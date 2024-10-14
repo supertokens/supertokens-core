@@ -20,14 +20,22 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.OAuthToken;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.session.Session;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -98,6 +106,26 @@ public class OAuthAuthAPI extends WebserverAPI {
                 String redirectTo = response.headers.get("Location").get(0);
 
                 redirectTo = OAuth.transformTokensInAuthRedirect(main, appIdentifier, storage, redirectTo, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+
+
+                if (redirectTo.contains("#")) {
+                    String tokensPart = redirectTo.substring(redirectTo.indexOf("#") + 1);
+                    String[] parts = tokensPart.split("&");
+                    for (String part : parts) {
+                        if (part.startsWith("access_token=")) {
+                            String accessToken = java.net.URLDecoder.decode(part.split("=")[1], "UTF-8");
+                            try {
+                                JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
+                                if (accessTokenPayload.has("sessionHandle")) {
+                                    updateLastActive(appIdentifier, accessTokenPayload.get("sessionHandle").getAsString());
+                                }
+                            } catch (Exception e) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
+
                 List<String> responseCookies = response.headers.get("Set-Cookie");
 
                 JsonObject finalResponse = new JsonObject();
@@ -118,6 +146,25 @@ public class OAuthAuthAPI extends WebserverAPI {
 
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
+        }
+    }
+
+    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
+        try {
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
+
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+            } else {
+                ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.userId);
+            }
+        } catch (Exception e) {
+            // ignore
         }
     }
 }

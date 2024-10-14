@@ -18,12 +18,16 @@ package io.supertokens.webserver.api.oauth;
 
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.*;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.OAuthToken;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -31,10 +35,17 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.session.Session;
+import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT.JWTException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -163,14 +174,14 @@ public class OAuthTokenAPI extends WebserverAPI {
                     if (grantType.equals("client_credentials")) {
                         try {
                             OAuth.addM2MToken(main, appIdentifier, storage, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
-                        } catch (Exception e) {
-                            // ignore
+                        } catch (TryRefreshTokenException e) {
+                            throw new IllegalStateException("should never happen");
                         }
                     }
 
                     if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
                         String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
-                        long exp = 0;
+                        long refreshTokenExp = 0;
 
                         {
                             // Introspect the new refresh token to get the expiry
@@ -191,25 +202,38 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                             if (introspectResponse != null) {
                                 JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
-                                exp = refreshTokenPayload.get("exp").getAsLong();
+                                refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
+                                if (refreshTokenPayload.has("sessionHandle")) {
+                                    updateLastActive(appIdentifier, refreshTokenPayload.get("sessionHandle").getAsString());
+                                }
+
                             } else {
-                                return;
+                                throw new IllegalStateException("Should never come here");
                             }
                         }
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, exp);
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, refreshTokenExp);
                             } // else we don't need a mapping
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, exp);
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, refreshTokenExp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
                                 OAuth.deleteRefreshTokenMappingIfExists(main, appIdentifier, storage, inputRefreshToken);
                             }
+                        }
+                    } else {
+                        try {
+                            JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                            if (accessTokenPayload.has("sessionHandle")) {
+                                updateLastActive(appIdentifier, accessTokenPayload.get("sessionHandle").getAsString());
+                            }
+                        } catch (Exception e) {
+                            // ignore
                         }
                     }
 
@@ -227,6 +251,25 @@ public class OAuthTokenAPI extends WebserverAPI {
             throw new ServletException(e);
         } catch (OAuthClientNotFoundException e) {
             OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+        }
+    }
+
+    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
+        try {
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
+
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+            } else {
+                ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.userId);
+            }
+        } catch (Exception e) {
+            // ignore
         }
     }
 }
