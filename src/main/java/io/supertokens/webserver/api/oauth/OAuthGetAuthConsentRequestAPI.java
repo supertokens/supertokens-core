@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -28,7 +28,7 @@ public class OAuthGetAuthConsentRequestAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),

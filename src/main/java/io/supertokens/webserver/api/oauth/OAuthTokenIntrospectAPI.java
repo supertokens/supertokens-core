@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -69,7 +69,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                 token = OAuth.getOAuthProviderRefreshToken(main, null, null, token);
                 formFields.put("token", token);
 
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
                     storage,

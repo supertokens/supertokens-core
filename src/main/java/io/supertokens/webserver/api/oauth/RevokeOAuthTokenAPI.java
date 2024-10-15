@@ -11,7 +11,7 @@ import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -55,7 +55,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     Map<String, String> formFields = new HashMap<>();
                     formFields.put("token", token);
 
-                    HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                    HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                         main, req, resp,
                         appIdentifier,
                         storage,
@@ -101,7 +101,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     formFields.put("client_secret", clientSecret);
                 }
 
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),

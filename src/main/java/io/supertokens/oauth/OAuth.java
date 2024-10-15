@@ -74,7 +74,7 @@ public class OAuth {
                         "feature.");
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -97,7 +97,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doGet(fullUrl, headers, queryParams);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doGet(fullUrl, headers, queryParams);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -113,7 +113,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -137,7 +137,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doFormPost(fullUrl, headers, formFields);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doFormPost(fullUrl, headers, formFields);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -152,7 +152,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -176,7 +176,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPost(fullUrl, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonPost(fullUrl, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -191,7 +191,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -216,7 +216,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPut(fullUrl, queryParams, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonPut(fullUrl, queryParams, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -231,7 +231,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -255,7 +255,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -270,7 +270,7 @@ public class OAuth {
         return response;
     }
 
-    private static void checkNonSuccessResponse(HttpRequestForOry.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
+    private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
         if (response.statusCode == 404) {
             throw new OAuthClientNotFoundException();
         }
@@ -381,9 +381,9 @@ public class OAuth {
         return clientSecret;
     }
 
-    public static void removeClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+    public static boolean removeClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.deleteOAuthClient(appIdentifier, clientId);
+        return oauthStorage.deleteOAuthClient(appIdentifier, clientId);
     }
 
     public static List<OAuthClient> getClients(Main main, AppIdentifier appIdentifier, Storage storage, List<String> clientIds) throws StorageQueryException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, InvalidConfigException {

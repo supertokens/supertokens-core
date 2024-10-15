@@ -16,7 +16,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -53,7 +53,7 @@ public class OAuthClientListAPI extends WebserverAPI {
             Map<String, String> queryParams = OAuthProxyHelper.defaultGetQueryParamsFromRequest(req);
             queryParams.put("owner", appIdentifier.getAppId());
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
                 storage,

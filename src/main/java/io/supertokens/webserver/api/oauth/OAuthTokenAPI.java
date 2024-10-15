@@ -25,7 +25,7 @@ import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.OAuthToken;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
@@ -42,7 +42,6 @@ import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundExcepti
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
-import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -119,7 +118,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
                 formFieldsForTokenIntrospect.put("token", oauthProviderRefreshToken);
 
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
                     storage,
@@ -155,7 +154,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 formFields.put("refresh_token", oauthProviderRefreshToken);
             }
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -188,7 +187,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                             Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
                             formFieldsForTokenIntrospect.put("token", newRefreshToken);
 
-                            HttpRequestForOry.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
+                            HttpRequestForOAuthProvider.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
                                 main, req, resp,
                                 getAppIdentifier(req),
                                 enforcePublicTenantAndGetPublicTenantStorage(req),

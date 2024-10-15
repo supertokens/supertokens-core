@@ -56,6 +56,7 @@ public class TestAuthCodeFlow {
     @Before
     public void beforeEach() {
         Utils.reset();
+        OAuthAPIHelper.resetOAuthProvider();
     }
 
     @Test

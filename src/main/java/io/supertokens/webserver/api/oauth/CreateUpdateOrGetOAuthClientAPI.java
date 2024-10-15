@@ -35,7 +35,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.Transformations;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
@@ -71,7 +71,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
                 storage,
@@ -132,7 +132,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
             input.addProperty("owner", appIdentifier.getAppId());
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPOST(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyJsonPOST(
                 main, req, resp, 
                 appIdentifier,
                 storage,
@@ -175,7 +175,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         try {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("clientId", clientId);
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyGET(
+            HttpRequestForOAuthProvider.Response response = OAuth.doOAuthProxyGET(
                     main,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -219,7 +219,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 client = new OAuthClient(clientId, client.clientSecret, client.isClientCredentialsOnly, enableRefreshTokenRotation);
             }
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
                 appIdentifier,
                 storage,

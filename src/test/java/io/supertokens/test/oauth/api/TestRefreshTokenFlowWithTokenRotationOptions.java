@@ -57,6 +57,7 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     @Before
     public void beforeEach() {
         Utils.reset();
+        OAuthAPIHelper.resetOAuthProvider();
     }
 
     private static JsonObject createClient(Main main, boolean enableRefreshTokenRotation) throws Exception {

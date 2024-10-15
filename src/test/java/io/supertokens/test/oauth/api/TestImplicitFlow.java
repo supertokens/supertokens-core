@@ -56,6 +56,7 @@ public class TestImplicitFlow {
     @Before
     public void beforeEach() {
         Utils.reset();
+        OAuthAPIHelper.resetOAuthProvider();
     }
 
     @Test

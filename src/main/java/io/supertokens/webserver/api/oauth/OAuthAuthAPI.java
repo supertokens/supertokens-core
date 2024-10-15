@@ -23,7 +23,7 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.OAuthToken;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -86,7 +86,7 @@ public class OAuthAuthAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
                 storage,
