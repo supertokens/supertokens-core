@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.oauth.api.Map;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
@@ -35,10 +36,12 @@ import org.junit.runner.Description;
 import org.mockito.Mockito;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -270,5 +273,17 @@ public abstract class Utils extends Mockito {
         assertTrue(
                 array1.length == array2.length && Arrays.asList(array1).containsAll(Arrays.asList(array2))
                         && Arrays.asList(array2).containsAll(Arrays.asList(array1)));
+    }
+
+    public static java.util.Map<String, String> splitQueryString(String query) throws UnsupportedEncodingException {
+        java.util.Map<String, String> queryParams = new HashMap<>();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
+            String value = idx > 0 && pair.length() > idx + 1 ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8") : null;
+            queryParams.put(key, value);
+        }
+        return queryParams;
     }
 }

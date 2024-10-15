@@ -271,9 +271,6 @@ public class OAuth {
     }
 
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
-        if (response.statusCode == 404) {
-            throw new OAuthClientNotFoundException();
-        }
         if (response.statusCode >= 400) {
             String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
             String errorDescription = null;
