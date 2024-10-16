@@ -25,7 +25,6 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.test.oauth.api.Map;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;

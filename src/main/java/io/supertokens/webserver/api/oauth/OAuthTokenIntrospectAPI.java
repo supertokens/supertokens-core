@@ -66,7 +66,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-                token = OAuth.getOAuthProviderRefreshToken(main, null, null, token);
+                token = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, token);
                 formFields.put("token", token);
 
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
