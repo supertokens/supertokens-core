@@ -60,8 +60,13 @@ public class RevokeOAuthTokensAPI extends WebserverAPI {
             );
 
             if (response != null) {
-                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
-                super.sendJsonResponse(200, response.jsonResponse, resp);
+                if (response.statusCode == 204) {
+                    JsonObject finalResponse = new JsonObject();
+                    finalResponse.addProperty("status", "OK");
+                    super.sendJsonResponse(200, finalResponse, resp);
+                } else {
+                    throw new IllegalStateException("should never come here");
+                }
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);

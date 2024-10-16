@@ -403,7 +403,6 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Helper method to split query parameters
     private static Map<String, String> splitQuery(URL url) throws UnsupportedEncodingException {
         Map<String, String> queryPairs = new LinkedHashMap<>();
         String query = url.getQuery();

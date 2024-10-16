@@ -102,6 +102,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
                 JsonObject response = OAuth.introspectAccessToken(main, appIdentifier, storage, token);
+                response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
 
             } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {

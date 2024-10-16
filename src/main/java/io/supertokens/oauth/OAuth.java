@@ -255,7 +255,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonDelete(fullUrl, headers, queryParams, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
