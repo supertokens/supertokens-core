@@ -78,7 +78,7 @@ public class BulkImportFlowTest {
         setFeatureFlags(main, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
-        int NUMBER_OF_USERS_TO_UPLOAD = 140000; //1000000;
+        int NUMBER_OF_USERS_TO_UPLOAD = 1000000;
         int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
         System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
         System.out.println("Worker threads: " + parallelism_set_to);
@@ -107,7 +107,7 @@ public class BulkImportFlowTest {
         long processingStartedTime = System.currentTimeMillis();
 
         // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 100000);
+        startBulkImportCronjob(main, 20000);
         System.out.println("CronJob started");
 
         // wait for the cron job to process them
@@ -280,7 +280,7 @@ public class BulkImportFlowTest {
         }
         return HttpRequestForTesting.sendGETRequest(main, "",
                 "http://localhost:3567/bulk-import/users/count",
-                params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                params, 10000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
 
     private static JsonObject loadBulkImportUsersWithStatus(Main main, BulkImportStorage.BULK_IMPORT_USER_STATUS status)
@@ -291,7 +291,7 @@ public class BulkImportFlowTest {
         }
         return HttpRequestForTesting.sendGETRequest(main, "",
                 "http://localhost:3567/bulk-import/users",
-                params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                params, 10000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
 
     private static JsonObject loadUsersCount(Main main) throws HttpResponseException, IOException {
@@ -299,7 +299,7 @@ public class BulkImportFlowTest {
 
         return HttpRequestForTesting.sendGETRequest(main, "",
                 "http://localhost:3567/users/count",
-                params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                params, 10000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
 
     private static JsonObject generateUsersJson(int numberOfUsers, int startIndex) {

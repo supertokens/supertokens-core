@@ -83,10 +83,21 @@ public class BulkImportBackgroundJobManagerAPITest {
             assertEquals("ACTIVE", currentStatus.get("jobStatus").getAsString());
         }
 
+
+        //stopping it makes it inactive
+        {
+            JsonObject startResponse = stopBulkImportCronjob(main);
+            assertEquals("OK", startResponse.get("status").getAsString());
+            assertEquals("INACTIVE", startResponse.get("jobStatus").getAsString());
+
+            JsonObject currentStatus = loadBulkImportCronjobStatus(main);
+            assertEquals("OK", currentStatus.get("status").getAsString());
+            assertEquals("INACTIVE", currentStatus.get("jobStatus").getAsString());
+        }
     }
 
     private static JsonObject startBulkImportCronjob(Main main, int batchSize) throws HttpResponseException, IOException {
-        return sendCommandForBulkImportCronjob(main, "START", 100);
+        return sendCommandForBulkImportCronjob(main, "START", batchSize);
     }
 
     private static JsonObject stopBulkImportCronjob(Main main) throws HttpResponseException, IOException {
