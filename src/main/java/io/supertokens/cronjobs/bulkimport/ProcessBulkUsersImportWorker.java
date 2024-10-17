@@ -41,9 +41,11 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,14 +56,14 @@ public class ProcessBulkUsersImportWorker implements Runnable {
     private final Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();
     private final Main main;
     private final AppIdentifier app;
-    private final List<BulkImportUser> usersToImport;
     private final BulkImportSQLStorage bulkImportSQLStorage;
     private final BulkImportUserUtils bulkImportUserUtils;
+    private final List<BulkImportUser> usersToProcess;
 
-    ProcessBulkUsersImportWorker(Main main, AppIdentifier app, List<BulkImportUser> userListToImport, BulkImportSQLStorage bulkImportSQLStorage, BulkImportUserUtils bulkImportUserUtils){
+    ProcessBulkUsersImportWorker(Main main, AppIdentifier app, List<BulkImportUser> usersToProcess, BulkImportSQLStorage bulkImportSQLStorage, BulkImportUserUtils bulkImportUserUtils){
         this.main = main;
         this.app = app;
-        this.usersToImport = userListToImport;
+        this.usersToProcess = usersToProcess;
         this.bulkImportSQLStorage = bulkImportSQLStorage;
         this.bulkImportUserUtils = bulkImportUserUtils;
     }
@@ -69,7 +71,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
     @Override
     public void run() {
         try {
-            processMultipleUsers(app, usersToImport, bulkImportUserUtils, bulkImportSQLStorage);
+            processMultipleUsers(app, usersToProcess, bulkImportUserUtils, bulkImportSQLStorage);
         } catch (TenantOrAppNotFoundException | DbInitException | IOException | StorageQueryException e) {
             throw new RuntimeException(e);
         }
@@ -224,7 +226,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             // of marking it as FAILED. We will return early in that case.
             if (exception.actualException instanceof StorageQueryException) {
                 Logging.error(main, null, "We got an StorageQueryException while processing a bulk import user entry. It will be retried again. Error Message: " + e.getMessage(), true);
-                return; // TODO find out when it's a good idea..
+                return;
             }
             errorMessage[0] = exception.actualException.getMessage();
         } else if (e instanceof InvalidBulkImportDataException) {

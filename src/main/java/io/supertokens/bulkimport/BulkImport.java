@@ -98,7 +98,7 @@ public class BulkImport {
     // Number of users to process in a single batch of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_BATCH_SIZE = 10000;
     // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
-    public static final int PROCESS_USERS_INTERVAL_SECONDS = 1;
+    public static final int PROCESS_USERS_INTERVAL_SECONDS = 30;
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
     private static Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();

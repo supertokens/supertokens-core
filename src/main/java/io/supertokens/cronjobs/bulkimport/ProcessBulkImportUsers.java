@@ -48,6 +48,7 @@ public class ProcessBulkImportUsers extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.ProcessBulkImportUsers";
 
     private Integer batchSize;
+    private ExecutorService executorService;
 
     private ProcessBulkImportUsers(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("ProcessBulkImportUsers", main, tenantsInfo, true);
@@ -70,36 +71,41 @@ public class ProcessBulkImportUsers extends CronTask {
         BulkImportSQLStorage bulkImportSQLStorage = (BulkImportSQLStorage) StorageLayer
                 .getStorage(app.getAsPublicTenantIdentifier(), main);
 
-        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
-                this.batchSize);
-
         String[] allUserRoles = StorageUtils.getUserRolesStorage(bulkImportSQLStorage).getRoles(app);
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
+
+        System.out.println(Thread.currentThread().getName() + " ProcessBulkImportUsers: " + " starting to load users " + this.batchSize);
+        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
+                this.batchSize);
+        System.out.println(Thread.currentThread().getName() + " ProcessBulkImportUsers: " + " loaded users");
+
+        if(users == null || users.isEmpty()) {
+            return;
+        }
 
         //split the loaded users list into smaller chunks
         int NUMBER_OF_BATCHES = Config.getConfig(app.getAsPublicTenantIdentifier(), main).getBulkMigrationParallelism();
         List<List<BulkImportUser>> loadedUsersChunks = makeChunksOf(users, NUMBER_OF_BATCHES);
 
         //pass the chunks for processing for the workers
-        ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_OF_BATCHES);;
-        try {
+        if(executorService == null) {
+            executorService = Executors.newFixedThreadPool(NUMBER_OF_BATCHES);
+        }
+
+//        try {
             List<Future<?>> tasks = new ArrayList<>();
-            for (List<BulkImportUser> userListChunk : loadedUsersChunks) {
-                tasks.add(executorService.submit(
-                        new ProcessBulkUsersImportWorker(main, app, userListChunk, bulkImportSQLStorage,
-                                bulkImportUserUtils)));
+            for (int i =0; i< NUMBER_OF_BATCHES; i++) {
+                tasks.add(executorService.submit(new ProcessBulkUsersImportWorker(main, app, loadedUsersChunks.get(i),
+                        bulkImportSQLStorage, bulkImportUserUtils)));
             }
 
-            for (Future<?> task : tasks) {
-                task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
-            }
-
-        } catch (ExecutionException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            executorService.shutdown();
-        }
+//            for (Future<?> task : tasks) {
+//                task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
+//            }
+//
+//        } catch (ExecutionException | InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     @Override
