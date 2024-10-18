@@ -19,6 +19,7 @@ package io.supertokens.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -53,6 +54,7 @@ import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -82,7 +84,7 @@ public class Session {
             JWT.JWTException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return createNewSession(tenantIdentifier, storage, main, recipeUserId, userDataInJWT, userDataInDatabase,
-                    false, AccessToken.getLatestVersion(), false);
+                    false, AccessToken.getLatestVersion(), false, null);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -101,8 +103,9 @@ public class Session {
         try {
             return createNewSession(
                     new TenantIdentifier(null, null, null), storage, main,
-                    recipeUserId, userDataInJWT, userDataInDatabase, false, AccessToken.getLatestVersion(), false);
-        } catch (TenantOrAppNotFoundException e) {
+                    recipeUserId, userDataInJWT, userDataInDatabase, false,
+                    AccessToken.getLatestVersion(), false, null);
+        } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -121,8 +124,8 @@ public class Session {
         try {
             return createNewSession(
                     new TenantIdentifier(null, null, null), storage, main,
-                    recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey);
-        } catch (TenantOrAppNotFoundException e) {
+                    recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey, null);
+        } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -132,11 +135,11 @@ public class Session {
                                                             @Nonnull JsonObject userDataInJWT,
                                                             @Nonnull JsonObject userDataInDatabase,
                                                             boolean enableAntiCsrf, AccessToken.VERSION version,
-                                                            boolean useStaticKey)
+                                                            boolean useStaticKey, SemVer semVer)
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, AccessTokenPayloadError,
-            UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException {
+            UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, UnauthorisedException {
         String sessionHandle = UUID.randomUUID().toString();
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             sessionHandle += "_" + tenantIdentifier.getTenantId();
@@ -150,6 +153,7 @@ public class Session {
             if (userIdMapping != null) {
                 recipeUserId = userIdMapping.superTokensUserId;
             }
+
 
             primaryUserId = StorageUtils.getAuthRecipeStorage(storage)
                     .getPrimaryUserIdStrForUserId(tenantIdentifier.toAppIdentifier(), recipeUserId);
@@ -165,6 +169,16 @@ public class Session {
             }
             if (userIdMappings.containsKey(recipeUserId)) {
                 recipeUserId = userIdMappings.get(recipeUserId);
+            }
+
+            if(semVer!= null && semVer.greaterThanOrEqualTo(SemVer.v5_2)) {
+                AuthRecipeUserInfo authRecipeUserInfo = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(),
+                        storage, recipeUserId);
+                if (authRecipeUserInfo != null) {
+                    if (!authRecipeUserInfo.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        throw new UnauthorisedException("User is not part of requested tenant!");
+                    }
+                }
             }
         }
 

@@ -386,7 +386,7 @@ public class SessionTests {
 
         AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1Storage,
                 user2.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1Storage, user1.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), t2.toAppIdentifier(), t2Storage, user1.getSupertokensUserId(),
                 user2.getSupertokensUserId());
 
         SessionInformationHolder session1 = Session.createNewSession(t2, t2Storage, process.getProcess(),

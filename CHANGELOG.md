@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.2.4] 
+
+- Adds support for CDI 5.2
+- In CDI 5.2, when creating a new session for a known user, checks if the user is a member of that tenant.
+  If not, returns UNAUTHORISED.
+
 ## [9.2.3] - 2024-10-09
 
 - Adds support for `--with-temp-dir` in CLI and `tempDirLocation=` in Core
