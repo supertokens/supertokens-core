@@ -103,7 +103,7 @@ public class SessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.createNewSession(
                     tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
-                    useStaticSigningKey);
+                    useStaticSigningKey, version);
 
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -143,6 +143,11 @@ public class SessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
+        } catch (UnauthorisedException e) {
+                JsonObject reply = new JsonObject();
+                reply.addProperty("status", "UNAUTHORISED");
+                reply.addProperty("message", e.getMessage());
+                super.sendJsonResponse(200, reply, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
                  StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
                  BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
