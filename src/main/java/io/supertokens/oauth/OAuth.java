@@ -367,12 +367,18 @@ public class OAuth {
     }
 
     private static String encryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        if (clientSecret == null) {
+            return null;
+        }
         String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.encrypt(clientSecret, key);
         return clientSecret;
     }
 
     private static String decryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        if (clientSecret == null) {
+            return null;
+        }
         String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.decrypt(clientSecret, key);
         return clientSecret;
