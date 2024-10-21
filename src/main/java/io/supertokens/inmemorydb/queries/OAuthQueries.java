@@ -54,10 +54,10 @@ public class OAuthQueries {
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + oAuth2RefreshTokenMappingTable + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
-                + "st_refresh_token VARCHAR(255) NOT NULL,"
-                + "op_refresh_token VARCHAR(255) NOT NULL,"
+                + "external_refresh_token VARCHAR(255) NOT NULL,"
+                + "internal_refresh_token VARCHAR(255) NOT NULL,"
                 + "exp BIGINT NOT NULL,"
-                + "PRIMARY KEY (app_id, st_refresh_token),"
+                + "PRIMARY KEY (app_id, external_refresh_token),"
                 + "FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE);";
         // @formatter:on
     }
@@ -394,40 +394,40 @@ public class OAuthQueries {
         });
     }
 
-    public static void createOrUpdateRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String superTokensRefreshToken, String oauthProviderRefreshToken, long exp) throws SQLException, StorageQueryException {
+    public static void createOrUpdateRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String externalRefreshToken, String internalRefreshToken, long exp) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
-                " (app_id, st_refresh_token, op_refresh_token, exp) VALUES (?, ?, ?, ?) ON CONFLICT (app_id, st_refresh_token) DO UPDATE SET op_refresh_token = ?, exp = ?";
+                " (app_id, external_refresh_token, internal_refresh_token, exp) VALUES (?, ?, ?, ?) ON CONFLICT (app_id, external_refresh_token) DO UPDATE SET internal_refresh_token = ?, exp = ?";
         update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, superTokensRefreshToken);
-            pst.setString(3, oauthProviderRefreshToken);
+            pst.setString(2, externalRefreshToken);
+            pst.setString(3, internalRefreshToken);
             pst.setLong(4, exp);
-            pst.setString(5, oauthProviderRefreshToken);
+            pst.setString(5, internalRefreshToken);
             pst.setLong(6, exp);
         });
     }
 
-    public static String getRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String superTokensRefreshToken) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT op_refresh_token FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
-                " WHERE app_id = ? AND st_refresh_token = ?";
+    public static String getRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String externalRefreshToken) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT internal_refresh_token FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
+                " WHERE app_id = ? AND external_refresh_token = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, superTokensRefreshToken);
+            pst.setString(2, externalRefreshToken);
         }, result -> {
             if (result.next()) {
-                return result.getString("op_refresh_token");
+                return result.getString("internal_refresh_token");
             }
             return null;
         });
     }
 
     public static void deleteRefreshTokenMapping(Start start, AppIdentifier appIdentifier,
-            String superTokensRefreshToken) throws SQLException, StorageQueryException {
+            String externalRefreshToken) throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
-                " WHERE app_id = ? AND st_refresh_token = ?";
+                " WHERE app_id = ? AND external_refresh_token = ?";
         update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, superTokensRefreshToken);
+            pst.setString(2, externalRefreshToken);
         });
     }
 

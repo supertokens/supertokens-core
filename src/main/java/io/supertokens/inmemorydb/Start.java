@@ -49,7 +49,10 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -3194,30 +3197,30 @@ public class Start
     }
 
     @Override
-    public void createOrUpdateRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken,
-            String oauthProviderRefreshToken, long exp) throws StorageQueryException {
+    public void createOrUpdateRefreshTokenMapping(AppIdentifier appIdentifier, String externalTokensRefreshToken,
+            String internalRefreshToken, long exp) throws StorageQueryException {
         try {
-            OAuthQueries.createOrUpdateRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken, oauthProviderRefreshToken, exp);
+            OAuthQueries.createOrUpdateRefreshTokenMapping(this, appIdentifier, externalTokensRefreshToken, internalRefreshToken, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public String getRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken)
+    public String getRefreshTokenMapping(AppIdentifier appIdentifier, String externalRefreshToken)
             throws StorageQueryException {
         try {
-            return OAuthQueries.getRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken);
+            return OAuthQueries.getRefreshTokenMapping(this, appIdentifier, externalRefreshToken);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken)
+    public void deleteRefreshTokenMapping(AppIdentifier appIdentifier, String externalRefreshToken)
             throws StorageQueryException {
         try {
-            OAuthQueries.deleteRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken);
+            OAuthQueries.deleteRefreshTokenMapping(this, appIdentifier, externalRefreshToken);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
