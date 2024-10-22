@@ -20,6 +20,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -84,10 +85,20 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 }
 
                 // revoking refresh token
-                String clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
-                String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
+
+                String clientId, clientSecret;
 
                 String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
+
+                if (authorizationHeader != null) {
+                    String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                    clientId = parsedHeader[0];
+                    clientSecret = parsedHeader[1];
+                } else {
+                    clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
+                    clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
+                }
+
 
                 Map<String, String> headers = new HashMap<>();
                 if (authorizationHeader != null) {
