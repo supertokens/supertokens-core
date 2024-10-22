@@ -16,7 +16,8 @@
 
 package io.supertokens.webserver.api.oauth;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -83,9 +84,12 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
 
                 if (response != null) {
                     JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
-
+                    String clientId = null;
+                    if(finalResponse.has("client_id")) {
+                        clientId = finalResponse.get("client_id").getAsString();
+                    }
                     try {
-                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
+                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token, clientId);
                     } catch (StorageQueryException | TenantOrAppNotFoundException |
                                 FeatureNotEnabledException | InvalidConfigException e) {
                         throw new ServletException(e);

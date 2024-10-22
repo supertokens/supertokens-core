@@ -173,12 +173,12 @@ public class SQLiteConfig {
         return "oauth_refresh_token_mapping";
     }
 
-    public String getOAuthRevokeTable() {
-        return "oauth_revoke";
-    }
-
     public String getOAuthM2MTokensTable() {
         return "oauth_m2m_tokens";
+    }
+
+    public String getOAuthSessionsTable() {
+        return "oauth_sessions";
     }
 
     public String getOAuthLogoutChallengesTable() {

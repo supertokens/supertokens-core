@@ -17,8 +17,8 @@
 package io.supertokens.webserver.api.oauth;
 
 import com.auth0.jwt.exceptions.JWTCreationException;
-import com.google.gson.*;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -113,10 +113,10 @@ public class OAuthTokenAPI extends WebserverAPI {
                 String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
                 inputRefreshToken = refreshToken;
 
-                String oauthProviderRefreshToken = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, refreshToken);
+                String internalRefreshToken = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, refreshToken);
 
                 Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
-                formFieldsForTokenIntrospect.put("token", oauthProviderRefreshToken);
+                formFieldsForTokenIntrospect.put("token", internalRefreshToken);
 
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
@@ -137,7 +137,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
 
                 try {
-                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken);
+                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken, oauthClient.clientId);
                 } catch (StorageQueryException | TenantOrAppNotFoundException |
                             FeatureNotEnabledException | InvalidConfigException e) {
                     throw new ServletException(e);
@@ -151,7 +151,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     return;
                 }
 
-                formFields.put("refresh_token", oauthProviderRefreshToken);
+                formFields.put("refresh_token", internalRefreshToken);
             }
 
             HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
@@ -181,7 +181,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
                         String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
                         long refreshTokenExp = 0;
-
+                        String gid = null;
                         {
                             // Introspect the new refresh token to get the expiry
                             Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
@@ -205,24 +205,22 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 if (refreshTokenPayload.has("sessionHandle")) {
                                     updateLastActive(appIdentifier, refreshTokenPayload.get("sessionHandle").getAsString());
                                 }
-
+                                if (refreshTokenPayload.has("gid")) {
+                                    gid = refreshTokenPayload.get("gid").getAsString();
+                                }
                             } else {
                                 throw new IllegalStateException("Should never come here");
                             }
                         }
 
                         if (inputRefreshToken == null) {
-                            // Issuing a new refresh token
-                            if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, refreshTokenExp);
-                            } // else we don't need a mapping
+                            // Issuing a new refresh token, always creating a mapping.
+                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, formFields.get("client_id"), gid, newRefreshToken, newRefreshToken, null, null, refreshTokenExp);
                         } else {
                             // Refreshing a token
+                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, formFields.get("client_id"), gid, inputRefreshToken, newRefreshToken, null, null, refreshTokenExp);
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, refreshTokenExp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
-                            } else {
-                                OAuth.deleteRefreshTokenMappingIfExists(main, appIdentifier, storage, inputRefreshToken);
                             }
                         }
                     } else {
