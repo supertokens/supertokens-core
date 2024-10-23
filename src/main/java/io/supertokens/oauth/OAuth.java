@@ -364,10 +364,14 @@ public class OAuth {
         oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, clientSecret, isClientCredentialsOnly, enableRefreshTokenRotation);
     }
 
+
     private static String encryptClientSecret(Main main, TenantIdentifier tenant, String clientSecret)
             throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             TenantOrAppNotFoundException {
+        if (clientSecret == null) {
+            return null;
+        }
         String key = Config.getConfig(tenant, main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.encrypt(clientSecret, key);
         return clientSecret;
@@ -377,6 +381,9 @@ public class OAuth {
             throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             TenantOrAppNotFoundException {
+        if (clientSecret == null) {
+            return null;
+        }
         String key = Config.getConfig(tenant, main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.decrypt(clientSecret, key);
         return clientSecret;

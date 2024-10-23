@@ -45,6 +45,7 @@ import io.supertokens.session.Session;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -99,7 +100,14 @@ public class OAuthTokenAPI extends WebserverAPI {
             formFields.put(entry.getKey(), entry.getValue().getAsString());
         }
 
-        String clientId = formFields.get("client_id");
+        String clientId;
+
+        if (authorizationHeader != null) {
+            String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+            clientId = parsedHeader[0];
+        } else {
+            clientId = InputParser.parseStringOrThrowError(input, formFields.get("client_id"), false);
+        }
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -158,7 +166,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
-                formFields.get("client_id"), // clientIdToCheck
+                clientId, // clientIdToCheck
                 "/oauth2/token", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
