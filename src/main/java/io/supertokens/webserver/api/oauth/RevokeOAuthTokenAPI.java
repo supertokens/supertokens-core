@@ -46,7 +46,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (token.startsWith("st_rt_")) {
-                token = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, token);
+                token = OAuth.getInternalRefreshToken(main, appIdentifier, storage, token);
 
                 String gid = null;
                 long exp = -1;

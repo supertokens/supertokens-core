@@ -121,7 +121,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
                 inputRefreshToken = refreshToken;
 
-                String internalRefreshToken = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, refreshToken);
+                String internalRefreshToken = OAuth.getInternalRefreshToken(main, appIdentifier, storage, refreshToken);
 
                 Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
                 formFieldsForTokenIntrospect.put("token", internalRefreshToken);

@@ -144,7 +144,7 @@ public class OAuthQueries {
                                                   List<String> jtis, long exp)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthSessionsTable() +
-                " (gid, client_id, app_id, external_refresh_token, internal_refresh_token, session_handle, jti, exp) VALUES (?, ?, ?, ?, ?, ?) " +
+                " (gid, client_id, app_id, external_refresh_token, internal_refresh_token, session_handle, jti, exp) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (gid) DO UPDATE SET external_refresh_token = ?, internal_refresh_token = ?, " +
                 "session_handle = ? , jti = ?, exp = ?";
         update(start, QUERY, pst -> {
@@ -251,21 +251,16 @@ public class OAuthQueries {
 
     public static boolean deleteJTIFromOAuthSession(Start start, AppIdentifier appIdentifier, String gid, String jti)
             throws SQLException, StorageQueryException {
-        //jti is a coma separated list. When deleting a jti, just have to delete from the list
+        //jti is a comma separated list. When deleting a jti, just have to delete from the list
         List<String> savedJTIs  = getOAuthJTIsByGID(start, appIdentifier, gid);
+        List<String> toSaveJTIs = new ArrayList<>(savedJTIs);
         boolean deletionHappened = false;
-        if (savedJTIs != null && savedJTIs.contains(jti)){
-            savedJTIs.remove(jti);
-            deletionHappened = updateOAuthJTIsByGID(start, appIdentifier, gid, savedJTIs) > 0;
+        if (toSaveJTIs != null && toSaveJTIs.contains(jti)){
+            toSaveJTIs.remove(jti);
+            deletionHappened = updateOAuthJTIsByGID(start, appIdentifier, gid, toSaveJTIs) > 0;
         }
         return deletionHappened;
     }
-
-//    public static boolean isOAuthTokenRevokedBasedOnTargetFields(Start start, AppIdentifier appIdentifier, OAuthRevokeTargetType[] targetTypes, String[] targetValues, long issuedAt)
-//            throws SQLException, StorageQueryException {
-//        String oAuth2RefreshTokenMappingTable = Config.getConfig(start).getOAuthRefreshTokenMappingTable();
-//
-//    }
 
     public static int countTotalNumberOfClients(Start start, AppIdentifier appIdentifier,
             boolean filterByClientCredentialsOnly) throws SQLException, StorageQueryException {
@@ -421,14 +416,14 @@ public class OAuthQueries {
 
     public static List<String> getOAuthJTIsByGID(Start start, AppIdentifier appIdentifier, String gid)
             throws SQLException, StorageQueryException {
-        String SELECT = "SELECT jit FROM " + Config.getConfig(start).getOAuthSessionsTable() +
+        String SELECT = "SELECT jti FROM " + Config.getConfig(start).getOAuthSessionsTable() +
                 " WHERE app_id = ? AND gid = ?";
         return execute(start, SELECT, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, gid);
         }, result -> {
             if (result.next()) {
-                return List.of(result.getString("jit").split(","));
+                return List.of(result.getString("jti").split(","));
             }
             return null;
         });
@@ -437,7 +432,7 @@ public class OAuthQueries {
     public static int updateOAuthJTIsByGID(Start start, AppIdentifier appIdentifier, String gid, List<String> jtis)
             throws SQLException, StorageQueryException {
         String UPDATE = "UPDATE " + Config.getConfig(start).getOAuthSessionsTable() +
-                " SET jit = ? WHERE app_id = ? AND gid = ?";
+                " SET jti = ? WHERE app_id = ? AND gid = ?";
         return update(start, UPDATE, pst -> {
             pst.setString(1, String.join(",", jtis));
             pst.setString(2, appIdentifier.getAppId());
@@ -474,7 +469,7 @@ public class OAuthQueries {
             pst.setString(2, gid);
         }, result -> {
             if(result.next()){
-                return result.getInt(0) > 0;
+                return result.getInt(1) > 0;
             }
             return false;
         });
@@ -489,7 +484,7 @@ public class OAuthQueries {
             pst.setString(2, clientId);
         }, result -> {
             if(result.next()){
-                return result.getInt(0) > 0;
+                return result.getInt(1) > 0;
             }
             return false;
         });
@@ -504,7 +499,7 @@ public class OAuthQueries {
             pst.setString(2, sessionHandle);
         }, result -> {
             if(result.next()){
-                return result.getInt(0) > 0;
+                return result.getInt(1) > 0;
             }
             return false;
         });
@@ -519,7 +514,7 @@ public class OAuthQueries {
             pst.setString(2, gid);
         }, result -> {
             if(result.next()){
-                List<String> jtis = List.of(result.getString(0).split(","));
+                List<String> jtis = List.of(result.getString(1).split(","));
                 return jtis.contains(jti);
             }
             return false;

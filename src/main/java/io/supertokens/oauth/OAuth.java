@@ -654,14 +654,14 @@ public class OAuth {
         return client;
     }
 
-    public static String getOAuthProviderRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage,
-            String refreshToken) throws StorageQueryException {
+    public static String getInternalRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                 String externalRefreshToken) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        String opRefreshToken = oauthStorage.getRefreshTokenMapping(appIdentifier, refreshToken);
-        if (opRefreshToken == null) {
-            return refreshToken;
+        String internalRefreshToken = oauthStorage.getRefreshTokenMapping(appIdentifier, externalRefreshToken);
+        if (internalRefreshToken == null) {
+            return externalRefreshToken;
         }
-        return opRefreshToken;
+        return internalRefreshToken;
     }
 
     public static void createOrUpdateRefreshTokenMapping(Main main, AppIdentifier appIdentifier, Storage storage,
