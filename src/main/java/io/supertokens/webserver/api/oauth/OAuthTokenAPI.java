@@ -106,7 +106,7 @@ public class OAuthTokenAPI extends WebserverAPI {
             String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
             clientId = parsedHeader[0];
         } else {
-            clientId = InputParser.parseStringOrThrowError(input, formFields.get("client_id"), false);
+            clientId = formFields.get("client_id");
         }
 
         try {
