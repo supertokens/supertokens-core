@@ -177,7 +177,7 @@ public class TestAppData {
         UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
 
-        OAuth.addOrUpdateClientId(process.getProcess(), app.toAppIdentifier(), appStorage, "test", false);
+        OAuth.addOrUpdateClient(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "secret123", false, false);
         OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");
         ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");

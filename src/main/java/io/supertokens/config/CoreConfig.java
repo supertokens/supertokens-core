@@ -309,6 +309,12 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription("The encryption key used for saving OAuth client secret on the database.")
+    private String oauth_client_secret_encryption_key = null;
+
+    @ConfigYamlOnly
+    @JsonProperty
     @ConfigDescription(
             "This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database " +
                     "information is shown to / modifiable by the dev when they query the core to get the information " +
@@ -389,6 +395,13 @@ public class CoreConfig {
             throw new InvalidConfigException("oauth_provider_url_configured_in_oauth_provider is not set");
         }
         return oauth_provider_url_configured_in_oauth_provider;
+    }
+
+    public String getOAuthClientSecretEncryptionKey() throws InvalidConfigException {
+        if(oauth_client_secret_encryption_key == null) {
+            throw new InvalidConfigException("oauth_client_secret_encryption_key is not set");
+        }
+        return oauth_client_secret_encryption_key;
     }
 
     public String getIpAllowRegex() {

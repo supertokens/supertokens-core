@@ -11,7 +11,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.Storage;
@@ -28,9 +28,9 @@ public class OAuthProxyHelper {
     @Serial
     private static final long serialVersionUID = -8734479943734920904L;
 
-    public static HttpRequestForOry.Response proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                Map<String, String> queryParams, Map<String, String> headers) throws IOException, ServletException {
+    public static HttpRequestForOAuthProvider.Response proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+                                                                String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                                                Map<String, String> queryParams, Map<String, String> headers) throws IOException, ServletException {
         try {
             return OAuth.doOAuthProxyGET(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
 
@@ -44,9 +44,9 @@ public class OAuthProxyHelper {
         return null;
     }
 
-    public static HttpRequestForOry.Response proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     Map<String, String> formFields, Map<String, String> headers) throws IOException, ServletException {
+    public static HttpRequestForOAuthProvider.Response proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+                                                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                                                     Map<String, String> formFields, Map<String, String> headers) throws IOException, ServletException {
         try {
             return OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
         } catch (OAuthClientNotFoundException e) {
@@ -59,9 +59,9 @@ public class OAuthProxyHelper {
         return null;
     }
 
-    public static HttpRequestForOry.Response proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
+    public static HttpRequestForOAuthProvider.Response proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+                                                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                                                     JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
         try {
             return OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {
@@ -74,9 +74,9 @@ public class OAuthProxyHelper {
         return null;
     }
 
-    public static HttpRequestForOry.Response proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                    String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                    Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
+    public static HttpRequestForOAuthProvider.Response proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+                                                                    String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                                                    Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
 
         try {
             return OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
@@ -90,9 +90,9 @@ public class OAuthProxyHelper {
         return null;
     }
 
-    public static HttpRequestForOry.Response proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                       String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
+    public static HttpRequestForOAuthProvider.Response proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+                                                                       String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
         try {
             return OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {

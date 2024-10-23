@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -77,7 +77,7 @@ public class OAuthLogoutAPI extends WebserverAPI {
 
             // Check if the post logout redirection URI is valid for the clientId
             if (postLogoutRedirectionUri != null) {
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                     main, req, resp, 
                     appIdentifier, storage,
                     clientId, // clientIdToCheck

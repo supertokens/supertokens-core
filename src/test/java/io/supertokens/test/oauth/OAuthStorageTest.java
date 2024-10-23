@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
@@ -34,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -66,25 +68,44 @@ public class OAuthStorageTest {
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
-        assertEquals(0, storage.listOAuthClients(appIdentifier).size());
+        assertEquals(0, storage.getOAuthClients(appIdentifier, new ArrayList<>()).size()); // TODO fix me
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid1", false);
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", true);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid1", "secret123", false, false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", true, false);
 
-        assertTrue(storage.doesOAuthClientIdExist(appIdentifier, "clientid1"));
-        assertFalse(storage.doesOAuthClientIdExist(appIdentifier, "clientid3"));
+        OAuthClient client = storage.getOAuthClientById(appIdentifier, "clientid1");
+        assertNotNull(client);
+        assertEquals("secret123", client.clientSecret);
+        assertFalse(client.isClientCredentialsOnly);
+        assertFalse(client.enableRefreshTokenRotation);
+
+        try {
+            storage.getOAuthClientById(appIdentifier, "clientid3");
+            fail();
+        } catch (OAuthClientNotFoundException e) {
+            // ignore
+        }
 
         assertEquals(2, storage.countTotalNumberOfOAuthClients(appIdentifier));
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
 
-        assertEquals(List.of("clientid1", "clientid2"), storage.listOAuthClients(appIdentifier));
+        List<OAuthClient> clients = storage.getOAuthClients(appIdentifier, List.of("clientid1", "clientid2"));
+        assertEquals(2, clients.size());
 
         storage.deleteOAuthClient(appIdentifier, "clientid1");
-        assertEquals(List.of("clientid2"), storage.listOAuthClients(appIdentifier));
+        clients = storage.getOAuthClients(appIdentifier, List.of("clientid1", "clientid2"));
+        assertEquals(1, clients.size());
 
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", false, false);
         assertEquals(0, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
+
+        // Test all field updates
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "newsecret", true, true);
+        client = storage.getOAuthClientById(appIdentifier, "clientid2");
+        assertEquals("newsecret", client.clientSecret);
+        assertTrue(client.isClientCredentialsOnly);
+        assertTrue(client.enableRefreshTokenRotation);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -105,7 +126,7 @@ public class OAuthStorageTest {
 
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 
         // Test nulls
         storage.addOAuthLogoutChallenge(appIdentifier, "challengeid", "clientid", null, null, null, System.currentTimeMillis());
@@ -181,7 +202,7 @@ public class OAuthStorageTest {
 
         // test cleanup
         Thread.sleep(3000);
-        storage.cleanUpExpiredAndRevokedOAuthTokensList();
+        storage.deleteExpiredRevokedOAuthTokens(System.currentTimeMillis() / 1000 - 3);
 
         assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
                 appIdentifier,
@@ -236,7 +257,7 @@ public class OAuthStorageTest {
 
         long now = System.currentTimeMillis() / 1000;
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", true);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", true, false);
 
         storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 - 2, now + 2);
         storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 24 - 2, now + 2);
@@ -266,7 +287,7 @@ public class OAuthStorageTest {
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 
         // PK
         {
@@ -290,7 +311,7 @@ public class OAuthStorageTest {
         // App id FK
         AppIdentifier appIdentifier2 = new AppIdentifier(null,"a1");
         try {
-            storage.addOrUpdateOauthClient(appIdentifier2, "clientid", false);
+            storage.addOrUpdateOauthClient(appIdentifier2, "clientid", "secret123", false, false);
             fail();
         } catch (TenantOrAppNotFoundException e) {
             // expected

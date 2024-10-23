@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class HttpRequestForOry {
+public class HttpRequestForOAuthProvider {
     // This is a helper class to make HTTP requests to the hydra server specifically.
     // Although this is similar to HttpRequest, this is slightly modified to be able to work with
     // form data, headers in request and responses, query params in non-get requests, reading responses in

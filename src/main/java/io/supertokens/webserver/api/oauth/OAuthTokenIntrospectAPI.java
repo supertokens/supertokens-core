@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -65,7 +65,11 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
             try {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+
+                token = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, token);
+                formFields.put("token", token);
+
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
                     storage,
@@ -90,7 +94,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     finalResponse.addProperty("status", "OK");
                     super.sendJsonResponse(200, finalResponse, resp);
                 }
-            } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+            } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
         } else {
@@ -98,6 +102,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
                 JsonObject response = OAuth.introspectAccessToken(main, appIdentifier, storage, token);
+                response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
 
             } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
