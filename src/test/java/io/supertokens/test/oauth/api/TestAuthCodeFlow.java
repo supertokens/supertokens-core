@@ -16,6 +16,9 @@
 
 package io.supertokens.test.oauth.api;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
@@ -31,18 +34,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-
-import static org.junit.Assert.assertNotNull;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static org.junit.Assert.assertNotNull;
 
 public class TestAuthCodeFlow {
     @Rule
@@ -172,7 +171,9 @@ public class TestAuthCodeFlow {
         JsonArray audience = new JsonArray();
         acceptConsentRequestBody.add("grantAccessTokenAudience", audience);
         JsonObject session = new JsonObject();
-        session.add("access_token", new JsonObject());
+        JsonObject accessToken = new JsonObject();
+        accessToken.addProperty("gid", "gidForTesting");
+        session.add("access_token", accessToken);
         session.add("id_token", new JsonObject());
         acceptConsentRequestBody.add("session", session);
 

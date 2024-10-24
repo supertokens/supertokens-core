@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.oauth;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -106,7 +105,6 @@ public class OAuthAuthAPI extends WebserverAPI {
                 String redirectTo = response.headers.get("Location").get(0);
 
                 redirectTo = OAuth.transformTokensInAuthRedirect(main, appIdentifier, storage, redirectTo, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
-
 
                 if (redirectTo.contains("#")) {
                     String tokensPart = redirectTo.substring(redirectTo.indexOf("#") + 1);

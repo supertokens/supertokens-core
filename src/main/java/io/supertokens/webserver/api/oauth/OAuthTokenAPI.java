@@ -28,6 +28,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.OAuthToken;
+import io.supertokens.oauth.Transformations;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -61,6 +62,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class OAuthTokenAPI extends WebserverAPI {
@@ -186,10 +188,27 @@ public class OAuthTokenAPI extends WebserverAPI {
                         }
                     }
 
+                    String gid = null;
+                    String jti = null;
+                    String sessionHandle = null;
+
+                    if(response.jsonResponse.getAsJsonObject().has("access_token")){
+                        try {
+                            JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                            if(accessTokenPayload.has("gid")) {
+                                gid = accessTokenPayload.get("gid").getAsString();
+                            }
+                            if(accessTokenPayload.has("jti")) {
+                                jti = accessTokenPayload.get("jti").getAsString();
+                            }
+                        } catch (TryRefreshTokenException e) {
+                            //ignore, shouldn't happen
+                        }
+                    }
+
                     if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
                         String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
                         long refreshTokenExp = 0;
-                        String gid = null;
                         {
                             // Introspect the new refresh token to get the expiry
                             Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
@@ -209,12 +228,11 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                             if (introspectResponse != null) {
                                 JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
+                                Transformations.transformExt(refreshTokenPayload);
                                 refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
                                 if (refreshTokenPayload.has("sessionHandle")) {
                                     updateLastActive(appIdentifier, refreshTokenPayload.get("sessionHandle").getAsString());
-                                }
-                                if (refreshTokenPayload.has("gid")) {
-                                    gid = refreshTokenPayload.get("gid").getAsString();
+                                    sessionHandle = refreshTokenPayload.get("sessionHandle").getAsString();
                                 }
                             } else {
                                 throw new IllegalStateException("Should never come here");
@@ -223,12 +241,14 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token, always creating a mapping.
-                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, formFields.get("client_id"), gid, newRefreshToken, newRefreshToken, null, null, refreshTokenExp);
+                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
                         } else {
                             // Refreshing a token
-                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, formFields.get("client_id"), gid, inputRefreshToken, newRefreshToken, null, null, refreshTokenExp);
                             if (!oauthClient.enableRefreshTokenRotation) {
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, List.of(jti), refreshTokenExp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
+                            } else {
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
                             }
                         }
                     } else {

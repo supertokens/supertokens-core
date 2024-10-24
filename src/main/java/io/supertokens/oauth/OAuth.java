@@ -469,14 +469,16 @@ public class OAuth {
             payload.entrySet().clear();
             payload.addProperty("active", false);
 
-             // ideally we want to revoke the refresh token in hydra, but we can't since we don't have the client secret here
-            //TODO: gather client secret for below!
-             refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
-             Map<String, String> formFields = new HashMap<>();
-             formFields.put("token", refreshToken);
+            refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+            Map<String, String> formFields = new HashMap<>();
+            formFields.put("token", refreshToken);
 
-             try {
-                 doOAuthProxyFormPOST(
+            try {
+                OAuthClient oAuthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+                formFields.put("client_secret", oAuthClient.clientSecret);
+                formFields.put("client_id", oAuthClient.clientId);
+
+                HttpRequestForOAuthProvider.Response revokeResponse = doOAuthProxyFormPOST(
                      main, appIdentifier, oauthStorage,
                      clientId, // clientIdToCheck
                      "/oauth2/revoke", // path
@@ -484,9 +486,12 @@ public class OAuth {
                      false, // camelToSnakeCaseConversion
                      formFields,
                      new HashMap<>());
-             } catch (OAuthAPIException | OAuthClientNotFoundException e) {
-                 // ignore
-             }
+
+            } catch (OAuthAPIException | OAuthClientNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
+                    InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException |
+                    IllegalBlockSizeException | BadPaddingException e){
+                //ignore
+            }
         }
     }
 

@@ -71,7 +71,6 @@ public class OAuthQueries {
                 + oAuth2SessionTable + "(exp DESC);";
     }
 
-    //TODO: do we still need this?
     public static String getQueryToCreateOAuthM2MTokensTable(Start start) {
         String oAuth2M2MTokensTable = Config.getConfig(start).getOAuthM2MTokensTable();
         // @formatter:off
@@ -159,11 +158,20 @@ public class OAuthQueries {
             pst.setString(7, jtiDbValue);
             pst.setLong(8, exp);
 
+            List<String> alreadySavedJTIs = getOAuthJTIsByGID(start, appIdentifier, gid);
+            if(alreadySavedJTIs != null) {
+                if(jtiDbValue != null) {
+                    jtiDbValue += ",";
+                }
+                jtiDbValue += String.join(",", alreadySavedJTIs);
+            }
+
             pst.setString(9, externalRefreshToken);
             pst.setString(10, internalRefreshToken);
             pst.setString(11, sessionHandle);
             pst.setString(12, jtiDbValue);
             pst.setLong(13, exp);
+
         });
     }
 
