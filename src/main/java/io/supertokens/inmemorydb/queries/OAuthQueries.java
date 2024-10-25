@@ -65,9 +65,9 @@ public class OAuthQueries {
         // @formatter:on
     }
 
-    public static String getQueryToCreateOAuthRefreshTokenMappingExpIndex(Start start) {
+    public static String getQueryToCreateOAuthSessionsExpIndex(Start start) {
         String oAuth2SessionTable = Config.getConfig(start).getOAuthSessionsTable();
-        return "CREATE INDEX IF NOT EXISTS oauth_refresh_token_mapping_exp_index ON "
+        return "CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON "
                 + oAuth2SessionTable + "(exp DESC);";
     }
 
