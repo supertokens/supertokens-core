@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS oauth_sessions (
 );
 
 CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
+CREATE INDEX IF NOT EXISTS oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
 
 CREATE TABLE IF NOT EXISTS oauth_m2m_tokens (
     app_id VARCHAR(64) DEFAULT 'public',
@@ -121,6 +122,7 @@ CREATE TABLE IF NOT EXISTS oauth_sessions (
 );
 
 CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
+CREATE INDEX IF NOT EXISTS oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
 
 CREATE TABLE oauth_m2m_tokens (
   app_id VARCHAR(64) DEFAULT 'public',

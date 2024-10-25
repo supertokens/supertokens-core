@@ -438,6 +438,7 @@ public class GeneralQueries {
 
             // index
             update(start, OAuthQueries.getQueryToCreateOAuthSessionsExpIndex(start), NO_OP_SETTER);
+            update(start, OAuthQueries.getQueryToCreateOAuthSessionsExternalRefreshTokenIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getOAuthM2MTokensTable())) {

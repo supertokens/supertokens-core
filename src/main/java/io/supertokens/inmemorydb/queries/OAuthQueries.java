@@ -71,6 +71,12 @@ public class OAuthQueries {
                 + oAuth2SessionTable + "(exp DESC);";
     }
 
+    public static String getQueryToCreateOAuthSessionsExternalRefreshTokenIndex(Start start) {
+        String oAuth2SessionTable = Config.getConfig(start).getOAuthSessionsTable();
+        return "CREATE INDEX IF NOT EXISTS oauth_session_external_refresh_token_index ON "
+                + oAuth2SessionTable + "(app_id, external_refresh_token DESC);";
+    }
+
     public static String getQueryToCreateOAuthM2MTokensTable(Start start) {
         String oAuth2M2MTokensTable = Config.getConfig(start).getOAuthM2MTokensTable();
         // @formatter:off
