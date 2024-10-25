@@ -261,7 +261,10 @@ public class OAuthTokenAPI extends WebserverAPI {
                         }
                     }
 
-                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
+                         | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+                         | JWTCreationException | JWTException | StorageTransactionLogicException
+                         | UnsupportedJWTSigningAlgorithmException | OAuthClientNotFoundException e) {
                     throw new ServletException(e);
                 }
 

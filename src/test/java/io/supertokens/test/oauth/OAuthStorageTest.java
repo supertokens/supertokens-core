@@ -315,7 +315,15 @@ public class OAuthStorageTest {
             storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, List.of("asdasd"),
                     System.currentTimeMillis() + 10000);
             fail();
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (OAuthClientNotFoundException e) {
+            //expected
+        }
+
+        try {
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid-not-existing", null, null, null, List.of("asdasd"),
+                    System.currentTimeMillis() + 10000);
+            fail();
+        } catch (OAuthClientNotFoundException e) {
             //expected
         }
 

@@ -3196,7 +3196,7 @@ public class Start
     public void createOrUpdateOAuthSession(AppIdentifier appIdentifier, String gid, String clientId,
                                            String externalRefreshToken, String internalRefreshToken,
                                            String sessionHandle, List<String> jtis, long exp)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+            throws StorageQueryException, OAuthClientNotFoundException {
         try {
             OAuthQueries.createOrUpdateOAuthSession(this, appIdentifier, gid, clientId, externalRefreshToken,
                     internalRefreshToken, sessionHandle, jtis, exp);
@@ -3207,10 +3207,10 @@ public class Start
 
                 if (isForeignKeyConstraintError(
                         errorMessage,
-                        config.getAppsTable(),
-                        new String[]{"app_id"},
-                        new Object[]{appIdentifier.getAppId()})) {
-                    throw new TenantOrAppNotFoundException(appIdentifier);
+                        config.getOAuthClientsTable(),
+                        new String[]{"app_id", "client_id"},
+                        new Object[]{appIdentifier.getAppId(), clientId})) {
+                    throw new OAuthClientNotFoundException();
                 }
             }
             throw new StorageQueryException(e);

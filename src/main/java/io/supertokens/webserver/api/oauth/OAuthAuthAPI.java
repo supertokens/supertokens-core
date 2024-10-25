@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -157,7 +158,7 @@ public class OAuthAuthAPI extends WebserverAPI {
                 super.sendJsonResponse(200, finalResponse, resp);
             }
 
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | OAuthClientNotFoundException e) {
             throw new ServletException(e);
         }
     }
