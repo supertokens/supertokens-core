@@ -3196,11 +3196,23 @@ public class Start
     public void createOrUpdateOAuthSession(AppIdentifier appIdentifier, String gid, String clientId,
                                            String externalRefreshToken, String internalRefreshToken,
                                            String sessionHandle, List<String> jtis, long exp)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantOrAppNotFoundException {
         try {
             OAuthQueries.createOrUpdateOAuthSession(this, appIdentifier, gid, clientId, externalRefreshToken,
                     internalRefreshToken, sessionHandle, jtis, exp);
         } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getAppsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{appIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(appIdentifier);
+                }
+            }
             throw new StorageQueryException(e);
         }
     }
@@ -3210,16 +3222,6 @@ public class Start
             throws StorageQueryException {
         try {
             return OAuthQueries.getRefreshTokenMapping(this, appIdentifier, externalRefreshToken);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void deleteRefreshTokenMapping(AppIdentifier appIdentifier, String externalRefreshToken)
-            throws StorageQueryException {
-        try {
-            OAuthQueries.deleteRefreshTokenMapping(this, appIdentifier, externalRefreshToken);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3273,16 +3275,6 @@ public class Start
     }
 
     @Override
-    public boolean isOAuthTokenRevokedByClientId(AppIdentifier appIdentifier, String clientId)
-            throws StorageQueryException {
-        try {
-            return !OAuthQueries.isOAuthSessionExistsByClientId(this, appIdentifier, clientId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public boolean isOAuthTokenRevokedByGID(AppIdentifier appIdentifier, String gid) throws StorageQueryException {
         try {
             return !OAuthQueries.isOAuthSessionExistsByGID(this, appIdentifier, gid);
@@ -3296,16 +3288,6 @@ public class Start
             throws StorageQueryException {
         try {
             return !OAuthQueries.isOAuthSessionExistsByJTI(this, appIdentifier, gid, jti);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public boolean isOAuthTokenRevokedBySessionHandle(AppIdentifier appIdentifier, String sessionHandle)
-            throws StorageQueryException {
-        try {
-            return !OAuthQueries.isOAuthSessionExistsBySessionHandle(this, appIdentifier, sessionHandle);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

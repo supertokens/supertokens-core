@@ -179,7 +179,7 @@ public class TestRevoke5_2 {
 
         Thread.sleep(1000);
 
-        // test introspect refresh token (allowed)
+        // test introspect refresh token (should be revoked also - not allowed)
         JsonObject introspectResponse = introspectToken(process.getProcess(),
                 tokenResponse.get("refresh_token").getAsString());
         assertEquals("OK", introspectResponse.get("status").getAsString());
@@ -190,7 +190,7 @@ public class TestRevoke5_2 {
         assertEquals("OK", introspectResponse.get("status").getAsString());
         assertFalse(introspectResponse.get("active").getAsBoolean());
 
-        // test refresh token (allowed)
+        // test refresh token (not allowed)
         JsonObject refreshResponse = refreshToken(process.getProcess(), client,
                 tokenResponse.get("refresh_token").getAsString());
         assertEquals("OAUTH_ERROR", refreshResponse.get("status").getAsString());

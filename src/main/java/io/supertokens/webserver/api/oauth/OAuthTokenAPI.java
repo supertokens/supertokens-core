@@ -239,14 +239,14 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token, always creating a mapping.
-                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, List.of(jti), refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, List.of(jti), refreshTokenExp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
                             }
                         }
                     } else {
@@ -255,7 +255,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                             if (accessTokenPayload.has("sessionHandle")) {
                                 updateLastActive(appIdentifier, accessTokenPayload.get("sessionHandle").getAsString());
                             }
-                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
                         } catch (Exception e) {
                             // ignore
                         }

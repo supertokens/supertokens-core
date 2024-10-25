@@ -16,8 +16,6 @@
 
 package io.supertokens.inmemorydb;
 
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -26,5 +24,5 @@ public interface PreparedStatementValueSetter {
     PreparedStatementValueSetter NO_OP_SETTER = pst -> {
     };
 
-    void setValues(PreparedStatement pst) throws SQLException, StorageQueryException;
+    void setValues(PreparedStatement pst) throws SQLException;
 }

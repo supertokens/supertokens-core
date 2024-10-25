@@ -131,7 +131,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     // Success response would mean that the clientId/secret has been validated
                     if (gid != null) {
                         try {
-                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid, exp);
+                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid);
                         } catch (StorageQueryException | NoSuchAlgorithmException e) {
                             throw new ServletException(e);
                         }

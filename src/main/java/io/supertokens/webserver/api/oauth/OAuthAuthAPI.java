@@ -134,7 +134,7 @@ public class OAuthAuthAPI extends WebserverAPI {
                                 updateLastActive(appIdentifier, sessionHandle);
                             }
 
-                            OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
                         }
                     }
                 }

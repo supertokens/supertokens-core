@@ -27,7 +27,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -151,7 +153,7 @@ public class OAuthQueries {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthSessionsTable() +
                 " (gid, client_id, app_id, external_refresh_token, internal_refresh_token, session_handle, jti, exp) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (gid) DO UPDATE SET external_refresh_token = ?, internal_refresh_token = ?, " +
-                "session_handle = ? , jti = ?, exp = ?";
+                "session_handle = ? , jti = CONCAT(jti, ',' , ?), exp = ?";
         update(start, QUERY, pst -> {
             String jtiDbValue = jtis == null ? null : String.join(",", jtis);
 
@@ -164,20 +166,11 @@ public class OAuthQueries {
             pst.setString(7, jtiDbValue);
             pst.setLong(8, exp);
 
-            List<String> alreadySavedJTIs = getOAuthJTIsByGID(start, appIdentifier, gid);
-            if(alreadySavedJTIs != null) {
-                if(jtiDbValue != null) {
-                    jtiDbValue += ",";
-                }
-                jtiDbValue += String.join(",", alreadySavedJTIs);
-            }
-
             pst.setString(9, externalRefreshToken);
             pst.setString(10, internalRefreshToken);
             pst.setString(11, sessionHandle);
             pst.setString(12, jtiDbValue);
             pst.setLong(13, exp);
-
         });
     }
 
@@ -233,7 +226,7 @@ public class OAuthQueries {
     public static boolean deleteOAuthSessionByGID(Start start, AppIdentifier appIdentifier, String gid)
             throws SQLException, StorageQueryException {
         String DELETE = "DELETE FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                        + " WHERE gid = ? and app_id = ?";
+                        + " WHERE gid = ? and app_id = ?;";
         int numberOfRows = update(start, DELETE, pst -> {
             pst.setString(1, gid);
             pst.setString(2, appIdentifier.getAppId());
@@ -244,7 +237,7 @@ public class OAuthQueries {
     public static boolean deleteOAuthSessionByClientId(Start start, AppIdentifier appIdentifier, String clientId)
             throws SQLException, StorageQueryException {
         String DELETE = "DELETE FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                + " WHERE app_id = ? and client_id = ?";
+                + " WHERE app_id = ? and client_id = ?;";
         int numberOfRows = update(start, DELETE, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, clientId);
@@ -266,14 +259,15 @@ public class OAuthQueries {
     public static boolean deleteJTIFromOAuthSession(Start start, AppIdentifier appIdentifier, String gid, String jti)
             throws SQLException, StorageQueryException {
         //jti is a comma separated list. When deleting a jti, just have to delete from the list
-        List<String> savedJTIs  = getOAuthJTIsByGID(start, appIdentifier, gid);
-        List<String> toSaveJTIs = new ArrayList<>(savedJTIs);
-        boolean deletionHappened = false;
-        if (toSaveJTIs != null && toSaveJTIs.contains(jti)){
-            toSaveJTIs.remove(jti);
-            deletionHappened = updateOAuthJTIsByGID(start, appIdentifier, gid, toSaveJTIs) > 0;
-        }
-        return deletionHappened;
+        String DELETE = "UPDATE " + Config.getConfig(start).getOAuthSessionsTable()
+                + " SET jti = REPLACE(jti, ?, '')" // deletion means replacing the jti with empty char
+                + " WHERE app_id = ? and gid = ?";
+        int numberOfRows = update(start, DELETE, pst -> {
+            pst.setString(1, jti);
+            pst.setString(2, appIdentifier.getAppId());
+            pst.setString(3, gid);
+        });
+        return numberOfRows > 0;
     }
 
     public static int countTotalNumberOfClients(Start start, AppIdentifier appIdentifier,
@@ -415,45 +409,6 @@ public class OAuthQueries {
         });
     }
 
-    public static void deleteRefreshTokenMapping(Start start, AppIdentifier appIdentifier,
-            String externalRefreshToken) throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getOAuthSessionsTable() +
-                " SET external_refresh_token = ?, internal_refresh_token = ?" +
-                " WHERE app_id = ? AND external_refresh_token = ?";
-        update(start, QUERY, pst -> {
-            pst.setString(1, null);
-            pst.setString(2, null);
-            pst.setString(3, appIdentifier.getAppId());
-            pst.setString(4, externalRefreshToken);
-        });
-    }
-
-    public static List<String> getOAuthJTIsByGID(Start start, AppIdentifier appIdentifier, String gid)
-            throws SQLException, StorageQueryException {
-        String SELECT = "SELECT jti FROM " + Config.getConfig(start).getOAuthSessionsTable() +
-                " WHERE app_id = ? AND gid = ?";
-        return execute(start, SELECT, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, gid);
-        }, result -> {
-            if (result.next()) {
-                return List.of(result.getString("jti").split(","));
-            }
-            return null;
-        });
-    }
-
-    public static int updateOAuthJTIsByGID(Start start, AppIdentifier appIdentifier, String gid, List<String> jtis)
-            throws SQLException, StorageQueryException {
-        String UPDATE = "UPDATE " + Config.getConfig(start).getOAuthSessionsTable() +
-                " SET jti = ? WHERE app_id = ? AND gid = ?";
-        return update(start, UPDATE, pst -> {
-            pst.setString(1, String.join(",", jtis));
-            pst.setString(2, appIdentifier.getAppId());
-            pst.setString(3, gid);
-        });
-    }
-
     public static void deleteExpiredOAuthSessions(Start start, long exp) throws SQLException, StorageQueryException {
         // delete expired M2M tokens
         String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthSessionsTable() +
@@ -468,68 +423,38 @@ public class OAuthQueries {
         // delete expired M2M tokens
         String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthM2MTokensTable() +
                 " WHERE exp < ?";
-
         update(start, QUERY, pst -> {
             pst.setLong(1, exp);
-        });
-    }
-
-    public static boolean isOAuthSessionExistsByGID(Start start, AppIdentifier appIdentifier, String gid)
-            throws SQLException, StorageQueryException {
-        String SELECT = "SELECT count(*) FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                + " WHERE app_id = ? and gid = ?";
-        return execute(start, SELECT, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, gid);
-        }, result -> {
-            if(result.next()){
-                return result.getInt(1) > 0;
-            }
-            return false;
-        });
-    }
-
-    public static boolean isOAuthSessionExistsByClientId(Start start, AppIdentifier appIdentifier, String clientId)
-            throws SQLException, StorageQueryException {
-        String SELECT = "SELECT count(*) FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                + " WHERE app_id = ? and client_id = ?";
-        return execute(start, SELECT, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, clientId);
-        }, result -> {
-            if(result.next()){
-                return result.getInt(1) > 0;
-            }
-            return false;
-        });
-    }
-
-    public static boolean isOAuthSessionExistsBySessionHandle(Start start, AppIdentifier appIdentifier, String sessionHandle)
-            throws SQLException, StorageQueryException {
-        String SELECT = "SELECT count(*) FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                + " WHERE app_id = ? and session_handle = ?";
-        return execute(start, SELECT, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, sessionHandle);
-        }, result -> {
-            if(result.next()){
-                return result.getInt(1) > 0;
-            }
-            return false;
         });
     }
 
     public static boolean isOAuthSessionExistsByJTI(Start start, AppIdentifier appIdentifier, String gid, String jti)
             throws SQLException, StorageQueryException {
         String SELECT = "SELECT jti FROM " + Config.getConfig(start).getOAuthSessionsTable()
-                + " WHERE app_id = ? and gid = ?";
+                + " WHERE app_id = ? and gid = ?;";
         return execute(start, SELECT, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, gid);
         }, result -> {
             if(result.next()){
-                List<String> jtis = List.of(result.getString(1).split(","));
+                List<String> jtis = Arrays.stream(result.getString(1).split(",")).filter(s -> !s.isEmpty()).collect(
+                        Collectors.toList());
                 return jtis.contains(jti);
+            }
+            return false;
+        });
+    }
+
+    public static boolean isOAuthSessionExistsByGID(Start start, AppIdentifier appIdentifier, String gid)
+            throws SQLException, StorageQueryException {
+        String SELECT = "SELECT count(*) FROM " + Config.getConfig(start).getOAuthSessionsTable()
+                + " WHERE app_id = ? and gid = ?;";
+        return execute(start, SELECT, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, gid);
+        }, result -> {
+            if(result.next()){
+                return result.getInt(1) > 0;
             }
             return false;
         });

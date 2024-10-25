@@ -496,23 +496,14 @@ public class OAuth {
     }
 
     private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
-        long issuedAt = payload.get("iat").getAsLong();
-        boolean revoked = false;
-
-        revoked =  oauthStorage.isOAuthTokenRevokedByClientId(appIdentifier, payload.get("client_id").getAsString());
-
+        boolean revoked = true;
         if (payload.has("jti") && payload.has("gid")) {
-            revoked = revoked || oauthStorage.isOAuthTokenRevokedByJTI(appIdentifier, payload.get("gid").getAsString(), payload.get("jti").getAsString());
+            //access token
+            revoked = oauthStorage.isOAuthTokenRevokedByJTI(appIdentifier, payload.get("gid").getAsString(), payload.get("jti").getAsString());
+        } else {
+            // refresh token
+            revoked = oauthStorage.isOAuthTokenRevokedByGID(appIdentifier, payload.get("gid").getAsString());
         }
-
-        if (payload.has("gid")) {
-            revoked = revoked || oauthStorage.isOAuthTokenRevokedByGID(appIdentifier, payload.get("gid").getAsString());
-        }
-
-        if (payload.has("sessionHandle")) {
-            revoked = revoked || oauthStorage.isOAuthTokenRevokedBySessionHandle(appIdentifier, payload.get("sessionHandle").getAsString());
-        }
-
         return revoked;
     }
 
@@ -551,7 +542,7 @@ public class OAuth {
         oauthStorage.revokeOAuthTokenByClientId(appIdentifier, clientId);
     }
 
-    public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp)
+    public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid)
             throws StorageQueryException, NoSuchAlgorithmException, TenantOrAppNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.revokeOAuthTokenByGID(appIdentifier, gid);
@@ -562,9 +553,6 @@ public class OAuth {
         try {
             OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
             JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
-
-            long exp = payload.get("exp").getAsLong();
-
             if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
                 String jti = payload.get("jti").getAsString();
                 String gid = payload.get("gid").getAsString();
@@ -669,17 +657,12 @@ public class OAuth {
         return internalRefreshToken;
     }
 
-    public static void createOrUpdateRefreshTokenMapping(Main main, AppIdentifier appIdentifier, Storage storage,
-            String clientId, String gid, String externalRefreshToken, String internalRefreshToken,
-            String sessionHandle, List<String> jtis, long exp) throws StorageQueryException {
+    public static void createOrUpdateOauthSession(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                  String clientId, String gid, String externalRefreshToken, String internalRefreshToken,
+                                                  String sessionHandle, List<String> jtis, long exp)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.createOrUpdateOAuthSession(appIdentifier, gid, clientId, externalRefreshToken, internalRefreshToken,
                 sessionHandle, jtis, exp);
-    }
-
-    public static void deleteRefreshTokenMappingIfExists(Main main, AppIdentifier appIdentifier, Storage storage,
-            String externalRefreshToken) throws StorageQueryException {
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.deleteRefreshTokenMapping(appIdentifier, externalRefreshToken);
     }
 }

@@ -180,10 +180,8 @@ public class OAuthStorageTest {
         storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
                 "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
 
-        assertFalse(storage.isOAuthTokenRevokedByGID(appIdentifier,"abcd"));
-        assertFalse(storage.isOAuthTokenRevokedByClientId(appIdentifier,"clientid"));
-        assertFalse(storage.isOAuthTokenRevokedBySessionHandle(appIdentifier, "efgh"));
         assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
+        assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
         storage.revokeOAuthTokenByJTI(appIdentifier, "abcd","ijkl");
         assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
@@ -195,12 +193,12 @@ public class OAuthStorageTest {
 
 
         storage.revokeOAuthTokenByGID(appIdentifier, "abcd");
-        assertTrue(storage.isOAuthTokenRevokedByGID(appIdentifier,"abcd"));
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
         storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
                 "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
         storage.revokeOAuthTokenBySessionHandle(appIdentifier, "efgh");
-        assertTrue(storage.isOAuthTokenRevokedBySessionHandle(appIdentifier, "efgh"));
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
         // test cleanup
         Thread.sleep(3000);
@@ -273,7 +271,7 @@ public class OAuthStorageTest {
             // this is what we expect
         }
         {
-            storage.revokeOAuthTokenByGID(appIdentifier, "abcd");
+            assertFalse(storage.revokeOAuthTokenByGID(appIdentifier, "abcd"));
         }
 
         // App id FK
@@ -284,12 +282,8 @@ public class OAuthStorageTest {
         } catch (TenantOrAppNotFoundException e) {
             // expected
         }
-//        try {
-            storage.revokeOAuthTokenByGID(appIdentifier2, "abcd");
-//            fail();
-//        } catch (TenantOrAppNotFoundException e) {
-//            // expected
-//        }
+
+        assertFalse(storage.revokeOAuthTokenByGID(appIdentifier2, "abcd"));
 
         // Client FK
         try {
@@ -315,6 +309,14 @@ public class OAuthStorageTest {
             fail();
         } catch (OAuthClientNotFoundException e) {
             // expected
+        }
+
+        try {
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, List.of("asdasd"),
+                    System.currentTimeMillis() + 10000);
+            fail();
+        } catch (TenantOrAppNotFoundException e) {
+            //expected
         }
 
         process.kill();
