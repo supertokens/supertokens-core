@@ -53,18 +53,20 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
     FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS oauth_revoke (
+CREATE TABLE IF NOT EXISTS oauth_sessions (
+    gid VARCHAR(255),
     app_id VARCHAR(64) DEFAULT 'public',
-    target_type VARCHAR(16) NOT NULL,
-    target_value VARCHAR(128) NOT NULL,
-    timestamp BIGINT NOT NULL,
+    client_id VARCHAR(255) NOT NULL,
+    session_handle VARCHAR(128),
+    external_refresh_token VARCHAR(255) UNIQUE,
+    internal_refresh_token VARCHAR(255) UNIQUE,
+    jti TEXT NOT NULL,
     exp BIGINT NOT NULL,
-    PRIMARY KEY (app_id, target_type, target_value),
-    FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+    PRIMARY KEY (gid),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS oauth_revoke_timestamp_index ON oauth_revoke(timestamp DESC, app_id DESC);
-CREATE INDEX IF NOT EXISTS oauth_revoke_exp_index ON oauth_revoke(exp DESC);
+CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
 
 CREATE TABLE IF NOT EXISTS oauth_m2m_tokens (
     app_id VARCHAR(64) DEFAULT 'public',
@@ -104,18 +106,21 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS oauth_revoke (
+
+CREATE TABLE IF NOT EXISTS oauth_sessions (
+  gid VARCHAR(255),
   app_id VARCHAR(64) DEFAULT 'public',
-  target_type VARCHAR(16) NOT NULL,
-  target_value VARCHAR(128) NOT NULL,
-  timestamp BIGINT UNSIGNED NOT NULL,
-  exp BIGINT UNSIGNED NOT NULL,
-  PRIMARY KEY (app_id, target_type, target_value),
-  FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+  client_id VARCHAR(255) NOT NULL,
+  session_handle VARCHAR(128),
+  external_refresh_token VARCHAR(255) UNIQUE,
+  internal_refresh_token VARCHAR(255) UNIQUE,
+  jti TEXT NOT NULL,
+  exp BIGINT NOT NULL,
+  PRIMARY KEY (gid),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
 );
 
-CREATE INDEX oauth_revoke_timestamp_index ON oauth_revoke(timestamp DESC, app_id DESC);
-CREATE INDEX oauth_revoke_exp_index ON oauth_revoke(exp DESC);
+CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
 
 CREATE TABLE oauth_m2m_tokens (
   app_id VARCHAR(64) DEFAULT 'public',
