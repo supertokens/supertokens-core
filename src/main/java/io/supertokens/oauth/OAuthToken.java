@@ -105,6 +105,11 @@ public class OAuthToken {
         if (tokenType == TokenType.ACCESS_TOKEN) {
             // we need to move rsub, tId and sessionHandle from ext to root
             Transformations.transformExt(payload);
+        } else {
+            if (payload.has("ext")) {
+                JsonObject ext = payload.get("ext").getAsJsonObject();
+                payload.addProperty("sid", ext.get("sessionHandle").getAsString());
+            }
         }
 
         // This should only happen in the authorization code flow during the token exchange. (enforced on the api level)

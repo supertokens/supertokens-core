@@ -191,14 +191,18 @@ public class OAuthTokenAPI extends WebserverAPI {
                     String gid = null;
                     String jti = null;
                     String sessionHandle = null;
-                    Long exp = null;
+                    Long accessTokenExp = null;
 
                     if(response.jsonResponse.getAsJsonObject().has("access_token")){
                         try {
                             JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
                             gid = accessTokenPayload.get("gid").getAsString();
                             jti = accessTokenPayload.get("jti").getAsString();
-                            exp = accessTokenPayload.get("exp").getAsLong();
+                            accessTokenExp = accessTokenPayload.get("exp").getAsLong();
+                            if (accessTokenPayload.has("sessionHandle")) {
+                                sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
+                                updateLastActive(appIdentifier, sessionHandle);
+                            }
                         } catch (TryRefreshTokenException e) {
                             //ignore, shouldn't happen
                         }
@@ -226,12 +230,7 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                             if (introspectResponse != null) {
                                 JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
-                                Transformations.transformExt(refreshTokenPayload);
                                 refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
-                                if (refreshTokenPayload.has("sessionHandle")) {
-                                    updateLastActive(appIdentifier, refreshTokenPayload.get("sessionHandle").getAsString());
-                                    sessionHandle = refreshTokenPayload.get("sessionHandle").getAsString();
-                                }
                             } else {
                                 throw new IllegalStateException("Should never come here");
                             }
@@ -250,15 +249,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                             }
                         }
                     } else {
-                        try {
-                            JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
-                            if (accessTokenPayload.has("sessionHandle")) {
-                                updateLastActive(appIdentifier, accessTokenPayload.get("sessionHandle").getAsString());
-                            }
-                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
-                        } catch (Exception e) {
-                            // ignore
-                        }
+                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), accessTokenExp);
                     }
 
                 } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
