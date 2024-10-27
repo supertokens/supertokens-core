@@ -25,10 +25,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class OAuthToken {
     public enum TokenType {
@@ -108,6 +105,11 @@ public class OAuthToken {
         if (tokenType == TokenType.ACCESS_TOKEN) {
             // we need to move rsub, tId and sessionHandle from ext to root
             Transformations.transformExt(payload);
+        } else {
+            if (payload.has("ext")) {
+                JsonObject ext = payload.get("ext").getAsJsonObject();
+                payload.addProperty("sid", ext.get("sessionHandle").getAsString());
+            }
         }
 
         // This should only happen in the authorization code flow during the token exchange. (enforced on the api level)
@@ -124,6 +126,12 @@ public class OAuthToken {
         }
         payload.remove("ext");
         payload.remove("initialPayload");
+
+        // We ensure that the gid is there
+        // If it isn't that means that we are in a client_credentials (M2M) flow
+        if (!payload.has("gid")) {
+            payload.addProperty("gid", UUID.randomUUID().toString());
+        }
 
         if (payloadUpdate != null) {
             for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {

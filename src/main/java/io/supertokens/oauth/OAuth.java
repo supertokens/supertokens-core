@@ -20,7 +20,6 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -28,24 +27,29 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
-import io.supertokens.oauth.exceptions.*;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
-import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -68,7 +72,7 @@ public class OAuth {
                         "feature.");
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -77,9 +81,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -93,7 +95,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doGet(fullUrl, headers, queryParams);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doGet(fullUrl, headers, queryParams);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -109,7 +111,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -118,9 +120,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -135,7 +135,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doFormPost(fullUrl, headers, formFields);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doFormPost(fullUrl, headers, formFields);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -150,7 +150,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -159,9 +159,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -176,7 +174,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPost(fullUrl, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonPost(fullUrl, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -191,7 +189,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -201,9 +199,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -218,7 +214,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPut(fullUrl, queryParams, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonPut(fullUrl, queryParams, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -233,7 +229,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOAuthProvider.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -242,9 +238,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -259,7 +253,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonDelete(fullUrl, headers, queryParams, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -274,10 +268,7 @@ public class OAuth {
         return response;
     }
 
-    private static void checkNonSuccessResponse(HttpRequestForOry.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
-        if (response.statusCode == 404) {
-            throw new OAuthClientNotFoundException();
-        }
+    private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
         if (response.statusCode >= 400) {
             String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
             String errorDescription = null;
@@ -334,8 +325,6 @@ public class OAuth {
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String atHash = null;
 
-        System.out.println("transformTokens: " + jsonBody.toString());
-
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
@@ -368,20 +357,54 @@ public class OAuth {
         return jsonBody;
     }
 
-    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+    public static void addOrUpdateClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, String clientSecret, boolean isClientCredentialsOnly, boolean enableRefreshTokenRotation)
+            throws StorageQueryException, TenantOrAppNotFoundException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, InvalidConfigException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, isClientCredentialsOnly);
+        clientSecret = encryptClientSecret(main, appIdentifier.getAsPublicTenantIdentifier(), clientSecret);
+        oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, clientSecret, isClientCredentialsOnly, enableRefreshTokenRotation);
     }
 
-    public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.deleteOAuthClient(appIdentifier, clientId);
+
+    private static String encryptClientSecret(Main main, TenantIdentifier tenant, String clientSecret)
+            throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
+            NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
+            TenantOrAppNotFoundException {
+        if (clientSecret == null) {
+            return null;
+        }
+        String key = Config.getConfig(tenant, main).getOAuthClientSecretEncryptionKey();
+        clientSecret = Utils.encrypt(clientSecret, key);
+        return clientSecret;
     }
 
-    public static List<String> listClientIds(Main main, AppIdentifier appIdentifier, Storage storage) throws StorageQueryException {
+    private static String decryptClientSecret(Main main,  TenantIdentifier tenant, String clientSecret)
+            throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
+            NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
+            TenantOrAppNotFoundException {
+        if (clientSecret == null) {
+            return null;
+        }
+        String key = Config.getConfig(tenant, main).getOAuthClientSecretEncryptionKey();
+        clientSecret = Utils.decrypt(clientSecret, key);
+        return clientSecret;
+    }
+
+    public static boolean removeClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        return oauthStorage.listOAuthClients(appIdentifier);
+        return oauthStorage.deleteOAuthClient(appIdentifier, clientId);
+    }
+
+    public static List<OAuthClient> getClients(Main main, AppIdentifier appIdentifier, Storage storage, List<String> clientIds)
+            throws StorageQueryException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
+            NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
+            InvalidConfigException, TenantOrAppNotFoundException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        List<OAuthClient> finalResult = new ArrayList<>();
+        List<OAuthClient> clients = oauthStorage.getOAuthClients(appIdentifier, clientIds);
+        for (OAuthClient client : clients) {
+            finalResult.add(new OAuthClient(client.clientId, decryptClientSecret(main, appIdentifier.getAsPublicTenantIdentifier(), client.clientSecret), client.isClientCredentialsOnly, client.enableRefreshTokenRotation));
+        }
+        return finalResult;
     }
 
     private static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
@@ -394,7 +417,7 @@ public class OAuth {
         return result;
     }
 
-    public static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
+    private static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
         JsonObject result = new JsonObject();
         for (Map.Entry<String, JsonElement> entry : queryParams.entrySet()) {
             result.add(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
@@ -426,12 +449,11 @@ public class OAuth {
             return result;
         }
         return jsonResponse;
-
     }
 
     public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
-            Storage storage, JsonObject payload, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
-        
+            Storage storage, JsonObject payload, String refreshToken, String clientId) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
+
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
         if (!payload.get("active").getAsBoolean()) {
@@ -447,50 +469,42 @@ public class OAuth {
             payload.entrySet().clear();
             payload.addProperty("active", false);
 
-            // // ideally we want to revoke the refresh token in hydra, but we can't since we don't have the client secret here
-            // refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
-            // Map<String, String> formFields = new HashMap<>();
-            // formFields.put("token", refreshToken);
+            refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+            Map<String, String> formFields = new HashMap<>();
+            formFields.put("token", refreshToken);
 
-            // try {
-            //     doOAuthProxyFormPOST(
-            //         main, appIdentifier, oauthStorage,
-            //         clientId, // clientIdToCheck
-            //         "/oauth2/revoke", // path
-            //         false, // proxyToAdmin
-            //         false, // camelToSnakeCaseConversion
-            //         formFields,
-            //         new HashMap<>());
-            // } catch (OAuthAPIException | OAuthClientNotFoundException e) {
-            //     // ignore
-            // }
+            try {
+                OAuthClient oAuthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+                formFields.put("client_secret", oAuthClient.clientSecret);
+                formFields.put("client_id", oAuthClient.clientId);
+
+                HttpRequestForOAuthProvider.Response revokeResponse = doOAuthProxyFormPOST(
+                     main, appIdentifier, oauthStorage,
+                     clientId, // clientIdToCheck
+                     "/oauth2/revoke", // path
+                     false, // proxyToAdmin
+                     false, // camelToSnakeCaseConversion
+                     formFields,
+                     new HashMap<>());
+
+            } catch (OAuthAPIException | OAuthClientNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
+                    InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException |
+                    IllegalBlockSizeException | BadPaddingException e){
+                //ignore
+            }
         }
     }
 
     private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
-        long issuedAt = payload.get("iat").getAsLong();
-        List<OAuthRevokeTargetType> targetTypes = new ArrayList<>();
-        List<String> targetValues = new ArrayList<>();
-
-        targetTypes.add(OAuthRevokeTargetType.CLIENT_ID);
-        targetValues.add(payload.get("client_id").getAsString());
-
-        if (payload.has("jti")) {
-            targetTypes.add(OAuthRevokeTargetType.JTI);
-            targetValues.add(payload.get("jti").getAsString());
+        boolean revoked = true;
+        if (payload.has("jti") && payload.has("gid")) {
+            //access token
+            revoked = oauthStorage.isOAuthTokenRevokedByJTI(appIdentifier, payload.get("gid").getAsString(), payload.get("jti").getAsString());
+        } else {
+            // refresh token
+            revoked = oauthStorage.isOAuthTokenRevokedByGID(appIdentifier, payload.get("gid").getAsString());
         }
-
-        if (payload.has("gid")) {
-            targetTypes.add(OAuthRevokeTargetType.GID);
-            targetValues.add(payload.get("gid").getAsString());
-        }
-
-        if (payload.has("sessionHandle")) {
-            targetTypes.add(OAuthRevokeTargetType.SESSION_HANDLE);
-            targetValues.add(payload.get("sessionHandle").getAsString());
-        }
-
-        return oauthStorage.isOAuthTokenRevokedBasedOnTargetFields(appIdentifier, targetTypes.toArray(new OAuthRevokeTargetType[0]), targetValues.toArray(new String[0]), issuedAt);
+        return revoked;
     }
 
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
@@ -524,28 +538,25 @@ public class OAuth {
 
     public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.CLIENT_ID, clientId, exp);
+        oauthStorage.revokeOAuthTokenByClientId(appIdentifier, clientId);
     }
 
-	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp)
+    public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid)
             throws StorageQueryException, NoSuchAlgorithmException, TenantOrAppNotFoundException {
-		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-		oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, gid, exp);
-	}
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revokeOAuthTokenByGID(appIdentifier, gid);
+    }
 
     public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
             Storage storage, String token) throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
         try {
             OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
             JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
-
-            long exp = payload.get("exp").getAsLong();
-
             if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
                 String jti = payload.get("jti").getAsString();
-                oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.JTI, jti, exp);
+                String gid = payload.get("gid").getAsString();
+                oauthStorage.revokeOAuthTokenByJTI(appIdentifier, gid, jti);
             }
 
         } catch (TryRefreshTokenException e) {
@@ -553,12 +564,11 @@ public class OAuth {
         }
     }
 
-	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
-			String sessionHandle) throws StorageQueryException, TenantOrAppNotFoundException {
-        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.SESSION_HANDLE, sessionHandle, exp);
-	}
+        public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
+                String sessionHandle) throws StorageQueryException, TenantOrAppNotFoundException {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+            oauthStorage.revokeOAuthTokenBySessionHandle(appIdentifier, sessionHandle);
+        }
 
     public static JsonObject verifyIdTokenAndGetPayload(Main main, AppIdentifier appIdentifier, Storage storage,
             String idToken) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
@@ -622,5 +632,37 @@ public class OAuth {
     public static void deleteLogoutChallenge(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.deleteOAuthLogoutChallenge(appIdentifier, challenge);
+    }
+
+    public static OAuthClient getOAuthClientById(Main main, AppIdentifier appIdentifier, Storage storage,
+        String clientId)
+            throws OAuthClientNotFoundException, StorageQueryException, InvalidKeyException, NoSuchAlgorithmException,
+            InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            IllegalBlockSizeException, BadPaddingException, InvalidConfigException, TenantOrAppNotFoundException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        OAuthClient client = oauthStorage.getOAuthClientById(appIdentifier, clientId);
+        if (client.clientSecret != null) {
+            client = new OAuthClient(client.clientId, decryptClientSecret(main, appIdentifier.getAsPublicTenantIdentifier(), client.clientSecret), client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
+        }
+        return client;
+    }
+
+    public static String getInternalRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                 String externalRefreshToken) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        String internalRefreshToken = oauthStorage.getRefreshTokenMapping(appIdentifier, externalRefreshToken);
+        if (internalRefreshToken == null) {
+            return externalRefreshToken;
+        }
+        return internalRefreshToken;
+    }
+
+    public static void createOrUpdateOauthSession(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                  String clientId, String gid, String externalRefreshToken, String internalRefreshToken,
+                                                  String sessionHandle, List<String> jtis, long exp)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.createOrUpdateOAuthSession(appIdentifier, gid, clientId, externalRefreshToken, internalRefreshToken,
+                sessionHandle, jtis, exp);
     }
 }

@@ -1,13 +1,11 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;

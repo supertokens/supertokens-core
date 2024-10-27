@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
@@ -47,6 +47,9 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         accessToken.add("initialPayload", initialAccessTokenPayload);
 
         JsonObject idToken = new JsonObject();
+        JsonObject idTokenExt = new JsonObject();
+        idTokenExt.addProperty("sessionHandle", sessionHandle);
+        idToken.add("ext", idTokenExt);
         idToken.add("initialPayload", initialIdTokenPayload);
 
         // remove the above from input
@@ -63,7 +66,7 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         input.add("session", session);
 
         try {
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),

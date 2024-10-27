@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -46,7 +46,7 @@ public class RevokeOAuthTokensAPI extends WebserverAPI {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("client_id", clientId);
 
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonDELETE(
+            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyJsonDELETE(
                 main, req, resp,
                 appIdentifier,
                 storage,
@@ -60,8 +60,13 @@ public class RevokeOAuthTokensAPI extends WebserverAPI {
             );
 
             if (response != null) {
-                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
-                super.sendJsonResponse(200, response.jsonResponse, resp);
+                if (response.statusCode == 204) {
+                    JsonObject finalResponse = new JsonObject();
+                    finalResponse.addProperty("status", "OK");
+                    super.sendJsonResponse(200, finalResponse, resp);
+                } else {
+                    throw new IllegalStateException("should never come here");
+                }
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);

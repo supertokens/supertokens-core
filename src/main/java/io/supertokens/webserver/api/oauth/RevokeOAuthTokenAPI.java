@@ -1,17 +1,11 @@
 package io.supertokens.webserver.api.oauth;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -20,11 +14,17 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RevokeOAuthTokenAPI extends WebserverAPI {
     public RevokeOAuthTokenAPI(Main main){
@@ -46,14 +46,16 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (token.startsWith("st_rt_")) {
+                token = OAuth.getInternalRefreshToken(main, appIdentifier, storage, token);
+
                 String gid = null;
                 long exp = -1;
                 {
                     // introspect token to get gid
                     Map<String, String> formFields = new HashMap<>();
                     formFields.put("token", token);
-    
-                    HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+
+                    HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                         main, req, resp,
                         appIdentifier,
                         storage,
@@ -67,9 +69,13 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
 
                     if (response != null) {
                         JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
+                        String clientId = null;
+                        if (finalResponse.has("client_id")){
+                            clientId = finalResponse.get("client_id").getAsString();
+                        }
 
                         try {
-                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
+                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token, clientId);
                             if (finalResponse.get("active").getAsBoolean()) {
                                 gid = finalResponse.get("gid").getAsString();
                                 exp = finalResponse.get("exp").getAsLong();
@@ -82,10 +88,20 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 }
 
                 // revoking refresh token
-                String clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
-                String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
+
+                String clientId, clientSecret;
 
                 String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
+
+                if (authorizationHeader != null) {
+                    String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                    clientId = parsedHeader[0];
+                    clientSecret = parsedHeader[1];
+                } else {
+                    clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
+                    clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
+                }
+
 
                 Map<String, String> headers = new HashMap<>();
                 if (authorizationHeader != null) {
@@ -99,7 +115,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     formFields.put("client_secret", clientSecret);
                 }
 
-                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -115,7 +131,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     // Success response would mean that the clientId/secret has been validated
                     if (gid != null) {
                         try {
-                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid, exp);
+                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid);
                         } catch (StorageQueryException | NoSuchAlgorithmException e) {
                             throw new ServletException(e);
                         }
