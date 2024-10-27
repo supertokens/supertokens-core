@@ -1,4 +1,4 @@
-package io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges;
+package io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges;
 
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
@@ -13,11 +13,11 @@ import java.util.List;
 
 public class CleanupOAuthSessionsAndChallenges extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges" +
-            ".CleanupOAuthRevokeListAndChallenges";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges" +
+            ".CleanupOAuthSessionsAndChallenges";
 
     private CleanupOAuthSessionsAndChallenges(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("CleanupOAuthRevokeList", main, tenantsInfo, true);
+        super("CleanupOAuthSessionsAndChallenges", main, tenantsInfo, true);
     }
 
     public static CleanupOAuthSessionsAndChallenges init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
