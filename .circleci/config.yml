@@ -5,6 +5,7 @@ jobs:
   test:
     docker:
       - image: rishabhpoddar/supertokens_core_testing
+      - image: rishabhpoddar/oauth-server-cicd
       - image: mongo
         environment:
           MONGO_INITDB_ROOT_USERNAME: root
