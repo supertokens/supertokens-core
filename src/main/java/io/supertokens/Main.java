@@ -269,6 +269,7 @@ public class Main {
         Webserver.getInstance(this).start();
 
         // this is a sign to the controlling script that this process has started.
+
         createDotStartedFileForThisProcess();
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
@@ -348,10 +349,11 @@ public class Main {
 
     private void createDotStartedFileForThisProcess() throws IOException {
         CoreConfig config = Config.getBaseConfig(this);
+        String fileLocation = CLIOptions.get(this).getTempDirLocation() == null ? CLIOptions.get(this).getInstallationPath() : CLIOptions.get(this).getTempDirLocation();
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
-                ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
+                ? fileLocation + ".started\\" + config.getHost(this) + "-"
                 + config.getPort(this)
-                : CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-"
+                : fileLocation + ".started/" + config.getHost(this) + "-"
                 + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {

@@ -287,4 +287,32 @@ public class CLIOptionsTest {
 
     }
 
+    @Test
+    public void cli2TempLocationTest() throws Exception {
+
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
+        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+        //process starts with tempDirLocation param too.
+        args = new String[]{"../", "tempDirLocation=" + new File("../tempDir/").getAbsolutePath()};
+
+        process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
+        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+    }
+
 }
