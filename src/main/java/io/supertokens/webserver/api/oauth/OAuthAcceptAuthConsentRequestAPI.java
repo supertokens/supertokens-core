@@ -47,6 +47,9 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         accessToken.add("initialPayload", initialAccessTokenPayload);
 
         JsonObject idToken = new JsonObject();
+        JsonObject idTokenExt = new JsonObject();
+        idTokenExt.addProperty("sessionHandle", sessionHandle);
+        idToken.add("ext", idTokenExt);
         idToken.add("initialPayload", initialIdTokenPayload);
 
         // remove the above from input

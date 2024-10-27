@@ -1,12 +1,6 @@
 package io.supertokens.webserver.api.oauth;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -26,6 +20,11 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RevokeOAuthTokenAPI extends WebserverAPI {
     public RevokeOAuthTokenAPI(Main main){
@@ -47,7 +46,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (token.startsWith("st_rt_")) {
-                token = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, token);
+                token = OAuth.getInternalRefreshToken(main, appIdentifier, storage, token);
 
                 String gid = null;
                 long exp = -1;
@@ -70,9 +69,13 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
 
                     if (response != null) {
                         JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
+                        String clientId = null;
+                        if (finalResponse.has("client_id")){
+                            clientId = finalResponse.get("client_id").getAsString();
+                        }
 
                         try {
-                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
+                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token, clientId);
                             if (finalResponse.get("active").getAsBoolean()) {
                                 gid = finalResponse.get("gid").getAsString();
                                 exp = finalResponse.get("exp").getAsLong();
@@ -128,7 +131,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     // Success response would mean that the clientId/secret has been validated
                     if (gid != null) {
                         try {
-                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid, exp);
+                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid);
                         } catch (StorageQueryException | NoSuchAlgorithmException e) {
                             throw new ServletException(e);
                         }

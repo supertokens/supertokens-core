@@ -19,21 +19,22 @@ package io.supertokens.webserver.api.oauth;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.OAuthToken;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -107,21 +108,34 @@ public class OAuthAuthAPI extends WebserverAPI {
 
                 redirectTo = OAuth.transformTokensInAuthRedirect(main, appIdentifier, storage, redirectTo, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
 
-
                 if (redirectTo.contains("#")) {
                     String tokensPart = redirectTo.substring(redirectTo.indexOf("#") + 1);
                     String[] parts = tokensPart.split("&");
                     for (String part : parts) {
                         if (part.startsWith("access_token=")) {
                             String accessToken = java.net.URLDecoder.decode(part.split("=")[1], "UTF-8");
+                            JsonObject accessTokenPayload;
                             try {
-                                JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
-                                if (accessTokenPayload.has("sessionHandle")) {
-                                    updateLastActive(appIdentifier, accessTokenPayload.get("sessionHandle").getAsString());
-                                }
-                            } catch (Exception e) {
-                                // ignore
+                                JWT.JWTInfo jwtInfo = JWT.getPayloadWithoutVerifying(accessToken);
+                                accessTokenPayload = jwtInfo.payload;
+                            } catch (JWT.JWTException  e) {
+                                // This should never happen here since we just created/signed the token
+                                throw new ServletException(e);
                             }
+
+                            String clientId =  accessTokenPayload.get("client_id").getAsString();
+                            String gid = accessTokenPayload.get("gid").getAsString();
+                            String jti = accessTokenPayload.get("jti").getAsString();
+
+                            long exp = accessTokenPayload.get("exp").getAsLong();
+
+                            String sessionHandle = null;
+                            if (accessTokenPayload.has("sessionHandle")) {
+                                sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
+                                updateLastActive(appIdentifier, sessionHandle);
+                            }
+
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), exp);
                         }
                     }
                 }
@@ -144,7 +158,7 @@ public class OAuthAuthAPI extends WebserverAPI {
                 super.sendJsonResponse(200, finalResponse, resp);
             }
 
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | OAuthClientNotFoundException e) {
             throw new ServletException(e);
         }
     }

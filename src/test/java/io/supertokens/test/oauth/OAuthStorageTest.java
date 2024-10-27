@@ -22,7 +22,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
-import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
@@ -177,65 +176,33 @@ public class OAuthStorageTest {
 
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, "abcd", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.SESSION_HANDLE, "efgh", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.JTI, "ijkl", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "clientSecret", false, true);
+        storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
+                "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
 
-        assertTrue(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID},
-                new String[]{"abcd"},
-                System.currentTimeMillis()/1000 - 2
-        ));
-        assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID},
-                new String[]{"efgh"},
-                System.currentTimeMillis()/1000 - 2
-        ));
-        assertTrue(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID, OAuthRevokeTargetType.SESSION_HANDLE},
-                new String[]{"efgh", "efgh"},
-                System.currentTimeMillis()/1000 - 2
-        ));
+        assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
+        assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
+
+        storage.revokeOAuthTokenByJTI(appIdentifier, "abcd","ijkl");
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
+        assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
+
+        storage.revokeOAuthTokenByJTI(appIdentifier, "abcd","mnop");
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
+
+
+        storage.revokeOAuthTokenByGID(appIdentifier, "abcd");
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
+
+        storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
+                "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+        storage.revokeOAuthTokenBySessionHandle(appIdentifier, "efgh");
+        assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
         // test cleanup
         Thread.sleep(3000);
-        storage.deleteExpiredRevokedOAuthTokens(System.currentTimeMillis() / 1000 - 3);
-
-        assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID},
-                new String[]{"abcd"},
-                System.currentTimeMillis()/1000 - 5
-        ));
-        assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID, OAuthRevokeTargetType.SESSION_HANDLE},
-                new String[]{"efgh", "efgh"},
-                System.currentTimeMillis()/1000 - 5
-        ));
-
-        // newly issued should be allowed
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, "abcd", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.SESSION_HANDLE, "efgh", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
-        storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.JTI, "ijkl", System.currentTimeMillis()/1000 + 2 - 3600 * 24 * 31);
-
-        Thread.sleep(2000);
-
-        assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID},
-                new String[]{"abcd"},
-                System.currentTimeMillis()/1000
-        ));
-        assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
-                appIdentifier,
-                new OAuthRevokeTargetType[]{OAuthRevokeTargetType.GID, OAuthRevokeTargetType.SESSION_HANDLE},
-                new String[]{"efgh", "efgh"},
-                System.currentTimeMillis()/1000
-        ));
+        storage.deleteExpiredOAuthSessions(System.currentTimeMillis() / 1000 - 3);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -304,8 +271,7 @@ public class OAuthStorageTest {
             // this is what we expect
         }
         {
-            storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, "abcd", 0);
-            storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, "abcd", 0); // should update
+            assertFalse(storage.revokeOAuthTokenByGID(appIdentifier, "abcd"));
         }
 
         // App id FK
@@ -316,12 +282,8 @@ public class OAuthStorageTest {
         } catch (TenantOrAppNotFoundException e) {
             // expected
         }
-        try {
-            storage.revokeOAuthTokensBasedOnTargetFields(appIdentifier2, OAuthRevokeTargetType.GID, "abcd", 0);
-            fail();
-        } catch (TenantOrAppNotFoundException e) {
-            // expected
-        }
+
+        assertFalse(storage.revokeOAuthTokenByGID(appIdentifier2, "abcd"));
 
         // Client FK
         try {
@@ -347,6 +309,22 @@ public class OAuthStorageTest {
             fail();
         } catch (OAuthClientNotFoundException e) {
             // expected
+        }
+
+        try {
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, List.of("asdasd"),
+                    System.currentTimeMillis() + 10000);
+            fail();
+        } catch (OAuthClientNotFoundException e) {
+            //expected
+        }
+
+        try {
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid-not-existing", null, null, null, List.of("asdasd"),
+                    System.currentTimeMillis() + 10000);
+            fail();
+        } catch (OAuthClientNotFoundException e) {
+            //expected
         }
 
         process.kill();

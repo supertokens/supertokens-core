@@ -16,6 +16,9 @@
 
 package io.supertokens.test.oauth.api;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -31,10 +34,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -95,6 +94,7 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         params.addProperty("response_type", "code");
         params.addProperty("scope", "openid offline_access");
         params.addProperty("state", "test12345678");
+
         authRequestBody.add("params", params);
         JsonObject authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
@@ -158,6 +158,8 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         JsonArray audience = new JsonArray();
         acceptConsentRequestBody.add("grantAccessTokenAudience", audience);
         JsonObject session = new JsonObject();
+//        JsonObject accessToken = new JsonObject();
+//        accessToken.addProperty("gid", "gidForTesting");
         session.add("access_token", new JsonObject());
         session.add("id_token", new JsonObject());
         acceptConsentRequestBody.add("session", session);
@@ -350,6 +352,7 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         assertEquals("OAUTH_ERROR", newTokens.get("status").getAsString());
         assertEquals("token_inactive", newTokens.get("error").getAsString());
 
+
         newTokens = refreshToken(process.getProcess(), client, newRefreshToken);
         assertTrue(newTokens.has("refresh_token"));
 
@@ -392,6 +395,12 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         String newRefreshToken = newTokens.get("refresh_token").getAsString();
 
         updateClient(process.getProcess(), client, false);
+
+        newTokens = refreshToken(process.getProcess(), client, newRefreshToken);
+        assertFalse(newTokens.has("refresh_token"));
+
+        newTokens = refreshToken(process.getProcess(), client, newRefreshToken);
+        assertFalse(newTokens.has("refresh_token"));
 
         newTokens = refreshToken(process.getProcess(), client, newRefreshToken);
         assertFalse(newTokens.has("refresh_token"));

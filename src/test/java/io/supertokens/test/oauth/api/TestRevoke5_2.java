@@ -1,27 +1,8 @@
 package io.supertokens.test.oauth.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
@@ -34,6 +15,20 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TestRevoke5_2 {
     @Rule
@@ -180,26 +175,25 @@ public class TestRevoke5_2 {
 
         // revoke client id
         JsonObject revokeClientIdResponse = revokeClientId(process.getProcess(), client);
-        System.out.println(revokeClientIdResponse.toString());
         assertEquals("OK", revokeClientIdResponse.get("status").getAsString());
 
         Thread.sleep(1000);
 
-        // test introspect refresh token (allowed)
+        // test introspect refresh token (should be revoked also - not allowed)
         JsonObject introspectResponse = introspectToken(process.getProcess(),
                 tokenResponse.get("refresh_token").getAsString());
         assertEquals("OK", introspectResponse.get("status").getAsString());
-        assertTrue(introspectResponse.get("active").getAsBoolean());
+        assertFalse(introspectResponse.get("active").getAsBoolean());
 
         // test introspect access token (not allowed)
         introspectResponse = introspectToken(process.getProcess(), tokenResponse.get("access_token").getAsString());
         assertEquals("OK", introspectResponse.get("status").getAsString());
         assertFalse(introspectResponse.get("active").getAsBoolean());
 
-        // test refresh token (allowed)
+        // test refresh token (not allowed)
         JsonObject refreshResponse = refreshToken(process.getProcess(), client,
                 tokenResponse.get("refresh_token").getAsString());
-        assertEquals("OK", refreshResponse.get("status").getAsString());
+        assertEquals("OAUTH_ERROR", refreshResponse.get("status").getAsString());
 
         Thread.sleep(1000);
 

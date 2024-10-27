@@ -49,7 +49,10 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -57,7 +60,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
-import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
@@ -3070,42 +3072,39 @@ public class Start
     }
 
     @Override
-    public void revokeOAuthTokensBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType targetType, String targetValue, long exp)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+    public boolean revokeOAuthTokenByGID(AppIdentifier appIdentifier, String gid) throws StorageQueryException {
         try {
-            OAuthQueries.revokeOAuthTokensBasedOnTargetFields(this, appIdentifier, targetType, targetValue, exp);
+            return OAuthQueries.deleteOAuthSessionByGID(this, appIdentifier, gid);
         } catch (SQLException e) {
-            if (e instanceof SQLiteException) {
-                String errorMessage = e.getMessage();
-                SQLiteConfig config = Config.getConfig(this);
-
-                if (isForeignKeyConstraintError(
-                        errorMessage,
-                        config.getOAuthRevokeTable(),
-                        new String[]{"app_id"},
-                        new Object[]{appIdentifier.getAppId()})) {
-                    throw new TenantOrAppNotFoundException(appIdentifier);
-                }
-            }
             throw new StorageQueryException(e);
         }
-        
     }
 
     @Override
-    public boolean isOAuthTokenRevokedBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType[] targetTypes, String[] targetValues, long issuedAt)
+    public boolean revokeOAuthTokenByClientId(AppIdentifier appIdentifier, String clientId)
             throws StorageQueryException {
         try {
-            return OAuthQueries.isOAuthTokenRevokedBasedOnTargetFields(this, appIdentifier, targetTypes, targetValues, issuedAt);
+            return OAuthQueries.deleteOAuthSessionByClientId(this, appIdentifier, clientId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteExpiredRevokedOAuthTokens(long exp) throws StorageQueryException {
+    public boolean revokeOAuthTokenByJTI(AppIdentifier appIdentifier, String gid, String jti)
+            throws StorageQueryException {
         try {
-            OAuthQueries.deleteExpiredRevokedOAuthTokens(this, exp);
+            return OAuthQueries.deleteJTIFromOAuthSession(this, appIdentifier, gid, jti);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean revokeOAuthTokenBySessionHandle(AppIdentifier appIdentifier, String sessionHandle)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.deleteOAuthSessionBySessionHandle(this, appIdentifier, sessionHandle);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3194,39 +3193,44 @@ public class Start
     }
 
     @Override
-    public void createOrUpdateRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken,
-            String oauthProviderRefreshToken, long exp) throws StorageQueryException {
+    public void createOrUpdateOAuthSession(AppIdentifier appIdentifier, String gid, String clientId,
+                                           String externalRefreshToken, String internalRefreshToken,
+                                           String sessionHandle, List<String> jtis, long exp)
+            throws StorageQueryException, OAuthClientNotFoundException {
         try {
-            OAuthQueries.createOrUpdateRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken, oauthProviderRefreshToken, exp);
+            OAuthQueries.createOrUpdateOAuthSession(this, appIdentifier, gid, clientId, externalRefreshToken,
+                    internalRefreshToken, sessionHandle, jtis, exp);
         } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getOAuthClientsTable(),
+                        new String[]{"app_id", "client_id"},
+                        new Object[]{appIdentifier.getAppId(), clientId})) {
+                    throw new OAuthClientNotFoundException();
+                }
+            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public String getRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken)
+    public String getRefreshTokenMapping(AppIdentifier appIdentifier, String externalRefreshToken)
             throws StorageQueryException {
         try {
-            return OAuthQueries.getRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken);
+            return OAuthQueries.getRefreshTokenMapping(this, appIdentifier, externalRefreshToken);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteRefreshTokenMapping(AppIdentifier appIdentifier, String superTokensRefreshToken)
-            throws StorageQueryException {
+    public void deleteExpiredOAuthSessions(long exp) throws StorageQueryException {
         try {
-            OAuthQueries.deleteRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void deleteExpiredRefreshTokenMappings(long exp) throws StorageQueryException {
-        try {
-            OAuthQueries.deleteExpiredRefreshTokenMappings(this, exp);
+            OAuthQueries.deleteExpiredOAuthSessions(this, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3265,6 +3269,25 @@ public class Start
     public int countTotalNumberOfOAuthM2MTokensAlive(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
             return OAuthQueries.countTotalNumberOfOAuthM2MTokensAlive(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isOAuthTokenRevokedByGID(AppIdentifier appIdentifier, String gid) throws StorageQueryException {
+        try {
+            return !OAuthQueries.isOAuthSessionExistsByGID(this, appIdentifier, gid);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isOAuthTokenRevokedByJTI(AppIdentifier appIdentifier, String gid, String jti)
+            throws StorageQueryException {
+        try {
+            return !OAuthQueries.isOAuthSessionExistsByJTI(this, appIdentifier, gid, jti);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
