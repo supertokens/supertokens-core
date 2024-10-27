@@ -1049,7 +1049,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 86400);
-        intervals.put("io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges.CleanupOAuthRevokeListAndChallenges",
+        intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 86400);
 
         Map<String, Integer> delays = new HashMap<>();
@@ -1065,7 +1065,7 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.telemetry.Telemetry", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 0);
-        delays.put("io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges.CleanupOAuthRevokeListAndChallenges",
+        delays.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
