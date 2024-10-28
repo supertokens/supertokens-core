@@ -28,7 +28,6 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.OAuthToken;
-import io.supertokens.oauth.Transformations;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -62,7 +61,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class OAuthTokenAPI extends WebserverAPI {
@@ -238,18 +236,18 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token, always creating a mapping.
-                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, List.of(jti), refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, jti, refreshTokenExp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
-                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, List.of(jti), refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
                             }
                         }
                     } else {
-                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, List.of(jti), accessTokenExp);
+                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, accessTokenExp);
                     }
 
                 } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException

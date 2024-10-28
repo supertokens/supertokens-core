@@ -28,7 +28,6 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.OAuthToken;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
@@ -59,7 +58,6 @@ import java.security.Key;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -183,7 +181,7 @@ public class TestAppData {
         OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");
         ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
-        OAuth.createOrUpdateOauthSession(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "test-gid", null, null, "sessionHandle", List.of("jti"), 0);
+        OAuth.createOrUpdateOauthSession(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "test-gid", null, null, "sessionHandle", "jti", 0);
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());

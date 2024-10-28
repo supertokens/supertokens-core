@@ -659,10 +659,10 @@ public class OAuth {
 
     public static void createOrUpdateOauthSession(Main main, AppIdentifier appIdentifier, Storage storage,
                                                   String clientId, String gid, String externalRefreshToken, String internalRefreshToken,
-                                                  String sessionHandle, List<String> jtis, long exp)
+                                                  String sessionHandle, String jti, long exp)
             throws StorageQueryException, OAuthClientNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.createOrUpdateOAuthSession(appIdentifier, gid, clientId, externalRefreshToken, internalRefreshToken,
-                sessionHandle, jtis, exp);
+                sessionHandle, jti, exp);
     }
 }
