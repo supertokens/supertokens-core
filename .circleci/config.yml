@@ -34,7 +34,7 @@ jobs:
           steps:
             - run: cp ~/supertokens-root/supertokens-<< parameters.plugin >>-plugin/build/test-results/test/*.xml ~/junit/
       - store_test_results:
-        path: ~/junit
+          path: ~/junit
       - slack/status
 
   mark-passed:
