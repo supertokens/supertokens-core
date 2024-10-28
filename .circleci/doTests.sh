@@ -175,7 +175,7 @@ do
 
           # TODO: remove before merging, this is here to make testing the scripts quicker
           sed -i -e "s/\.\/gradlew test/\.\/gradlew test \$GRADLE_ARGS/" startTestEnv
-          ./startTestingEnv --cicd
+          GRADLE_ARGS=$GRADLE_ARGS ./startTestingEnv --cicd
 
           if [[ $? -ne 0 ]]
           then
