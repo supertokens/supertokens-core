@@ -25,8 +25,8 @@ jobs:
       - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf
       - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
       - run:
-        command: cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
-        when: always
+          command: cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
+          when: always
       - when:
           condition:
             not:
