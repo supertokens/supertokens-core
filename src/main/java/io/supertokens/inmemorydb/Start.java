@@ -3195,11 +3195,11 @@ public class Start
     @Override
     public void createOrUpdateOAuthSession(AppIdentifier appIdentifier, String gid, String clientId,
                                            String externalRefreshToken, String internalRefreshToken,
-                                           String sessionHandle, List<String> jtis, long exp)
+                                           String sessionHandle, String jti, long exp)
             throws StorageQueryException, OAuthClientNotFoundException {
         try {
             OAuthQueries.createOrUpdateOAuthSession(this, appIdentifier, gid, clientId, externalRefreshToken,
-                    internalRefreshToken, sessionHandle, jtis, exp);
+                    internalRefreshToken, sessionHandle, jti, exp);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
                 String errorMessage = e.getMessage();

@@ -178,7 +178,9 @@ public class OAuthStorageTest {
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid", "clientSecret", false, true);
         storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
-                "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+                "internalRefreshToken", "efgh", "ijkl", System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+        storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
+                "internalRefreshToken", "efgh", "mnop", System.currentTimeMillis() + 1000 * 60 * 60 * 24);
 
         assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "ijkl"));
         assertFalse(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
@@ -196,7 +198,10 @@ public class OAuthStorageTest {
         assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
         storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
-                "internalRefreshToken", "efgh", List.of("ijkl", "mnop"), System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+                "internalRefreshToken", "efgh", "ijkl", System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+        storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
+                "internalRefreshToken", "efgh", "mnop", System.currentTimeMillis() + 1000 * 60 * 60 * 24);
+
         storage.revokeOAuthTokenBySessionHandle(appIdentifier, "efgh");
         assertTrue(storage.isOAuthTokenRevokedByJTI(appIdentifier, "abcd", "mnop"));
 
@@ -312,7 +317,7 @@ public class OAuthStorageTest {
         }
 
         try {
-            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, List.of("asdasd"),
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, "asdasd",
                     System.currentTimeMillis() + 10000);
             fail();
         } catch (OAuthClientNotFoundException e) {
@@ -320,7 +325,7 @@ public class OAuthStorageTest {
         }
 
         try {
-            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid-not-existing", null, null, null, List.of("asdasd"),
+            storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid-not-existing", null, null, null, "asdasd",
                     System.currentTimeMillis() + 10000);
             fail();
         } catch (OAuthClientNotFoundException e) {
