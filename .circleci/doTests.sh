@@ -174,7 +174,7 @@ do
           echo "Prepared arguments for Gradle: $GRADLE_ARGS"
 
           # TODO: remove before merging, this is here to make testing the scripts quicker
-          sed -i -e "s/\.\/gradlew test/\.\/gradlew test --tests \*Config\*/"  startTestEnv
+          sed -i -e "s/\.\/gradlew test/\.\/gradlew test $GRADLE_ARGS/" startTestEnv
           ./startTestingEnv --cicd
 
           if [[ $? -ne 0 ]]
