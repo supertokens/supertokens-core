@@ -45,6 +45,7 @@ public class OAuthAPIHelper {
             // We query these in an effort to help with possible warm up issues
             HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/openid-configuration", new HashMap<>(), new HashMap<>());
             HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/jwks.json", new HashMap<>(), new HashMap<>());
+            Thread.sleep(1000);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
