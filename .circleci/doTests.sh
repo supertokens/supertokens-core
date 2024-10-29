@@ -171,10 +171,15 @@ do
 
           if [ -d ~/junit ]
           then
+            echo "Copying output from core"
+            ls ~/supertokens-root/supertokens-core/build/test-results/test/*.xml
             cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
 
             if [[ $pluginToTest -ne "sqlite" ]]
             then
+              echo "Copying output from plugin"
+              echo "Using path: ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml"
+              ls "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml"
               cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
             fi
           fi
