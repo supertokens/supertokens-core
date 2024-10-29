@@ -180,9 +180,9 @@ do
             then
               echo "Copying output from plugin"
               ls -R ~/supertokens-root/supertokens-$pluginToTest-plugin/
-              echo "Using path: ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test/test/*.xml"
+              echo "Using path: ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test/test/.xml"
               cp ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test/test/.xml ~/junit/
-              cp ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/.xml" ~/junit/
+              cp ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/.xml ~/junit/
             fi
           fi
 
