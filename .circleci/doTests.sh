@@ -167,7 +167,19 @@ do
 
           ./startTestingEnv --cicd
 
-          if [[ $? -ne 0 ]]
+          TEST_EXIT_CODE=$?
+
+          if [ -d ~/junit ]
+          then
+            cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
+
+            if [[ $pluginToTest -ne "sqlite" ]]
+            then
+              cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
+            fi
+          fi
+          
+          if [[ TEST_EXIT_CODE -ne 0 ]]
           then
               echo ""
               echo ""
@@ -198,18 +210,6 @@ do
           echo ""
           echo ""
           echo ""
-
-          cd ../
-
-          if [ -d ~/junit ]
-          then
-            cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
-
-            if [[ $pluginToTest -ne "sqlite" ]]
-            then
-              cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
-            fi
-          fi
 
           rm -rf supertokens-root
 
