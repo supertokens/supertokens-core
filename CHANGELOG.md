@@ -107,7 +107,6 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
 );
 
-
 CREATE TABLE IF NOT EXISTS oauth_sessions (
   gid VARCHAR(255),
   app_id VARCHAR(64) DEFAULT 'public',
@@ -121,8 +120,8 @@ CREATE TABLE IF NOT EXISTS oauth_sessions (
   FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
-CREATE INDEX IF NOT EXISTS oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
+CREATE INDEX oauth_session_exp_index ON oauth_sessions(exp DESC);
+CREATE INDEX oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
 
 CREATE TABLE oauth_m2m_tokens (
   app_id VARCHAR(64) DEFAULT 'public',

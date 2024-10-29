@@ -162,6 +162,7 @@ do
           fi
           cd ../
           echo $SUPERTOKENS_API_KEY > apiPassword
+
           ./startTestingEnv --cicd
 
           if [[ $? -ne 0 ]]

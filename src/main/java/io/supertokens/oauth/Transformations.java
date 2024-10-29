@@ -68,24 +68,23 @@ public class Transformations {
     }
 
     private static String transformQueryParamsInURLFromHydra(String redirectTo) {
-        try {
-            URL url = new URL(redirectTo);
-            String query = url.getQuery();
-            if (query != null) {
-                String[] queryParams = query.split("&");
-                StringBuilder updatedQuery = new StringBuilder();
-                for (String param : queryParams) {
-                    String[] keyValue = param.split("=");
-                    if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
-                        updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
-                    } else {
-                        updatedQuery.append(param).append("&");
-                    }
+        if (!redirectTo.contains("?")) {
+            return redirectTo;
+        }
+
+        String query = redirectTo.split("\\?")[1];
+        if (query != null) {
+            String[] queryParams = query.split("&");
+            StringBuilder updatedQuery = new StringBuilder();
+            for (String param : queryParams) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
+                    updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
+                } else {
+                    updatedQuery.append(param).append("&");
                 }
-                redirectTo = redirectTo.replace("?" + query, "?" + updatedQuery.toString().trim());
             }
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException(e);
+            redirectTo = redirectTo.replace("?" + query, "?" + updatedQuery.toString().trim());
         }
 
         return redirectTo;
@@ -153,37 +152,29 @@ public class Transformations {
         if (!redirectTo.startsWith("/")) {
             redirectTo = transformQueryParamsInURLFromHydra(redirectTo);
 
-            try {
-                if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
-                    try {
-                        URL url = new URL(redirectTo);
-                        String query = url.getQuery();
-                        Map<String, String> urlQueryParams = new HashMap<>();
-                        if (query != null) {
-                            String[] pairs = query.split("&");
-                            for (String pair : pairs) {
-                                int idx = pair.indexOf("=");
-                                urlQueryParams.put(pair.substring(0, idx), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
-                            }
-                        }
-                        String error = urlQueryParams.getOrDefault("error", null);
-                        String errorDescription = urlQueryParams.getOrDefault("error_description", null);
-                        if (error != null) {
-                            throw new OAuthAPIException(error, errorDescription, 400);
-                        }
-                        redirectTo = redirectTo.replace(hydraInternalAddress, "{apiDomain}");
-
-                        // path to hydra starts with /oauth2 while on the SDK it would be /oauth
-                        redirectTo = redirectTo.replace("oauth2/", "oauth/");
-
-                    } catch (MalformedURLException e) {
-                        throw new IllegalStateException(e);
+            // We do not use the containsURL util to compare these because redirectTo can be a deep link
+            // Also, we do not mind comparison to internal addresses being strict comparisons
+            if (redirectTo.startsWith(hydraInternalAddress)) {
+                String query = redirectTo.contains("?") ? redirectTo.split("\\?")[1] : null;
+                Map<String, String> urlQueryParams = new HashMap<>();
+                if (query != null) {
+                    String[] pairs = query.split("&");
+                    for (String pair : pairs) {
+                        int idx = pair.indexOf("=");
+                        urlQueryParams.put(pair.substring(0, idx), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
                     }
-                } else if (Utils.containsUrl(redirectTo, hydraBaseUrlForConsentAndLogin, true)) {
-                    redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
                 }
-            } catch (MalformedURLException e) {
-                throw new IllegalStateException(e);
+                String error = urlQueryParams.getOrDefault("error", null);
+                String errorDescription = urlQueryParams.getOrDefault("error_description", null);
+                if (error != null) {
+                    throw new OAuthAPIException(error, errorDescription, 400);
+                }
+                redirectTo = redirectTo.replace(hydraInternalAddress, "{apiDomain}");
+
+                // path to hydra starts with /oauth2 while on the SDK it would be /oauth
+                redirectTo = redirectTo.replace("oauth2/", "oauth/");
+            } else if (redirectTo.startsWith(hydraBaseUrlForConsentAndLogin)) {
+                redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
             }
         }
 
