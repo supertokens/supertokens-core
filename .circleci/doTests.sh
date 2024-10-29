@@ -163,20 +163,7 @@ do
           cd ../
           echo $SUPERTOKENS_API_KEY > apiPassword
 
-          # Get list of classnames of tests that should run on this node.
-          circleci tests glob "supertokens-*/src/test/**/*.java" | cut -c 1- | sed 's@/@.@g' | sed 's/.\{5\}$//' |
-          sed 's/^.*io\.supertokens/io.supertokens/' |
-          circleci tests run --command=">classnames.txt xargs echo" --verbose --split-by=timings --timings-type=classname
-
-          #if this is a re-run and it is a parallel run that does not have tests to run, halt execution of this parallel run
-          [ -s classnames.txt ] || circleci-agent step halt
-
-          GRADLE_ARGS=$(cat classnames.txt | awk '{for (i=1; i<=NF; i++) print "--tests",$i}')
-          echo "Prepared arguments for Gradle: $GRADLE_ARGS"
-
-          # TODO: remove before merging, this is here to make testing the scripts quicker
-          sed -i -e "s/\.\/gradlew test/\.\/gradlew test \$GRADLE_ARGS/" startTestEnv
-          GRADLE_ARGS=$GRADLE_ARGS ./startTestingEnv --cicd
+          ./startTestingEnv --cicd
 
           if [[ $? -ne 0 ]]
           then
