@@ -202,9 +202,11 @@ do
           cd ../
 
           if [ -d ~/junit ]
+          then
             cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
 
             if [[ $pluginToTest -ne "sqlite" ]]
+            then
               cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
             fi
           fi
