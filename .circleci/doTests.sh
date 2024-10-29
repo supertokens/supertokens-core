@@ -175,7 +175,7 @@ do
             ls ~/supertokens-root/supertokens-core/build/test-results/test/
             cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
 
-            if [[ $pluginToTest -ne "sqlite" ]]
+            if [[ $pluginToTest != "sqlite" ]]
             then
               echo "Copying output from plugin"
               echo "Using path: ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml"
