@@ -179,7 +179,7 @@ do
             fi
           fi
           
-          if [[ TEST_EXIT_CODE -ne 0 ]]
+          if [[ $TEST_EXIT_CODE -ne 0 ]]
           then
               echo ""
               echo ""
