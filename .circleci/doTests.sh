@@ -65,6 +65,8 @@ then
 	exit 1
 fi
 
+mkdir -p ~/junit
+
 someTestsRan=false
 while read -u 10 line
 do
@@ -165,7 +167,21 @@ do
 
           ./startTestingEnv --cicd
 
-          if [[ $? -ne 0 ]]
+          TEST_EXIT_CODE=$?
+
+          if [ -d ~/junit ]
+          then
+            echo "Copying output from core"
+            cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
+
+            if [[ $pluginToTest != "sqlite" ]]
+            then
+              echo "Copying output from plugin"
+              cp ~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml ~/junit/
+            fi
+          fi
+
+          if [[ $TEST_EXIT_CODE -ne 0 ]]
           then
               echo ""
               echo ""
@@ -197,7 +213,7 @@ do
           echo ""
           echo ""
 
-          cd ../
+          cd ..
           rm -rf supertokens-root
 
           if [[ $currPinnedDb == "sqlite" ]]
