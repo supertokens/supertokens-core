@@ -65,6 +65,8 @@ then
 	exit 1
 fi
 
+mkdir -p ~/junit
+
 someTestsRan=false
 while read -u 10 line
 do
@@ -198,6 +200,15 @@ do
           echo ""
 
           cd ../
+
+          if [ -d ~/junit ]
+            cp ~/supertokens-root/supertokens-core/build/test-results/test/*.xml ~/junit/
+
+            if [[ $pluginToTest -ne "sqlite" ]]
+              cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
+            fi
+          fi
+
           rm -rf supertokens-root
 
           if [[ $currPinnedDb == "sqlite" ]]
