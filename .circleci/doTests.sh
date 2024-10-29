@@ -178,7 +178,7 @@ do
               cp "~/supertokens-root/supertokens-$pluginToTest-plugin/build/test-results/test/*.xml" ~/junit/
             fi
           fi
-          
+
           if [[ $TEST_EXIT_CODE -ne 0 ]]
           then
               echo ""
@@ -211,6 +211,7 @@ do
           echo ""
           echo ""
 
+          cd ..
           rm -rf supertokens-root
 
           if [[ $currPinnedDb == "sqlite" ]]
