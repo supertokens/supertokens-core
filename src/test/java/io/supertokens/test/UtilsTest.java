@@ -22,6 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.net.MalformedURLException;
+
 import static org.junit.Assert.*;
 
 public class UtilsTest {
@@ -103,5 +105,139 @@ public class UtilsTest {
         // Test with a phone number containing only whitespace
         String inputPhoneNumber = "   ";
         assertEquals("", io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber));
+    }
+
+    @Test
+    public void testUrlContainsWithoutSlash() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithSlash() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1/";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1:3000/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1:3000/";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithAndWithoutPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1:3000/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithoutAndWithPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1:4444";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWhenProtocolDoesntMatter() throws MalformedURLException {
+        String itShouldContain = "https://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, false));
+    }
+
+    @Test
+    public void testUrlContainsCaseSensitive() throws MalformedURLException {
+        String itShouldContain = "http://littlecat/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://littleCat";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, false));
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCase() {
+        String original = "snake_case";
+        String expectedResult = "snakeCase";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseStartingWithSnake() {
+        String original = "_snake_case";
+        String expectedResult = "SnakeCase";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseWithNull() {
+        String original = null;
+        String expectedResult = null;
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseNothingToDo() {
+        String original = "snake";
+        String expectedResult = "snake";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseMultipleSnakes() {
+        String original = "snake_case_multiple_snakes";
+        String expectedResult = "snakeCaseMultipleSnakes";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCase() {
+        String original = "camelCased";
+        String expectedResult = "camel_cased";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCaseBigInitial() {
+        String original = "CamelCased";
+        String expectedResult = "camel_cased";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCaseWithNull() {
+        String original = null;
+        String expectedResult = null;
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+    @Test
+    public void testCamelCaseToSnakeCaseMultipleCamels() {
+        String original = "multipleCamelsInCamelCase";
+        String expectedResult = "multiple_camels_in_camel_case";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+    @Test
+    public void testCamelCaseToSnakeCaseNothingToDo() {
+        String original = "nothing";
+        String expectedResult = "nothing";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
     }
 }

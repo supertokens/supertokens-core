@@ -21,6 +21,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
+import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
@@ -262,6 +263,8 @@ public class Main {
         // initializes ProcessBulkImportUsers cronjob to process bulk import users - start happens via API call @see BulkImportBackgroundJobManager
         ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants);
 
+        Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
+
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();
 
@@ -272,6 +275,7 @@ public class Main {
         Webserver.getInstance(this).start();
 
         // this is a sign to the controlling script that this process has started.
+
         createDotStartedFileForThisProcess();
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
@@ -351,10 +355,11 @@ public class Main {
 
     private void createDotStartedFileForThisProcess() throws IOException {
         CoreConfig config = Config.getBaseConfig(this);
+        String fileLocation = CLIOptions.get(this).getTempDirLocation() == null ? CLIOptions.get(this).getInstallationPath() : CLIOptions.get(this).getTempDirLocation();
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
-                ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
+                ? fileLocation + ".started\\" + config.getHost(this) + "-"
                 + config.getPort(this)
-                : CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-"
+                : fileLocation + ".started/" + config.getHost(this) + "-"
                 + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {

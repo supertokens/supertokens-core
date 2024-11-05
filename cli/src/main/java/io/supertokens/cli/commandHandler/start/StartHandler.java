@@ -35,6 +35,7 @@ public class StartHandler extends CommandHandler {
     public void doCommand(String installationDir, boolean viaInstaller, String[] args) {
         String space = CLIOptionsParser.parseOption("--with-space", args);
         String configPath = CLIOptionsParser.parseOption("--with-config", args);
+        String tempDirLocation = CLIOptionsParser.parseOption("--with-temp-dir", args);
         if (configPath != null) {
             configPath = new File(configPath).getAbsolutePath();
         }
@@ -67,6 +68,9 @@ public class StartHandler extends CommandHandler {
             if (forceNoInMemDB) {
                 commands.add("forceNoInMemDB=true");
             }
+            if(tempDirLocation != null && !tempDirLocation.isEmpty()) {
+                commands.add("tempDirLocation=" + tempDirLocation);
+            }
         } else {
             commands.add(installationDir + "jre/bin/java");
             commands.add("-Djava.security.egd=file:/dev/urandom");
@@ -89,6 +93,9 @@ public class StartHandler extends CommandHandler {
             }
             if (forceNoInMemDB) {
                 commands.add("forceNoInMemDB=true");
+            }
+            if(tempDirLocation != null && !tempDirLocation.isEmpty()) {
+                commands.add("tempDirLocation=" + tempDirLocation);
             }
         }
         if (!foreground) {
@@ -172,6 +179,8 @@ public class StartHandler extends CommandHandler {
                 "Sets the host on which this instance of SuperTokens should run. Example: \"--host=192.168.0.1\""));
         options.add(
                 new Option("--foreground", "Runs this instance of SuperTokens in the foreground (not as a daemon)"));
+        options.add(
+                new Option("--with-temp-dir", "Uses the passed dir as temp dir, instead of the internal default."));
         return options;
     }
 

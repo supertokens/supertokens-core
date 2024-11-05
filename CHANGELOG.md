@@ -5,7 +5,156 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
+
+## [9.3.0]
+
+### Changes
+
+- Adds support for OAuth2
+    - Added new feature in license key: `OAUTH`
+    - Adds new core config:
+        - `oauth_provider_public_service_url`
+        - `oauth_provider_admin_service_url`
+        - `oauth_provider_consent_login_base_url`
+        - `oauth_provider_url_configured_in_oauth_provider`
+    - Adds following APIs:
+        - POST `/recipe/oauth/clients`
+        - PUT `/recipe/oauth/clients`
+        - GET `/recipe/oauth/clients`
+        - GET `/recipe/oauth/clients/list`
+        - POST `/recipe/oauth/clients/remove`
+        - GET `/recipe/oauth/auth/requests/consent`
+        - PUT `/recipe/oauth/auth/requests/consent/accept`
+        - PUT `/recipe/oauth/auth/requests/consent/reject`
+        - GET `/recipe/oauth/auth/requests/login`
+        - PUT `/recipe/oauth/auth/requests/login/accept`
+        - PUT `/recipe/oauth/auth/requests/login/reject`
+        - GET `/recipe/oauth/auth/requests/logout`
+        - PUT `/recipe/oauth/auth/requests/logout/accept`
+        - PUT `/recipe/oauth/auth/requests/logout/reject`
+        - POST `/recipe/oauth/auth`
+        - POST `/recipe/oauth/token`
+        - POST `/recipe/oauth/introspect`
+        - POST `/recipe/oauth/session/revoke`
+        - POST `/recipe/oauth/token/revoke`
+        - POST `/recipe/oauth/tokens/revoke`
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS oauth_clients (
+    app_id VARCHAR(64),
+    client_id VARCHAR(255) NOT NULL,
+    is_client_credentials_only BOOLEAN NOT NULL,
+    PRIMARY KEY (app_id, client_id),
+    FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS oauth_sessions (
+    gid VARCHAR(255),
+    app_id VARCHAR(64) DEFAULT 'public',
+    client_id VARCHAR(255) NOT NULL,
+    session_handle VARCHAR(128),
+    external_refresh_token VARCHAR(255) UNIQUE,
+    internal_refresh_token VARCHAR(255) UNIQUE,
+    jti TEXT NOT NULL,
+    exp BIGINT NOT NULL,
+    PRIMARY KEY (gid),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_session_exp_index ON oauth_sessions(exp DESC);
+CREATE INDEX IF NOT EXISTS oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_m2m_tokens (
+    app_id VARCHAR(64) DEFAULT 'public',
+    client_id VARCHAR(255) NOT NULL,
+    iat BIGINT NOT NULL,
+    exp BIGINT NOT NULL,
+    PRIMARY KEY (app_id, client_id, iat),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_m2m_token_iat_index ON oauth_m2m_tokens(iat DESC, app_id DESC);
+CREATE INDEX IF NOT EXISTS oauth_m2m_token_exp_index ON oauth_m2m_tokens(exp DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_logout_challenges (
+    app_id VARCHAR(64) DEFAULT 'public',
+    challenge VARCHAR(128) NOT NULL,
+    client_id VARCHAR(255) NOT NULL,
+    post_logout_redirect_uri VARCHAR(1024),
+    session_handle VARCHAR(128),
+    state VARCHAR(128),
+    time_created BIGINT NOT NULL,
+    PRIMARY KEY (app_id, challenge),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_logout_challenges_time_created_index ON oauth_logout_challenges(time_created DESC);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS oauth_clients (
+  app_id VARCHAR(64),
+  client_id VARCHAR(255) NOT NULL,
+  is_client_credentials_only BOOLEAN NOT NULL,
+  PRIMARY KEY (app_id, client_id),
+  FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS oauth_sessions (
+  gid VARCHAR(255),
+  app_id VARCHAR(64) DEFAULT 'public',
+  client_id VARCHAR(255) NOT NULL,
+  session_handle VARCHAR(128),
+  external_refresh_token VARCHAR(255) UNIQUE,
+  internal_refresh_token VARCHAR(255) UNIQUE,
+  jti TEXT NOT NULL,
+  exp BIGINT NOT NULL,
+  PRIMARY KEY (gid),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_session_exp_index ON oauth_sessions(exp DESC);
+CREATE INDEX oauth_session_external_refresh_token_index ON oauth_sessions(app_id, external_refresh_token DESC);
+
+CREATE TABLE oauth_m2m_tokens (
+  app_id VARCHAR(64) DEFAULT 'public',
+  client_id VARCHAR(255) NOT NULL,
+  iat BIGINT UNSIGNED NOT NULL,
+  exp BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (app_id, client_id, iat),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_m2m_token_iat_index ON oauth_m2m_tokens(iat DESC, app_id DESC);
+CREATE INDEX oauth_m2m_token_exp_index ON oauth_m2m_tokens(exp DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_logout_challenges (
+  app_id VARCHAR(64) DEFAULT 'public',
+  challenge VARCHAR(128) NOT NULL,
+  client_id VARCHAR(255) NOT NULL,
+  post_logout_redirect_uri VARCHAR(1024),
+  session_handle VARCHAR(128),
+  state VARCHAR(128),
+  time_created BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (app_id, challenge),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_logout_challenges_time_created_index ON oauth_logout_challenges(time_created ASC, app_id ASC);
+```
+
+## [9.2.3] - 2024-10-09
+
+- Adds support for `--with-temp-dir` in CLI and `tempDirLocation=` in Core
+- Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow 
+  special chars.
 
 ### Added
 
@@ -168,17 +317,19 @@ Make sure the core is already upgraded to version 8.0.0 before migrating
 If using PostgreSQL
 
 ```sql
-ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
-ALTER TABLE totp_user_devices 
-  ALTER COLUMN created_at DROP DEFAULT;
+ALTER TABLE totp_user_devices
+    ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
+ALTER TABLE totp_user_devices
+    ALTER COLUMN created_at DROP DEFAULT;
 ```
 
 If using MySQL
 
 ```sql
-ALTER TABLE totp_user_devices ADD COLUMN created_at BIGINT UNSIGNED default 0;
-ALTER TABLE totp_user_devices 
-  ALTER COLUMN created_at DROP DEFAULT;
+ALTER TABLE totp_user_devices
+    ADD COLUMN created_at BIGINT UNSIGNED default 0;
+ALTER TABLE totp_user_devices
+    ALTER COLUMN created_at DROP DEFAULT;
 DROP INDEX all_auth_recipe_users_pagination_index2 ON all_auth_recipe_users;
 DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 ```
@@ -230,8 +381,8 @@ For MySQL:
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
 ALTER TABLE user_roles
-  ADD FOREIGN KEY (app_id, tenant_id)
-    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+    ADD FOREIGN KEY (app_id, tenant_id)
+        REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 ```
 
 ## [7.0.18] - 2024-02-19

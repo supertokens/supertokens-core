@@ -35,6 +35,7 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.catalina.startup.Tomcat;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,6 +43,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -961,6 +963,25 @@ public class WebserverTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
 
+    }
+
+    @Test
+    public void tempDirLocationWebserverStarts() throws InterruptedException, HttpResponseException, IOException {
+        String tempDirLocation = new File("../tempDir/").getCanonicalPath();
+        String[] args = {"../", "tempDirLocation=" + tempDirLocation};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.TomcatReference reference = Webserver.getInstance(process.getProcess()).getTomcatReference();
+        File catalinaBase = reference.getTomcatForTest().getServer().getCatalinaBase();
+        assertEquals(tempDirLocation, catalinaBase.getAbsolutePath());
+
+        String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/", null,
+                1000, 1000, null);
+        assertEquals("Hello", response);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test

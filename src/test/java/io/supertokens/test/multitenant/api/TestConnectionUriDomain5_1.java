@@ -745,6 +745,51 @@ public class TestConnectionUriDomain5_1 {
         }
     }
 
+    @Test
+    public void testInvalidValuesInFirstFactorsAndRequiredSecondaryFactors() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        String[] factors = new String[]{"inv@lid", "email?password", "cus!tom"};
+        try {
+            createConnectionUriDomain(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "127.0.0.1",
+                    true, factors, false, null,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors should contain only 0-9,a-z,A-Z,_,.,- characters",
+                    e.getMessage());
+        }
+
+        try {
+            createConnectionUriDomain(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "127.0.0.1",
+                    false, null, true, factors,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors should contain only 0-9,a-z,A-Z,_,.,- characters",
+                    e.getMessage());
+        }
+    }
+
     private static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
                                                         String connectionUriDomain,
                                                         boolean setFirstFactors, String[] firstFactors,

@@ -5,22 +5,27 @@ jobs:
   test:
     docker:
       - image: rishabhpoddar/supertokens_core_testing
+      - image: rishabhpoddar/oauth-server-cicd
       - image: mongo
         environment:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
     resource_class: large
+    parallelism: 4
     parameters:
       plugin:
         type: string
     steps:
       - checkout
+      - run: mkdir ~/junit
       - run: echo $'\n[mysqld]\ncharacter_set_server=utf8mb4\nmax_connections=10000' >> /etc/mysql/mysql.cnf
       - run: apt-get update && apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 sudo
       - run: echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.5/main/pg_hba.conf
       - run: echo "listen_addresses='*'" >> /etc/postgresql/9.5/main/postgresql.conf
       - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf
       - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
+      - store_test_results:
+          path: ~/junit
       - slack/status
 
   mark-passed:
@@ -44,7 +49,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
       - test:
           plugin: mongodb
           name: test-mongodb
@@ -54,7 +59,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
       - test:
           plugin: postgresql
           name: test-postgresql
@@ -64,7 +69,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
       - test:
           plugin: mysql
           name: test-mysql
@@ -74,7 +79,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
       - mark-passed:
           context:
             - slack-notification

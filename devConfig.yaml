@@ -152,6 +152,26 @@ disable_telemetry: true
 # if there are more CUDs in the database and block all other CUDs from being used from this instance.
 # supertokens_saas_load_only_cud:
 
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider
+# public service.
+# oauth_provider_public_service_url:
+
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider admin
+# service.
+# oauth_provider_admin_service_url:
+
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL to replace the default
+# consent and login URLs to {apiDomain}.
+# oauth_provider_consent_login_base_url:
+
+# (OPTIONAL | Default: oauth_provider_public_service_url) If specified, the core uses this URL to parse responses from
+# the oauth provider when the oauth provider's internal address differs from the known public provider address.
+# oauth_provider_url_configured_in_oauth_provider:
+
+# (Optional | Default: null) string value. The encryption key used for saving OAuth client secret on the database.
+# oauth_client_secret_encryption_key:
+
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: number of available processor cores) int value. If specified,
 # the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
+

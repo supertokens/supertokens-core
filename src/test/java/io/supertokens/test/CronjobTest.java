@@ -22,7 +22,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
-import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -33,7 +32,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -1051,6 +1049,8 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 86400);
         intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 60);
+        intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
+                86400);
 
         Map<String, Integer> delays = new HashMap<>();
         delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
@@ -1066,6 +1066,8 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 0);
         delays.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 0);
+        delays.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
+                0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
         assertEquals(11, allTasks.size());
