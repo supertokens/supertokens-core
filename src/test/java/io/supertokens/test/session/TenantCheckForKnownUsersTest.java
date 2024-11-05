@@ -30,7 +30,6 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,7 +69,7 @@ public class TenantCheckForKnownUsersTest {
 
         SessionInformationHolder sessionInfo = Session.createNewSession(new TenantIdentifier(null, null, null), StorageLayer.getBaseStorage(process.getProcess()),
                 process.getProcess(), userId, userDataInJWT, userDataInDatabase, true, AccessToken.getLatestVersion(), false,
-                SemVer.v5_2);
+                true);
 
         JsonObject sessionData = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle).userDataInDatabase;
@@ -126,7 +125,7 @@ public class TenantCheckForKnownUsersTest {
 
         SessionInformationHolder sessionInfo = Session.createNewSession(new TenantIdentifier(null, "a1", "t1"), StorageLayer.getBaseStorage(process.getProcess()),
                     process.getProcess(), userId, userDataInJWT, userDataInDatabase, true, AccessToken.getLatestVersion(), false,
-                SemVer.v5_2);
+                true);
 
         JsonObject sessionData = Session.getSession(new TenantIdentifier(null, "a1", "t1"),
                 StorageLayer.getBaseStorage(process.getProcess()), sessionInfo.session.handle).userDataInDatabase;
@@ -194,7 +193,7 @@ public class TenantCheckForKnownUsersTest {
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(tenant2, StorageLayer.getBaseStorage(process.getProcess()),
                     process.getProcess(), userId, userDataInJWT, userDataInDatabase, true, AccessToken.getLatestVersion(), false,
-                    SemVer.v5_2);
+                    true);
 
             fail();
         } catch (UnauthorisedException e) {
@@ -261,7 +260,7 @@ public class TenantCheckForKnownUsersTest {
 
         SessionInformationHolder sessionInfo = Session.createNewSession(tenant2, StorageLayer.getBaseStorage(process.getProcess()),
                 process.getProcess(), userId, userDataInJWT, userDataInDatabase, true, AccessToken.getLatestVersion(), false,
-                SemVer.v5_1);
+                false);
 
         JsonObject sessionData = Session.getSession(tenant2, StorageLayer.getBaseStorage(process.getProcess()), sessionInfo.session.handle).userDataInDatabase;
         assertEquals(userDataInDatabase.toString(), sessionData.toString());

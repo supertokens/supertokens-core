@@ -99,11 +99,12 @@ public class SessionAPI extends WebserverAPI {
             }
 
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
+            boolean shouldCheckUserForTenant = version.greaterThanOrEqualTo(SemVer.v5_3);
 
             SessionInformationHolder sessionInfo = Session.createNewSession(
                     tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
-                    useStaticSigningKey, version);
+                    useStaticSigningKey, shouldCheckUserForTenant);
 
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -145,7 +146,7 @@ public class SessionAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
                 JsonObject reply = new JsonObject();
-                reply.addProperty("status", "UNAUTHORISED");
+                reply.addProperty("status", "USER_DOES_NOT_BELONG_TO_TENANT_ERROR");
                 reply.addProperty("message", e.getMessage());
                 super.sendJsonResponse(200, reply, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |

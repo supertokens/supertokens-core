@@ -54,7 +54,6 @@ import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
-import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -84,7 +83,7 @@ public class Session {
             JWT.JWTException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return createNewSession(tenantIdentifier, storage, main, recipeUserId, userDataInJWT, userDataInDatabase,
-                    false, AccessToken.getLatestVersion(), false, null);
+                    false, AccessToken.getLatestVersion(), false, false);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -104,7 +103,7 @@ public class Session {
             return createNewSession(
                     new TenantIdentifier(null, null, null), storage, main,
                     recipeUserId, userDataInJWT, userDataInDatabase, false,
-                    AccessToken.getLatestVersion(), false, null);
+                    AccessToken.getLatestVersion(), false, false);
         } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
             throw new IllegalStateException(e);
         }
@@ -124,7 +123,7 @@ public class Session {
         try {
             return createNewSession(
                     new TenantIdentifier(null, null, null), storage, main,
-                    recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey, null);
+                    recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey, false);
         } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
             throw new IllegalStateException(e);
         }
@@ -135,7 +134,7 @@ public class Session {
                                                             @Nonnull JsonObject userDataInJWT,
                                                             @Nonnull JsonObject userDataInDatabase,
                                                             boolean enableAntiCsrf, AccessToken.VERSION version,
-                                                            boolean useStaticKey, SemVer semVer)
+                                                            boolean useStaticKey, boolean checkUserForTenant)
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, AccessTokenPayloadError,
@@ -171,7 +170,7 @@ public class Session {
                 recipeUserId = userIdMappings.get(recipeUserId);
             }
 
-            if(semVer!= null && semVer.greaterThanOrEqualTo(SemVer.v5_2)) {
+            if(checkUserForTenant) {
                 AuthRecipeUserInfo authRecipeUserInfo = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(),
                         storage, recipeUserId);
                 if (authRecipeUserInfo != null) {
