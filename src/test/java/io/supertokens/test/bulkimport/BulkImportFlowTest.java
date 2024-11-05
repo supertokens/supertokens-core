@@ -23,8 +23,6 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -41,6 +39,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -107,7 +107,7 @@ public class BulkImportFlowTest {
         long processingStartedTime = System.currentTimeMillis();
 
         // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 20000);
+        startBulkImportCronjob(main, 5000);
         System.out.println("CronJob started");
 
         // wait for the cron job to process them
@@ -423,5 +423,53 @@ public class BulkImportFlowTest {
                 "http://localhost:3567/bulk-import/users",
                 request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
+
+    @Test
+    public void writeUsersToFile() throws Exception {
+        String[] args = { "../" };
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "14");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[] {
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 1000000;
+        int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
+        System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
+        System.out.println("Worker threads: " + parallelism_set_to);
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        // upload a bunch of users through the API
+        {
+            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 10000); i++) {
+                JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
+                FileWriter fileWriter = new FileWriter(new File("/home/prophet/Projects/bulkimport-users-" + i + ".json"));
+                fileWriter.write(String.valueOf(request));
+                fileWriter.flush();
+                fileWriter.close();
+            }
+
+        }
+
+        System.out.println("setup done, waiting");
+        while(true){
+            Thread.sleep(10000);
+        }
+    }
+
 
 }

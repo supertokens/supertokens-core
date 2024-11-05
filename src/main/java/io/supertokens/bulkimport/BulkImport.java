@@ -16,11 +16,7 @@
 
 package io.supertokens.bulkimport;
 
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
-import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -42,10 +38,15 @@ import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
+import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -72,15 +73,12 @@ import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
-
-import com.google.gson.JsonObject;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
 // Current range: E001 to E046.
@@ -207,11 +205,11 @@ public class BulkImport {
         }
 
         createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-        createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
-        verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
-        createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-        createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
-        createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
+//        createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
+//        verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
+//        createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
+//        createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
+//        createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
     }
 
     public static void processUserLoginMethod(Main main, AppIdentifier appIdentifier, Storage storage,

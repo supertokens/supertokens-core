@@ -88,24 +88,26 @@ public class ProcessBulkImportUsers extends CronTask {
         List<List<BulkImportUser>> loadedUsersChunks = makeChunksOf(users, NUMBER_OF_BATCHES);
 
         //pass the chunks for processing for the workers
-        if(executorService == null) {
-            executorService = Executors.newFixedThreadPool(NUMBER_OF_BATCHES);
-        }
 
-//        try {
+        executorService = Executors.newFixedThreadPool(NUMBER_OF_BATCHES);
+
+
+        try {
             List<Future<?>> tasks = new ArrayList<>();
             for (int i =0; i< NUMBER_OF_BATCHES; i++) {
                 tasks.add(executorService.submit(new ProcessBulkUsersImportWorker(main, app, loadedUsersChunks.get(i),
                         bulkImportSQLStorage, bulkImportUserUtils)));
             }
 
-//            for (Future<?> task : tasks) {
-//                task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
-//            }
-//
-//        } catch (ExecutionException | InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
+            for (Future<?> task : tasks) {
+                task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
+            }
+
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        bulkImportSQLStorage.doVacuumFull();
     }
 
     @Override

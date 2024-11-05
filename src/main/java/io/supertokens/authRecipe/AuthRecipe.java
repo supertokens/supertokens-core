@@ -21,11 +21,11 @@ import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnoth
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.*;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -43,7 +43,6 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
-
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
@@ -563,7 +562,7 @@ public class AuthRecipe {
             return authRecipeStorage.startTransaction(con -> {
 
                 try {
-                    CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifier, authRecipeStorage,
+                        CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifier, authRecipeStorage,
                             recipeUserId);
                     if (result.wasAlreadyAPrimaryUser) {
                         return result;
