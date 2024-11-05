@@ -106,8 +106,6 @@ public class ProcessBulkImportUsers extends CronTask {
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-        bulkImportSQLStorage.doVacuumFull();
     }
 
     @Override
