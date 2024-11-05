@@ -23,6 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.exceptions.UserNotInTenantException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -99,11 +100,12 @@ public class SessionAPI extends WebserverAPI {
             }
 
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
+            boolean shouldCheckUserForTenant = version.greaterThanOrEqualTo(SemVer.v5_3);
 
             SessionInformationHolder sessionInfo = Session.createNewSession(
                     tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
-                    useStaticSigningKey);
+                    useStaticSigningKey, shouldCheckUserForTenant);
 
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -143,6 +145,11 @@ public class SessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
+        } catch (UserNotInTenantException e) {
+                JsonObject reply = new JsonObject();
+                reply.addProperty("status", "USER_DOES_NOT_BELONG_TO_TENANT_ERROR");
+                reply.addProperty("message", e.getMessage());
+                super.sendJsonResponse(200, reply, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
                  StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
                  BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |

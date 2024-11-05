@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
+## [9.3.1] 
+
+- Adds support for CDI 5.3
+- In CDI 5.3, when creating a new session for a known user, checks if the user is a member of that tenant.
+  If not, returns USER_DOES_NOT_BELONG_TO_TENANT_ERROR.
+
 ## [9.3.0]
 
 ### Changes
