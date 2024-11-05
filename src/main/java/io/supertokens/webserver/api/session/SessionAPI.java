@@ -23,6 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.exceptions.UserNotInTenantException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -144,7 +145,7 @@ public class SessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
-        } catch (UnauthorisedException e) {
+        } catch (UserNotInTenantException e) {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "USER_DOES_NOT_BELONG_TO_TENANT_ERROR");
                 reply.addProperty("message", e.getMessage());

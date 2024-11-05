@@ -156,7 +156,6 @@ CREATE TABLE IF NOT EXISTS oauth_logout_challenges (
 
 CREATE INDEX oauth_logout_challenges_time_created_index ON oauth_logout_challenges(time_created ASC, app_id ASC);
 ```
->>>>>>> origin/master
 
 ## [9.2.3] - 2024-10-09
 

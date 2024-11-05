@@ -22,10 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import io.supertokens.exceptions.AccessTokenPayloadError;
-import io.supertokens.exceptions.TokenTheftDetectedException;
-import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.exceptions.*;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -79,7 +76,7 @@ public class Session {
                                                             @Nonnull JsonObject userDataInDatabase)
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UserNotInTenantException,
             JWT.JWTException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return createNewSession(tenantIdentifier, storage, main, recipeUserId, userDataInJWT, userDataInDatabase,
@@ -104,7 +101,7 @@ public class Session {
                     new TenantIdentifier(null, null, null), storage, main,
                     recipeUserId, userDataInJWT, userDataInDatabase, false,
                     AccessToken.getLatestVersion(), false, false);
-        } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
+        } catch (TenantOrAppNotFoundException | UserNotInTenantException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -124,7 +121,7 @@ public class Session {
             return createNewSession(
                     new TenantIdentifier(null, null, null), storage, main,
                     recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey, false);
-        } catch (TenantOrAppNotFoundException | UnauthorisedException e) {
+        } catch (TenantOrAppNotFoundException | UserNotInTenantException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -138,7 +135,7 @@ public class Session {
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, AccessTokenPayloadError,
-            UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, UnauthorisedException {
+            UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, UserNotInTenantException {
         String sessionHandle = UUID.randomUUID().toString();
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             sessionHandle += "_" + tenantIdentifier.getTenantId();
@@ -175,7 +172,7 @@ public class Session {
                         storage, recipeUserId);
                 if (authRecipeUserInfo != null) {
                     if (!authRecipeUserInfo.tenantIds.contains(tenantIdentifier.getTenantId())) {
-                        throw new UnauthorisedException("User is not part of requested tenant!");
+                        throw new UserNotInTenantException("User is not part of requested tenant!");
                     }
                 }
             }
