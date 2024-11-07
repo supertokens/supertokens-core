@@ -205,11 +205,11 @@ public class BulkImport {
         }
 
         createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-//        createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
-//        verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
-//        createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-//        createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
-//        createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
+        createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
+        verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
+        createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
+        createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
+        createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
     }
 
     public static void processUserLoginMethod(Main main, AppIdentifier appIdentifier, Storage storage,

@@ -103,6 +103,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
             }
 
+            executorService.shutdownNow();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }

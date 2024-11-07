@@ -41,11 +41,9 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
-import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,6 +83,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
 
         BulkImportUser user = null;
         try {
+            final Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
             boolean shouldRetryImmediately = false;
             int userIndexPointer = 0;
             while(userIndexPointer < users.size()){
@@ -153,7 +152,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                 BulkImportUser finalUser = user;
                 shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
                     try {
-                        Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
+
                         BulkImport.processUserImportSteps(main, con, appIdentifier, bulkImportProxyStorage, finalUser,
                                 primaryLM, allStoragesForApp);
 
