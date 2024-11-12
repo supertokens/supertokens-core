@@ -125,7 +125,7 @@ public class PathRouterTest extends Mockito {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(500, e.statusCode);
-                assertEquals("Http error. Status Code: 500. Message: Test Exception", e.getMessage());
+                assertEquals("Http error. Status Code: 500. Message: java.lang.RuntimeException: Test Exception", e.getMessage());
             }
         }
 
@@ -137,7 +137,7 @@ public class PathRouterTest extends Mockito {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(500, e.statusCode);
-                assertEquals("Http error. Status Code: 500. Message: Runtime Exception", e.getMessage());
+                assertEquals("Http error. Status Code: 500. Message: java.lang.RuntimeException: Runtime Exception", e.getMessage());
             }
         }
     }
