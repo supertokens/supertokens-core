@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [9.3.1]
 
 - Includes exception class name in 500 error message
+- Includes CUD in the owner field for OAuth clients
 
 ## [9.3.0]
 
