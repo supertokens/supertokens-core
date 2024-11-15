@@ -43,8 +43,11 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
+import io.supertokens.pluginInterface.bulkimport.ImportUserBase;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -55,10 +58,13 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -72,6 +78,8 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -79,6 +87,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
 // Current range: E001 to E046.
@@ -97,6 +106,7 @@ public class BulkImport {
     public static final int PROCESS_USERS_BATCH_SIZE = 10000;
     // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_INTERVAL_SECONDS = 30;
+    private static final Logger log = LoggerFactory.getLogger(BulkImport.class);
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
     private static Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();
@@ -212,7 +222,147 @@ public class BulkImport {
         createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
     }
 
-    public static void processUserLoginMethod(Main main, AppIdentifier appIdentifier, Storage storage,
+    public static void processUsersImportSteps(Main main, TransactionConnection connection, AppIdentifier appIdentifier,
+            Storage bulkImportProxyStorage, List<BulkImportUser> users, Storage[] allStoragesForApp)
+            throws StorageTransactionLogicException {
+        processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
+        try {
+            createPrimaryUsersAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, users);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException |
+                 RecipeUserIdAlreadyLinkedWithPrimaryUserIdException | StorageQueryException | FeatureNotEnabledException |
+                TenantOrAppNotFoundException | UnknownUserIdException e) {
+            throw new RuntimeException(e);
+        }
+        //TODO create user id mapping!
+        for(BulkImportUser user : users) {
+            createUserIdMapping(appIdentifier, user, getPrimaryLoginMethod(user), allStoragesForApp);
+        }
+        verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
+        createMultipleTotpDevices(main, appIdentifier, bulkImportProxyStorage, users);
+        createMultipleUserMetadata(appIdentifier, bulkImportProxyStorage, users);
+        createMultipleUserRoles(main, appIdentifier, bulkImportProxyStorage, users);
+    }
+
+    public static void processUsersLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
+                                              List<BulkImportUser> users) throws StorageTransactionLogicException {
+        //sort login methods together
+        System.out.println(Thread.currentThread().getName() + " processUsersLoginMethods");
+        Map<String, List<LoginMethod>> sortedLoginMethods = new HashMap<>();
+        for (BulkImportUser user: users) {
+            for(LoginMethod loginMethod : user.loginMethods){
+                if(!sortedLoginMethods.containsKey(loginMethod.recipeId)) {
+                    sortedLoginMethods.put(loginMethod.recipeId, new ArrayList<>());
+                }
+                sortedLoginMethods.get(loginMethod.recipeId).add(loginMethod);
+            }
+        }
+
+        List<ImportUserBase> importedUsers = new ArrayList<>();
+        importedUsers.addAll(processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword"), appIdentifier));
+        importedUsers.addAll(processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty"), appIdentifier));
+        importedUsers.addAll(processPasswordlessLoginMethods(appIdentifier, storage,
+                sortedLoginMethods.get("passwordless")));
+
+        //TODO
+        for(Map.Entry<String, List<LoginMethod>> loginMethodEntries : sortedLoginMethods.entrySet()){
+            for(LoginMethod loginMethod : loginMethodEntries.getValue()){
+                associateUserToTenants(main, appIdentifier, storage, loginMethod, loginMethod.tenantIds.get(0));
+            }
+        }
+    }
+
+    private static List<? extends ImportUserBase> processPasswordlessLoginMethods(AppIdentifier appIdentifier, Storage storage,
+                                                                              List<LoginMethod> loginMethods)
+            throws StorageTransactionLogicException {
+        try {
+            List<PasswordlessImportUser> usersToImport = new ArrayList<>();
+            for (LoginMethod loginMethod: loginMethods){
+                String userId = Utils.getUUID();
+                TenantIdentifier tenantIdentifierForLoginMethod =  new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                        appIdentifier.getAppId(), loginMethod.tenantIds.get(0)); // the cron runs per app. The app stays the same, the tenant can change
+
+                usersToImport.add(new PasswordlessImportUser(userId, loginMethod.phoneNumber,
+                        loginMethod.email, tenantIdentifierForLoginMethod, loginMethod.timeJoinedInMSSinceEpoch));
+                loginMethod.superTokensUserId = userId;
+            }
+
+            Passwordless.createPasswordlessUsers(storage, usersToImport);
+            return  usersToImport;
+        } catch (RestartFlowException e) {
+            String errorMessage =""; // TODO
+            throw new StorageTransactionLogicException(new Exception(errorMessage));
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(new Exception("E008: " + e.getMessage()));
+        }
+    }
+
+    private static List<? extends ImportUserBase> processThirdpartyLoginMethods(Main main, Storage storage, List<LoginMethod> loginMethods,
+                                                      AppIdentifier appIdentifier)
+            throws StorageTransactionLogicException {
+        try {
+            List<ThirdPartyImportUser> usersToImport = new ArrayList<>();
+            for (LoginMethod loginMethod: loginMethods){
+                String userId = Utils.getUUID();
+                TenantIdentifier tenantIdentifierForLoginMethod =  new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                        appIdentifier.getAppId(), loginMethod.tenantIds.get(0)); // the cron runs per app. The app stays the same, the tenant can change
+
+                usersToImport.add(new ThirdPartyImportUser(loginMethod.email, userId, loginMethod.thirdPartyId,
+                        loginMethod.thirdPartyUserId, tenantIdentifierForLoginMethod, loginMethod.timeJoinedInMSSinceEpoch));
+                loginMethod.superTokensUserId = userId;
+            }
+            ThirdParty.createThirdPartyUsers(storage, usersToImport);
+            return usersToImport;
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+//        } catch (TenantOrAppNotFoundException e) {
+//            throw new StorageTransactionLogicException(new Exception("E004: " + e.getMessage()));
+//        } catch (DuplicateThirdPartyUserException e) {
+//            throw new StorageTransactionLogicException(new Exception("E005: A user with thirdPartyId "
+//                    + " and thirdPartyUserId already exists in thirdparty loginMethod.")); // TODO
+        }
+    }
+
+    private static List<? extends ImportUserBase>  processEmailPasswordLoginMethods(Main main, Storage storage, List<LoginMethod> loginMethods,
+                                                               AppIdentifier appIdentifier)
+            throws StorageTransactionLogicException {
+        try {
+            //prepare data for batch import
+            List<EmailPasswordImportUser> usersToImport = new ArrayList<>();
+            for(LoginMethod emailPasswordLoginMethod : loginMethods) {
+
+                TenantIdentifier tenantIdentifierForLoginMethod =  new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                        appIdentifier.getAppId(), emailPasswordLoginMethod.tenantIds.get(0)); // the cron runs per app. The app stays the same, the tenant can change
+
+                String passwordHash = emailPasswordLoginMethod.passwordHash;
+                if (passwordHash == null && emailPasswordLoginMethod.plainTextPassword != null) {
+                    passwordHash = PasswordHashing.getInstance(main)
+                            .createHashWithSalt(tenantIdentifierForLoginMethod.toAppIdentifier(), emailPasswordLoginMethod.plainTextPassword);
+                }
+                emailPasswordLoginMethod.passwordHash = passwordHash;
+                String userId = Utils.getUUID();
+                usersToImport.add(new EmailPasswordImportUser(userId, emailPasswordLoginMethod.email,
+                        emailPasswordLoginMethod.passwordHash, tenantIdentifierForLoginMethod, emailPasswordLoginMethod.timeJoinedInMSSinceEpoch));
+                emailPasswordLoginMethod.superTokensUserId = userId;
+            }
+
+            EmailPassword.createUsersWithPasswordHash(storage, usersToImport);
+            return usersToImport;
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(new Exception("E002: " + e.getMessage()));
+        } catch (DuplicateEmailException e) {
+            throw new StorageTransactionLogicException(
+                    new Exception(
+                            "E003: A user with email already exists in emailpassword loginMethod."));
+        } catch (DuplicateUserIdException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+        public static void processUserLoginMethod(Main main, AppIdentifier appIdentifier, Storage storage,
             LoginMethod lm) throws StorageTransactionLogicException {
         String firstTenant = lm.tenantIds.get(0);
 
@@ -230,7 +380,8 @@ public class BulkImport {
                     new IllegalArgumentException("E001: Unknown recipeId " + lm.recipeId + " for loginMethod."));
         }
 
-        associateUserToTenants(main, appIdentifier, storage, lm, firstTenant);
+        associateUserToTenants(main, appIdentifier, storage, lm, firstTenant); //already associated here. Why this?
+            // found it: the remaining tenants are not associated, only the first one
     }
 
     private static void processEmailPasswordLoginMethod(Main main, TenantIdentifier tenantIdentifier, Storage storage,
@@ -348,7 +499,21 @@ public class BulkImport {
         }
     }
 
-    public static void createPrimaryUserAndLinkAccounts(Main main,
+    private static void createPrimaryUsersAndLinkAccounts(Main main,
+                                                        AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
+            throws StorageTransactionLogicException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, UnknownUserIdException {
+        System.out.println(Thread.currentThread().getName() + " createPrimaryUsersAndLinkAccounts");
+        List<String> userIds =
+        users.stream().map(bulkImportUser -> getPrimaryLoginMethod(bulkImportUser).getSuperTokenOrExternalUserId()).collect(Collectors.toList());
+
+        AuthRecipe.createPrimaryUsers(main, appIdentifier, storage, userIds);
+        linkAccountsForMultipleUser(main, appIdentifier, storage, users);
+    }
+
+
+        public static void createPrimaryUserAndLinkAccounts(Main main,
             AppIdentifier appIdentifier, Storage storage, BulkImportUser user, LoginMethod primaryLM)
             throws StorageTransactionLogicException {
         if (user.loginMethods.size() == 1) {
@@ -380,6 +545,11 @@ public class BulkImport {
                             + " but the account info is already associated with another primary user."));
         }
 
+            linkAccountsForUser(main, appIdentifier, storage, user, primaryLM);
+        }
+
+    private static void linkAccountsForUser(Main main, AppIdentifier appIdentifier, Storage storage, BulkImportUser user,
+                                  LoginMethod primaryLM) throws StorageTransactionLogicException {
         for (LoginMethod lm : user.loginMethods) {
             try {
                 if (lm.getSuperTokenOrExternalUserId().equals(primaryLM.getSuperTokenOrExternalUserId())) {
@@ -417,6 +587,28 @@ public class BulkImport {
                                 + " but it is already linked with another primary user."));
             }
         }
+    }
+
+    private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
+            throws StorageTransactionLogicException {
+        Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
+        for(BulkImportUser user: users){
+            LoginMethod primaryLM = getPrimaryLoginMethod(user);
+            for (LoginMethod lm : user.loginMethods) {
+                if (lm.getSuperTokenOrExternalUserId().equals(primaryLM.getSuperTokenOrExternalUserId())) {
+                    continue;
+                }
+                recipeUserIdByPrimaryUserId.put(lm.getSuperTokenOrExternalUserId(),
+                        primaryLM.getSuperTokenOrExternalUserId());
+            }
+        }
+
+        try {
+            AuthRecipe.linkMultipleAccounts(main, appIdentifier, storage, recipeUserIdByPrimaryUserId);
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+        //TODO proper error handling
     }
 
     public static void createUserIdMapping(AppIdentifier appIdentifier,
@@ -461,6 +653,26 @@ public class BulkImport {
         }
     }
 
+    public static void createMultipleUserMetadata(AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
+            throws StorageTransactionLogicException {
+        System.out.println(Thread.currentThread().getName() + " createMultipleUserMetadata");
+
+        Map<String, JsonObject> usersMetadata = new HashMap<>();
+        for(BulkImportUser user: users) {
+            if (user.userMetadata != null) {
+                usersMetadata.put(getPrimaryLoginMethod(user).getSuperTokenOrExternalUserId(), user.userMetadata);
+            }
+        }
+
+        try {
+            UserMetadata.updateMultipleUsersMetadata(appIdentifier, storage, usersMetadata);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(new Exception("E040: " + e.getMessage()));
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+    }
+
     public static void createUserRoles(Main main, AppIdentifier appIdentifier, Storage storage,
             BulkImportUser user) throws StorageTransactionLogicException {
         if (user.userRoles != null) {
@@ -483,6 +695,39 @@ public class BulkImport {
                 }
             }
         }
+    }
+
+    public static void createMultipleUserRoles(Main main, AppIdentifier appIdentifier, Storage storage,
+                                               List<BulkImportUser> users) throws StorageTransactionLogicException {
+        Map<TenantIdentifier, Map<String, String>> rolesToUserByTenant = new HashMap<>();
+        System.out.println(Thread.currentThread().getName() + " createMultipleUserRoles");
+        for (BulkImportUser user : users) {
+
+            if (user.userRoles != null) {
+                for (UserRole userRole : user.userRoles) {
+                    for (String tenantId : userRole.tenantIds) {
+                        TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                                tenantId);
+                        if(!rolesToUserByTenant.containsKey(tenantIdentifier)){
+
+                            rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
+                        }
+                        rolesToUserByTenant.get(tenantIdentifier).put(user.externalUserId, userRole.role);
+                    }
+                }
+            }
+        }
+        try {
+
+            UserRoles.addMultipleRolesToMultipleUsers(main, storage, rolesToUserByTenant);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(new Exception("E033: " + e.getMessage()));
+        } catch (UnknownRoleException e) {
+            throw new StorageTransactionLogicException(new Exception("E034: Role "
+                    + " does not exist! You need pre-create the role before assigning it to the user."));
+        }
+
     }
 
     public static void verifyEmailForAllLoginMethods(AppIdentifier appIdentifier, TransactionConnection con,
@@ -508,6 +753,35 @@ public class BulkImport {
         }
     }
 
+    public static void verifyMultipleEmailForAllLoginMethods(AppIdentifier appIdentifier, Storage storage,
+                                                             List<BulkImportUser> users)
+            throws StorageTransactionLogicException {
+        System.out.println(Thread.currentThread().getName() + " verifyMultipleEmailForAllLoginMethods");
+        Map<String, String> emailToUserId = new HashMap<>();
+        for (BulkImportUser user : users) {
+            for (LoginMethod lm : user.loginMethods) {
+                emailToUserId.put(lm.email, lm.getSuperTokenOrExternalUserId());
+            }
+        }
+
+        try {
+
+            EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
+                    .getEmailVerificationStorage(storage);
+            emailVerificationSQLStorage.startTransaction(con -> {
+                emailVerificationSQLStorage
+                        .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
+                                emailToUserId, true);
+
+                emailVerificationSQLStorage.commitTransaction(con);
+                return null;
+            });
+
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+    }
+
     public static void createTotpDevices(Main main, AppIdentifier appIdentifier, Storage storage,
             BulkImportUser user, LoginMethod primaryLM) throws StorageTransactionLogicException {
         if (user.totpDevices != null) {
@@ -528,6 +802,30 @@ public class BulkImport {
                                     "E038: A totp device with name " + totpDevice.deviceName + " already exists"));
                 }
             }
+        }
+    }
+
+    public static void createMultipleTotpDevices(Main main, AppIdentifier appIdentifier,
+                                                 Storage storage, List<BulkImportUser> users)
+            throws StorageTransactionLogicException {
+        System.out.println(Thread.currentThread().getName() + " createMultipleTotpDevices");
+        List<TOTPDevice> devices = new ArrayList<>();
+        for (BulkImportUser user : users) {
+            if (user.totpDevices != null) {
+                for(TotpDevice device : user.totpDevices){
+                    TOTPDevice totpDevice = new TOTPDevice(getPrimaryLoginMethod(user).getSuperTokenOrExternalUserId(), //TODO getPrimaryLoginMethod call should be done once in the whole process
+                            device.deviceName, device.secretKey, device.period, device.skew, true,
+                            System.currentTimeMillis());
+                    devices.add(totpDevice);
+                }
+            }
+        }
+        try {
+            Totp.createDevices(main, appIdentifier, storage, devices);
+        } catch (StorageQueryException e) {
+            throw new StorageTransactionLogicException(e);
+        } catch (FeatureNotEnabledException e) {
+            throw new StorageTransactionLogicException(new Exception("E037: " + e.getMessage()));
         }
     }
 

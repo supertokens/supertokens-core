@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
@@ -56,6 +57,7 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 public class EmailPassword {
 
@@ -210,6 +212,7 @@ public class EmailPassword {
         }
         return response;
     }
+
     public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
             @Nonnull String email,
             @Nonnull String passwordHash, @Nullable long timeJoined)
@@ -253,6 +256,14 @@ public class EmailPassword {
                 }
             }
         }
+    }
+
+    public static void createUsersWithPasswordHash(Storage storage,
+                                                   List<EmailPasswordImportUser> usersToImport)
+            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException,
+            DuplicateUserIdException, StorageTransactionLogicException {
+        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
+        epStorage.signUpMultiple(usersToImport);
     }
 
     @TestOnly

@@ -35,10 +35,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,10 +97,18 @@ public class ProcessBulkImportUsers extends CronTask {
             }
 
             for (Future<?> task : tasks) {
-                task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
+                while(!task.isDone()) {
+                    Thread.sleep(1000);
+                }
+                Void result = (Void) task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
+                System.out.println("Result: " + result);
             }
 
+
             executorService.shutdownNow();
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                System.out.println("Pool did not terminate");
+            }
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }

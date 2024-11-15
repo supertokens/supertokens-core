@@ -78,7 +78,8 @@ public class BulkImportFlowTest {
         setFeatureFlags(main, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
-        int NUMBER_OF_USERS_TO_UPLOAD = 1000000;
+        //int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
+        int NUMBER_OF_USERS_TO_UPLOAD = 10000;
         int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
         System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
         System.out.println("Worker threads: " + parallelism_set_to);

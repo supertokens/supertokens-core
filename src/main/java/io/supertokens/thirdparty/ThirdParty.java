@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -42,10 +43,7 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class ThirdParty {
 
@@ -353,6 +351,20 @@ public class ThirdParty {
                 // we try again..
             }
         }
+    }
+
+    public static void createThirdPartyUsers(Storage storage,
+                                             Collection<ThirdPartyImportUser> usersToImport)
+            throws StorageQueryException, StorageTransactionLogicException {
+        ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
+
+        tpStorage.startTransaction(con -> {
+            tpStorage.importThirdPartyUsers_Transaction(con, usersToImport);
+            tpStorage.commitTransaction(con);
+            return null;
+        });
+
+        // TODO error handling
     }
 
     @Deprecated

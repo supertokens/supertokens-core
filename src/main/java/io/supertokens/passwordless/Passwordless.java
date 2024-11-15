@@ -21,7 +21,6 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -42,6 +41,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
+import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -548,6 +548,19 @@ public class Passwordless {
                 // We can retry..
             }
         }
+    }
+
+    public static void createPasswordlessUsers(Storage storage,
+                                               List<PasswordlessImportUser> importUsers)
+            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException,
+            StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        passwordlessStorage.startTransaction(con -> {
+            passwordlessStorage.importPasswordlessUsers_Transaction(con, importUsers);
+            passwordlessStorage.commitTransaction(con);
+            return null;
+        });
     }
 
     @TestOnly

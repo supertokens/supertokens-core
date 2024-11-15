@@ -27,7 +27,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportTransactionRolledBackException;
@@ -86,118 +85,59 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             final Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
             boolean shouldRetryImmediately = false;
             int userIndexPointer = 0;
-            while(userIndexPointer < users.size()){
+            List<BulkImportUser> validUsers = new ArrayList<>();
+            while(userIndexPointer < users.size()) {
                 user = users.get(userIndexPointer);
-                if ((Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) || shouldRetryImmediately) {
+                if ((Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) ||
+                        shouldRetryImmediately) {
                     // Skip validation when the flag is enabled during testing
                     // Skip validation if it's a retry run. This already passed validation. A revalidation triggers
                     // an invalid external user id already exists validation error - which is not true!
                 } else {
                     // Validate the user
-                    bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, user.toJsonObject(), user.id);
+                    validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, user.toJsonObject(), user.id));
                 }
+                userIndexPointer+=1;
+            }
+            // Since all the tenants of a user must share the storage, we will just use the
+            // storage of the first tenantId of the first loginMethod
+            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), validUsers.get(0).loginMethods.get(0).tenantIds.get(0));
 
-                // Since all the tenants of a user must share the storage, we will just use the
-                // storage of the first tenantId of the first loginMethod
-                TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                        appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
+            SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
 
-                SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
-                BulkImportUser.LoginMethod primaryLM = BulkImport.getPrimaryLoginMethod(user);
+            BulkImportUser finalUser = user;
+            shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
+                try {
 
-                AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getBulkImportProxyStorage(
-                        firstTenantIdentifier);
+                    BulkImport.processUsersImportSteps(main, con, appIdentifier, bulkImportProxyStorage, validUsers, allStoragesForApp);
 
-                /*
-                 * We use two separate storage instances: one for importing the user and another for managing
-                 * bulk_import_users entries.
-                 * This is necessary because the bulk_import_users entries are always in the public tenant storage,
-                 * but the actual user data could be in a different storage.
-                 *
-                 * If transactions are committed individually, in this order:
-                 * 1. Commit the transaction that imports the user.
-                 * 2. Commit the transaction that deletes the corresponding bulk import entry.
-                 *
-                 * There's a risk where the first commit succeeds, but the second fails. This creates a situation where
-                 * the bulk import entry is re-processed, even though the user has already been imported into the
-                 * database.
-                 *
-                 * To resolve this, we added a `primaryUserId` field to the `bulk_import_users` table.
-                 * The processing logic now follows these steps:
-                 *
-                 * 1. Import the user and get the `primaryUserId` (transaction uncommitted).
-                 * 2. Update the `primaryUserId` in the corresponding bulk import entry.
-                 * 3. Commit the import transaction from step 1.
-                 * 4. Delete the bulk import entry.
-                 *
-                 * If step 2 or any earlier step fails, nothing is committed, preventing partial state.
-                 * If step 3 fails, the `primaryUserId` in the bulk import entry is updated, but the user doesn't
-                 * exist in the database—this results in re-processing on the
-                 * next run.
-                 * If step 4 fails, the user exists but the bulk import entry remains; this will be handled by
-                 * deleting it in the next run.
-                 *
-                 * The following code implements this logic.
-                 */
-                if (user.primaryUserId != null) {
-                    AuthRecipeUserInfo importedUser = authRecipeSQLStorage.getPrimaryUserById(appIdentifier,
-                            user.primaryUserId);
+                    bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
 
-                    if (importedUser != null && isProcessedUserFromSameBulkImportUserEntry(importedUser, user)) {
-                        baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[]{user.id});
-                        return;
+                    String[] toDelete = new String[validUsers.size()];
+                    for(int i = 0; i < validUsers.size(); i++) {
+                        toDelete[i] = validUsers.get(i).id;
                     }
-                }
 
-                BulkImportUser finalUser = user;
-                shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
-                    try {
-
-                        BulkImport.processUserImportSteps(main, con, appIdentifier, bulkImportProxyStorage, finalUser,
-                                primaryLM, allStoragesForApp);
-
-                        // We are updating the primaryUserId in the bulkImportUser entry. This will help us handle
-                        // the inconsistent transaction commit.
-                        // If this update statement fails then the outer transaction will fail as well and the user
-                        // will simpl be processed again. No inconsistency will happen in this
-                        // case.
-                        baseTenantStorage.updateBulkImportUserPrimaryUserId(appIdentifier, finalUser.id,
-                                primaryLM.superTokensUserId);
-
-                        // We need to commit the transaction manually because we have overridden that in the proxy
-                        // storage
-                        // If this fails, the primaryUserId will be updated in the bulkImportUser but it wouldn’t
-                        // actually exist.
-                        // When processing the user again, we'll check if primaryUserId exists with the same email.
-                        // In this case the user won't exist, and we'll simply re-process it.
-                        bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
-
-                        // NOTE: We need to use the baseTenantStorage as bulkImportProxyStorage could have a
-                        // different storage than the baseTenantStorage
-                        // If this fails, the primaryUserId will be updated in the bulkImportUser and it would exist
-                        // in the database.
-                        // When processing the user again, we'll check if primaryUserId exists with the same email.
-                        // In this case the user will exist, and we'll simply delete the entry.
-                        baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[]{finalUser.id});
-                    } catch (StorageTransactionLogicException e) {
-                        // We need to rollback the transaction manually because we have overridden that in the proxy
-                        // storage
-                        bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
-                        if(isBulkImportTransactionRolledBackIsTheRealCause(e)){
-                            return true;
-                            //@see BulkImportTransactionRolledBackException for explanation
-                        }
-                        handleProcessUserExceptions(app, finalUser, e, baseTenantStorage);
+                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
+                } catch (StorageTransactionLogicException e) {
+                    // We need to rollback the transaction manually because we have overridden that in the proxy
+                    // storage
+                    bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
+                    if(isBulkImportTransactionRolledBackIsTheRealCause(e)){
+                        return true;
+                        //@see BulkImportTransactionRolledBackException for explanation
                     }
-                    return false;
-                });
-
-                if(!shouldRetryImmediately){
-                    userIndexPointer++;
+                    handleProcessUserExceptions(app, finalUser, e, baseTenantStorage);
                 }
+                return false;
+            });
+
+            if(!shouldRetryImmediately){
+                userIndexPointer++;
             }
         } catch (StorageTransactionLogicException | InvalidBulkImportDataException | InvalidConfigException e) {
-            handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
+            throw new RuntimeException(e);
         } finally {
             closeAllProxyStorages(); //closing it here to reuse the existing connection with all the users
         }

@@ -16,12 +16,9 @@
 
 package io.supertokens.webserver.api.bulkimport;
 
-import java.io.IOException;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.Main;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
@@ -42,6 +39,8 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 public class ImportUserAPI extends WebserverAPI {
   public ImportUserAPI(Main main) {

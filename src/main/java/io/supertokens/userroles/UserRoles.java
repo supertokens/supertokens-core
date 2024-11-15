@@ -31,7 +31,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
+import java.util.Map;
 
 public class UserRoles {
     // add a role to a user and return true, if the role is already mapped to the user return false, but if
@@ -54,6 +54,33 @@ public class UserRoles {
         } catch (DuplicateUserRoleMappingException e) {
             // user already has role
             return false;
+        }
+    }
+
+    public static void addMultipleRolesToMultipleUsers(Main main, Storage storage, Map<TenantIdentifier, Map<String, String>> rolesToUserByTenant)
+            throws StorageTransactionLogicException, UnknownRoleException, TenantOrAppNotFoundException {
+
+        // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
+        // We do this because it's not straight forward to replicate roles to all storages of an app
+        for(TenantIdentifier tenantIdentifier : rolesToUserByTenant.keySet()){
+            Storage appStorage = StorageLayer.getStorage(
+                    tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
+            // TODO!!
+//            if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
+//                throw new UnknownRoleException();
+//            }
+
+            try {
+                UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+                userRolesStorage.startTransaction(con -> {
+                   userRolesStorage.addRolesToUsers_Transaction(con, rolesToUserByTenant);
+                   userRolesStorage.commitTransaction(con);
+                   return null;
+                });
+
+            } catch (StorageQueryException e) {
+                throw new StorageTransactionLogicException(e);
+            }
         }
     }
 
