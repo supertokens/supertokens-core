@@ -281,12 +281,12 @@ public class AuthRecipe {
         tenantIds.addAll(recipeUser.tenantIds);
         tenantIds.addAll(primaryUser.tenantIds);
 
-//        checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, recipeUser.loginMethods[0], primaryUser);
-//
-//        for (LoginMethod currLoginMethod : primaryUser.loginMethods) {
-//            checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, currLoginMethod, primaryUser);
-//        }
-// TODO !!!
+        checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, recipeUser.loginMethods[0], primaryUser);
+
+        for (LoginMethod currLoginMethod : primaryUser.loginMethods) {
+            checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, currLoginMethod, primaryUser);
+        }
+
         return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
@@ -337,15 +337,13 @@ public class AuthRecipe {
                         tenantIds.addAll(primaryUser.tenantIds);
 
                         try {
-                            //TODO (?) this below method still uses multiple DB queries which could be enhanced
-                            //TODO update: this below method takes a significant time. enhance it! 20 mins vs 8 hours
-                            checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
+                            bulkCheckIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
                                     recipeUser.loginMethods[0], primaryUser, allUsersWithExtraData);
 
                             for (LoginMethod currLoginMethod : primaryUser.loginMethods) {
-                                checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
+                                bulkCheckIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
                                         currLoginMethod, primaryUser, allUsersWithExtraData);
-                            } // I don't get why this is needed..
+                            }
 
                             results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, null, primaryUser));
 
@@ -360,10 +358,82 @@ public class AuthRecipe {
     }
 
     private static void checkIfLoginMethodCanBeLinkedOnTenant(TransactionConnection con, AppIdentifier appIdentifier,
-                                                              AuthRecipeSQLStorage authRecipeStorage,
-                                                              Set<String> tenantIds, LoginMethod currLoginMethod,
-                                                              AuthRecipeUserInfo primaryUser,
-                                                              List<AuthRecipeUserInfo> allUsersWithExtraData)
+                                                                  AuthRecipeSQLStorage authRecipeStorage,
+                                                                  Set<String> tenantIds, LoginMethod currLoginMethod,
+                                                                  AuthRecipeUserInfo primaryUser)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        // we loop through the union of both the user's tenantIds and check that the criteria for
+        // linking accounts is not violated in any of them. We do a union and not an intersection
+        // cause if we did an intersection, and that yields that account linking is allowed, it could
+        // result in one tenant having two primary users with the same email. For example:
+        // - tenant1 has u1 with email e, and u2 with email e, primary user (one is ep, one is tp)
+        // - tenant2 has u3 with email e, primary user (passwordless)
+        // now if we want to link u3 with u1, we have to deny it cause if we don't, it will result in
+        // u1 and u2 to be primary users with the same email in the same tenant. If we do an
+        // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
+        // do the checks in both.
+        for (String tenantId : tenantIds) {
+            // we do not bother with getting the storage for each tenant here because
+            // we get the tenants from the user itself, and the user can only be shared across
+            // tenants of the same storage - therefore, the storage will be the same.
+
+            if (currLoginMethod.email != null) {
+                AuthRecipeUserInfo[] usersWithSameEmail =
+                        authRecipeStorage.listPrimaryUsersByEmail_Transaction(appIdentifier, con, currLoginMethod.email);
+                for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
+                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
+                                "This user's email is already associated with another user ID");
+                    }
+                }
+            }
+
+            if (currLoginMethod.phoneNumber != null) {
+                AuthRecipeUserInfo[] usersWithSamePhoneNumber =
+                        authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(appIdentifier, con,
+                                currLoginMethod.phoneNumber);
+                for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
+                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
+                                "This user's phone number is already associated with another user" +
+                                        " ID");
+                    }
+                }
+            }
+
+            if (currLoginMethod.thirdParty != null) {
+                AuthRecipeUserInfo[] usersWithSameThirdParty = authRecipeStorage
+                        .listPrimaryUsersByThirdPartyInfo_Transaction(appIdentifier, con,
+                                currLoginMethod.thirdParty.id, currLoginMethod.thirdParty.userId);
+                for (AuthRecipeUserInfo userWithSameThirdParty : usersWithSameThirdParty) {
+                    if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
+                    if (userWithSameThirdParty.isPrimaryUser) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                userWithSameThirdParty.getSupertokensUserId(),
+                                "This user's third party login is already associated with another" +
+                                        " user ID");
+
+                    }
+                }
+            }
+        }
+    }
+
+    private static void bulkCheckIfLoginMethodCanBeLinkedOnTenant(TransactionConnection con, AppIdentifier appIdentifier,
+                                                                  AuthRecipeSQLStorage authRecipeStorage,
+                                                                  Set<String> tenantIds, LoginMethod currLoginMethod,
+                                                                  AuthRecipeUserInfo primaryUser,
+                                                                  List<AuthRecipeUserInfo> allUsersWithExtraData)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
         // we loop through the union of both the user's tenantIds and check that the criteria for
         // linking accounts is not violated in any of them. We do a union and not an intersection
