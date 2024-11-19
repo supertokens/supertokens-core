@@ -17,7 +17,10 @@
 package io.supertokens.storageLayer;
 
 import com.google.gson.JsonObject;
-import io.supertokens.*;
+import io.supertokens.Main;
+import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
@@ -31,7 +34,10 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -572,4 +578,40 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new IllegalStateException("should never come here");
         }
     }
+
+    public static List<StorageAndUserIdMapping> findStorageAndUserIdMappingForBulkUserImport(
+            AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
+            UserIdType userIdType) throws StorageQueryException {
+
+        if (storages.length == 0) {
+            throw new IllegalStateException("No storages were provided!");
+        }
+
+        if (storages[0].getType() != STORAGE_TYPE.SQL) {
+            // for non sql plugin, there will be only one storage as multitenancy is not supported
+            assert storages.length == 1;
+            return Collections.singletonList(new StorageAndUserIdMapping(storages[0], null));
+        }
+        List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
+        if (userIdType != UserIdType.ANY) {
+            for (Storage storage : storages) {
+                List<String> existingIdsInStorage = ((AuthRecipeStorage)storage).findExistingUserIds(appIdentifier, userIds);
+                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(
+                        appIdentifier, storage,
+                        userIds, userIdType);
+
+                for(String existingId : existingIdsInStorage) {
+                    UserIdMapping mappingForId = mappingsFromThisStorage.stream()
+                                .filter(userIdMapping -> (userIdType == UserIdType.SUPERTOKENS && userIdMapping.superTokensUserId.equals(existingId))
+                                        || (userIdType == UserIdType.EXTERNAL && userIdMapping.externalUserId.equals(existingId)) )
+                                .findFirst().orElse(null);
+                    allMappingsFromAllStorages.add(new StorageAndUserIdMapping(storage, mappingForId));
+                }
+            }
+        } else {
+            throw new IllegalStateException("UserIdType.ANY is not supported for this method");
+        }
+        return allMappingsFromAllStorages;
+    }
+
 }

@@ -69,7 +69,7 @@ public class BulkImportFlowTest {
         String[] args = { "../" };
 
         // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "14");
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -78,8 +78,8 @@ public class BulkImportFlowTest {
         setFeatureFlags(main, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
-        //int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
-        int NUMBER_OF_USERS_TO_UPLOAD = 10000;
+        int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
+        //int NUMBER_OF_USERS_TO_UPLOAD = 10000;
         int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
         System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
         System.out.println("Worker threads: " + parallelism_set_to);
@@ -108,7 +108,7 @@ public class BulkImportFlowTest {
         long processingStartedTime = System.currentTimeMillis();
 
         // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 5000);
+        startBulkImportCronjob(main, 6000);
         System.out.println("CronJob started");
 
         // wait for the cron job to process them

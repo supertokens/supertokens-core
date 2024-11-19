@@ -78,15 +78,13 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
@@ -105,7 +103,7 @@ public class BulkImport {
     // Number of users to process in a single batch of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_BATCH_SIZE = 10000;
     // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
-    public static final int PROCESS_USERS_INTERVAL_SECONDS = 30;
+    public static final int PROCESS_USERS_INTERVAL_SECONDS = 1;
     private static final Logger log = LoggerFactory.getLogger(BulkImport.class);
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
@@ -233,10 +231,8 @@ public class BulkImport {
                 TenantOrAppNotFoundException | UnknownUserIdException e) {
             throw new RuntimeException(e);
         }
-        //TODO create user id mapping!
-        for(BulkImportUser user : users) {
-            createUserIdMapping(appIdentifier, user, getPrimaryLoginMethod(user), allStoragesForApp);
-        }
+
+        createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
         verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
         createMultipleTotpDevices(main, appIdentifier, bulkImportProxyStorage, users);
         createMultipleUserMetadata(appIdentifier, bulkImportProxyStorage, users);
@@ -507,9 +503,26 @@ public class BulkImport {
         System.out.println(Thread.currentThread().getName() + " createPrimaryUsersAndLinkAccounts");
         List<String> userIds =
         users.stream().map(bulkImportUser -> getPrimaryLoginMethod(bulkImportUser).getSuperTokenOrExternalUserId()).collect(Collectors.toList());
+        Set<String> allEmails = new HashSet<>();
+        Set<String> allPhoneNumber = new HashSet<>();
+        Map<String, String> allThirdParty = new HashMap<>();
+        for(BulkImportUser user: users){
+            for(LoginMethod loginMethod : user.loginMethods) {
+                if(loginMethod.email != null) {
+                    allEmails.add(loginMethod.email);
+                }
+                if(loginMethod.phoneNumber != null){
+                    allPhoneNumber.add(loginMethod.phoneNumber);
+                }
+                if(loginMethod.thirdPartyId != null && loginMethod.thirdPartyUserId != null){
+                    allThirdParty.put(loginMethod.thirdPartyUserId, loginMethod.thirdPartyId);
+                }
 
-        AuthRecipe.createPrimaryUsers(main, appIdentifier, storage, userIds);
-        linkAccountsForMultipleUser(main, appIdentifier, storage, users);
+            }
+        }
+
+        AuthRecipe.createPrimaryUsers(main, appIdentifier, storage, userIds, new ArrayList<>(allEmails), new ArrayList<>(allPhoneNumber), allThirdParty);
+        linkAccountsForMultipleUser(main, appIdentifier, storage, users, new ArrayList<>(allEmails), new ArrayList<>(allPhoneNumber), allThirdParty);
     }
 
 
@@ -589,8 +602,24 @@ public class BulkImport {
         }
     }
 
-    private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
+    private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                    List<BulkImportUser> users,
+                                                    List<String> allDistinctEmails,
+                                                    List<String> allDistinctPhones,
+                                                    Map<String, String> thirdpartyUserIdsToThirdpartyIds)
             throws StorageTransactionLogicException {
+        Map<String, String> recipeUserIdByPrimaryUserId = collectRecipeIdsToPrimaryIds(users);
+        try {
+            AuthRecipe.linkMultipleAccounts(main, appIdentifier, storage, recipeUserIdByPrimaryUserId,
+                    allDistinctEmails, allDistinctPhones, thirdpartyUserIdsToThirdpartyIds);
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+        //TODO proper error handling
+    }
+
+    @NotNull
+    private static Map<String, String> collectRecipeIdsToPrimaryIds(List<BulkImportUser> users) {
         Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
         for(BulkImportUser user: users){
             LoginMethod primaryLM = getPrimaryLoginMethod(user);
@@ -602,13 +631,7 @@ public class BulkImport {
                         primaryLM.getSuperTokenOrExternalUserId());
             }
         }
-
-        try {
-            AuthRecipe.linkMultipleAccounts(main, appIdentifier, storage, recipeUserIdByPrimaryUserId);
-        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
-            throw new StorageTransactionLogicException(e);
-        }
-        //TODO proper error handling
+        return recipeUserIdByPrimaryUserId;
     }
 
     public static void createUserIdMapping(AppIdentifier appIdentifier,
@@ -636,6 +659,32 @@ public class BulkImport {
                                 + primaryLM.superTokensUserId
                                 + " but it doesn't exist. This should not happen. Please contact support."));
             }
+        }
+    }
+
+    public static void createMultipleUserIdMapping(AppIdentifier appIdentifier,
+                                           List<BulkImportUser> users, Storage[] storages) throws StorageTransactionLogicException {
+        System.out.println(Thread.currentThread().getName() + " createMultipleUserIdMapping");
+        Map<String, String> superTokensUserIdToExternalUserId = new HashMap<>();
+        for(BulkImportUser user: users) {
+            if(user.externalUserId != null) {
+                LoginMethod primaryLoginMethod = getPrimaryLoginMethod(user);
+                superTokensUserIdToExternalUserId.put(primaryLoginMethod.superTokensUserId, user.externalUserId);
+            }
+        }
+        try {
+            List<UserIdMapping.UserIdBulkMappingResult> mappingResults = UserIdMapping.createMultipleUserIdMappings(
+                    appIdentifier, storages,
+                    superTokensUserIdToExternalUserId,
+                    false,  true);
+
+//            for(UserIdMapping.UserIdBulkMappingResult mappingResult : mappingResults){
+//                if(mappingResult.error == null) { // no error means successful mapping
+//                    // TODO
+//                }
+//            }
+        } catch (Exception e) {
+            //TODO proper error handling
         }
     }
 

@@ -655,6 +655,13 @@ public class Start
         }
     }
 
+    @Override
+    public Map<String, List<String>> findNonAuthRecipesWhereForUserIdsUsed(AppIdentifier appIdentifier,
+                                                                           List<String> userIds)
+            throws StorageQueryException {
+        return Map.of();
+    }
+
     @TestOnly
     @Override
     public void addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier tenantIdentifier, String className, String userId)
@@ -1147,6 +1154,13 @@ public class Start
     }
 
     @Override
+    public void updateMultipleIsEmailVerifiedToExternalUserIds(AppIdentifier appIdentifier,
+                                                               Map<String, String> supertokensUserIdToExternalUserId)
+            throws StorageQueryException {
+
+    }
+
+    @Override
     public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
         try {
             EmailPasswordQueries.deleteExpiredPasswordResetTokens(this);
@@ -1332,6 +1346,12 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<String> findExistingUserIds(AppIdentifier appIdentifier, List<String> userIds)
+            throws StorageQueryException {
+        return List.of(); // TODO
     }
 
     @Override
@@ -2238,6 +2258,13 @@ public class Start
     }
 
     @Override
+    public void createBulkUserIdMapping(AppIdentifier appIdentifier,
+                                        Map<String, String> superTokensUserIdToExternalUserId)
+            throws StorageQueryException {
+
+    }
+
+    @Override
     public boolean deleteUserIdMapping(AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
         try {
@@ -2978,6 +3005,13 @@ public class Start
     }
 
     @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction(
+            AppIdentifier appIdentifier, TransactionConnection con, List<String> emails, List<String> phones,
+            Map<String, String> thirdpartyIdToThirdpartyUserId) throws StorageQueryException {
+        return new AuthRecipeUserInfo[0]; // TODO
+    }
+
+    @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(AppIdentifier appIdentifier,
                                                                           TransactionConnection con,
                                                                           String phoneNumber)
@@ -3140,6 +3174,14 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<UserIdMapping> getMultipleUserIdMapping_Transaction(TransactionConnection connection,
+                                                                    AppIdentifier appIdentifier, List<String> userIds,
+                                                                    boolean isSupertokensIds)
+            throws StorageQueryException {
+        return List.of(); // TODO
     }
 
     @Override
