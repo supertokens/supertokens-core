@@ -590,7 +590,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (storages[0].getType() != STORAGE_TYPE.SQL) {
             // for non sql plugin, there will be only one storage as multitenancy is not supported
             assert storages.length == 1;
-            return Collections.singletonList(new StorageAndUserIdMapping(storages[0], null));
+            List<StorageAndUserIdMapping> results = new ArrayList<>();
+            for(String userId : userIds) {
+                results.add(new StorageAndUserIdMapping(storages[0], new UserIdMapping(userId, null, null)));
+            }
+            return results;
         }
         List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
         if (userIdType != UserIdType.ANY) {
@@ -605,6 +609,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                 .filter(userIdMapping -> (userIdType == UserIdType.SUPERTOKENS && userIdMapping.superTokensUserId.equals(existingId))
                                         || (userIdType == UserIdType.EXTERNAL && userIdMapping.externalUserId.equals(existingId)) )
                                 .findFirst().orElse(null);
+                    if(mappingForId == null && userIdType == UserIdType.SUPERTOKENS) {
+                        mappingForId = new UserIdMapping(existingId, null, null);
+                    }
                     allMappingsFromAllStorages.add(new StorageAndUserIdMapping(storage, mappingForId));
                 }
             }

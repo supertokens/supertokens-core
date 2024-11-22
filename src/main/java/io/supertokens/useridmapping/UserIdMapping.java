@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -181,9 +182,7 @@ public class UserIdMapping {
     public static List<UserIdBulkMappingResult> createMultipleUserIdMappings(AppIdentifier appIdentifier, Storage[] storages,
                                            Map<String, String> superTokensUserIdToExternalUserId, boolean force,
                                            boolean makeExceptionForEmailVerification)
-            throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
-            TenantOrAppNotFoundException {
+            throws StorageQueryException {
 
         // We first need to check if the external user id exists across all app storages because we do not want
         // 2 users from different user pool but same app to point to same external user id.
@@ -209,7 +208,6 @@ public class UserIdMapping {
         List<StorageAndUserIdMapping> mappingAndStoragesAsInvalid = StorageLayer.findStorageAndUserIdMappingForBulkUserImport(
                 appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.values()), UserIdType.SUPERTOKENS);
 
-        //TODO does it matter which storage?
         Map<String, List<String>> userIdsUsedInNonAuthRecipes =
                 storages[0].findNonAuthRecipesWhereForUserIdsUsed(appIdentifier, new ArrayList<>(superTokensUserIdToExternalUserId.keySet()));
 
@@ -310,6 +308,15 @@ public class UserIdMapping {
                     mappingResults.add(new UserIdBulkMappingResult(supertokensIdForResult, supertokensIdToExternalIdInCurrentStorage.get(supertokensIdForResult), null));
                 }
             }
+        }
+        Map<String, Exception> errors = new HashMap<>();
+        for(UserIdBulkMappingResult result : mappingResults){
+            if(result.error != null) {
+                errors.put(result.supertokensUserId, result.error);
+            }
+        }
+        if(!errors.isEmpty()) {
+            throw new StorageQueryException(new BulkImportBatchInsertException("useridmapping errors", errors));
         }
         return mappingResults;
     }

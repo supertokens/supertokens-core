@@ -43,7 +43,10 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 
 public class ThirdParty {
 
@@ -353,9 +356,9 @@ public class ThirdParty {
         }
     }
 
-    public static void createThirdPartyUsers(Storage storage,
-                                             Collection<ThirdPartyImportUser> usersToImport)
-            throws StorageQueryException, StorageTransactionLogicException {
+    public static void createMultipleThirdPartyUsers(Storage storage,
+                                                     List<ThirdPartyImportUser> usersToImport)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
 
         tpStorage.startTransaction(con -> {
@@ -363,8 +366,6 @@ public class ThirdParty {
             tpStorage.commitTransaction(con);
             return null;
         });
-
-        // TODO error handling
     }
 
     @Deprecated

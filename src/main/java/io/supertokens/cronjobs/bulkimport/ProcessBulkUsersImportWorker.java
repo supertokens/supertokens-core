@@ -27,8 +27,8 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportTransactionRolledBackException;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -93,6 +93,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     // Skip validation when the flag is enabled during testing
                     // Skip validation if it's a retry run. This already passed validation. A revalidation triggers
                     // an invalid external user id already exists validation error - which is not true!
+                    //TODO set invalid users status to failed
                 } else {
                     // Validate the user
                     validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, user.toJsonObject(), user.id));
@@ -106,7 +107,6 @@ public class ProcessBulkUsersImportWorker implements Runnable {
 
             SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
 
-            BulkImportUser finalUser = user;
             shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
                 try {
 
@@ -128,7 +128,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                         return true;
                         //@see BulkImportTransactionRolledBackException for explanation
                     }
-                    handleProcessUserExceptions(app, finalUser, e, baseTenantStorage);
+                    handleProcessUserExceptions(app, validUsers, e, baseTenantStorage);
                 }
                 return false;
             });
@@ -152,12 +152,13 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         return false;
     }
 
-    private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e,
+    private void handleProcessUserExceptions(AppIdentifier appIdentifier, List<BulkImportUser> usersBatch, Exception e,
                                              BulkImportSQLStorage baseTenantStorage)
             throws StorageQueryException {
         // Java doesn't allow us to reassign local variables inside a lambda expression
         // so we have to use an array.
         String[] errorMessage = { e.getMessage() };
+        Map<String, String> bulkImportUserIdToErrorMessage = new HashMap<>();
 
         if (e instanceof StorageTransactionLogicException) {
             StorageTransactionLogicException exception = (StorageTransactionLogicException) e;
@@ -167,7 +168,24 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                 Logging.error(main, null, "We got an StorageQueryException while processing a bulk import user entry. It will be retried again. Error Message: " + e.getMessage(), true);
                 return;
             }
-            errorMessage[0] = exception.actualException.getMessage();
+            if(exception.actualException instanceof BulkImportBatchInsertException){
+                Map<String, Exception> userIndexToError = ((BulkImportBatchInsertException) exception.actualException).exceptionByUserId;
+                for(String userid : userIndexToError.keySet()){
+                    String id = usersBatch.stream()
+                            .filter(bulkImportUser ->
+                                    bulkImportUser.loginMethods.stream()
+                                            .map(loginMethod -> loginMethod.superTokensUserId)
+                                            .anyMatch(s -> s.equals(userid))).findFirst().get().id;
+                    bulkImportUserIdToErrorMessage.put(id, userIndexToError.get(userid).getMessage());
+                }
+            } else {
+                //fail the whole batch
+                errorMessage[0] = exception.actualException.getMessage();
+                for(BulkImportUser user : usersBatch){
+                    bulkImportUserIdToErrorMessage.put(user.id, errorMessage[0]);
+                }
+            }
+
         } else if (e instanceof InvalidBulkImportDataException) {
             errorMessage[0] = ((InvalidBulkImportDataException) e).errors.toString();
         } else if (e instanceof InvalidConfigException) {
@@ -176,8 +194,8 @@ public class ProcessBulkUsersImportWorker implements Runnable {
 
         try {
             baseTenantStorage.startTransaction(con -> {
-                baseTenantStorage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
-                        BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED, errorMessage[0]);
+                baseTenantStorage.updateMultipleBulkImportUsersStatusToError_Transaction(appIdentifier, con,
+                        bulkImportUserIdToErrorMessage);
                 return null;
             });
         } catch (StorageTransactionLogicException e1) {

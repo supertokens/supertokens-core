@@ -156,7 +156,6 @@ public class Totp {
             totpStorage.startTransaction(con -> {
                 totpStorage.createDevices_Transaction(con, appIdentifier, devices);
                 totpStorage.commitTransaction(con);
-                System.out.println("Created TOTP devices");
                 return null;
             });
 

@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -598,6 +599,7 @@ public class AuthRecipe {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        Map<String, Exception> errorByUserId = new HashMap<>();
         try {
 
             List<LinkAccountsBulkResult> linkAccountsResults = authRecipeStorage.startTransaction(con -> {
@@ -614,6 +616,7 @@ public class AuthRecipe {
                         } else if(canLinkAccountsBulkResult.error != null) {
                             results.add(new LinkAccountsBulkResult(
                                     canLinkAccountsBulkResult.authRecipeUserInfo, false, canLinkAccountsBulkResult.error)); // preparing to return the error
+                            errorByUserId.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.error);
                         } else {
                             recipeUserByPrimaryUserNeedsLinking.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.primaryUserId);
                         }
@@ -628,7 +631,9 @@ public class AuthRecipe {
 
                     authRecipeStorage.commitTransaction(con);
                 }
-
+                if(!errorByUserId.isEmpty()) {
+                    throw new StorageQueryException(new BulkImportBatchInsertException("link accounts errors", errorByUserId));
+                }
                 return results;
             });
 
@@ -802,7 +807,6 @@ public class AuthRecipe {
                                                                                  Map<String, String> thirdpartyUserIdToThirdpartyId)
             throws StorageQueryException, UnknownUserIdException{
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-
         List<AuthRecipeUserInfo> targetUsers = authRecipeStorage.getPrimaryUsersByIds_Transaction(appIdentifier, con,
                 recipeUserIds);
         if (targetUsers == null || targetUsers.isEmpty()) {
@@ -978,13 +982,13 @@ public class AuthRecipe {
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
-
         if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        Map<String, Exception> errorsByUserId = new HashMap<>();
         try {
             return authRecipeStorage.startTransaction(con -> {
 
@@ -993,7 +997,11 @@ public class AuthRecipe {
                             recipeUserIds, allDistinctEmails, allDistinctPhones, thirdpartyUserIdsToThirdpartyIds);
                     List<CreatePrimaryUserBulkResult> canMakePrimaryUsers = new ArrayList<>();
                     for(CreatePrimaryUserBulkResult result : results) {
-                        if (result.wasAlreadyAPrimaryUser || result.error != null) {
+                        if (result.wasAlreadyAPrimaryUser) {
+                            continue;
+                        }
+                        if(result.error != null) {
+                            errorsByUserId.put(result.user.getSupertokensUserId(), result.error);
                             continue;
                         }
                         canMakePrimaryUsers.add(result);
@@ -1005,26 +1013,27 @@ public class AuthRecipe {
                         authRecipeStorage.commitTransaction(con);
 
                     for(CreatePrimaryUserBulkResult result : results) {
-                        if (result.wasAlreadyAPrimaryUser || result.error != null) {
+                        if (result.wasAlreadyAPrimaryUser) {
+                            continue;
+                        }
+                        if(result.error != null) {
+                            errorsByUserId.put(result.user.getSupertokensUserId(), result.error);
                             continue;
                         }
                         result.user.isPrimaryUser = true;
                     }
-                    return results;
 
+                    if(!errorsByUserId.isEmpty()) {
+                        throw new StorageTransactionLogicException(new BulkImportBatchInsertException("create primary users errors", errorsByUserId));
+                    }
+
+                    return results;
                 } catch (UnknownUserIdException e) {
                     throw new StorageTransactionLogicException(e);
                 }
             });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownUserIdException) {
-                throw (UnknownUserIdException) e.actualException;
-            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
-                throw (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) e.actualException;
-            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
-                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
-            }
-            throw new StorageQueryException(e);
+        } catch (StorageTransactionLogicException  e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 

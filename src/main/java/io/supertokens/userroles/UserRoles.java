@@ -31,6 +31,8 @@ import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class UserRoles {
@@ -58,24 +60,28 @@ public class UserRoles {
     }
 
     public static void addMultipleRolesToMultipleUsers(Main main, Storage storage, Map<TenantIdentifier, Map<String, String>> rolesToUserByTenant)
-            throws StorageTransactionLogicException, UnknownRoleException, TenantOrAppNotFoundException {
+            throws StorageTransactionLogicException, TenantOrAppNotFoundException {
 
         // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
         // We do this because it's not straight forward to replicate roles to all storages of an app
         for(TenantIdentifier tenantIdentifier : rolesToUserByTenant.keySet()){
             Storage appStorage = StorageLayer.getStorage(
                     tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
-            // TODO!!
-//            if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
-//                throw new UnknownRoleException();
-//            }
 
             try {
                 UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
                 userRolesStorage.startTransaction(con -> {
-                   userRolesStorage.addRolesToUsers_Transaction(con, rolesToUserByTenant);
-                   userRolesStorage.commitTransaction(con);
-                   return null;
+
+                    List<Boolean> rolesFound = ((UserRolesSQLStorage) appStorage).doesMultipleRoleExist_Transaction(
+                            tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier().toAppIdentifier(),
+                            con, new ArrayList<>(rolesToUserByTenant.get(tenantIdentifier).values()));
+
+                    if(rolesFound.contains(Boolean.FALSE)){
+                        throw new StorageTransactionLogicException(new UnknownRoleException());
+                    }
+                    userRolesStorage.addRolesToUsers_Transaction(con, rolesToUserByTenant);
+                    userRolesStorage.commitTransaction(con);
+                    return null;
                 });
 
             } catch (StorageQueryException e) {

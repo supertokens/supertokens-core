@@ -552,7 +552,7 @@ public class Passwordless {
 
     public static void createPasswordlessUsers(Storage storage,
                                                List<PasswordlessImportUser> importUsers)
-            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException,
+            throws TenantOrAppNotFoundException, StorageQueryException,
             StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 

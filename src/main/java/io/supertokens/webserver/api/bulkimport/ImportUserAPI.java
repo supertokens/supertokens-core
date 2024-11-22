@@ -43,59 +43,59 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class ImportUserAPI extends WebserverAPI {
-  public ImportUserAPI(Main main) {
-    super(main, "");
-  }
-
-  @Override
-  public String getPath() {
-    return "/bulk-import/import";
-  }
-
-  @Override
-  protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    // API is app specific
-
-    if (StorageLayer.isInMemDb(main)) {
-      throw new ServletException(new BadRequestException("This API is not supported in the in-memory database."));
+    public ImportUserAPI(Main main) {
+        super(main, "");
     }
 
-    JsonObject jsonUser = InputParser.parseJsonObjectOrThrowError(req);
-
-    AppIdentifier appIdentifier = null;
-    Storage storage = null;
-    String[] allUserRoles = null;
-
-    try {
-      appIdentifier = getAppIdentifier(req);
-      storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-      allUserRoles = StorageUtils.getUserRolesStorage(storage).getRoles(appIdentifier);
-    } catch (TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
-      throw new ServletException(e);
+    @Override
+    public String getPath() {
+        return "/bulk-import/import";
     }
 
-    BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // API is app specific
 
-    try {
-      BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser,
-          Utils.getUUID());
+        if (StorageLayer.isInMemDb(main)) {
+            throw new ServletException(new BadRequestException("This API is not supported in the in-memory database."));
+        }
 
-      AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
+        JsonObject jsonUser = InputParser.parseJsonObjectOrThrowError(req);
 
-      JsonObject result = new JsonObject();
-      result.addProperty("status", "OK");
-      result.add("user",  importedUser.toJson());
-      super.sendJsonResponse(200, result, resp);
-    } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
-      JsonArray errors = e.errors.stream()
-          .map(JsonPrimitive::new)
-          .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+        AppIdentifier appIdentifier = null;
+        Storage storage = null;
+        String[] allUserRoles = null;
 
-      JsonObject errorResponseJson = new JsonObject();
-      errorResponseJson.add("errors", errors);
-      throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
-    } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
-      throw new ServletException(e);
+        try {
+            appIdentifier = getAppIdentifier(req);
+            storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            allUserRoles = StorageUtils.getUserRolesStorage(storage).getRoles(appIdentifier);
+        } catch (TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
+        BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
+
+        try {
+            BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser,
+                    Utils.getUUID());
+
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.add("user", importedUser.toJson());
+            super.sendJsonResponse(200, result, resp);
+        } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
+            JsonArray errors = e.errors.stream()
+                    .map(JsonPrimitive::new)
+                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+
+            JsonObject errorResponseJson = new JsonObject();
+            errorResponseJson.add("errors", errors);
+            throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
+        } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
+            throw new ServletException(e);
+        }
     }
-  }
 }

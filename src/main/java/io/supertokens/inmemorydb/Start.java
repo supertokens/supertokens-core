@@ -233,7 +233,8 @@ public class Start
             tries++;
             try {
                 return startTransactionHelper(logic);
-            } catch (SQLException | StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+            } catch (SQLException | StorageQueryException | StorageTransactionLogicException |
+                     TenantOrAppNotFoundException e) {
                 if ((e instanceof SQLTransactionRollbackException
                         || (e.getMessage() != null && e.getMessage().toLowerCase().contains("deadlock")))
                         && tries < 3) {
@@ -245,8 +246,6 @@ public class Start
                     throw (StorageQueryException) e;
                 } else if (e instanceof StorageTransactionLogicException) {
                     throw (StorageTransactionLogicException) e;
-                } else if (e instanceof TenantOrAppNotFoundException) { // TODO this should not be here.
-                    throw new StorageTransactionLogicException(e);
                 }
                 throw new StorageQueryException(e);
             }
@@ -819,13 +818,6 @@ public class Start
     }
 
     @Override
-    public void signUpMultiple(List<EmailPasswordImportUser> users)
-            throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException,
-            TenantOrAppNotFoundException, StorageTransactionLogicException {
-        // TODO
-    }
-
-    @Override
     public void addPasswordResetToken(AppIdentifier appIdentifier, PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
@@ -935,6 +927,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void signUpMultipleViaBulkImport_Transaction(TransactionConnection connection,
+                                                        List<EmailPasswordImportUser> users)
+            throws StorageQueryException, StorageTransactionLogicException {
+        //TODO
     }
 
     @Override
@@ -1196,16 +1195,16 @@ public class Start
 
     @Override
     public void importThirdPartyUsers_Transaction(TransactionConnection con,
-                                                  Collection<ThirdPartyImportUser> usersToImport)
-            throws StorageQueryException {
+                                                  List<ThirdPartyImportUser> usersToImport)
+            throws StorageQueryException, StorageTransactionLogicException {
         // TODO
     }
 
     @Override
     public void importPasswordlessUsers_Transaction(TransactionConnection con,
-                                                    Collection<PasswordlessImportUser> users)
+                                                    List<PasswordlessImportUser> users)
             throws StorageQueryException {
-        //todo
+        // TODO
     }
 
     @Override
@@ -2197,6 +2196,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<Boolean> doesMultipleRoleExist_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                           List<String> roles) throws StorageQueryException {
+        // TODO
+        return List.of();
     }
 
     @Override

@@ -258,12 +258,14 @@ public class EmailPassword {
         }
     }
 
-    public static void createUsersWithPasswordHash(Storage storage,
-                                                   List<EmailPasswordImportUser> usersToImport)
-            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException,
-            DuplicateUserIdException, StorageTransactionLogicException {
+    public static void createMultipleUsersWithPasswordHash(Storage storage,
+                                                           List<EmailPasswordImportUser> usersToImport)
+            throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
         EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
-        epStorage.signUpMultiple(usersToImport);
+        epStorage.startTransaction(con -> {
+            epStorage.signUpMultipleViaBulkImport_Transaction(con, usersToImport);
+            return null;
+        });
     }
 
     @TestOnly
