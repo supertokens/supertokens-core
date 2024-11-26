@@ -17,10 +17,7 @@
 package io.supertokens.storageLayer;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
-import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.*;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
@@ -609,10 +606,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                 .filter(userIdMapping -> (userIdType == UserIdType.SUPERTOKENS && userIdMapping.superTokensUserId.equals(existingId))
                                         || (userIdType == UserIdType.EXTERNAL && userIdMapping.externalUserId.equals(existingId)) )
                                 .findFirst().orElse(null);
-                    if(mappingForId == null && userIdType == UserIdType.SUPERTOKENS) {
-                        mappingForId = new UserIdMapping(existingId, null, null);
-                    }
-                    allMappingsFromAllStorages.add(new StorageAndUserIdMapping(storage, mappingForId));
+                    allMappingsFromAllStorages.add(new StorageAndUserIdMappingForBulkImport(storage, mappingForId, existingId));
                 }
             }
         } else {

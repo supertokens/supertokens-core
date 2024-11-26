@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -86,16 +87,30 @@ public class ImportUserAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("user", importedUser.toJson());
             super.sendJsonResponse(200, result, resp);
-        } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
-            JsonArray errors = e.errors.stream()
-                    .map(JsonPrimitive::new)
-                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+        } catch (StorageQueryException e) {
+            JsonArray errors = new JsonArray();
+            if(e.getCause() instanceof BulkImportBatchInsertException){
+                BulkImportBatchInsertException insertException = (BulkImportBatchInsertException) e.getCause();
+                errors.addAll(
+                insertException.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
+                        .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
+                );
+            } else {
+                errors.add(new JsonPrimitive(e.getMessage()));
+            }
 
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
-        } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
             throw new ServletException(e);
+        } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
+            JsonArray errors = e.errors.stream()
+                    .map(JsonPrimitive::new)
+                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+            JsonObject errorResponseJson = new JsonObject();
+            errorResponseJson.add("errors", errors);
+            throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         }
     }
 }

@@ -22,11 +22,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -39,8 +40,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,11 +77,7 @@ public class BulkImportFlowTest {
         setFeatureFlags(main, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
-        //int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
-        int NUMBER_OF_USERS_TO_UPLOAD = 10000;
-        int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
-        System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
-        System.out.println("Worker threads: " + parallelism_set_to);
+        int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -100,16 +95,13 @@ public class BulkImportFlowTest {
                 JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
                 JsonObject response = uploadBulkImportUsersJson(main, request);
                 assertEquals("OK", response.get("status").getAsString());
-                System.out.println(i + " Uploaded 10k users for bulk import");
             }
 
         }
 
-        long processingStartedTime = System.currentTimeMillis();
-
+        long processingStarted = System.currentTimeMillis();
         // Starting the processing cronjob here to be able to measure the runtime
         startBulkImportCronjob(main, 8000);
-        System.out.println("CronJob started");
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -121,36 +113,21 @@ public class BulkImportFlowTest {
                 JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
                 assertEquals("OK", response.get("status").getAsString());
                 count = response.get("count").getAsLong();
-                System.out.println("Number of unprocessed users: " + count + "," + response);
                 int newUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
-                int failedUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
                 int processingUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
-                System.out.println("\t stats: ");
-                System.out.println("\t\tNEW: \t" + newUsersNumber);
-                System.out.println("\t\tFAILED: \t" + failedUsersNumber);
-                System.out.println("\t\tPROCESSING: \t" + processingUsersNumber);
 
                 count = newUsersNumber + processingUsersNumber;
 
-                long elapsedSeconds = (System.currentTimeMillis() - processingStartedTime) / 1000;
-                System.out.println("Elapsed time: " + elapsedSeconds + " seconds, (" + elapsedSeconds / 3600 + " hours)");
                 if(count == 0 ){
                     break;
                 }
-                Thread.sleep(60000); // one minute
+                Thread.sleep(5000); // one minute
             }
         }
 
-        long processingFinishedTime = System.currentTimeMillis();
-        System.out.println("Processing took " + (processingFinishedTime - processingStartedTime) / 1000 + " seconds");
-
-        //print failed users
-        {
-            JsonObject failedUsersLs = loadBulkImportUsersWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
-            if(failedUsersLs.has("users") ){
-                System.out.println(failedUsersLs.get("users"));
-            }
-        }
+        long processingFinished = System.currentTimeMillis();
+        System.out.println("Processed " + NUMBER_OF_USERS_TO_UPLOAD + " users in " + (processingFinished - processingStarted) / 1000
+                + " seconds ( or " + (processingFinished - processingStarted) / 60000 + " minutes)");
 
         // after processing finished, make sure every user got processed correctly
         {
@@ -163,7 +140,7 @@ public class BulkImportFlowTest {
     }
 
     @Test
-    public void testBatchWithDuplicates() throws Exception {
+    public void testBatchWithDuplicate() throws Exception {
         String[] args = {"../"};
 
         // set processing thread number
@@ -226,20 +203,291 @@ public class BulkImportFlowTest {
         //print failed users
         JsonObject failedUsersLs = loadBulkImportUsersWithStatus(main,
                 BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
-        if (failedUsersLs.has("users")) {
-            System.out.println(failedUsersLs.get("users"));
-        }
-        System.out.println("Failed Users: " + failedUsersLs);
-        System.out.println("Failed Users Number: " + failedUsersNumber);
 
         // after processing finished, make sure every user got processed correctly
         int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main,
                 BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
         int usersInCore = loadUsersCount(main).get("count").getAsInt();
-        System.out.println("Users in core: " + usersInCore);
         assertEquals(NUMBER_OF_USERS_TO_UPLOAD + 2, usersInCore + failedImportedUsersNumber);
         assertEquals(2, failedImportedUsersNumber);
 
+
+        for(JsonElement userJson : failedUsersLs.get("users").getAsJsonArray()) {
+            String errorMessage = userJson.getAsJsonObject().get("errorMessage").getAsString();
+            assertTrue(errorMessage.startsWith("E003:"));
+        }
+
+    }
+
+    @Test
+    public void testBatchWithDuplicateUserIdMappingWithInputValidation() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 20;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        //set the first and last users' externalId to the same value
+        usersJson.get("users").getAsJsonArray().get(0).getAsJsonObject().addProperty("externalUserId",
+                "some-text-external-id");
+        usersJson.get("users").getAsJsonArray().get(19).getAsJsonObject().addProperty("externalUserId",
+                "some-text-external-id");
+
+        try {
+            JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        } catch (HttpResponseException expected) {
+            assertEquals(400, expected.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: {\"error\":\"Data has missing or invalid fields. Please check the users field for more details.\",\"users\":[{\"index\":19,\"errors\":[\"externalUserId some-text-external-id is not unique. It is already used by another user.\"]}]}",
+                    expected.getMessage());
+        }
+    }
+
+    @Test
+    public void testBatchWithInvalidInput() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 2;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        usersJson.get("users").getAsJsonArray().get(0).getAsJsonObject().addProperty("externalUserId",
+                Boolean.FALSE); // invalid, should be string
+
+        try {
+            JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        } catch (HttpResponseException exception) {
+            assertEquals(400, exception.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: {\"error\":\"Data has missing or invalid " +
+                    "fields. Please check the users field for more details.\",\"users\":[{\"index\":0,\"errors\":" +
+                    "[\"externalUserId should be of type string.\"]}]}", exception.getMessage());
+        }
+    }
+
+    @Test
+    public void testBatchWithMissingRole() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 2;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Creating only one user role before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        try {
+            JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        } catch (HttpResponseException exception) {
+            assertEquals(400, exception.statusCode);
+            assertEquals(400, exception.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: {\"error\":\"Data has missing or " +
+                    "invalid fields. Please check the users field for more details.\",\"users\":[{\"index\":0,\"errors\"" +
+                    ":[\"Role role2 does not exist.\"]},{\"index\":1,\"errors\":[\"Role role2 does not exist.\"]}]}",
+                    exception.getMessage());
+        }
+    }
+
+    @Test
+    public void testBatchWithOnlyOneWithDuplicate() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "2");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 9;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        //create tenant t1
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                main,
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        tenantIdentifier,
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, new JsonObject()));
+
+        // Create user roles before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        usersJson.get("users").getAsJsonArray().add(generateUsersJson(1, 0).get("users").getAsJsonArray().get(0).getAsJsonObject());
+
+        JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        assertEquals("OK", response.get("status").getAsString());
+
+        // Starting the processing cronjob here to be able to measure the runtime
+        startBulkImportCronjob(main, 10);
+
+        // wait for the cron job to process them
+        // periodically check the remaining unprocessed users
+        // Note1: the cronjob starts the processing automatically
+        // Note2: the successfully processed users get deleted from the bulk_import_users table
+
+        long count = NUMBER_OF_USERS_TO_UPLOAD;
+        int failedUsersNumber = 0;
+        while (true) {
+            response = loadBulkImportUsersCountWithStatus(main, null);
+            assertEquals("OK", response.get("status").getAsString());
+            int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+            int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+
+            count = newUsersNumber + processingUsersNumber;
+            if(count == 0) {
+                break;
+            }
+            Thread.sleep(5000);
+        }
+
+        //print failed users
+        JsonObject failedUsersLs = loadBulkImportUsersWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
+
+        // after processing finished, make sure every user got processed correctly
+        int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+        int usersInCore = loadUsersCount(main).get("count").getAsInt();
+        assertEquals(NUMBER_OF_USERS_TO_UPLOAD + 1, usersInCore + failedImportedUsersNumber);
+        assertEquals(1, failedImportedUsersNumber);
+
+
+        for(JsonElement userJson : failedUsersLs.get("users").getAsJsonArray()) {
+            String errorMessage = userJson.getAsJsonObject().get("errorMessage").getAsString();
+            assertTrue(errorMessage.startsWith("E003:"));
+        }
+
+    }
+
+    @Test
+    public void testBatchWithOneThreadWorks() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "1");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 5;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        assertEquals("OK", response.get("status").getAsString());
+
+        // Starting the processing cronjob here to be able to measure the runtime
+        startBulkImportCronjob(main, 8000);
+
+        // wait for the cron job to process them
+        // periodically check the remaining unprocessed users
+        // Note1: the cronjob starts the processing automatically
+        // Note2: the successfully processed users get deleted from the bulk_import_users table
+
+        long count = NUMBER_OF_USERS_TO_UPLOAD;
+        while (true) {
+            response = loadBulkImportUsersCountWithStatus(main, null);
+            assertEquals("OK", response.get("status").getAsString());
+            int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+            int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+
+            count = newUsersNumber + processingUsersNumber;
+            if(count == 0) {
+                break;
+            }
+            Thread.sleep(5000); // 5 seconds
+        }
+
+        // after processing finished, make sure every user got processed correctly
+        int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+        int usersInCore = loadUsersCount(main).get("count").getAsInt();
+        assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore);
+        assertEquals(0, failedImportedUsersNumber);
     }
 
     @Test
@@ -257,9 +505,6 @@ public class BulkImportFlowTest {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
         int NUMBER_OF_USERS_TO_UPLOAD = 1000;
-        int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
-        System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
-        System.out.println("Worker threads: " + parallelism_set_to);
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -282,24 +527,17 @@ public class BulkImportFlowTest {
             assertEquals("OK", lazyImportResponse.get("status").getAsString());
             assertNotNull(lazyImportResponse.get("user"));
             successfully_lazy_imported++;
-            System.out.println(i + "th lazy imported");
-//            System.out.println("\tOriginal user: " + userToImportLazy);
-//            System.out.println("\tResponse user: " + lazyImportResponse.get("user"));
         }
 
         // bulk import all of the users
         {
             JsonObject bulkUploadResponse = uploadBulkImportUsersJson(main, allUsersJson);
             assertEquals("OK", bulkUploadResponse.get("status").getAsString());
-            System.out.println("Bulk uploaded all of the users");
         }
-
-        long processingStartedTime = System.currentTimeMillis();
-
 
         // Starting the processing cronjob here to be able to measure the runtime
         startBulkImportCronjob(main, 10000);
-        System.out.println("CronJob started");
+
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -310,15 +548,8 @@ public class BulkImportFlowTest {
             while(count != 0) {
                 JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
                 assertEquals("OK", response.get("status").getAsString());
-                count = response.get("count").getAsLong();
-                System.out.println("Number of unprocessed users: " + count + "," + response);
                 int newUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
-                int failedUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
                 int processingUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
-                System.out.println("\t stats: ");
-                System.out.println("\t\tNEW: \t" + newUsersNumber);
-                System.out.println("\t\tFAILED: \t" + failedUsersNumber);
-                System.out.println("\t\tPROCESSING: \t" + processingUsersNumber);
 
                 count = newUsersNumber + processingUsersNumber; // + processingUsersNumber;
 
@@ -326,8 +557,6 @@ public class BulkImportFlowTest {
             }
         }
 
-        long processingFinishedTime = System.currentTimeMillis();
-        System.out.println("Processing took " + (processingFinishedTime - processingStartedTime) / 1000 + " seconds");
 
         // expect: lazy imported users are already there, duplicate.. errors
         // expect: not lazy imported users are imported successfully
@@ -344,7 +573,6 @@ public class BulkImportFlowTest {
             String errorMessage = failedUser.getAsJsonObject().get("errorMessage").getAsString();
             assertTrue(errorMessage.startsWith("E003:") || errorMessage.startsWith("E005:")
                     || errorMessage.startsWith("E006:") || errorMessage.startsWith("E007:")); // duplicate email, phone, etc errors
-            System.out.println(errorMessage);
         }
 
         stopBulkImportCronjob(main);
@@ -362,9 +590,6 @@ public class BulkImportFlowTest {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
         int NUMBER_OF_USERS_TO_UPLOAD = 100;
-        int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
-        System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
-        System.out.println("Worker threads: " + parallelism_set_to);
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -387,7 +612,6 @@ public class BulkImportFlowTest {
             assertEquals("OK", lazyImportResponse.get("status").getAsString());
             assertNotNull(lazyImportResponse.get("user"));
             successfully_lazy_imported++;
-            System.out.println(i + "th lazy imported");
         }
 
         // expect: lazy imported users are already there, duplicate.. errors
@@ -470,10 +694,10 @@ public class BulkImportFlowTest {
 
         JsonObject userToImportLazyAgain = allUsersJson.get("users").getAsJsonArray().get(0).getAsJsonObject();
         try {
-            JsonObject lazyImportResponseTwo = lazyImportUser(main, userToImportLazy);
+            JsonObject lazyImportResponseTwo = lazyImportUser(main, userToImportLazyAgain);
         } catch (HttpResponseException expected) {
-            assertEquals(400, expected.statusCode);
             System.out.println(expected.getMessage());
+            assertEquals(400, expected.statusCode);
         }
     }
 
@@ -481,7 +705,7 @@ public class BulkImportFlowTest {
             throws HttpResponseException, IOException {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/bulk-import/import",
-                user, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                user, 100000, 100000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
 
     private static JsonObject loadBulkImportUsersCountWithStatus(Main main, BulkImportStorage.BULK_IMPORT_USER_STATUS status)
@@ -528,6 +752,7 @@ public class BulkImportFlowTest {
                     "[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
             user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"deviceName\":\"deviceName\"}]"));
 
+            //JsonArray tenanatIds = parser.parse("[\"public\", \"t1\"]").getAsJsonArray();
             JsonArray tenanatIds = parser.parse("[\"public\"]").getAsJsonArray();
             String email = " johndoe+" + (i + startIndex) + "@gmail.com ";
 
@@ -635,53 +860,4 @@ public class BulkImportFlowTest {
                 "http://localhost:3567/bulk-import/users",
                 request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
-
-    @Test
-    public void writeUsersToFile() throws Exception {
-        String[] args = { "../" };
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "14");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
-
-        int NUMBER_OF_USERS_TO_UPLOAD = 1000000;
-        int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
-        System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
-        System.out.println("Worker threads: " + parallelism_set_to);
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
-            return;
-        }
-
-        // Create user roles before inserting bulk users
-        {
-            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
-            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
-        }
-
-        // upload a bunch of users through the API
-        {
-            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 10000); i++) {
-                JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
-                FileWriter fileWriter = new FileWriter(new File("/home/prophet/Projects/bulkimport-users-" + i + ".json"));
-                fileWriter.write(String.valueOf(request));
-                fileWriter.flush();
-                fileWriter.close();
-            }
-
-        }
-
-        System.out.println("setup done, waiting");
-        while(true){
-            Thread.sleep(10000);
-        }
-    }
-
-
 }

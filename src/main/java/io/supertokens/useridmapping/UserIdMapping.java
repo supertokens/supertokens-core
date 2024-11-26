@@ -18,6 +18,7 @@ package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.StorageAndUserIdMappingForBulkImport;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -59,6 +60,15 @@ public class UserIdMapping {
             this.supertokensUserId = supertokensUserId;
             this.error = error;
             this.externalUserId = externalUserId;
+        }
+
+        @Override
+        public String toString() {
+            return "UserIdBulkMappingResult{" +
+                    "supertokensUserId='" + supertokensUserId + '\'' +
+                    ", externalUserId='" + externalUserId + '\'' +
+                    ", error=" + error +
+                    '}';
         }
     }
 
@@ -218,16 +228,20 @@ public class UserIdMapping {
         for(Map.Entry<String, String> supertokensIdToExternalId : superTokensUserIdToExternalUserId.entrySet()) {
             String supertokensId = supertokensIdToExternalId.getKey();
             String externalId = supertokensIdToExternalId.getValue();
-            StorageAndUserIdMapping mappingByExternal = findStorageAndUserIdMappingForUser(externalId, mappingAndStorageWithExternal, false);
-            if (mappingByExternal != null && mappingByExternal.userIdMapping != null ){
+            StorageAndUserIdMapping mappingByExternal = findStorageAndUserIdMappingForUser(externalId,
+                    mappingAndStorageWithExternal, false);
+            if (mappingByExternal != null && mappingByExternal.userIdMapping != null) {
                 mappingResults.add(new UserIdBulkMappingResult(supertokensId, externalId,
-                        new UserIdMappingAlreadyExistsException(supertokensId.equals(mappingByExternal.userIdMapping.superTokensUserId),
+                        new UserIdMappingAlreadyExistsException(
+                                supertokensId.equals(mappingByExternal.userIdMapping.superTokensUserId),
                                 externalId.equals(mappingByExternal.userIdMapping.externalUserId))));
                 continue;
             }
-            StorageAndUserIdMapping mappingBySupertokens = findStorageAndUserIdMappingForUser(supertokensId, mappingAndStorageWithSupertokens, true);
-            if(mappingBySupertokens == null) {
-                mappingResults.add(new UserIdBulkMappingResult(supertokensId, externalId, new UnknownSuperTokensUserIdException()));
+            StorageAndUserIdMapping mappingBySupertokens = findStorageAndUserIdMappingForUser(supertokensId,
+                    mappingAndStorageWithSupertokens, true);
+            if (mappingBySupertokens == null) {
+                mappingResults.add(new UserIdBulkMappingResult(supertokensId, externalId,
+                        new UnknownSuperTokensUserIdException()));
                 continue;
             }
             Storage userStorage = mappingBySupertokens.storage;
@@ -242,14 +256,15 @@ public class UserIdMapping {
 
                 {
                     if (findStorageAndUserIdMappingForUser(externalId, mappingAndStoragesAsInvalid, true) != null) {
-                        mappingResults.add(new UserIdBulkMappingResult(supertokensId, externalId, new ServletException(new WebserverAPI.BadRequestException(
-                                "Cannot create a userId mapping where the externalId is also a SuperTokens userID"))));
+                        mappingResults.add(new UserIdBulkMappingResult(supertokensId, externalId,
+                                new ServletException(new WebserverAPI.BadRequestException(
+                                        "Cannot create a userId mapping where the externalId is also a SuperTokens userID"))));
                         continue;
                     }
                 }
 
                 List<String> storageClasses;
-                if(userIdsUsedInNonAuthRecipes.containsKey(supertokensId)){
+                if (userIdsUsedInNonAuthRecipes.containsKey(supertokensId)) {
                     storageClasses = userIdsUsedInNonAuthRecipes.get(supertokensId);
                 } else {
                     storageClasses = new ArrayList<>();
@@ -280,35 +295,44 @@ public class UserIdMapping {
                     }
                 } else {
                     //if we are not making any exceptions, then having the id used is an error!
-                    if(!storageClasses.isEmpty()) {
-                        createBulkIdMappingErrorForNonAuthRecipeUsage(storageClasses, mappingResults, supertokensId, externalId);
+                    if (!storageClasses.isEmpty()) {
+                        createBulkIdMappingErrorForNonAuthRecipeUsage(storageClasses, mappingResults, supertokensId,
+                                externalId);
                         continue;
                     }
                 }
 
                 noErrorFound.add(mappingBySupertokens);
             }
+        }
+        //userstorage - group users by storage
+        Map<Storage, List<StorageAndUserIdMapping>> partitionedMappings = partitionUsersByStorage(noErrorFound);
+        for(Storage storage : partitionedMappings.keySet()){
 
-            //userstorage - group users by storage
-            Map<Storage, List<StorageAndUserIdMapping>> partitionedMappings = partitionUsersByStorage(noErrorFound);
-            for(Storage storage : partitionedMappings.keySet()){
-                List<StorageAndUserIdMapping> mappingsForCurrentStorage = partitionedMappings.get(storage);
+            List<StorageAndUserIdMapping> mappingsForCurrentStorage = partitionedMappings.get(storage);
+            Map<String, String> mappingInCurrentStorageThatNeedsToBeDone = new HashMap<>();
+            Map<String, String> supertokensIdToExternalIdInCurrentStorageForEmailUpdate = new HashMap<>();
 
-                Map<String, String> supertokensIdToExternalIdInCurrentStorage = new HashMap<>();
-                for(StorageAndUserIdMapping storageAndUserIdMapping: mappingsForCurrentStorage) {
-                    supertokensIdToExternalIdInCurrentStorage.put(storageAndUserIdMapping.userIdMapping.superTokensUserId,
-                            superTokensUserIdToExternalUserId.get(storageAndUserIdMapping.userIdMapping.superTokensUserId));
+            for(StorageAndUserIdMapping storageAndUserIdMapping: mappingsForCurrentStorage) {
+                String userIdInQuestion = ((StorageAndUserIdMappingForBulkImport)storageAndUserIdMapping).userIdInQuestion;
+
+                if(supertokensToExternalUserIdsToUpdateEmailVerified.keySet().contains(userIdInQuestion)){
+                    supertokensIdToExternalIdInCurrentStorageForEmailUpdate.put(userIdInQuestion,
+                            superTokensUserIdToExternalUserId.get(userIdInQuestion));
                 }
+                mappingInCurrentStorageThatNeedsToBeDone.put(userIdInQuestion, superTokensUserIdToExternalUserId.get(userIdInQuestion));
+            }
 
-                EmailVerificationStorage emailVerificationStorage = StorageUtils.getEmailVerificationStorage(storage);
-                emailVerificationStorage.updateMultipleIsEmailVerifiedToExternalUserIds(appIdentifier, supertokensIdToExternalIdInCurrentStorage);
+            StorageUtils.getUserIdMappingStorage(storage).createBulkUserIdMapping(appIdentifier, mappingInCurrentStorageThatNeedsToBeDone);
 
-                StorageUtils.getUserIdMappingStorage(storage).createBulkUserIdMapping(appIdentifier, supertokensIdToExternalIdInCurrentStorage);
-                for(String supertokensIdForResult : supertokensIdToExternalIdInCurrentStorage.keySet()) {
-                    mappingResults.add(new UserIdBulkMappingResult(supertokensIdForResult, supertokensIdToExternalIdInCurrentStorage.get(supertokensIdForResult), null));
-                }
+            EmailVerificationStorage emailVerificationStorage = StorageUtils.getEmailVerificationStorage(storage);
+            emailVerificationStorage.updateMultipleIsEmailVerifiedToExternalUserIds(appIdentifier, supertokensIdToExternalIdInCurrentStorageForEmailUpdate);
+
+            for(String supertokensIdForResult : mappingInCurrentStorageThatNeedsToBeDone.keySet()) {
+                mappingResults.add(new UserIdBulkMappingResult(supertokensIdForResult, mappingInCurrentStorageThatNeedsToBeDone.get(supertokensIdForResult), null));
             }
         }
+
         Map<String, Exception> errors = new HashMap<>();
         for(UserIdBulkMappingResult result : mappingResults){
             if(result.error != null) {
@@ -345,16 +369,18 @@ public class UserIdMapping {
 
     private static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(String userId, List<StorageAndUserIdMapping> findIn, boolean supertokensId) {
         List<StorageAndUserIdMapping> mappings = findIn.stream().filter(storageAndUserIdMapping -> {
-            if(storageAndUserIdMapping.userIdMapping != null) {
+            if(storageAndUserIdMapping instanceof StorageAndUserIdMappingForBulkImport && ((StorageAndUserIdMappingForBulkImport) storageAndUserIdMapping).userIdInQuestion != null) {
+                return ((StorageAndUserIdMappingForBulkImport)storageAndUserIdMapping).userIdInQuestion.equals(userId);
+            } else if(storageAndUserIdMapping.userIdMapping != null) {
                 if(supertokensId) {
-                    return storageAndUserIdMapping.userIdMapping.superTokensUserId.equals(userId);
+                    return userId.equals(storageAndUserIdMapping.userIdMapping.superTokensUserId);
                 } else {
-                    return storageAndUserIdMapping.userIdMapping.externalUserId.equals(userId);
+                    return userId.equals(storageAndUserIdMapping.userIdMapping.externalUserId);
                 }
             }
             return false;
         }).collect(Collectors.toList()); // theoretically it shouldn't happen that there are more than one element in the list
-        if(mappings.size() > 1) {
+        if(mappings.size() > 1 && !(mappings.get(0) instanceof StorageAndUserIdMappingForBulkImport)) {
             throw new IllegalStateException("more than one mapping exists for Id.");
         }
         return mappings.isEmpty() ? null : mappings.get(0);

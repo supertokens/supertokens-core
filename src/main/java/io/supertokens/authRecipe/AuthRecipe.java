@@ -979,8 +979,7 @@ public class AuthRecipe {
                                                             List<String> allDistinctEmails,
                                                             List<String> allDistinctPhones,
                                                             Map<String, String> thirdpartyUserIdsToThirdpartyIds)
-            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
+            throws StorageQueryException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
         if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
             throw new FeatureNotEnabledException(

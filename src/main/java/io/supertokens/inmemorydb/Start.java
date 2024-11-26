@@ -658,7 +658,8 @@ public class Start
     public Map<String, List<String>> findNonAuthRecipesWhereForUserIdsUsed(AppIdentifier appIdentifier,
                                                                            List<String> userIds)
             throws StorageQueryException {
-        return Map.of();
+        throw new UnsupportedOperationException("'findNonAuthRecipesWhereForUserIdsUsed' is not supported for in-memory db");
+
     }
 
     @TestOnly
@@ -933,7 +934,7 @@ public class Start
     public void signUpMultipleViaBulkImport_Transaction(TransactionConnection connection,
                                                         List<EmailPasswordImportUser> users)
             throws StorageQueryException, StorageTransactionLogicException {
-        //TODO
+        throw new UnsupportedOperationException("'signUpMultipleViaBulkImport_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -1156,7 +1157,7 @@ public class Start
     public void updateMultipleIsEmailVerifiedToExternalUserIds(AppIdentifier appIdentifier,
                                                                Map<String, String> supertokensUserIdToExternalUserId)
             throws StorageQueryException {
-
+        throw new UnsupportedOperationException("'updateMultipleIsEmailVerifiedToExternalUserIds' is not supported for in-memory db");
     }
 
     @Override
@@ -1197,14 +1198,14 @@ public class Start
     public void importThirdPartyUsers_Transaction(TransactionConnection con,
                                                   List<ThirdPartyImportUser> usersToImport)
             throws StorageQueryException, StorageTransactionLogicException {
-        // TODO
+        throw new UnsupportedOperationException("'importThirdPartyUsers_Transaction' is not supported for in-memory db");
     }
 
     @Override
     public void importPasswordlessUsers_Transaction(TransactionConnection con,
                                                     List<PasswordlessImportUser> users)
             throws StorageQueryException {
-        // TODO
+        throw new UnsupportedOperationException("'importPasswordlessUsers_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -1350,7 +1351,7 @@ public class Start
     @Override
     public List<String> findExistingUserIds(AppIdentifier appIdentifier, List<String> userIds)
             throws StorageQueryException {
-        return List.of(); // TODO
+        throw new UnsupportedOperationException("'findExistingUserIds' is not supported for in-memory db");
     }
 
     @Override
@@ -1917,7 +1918,7 @@ public class Start
                                                                          TransactionConnection con,
                                                                          List<String> userIds)
             throws StorageQueryException {
-        return Map.of(); // TODO
+        throw new UnsupportedOperationException("'getMultipleUsersMetadatas_Transaction' is not supported for in-memory db");
     }
 
 
@@ -1951,7 +1952,7 @@ public class Start
     public void setMultipleUsersMetadatas_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                      Map<String, JsonObject> metadataByUserId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        //TODO
+        throw new UnsupportedOperationException("'setMultipleUsersMetadatas_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -2199,10 +2200,10 @@ public class Start
     }
 
     @Override
-    public List<Boolean> doesMultipleRoleExist_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+    public List<String> doesMultipleRoleExist_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                            List<String> roles) throws StorageQueryException {
-        // TODO
-        return List.of();
+        throw new UnsupportedOperationException("'doesMultipleRoleExist_Transaction' is not supported for in-memory db");
+
     }
 
     @Override
@@ -2218,9 +2219,9 @@ public class Start
 
     @Override
     public void addRolesToUsers_Transaction(TransactionConnection connection,
-                                            Map<TenantIdentifier, Map<String, String>> rolesToUserByTenants)
+                                            Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenants)
             throws StorageQueryException {
-        // TODO
+        throw new UnsupportedOperationException("'addRolesToUsers_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -2267,7 +2268,7 @@ public class Start
     public void createBulkUserIdMapping(AppIdentifier appIdentifier,
                                         Map<String, String> superTokensUserIdToExternalUserId)
             throws StorageQueryException {
-
+        throw new UnsupportedOperationException("'createBulkUserIdMapping' is not supported for in-memory db");
     }
 
     @Override
@@ -2775,7 +2776,7 @@ public class Start
     public void createDevices_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                           List<TOTPDevice> devices)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        // TODO
+        throw new UnsupportedOperationException("'createDevices_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -3014,7 +3015,7 @@ public class Start
     public AuthRecipeUserInfo[] listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction(
             AppIdentifier appIdentifier, TransactionConnection con, List<String> emails, List<String> phones,
             Map<String, String> thirdpartyIdToThirdpartyUserId) throws StorageQueryException {
-        return new AuthRecipeUserInfo[0]; // TODO
+        throw new UnsupportedOperationException("'listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -3102,7 +3103,7 @@ public class Start
     public void linkMultipleAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                  Map<String, String> recipeUserIdByPrimaryUserId)
             throws StorageQueryException {
-        // TODO
+        throw new UnsupportedOperationException("'linkMultipleAccounts_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -3187,7 +3188,7 @@ public class Start
                                                                     AppIdentifier appIdentifier, List<String> userIds,
                                                                     boolean isSupertokensIds)
             throws StorageQueryException {
-        return List.of(); // TODO
+        throw new UnsupportedOperationException("'getMultipleUserIdMapping_Transaction' is not supported for in-memory db");
     }
 
     @Override

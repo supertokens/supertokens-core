@@ -206,17 +206,15 @@ public class BulkImport {
         processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
         try {
             createPrimaryUsersAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, users);
-        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException |
-                 RecipeUserIdAlreadyLinkedWithPrimaryUserIdException | StorageQueryException | FeatureNotEnabledException |
-                TenantOrAppNotFoundException | UnknownUserIdException e) {
-            throw new RuntimeException(e);
+            createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
+            verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
+            createMultipleTotpDevices(main, appIdentifier, bulkImportProxyStorage, users);
+            createMultipleUserMetadata(appIdentifier, bulkImportProxyStorage, users);
+            createMultipleUserRoles(main, appIdentifier, bulkImportProxyStorage, users);
+        } catch ( StorageQueryException | FeatureNotEnabledException |
+                  TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(e);
         }
-
-        createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
-        verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
-        createMultipleTotpDevices(main, appIdentifier, bulkImportProxyStorage, users);
-        createMultipleUserMetadata(appIdentifier, bulkImportProxyStorage, users);
-        createMultipleUserRoles(main, appIdentifier, bulkImportProxyStorage, users);
     }
 
     public static void processUsersLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
@@ -456,9 +454,8 @@ public class BulkImport {
     private static void createPrimaryUsersAndLinkAccounts(Main main,
                                                           AppIdentifier appIdentifier, Storage storage,
                                                           List<BulkImportUser> users)
-            throws StorageTransactionLogicException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, StorageQueryException, FeatureNotEnabledException,
-            TenantOrAppNotFoundException, UnknownUserIdException {
+            throws StorageTransactionLogicException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException {
         List<String> userIds =
                 users.stream()
                         .map(bulkImportUser -> getPrimaryLoginMethod(bulkImportUser).getSuperTokenOrExternalUserId())
@@ -591,6 +588,7 @@ public class BulkImport {
             if(user.externalUserId != null) {
                 LoginMethod primaryLoginMethod = getPrimaryLoginMethod(user);
                 superTokensUserIdToExternalUserId.put(primaryLoginMethod.superTokensUserId, user.externalUserId);
+                primaryLoginMethod.externalUserId = user.externalUserId;
             }
         }
         try {
@@ -645,7 +643,7 @@ public class BulkImport {
 
     public static void createMultipleUserRoles(Main main, AppIdentifier appIdentifier, Storage storage,
                                                List<BulkImportUser> users) throws StorageTransactionLogicException {
-        Map<TenantIdentifier, Map<String, String>> rolesToUserByTenant = new HashMap<>();
+        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = new HashMap<>();
         for (BulkImportUser user : users) {
 
             if (user.userRoles != null) {
@@ -658,24 +656,34 @@ public class BulkImport {
 
                             rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
                         }
-                        rolesToUserByTenant.get(tenantIdentifier).put(user.externalUserId, userRole.role);
+                        if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(user.externalUserId)){
+                            rolesToUserByTenant.get(tenantIdentifier).put(user.externalUserId, new ArrayList<>());
+                        }
+                        rolesToUserByTenant.get(tenantIdentifier).get(user.externalUserId).add(userRole.role);
                     }
                 }
             }
         }
         try {
 
-            UserRoles.addMultipleRolesToMultipleUsers(main, storage, rolesToUserByTenant);
+            UserRoles.addMultipleRolesToMultipleUsers(main, appIdentifier, storage, rolesToUserByTenant);
         } catch (TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(new Exception("E033: " + e.getMessage()));
         } catch (StorageTransactionLogicException e) {
-            if(e.actualException instanceof UnknownRoleException){
-                throw new StorageTransactionLogicException(new Exception("E034: Role "
-                        + " does not exist! You need pre-create the role before assigning it to the user."));
+            if(e.actualException instanceof BulkImportBatchInsertException){
+                Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
+                for (String userid : errorsByPosition.keySet()) {
+                    Exception exception = errorsByPosition.get(userid);
+                    if (exception instanceof UnknownRoleException) {
+                        String message = "E034: Role does not exist! You need to pre-create the role before " +
+                                "assigning it to the user.";
+                        errorsByPosition.put(userid, new Exception(message));
+                    }
+                }
+                throw new StorageTransactionLogicException(new BulkImportBatchInsertException("roles errors translated", errorsByPosition));
             } else {
                 throw new StorageTransactionLogicException(e);
             }
-
         }
 
     }
@@ -686,7 +694,7 @@ public class BulkImport {
         Map<String, String> emailToUserId = new HashMap<>();
         for (BulkImportUser user : users) {
             for (LoginMethod lm : user.loginMethods) {
-                emailToUserId.put(lm.email, lm.getSuperTokenOrExternalUserId());
+                emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
             }
         }
 

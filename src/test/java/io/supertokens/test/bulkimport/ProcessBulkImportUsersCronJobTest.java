@@ -19,13 +19,10 @@ package io.supertokens.test.bulkimport;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportBackgroundJobManager;
-import io.supertokens.config.Config;
-import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
@@ -33,34 +30,31 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.CronjobTest;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.Utils;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.userroles.UserRoles;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUserWithRoles;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ProcessBulkImportUsersCronJobTest {
     @Rule
@@ -352,7 +346,7 @@ public class ProcessBulkImportUsersCronJobTest {
         assertEquals(1, usersAfterProcessing.size());
 
         assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
-        assertEquals("E034: Role role1 does not exist! You need pre-create the role before assigning it to the user.",
+        assertEquals("E034: Role does not exist! You need to pre-create the role before assigning it to the user.",
                 usersAfterProcessing.get(0).errorMessage);
 
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
@@ -395,7 +389,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         for(BulkImportUser userAfterProcessing: usersAfterProcessing){
             assertEquals(BULK_IMPORT_USER_STATUS.FAILED, userAfterProcessing.status); // should process every user and every one of them should fail because of the missing role
-            assertEquals("E034: Role role1 does not exist! You need pre-create the role before assigning it to the user.",
+            assertEquals("E034: Role does not exist! You need to pre-create the role before assigning it to the user.",
                     userAfterProcessing.errorMessage);
         }
 
@@ -419,7 +413,6 @@ public class ProcessBulkImportUsersCronJobTest {
             return;
         }
 
-
         BulkImportTestUtils.createTenants(main);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
@@ -435,7 +428,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(2 * 60000);
+        Thread.sleep(60000); // one minute
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -446,7 +439,7 @@ public class ProcessBulkImportUsersCronJobTest {
         for(int i = 0; i < usersAfterProcessing.size(); i++){
             if(usersAfterProcessing.get(i).status == BULK_IMPORT_USER_STATUS.FAILED) {
                 assertEquals(
-                        "E034: Role notExistingRole does not exist! You need pre-create the role before assigning it to the user.",
+                        "E034: Role does not exist! You need to pre-create the role before assigning it to the user.",
                         usersAfterProcessing.get(i).errorMessage);
                 numberOfFailed++;
             }
@@ -538,13 +531,13 @@ public class ProcessBulkImportUsersCronJobTest {
 
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
-        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 100000);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1);
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
-        BulkImportBackgroundJobManager.startBackgroundJob(main, 1000);
+        BulkImportBackgroundJobManager.startBackgroundJob(main, 8000);
         if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
             return null;
         }
