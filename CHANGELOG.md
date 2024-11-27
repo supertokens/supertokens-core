@@ -7,6 +7,46 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [9.4.0]
+
+### Added
+- Adds property `bulk_migration_parallelism` for fine-tuning the worker threads number
+- Adds APIs to bulk import users
+    - GET `/bulk-import/users`
+    - POST `/bulk-import/users`
+    - GET `/bulk-import/users/count`
+    - POST `/bulk-import/users/remove`
+    - POST `/bulk-import/users/import`
+    - POST `/bulk-import/backgroundjob`
+    - GET `/bulk-import/backgroundjob`
+- Adds `ProcessBulkImportUsers` cron job to process bulk import users
+- Adds multithreaded worker support for the `ProcessBulkImportUsers` cron job for faster bulk imports
+- Adds support for lazy importing users
+
+### Migrations
+
+```sql
+"CREATE TABLE IF NOT EXISTS bulk_import_users (
+                id CHAR(36),
+                app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+                primary_user_id VARCHAR(36),
+                raw_data TEXT NOT NULL,
+                status VARCHAR(128) DEFAULT 'NEW',
+                error_msg TEXT,
+                created_at BIGINT NOT NULL, 
+                updated_at BIGINT NOT NULL, 
+                CONSTRAINT bulk_import_users_pkey PRIMARY KEY(app_id, id),
+                CONSTRAINT bulk_import_users__app_id_fkey FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS bulk_import_users_status_updated_at_index ON bulk_import_users (app_id, status, updated_at);
+
+CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index1 ON bulk_import_users (app_id, status, created_at DESC,
+ id DESC);
+ 
+CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
+```
+
 ## [9.3.0]
 
 ### Changes
@@ -156,13 +196,6 @@ CREATE INDEX oauth_logout_challenges_time_created_index ON oauth_logout_challeng
 - Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow 
   special chars.
 
-### Added
-
-- Adds multithreaded worker support for the `ProcessBulkImportUsers` cron job for faster bulk imports
-- Adds property `bulk_migration_parallelism` for fine-tuning the worker threads number
-- Adds APIs to bulk import users
-- Adds `ProcessBulkImportUsers` cron job to process bulk import users
-
 ## [9.2.2] - 2024-09-04
 
 - Adds index on `last_active_time` for `user_last_active` table to improve the performance of MAU computation.
@@ -260,7 +293,6 @@ If using MySQL
 ALTER TABLE tenant_configs ADD COLUMN is_first_factors_null BOOLEAN DEFAULT TRUE;
 ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
 ```
->>>>>>> master
 
 ## [9.0.2] - 2024-04-17
 
