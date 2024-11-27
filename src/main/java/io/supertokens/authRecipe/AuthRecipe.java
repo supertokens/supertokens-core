@@ -418,7 +418,8 @@ public class AuthRecipe {
                     if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
                         continue;
                     }
-                    if (userWithSameThirdParty.isPrimaryUser) {
+                    if (userWithSameThirdParty.isPrimaryUser &&
+                            !userWithSameThirdParty.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
                                 userWithSameThirdParty.getSupertokensUserId(),
                                 "This user's third party login is already associated with another" +
