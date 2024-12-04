@@ -261,11 +261,12 @@ public class EmailPassword {
     public static void createMultipleUsersWithPasswordHash(Storage storage,
                                                            List<EmailPasswordImportUser> usersToImport)
             throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
-        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
-        epStorage.startTransaction(con -> {
-            epStorage.signUpMultipleViaBulkImport_Transaction(con, usersToImport);
-            return null;
-        });
+
+            EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
+            epStorage.startTransaction(con -> {
+                epStorage.signUpMultipleViaBulkImport_Transaction(con, usersToImport);
+                return null;
+            });
     }
 
     @TestOnly

@@ -143,7 +143,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(60000);
+        Thread.sleep(6000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -159,8 +159,6 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInLargeNumbersInTheSameTenant() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "8");
-
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
@@ -198,7 +196,9 @@ public class ProcessBulkImportUsersCronJobTest {
     }
 
     @Test
-    public void shouldProcessBulkImportUsersInMultipleTenantsWithDifferentStorages() throws Exception {
+    public void shouldProcessBulkImportUsersInMultipleTenantsWithDifferentStoragesOnMultipleThreads() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "3");
+
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
@@ -226,9 +226,73 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportUser bulkImportUserT1 = usersT1.get(0);
         BulkImportUser bulkImportUserT2 = usersT2.get(0);
 
-        BulkImport.addUsers(appIdentifier, storage, List.of(bulkImportUserT1, bulkImportUserT2));
+        BulkImport.addUsers(appIdentifier, storage, usersT1);
+        BulkImport.addUsers(appIdentifier, storage, usersT2);
 
-        Thread.sleep(6000);
+        Thread.sleep(12000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        Storage storageT1 = StorageLayer.getStorage(t1, main);
+        Storage storageT2 = StorageLayer.getStorage(t2, main);
+
+        UserPaginationContainer containerT1 = AuthRecipe.getUsers(t1, storageT1, 100, "ASC", null, null, null);
+        UserPaginationContainer containerT2 = AuthRecipe.getUsers(t2, storageT2, 100, "ASC", null, null, null);
+
+        assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
+
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t1, storageT1,
+                bulkImportUserT1,
+                containerT1.users[0]);
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t2, storageT2,
+                bulkImportUserT2,
+                containerT2.users[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldProcessBulkImportUsersInMultipleTenantsWithDifferentStoragesOnOneThreads() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "1");
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> usersT1 = generateBulkImportUser(1, List.of(t1.getTenantId()), 0);
+        List<BulkImportUser> usersT2 = generateBulkImportUser(1, List.of(t2.getTenantId()), 1);
+
+        BulkImportUser bulkImportUserT1 = usersT1.get(0);
+        BulkImportUser bulkImportUserT2 = usersT2.get(0);
+
+        BulkImport.addUsers(appIdentifier, storage, usersT1);
+        BulkImport.addUsers(appIdentifier, storage, usersT2);
+
+        Thread.sleep(12000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -314,6 +378,62 @@ public class ProcessBulkImportUsersCronJobTest {
     }
 
     @Test
+    public void shouldProcessBulkImportUsersInLargeNumberInMultipleTenantsWithDifferentStoragesOnOneThread() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "1");
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> usersT1 = generateBulkImportUser(50, List.of(t1.getTenantId()), 0);
+        List<BulkImportUser> usersT2 = generateBulkImportUser(50, List.of(t2.getTenantId()), 50);
+
+        List<BulkImportUser> allUsers = new ArrayList<>();
+        allUsers.addAll(usersT1);
+        allUsers.addAll(usersT2);
+
+        BulkImport.addUsers(appIdentifier, storage, allUsers);
+
+        Thread.sleep(2 * 60000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        Storage storageT1 = StorageLayer.getStorage(t1, main);
+        Storage storageT2 = StorageLayer.getStorage(t2, main);
+
+        UserPaginationContainer containerT1 = AuthRecipe.getUsers(t1, storageT1, 500, "ASC", null, null, null);
+        UserPaginationContainer containerT2 = AuthRecipe.getUsers(t2, storageT2, 500, "ASC", null, null, null);
+
+        assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
+
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void shouldDeleteEverythingFromTheDBIfAnythingFails() throws Exception {
         // Creating a non-existing user role will result in an error.
         // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
@@ -338,7 +458,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(6000);
+        Thread.sleep(12000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -506,7 +626,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1, List.of("t1", "t2"), 0);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(6000);
+        Thread.sleep(12000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);

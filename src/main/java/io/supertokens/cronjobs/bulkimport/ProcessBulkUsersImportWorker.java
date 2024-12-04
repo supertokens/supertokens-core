@@ -26,7 +26,6 @@ import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportTransactionRolledBackException;
@@ -76,7 +75,6 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                                       BulkImportSQLStorage baseTenantStorage)
             throws TenantOrAppNotFoundException, StorageQueryException, IOException,
             DbInitException {
-
         BulkImportUser user = null;
         try {
             final Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
@@ -108,36 +106,37 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             }
             // Since all the tenants of a user must share the storage, we will just use the
             // storage of the first tenantId of the first loginMethod
-            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), validUsers.get(0).loginMethods.get(0).tenantIds.get(0));
+            Map<SQLStorage, List<BulkImportUser>> partitionedUsers = partitionUsersByStorage(appIdentifier, validUsers);
+            for(SQLStorage bulkImportProxyStorage : partitionedUsers.keySet()) {
+                boolean shouldRetryImmediatley = true;
+                while (shouldRetryImmediatley) {
+                    shouldRetryImmediatley = bulkImportProxyStorage.startTransaction(con -> {
+                        try {
+                            BulkImport.processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage, partitionedUsers.get(bulkImportProxyStorage),
+                                    allStoragesForApp);
 
-            SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
+                            bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
 
-            bulkImportProxyStorage.startTransaction(con -> {
-                try {
+                            String[] toDelete = new String[validUsers.size()];
+                            for (int i = 0; i < validUsers.size(); i++) {
+                                toDelete[i] = validUsers.get(i).id;
+                            }
 
-                    BulkImport.processUsersImportSteps(main, con, appIdentifier, bulkImportProxyStorage, validUsers, allStoragesForApp);
-
-                    bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
-
-                    String[] toDelete = new String[validUsers.size()];
-                    for(int i = 0; i < validUsers.size(); i++) {
-                        toDelete[i] = validUsers.get(i).id;
-                    }
-
-                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
-                } catch (StorageTransactionLogicException e) {
-                    // We need to rollback the transaction manually because we have overridden that in the proxy
-                    // storage
-                    bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
-                    if(isBulkImportTransactionRolledBackIsTheRealCause(e)){
-                        return true;
-                        //@see BulkImportTransactionRolledBackException for explanation
-                    }
-                    handleProcessUserExceptions(app, validUsers, e, baseTenantStorage);
+                            baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
+                        } catch (StorageTransactionLogicException e) {
+                            // We need to rollback the transaction manually because we have overridden that in the proxy
+                            // storage
+                            bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
+                            if (isBulkImportTransactionRolledBackIsTheRealCause(e)) {
+                                return true;
+                                //@see BulkImportTransactionRolledBackException for explanation
+                            }
+                            handleProcessUserExceptions(app, validUsers, e, baseTenantStorage);
+                        }
+                        return false;
+                    });
                 }
-                return false;
-            });
+            }
         } catch (StorageTransactionLogicException | InvalidConfigException e) {
             throw new RuntimeException(e);
         } catch (BulkImportBatchInsertException insertException) {
@@ -217,7 +216,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                         .filter(bulkImportUser ->
                                 bulkImportUser.loginMethods.stream()
                                         .map(loginMethod -> loginMethod.superTokensUserId)
-                                        .anyMatch(s -> s.equals(userid))).findFirst();
+                                        .anyMatch(s -> s!= null && s.equals(userid))).findFirst();
                 if(userWithId.isPresent()){
                     id = userWithId.get().id;
                 }
@@ -280,46 +279,19 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         userPoolToStorageMap.clear();
     }
 
-    // Checks if the importedUser was processed from the same bulkImportUser entry.
-    private boolean isProcessedUserFromSameBulkImportUserEntry(
-            AuthRecipeUserInfo importedUser, BulkImportUser bulkImportEntry) {
-        if (bulkImportEntry == null || importedUser == null || bulkImportEntry.loginMethods == null ||
-                importedUser.loginMethods == null) {
-            return false;
-        }
+   private Map<SQLStorage, List<BulkImportUser>> partitionUsersByStorage(AppIdentifier appIdentifier, List<BulkImportUser> users)
+           throws DbInitException, TenantOrAppNotFoundException, InvalidConfigException, IOException {
+        Map<SQLStorage, List<BulkImportUser>> result = new HashMap<>();
+        for(BulkImportUser user: users) {
+            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
 
-        for (BulkImportUser.LoginMethod lm1 : bulkImportEntry.loginMethods) {
-            for (io.supertokens.pluginInterface.authRecipe.LoginMethod lm2 : importedUser.loginMethods) {
-                if (lm2.recipeId.toString().equals(lm1.recipeId)) {
-                    if (lm1.email != null && !lm1.email.equals(lm2.email)) {
-                        return false;
-                    }
-
-                    switch (lm1.recipeId) {
-                        case "emailpassword":
-                            if (lm1.passwordHash != null && !lm1.passwordHash.equals(lm2.passwordHash)) {
-                                return false;
-                            }
-                            break;
-                        case "thirdparty":
-                            if ((lm1.thirdPartyId != null && !lm1.thirdPartyId.equals(lm2.thirdParty.id))
-                                    || (lm1.thirdPartyUserId != null
-                                    && !lm1.thirdPartyUserId.equals(lm2.thirdParty.userId))) {
-                                return false;
-                            }
-                            break;
-                        case "passwordless":
-                            if (lm1.phoneNumber != null && !lm1.phoneNumber.equals(lm2.phoneNumber)) {
-                                return false;
-                            }
-                            break;
-                        default:
-                            return false;
-                    }
-                }
+            SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
+            if(!result.containsKey(bulkImportProxyStorage)){
+                result.put(bulkImportProxyStorage, new ArrayList<>());
             }
+            result.get(bulkImportProxyStorage).add(user);
         }
-
-        return true;
-    }
+        return result;
+   }
 }

@@ -16,20 +16,9 @@
 
 package io.supertokens.test.bulkimport;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.Main;
-import io.supertokens.config.Config;
-import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
@@ -43,12 +32,7 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
-import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.storageLayer.StorageLayer;
@@ -56,6 +40,12 @@ import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.totp.Totp;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class BulkImportTestUtils {
 
@@ -76,7 +66,7 @@ public class BulkImportTestUtils {
             String id = io.supertokens.utils.Utils.getUUID();
             String externalId = io.supertokens.utils.Utils.getUUID();
 
-            JsonObject userMetadata = parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}")
+            JsonObject userMetadata = parser.parse("{\"key1\":\""+id+"\",\"key2\":{\"key3\":\"value3\"}}")
                     .getAsJsonObject();
 
             List<UserRole> userRoles = new ArrayList<>();

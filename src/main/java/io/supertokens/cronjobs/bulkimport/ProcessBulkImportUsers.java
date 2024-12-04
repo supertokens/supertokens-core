@@ -78,6 +78,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 this.batchSize);
 
         if(users == null || users.isEmpty()) {
+            // "No more users to process!"
             return;
         }
 

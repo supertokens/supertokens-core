@@ -359,13 +359,13 @@ public class ThirdParty {
     public static void createMultipleThirdPartyUsers(Storage storage,
                                                      List<ThirdPartyImportUser> usersToImport)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
 
-        tpStorage.startTransaction(con -> {
-            tpStorage.importThirdPartyUsers_Transaction(con, usersToImport);
-            tpStorage.commitTransaction(con);
-            return null;
-        });
+            ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
+            tpStorage.startTransaction(con -> {
+                tpStorage.importThirdPartyUsers_Transaction(con, usersToImport);
+                tpStorage.commitTransaction(con);
+                return null;
+            });
     }
 
     @Deprecated

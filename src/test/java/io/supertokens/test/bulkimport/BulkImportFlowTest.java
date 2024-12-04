@@ -41,6 +41,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -110,18 +111,29 @@ public class BulkImportFlowTest {
         {
             long count = NUMBER_OF_USERS_TO_UPLOAD;
             while(true) {
-                JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
-                assertEquals("OK", response.get("status").getAsString());
-                count = response.get("count").getAsLong();
-                int newUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
-                int processingUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+                try {
+                    JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
+                    assertEquals("OK", response.get("status").getAsString());
+                    count = response.get("count").getAsLong();
+                    int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+                    int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+                    int failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+                    count = newUsersNumber + processingUsersNumber;
 
-                count = newUsersNumber + processingUsersNumber;
-
-                if(count == 0 ){
-                    break;
+                    if (count == 0) {
+                        break;
+                    }
+                } catch (Exception e) {
+                    if(e instanceof SocketTimeoutException)  {
+                        //ignore
+                    } else {
+                        throw e;
+                    }
                 }
-                Thread.sleep(5000); // one minute
+                Thread.sleep(5000);
             }
         }
 
@@ -136,6 +148,81 @@ public class BulkImportFlowTest {
             assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore + failedImportedUsersNumber);
             assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore);
         }
+
+    }
+
+    @Test
+    public void testBatchWithOneUser() throws Exception {
+        String[] args = {"../"};
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[]{
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 100;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+
+        // upload a bunch of users through the API
+        JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
+
+        JsonObject response = uploadBulkImportUsersJson(main, usersJson);
+        assertEquals("OK", response.get("status").getAsString());
+
+        // Starting the processing cronjob here to be able to measure the runtime
+        startBulkImportCronjob(main, 8000);
+
+        // wait for the cron job to process them
+        // periodically check the remaining unprocessed users
+        // Note1: the cronjob starts the processing automatically
+        // Note2: the successfully processed users get deleted from the bulk_import_users table
+
+        long count = NUMBER_OF_USERS_TO_UPLOAD;
+        int failedUsersNumber = 0;
+        while (true) {
+            response = loadBulkImportUsersCountWithStatus(main, null);
+            assertEquals("OK", response.get("status").getAsString());
+            count = response.get("count").getAsLong();
+            int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+            failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+            int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+
+            count = newUsersNumber + processingUsersNumber;
+            if(count == 0) {
+                break;
+            }
+            System.out.println("new: " + newUsersNumber);
+            System.out.println("failed: " + failedUsersNumber);
+            System.out.println("processing: " + processingUsersNumber);
+            Thread.sleep(5000); // 5 seconds
+        }
+
+        //print failed users
+        JsonObject failedUsersLs = loadBulkImportUsersWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
+
+        // after processing finished, make sure every user got processed correctly
+        int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+        int usersInCore = loadUsersCount(main).get("count").getAsInt();
+        assertEquals(NUMBER_OF_USERS_TO_UPLOAD , usersInCore + failedImportedUsersNumber);
+        assertEquals(0, failedImportedUsersNumber);
+
 
     }
 
@@ -747,7 +834,7 @@ public class BulkImportFlowTest {
             JsonObject user = new JsonObject();
 
             user.addProperty("externalUserId", UUID.randomUUID().toString());
-            user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
+            user.add("userMetadata", parser.parse("{\"key1\":"+ UUID.randomUUID().toString() + ",\"key2\":{\"key3\":\"value3\"}}"));
             user.add("userRoles", parser.parse(
                     "[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
             user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"deviceName\":\"deviceName\"}]"));

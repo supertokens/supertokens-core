@@ -554,13 +554,13 @@ public class Passwordless {
                                                List<PasswordlessImportUser> importUsers)
             throws TenantOrAppNotFoundException, StorageQueryException,
             StorageTransactionLogicException {
-        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+            PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
-        passwordlessStorage.startTransaction(con -> {
-            passwordlessStorage.importPasswordlessUsers_Transaction(con, importUsers);
-            passwordlessStorage.commitTransaction(con);
-            return null;
-        });
+            passwordlessStorage.startTransaction(con -> {
+                passwordlessStorage.importPasswordlessUsers_Transaction(con, importUsers);
+                passwordlessStorage.commitTransaction(con);
+                return null;
+            });
     }
 
     @TestOnly

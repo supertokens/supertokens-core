@@ -59,7 +59,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
-import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -177,7 +176,7 @@ public class BulkImport {
                 try {
                     Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
 
-                    processUsersImportSteps(main, con, appIdentifier, bulkImportProxyStorage, List.of(user), allStoragesForApp);
+                    processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage, List.of(user), allStoragesForApp);
 
                     bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
 
@@ -200,11 +199,11 @@ public class BulkImport {
         }
     }
 
-    public static void processUsersImportSteps(Main main, TransactionConnection connection, AppIdentifier appIdentifier,
+    public static void processUsersImportSteps(Main main, AppIdentifier appIdentifier,
             Storage bulkImportProxyStorage, List<BulkImportUser> users, Storage[] allStoragesForApp)
             throws StorageTransactionLogicException {
-        processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
         try {
+            processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
             createPrimaryUsersAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, users);
             createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
             verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
@@ -242,7 +241,7 @@ public class BulkImport {
                                 appIdentifier));
             }
             if (sortedLoginMethods.containsKey("passwordless")) {
-                importedUsers.addAll(processPasswordlessLoginMethods(appIdentifier, storage,
+                importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
                         sortedLoginMethods.get("passwordless")));
             }
             Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
@@ -268,7 +267,7 @@ public class BulkImport {
             }
     }
 
-    private static List<? extends ImportUserBase> processPasswordlessLoginMethods(AppIdentifier appIdentifier, Storage storage,
+    private static List<? extends ImportUserBase> processPasswordlessLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
                                                                               List<LoginMethod> loginMethods)
             throws StorageTransactionLogicException {
         try {
@@ -279,13 +278,13 @@ public class BulkImport {
                         appIdentifier.getConnectionUriDomain(),
                         appIdentifier.getAppId(), loginMethod.tenantIds.get(
                         0)); // the cron runs per app. The app stays the same, the tenant can change
-
-                usersToImport.add(new PasswordlessImportUser(userId, loginMethod.phoneNumber,
+               usersToImport.add(new PasswordlessImportUser(userId, loginMethod.phoneNumber,
                         loginMethod.email, tenantIdentifierForLoginMethod, loginMethod.timeJoinedInMSSinceEpoch));
                 loginMethod.superTokensUserId = userId;
             }
 
             Passwordless.createPasswordlessUsers(storage, usersToImport);
+
             return usersToImport;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             if (e.getCause() instanceof BulkImportBatchInsertException) {
@@ -330,6 +329,7 @@ public class BulkImport {
                 loginMethod.superTokensUserId = userId;
             }
             ThirdParty.createMultipleThirdPartyUsers(storage, usersToImport);
+
             return usersToImport;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             if (e.getCause() instanceof BulkImportBatchInsertException) {
@@ -359,6 +359,7 @@ public class BulkImport {
                                                                AppIdentifier appIdentifier)
             throws StorageTransactionLogicException {
         try {
+
             //prepare data for batch import
             List<EmailPasswordImportUser> usersToImport = new ArrayList<>();
             for(LoginMethod emailPasswordLoginMethod : loginMethods) {
@@ -379,6 +380,7 @@ public class BulkImport {
             }
 
             EmailPassword.createMultipleUsersWithPasswordHash(storage, usersToImport);
+
             return usersToImport;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             if(e.getCause() instanceof BulkImportBatchInsertException){
