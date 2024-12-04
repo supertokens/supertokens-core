@@ -8,7 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 
-## [9.3.1] 
+## [9.4.0] 
 
 - Adds support for CDI 5.3
 - In CDI 5.3, when creating a new session for a known user, checks if the user is a member of that tenant.
