@@ -28,8 +28,9 @@ public class WebAuthNQueries {
                 " email VARCHAR(256) NOT NULL," +
                 " rp_id VARCHAR(256) NOT NULL," +
                 " time_joined BIGINT UNSIGNED NOT NULL," +
-                " CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id)" +
-                " FOERIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable() +
+                " CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id), " +
+                " CONSTRAINT webauthn_users_to_app_id_fkey " +
+                " FOREIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable() +
                 " (app_id, user_id) ON DELETE CASCADE " +
                 ");";
     }
