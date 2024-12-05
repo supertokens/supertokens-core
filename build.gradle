@@ -74,6 +74,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
     implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
 
+    // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-core
+    implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.3.RELEASE'
+
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 
