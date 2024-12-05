@@ -184,4 +184,12 @@ public class SQLiteConfig {
     public String getOAuthLogoutChallengesTable() {
         return "oauth_logout_challenges";
     }
+
+    public String getWebAuthNUsersTable(){ return "webauthn_users";}
+
+    public String getWebAuthNUserToTenantTable(){ return "webauthn_user_to_tenant"; }
+
+    public String getWebAuthNGeneratedOptionsTable() { return  "webauthn_generated_options"; }
+
+    public String getWebAuthNCredentialsTable() { return "webauthn_credentials"; }
 }

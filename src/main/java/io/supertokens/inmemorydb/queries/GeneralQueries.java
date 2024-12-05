@@ -457,6 +457,28 @@ public class GeneralQueries {
             // index
             update(start, OAuthQueries.getQueryToCreateOAuthLogoutChallengesTimeCreatedIndex(start), NO_OP_SETTER);
         }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNUsersTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUsersTable(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNUserToTenantTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUsersToTenantTable(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNGeneratedOptionsTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNGeneratedOptionsTable(start), NO_OP_SETTER);
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNChallengeExpiresIndex(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNCredentialsTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsTable(start), NO_OP_SETTER);
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
