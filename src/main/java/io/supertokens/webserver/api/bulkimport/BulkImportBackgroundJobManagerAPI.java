@@ -37,7 +37,7 @@ public class BulkImportBackgroundJobManagerAPI extends WebserverAPI {
     private static final long serialVersionUID = 2380841048110043408L;
 
     public BulkImportBackgroundJobManagerAPI(Main main) {
-        super(main, "");
+        super(main, "bulkimport");
     }
 
     @Override

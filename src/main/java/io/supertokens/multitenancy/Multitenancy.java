@@ -228,7 +228,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
 
-    public synchronized static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
                                                     boolean shouldPreventProtectedConfigUpdate,
                                                     boolean skipThirdPartyConfigValidation,
                                                     boolean forceReloadResources)

@@ -45,7 +45,7 @@ import java.io.IOException;
 
 public class ImportUserAPI extends WebserverAPI {
     public ImportUserAPI(Main main) {
-        super(main, "");
+        super(main, "bulkimport");
     }
 
     @Override
@@ -87,23 +87,16 @@ public class ImportUserAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("user", importedUser.toJson());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (BulkImportBatchInsertException e) {
             JsonArray errors = new JsonArray();
-            if(e.getCause() instanceof BulkImportBatchInsertException){
-                BulkImportBatchInsertException insertException = (BulkImportBatchInsertException) e.getCause();
-                errors.addAll(
-                insertException.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
-                        .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
-                );
-            } else {
-                errors.add(new JsonPrimitive(e.getMessage()));
-            }
-
+            BulkImportBatchInsertException insertException = (BulkImportBatchInsertException) e.getCause();
+            errors.addAll(
+            insertException.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
+                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
+            );
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
-            throw new ServletException(e);
         } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
             JsonArray errors = e.errors.stream()
                     .map(JsonPrimitive::new)
@@ -111,6 +104,14 @@ public class ImportUserAPI extends WebserverAPI {
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
+        } catch (StorageQueryException storageQueryException){
+            JsonArray errors = new JsonArray();
+            errors.add(new JsonPrimitive(storageQueryException.getMessage()));
+            JsonObject errorResponseJson = new JsonObject();
+            errorResponseJson.add("errors", errors);
+            throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | DbInitException e) {
+            throw new ServletException(e);
         }
     }
 }

@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.bulkimport;
 
-import java.io.IOException;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -35,9 +32,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
+
 public class CountBulkImportUsersAPI extends WebserverAPI {
   public CountBulkImportUsersAPI(Main main) {
-    super(main, "");
+    super(main, "bulkimport");
   }
 
   @Override

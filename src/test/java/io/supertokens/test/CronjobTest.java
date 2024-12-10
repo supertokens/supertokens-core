@@ -1080,4 +1080,42 @@ public class CronjobTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatIsCronJobLoadedReturnsTheGoodValues() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        boolean isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
+
+        Cronjobs.removeCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        //removing twice doesn't do anything funky
+        Cronjobs.removeCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        //adding twice doesn't do anything funky
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
+    }
 }

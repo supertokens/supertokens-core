@@ -161,7 +161,7 @@ public class BulkImport {
     public static synchronized AuthRecipeUserInfo importUser(Main main, AppIdentifier appIdentifier,
             BulkImportUser user)
             throws StorageQueryException, InvalidConfigException, IOException, TenantOrAppNotFoundException,
-            DbInitException {
+            DbInitException, BulkImportBatchInsertException {
         // Since all the tenants of a user must share the storage, we will just use the
         // storage of the first tenantId of the first loginMethod
         TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
@@ -195,6 +195,9 @@ public class BulkImport {
                 }
             });
         } catch (StorageTransactionLogicException e) {
+            if(e.actualException instanceof BulkImportBatchInsertException){
+                throw (BulkImportBatchInsertException) e.actualException;
+            }
             throw new StorageQueryException(e.actualException);
         }
     }

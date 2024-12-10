@@ -16,13 +16,9 @@
 
 package io.supertokens.webserver.api.bulkimport;
 
-import java.io.IOException;
-import java.util.List;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.Main;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -37,9 +33,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
+import java.util.List;
+
 public class DeleteBulkImportUserAPI extends WebserverAPI {
     public DeleteBulkImportUserAPI(Main main) {
-        super(main, "");
+        super(main, "bulkimport");
     }
 
     @Override

@@ -83,8 +83,30 @@ public class BulkImportBackgroundJobManagerAPITest {
             assertEquals("ACTIVE", currentStatus.get("jobStatus").getAsString());
         }
 
+        //starting it twice makes no difference
+        {
+            JsonObject startResponse = startBulkImportCronjob(main, 100);
+            assertEquals("OK", startResponse.get("status").getAsString());
+            assertEquals("ACTIVE", startResponse.get("jobStatus").getAsString());
+
+            JsonObject currentStatus = loadBulkImportCronjobStatus(main);
+            assertEquals("OK", currentStatus.get("status").getAsString());
+            assertEquals("ACTIVE", currentStatus.get("jobStatus").getAsString());
+        }
+
 
         //stopping it makes it inactive
+        {
+            JsonObject startResponse = stopBulkImportCronjob(main);
+            assertEquals("OK", startResponse.get("status").getAsString());
+            assertEquals("INACTIVE", startResponse.get("jobStatus").getAsString());
+
+            JsonObject currentStatus = loadBulkImportCronjobStatus(main);
+            assertEquals("OK", currentStatus.get("status").getAsString());
+            assertEquals("INACTIVE", currentStatus.get("jobStatus").getAsString());
+        }
+
+        //stopping it twice makes no difference
         {
             JsonObject startResponse = stopBulkImportCronjob(main);
             assertEquals("OK", startResponse.get("status").getAsString());

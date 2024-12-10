@@ -171,7 +171,7 @@ disable_telemetry: true
 # (Optional | Default: null) string value. The encryption key used for saving OAuth client secret on the database.
 # oauth_client_secret_encryption_key:
 
-# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: number of available processor cores) int value. If specified,
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: number of available processor cores) int value. If specified,
 # the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
 

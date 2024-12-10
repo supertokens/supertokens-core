@@ -152,6 +152,76 @@ public class BulkImportFlowTest {
     }
 
     @Test
+    public void testWithImportInProgressAndCronStopped() throws Exception {
+        String[] args = { "../" };
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        setFeatureFlags(main, new EE_FEATURES[] {
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 10000; // million
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        // upload a bunch of users through the API
+        {
+            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 10000); i++) {
+                JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
+                JsonObject response = uploadBulkImportUsersJson(main, request);
+                assertEquals("OK", response.get("status").getAsString());
+            }
+
+        }
+
+        // Starting the processing cronjob here to be able to measure the runtime
+        startBulkImportCronjob(main, 8000);
+
+        Thread.sleep(5000);
+
+        stopBulkImportCronjob(main);
+
+        JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
+        assertEquals("OK", response.get("status").getAsString());
+        int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+        int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+        int failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+
+        assertTrue(newUsersNumber != 0); // we assume that not all of the users are going to be handled in 5 sec
+        assertTrue(processingUsersNumber != 0); // we assume that not all of the users are going to be handled in 5 sec
+        assertEquals(0, failedUsersNumber); // we assume that not all of the users are going to be handled in 5 sec
+
+        Thread.sleep(5000);
+
+        int newUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+        int processingUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+        int failedUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
+                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+
+        assertEquals(newUsersNumber, newUsersNumber2);
+        assertEquals(processingUsersNumber, processingUsersNumber2);
+        assertEquals(failedUsersNumber, failedUsersNumber2);
+    }
+
+    @Test
     public void testBatchWithOneUser() throws Exception {
         String[] args = {"../"};
 
