@@ -18,10 +18,20 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class WebAuthNQueries {
 
-    static String getQueryToCreateWebAuthNUsersTable(Start start){
+    public static String getQueryToCreateWebAuthNUsersTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getWebAuthNUsersTable() + "(" +
                 " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
                 " user_id CHAR(36) NOT NULL," +
@@ -35,7 +45,7 @@ public class WebAuthNQueries {
                 ");";
     }
 
-    static String getQueryToCreateWebAuthNUsersToTenantTable(Start start){
+    public static String getQueryToCreateWebAuthNUsersToTenantTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS  " + Config.getConfig(start).getWebAuthNUserToTenantTable() +" (" +
                 " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
                 " tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
@@ -48,7 +58,7 @@ public class WebAuthNQueries {
                 ");";
     }
 
-    static String getQueryToCreateWebAuthNGeneratedOptionsTable(Start start){
+    public static String getQueryToCreateWebAuthNGeneratedOptionsTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable() + "(" +
                 " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
                 " tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
@@ -65,13 +75,13 @@ public class WebAuthNQueries {
                 ");";
     }
 
-    static String getQueryToCreateWebAuthNChallengeExpiresIndex(Start start) {
+    public static String getQueryToCreateWebAuthNChallengeExpiresIndex(Start start) {
         return  "CREATE INDEX webauthn_user_challenges_expires_at_index ON " +
                 Config.getConfig(start).getWebAuthNGeneratedOptionsTable() +
                 " (app_id, tenant_id, expires_at);";
     }
 
-    static String getQueryToCreateWebAuthNCredentialsTable(Start start){
+    public static String getQueryToCreateWebAuthNCredentialsTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS "+ Config.getConfig(start).getWebAuthNCredentialsTable() + "(" +
                 " id VARCHAR(256) NOT NULL," +
                 " app_id VARCHAR(64) DEFAULT 'public'," +
@@ -88,4 +98,60 @@ public class WebAuthNQueries {
                 ");";
     }
 
+    public static int saveOptions(Start start, TenantIdentifier tenantIdentifier, WebAuthNOptions options)
+            throws SQLException, StorageQueryException {
+        String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
+                + " (app_id, tenant_id, id, challenge, email, rp_id, origin, expires_at, created_at) "
+                + " VALUES (?,?,?,?,?,?,?,?,?);";
+
+        return update(start, INSERT, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, options.generatedOptionsId);
+            pst.setString(4, options.challenge);
+            pst.setString(5, options.userEmail);
+            pst.setString(6, options.relyingPartyId);
+            pst.setString(7, options.origin);
+            pst.setLong(8, options.expiresAt);
+            pst.setLong(9, options.createdAt);
+        });
+    }
+
+    public static WebAuthNOptions loadOptionsById(Start start, TenantIdentifier tenantIdentifier, String optionsId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
+                + " WHERE app_id = ? AND tenant_id = ? and id = ?";
+        return execute(start, QUERY, pst -> {
+           pst.setString(1, tenantIdentifier.getAppId());
+           pst.setString(2, tenantIdentifier.getTenantId());
+           pst.setString(3, optionsId);
+        }, result -> {
+            if(result.next()){
+                return WebAuthNOptionsRowMapper.getInstance().mapOrThrow(result); // we are expecting one or zero results
+            }
+            return null;
+        });
+    }
+
+    private static class WebAuthNOptionsRowMapper implements RowMapper<WebAuthNOptions, ResultSet> {
+        private static final WebAuthNOptionsRowMapper INSTANCE = new WebAuthNOptionsRowMapper();
+
+        public static WebAuthNOptionsRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public WebAuthNOptions map(ResultSet rs) throws Exception {
+            WebAuthNOptions result = new WebAuthNOptions();
+            result.timeout = rs.getLong("timeout");
+            result.expiresAt = rs.getLong("expires_at");
+            result.createdAt = rs.getLong("created_at");
+            result.relyingPartyId = rs.getString("rp_id");
+            result.origin = rs.getString("origin");
+            result.challenge = rs.getString("challenge");
+            result.userEmail = rs.getString("email");
+            result.generatedOptionsId = rs.getString("id");
+            return result;
+        }
+    }
 }

@@ -51,6 +51,9 @@ import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.userroles.*;
+import io.supertokens.webserver.api.webauthn.CredentialsRegisterAPI;
+import io.supertokens.webserver.api.webauthn.OptionsRegisterAPI;
+import io.supertokens.webserver.api.webauthn.SignInOptionsAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -300,6 +303,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RevokeOAuthTokensAPI(main));
         addAPI(new RevokeOAuthSessionAPI(main));
         addAPI(new OAuthLogoutAPI(main));
+
+        //webauthn
+        addAPI(new OptionsRegisterAPI(main));
+        addAPI(new SignInOptionsAPI(main));
+        addAPI(new CredentialsRegisterAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
