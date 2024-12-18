@@ -89,9 +89,8 @@ public class ImportUserAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (BulkImportBatchInsertException e) {
             JsonArray errors = new JsonArray();
-            BulkImportBatchInsertException insertException = (BulkImportBatchInsertException) e.getCause();
             errors.addAll(
-            insertException.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
+            e.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
                     .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
             );
             JsonObject errorResponseJson = new JsonObject();

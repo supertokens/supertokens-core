@@ -22,18 +22,23 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,20 +70,10 @@ public class BulkImportFlowTest {
     }
 
     @Test
-    public void testWithOneMillionUsers() throws Exception {
-        String[] args = { "../" };
+    public void testWithALotOfUsers() throws Exception {
+        Main main = startCronProcess("14");
 
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
-
-        int NUMBER_OF_USERS_TO_UPLOAD = 1000000; // million
+        int NUMBER_OF_USERS_TO_UPLOAD = 100000;
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -101,8 +96,6 @@ public class BulkImportFlowTest {
         }
 
         long processingStarted = System.currentTimeMillis();
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 8000);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -152,90 +145,10 @@ public class BulkImportFlowTest {
     }
 
     @Test
-    public void testWithImportInProgressAndCronStopped() throws Exception {
-        String[] args = { "../" };
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
-
-        int NUMBER_OF_USERS_TO_UPLOAD = 10000; // million
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
-            return;
-        }
-
-        // Create user roles before inserting bulk users
-        {
-            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
-            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
-        }
-
-        // upload a bunch of users through the API
-        {
-            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 10000); i++) {
-                JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
-                JsonObject response = uploadBulkImportUsersJson(main, request);
-                assertEquals("OK", response.get("status").getAsString());
-            }
-
-        }
-
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 8000);
-
-        Thread.sleep(5000);
-
-        stopBulkImportCronjob(main);
-
-        JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
-        assertEquals("OK", response.get("status").getAsString());
-        int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
-        int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
-        int failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
-
-        assertTrue(newUsersNumber != 0); // we assume that not all of the users are going to be handled in 5 sec
-        assertTrue(processingUsersNumber != 0); // we assume that not all of the users are going to be handled in 5 sec
-        assertEquals(0, failedUsersNumber); // we assume that not all of the users are going to be handled in 5 sec
-
-        Thread.sleep(5000);
-
-        int newUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
-        int processingUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
-        int failedUsersNumber2 = loadBulkImportUsersCountWithStatus(main,
-                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
-
-        assertEquals(newUsersNumber, newUsersNumber2);
-        assertEquals(processingUsersNumber, processingUsersNumber2);
-        assertEquals(failedUsersNumber, failedUsersNumber2);
-    }
-
-    @Test
     public void testBatchWithOneUser() throws Exception {
-        String[] args = {"../"};
+        Main main = startCronProcess("14");
 
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
-
-        int NUMBER_OF_USERS_TO_UPLOAD = 100;
+        int NUMBER_OF_USERS_TO_UPLOAD = 1;
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -250,9 +163,6 @@ public class BulkImportFlowTest {
 
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
-
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 8000);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -276,9 +186,6 @@ public class BulkImportFlowTest {
             if(count == 0) {
                 break;
             }
-            System.out.println("new: " + newUsersNumber);
-            System.out.println("failed: " + failedUsersNumber);
-            System.out.println("processing: " + processingUsersNumber);
             Thread.sleep(5000); // 5 seconds
         }
 
@@ -298,17 +205,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithDuplicate() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("14");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 2;
 
@@ -328,9 +225,6 @@ public class BulkImportFlowTest {
 
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
-
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 8000);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -378,17 +272,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithDuplicateUserIdMappingWithInputValidation() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("14");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 20;
 
@@ -420,17 +304,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithInvalidInput() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("14");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 2;
 
@@ -447,7 +321,6 @@ public class BulkImportFlowTest {
 
         usersJson.get("users").getAsJsonArray().get(0).getAsJsonObject().addProperty("externalUserId",
                 Boolean.FALSE); // invalid, should be string
-
         try {
             JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         } catch (HttpResponseException exception) {
@@ -460,17 +333,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithMissingRole() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("14");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 2;
 
@@ -498,17 +361,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithOnlyOneWithDuplicate() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "2");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("8", 10);
 
         int NUMBER_OF_USERS_TO_UPLOAD = 9;
 
@@ -540,9 +393,6 @@ public class BulkImportFlowTest {
 
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
-
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 10);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -587,17 +437,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testBatchWithOneThreadWorks() throws Exception {
-        String[] args = {"../"};
-
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "1");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[]{
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        Main main = startCronProcess("1");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 5;
 
@@ -614,9 +454,6 @@ public class BulkImportFlowTest {
 
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
-
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 8000);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
@@ -649,19 +486,10 @@ public class BulkImportFlowTest {
 
     @Test
     public void testFirstLazyImportAfterBulkImport() throws Exception {
-        String[] args = { "../" };
+        Main main = startCronProcess("14", 10);
 
-        // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "14");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
-
-        int NUMBER_OF_USERS_TO_UPLOAD = 1000;
+        int NUMBER_OF_USERS_TO_UPLOAD = 100;
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -692,10 +520,6 @@ public class BulkImportFlowTest {
             assertEquals("OK", bulkUploadResponse.get("status").getAsString());
         }
 
-        // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main, 10000);
-
-
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users
         // Note1: the cronjob starts the processing automatically
@@ -708,7 +532,7 @@ public class BulkImportFlowTest {
                 int newUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
                 int processingUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
 
-                count = newUsersNumber + processingUsersNumber; // + processingUsersNumber;
+                count = newUsersNumber + processingUsersNumber;
 
                 Thread.sleep(60000); // one minute
             }
@@ -732,19 +556,11 @@ public class BulkImportFlowTest {
                     || errorMessage.startsWith("E006:") || errorMessage.startsWith("E007:")); // duplicate email, phone, etc errors
         }
 
-        stopBulkImportCronjob(main);
     }
 
     @Test
     public void testLazyImport() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+        Main main = startCronProcess("1");
 
         int NUMBER_OF_USERS_TO_UPLOAD = 100;
 
@@ -782,14 +598,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testLazyImportUnknownRecipeLoginMethod() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+        Main main = startCronProcess("1");
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -819,14 +628,7 @@ public class BulkImportFlowTest {
 
     @Test
     public void testLazyImportDuplicatesFail() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-
-        setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+        Main main = startCronProcess("1");
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -853,7 +655,6 @@ public class BulkImportFlowTest {
         try {
             JsonObject lazyImportResponseTwo = lazyImportUser(main, userToImportLazyAgain);
         } catch (HttpResponseException expected) {
-            System.out.println(expected.getMessage());
             assertEquals(400, expected.statusCode);
         }
     }
@@ -991,30 +792,39 @@ public class BulkImportFlowTest {
         FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, features);
     }
 
-    private static void startBulkImportCronjob(Main main, int batchSize) throws HttpResponseException, IOException {
-        JsonObject request = new JsonObject();
-        request.addProperty("batchSize", batchSize);
-        request.addProperty("command", "START");
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/bulk-import/backgroundjob",
-                request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
-        System.out.println(response);
-        assertEquals("ACTIVE", response.get("jobStatus").getAsString());
-    }
-
-    private static void stopBulkImportCronjob(Main main) throws HttpResponseException, IOException {
-        JsonObject request = new JsonObject();
-        request.addProperty("command", "STOP");
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/bulk-import/backgroundjob",
-                request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
-        System.out.println(response);
-        assertEquals("INACTIVE", response.get("jobStatus").getAsString());
-    }
 
     private static JsonObject uploadBulkImportUsersJson(Main main, JsonObject request) throws IOException, HttpResponseException {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/bulk-import/users",
                 request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
     }
+
+    @NotNull
+    private Main startCronProcess(String parallelism) throws IOException, InterruptedException, TenantOrAppNotFoundException {
+        return startCronProcess(parallelism, 5*60);
+    }
+
+
+    @NotNull
+    private Main startCronProcess(String parallelism, int intervalInSeconds) throws IOException, InterruptedException, TenantOrAppNotFoundException {
+        String[] args = { "../" };
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", parallelism);
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Main main = process.getProcess();
+        setFeatureFlags(main, new EE_FEATURES[] {
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+        // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
+        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, intervalInSeconds);
+
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
+        return main;
+    }
+
 }

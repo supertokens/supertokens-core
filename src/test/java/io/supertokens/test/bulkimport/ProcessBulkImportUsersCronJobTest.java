@@ -22,7 +22,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.bulkimport.BulkImport;
-import io.supertokens.bulkimport.BulkImportBackgroundJobManager;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
@@ -657,7 +656,7 @@ public class ProcessBulkImportUsersCronJobTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
-        BulkImportBackgroundJobManager.startBackgroundJob(main, 8000);
+
         if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
             return null;
         }

@@ -26,7 +26,10 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.accountlinking.*;
-import io.supertokens.webserver.api.bulkimport.*;
+import io.supertokens.webserver.api.bulkimport.BulkImportAPI;
+import io.supertokens.webserver.api.bulkimport.CountBulkImportUsersAPI;
+import io.supertokens.webserver.api.bulkimport.DeleteBulkImportUserAPI;
+import io.supertokens.webserver.api.bulkimport.ImportUserAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
@@ -285,7 +288,6 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new DeleteBulkImportUserAPI(main));
         addAPI(new ImportUserAPI(main));
         addAPI(new CountBulkImportUsersAPI(main));
-        addAPI(new BulkImportBackgroundJobManagerAPI(main));
 
         addAPI(new OAuthAuthAPI(main));
         addAPI(new OAuthTokenAPI(main));

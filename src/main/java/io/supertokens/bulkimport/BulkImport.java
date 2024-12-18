@@ -95,9 +95,9 @@ public class BulkImport {
     // Maximum number of users that can be deleted in a single operation
     public static final int DELETE_USERS_MAX_LIMIT = 500;
     // Number of users to process in a single batch of ProcessBulkImportUsers Cron Job
-    public static final int PROCESS_USERS_BATCH_SIZE = 10000;
+    public static final int PROCESS_USERS_BATCH_SIZE = 8000;
     // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
-    public static final int PROCESS_USERS_INTERVAL_SECONDS = 1;
+    public static final int PROCESS_USERS_INTERVAL_SECONDS = 5*60; // 5 minutes
     private static final Logger log = LoggerFactory.getLogger(BulkImport.class);
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
