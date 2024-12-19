@@ -20,11 +20,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -51,8 +53,8 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
@@ -432,6 +434,12 @@ public class Utils {
         return new GsonBuilder().serializeNulls().create().toJsonTree(src);
     }
 
+
+    public static boolean isAccountLinkingEnabled(Main main, AppIdentifier appIdentifier) throws StorageQueryException, TenantOrAppNotFoundException {
+        return Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
+                .anyMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA);
+    }
+
     public static boolean containsUrl(String urlToCheckIfContains, String whatItContains, boolean careForProtocol)
             throws MalformedURLException {
         URL urlToCheck = new URL(urlToCheckIfContains);
@@ -467,4 +475,5 @@ public class Utils {
         }
         return toCamelCase;
     }
+
 }

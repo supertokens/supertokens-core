@@ -35,10 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -960,6 +957,37 @@ public class GeneralQueries {
         }
     }
 
+    public static void makePrimaryUsers_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                    List<String> userIds)
+            throws SQLException, StorageQueryException {
+
+        String users_update_QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
+        String appid_to_userid_update_QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
+
+        PreparedStatement usersUpdateStatement = sqlCon.prepareStatement(users_update_QUERY);
+        PreparedStatement appIdToUserIdUpdateStatement = sqlCon.prepareStatement(appid_to_userid_update_QUERY);
+        int counter = 0;
+        for(String userId: userIds){
+            usersUpdateStatement.setString(1, appIdentifier.getAppId());
+            usersUpdateStatement.setString(2, userId);
+            usersUpdateStatement.addBatch();
+
+            appIdToUserIdUpdateStatement.setString(1, appIdentifier.getAppId());
+            appIdToUserIdUpdateStatement.setString(2, userId);
+            appIdToUserIdUpdateStatement.addBatch();
+
+            counter++;
+            if(counter % 100 == 0) {
+                usersUpdateStatement.executeBatch();
+                appIdToUserIdUpdateStatement.executeBatch();
+            }
+        }
+        usersUpdateStatement.executeBatch();
+        appIdToUserIdUpdateStatement.executeBatch();
+    }
+
     public static void linkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                 String recipeUserId, String primaryUserId)
             throws SQLException, StorageQueryException {
@@ -988,6 +1016,54 @@ public class GeneralQueries {
                 pst.setString(3, recipeUserId);
             });
         }
+    }
+
+    public static void linkMultipleAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                Map<String, String> recipeUserIdToPrimaryUserId)
+            throws SQLException, StorageQueryException {
+
+        if(recipeUserIdToPrimaryUserId == null || recipeUserIdToPrimaryUserId.isEmpty()){
+            return;
+        }
+
+        String update_users_QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
+                    "user_id = ?";
+
+        String update_appid_to_userid_QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
+                "user_id = ?";
+
+        PreparedStatement updateUsers = sqlCon.prepareStatement(update_users_QUERY);
+        PreparedStatement updateAppIdToUserId = sqlCon.prepareStatement(update_appid_to_userid_QUERY);
+
+        int counter = 0;
+        for(Map.Entry<String, String> linkEntry : recipeUserIdToPrimaryUserId.entrySet()) {
+            String primaryUserId = linkEntry.getValue();
+            String recipeUserId = linkEntry.getKey();
+
+            updateUsers.setString(1, primaryUserId);
+            updateUsers.setString(2, appIdentifier.getAppId());
+            updateUsers.setString(3, recipeUserId);
+            updateUsers.addBatch();
+
+            updateAppIdToUserId.setString(1, primaryUserId);
+            updateAppIdToUserId.setString(2, appIdentifier.getAppId());
+            updateAppIdToUserId.setString(3, recipeUserId);
+            updateAppIdToUserId.addBatch();
+
+            counter++;
+            if (counter % 100 == 0) {
+                updateUsers.executeBatch();
+                updateAppIdToUserId.executeBatch();
+            }
+        }
+
+        updateUsers.executeBatch();
+        updateAppIdToUserId.executeBatch();
+
+        updateTimeJoinedForPrimaryUsers_Transaction(start, sqlCon, appIdentifier,
+                new ArrayList<>(recipeUserIdToPrimaryUserId.values()));
     }
 
     public static void unlinkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
@@ -1219,6 +1295,17 @@ public class GeneralQueries {
             return null;
         }
         return result.get(0);
+    }
+
+    public static List<AuthRecipeUserInfo> getPrimaryUsersInfoForUserIds_Transaction(Start start, Connection con,
+                                                                             AppIdentifier appIdentifier, List<String> ids)
+            throws SQLException, StorageQueryException {
+
+        List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds_Transaction(start, con, appIdentifier, ids);
+        if (result.isEmpty()) {
+            return null;
+        }
+        return result;
     }
 
     private static List<AuthRecipeUserInfo> getPrimaryUserInfoForUserIds(Start start,
@@ -1668,6 +1755,25 @@ public class GeneralQueries {
             pst.setString(3, appIdentifier.getAppId());
             pst.setString(4, primaryUserId);
         });
+    }
+
+    public static void updateTimeJoinedForPrimaryUsers_Transaction(Start start, Connection sqlCon,
+                                                                  AppIdentifier appIdentifier, List<String> primaryUserIds)
+            throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                " app_id = ? AND primary_or_recipe_user_id = ?";
+        PreparedStatement updateStatement = sqlCon.prepareStatement(QUERY);
+        for(String primaryUserId : primaryUserIds) {
+            updateStatement.setString(1, appIdentifier.getAppId());
+            updateStatement.setString(2, primaryUserId);
+            updateStatement.setString(3, appIdentifier.getAppId());
+            updateStatement.setString(4, primaryUserId);
+            updateStatement.addBatch();
+        }
+
+        updateStatement.executeBatch();
     }
 
     private static class AllAuthRecipeUsersResultHolder {

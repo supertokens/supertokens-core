@@ -25,6 +25,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -804,7 +805,8 @@ public class UserIdMappingTest {
         List<String> nonAuthRecipesWhichDontNeedUserIdMapping = List.of(
                 JWTRecipeStorage.class.getName(),
                 ActiveUsersStorage.class.getName(),
-                OAuthStorage.class.getName()
+                OAuthStorage.class.getName(),
+                BulkImportStorage.class.getName()
         );
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -888,7 +890,8 @@ public class UserIdMappingTest {
         List<String> nonAuthRecipesWhichDontNeedUserIdMapping = List.of(
                 JWTRecipeStorage.class.getName(),
                 ActiveUsersStorage.class.getName(),
-                OAuthStorage.class.getName()
+                OAuthStorage.class.getName(),
+                BulkImportStorage.class.getName()
         );
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);

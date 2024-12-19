@@ -83,6 +83,7 @@ public abstract class Utils extends Mockito {
 
     public static void reset() {
         Main.isTesting = true;
+        Main.isTesting_skipBulkImportUserValidationInCronJob = false;
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
         String installDir = "../";
