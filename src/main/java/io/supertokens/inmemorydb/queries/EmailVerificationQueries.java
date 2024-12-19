@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -29,13 +30,11 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.*;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
 import static java.lang.System.currentTimeMillis;
 
@@ -109,29 +108,25 @@ public class EmailVerificationQueries {
                                                                       boolean isEmailVerified)
             throws SQLException, StorageQueryException {
 
+        String QUERY = "";
         if (isEmailVerified) {
-            String QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTable()
+            QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTable()
                     + "(app_id, user_id, email) VALUES(?, ?, ?)";
-            PreparedStatement insertQuery = con.prepareStatement(QUERY);
-            for(Map.Entry<String, String> emailToUser : emailToUserIds.entrySet()){
-                insertQuery.setString(1, appIdentifier.getAppId());
-                insertQuery.setString(2, emailToUser.getValue());
-                insertQuery.setString(3, emailToUser.getKey());
-                insertQuery.addBatch();
-            }
-            insertQuery.executeBatch();
         } else {
-            String QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTable()
+            QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTable()
                     + " WHERE app_id = ? AND user_id = ? AND email = ?";
-            PreparedStatement deleteQuery = con.prepareStatement(QUERY);
-            for (Map.Entry<String, String> emailToUser : emailToUserIds.entrySet()) {
-                deleteQuery.setString(1, appIdentifier.getAppId());
-                deleteQuery.setString(2, emailToUser.getValue());
-                deleteQuery.setString(3, emailToUser.getKey());
-                deleteQuery.addBatch();
-            }
-            deleteQuery.executeBatch();
         }
+
+        List<PreparedStatementValueSetter> setters = new ArrayList<>();
+        for (Map.Entry<String, String> emailToUser : emailToUserIds.entrySet()) {
+            setters.add(pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, emailToUser.getValue());
+                pst.setString(3, emailToUser.getKey());
+            });
+        }
+
+        executeBatch(con, QUERY, setters);
     }
 
     public static void deleteAllEmailVerificationTokensForUser_Transaction(Start start, Connection con,
