@@ -108,7 +108,7 @@ public class EmailVerificationQueries {
                                                                       boolean isEmailVerified)
             throws SQLException, StorageQueryException {
 
-        String QUERY = "";
+        String QUERY;
         if (isEmailVerified) {
             QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTable()
                     + "(app_id, user_id, email) VALUES(?, ?, ?)";
