@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
@@ -61,6 +62,8 @@ public class Main {
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean isTesting = false;
+    // this flag is used in ProcessBulkImportUsersCronJobTest to skip the user validation
+    public static boolean isTesting_skipBulkImportUserValidationInCronJob = false;
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean makeConsolePrintSilent = false;
@@ -256,6 +259,9 @@ public class Main {
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
+
+        // initializes ProcessBulkImportUsers cronjob to process bulk import users
+        Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
 
         Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
 

@@ -32,6 +32,8 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
@@ -55,6 +57,7 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 public class EmailPassword {
 
@@ -177,19 +180,57 @@ public class EmailPassword {
                 tenantIdentifier.toAppIdentifier(), main,
                 passwordHash, hashingAlgorithm);
 
+        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
+        ImportUserResponse response = null;
+
+        try {
+            long timeJoined = System.currentTimeMillis();
+            response = createUserWithPasswordHash(tenantIdentifier, storage, email, passwordHash, timeJoined);
+        } catch (DuplicateEmailException e) {
+            AuthRecipeUserInfo[] allUsers = epStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
+            AuthRecipeUserInfo userInfoToBeUpdated = null;
+            LoginMethod loginMethod = null;
+            for (AuthRecipeUserInfo currUser : allUsers) {
+                for (LoginMethod currLM : currUser.loginMethods) {
+                    if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        userInfoToBeUpdated = currUser;
+                        loginMethod = currLM;
+                        break;
+                    }
+                }
+            }
+
+            if (userInfoToBeUpdated != null) {
+                LoginMethod finalLoginMethod = loginMethod;
+                epStorage.startTransaction(con -> {
+                    epStorage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                            finalLoginMethod.getSupertokensUserId(), passwordHash);
+                    return null;
+                });
+                response = new ImportUserResponse(true, userInfoToBeUpdated);
+            }
+        }
+        return response;
+    }
+
+    public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
+            @Nonnull String email,
+            @Nonnull String passwordHash, @Nullable long timeJoined)
+            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException,
+            StorageTransactionLogicException {
+        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
         while (true) {
             String userId = Utils.getUUID();
-            long timeJoined = System.currentTimeMillis();
-
-            EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
-
             try {
-                AuthRecipeUserInfo userInfo = epStorage.signUp(tenantIdentifier, userId, email, passwordHash,
-                        timeJoined);
+                AuthRecipeUserInfo userInfo = null;
+                userInfo = epStorage.signUp(tenantIdentifier, userId, email, passwordHash, timeJoined);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
+                if(epStorage instanceof BulkImportStorage){
+                    throw e;
+                }
                 AuthRecipeUserInfo[] allUsers = epStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
                 AuthRecipeUserInfo userInfoToBeUpdated = null;
                 LoginMethod loginMethod = null;
@@ -215,6 +256,17 @@ public class EmailPassword {
                 }
             }
         }
+    }
+
+    public static void createMultipleUsersWithPasswordHash(Storage storage,
+                                                           List<EmailPasswordImportUser> usersToImport)
+            throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+
+            EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
+            epStorage.startTransaction(con -> {
+                epStorage.signUpMultipleViaBulkImport_Transaction(con, usersToImport);
+                return null;
+            });
     }
 
     @TestOnly

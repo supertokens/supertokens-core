@@ -37,6 +37,7 @@ highlighting the necessary changes)
     - If no such branch exists, then create one from the latest released branch.
 - [ ] If added a foreign key constraint on `app_id_to_user_id` table, make sure to delete from this table when deleting
   the user as well if `deleteUserIdMappingToo` is false.
+- [ ] If added a new recipe, then make sure to update the bulk import API to include the new recipe.
 
 ## Remaining TODOs for this PR
 
