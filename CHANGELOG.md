@@ -47,6 +47,10 @@ CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index1 ON bulk_import_us
 CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
 ```
 
+## [9.3.1]
+
+- Includes exception class name in 500 error message
+
 ## [9.3.0]
 
 ### Changes
