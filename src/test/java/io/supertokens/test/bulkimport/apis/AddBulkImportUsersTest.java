@@ -16,29 +16,9 @@
 
 package io.supertokens.test.bulkimport.apis;
 
-import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -51,6 +31,18 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.bulkimport.BulkImportTestUtils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.userroles.UserRoles;
+import org.junit.*;
+import org.junit.rules.TestRule;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
+import static org.junit.Assert.*;
 
 public class AddBulkImportUsersTest {
     private String genericErrMsg = "Data has missing or invalid fields. Please check the users field for more details.";
@@ -551,7 +543,7 @@ public class AddBulkImportUsersTest {
         checkFields(user, "BulkImportUser",
                 Arrays.asList("id", "externalUserId", "userMetadata", "userRoles", "totpDevices",
                         "loginMethods", "status", "primaryUserId", "errorMessage", "createdAt",
-                        "updatedAt"));
+                        "updatedAt", "gson"));
 
         checkLoginMethodFields(user.loginMethods.get(0), "LoginMethod",
                 Arrays.asList("tenantIds", "isVerified", "isPrimary", "timeJoinedInMSSinceEpoch",
