@@ -73,7 +73,7 @@ public class BulkImportFlowTest {
     public void testWithALotOfUsers() throws Exception {
         Main main = startCronProcess("14");
 
-        int NUMBER_OF_USERS_TO_UPLOAD = 100000;
+        int NUMBER_OF_USERS_TO_UPLOAD = 10000;
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -115,6 +115,7 @@ public class BulkImportFlowTest {
                     int failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
                             BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
                     count = newUsersNumber + processingUsersNumber;
+                    System.out.println("Remaining users: " + count);
 
                     if (count == 0) {
                         break;

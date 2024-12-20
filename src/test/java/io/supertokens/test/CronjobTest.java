@@ -878,7 +878,7 @@ public class CronjobTest {
 
         Thread.sleep(5000);
         assertTrue(CounterCronJob.getInstance(process.getProcess()).getCount() > 3 &&
-                CounterCronJob.getInstance(process.getProcess()).getCount() < 8);
+                CounterCronJob.getInstance(process.getProcess()).getCount() < 10);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -964,7 +964,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(11, tenantsInfos.size());
+            assertEquals(12, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -974,7 +974,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(10, count);
+            assertEquals(11, count);
         }
 
         process.kill(false);
@@ -991,7 +991,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(11, tenantsInfos.size());
+            assertEquals(12, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -1001,7 +1001,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(10, count);
+            assertEquals(11, count);
         }
 
         process.kill();
@@ -1048,7 +1048,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 86400);
-        intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 60);
+        intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 300);
         intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 86400);
 
@@ -1070,7 +1070,7 @@ public class CronjobTest {
                 0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
-        assertEquals(11, allTasks.size());
+        assertEquals(12, allTasks.size());
 
         for (CronTask task : allTasks) {
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());

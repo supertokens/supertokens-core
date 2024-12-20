@@ -72,11 +72,11 @@ public class ProcessBulkImportUsersCronJobTest {
     @Test
     public void shouldProcessBulkImportUsersInTheSameTenant() throws Exception {
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -121,11 +121,10 @@ public class ProcessBulkImportUsersCronJobTest {
     public void shouldProcessBulkImportUsersInNotSoLargeNumbersInTheSameTenant() throws Exception {
         Utils.setValueInConfig("bulk_migration_parallelism", "8");
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -159,11 +158,10 @@ public class ProcessBulkImportUsersCronJobTest {
     @Test
     public void shouldProcessBulkImportUsersInLargeNumbersInTheSameTenant() throws Exception {
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -199,11 +197,11 @@ public class ProcessBulkImportUsersCronJobTest {
         Utils.setValueInConfig("bulk_migration_parallelism", "3");
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
+
 
         // Create user roles before inserting bulk users
         {
@@ -262,11 +260,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Utils.setValueInConfig("bulk_migration_parallelism", "1");
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -325,11 +322,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Utils.setValueInConfig("bulk_migration_parallelism", "12");
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -381,11 +377,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Utils.setValueInConfig("bulk_migration_parallelism", "1");
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         // Create user roles before inserting bulk users
         {
@@ -441,11 +436,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Main.isTesting_skipBulkImportUserValidationInCronJob = true;
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         BulkImportTestUtils.createTenants(main);
 
@@ -483,11 +477,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Main.isTesting_skipBulkImportUserValidationInCronJob = true;
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         BulkImportTestUtils.createTenants(main);
 
@@ -526,11 +519,10 @@ public class ProcessBulkImportUsersCronJobTest {
         Main.isTesting_skipBulkImportUserValidationInCronJob = true;
 
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         BulkImportTestUtils.createTenants(main);
 
@@ -573,11 +565,10 @@ public class ProcessBulkImportUsersCronJobTest {
     @Test
     public void shouldThrowTenantDoesNotExistError() throws Exception {
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -606,11 +597,10 @@ public class ProcessBulkImportUsersCronJobTest {
     @Test
     public void shouldThrowTenantHaveDifferentStoragesError() throws Exception {
         TestingProcess process = startCronProcess();
-        Main main = process.getProcess();
-
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+        if(process == null) {
             return;
         }
+        Main main = process.getProcess();
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -644,6 +634,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Main main = process.getProcess();
 
+
         FeatureFlagTestContent.getInstance(main)
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
@@ -655,11 +646,11 @@ public class ProcessBulkImportUsersCronJobTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
-
-        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return null;
         }
+
+        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
 
         return process;
     }
