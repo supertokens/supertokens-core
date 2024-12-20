@@ -87,8 +87,8 @@ public class BulkImportFlowTest {
 
         // upload a bunch of users through the API
         {
-            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 10000); i++) {
-                JsonObject request = generateUsersJson(10000, i * 10000); // API allows 10k users upload at once
+            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 1000); i++) {
+                JsonObject request = generateUsersJson(1000, i * 1000); // API allows 10k users upload at once
                 JsonObject response = uploadBulkImportUsersJson(main, request);
                 assertEquals("OK", response.get("status").getAsString());
             }
