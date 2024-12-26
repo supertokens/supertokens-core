@@ -26,6 +26,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Includes CUD in the owner field for OAuth clients
 
+### Fixes
+
+- Fixes issue with user id mapping while refreshing session
+
 ### Migrations
 
 For PostgreSQL, run the following SQL script:

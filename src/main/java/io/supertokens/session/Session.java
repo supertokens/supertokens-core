@@ -43,6 +43,7 @@ import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.info.SessionInfo;
@@ -580,6 +581,7 @@ public class Session {
         //////////////////////////////////////////////////////////////////////////////////////////////
         if (StorageUtils.getSessionStorage(storage).getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
+            UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) StorageUtils.getUserIdMappingStorage(storage);
             try {
                 CoreConfig config = Config.getConfig(tenantIdentifier, main);
                 return sessionStorage.startTransaction(con -> {
@@ -592,6 +594,22 @@ public class Session {
                             sessionStorage.commitTransaction(con);
                             throw new UnauthorisedException("Session missing in db or has expired");
                         }
+
+                        // fix user id mappings in the session info
+                        List<io.supertokens.pluginInterface.useridmapping.UserIdMapping> userIdMappings = userIdMappingStorage.getMultipleUserIdMapping_Transaction(
+                                con,
+                                tenantIdentifier.toAppIdentifier(),
+                                new ArrayList<>(Arrays.asList(sessionInfo.recipeUserId, sessionInfo.userId)), true);
+
+                        for (io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping : userIdMappings) {
+                            if (userIdMapping.superTokensUserId.equals(sessionInfo.recipeUserId)) {
+                                sessionInfo.recipeUserId = userIdMapping.externalUserId;
+                            }
+                            if (userIdMapping.superTokensUserId.equals(sessionInfo.userId)) {
+                                sessionInfo.userId = userIdMapping.externalUserId;
+                            }
+                        }
+
                         boolean useStaticKey =
                                 shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
 
