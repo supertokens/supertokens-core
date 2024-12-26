@@ -5,10 +5,10 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.mfa.Mfa;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -33,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
@@ -140,6 +141,26 @@ public class Totp {
             } catch (DeviceAlreadyExistsException e) {
             }
             verifiedDevicesCount++;
+        }
+    }
+
+    public static void createDevices(Main main, AppIdentifier appIdentifier, Storage storage, List<TOTPDevice> devices)
+            throws StorageQueryException, FeatureNotEnabledException,
+            StorageTransactionLogicException {
+
+        try {
+            Mfa.checkForMFAFeature(appIdentifier, main);
+
+            TOTPSQLStorage totpStorage = StorageUtils.getTOTPStorage(storage);
+
+            totpStorage.startTransaction(con -> {
+                totpStorage.createDevices_Transaction(con, appIdentifier, devices);
+                totpStorage.commitTransaction(con);
+                return null;
+            });
+
+        } catch (TenantOrAppNotFoundException e ) {
+            throw new StorageTransactionLogicException(e);
         }
     }
 

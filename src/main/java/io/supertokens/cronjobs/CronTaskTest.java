@@ -28,6 +28,7 @@ import java.util.Map;
 public class CronTaskTest extends SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.cronjobs.CronTaskTest";
     private Map<String, Integer> cronTaskToInterval = new HashMap<String, Integer>();
+    private Map<String, Integer> cronTaskToWaitTime = new HashMap<String, Integer>();
 
     private CronTaskTest() {
 
@@ -50,5 +51,14 @@ public class CronTaskTest extends SingletonResource {
 
     public Integer getIntervalInSeconds(String resourceId) {
         return cronTaskToInterval.get(resourceId);
+    }
+
+    @TestOnly
+    public void setInitialWaitTimeInSeconds(String resourceId, int interval) {
+        cronTaskToWaitTime.put(resourceId, interval);
+    }
+
+    public Integer getInitialWaitTimeInSeconds(String resourceId) {
+        return cronTaskToWaitTime.get(resourceId);
     }
 }

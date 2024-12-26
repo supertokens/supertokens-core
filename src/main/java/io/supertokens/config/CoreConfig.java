@@ -344,6 +344,12 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("If specified, the supertokens core will use the specified number of threads to complete the " +
+            "migration of users. (Default: number of available processor cores).")
+    private int bulk_migration_parallelism =  Runtime.getRuntime().availableProcessors();
+
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -579,6 +585,10 @@ public class CoreConfig {
         return webserver_https_enabled;
     }
 
+    public int getBulkMigrationParallelism() {
+        return bulk_migration_parallelism;
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -770,6 +780,10 @@ public class CoreConfig {
             } catch (IllegalArgumentException e) {
                 throw new InvalidConfigException("supertokens_max_cdi_version is not a valid semantic version");
             }
+        }
+
+        if (bulk_migration_parallelism < 1) {
+            throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
         }
 
         for (String fieldId : CoreConfig.getValidFields()) {
