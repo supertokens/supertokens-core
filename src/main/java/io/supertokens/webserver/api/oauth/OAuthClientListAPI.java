@@ -51,7 +51,7 @@ public class OAuthClientListAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             Map<String, String> queryParams = OAuthProxyHelper.defaultGetQueryParamsFromRequest(req);
-            queryParams.put("owner", appIdentifier.getAppId());
+            queryParams.put("owner", appIdentifier.getConnectionUriDomain() + "_" + appIdentifier.getAppId());
 
             HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
