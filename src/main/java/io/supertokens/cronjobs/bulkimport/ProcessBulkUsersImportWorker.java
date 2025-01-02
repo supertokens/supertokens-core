@@ -186,7 +186,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         } else if (e instanceof InvalidConfigException) {
             errorMessage[0] = e.getMessage();
         } else if (e instanceof BulkImportBatchInsertException) {
-            handleBulkImportException(usersBatch, (BulkImportBatchInsertException)e, bulkImportUserIdToErrorMessage);
+            handleBulkImportException(usersBatch, (BulkImportBatchInsertException) e, bulkImportUserIdToErrorMessage);
         }
 
         try {
