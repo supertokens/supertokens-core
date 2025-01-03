@@ -110,11 +110,18 @@ public class BulkImport {
                 StorageUtils.getBulkImportStorage(storage).addBulkImportUsers(appIdentifier, users);
                 break;
             } catch (StorageQueryException sqe) {
-                if(sqe.getCause() instanceof io.supertokens.pluginInterface.bulkimport.exceptions.DuplicateUserIdException ) {
+                if(sqe.getCause() instanceof io.supertokens.pluginInterface.bulkimport.exceptions.DuplicateUserIdException) {
                     // We re-generate the user id for every user and retry
                     for (BulkImportUser user : users) {
                         user.id = Utils.getUUID();
                     }
+                    continue;
+                }
+                throw sqe;
+            } catch (io.supertokens.pluginInterface.bulkimport.exceptions.DuplicateUserIdException e) {
+                // We re-generate the user id for every user and retry
+                for (BulkImportUser user : users) {
+                    user.id = Utils.getUUID();
                 }
             }
         }
