@@ -115,8 +115,9 @@ public class BulkImport {
                     for (BulkImportUser user : users) {
                         user.id = Utils.getUUID();
                     }
+                } else {
+                    throw sqe;
                 }
-                throw sqe;
             }
         }
     }
