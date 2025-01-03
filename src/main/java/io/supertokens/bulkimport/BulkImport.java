@@ -116,6 +116,7 @@ public class BulkImport {
                         user.id = Utils.getUUID();
                     }
                 }
+                throw sqe;
             }
         }
     }
