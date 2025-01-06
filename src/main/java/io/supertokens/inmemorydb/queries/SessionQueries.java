@@ -128,21 +128,65 @@ public class SessionQueries {
             return null;
         }
 
-        QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
-                + " WHERE app_id = ? AND user_id = ?";
+        // update userId of session info to reflect primary user id
+        // 1. find supertokens user id for recipe user id (if using a userIdMapping)
+        // 2. find the primary_or_recipe_user_id for the supertokens user id
+        // 3. map primary_or_recipe_user_id to external user (if using a userIdMapping)
 
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, sessionInfo.recipeUserId);
-        }, result -> {
-            if (result.next()) {
-                String primaryUserId = result.getString("primary_or_recipe_user_id");
-                if (primaryUserId != null) {
-                    sessionInfo.userId = primaryUserId;
+
+        { // Step 1
+            QUERY = "SELECT supertokens_user_id FROM " + getConfig(start).getUserIdMappingTable()
+                    + " WHERE app_id = ? AND external_user_id = ?";
+
+            String stUserId = execute(con, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, sessionInfo.recipeUserId);
+            }, result -> {
+                if (result.next()) {
+                    return result.getString("supertokens_user_id");
                 }
+                return null;
+            });
+            if (stUserId != null) {
+                sessionInfo.userId = stUserId;
             }
-            return sessionInfo;
-        });
+        }
+
+        { // Step 2
+            QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
+                    + " WHERE app_id = ? AND user_id = ?";
+            String primaryUserId = execute(con, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, sessionInfo.userId);
+            }, result -> {
+                if (result.next()) {
+                    return result.getString("primary_or_recipe_user_id");
+                }
+                return null;
+            });
+            if (primaryUserId != null) {
+                sessionInfo.userId = primaryUserId;
+            }
+        }
+
+        { // Step 3
+            QUERY = "SELECT external_user_id FROM " + getConfig(start).getUserIdMappingTable()
+                    + " WHERE app_id = ? AND supertokens_user_id = ?";
+            String externalUserId = execute(con, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, sessionInfo.userId);
+            }, result -> {
+                if (result.next()) {
+                    return result.getString("external_user_id");
+                }
+                return null;
+            });
+            if (externalUserId != null) {
+                sessionInfo.userId = externalUserId;
+            }
+        }
+
+        return sessionInfo;
     }
 
     public static void updateSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
