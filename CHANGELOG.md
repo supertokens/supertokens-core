@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Optimize getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId query
+
 ## [9.3.0]
 
 ### Changes
