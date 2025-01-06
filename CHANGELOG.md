@@ -7,8 +7,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Optimize getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId query
-
 ## [9.3.0]
 
 ### Changes
@@ -155,7 +153,7 @@ CREATE INDEX oauth_logout_challenges_time_created_index ON oauth_logout_challeng
 ## [9.2.3] - 2024-10-09
 
 - Adds support for `--with-temp-dir` in CLI and `tempDirLocation=` in Core
-- Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow
+- Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow 
   special chars.
 
 ## [9.2.2] - 2024-09-04
@@ -193,7 +191,7 @@ CREATE INDEX user_last_active_last_active_time_index ON user_last_active (last_a
 
 ### Fixes
 
-- Account linking now properly checks if the login methods of the primary user can be shared with the tenants of the
+- Account linking now properly checks if the login methods of the primary user can be shared with the tenants of the 
   recipe user we are trying to link
 - Simplifying email verification token creation
 
@@ -675,7 +673,7 @@ multiple times without any issue. Follow the steps below to run the script:
 
     CREATE INDEX all_auth_recipe_users_recipe_id_index ON all_auth_recipe_users (app_id, recipe_id, tenant_id);
 
-    ALTER TABLE emailpassword_pswd_reset_tokens
+    ALTER TABLE emailpassword_pswd_reset_tokens 
       DROP FOREIGN KEY emailpassword_pswd_reset_tokens_ibfk_1;
 
     ALTER TABLE emailpassword_pswd_reset_tokens
@@ -816,7 +814,7 @@ multiple times without any issue. Follow the steps below to run the script:
       CONSTRAINT apps_pkey PRIMARY KEY(app_id)
     );
 
-    INSERT INTO apps (app_id, created_at_time)
+    INSERT INTO apps (app_id, created_at_time) 
       VALUES ('public', 0) ON CONFLICT DO NOTHING;
 
     ------------------------------------------------------------
@@ -831,7 +829,7 @@ multiple times without any issue. Follow the steps below to run the script:
         REFERENCES apps (app_id) ON DELETE CASCADE
     );
 
-    INSERT INTO tenants (app_id, tenant_id, created_at_time)
+    INSERT INTO tenants (app_id, tenant_id, created_at_time) 
       VALUES ('public', 'public', 0) ON CONFLICT DO NOTHING;
 
     CREATE INDEX IF NOT EXISTS tenants_app_id_index ON tenants (app_id);
@@ -846,14 +844,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT key_value_pkey;
 
     ALTER TABLE key_value
-      ADD CONSTRAINT key_value_pkey
+      ADD CONSTRAINT key_value_pkey 
         PRIMARY KEY (app_id, tenant_id, name);
 
     ALTER TABLE key_value
       DROP CONSTRAINT IF EXISTS key_value_tenant_id_fkey;
 
     ALTER TABLE key_value
-      ADD CONSTRAINT key_value_tenant_id_fkey
+      ADD CONSTRAINT key_value_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -871,7 +869,7 @@ multiple times without any issue. Follow the steps below to run the script:
         FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE
     );
 
-    INSERT INTO app_id_to_user_id (user_id, recipe_id)
+    INSERT INTO app_id_to_user_id (user_id, recipe_id) 
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users ON CONFLICT DO NOTHING;
 
@@ -887,14 +885,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT all_auth_recipe_users_pkey CASCADE;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_pkey
+      ADD CONSTRAINT all_auth_recipe_users_pkey 
         PRIMARY KEY (app_id, tenant_id, user_id);
 
     ALTER TABLE all_auth_recipe_users
       DROP CONSTRAINT IF EXISTS all_auth_recipe_users_tenant_id_fkey;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_tenant_id_fkey
+      ADD CONSTRAINT all_auth_recipe_users_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -902,7 +900,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS all_auth_recipe_users_user_id_fkey;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_user_id_fkey
+      ADD CONSTRAINT all_auth_recipe_users_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -993,14 +991,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT session_info_pkey CASCADE;
 
     ALTER TABLE session_info
-      ADD CONSTRAINT session_info_pkey
+      ADD CONSTRAINT session_info_pkey 
         PRIMARY KEY (app_id, tenant_id, session_handle);
 
     ALTER TABLE session_info
       DROP CONSTRAINT IF EXISTS session_info_tenant_id_fkey;
 
     ALTER TABLE session_info
-      ADD CONSTRAINT session_info_tenant_id_fkey
+      ADD CONSTRAINT session_info_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -1017,14 +1015,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT session_access_token_signing_keys_pkey CASCADE;
 
     ALTER TABLE session_access_token_signing_keys
-      ADD CONSTRAINT session_access_token_signing_keys_pkey
+      ADD CONSTRAINT session_access_token_signing_keys_pkey 
         PRIMARY KEY (app_id, created_at_time);
 
     ALTER TABLE session_access_token_signing_keys
       DROP CONSTRAINT IF EXISTS session_access_token_signing_keys_app_id_fkey;
 
     ALTER TABLE session_access_token_signing_keys
-      ADD CONSTRAINT session_access_token_signing_keys_app_id_fkey
+      ADD CONSTRAINT session_access_token_signing_keys_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1039,14 +1037,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT jwt_signing_keys_pkey CASCADE;
 
     ALTER TABLE jwt_signing_keys
-      ADD CONSTRAINT jwt_signing_keys_pkey
+      ADD CONSTRAINT jwt_signing_keys_pkey 
         PRIMARY KEY (app_id, key_id);
 
     ALTER TABLE jwt_signing_keys
       DROP CONSTRAINT IF EXISTS jwt_signing_keys_app_id_fkey;
 
     ALTER TABLE jwt_signing_keys
-      ADD CONSTRAINT jwt_signing_keys_app_id_fkey
+      ADD CONSTRAINT jwt_signing_keys_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1061,14 +1059,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT emailverification_verified_emails_pkey CASCADE;
 
     ALTER TABLE emailverification_verified_emails
-      ADD CONSTRAINT emailverification_verified_emails_pkey
+      ADD CONSTRAINT emailverification_verified_emails_pkey 
         PRIMARY KEY (app_id, user_id, email);
 
     ALTER TABLE emailverification_verified_emails
       DROP CONSTRAINT IF EXISTS emailverification_verified_emails_app_id_fkey;
 
     ALTER TABLE emailverification_verified_emails
-      ADD CONSTRAINT emailverification_verified_emails_app_id_fkey
+      ADD CONSTRAINT emailverification_verified_emails_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1084,14 +1082,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT emailverification_tokens_pkey CASCADE;
 
     ALTER TABLE emailverification_tokens
-      ADD CONSTRAINT emailverification_tokens_pkey
+      ADD CONSTRAINT emailverification_tokens_pkey 
         PRIMARY KEY (app_id, tenant_id, user_id, email, token);
 
     ALTER TABLE emailverification_tokens
       DROP CONSTRAINT IF EXISTS emailverification_tokens_tenant_id_fkey;
 
     ALTER TABLE emailverification_tokens
-      ADD CONSTRAINT emailverification_tokens_tenant_id_fkey
+      ADD CONSTRAINT emailverification_tokens_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -1109,14 +1107,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS emailpassword_users_email_key CASCADE;
 
     ALTER TABLE emailpassword_users
-      ADD CONSTRAINT emailpassword_users_pkey
+      ADD CONSTRAINT emailpassword_users_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE emailpassword_users
       DROP CONSTRAINT IF EXISTS emailpassword_users_user_id_fkey;
 
     ALTER TABLE emailpassword_users
-      ADD CONSTRAINT emailpassword_users_user_id_fkey
+      ADD CONSTRAINT emailpassword_users_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -1163,14 +1161,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT emailpassword_pswd_reset_tokens_pkey CASCADE;
 
     ALTER TABLE emailpassword_pswd_reset_tokens
-      ADD CONSTRAINT emailpassword_pswd_reset_tokens_pkey
+      ADD CONSTRAINT emailpassword_pswd_reset_tokens_pkey 
         PRIMARY KEY (app_id, user_id, token);
 
     ALTER TABLE emailpassword_pswd_reset_tokens
       DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
 
     ALTER TABLE emailpassword_pswd_reset_tokens
-      ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey
+      ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES emailpassword_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -1185,7 +1183,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT passwordless_users_pkey CASCADE;
 
     ALTER TABLE passwordless_users
-      ADD CONSTRAINT passwordless_users_pkey
+      ADD CONSTRAINT passwordless_users_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE passwordless_users
@@ -1198,7 +1196,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS passwordless_users_user_id_fkey;
 
     ALTER TABLE passwordless_users
-      ADD CONSTRAINT passwordless_users_user_id_fkey
+      ADD CONSTRAINT passwordless_users_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -1242,14 +1240,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT passwordless_devices_pkey CASCADE;
 
     ALTER TABLE passwordless_devices
-      ADD CONSTRAINT passwordless_devices_pkey
+      ADD CONSTRAINT passwordless_devices_pkey 
         PRIMARY KEY (app_id, tenant_id, device_id_hash);
 
     ALTER TABLE passwordless_devices
       DROP CONSTRAINT IF EXISTS passwordless_devices_tenant_id_fkey;
 
     ALTER TABLE passwordless_devices
-      ADD CONSTRAINT passwordless_devices_tenant_id_fkey
+      ADD CONSTRAINT passwordless_devices_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -1273,14 +1271,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT passwordless_codes_pkey CASCADE;
 
     ALTER TABLE passwordless_codes
-      ADD CONSTRAINT passwordless_codes_pkey
+      ADD CONSTRAINT passwordless_codes_pkey 
         PRIMARY KEY (app_id, tenant_id, code_id);
 
     ALTER TABLE passwordless_codes
       DROP CONSTRAINT IF EXISTS passwordless_codes_device_id_hash_fkey;
 
     ALTER TABLE passwordless_codes
-      ADD CONSTRAINT passwordless_codes_device_id_hash_fkey
+      ADD CONSTRAINT passwordless_codes_device_id_hash_fkey 
         FOREIGN KEY (app_id, tenant_id, device_id_hash)
         REFERENCES passwordless_devices (app_id, tenant_id, device_id_hash) ON DELETE CASCADE;
 
@@ -1313,14 +1311,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS thirdparty_users_user_id_key CASCADE;
 
     ALTER TABLE thirdparty_users
-      ADD CONSTRAINT thirdparty_users_pkey
+      ADD CONSTRAINT thirdparty_users_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE thirdparty_users
       DROP CONSTRAINT IF EXISTS thirdparty_users_user_id_fkey;
 
     ALTER TABLE thirdparty_users
-      ADD CONSTRAINT thirdparty_users_user_id_fkey
+      ADD CONSTRAINT thirdparty_users_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -1376,7 +1374,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS userid_mapping_pkey CASCADE;
 
     ALTER TABLE userid_mapping
-      ADD CONSTRAINT userid_mapping_pkey
+      ADD CONSTRAINT userid_mapping_pkey 
         PRIMARY KEY (app_id, supertokens_user_id, external_user_id);
 
     ALTER TABLE userid_mapping
@@ -1397,7 +1395,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS userid_mapping_supertokens_user_id_fkey;
 
     ALTER TABLE userid_mapping
-      ADD CONSTRAINT userid_mapping_supertokens_user_id_fkey
+      ADD CONSTRAINT userid_mapping_supertokens_user_id_fkey 
         FOREIGN KEY (app_id, supertokens_user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -1412,14 +1410,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT roles_pkey CASCADE;
 
     ALTER TABLE roles
-      ADD CONSTRAINT roles_pkey
+      ADD CONSTRAINT roles_pkey 
         PRIMARY KEY (app_id, role);
 
     ALTER TABLE roles
       DROP CONSTRAINT IF EXISTS roles_app_id_fkey;
 
     ALTER TABLE roles
-      ADD CONSTRAINT roles_app_id_fkey
+      ADD CONSTRAINT roles_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1434,14 +1432,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT role_permissions_pkey CASCADE;
 
     ALTER TABLE role_permissions
-      ADD CONSTRAINT role_permissions_pkey
+      ADD CONSTRAINT role_permissions_pkey 
         PRIMARY KEY (app_id, role, permission);
 
     ALTER TABLE role_permissions
       DROP CONSTRAINT IF EXISTS role_permissions_role_fkey;
 
     ALTER TABLE role_permissions
-      ADD CONSTRAINT role_permissions_role_fkey
+      ADD CONSTRAINT role_permissions_role_fkey 
         FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
 
@@ -1461,14 +1459,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT user_roles_pkey CASCADE;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_pkey
+      ADD CONSTRAINT user_roles_pkey 
         PRIMARY KEY (app_id, tenant_id, user_id, role);
 
     ALTER TABLE user_roles
       DROP CONSTRAINT IF EXISTS user_roles_tenant_id_fkey;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_tenant_id_fkey
+      ADD CONSTRAINT user_roles_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -1476,7 +1474,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_role_fkey
+      ADD CONSTRAINT user_roles_role_fkey 
         FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
 
@@ -1497,14 +1495,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT user_metadata_pkey CASCADE;
 
     ALTER TABLE user_metadata
-      ADD CONSTRAINT user_metadata_pkey
+      ADD CONSTRAINT user_metadata_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE user_metadata
       DROP CONSTRAINT IF EXISTS user_metadata_app_id_fkey;
 
     ALTER TABLE user_metadata
-      ADD CONSTRAINT user_metadata_app_id_fkey
+      ADD CONSTRAINT user_metadata_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1519,7 +1517,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT dashboard_users_pkey CASCADE;
 
     ALTER TABLE dashboard_users
-      ADD CONSTRAINT dashboard_users_pkey
+      ADD CONSTRAINT dashboard_users_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE dashboard_users
@@ -1533,7 +1531,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS dashboard_users_app_id_fkey;
 
     ALTER TABLE dashboard_users
-      ADD CONSTRAINT dashboard_users_app_id_fkey
+      ADD CONSTRAINT dashboard_users_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1548,14 +1546,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT dashboard_user_sessions_pkey CASCADE;
 
     ALTER TABLE dashboard_user_sessions
-      ADD CONSTRAINT dashboard_user_sessions_pkey
+      ADD CONSTRAINT dashboard_user_sessions_pkey 
         PRIMARY KEY (app_id, session_id);
 
     ALTER TABLE dashboard_user_sessions
       DROP CONSTRAINT IF EXISTS dashboard_user_sessions_user_id_fkey;
 
     ALTER TABLE dashboard_user_sessions
-      ADD CONSTRAINT dashboard_user_sessions_user_id_fkey
+      ADD CONSTRAINT dashboard_user_sessions_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES dashboard_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -1570,14 +1568,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT totp_users_pkey CASCADE;
 
     ALTER TABLE totp_users
-      ADD CONSTRAINT totp_users_pkey
+      ADD CONSTRAINT totp_users_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE totp_users
       DROP CONSTRAINT IF EXISTS totp_users_app_id_fkey;
 
     ALTER TABLE totp_users
-      ADD CONSTRAINT totp_users_app_id_fkey
+      ADD CONSTRAINT totp_users_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1592,14 +1590,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT totp_user_devices_pkey;
 
     ALTER TABLE totp_user_devices
-      ADD CONSTRAINT totp_user_devices_pkey
+      ADD CONSTRAINT totp_user_devices_pkey 
         PRIMARY KEY (app_id, user_id, device_name);
 
     ALTER TABLE totp_user_devices
       DROP CONSTRAINT IF EXISTS totp_user_devices_user_id_fkey;
 
     ALTER TABLE totp_user_devices
-      ADD CONSTRAINT totp_user_devices_user_id_fkey
+      ADD CONSTRAINT totp_user_devices_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -1615,14 +1613,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT totp_used_codes_pkey CASCADE;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_pkey
+      ADD CONSTRAINT totp_used_codes_pkey 
         PRIMARY KEY (app_id, tenant_id, user_id, created_time_ms);
 
     ALTER TABLE totp_used_codes
       DROP CONSTRAINT IF EXISTS totp_used_codes_user_id_fkey;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_user_id_fkey
+      ADD CONSTRAINT totp_used_codes_user_id_fkey 
         FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -1630,7 +1628,7 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT IF EXISTS totp_used_codes_tenant_id_fkey;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_tenant_id_fkey
+      ADD CONSTRAINT totp_used_codes_tenant_id_fkey 
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -1651,14 +1649,14 @@ multiple times without any issue. Follow the steps below to run the script:
       DROP CONSTRAINT user_last_active_pkey CASCADE;
 
     ALTER TABLE user_last_active
-      ADD CONSTRAINT user_last_active_pkey
+      ADD CONSTRAINT user_last_active_pkey 
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE user_last_active
       DROP CONSTRAINT IF EXISTS user_last_active_app_id_fkey;
 
     ALTER TABLE user_last_active
-      ADD CONSTRAINT user_last_active_app_id_fkey
+      ADD CONSTRAINT user_last_active_app_id_fkey 
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -1682,10 +1680,10 @@ multiple times without any issue. Follow the steps below to run the script:
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';')
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';') 
               FROM information_schema.table_constraints
-              WHERE constraint_type='FOREIGN KEY'
+              WHERE constraint_type='FOREIGN KEY' 
                   AND table_schema = DATABASE()
                   AND table_name in (
                     'all_auth_recipe_users',
@@ -1741,10 +1739,10 @@ multiple times without any issue. Follow the steps below to run the script:
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';')
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';') 
               FROM information_schema.table_constraints
-              WHERE constraint_type='PRIMARY KEY'
+              WHERE constraint_type='PRIMARY KEY' 
                   AND table_schema = DATABASE()
                   AND table_name in (
                     'all_auth_recipe_users',
@@ -1800,10 +1798,10 @@ multiple times without any issue. Follow the steps below to run the script:
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';')
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';') 
               FROM information_schema.table_constraints
-              WHERE constraint_type='UNIQUE'
+              WHERE constraint_type='UNIQUE' 
                   AND table_schema = DATABASE()
                   AND table_name in (
                     'all_auth_recipe_users',
@@ -1859,10 +1857,10 @@ multiple times without any issue. Follow the steps below to run the script:
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for
+      DECLARE dropCur CURSOR for 
               SELECT DISTINCT concat('ALTER TABLE ', table_schema, '.', table_name, ' DROP INDEX ', index_name, ';')
               FROM information_schema.statistics
-              WHERE NON_UNIQUE = 1
+              WHERE NON_UNIQUE = 1 
                 AND table_schema = database()
                 AND table_name in (
                   'all_auth_recipe_users',
@@ -1915,7 +1913,7 @@ multiple times without any issue. Follow the steps below to run the script:
     --
 
     CREATE PROCEDURE st_add_column_if_not_exists(
-    IN p_table_name varchar(50),
+    IN p_table_name varchar(50), 
     IN p_column_name varchar(50),
     IN p_column_type varchar(50),
     IN p_additional varchar(100),
@@ -1923,14 +1921,14 @@ multiple times without any issue. Follow the steps below to run the script:
         READS SQL DATA
     BEGIN
         DECLARE v_count INT;
-
+        
         # Check wether column exist or not
         SELECT count(*) INTO v_count
         FROM information_schema.columns
         WHERE table_schema = database()
             AND table_name   = p_table_name
             AND column_name  = p_column_name;
-
+            
         IF v_count > 0 THEN
           # Return column already exists message
           SELECT 'Column already Exists' INTO p_status_message;
@@ -1950,7 +1948,7 @@ multiple times without any issue. Follow the steps below to run the script:
     CALL st_drop_all_fkeys();
     CALL st_drop_all_keys();
     CALL st_drop_all_pkeys();
-    CALL st_drop_all_indexes();
+    CALL st_drop_all_indexes(); 
 
     -- General Tables
 
@@ -1962,7 +1960,7 @@ multiple times without any issue. Follow the steps below to run the script:
     ALTER TABLE apps
       ADD PRIMARY KEY(app_id);
 
-    INSERT IGNORE INTO apps (app_id, created_at_time)
+    INSERT IGNORE INTO apps (app_id, created_at_time) 
       VALUES ('public', 0);
 
     --
@@ -1980,7 +1978,7 @@ multiple times without any issue. Follow the steps below to run the script:
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time)
+    INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time) 
       VALUES ('public', 'public', 0);
 
     --
@@ -2010,7 +2008,7 @@ multiple times without any issue. Follow the steps below to run the script:
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    INSERT IGNORE INTO app_id_to_user_id (user_id, recipe_id)
+    INSERT IGNORE INTO app_id_to_user_id (user_id, recipe_id) 
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users;
 
@@ -2604,13 +2602,13 @@ multiple times without any issue. Follow the steps below to run the script:
       {
         "$project": {
           "keys": 0,
-
+          
         }
       },
       {
         "$merge": {
           "into": "jwt_signing_keys",
-
+          
         }
       }
   ]);
