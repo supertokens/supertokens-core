@@ -55,3 +55,19 @@ RUN echo 'export PATH' >> /etc/profile
 
 RUN update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-12.0.2/bin/java" 1
 RUN update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-12.0.2/bin/javac" 1
+
+#install postgres 13
+# Import Repository Signing Key
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
+RUN apt install curl gpg gnupg2 software-properties-common apt-transport-https lsb-release ca-certificates sudo -y
+# Add PostgreSQL repository
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
+# Update again
+RUN apt update
+# Install PostgreSQL 13
+RUN apt install -y postgresql-13
+#  Verify PostgreSQL 13 Installation on Ubuntu 22.04|20.04|18.04
+RUN psql --version
+# Manage PostgreSQL 13 service
+RUN service postgresql start
