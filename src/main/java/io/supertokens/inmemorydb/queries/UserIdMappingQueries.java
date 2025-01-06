@@ -107,8 +107,8 @@ public class UserIdMappingQueries {
                                                                                               String userId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
-                + " WHERE app_id = ? AND supertokens_user_id = ? "
-                + "UNION "
+                + " WHERE app_id = ? AND supertokens_user_id = ?"
+                + " UNION ALL "
                 + "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
                 + " WHERE app_id = ? AND external_user_id = ?";
 
@@ -133,8 +133,8 @@ public class UserIdMappingQueries {
                                                                                                           String userId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
-                + " WHERE app_id = ? AND supertokens_user_id = ? "
-                + "UNION "
+                + " WHERE app_id = ? AND supertokens_user_id = ?"
+                + " UNION ALL "
                 + "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
                 + " WHERE app_id = ? AND external_user_id = ?";
 
