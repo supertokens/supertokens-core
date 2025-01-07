@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -200,11 +201,13 @@ public class TestTenantUserAssociation {
             if (name.equals(UserMetadataStorage.class.getName())
                     || name.equals(JWTRecipeStorage.class.getName())
                     || name.equals(ActiveUsersStorage.class.getName())
+                    || name.equals(BulkImportStorage.class.getName())
                     || name.equals(OAuthStorage.class.getName())
             ) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
                 // Active users storage does not have tenant specific data
+                // BulkImportStorage
                 continue;
             }
 

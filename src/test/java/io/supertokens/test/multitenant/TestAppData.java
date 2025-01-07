@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
@@ -40,6 +41,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.bulkimport.BulkImportTestUtils;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -176,6 +178,10 @@ public class TestAppData {
 
         UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
+
+        if(!StorageLayer.isInMemDb(process.getProcess())) {
+            BulkImport.addUsers(app.toAppIdentifier(), appStorage, BulkImportTestUtils.generateBulkImportUser(1));
+        }
 
         OAuth.addOrUpdateClient(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "secret123", false, false);
         OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");

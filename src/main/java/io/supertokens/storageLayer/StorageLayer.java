@@ -31,7 +31,10 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -55,8 +58,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return storage;
     }
 
-    public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier,
-                                                boolean doNotLog) throws InvalidConfigException {
+    public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
+        return getNewInstance(main, config, tenantIdentifier, doNotLog, false);
+    }
+
+    public static Storage getNewBulkImportProxyStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
+        return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
+    }
+
+    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -76,8 +86,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
                     && (storageLayer.canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-                result = storageLayer;
+                if (isBulkImportProxy) {
+                    result = storageLayer.createBulkImportProxyStorageInstance();
+                } else {
+                    result = storageLayer;
+                }
             } else {
+                if (isBulkImportProxy) {
+                    throw new QuitProgramException("Creating a bulk import proxy storage instance with in-memory DB is not supported.");
+                }
                 result = new Start(main);
             }
         }
@@ -558,4 +575,44 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new IllegalStateException("should never come here");
         }
     }
+
+    public static List<StorageAndUserIdMapping> findStorageAndUserIdMappingForBulkUserImport(
+            AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
+            UserIdType userIdType) throws StorageQueryException {
+
+        if (storages.length == 0) {
+            throw new IllegalStateException("No storages were provided!");
+        }
+
+        if (storages[0].getType() != STORAGE_TYPE.SQL) {
+            // for non sql plugin, there will be only one storage as multitenancy is not supported
+            assert storages.length == 1;
+            List<StorageAndUserIdMapping> results = new ArrayList<>();
+            for(String userId : userIds) {
+                results.add(new StorageAndUserIdMapping(storages[0], new UserIdMapping(userId, null, null)));
+            }
+            return results;
+        }
+        List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
+        if (userIdType != UserIdType.ANY) {
+            for (Storage storage : storages) {
+                List<String> existingIdsInStorage = ((AuthRecipeStorage)storage).findExistingUserIds(appIdentifier, userIds);
+                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(
+                        appIdentifier, storage,
+                        userIds, userIdType);
+
+                for(String existingId : existingIdsInStorage) {
+                    UserIdMapping mappingForId = mappingsFromThisStorage.stream()
+                                .filter(userIdMapping -> (userIdType == UserIdType.SUPERTOKENS && userIdMapping.superTokensUserId.equals(existingId))
+                                        || (userIdType == UserIdType.EXTERNAL && userIdMapping.externalUserId.equals(existingId)) )
+                                .findFirst().orElse(null);
+                    allMappingsFromAllStorages.add(new StorageAndUserIdMappingForBulkImport(storage, mappingForId, existingId));
+                }
+            }
+        } else {
+            throw new IllegalStateException("UserIdType.ANY is not supported for this method");
+        }
+        return allMappingsFromAllStorages;
+    }
+
 }

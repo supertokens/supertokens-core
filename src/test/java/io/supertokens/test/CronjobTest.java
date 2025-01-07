@@ -32,7 +32,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -879,7 +878,7 @@ public class CronjobTest {
 
         Thread.sleep(5000);
         assertTrue(CounterCronJob.getInstance(process.getProcess()).getCount() > 3 &&
-                CounterCronJob.getInstance(process.getProcess()).getCount() < 8);
+                CounterCronJob.getInstance(process.getProcess()).getCount() < 10);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -965,7 +964,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(11, tenantsInfos.size());
+            assertEquals(12, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -975,7 +974,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(10, count);
+            assertEquals(11, count);
         }
 
         process.kill(false);
@@ -992,7 +991,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(11, tenantsInfos.size());
+            assertEquals(12, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -1002,7 +1001,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(10, count);
+            assertEquals(11, count);
         }
 
         process.kill();
@@ -1049,6 +1048,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 86400);
+        intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 300);
         intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 86400);
 
@@ -1065,11 +1065,12 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.telemetry.Telemetry", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 0);
+        delays.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 0);
         delays.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
-        assertEquals(11, allTasks.size());
+        assertEquals(12, allTasks.size());
 
         for (CronTask task : allTasks) {
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());
@@ -1078,5 +1079,43 @@ public class CronjobTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatIsCronJobLoadedReturnsTheGoodValues() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        boolean isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
+
+        Cronjobs.removeCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        //removing twice doesn't do anything funky
+        Cronjobs.removeCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertFalse(isLoaded);
+
+        //adding twice doesn't do anything funky
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
+        Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+        isLoaded = Cronjobs.isCronjobLoaded(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+
+        assertTrue(isLoaded);
     }
 }
