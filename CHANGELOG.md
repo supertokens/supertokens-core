@@ -11,6 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Optimize getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId query
 - Adds property `bulk_migration_parallelism` for fine-tuning the worker threads number
 - Adds APIs to bulk import users
   - GET `/bulk-import/users`
@@ -77,6 +78,7 @@ CREATE INDEX bulk_import_users_pagination_index2 ON bulk_import_users (app_id, c
 ## [9.3.1]
 
 - Includes exception class name in 500 error message
+
 
 ## [9.3.0]
 
