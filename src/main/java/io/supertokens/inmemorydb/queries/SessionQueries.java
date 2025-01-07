@@ -128,62 +128,52 @@ public class SessionQueries {
             return null;
         }
 
-        // update userId of session info to reflect primary user id
-        // 1. find supertokens user id for recipe user id (if using a userIdMapping)
-        // 2. find the primary_or_recipe_user_id for the supertokens user id
-        // 3. map primary_or_recipe_user_id to external user (if using a userIdMapping)
+        QUERY = "SELECT external_user_id " +
+                "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
+                    "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +
+                        "SELECT primary_or_recipe_user_id " +
+                        "FROM " + getConfig(start).getUsersTable() + " " +
+                        "WHERE app_id = ? AND user_id IN (" +
+                            "SELECT um1.supertokens_user_id as user_id " +
+                            "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
+                            "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
+                            "UNION ALL " +
+                            "SELECT ? " +
+                            "LIMIT 1" +
+                        ")" +
+                    ") " +
+                "UNION ALL " +
+                "SELECT primary_or_recipe_user_id " +
+                "FROM " + getConfig(start).getUsersTable() + " " +
+                "WHERE app_id = ? AND user_id IN (" +
+                    "SELECT um1.supertokens_user_id as user_id " +
+                    "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
+                    "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
+                    "UNION ALL " +
+                    "SELECT ? " +
+                    "LIMIT 1" +
+                ") " +
+                "LIMIT 1";
 
-
-        { // Step 1
-            QUERY = "SELECT supertokens_user_id FROM " + getConfig(start).getUserIdMappingTable()
-                    + " WHERE app_id = ? AND external_user_id = ?";
-
-            String stUserId = execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, sessionInfo.recipeUserId);
-            }, result -> {
-                if (result.next()) {
-                    return result.getString("supertokens_user_id");
-                }
-                return null;
-            });
-            if (stUserId != null) {
-                sessionInfo.userId = stUserId;
+        String finalUserId = execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getAppId());
+            pst.setString(3, tenantIdentifier.getAppId());
+            pst.setString(4, sessionInfo.recipeUserId);
+            pst.setString(5, sessionInfo.recipeUserId);
+            pst.setString(6, tenantIdentifier.getAppId());
+            pst.setString(7, tenantIdentifier.getAppId());
+            pst.setString(8, sessionInfo.recipeUserId);
+            pst.setString(9, sessionInfo.recipeUserId);
+        }, result -> {
+            if (result.next()) {
+                return result.getString(1);
             }
-        }
+            return sessionInfo.recipeUserId;
+        });
 
-        { // Step 2
-            QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
-                    + " WHERE app_id = ? AND user_id = ?";
-            String primaryUserId = execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, sessionInfo.userId);
-            }, result -> {
-                if (result.next()) {
-                    return result.getString("primary_or_recipe_user_id");
-                }
-                return null;
-            });
-            if (primaryUserId != null) {
-                sessionInfo.userId = primaryUserId;
-            }
-        }
-
-        { // Step 3
-            QUERY = "SELECT external_user_id FROM " + getConfig(start).getUserIdMappingTable()
-                    + " WHERE app_id = ? AND supertokens_user_id = ?";
-            String externalUserId = execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, sessionInfo.userId);
-            }, result -> {
-                if (result.next()) {
-                    return result.getString("external_user_id");
-                }
-                return null;
-            });
-            if (externalUserId != null) {
-                sessionInfo.userId = externalUserId;
-            }
+        if (finalUserId != null) {
+            sessionInfo.userId = finalUserId;
         }
 
         return sessionInfo;
