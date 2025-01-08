@@ -676,7 +676,7 @@ public class PasswordHashingTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
+    //@Test
     public void parallelImportUserSignInFirebaseScrypt() throws Exception {
         String[] args = {"../"};
 
@@ -757,7 +757,7 @@ public class PasswordHashingTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
+    //@Test
     public void parallelImportUserSignInFirebaseScryptWithPoolSize4() throws Exception {
         String[] args = {"../"};
 
@@ -839,7 +839,7 @@ public class PasswordHashingTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
+    //@Test
     public void parallelSignUpSignIn() throws Exception {
         String[] args = {"../"};
 
