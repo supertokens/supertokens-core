@@ -95,7 +95,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImportUser bulkImportUser = users.get(0);
 
-        Thread.sleep(6000);
+        Thread.sleep(20000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -141,7 +141,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(6000);
+        Thread.sleep(60000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -178,7 +178,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(2 * 60000); // minute
+        Thread.sleep(5 * 60000); // minute
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -582,7 +582,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(6000);
+        Thread.sleep(20000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -640,7 +640,7 @@ public class ProcessBulkImportUsersCronJobTest {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
-        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
+        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 10);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1);
 
         process.startProcess();
