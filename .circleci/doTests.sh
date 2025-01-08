@@ -151,7 +151,7 @@ do
           fi
           ./loadModules
           cd supertokens-core
-          git checkout dev-v$coreVersion
+          git checkout $coreVersion
           cd ../supertokens-plugin-interface
           git checkout $currTag
           if [[ $currPinnedDb == "sqlite" ]]
