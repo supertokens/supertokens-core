@@ -76,6 +76,11 @@ public class SessionQueries {
                 + Config.getConfig(start).getSessionInfoTable() + "(expires_at);";
     }
 
+    static String getQueryToCreateSessionAppIdUserIdIndex(Start start) {
+        return "CREATE INDEX session_info_user_id_app_id_index ON "
+                + Config.getConfig(start).getSessionInfoTable() + "(user_id, app_id);";
+    }
+
     public static void createNewSession(Start start, TenantIdentifier tenantIdentifier, String sessionHandle,
                                         String userId, String refreshTokenHash2,
                                         JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,

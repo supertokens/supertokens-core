@@ -7,6 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Adds indexing for `session_info` table on `user_id, app_id` columns
+
+### Migration
+
+For PostgreSQL, run the following SQL script:
+```sql
+CREATE INDEX IF NOT EXISTS session_info_user_id_app_id_index ON session_info (user_id, app_id);
+```
+
+For MySQL, run the following SQL script:
+```sql
+CREATE INDEX session_info_user_id_app_id_index ON session_info (user_id, app_id);
+```
+
 ## [9.4.0]
 
 ### Added
