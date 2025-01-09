@@ -151,7 +151,7 @@ do
           fi
           ./loadModules
           cd supertokens-core
-          git checkout test-cicd/mysql8-upgrade
+          git checkout dev-v$coreVersion
           cd ../supertokens-plugin-interface
           git checkout $currTag
           if [[ $currPinnedDb == "sqlite" ]]

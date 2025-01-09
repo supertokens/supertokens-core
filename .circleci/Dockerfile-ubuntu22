@@ -70,4 +70,4 @@ RUN apt install -y postgresql-13
 #  Verify PostgreSQL 13 Installation on Ubuntu 22.04|20.04|18.04
 RUN psql --version
 # Manage PostgreSQL 13 service
-#RUN service postgresql start
+#you can manage with `service postgresql start`
