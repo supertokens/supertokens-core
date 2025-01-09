@@ -55,7 +55,7 @@ case $1 in
         mysql -u root --password=root -e "CREATE DATABASE st50;"
         ;;
     postgresql)
-        /etc/init.d/postgresql start
+        service postgresql start
         sudo -u postgres psql --command "CREATE USER root WITH SUPERUSER PASSWORD 'root';"
         createdb
         psql -c "create database supertokens;"
