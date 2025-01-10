@@ -1,6 +1,7 @@
 name: "Run tests"
 on:
   workflow_dispatch:
+    on: push
     inputs:
       pluginRepoOwnerName:
         description: 'supertokens-plugin-interface repo owner name'
@@ -14,17 +15,19 @@ on:
 jobs:
   test_job:
     name: Run tests
-    timeout-minutes: 60
+    timeout-minutes: 300
     runs-on: ubuntu-latest
-    container: rishabhpoddar/supertokens_core_testing
+    container: tamassupertokens/supertokens_core_testing
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Cloning supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
+
       - name: Update Java 1
         run: update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-15.0.1/bin/java" 2
       - name: Update Java 2
         run: update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-15.0.1/bin/javac" 2
+
       - name: Modifying modules.txt in supertokens-root
         run: cd ../supertokens-root && echo "core,master\nplugin-interface,${{ github.event.inputs.pluginInterfaceBranch }},${{ github.event.inputs.pluginRepoOwnerName }}" > modules.txt
       - name: Contents of modules.txt
@@ -34,4 +37,4 @@ jobs:
       - name: Copying current supertokens-core branch into supertokens-root
         run: cd ../supertokens-root && rm -rf ./supertokens-core && cp -r ../supertokens-core ./
       - name: Building and running tests
-        run: cd ../supertokens-root && ./startTestingEnv
+        run: cd ../supertokens-root && ./startTestingEnv --cicd
