@@ -133,31 +133,36 @@ public class SessionQueries {
             return null;
         }
 
-        QUERY = "SELECT external_user_id " +
+        QUERY = "SELECT external_user_id, 0 as o " +
                 "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
-                    "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +
-                        "SELECT primary_or_recipe_user_id " +
-                        "FROM " + getConfig(start).getUsersTable() + " " +
-                        "WHERE app_id = ? AND user_id IN (" +
-                            "SELECT um1.supertokens_user_id as user_id " +
+                "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +
+                    "SELECT primary_or_recipe_user_id " +
+                    "FROM " + getConfig(start).getUsersTable() + " " +
+                    "WHERE app_id = ? AND user_id IN (" +
+                        "SELECT user_id FROM (" +
+                            "SELECT um1.supertokens_user_id as user_id, 0 as o1 " +
                             "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
                             "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
-                            "UNION ALL " +
-                            "SELECT ? " +
-                            "LIMIT 1" +
-                        ")" +
-                    ") " +
-                "UNION ALL " +
-                "SELECT primary_or_recipe_user_id " +
+                            "UNION " +
+                            "SELECT ?, 1 as o1 " +
+                            "ORDER BY o1 ASC " +
+                        ") uid1" +
+                    ")" +
+                ") " +
+                "UNION " +
+                "SELECT primary_or_recipe_user_id, 1 as o " +
                 "FROM " + getConfig(start).getUsersTable() + " " +
                 "WHERE app_id = ? AND user_id IN (" +
-                    "SELECT um1.supertokens_user_id as user_id " +
-                    "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
-                    "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
-                    "UNION ALL " +
-                    "SELECT ? " +
-                    "LIMIT 1" +
+                    "SELECT user_ID FROM (" +
+                        "SELECT um1.supertokens_user_id as user_id, 0 as o2 " +
+                        "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
+                        "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
+                        "UNION " +
+                        "SELECT ?, 1 as o2 " +
+                        "ORDER BY o2 ASC " +
+                    ") uid2 " +
                 ") " +
+                "ORDER BY o ASC " +
                 "LIMIT 1";
 
         String finalUserId = execute(con, QUERY, pst -> {
