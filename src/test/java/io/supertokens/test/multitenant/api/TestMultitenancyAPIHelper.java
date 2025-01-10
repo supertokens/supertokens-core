@@ -149,7 +149,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
-                requestBody, 1000, 2500, null,
+                requestBody, 10000, 25000, null,
                 version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());

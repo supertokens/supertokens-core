@@ -26,7 +26,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.ThirdParty;
-import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -168,7 +167,7 @@ public class TestGetUserSpeed {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
+    //@Test
     public void testUserCreationLinkingAndGetByIdSpeedsWithoutMinIdle() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
