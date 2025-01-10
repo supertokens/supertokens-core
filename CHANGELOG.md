@@ -30,6 +30,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Fixes issue with user id mapping while refreshing session
+- Adds indexing for `session_info` table on `user_id, app_id` columns
 
 ### Migrations
 
@@ -54,6 +55,8 @@ CREATE INDEX IF NOT EXISTS bulk_import_users_status_updated_at_index ON bulk_imp
 CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index1 ON bulk_import_users (app_id, status, created_at DESC, id DESC);
  
 CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS session_info_user_id_app_id_index ON session_info (user_id, app_id);
 ```
 
 For MySQL run the following SQL script:
@@ -77,6 +80,8 @@ CREATE INDEX bulk_import_users_status_updated_at_index ON bulk_import_users (app
 CREATE INDEX bulk_import_users_pagination_index1 ON bulk_import_users (app_id, status, created_at DESC, id DESC);
  
 CREATE INDEX bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
+
+CREATE INDEX session_info_user_id_app_id_index ON session_info (user_id, app_id);
 ```
 
 ## [9.3.1]
