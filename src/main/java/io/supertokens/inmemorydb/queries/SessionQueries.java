@@ -128,21 +128,55 @@ public class SessionQueries {
             return null;
         }
 
-        QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
-                + " WHERE app_id = ? AND user_id = ?";
+        QUERY = "SELECT external_user_id " +
+                "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
+                    "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +
+                        "SELECT primary_or_recipe_user_id " +
+                        "FROM " + getConfig(start).getUsersTable() + " " +
+                        "WHERE app_id = ? AND user_id IN (" +
+                            "SELECT um1.supertokens_user_id as user_id " +
+                            "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
+                            "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
+                            "UNION ALL " +
+                            "SELECT ? " +
+                            "LIMIT 1" +
+                        ")" +
+                    ") " +
+                "UNION ALL " +
+                "SELECT primary_or_recipe_user_id " +
+                "FROM " + getConfig(start).getUsersTable() + " " +
+                "WHERE app_id = ? AND user_id IN (" +
+                    "SELECT um1.supertokens_user_id as user_id " +
+                    "FROM " + getConfig(start).getUserIdMappingTable() + " um1 " +
+                    "WHERE um1.app_id = ? AND um1.external_user_id = ? " +
+                    "UNION ALL " +
+                    "SELECT ? " +
+                    "LIMIT 1" +
+                ") " +
+                "LIMIT 1";
 
-        return execute(con, QUERY, pst -> {
+        String finalUserId = execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, sessionInfo.recipeUserId);
+            pst.setString(2, tenantIdentifier.getAppId());
+            pst.setString(3, tenantIdentifier.getAppId());
+            pst.setString(4, sessionInfo.recipeUserId);
+            pst.setString(5, sessionInfo.recipeUserId);
+            pst.setString(6, tenantIdentifier.getAppId());
+            pst.setString(7, tenantIdentifier.getAppId());
+            pst.setString(8, sessionInfo.recipeUserId);
+            pst.setString(9, sessionInfo.recipeUserId);
         }, result -> {
             if (result.next()) {
-                String primaryUserId = result.getString("primary_or_recipe_user_id");
-                if (primaryUserId != null) {
-                    sessionInfo.userId = primaryUserId;
-                }
+                return result.getString(1);
             }
-            return sessionInfo;
+            return sessionInfo.recipeUserId;
         });
+
+        if (finalUserId != null) {
+            sessionInfo.userId = finalUserId;
+        }
+
+        return sessionInfo;
     }
 
     public static void updateSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
