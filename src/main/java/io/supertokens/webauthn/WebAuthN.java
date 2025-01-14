@@ -16,7 +16,10 @@
 
 package io.supertokens.webauthn;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
@@ -35,7 +38,10 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Random;
 
 public class WebAuthN {
 
@@ -126,10 +132,8 @@ public class WebAuthN {
         return challenge;
     }
 
-    public static void registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String optionsId, String type,
-                                           String credentialId, String clientDataJson, String attestationJson,
-                                           Set<String> transports, String authenticatorAttachment, String clientExtension,
-                                           String credentialType, String originStr, String challenge) throws Exception {
+    public static void registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String optionsId, String registrationResponseJson)
+            throws Exception {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
@@ -141,34 +145,31 @@ public class WebAuthN {
         if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
             throw new Exception("not valid origin"); // TODO make it some meaningful exception
         }
-        if(!type.equals("webauthn.create")) {
-            throw new Exception("not valid type"); // TODO make it some meaningful exception
-        }
-
-        RegistrationRequest registrationRequest = new RegistrationRequest(attestationJson.getBytes(StandardCharsets.UTF_8),
-                clientDataJson.getBytes(StandardCharsets.UTF_8), clientExtension, transports);
-        Origin origin = new Origin(originStr);
-        Challenge challenge1 = new Challenge() {
-            @NotNull
-            @Override
-            public byte[] getValue() {
-                return challenge.getBytes(StandardCharsets.UTF_8);
-            }
-        };
-        ServerProperty serverProperty = new ServerProperty(origin, generatedOptions.relyingPartyId, challenge1); // I think relyingPartId should come from the incoming data
-        boolean requireUserPresence = true;
-        boolean requireUserVerification = true;
-        List<PublicKeyCredentialParameters> publicKeyCredentialParameters = new ArrayList<>(); // attestation object.authdata.credentialPublicKey
-        String decodedAttestation = new String(Base64.getDecoder().decode(attestationJson));
-        JsonObject attestationObject = new JsonParser().parse(decodedAttestation).getAsJsonObject();
-        JsonObject authData = attestationObject.get("authData").getAsJsonObject();
 
 
+        WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
+        RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(registrationResponseJson);
 
-        RegistrationParameters registrationParameters = new RegistrationParameters(serverProperty, publicKeyCredentialParameters, requireUserVerification, requireUserPresence);
-        RegistrationData registrationData = WebAuthnManager.createNonStrictWebAuthnManager().verify(registrationRequest, registrationParameters);
+        List<PublicKeyCredentialParameters> pubKeyCredParams = null;
+        boolean userVerificationRequired = false;
+        boolean userPresenceRequired = true;
 
-        System.out.println(registrationData);
+        RegistrationParameters registrationParameters = new RegistrationParameters(
+                new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
+                        new Challenge() {
+                            @NotNull
+                            @Override
+                            public byte[] getValue() {
+                                return generatedOptions.challenge.getBytes(StandardCharsets.UTF_8);
+                            }
+                        }),
+                pubKeyCredParams,
+                userVerificationRequired,
+                userPresenceRequired
+        );
+
+        nonStrictWebAuthnManager.verify(registrationData, registrationParameters);
+
     }
 
     private static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id) {
