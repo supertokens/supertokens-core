@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -131,6 +132,63 @@ public class WebAuthNQueries {
             }
             return null;
         });
+    }
+
+    public static WebAuthNStoredCredential loadCredential(Start start, TenantIdentifier tenantIdentifier, String credentialId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " WHERE app_id = ? AND id = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, credentialId);
+        }, result -> {
+            if(result.next()){
+                return WebAuthnStoredCredentialRowMapper.getInstance().mapOrThrow(result); // we are expecting one or zero results
+            }
+            return null;
+        });
+    }
+
+    public static void saveCredential(Start start, TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
+            throws SQLException, StorageQueryException {
+        String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " (id, app_id, rp_id, user_id, counter, public_key, transports, created_at, updated_at) "
+                + " VALUES (?,?,?,?,?,?,?,?,?);";
+
+        update(start, INSERT, pst -> {
+            pst.setString(1, credential.id);
+            pst.setString(2, credential.appId);
+            pst.setString(3, credential.rpId);
+            pst.setString(4, credential.userId);
+            pst.setLong(5, credential.counter);
+            pst.setBytes(6, credential.publicKey);
+            pst.setString(7, credential.transports);
+            pst.setLong(8, credential.createdAt);
+            pst.setLong(9, credential.updatedAt);
+        });
+    }
+
+    private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {
+        private static final WebAuthnStoredCredentialRowMapper INSTANCE = new WebAuthnStoredCredentialRowMapper();
+
+        public static WebAuthnStoredCredentialRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public WebAuthNStoredCredential map(ResultSet rs) throws Exception {
+            WebAuthNStoredCredential result = new WebAuthNStoredCredential();
+            result.id = rs.getString("id");
+            result.appId = rs.getString("app_id");
+            result.rpId = rs.getString("rp_id");
+            result.userId = rs.getString("user_id");
+            result.counter = rs.getLong("counter");
+            result.publicKey = rs.getBytes("public_key");
+            result.transports = rs.getString("transports");
+            result.createdAt = rs.getLong("created_at");
+            result.updatedAt = rs.getLong("updated_at");
+            return result;
+        }
     }
 
     private static class WebAuthNOptionsRowMapper implements RowMapper<WebAuthNOptions, ResultSet> {

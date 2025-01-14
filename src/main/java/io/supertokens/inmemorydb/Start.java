@@ -94,6 +94,7 @@ import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import org.sqlite.SQLiteException;
@@ -3290,6 +3291,16 @@ public class Start
             throws StorageQueryException {
         try {
             return !OAuthQueries.isOAuthSessionExistsByJTI(this, appIdentifier, gid, jti);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void saveCredentials(TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
+            throws StorageQueryException {
+        try {
+            WebAuthNQueries.saveCredential(this, tenantIdentifier, credential);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -21,6 +21,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.webauthn4j.WebAuthnManager;
+import com.webauthn4j.converter.AttestedCredentialDataConverter;
+import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
@@ -34,6 +36,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -132,7 +135,8 @@ public class WebAuthN {
         return challenge;
     }
 
-    public static void registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String optionsId, String registrationResponseJson)
+    public static void registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String optionsId,
+                                           String credentialId, String registrationResponseJson)
             throws Exception {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
@@ -146,11 +150,46 @@ public class WebAuthN {
             throw new Exception("not valid origin"); // TODO make it some meaningful exception
         }
 
-
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
         RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(registrationResponseJson);
 
-        List<PublicKeyCredentialParameters> pubKeyCredParams = null;
+        RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
+
+        RegistrationData verifiedRegistrationData = nonStrictWebAuthnManager.verify(registrationData,
+                registrationParameters);
+
+        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData, credentialId, generatedOptions.userEmail,
+                generatedOptions.relyingPartyId, tenantIdentifier);
+
+        webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
+        //TODO create recipe user
+        //TODO save recipe user related stuff
+        //TODO return values!
+    }
+
+    private static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(RegistrationData verifiedRegistrationData,
+                                                              String credentialId, String userEmail,
+                                                              String relyingPartyId, TenantIdentifier tenantIdentifier) {
+        ObjectConverter objectConverter = new ObjectConverter();
+        WebAuthNStoredCredential storedCredential = new WebAuthNStoredCredential();
+        storedCredential.id = credentialId;
+        storedCredential.appId = tenantIdentifier.getAppId();
+        storedCredential.rpId = relyingPartyId;
+        storedCredential.userId = userEmail;
+        storedCredential.counter = verifiedRegistrationData.getAttestationObject().getAuthenticatorData().getSignCount();
+        AttestedCredentialDataConverter attestedCredentialDataConverter = new AttestedCredentialDataConverter(objectConverter);
+        storedCredential.publicKey = attestedCredentialDataConverter.convert(verifiedRegistrationData.getAttestationObject().getAuthenticatorData()
+                .getAttestedCredentialData());
+        storedCredential.transports = objectConverter.getJsonConverter().writeValueAsString(verifiedRegistrationData.getTransports());
+        storedCredential.createdAt = System.currentTimeMillis();
+        storedCredential.updatedAt = storedCredential.createdAt;
+
+        return storedCredential;
+    }
+
+    @NotNull
+    private static RegistrationParameters getRegistrationParameters(WebAuthNOptions generatedOptions) {
+        List<PublicKeyCredentialParameters> pubKeyCredParams = null; //Specify the same value as the pubKeyCredParams provided in PublicKeyCredentialCreationOptions
         boolean userVerificationRequired = false;
         boolean userPresenceRequired = true;
 
@@ -167,9 +206,7 @@ public class WebAuthN {
                 userVerificationRequired,
                 userPresenceRequired
         );
-
-        nonStrictWebAuthnManager.verify(registrationData, registrationParameters);
-
+        return registrationParameters;
     }
 
     private static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id) {

@@ -51,15 +51,16 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
-            JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credentialsData", false);
+            JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
-            WebAuthN.registerCredentials(storage, tenantIdentifier, webauthGeneratedOptionsId, credentialsDataString);
+            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
+            WebAuthN.registerCredentials(storage, tenantIdentifier, credentialId, webauthGeneratedOptionsId, credentialsDataString);
 
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (StorageQueryException e) {
             throw new RuntimeException(e);
-        } catch (Exception e) {
+        } catch (Exception e) { // TODO: make this more specific
             throw new RuntimeException(e);
         }
     }
