@@ -3324,4 +3324,10 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, String userId, String email,
+                                     String relyingPartyId) throws StorageQueryException {
+        return null; // TODO!!!
+    }
 }
