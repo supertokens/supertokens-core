@@ -162,9 +162,11 @@ public class WebAuthN {
                 generatedOptions.relyingPartyId, tenantIdentifier);
 
         webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
-        //TODO create recipe user
-        //TODO save recipe user related stuff
-        //TODO return values!
+
+        AuthRecipeUserInfo recipeUserInfo = webAuthNStorage.signUp(tenantIdentifier, Utils.getUUID(),
+                generatedOptions.userEmail,
+                generatedOptions.relyingPartyId);
+
     }
 
     private static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(RegistrationData verifiedRegistrationData,
