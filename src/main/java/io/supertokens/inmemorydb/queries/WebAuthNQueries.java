@@ -19,6 +19,7 @@ package io.supertokens.inmemorydb.queries;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
@@ -166,6 +167,35 @@ public class WebAuthNQueries {
             pst.setLong(8, credential.createdAt);
             pst.setLong(9, credential.updatedAt);
         });
+    }
+
+    public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier,String userId, String email, String relyingPartyId)
+        throws SQLException, StorageQueryException {
+
+        String insertWebauthNUsersToTenant = "INSERT INTO " + Config.getConfig(start).getWebAuthNUserToTenantTable()
+            + " (app_id, tenant_id, user_id, email) "
+            + " VALUES (?,?,?,?);";
+
+        update(start, insertWebauthNUsersToTenant, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, userId);
+            pst.setString(4, email);
+        });
+
+        String insertWebauthNUsers = "INSERT INTO " + Config.getConfig(start).getWebAuthNUsersTable()
+            + " (app_id, user_id, email, rp_id, time_joined) "
+            + " VALUES (?,?,?,?,?);";
+
+        update(start, insertWebauthNUsers, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, userId);
+            pst.setString(3, email);
+            pst.setString(4, relyingPartyId);
+            pst.setLong(5, System.currentTimeMillis());
+        });
+
+        return null; // TODO
     }
 
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {
