@@ -89,10 +89,10 @@ public class WebAuthN {
 
         String optionsId = Utils.getUUID();
 
-        saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
+        WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
                 options.getRp().getId(), origin, email, optionsId);
 
-        return createResponseFromOptions(options, optionsId);
+        return createResponseFromOptions(options, optionsId, savedOptions.createdAt, savedOptions.expiresAt);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
@@ -135,8 +135,8 @@ public class WebAuthN {
         return challenge;
     }
 
-    public static void registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String optionsId,
-                                           String credentialId, String registrationResponseJson)
+    public static WebauthNSaveCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
+                                           String optionsId, String credentialId, String registrationResponseJson)
             throws Exception {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
@@ -146,7 +146,7 @@ public class WebAuthN {
         if(generatedOptions.expiresAt < now) {
             throw new Exception("expired"); // TODO make it some meaningful exception
         }
-        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
+        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) { // This seems to be bullshit. TODO
             throw new Exception("not valid origin"); // TODO make it some meaningful exception
         }
 
@@ -158,26 +158,24 @@ public class WebAuthN {
         RegistrationData verifiedRegistrationData = nonStrictWebAuthnManager.verify(registrationData,
                 registrationParameters);
 
-        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData, credentialId, generatedOptions.userEmail,
-                generatedOptions.relyingPartyId, tenantIdentifier);
+        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData,
+                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId, tenantIdentifier);
 
-        webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
+        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
 
-        AuthRecipeUserInfo recipeUserInfo = webAuthNStorage.signUp(tenantIdentifier, Utils.getUUID(),
-                generatedOptions.userEmail,
-                generatedOptions.relyingPartyId);
-
+        return mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
+                generatedOptions.relyingPartyName);
     }
 
     private static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(RegistrationData verifiedRegistrationData,
-                                                              String credentialId, String userEmail,
+                                                              String userId, String credentialId, String userEmail,
                                                               String relyingPartyId, TenantIdentifier tenantIdentifier) {
         ObjectConverter objectConverter = new ObjectConverter();
         WebAuthNStoredCredential storedCredential = new WebAuthNStoredCredential();
         storedCredential.id = credentialId;
         storedCredential.appId = tenantIdentifier.getAppId();
         storedCredential.rpId = relyingPartyId;
-        storedCredential.userId = userEmail;
+        storedCredential.userId = userId;
         storedCredential.counter = verifiedRegistrationData.getAttestationObject().getAuthenticatorData().getSignCount();
         AttestedCredentialDataConverter attestedCredentialDataConverter = new AttestedCredentialDataConverter(objectConverter);
         storedCredential.publicKey = attestedCredentialDataConverter.convert(verifiedRegistrationData.getAttestationObject().getAuthenticatorData()
@@ -191,7 +189,7 @@ public class WebAuthN {
 
     @NotNull
     private static RegistrationParameters getRegistrationParameters(WebAuthNOptions generatedOptions) {
-        List<PublicKeyCredentialParameters> pubKeyCredParams = null; //Specify the same value as the pubKeyCredParams provided in PublicKeyCredentialCreationOptions
+        List<PublicKeyCredentialParameters> pubKeyCredParams = null; //TODO: Specify the same value as the pubKeyCredParams provided in PublicKeyCredentialCreationOptions
         boolean userVerificationRequired = false;
         boolean userPresenceRequired = true;
 
@@ -211,7 +209,8 @@ public class WebAuthN {
         return registrationParameters;
     }
 
-    private static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id) {
+    private static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
+                                                        long createdAt, long expiresAt) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthGeneratedOptionsId", id);
 
@@ -229,6 +228,9 @@ public class WebAuthN {
         response.addProperty("timeout", options.getTimeout());
         response.addProperty("challenge", Base64.getEncoder().encodeToString(options.getChallenge().getValue()));
         response.addProperty("attestation", options.getAttestation().getValue());
+
+        response.addProperty("createdAt", createdAt);
+        response.addProperty("expiresAt", expiresAt);
 
         JsonArray pubKeyCredParams = new JsonArray();
         for(PublicKeyCredentialParameters params : options.getPubKeyCredParams()){
@@ -263,7 +265,7 @@ public class WebAuthN {
         return response;
     }
 
-    private static void saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
+    private static WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
             Long timeout, String relyinPartyId, String origin, String userEmail, String id)
             throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
@@ -276,6 +278,17 @@ public class WebAuthN {
         savableOptions.expiresAt = savableOptions.createdAt + savableOptions.timeout;
         savableOptions.relyingPartyId = relyinPartyId;
         savableOptions.userEmail = userEmail;
-        webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
+        return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
+    }
+
+    private static WebauthNSaveCredentialResponse mapStoredCredentialToResponse(WebAuthNStoredCredential credential,
+                                                                                String email, String relyingPartyName){
+        WebauthNSaveCredentialResponse response = new WebauthNSaveCredentialResponse();
+        response.email = email;
+        response.webauthnCredentialId = credential.id;
+        response.recipeUserId = credential.userId;
+        response.relyingPartyId = credential.rpId;
+        response.relyingPartyName = relyingPartyName;
+        return response;
     }
 }

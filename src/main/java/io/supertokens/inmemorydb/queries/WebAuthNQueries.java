@@ -21,15 +21,20 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static io.supertokens.pluginInterface.RECIPE_ID.PASSWORDLESS;
+import static io.supertokens.pluginInterface.RECIPE_ID.WEBAUTHN;
 
 public class WebAuthNQueries {
 
@@ -68,6 +73,7 @@ public class WebAuthNQueries {
                 " challenge VARCHAR(256) NOT NULL," +
                 " email VARCHAR(256)," +
                 " rp_id VARCHAR(256) NOT NULL," +
+                " rp_name VARCHAR(256) NOT NULL," +
                 " origin VARCHAR(256) NOT NULL," +
                 " expires_at BIGINT UNSIGNED NOT NULL," +
                 " created_at BIGINT UNSIGNED NOT NULL," +
@@ -100,13 +106,13 @@ public class WebAuthNQueries {
                 ");";
     }
 
-    public static int saveOptions(Start start, TenantIdentifier tenantIdentifier, WebAuthNOptions options)
+    public static WebAuthNOptions saveOptions(Start start, TenantIdentifier tenantIdentifier, WebAuthNOptions options)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
-                + " (app_id, tenant_id, id, challenge, email, rp_id, origin, expires_at, created_at) "
-                + " VALUES (?,?,?,?,?,?,?,?,?);";
+                + " (app_id, tenant_id, id, challenge, email, rp_id, origin, expires_at, created_at, rp_name) "
+                + " VALUES (?,?,?,?,?,?,?,?,?, ?);";
 
-        return update(start, INSERT, pst -> {
+        update(start, INSERT, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, options.generatedOptionsId);
@@ -116,7 +122,10 @@ public class WebAuthNQueries {
             pst.setString(7, options.origin);
             pst.setLong(8, options.expiresAt);
             pst.setLong(9, options.createdAt);
+            pst.setString(10, options.relyingPartyName);
         });
+
+        return options;
     }
 
     public static WebAuthNOptions loadOptionsById(Start start, TenantIdentifier tenantIdentifier, String optionsId)
@@ -150,7 +159,7 @@ public class WebAuthNQueries {
         });
     }
 
-    public static void saveCredential(Start start, TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
+    public static WebAuthNStoredCredential saveCredential(Start start, TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNCredentialsTable()
                 + " (id, app_id, rp_id, user_id, counter, public_key, transports, created_at, updated_at) "
@@ -167,33 +176,75 @@ public class WebAuthNQueries {
             pst.setLong(8, credential.createdAt);
             pst.setLong(9, credential.updatedAt);
         });
+
+        return credential;
     }
 
-    public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier,String userId, String email, String relyingPartyId)
-        throws SQLException, StorageQueryException {
+    public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier, String userId, String email,
+                                            String relyingPartyId)
+            throws StorageTransactionLogicException, StorageQueryException {
+        long timeJoined = System.currentTimeMillis();
+        start.startTransaction(transactionConnection -> {
+            try {
+                Connection sqlCon = (Connection) transactionConnection.getConnection();
 
-        String insertWebauthNUsersToTenant = "INSERT INTO " + Config.getConfig(start).getWebAuthNUserToTenantTable()
-            + " (app_id, tenant_id, user_id, email) "
-            + " VALUES (?,?,?,?);";
+                // app_id_to_user_id
+                String insertAppIdToUserId = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
+                        + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
+                update(sqlCon, insertAppIdToUserId, pst -> {
+                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(2, userId);
+                    pst.setString(3, userId);
+                    pst.setString(4, WEBAUTHN.toString());
+                });
 
-        update(start, insertWebauthNUsersToTenant, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, tenantIdentifier.getTenantId());
-            pst.setString(3, userId);
-            pst.setString(4, email);
+                // all_auth_recipe_users
+                String insertAllAuthRecipeUsers = "INSERT INTO " + getConfig(start).getUsersTable()
+                        +
+                        "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, " +
+                        "primary_or_recipe_user_time_joined)" +
+                        " VALUES(?, ?, ?, ?, ?, ?, ?)";
+                update(sqlCon, insertAllAuthRecipeUsers, pst -> {
+                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(2, tenantIdentifier.getTenantId());
+                    pst.setString(3, userId);
+                    pst.setString(4, userId);
+                    pst.setString(5, PASSWORDLESS.toString());
+                    pst.setLong(6, timeJoined);
+                    pst.setLong(7, timeJoined);
+                });
+
+                // webauthn_user_to_tenant
+                String insertWebauthNUsersToTenant =
+                        "INSERT INTO " + Config.getConfig(start).getWebAuthNUserToTenantTable()
+                                + " (app_id, tenant_id, user_id, email) "
+                                + " VALUES (?,?,?,?);";
+
+                update(sqlCon, insertWebauthNUsersToTenant, pst -> {
+                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(2, tenantIdentifier.getTenantId());
+                    pst.setString(3, userId);
+                    pst.setString(4, email);
+                });
+
+                // webauthn_users
+                String insertWebauthNUsers = "INSERT INTO " + Config.getConfig(start).getWebAuthNUsersTable()
+                        + " (app_id, user_id, email, rp_id, time_joined) "
+                        + " VALUES (?,?,?,?,?);";
+
+                update(sqlCon, insertWebauthNUsers, pst -> {
+                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(2, userId);
+                    pst.setString(3, email);
+                    pst.setString(4, relyingPartyId);
+                    pst.setLong(5, timeJoined);
+                });
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return null;
         });
 
-        String insertWebauthNUsers = "INSERT INTO " + Config.getConfig(start).getWebAuthNUsersTable()
-            + " (app_id, user_id, email, rp_id, time_joined) "
-            + " VALUES (?,?,?,?,?);";
-
-        update(start, insertWebauthNUsers, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, userId);
-            pst.setString(3, email);
-            pst.setString(4, relyingPartyId);
-            pst.setLong(5, System.currentTimeMillis());
-        });
 
         return null; // TODO
     }
@@ -239,6 +290,7 @@ public class WebAuthNQueries {
             result.challenge = rs.getString("challenge");
             result.userEmail = rs.getString("email");
             result.generatedOptionsId = rs.getString("id");
+            result.relyingPartyName = rs.getString("rp_name");
             return result;
         }
     }

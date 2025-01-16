@@ -29,7 +29,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -254,7 +255,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private String getTenantId(HttpServletRequest req) {
+    private String  getTenantId(HttpServletRequest req) {
         String path = req.getServletPath().toLowerCase();
         String apiPath = getPath().toLowerCase();
         if (!apiPath.startsWith("/")) {

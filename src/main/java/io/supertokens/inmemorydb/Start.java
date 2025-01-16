@@ -3297,19 +3297,19 @@ public class Start
     }
 
     @Override
-    public void saveCredentials(TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
+    public WebAuthNStoredCredential saveCredentials(TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
             throws StorageQueryException {
         try {
-            WebAuthNQueries.saveCredential(this, tenantIdentifier, credential);
+             return WebAuthNQueries.saveCredential(this, tenantIdentifier, credential);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void saveGeneratedOptions(TenantIdentifier tenantIdentifier, WebAuthNOptions optionsToSave) throws StorageQueryException {
+    public WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, WebAuthNOptions optionsToSave) throws StorageQueryException {
         try {
-            WebAuthNQueries.saveOptions(this, tenantIdentifier, optionsToSave);
+            return WebAuthNQueries.saveOptions(this, tenantIdentifier, optionsToSave);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -40,7 +41,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/credential/register";
+        return "/recipe/webauthn/user/credential/register";
     }
 
     @Override
@@ -50,11 +51,23 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             Storage storage = getTenantStorage(req);
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+            String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
             String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
-            WebAuthN.registerCredentials(storage, tenantIdentifier, credentialId, webauthGeneratedOptionsId, credentialsDataString);
+
+            WebauthNSaveCredentialResponse savedCredential = WebAuthN
+                    .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
+                            webauthGeneratedOptionsId, credentialsDataString);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.addProperty("webauthnCredentialId", savedCredential.webauthnCredentialId);
+            result.addProperty("recipeUserId", savedCredential.recipeUserId);
+            result.addProperty("email", savedCredential.email);
+            result.addProperty("relyingPartyId", savedCredential.relyingPartyId);
+            result.addProperty("relyingPartyName", savedCredential.relyingPartyName);
 
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
