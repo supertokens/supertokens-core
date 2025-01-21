@@ -28,12 +28,19 @@ import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.Challenge;
 import com.webauthn4j.server.ServerProperty;
+import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.webauthn.DuplicateRecoverAccountTokenException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
@@ -41,6 +48,9 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -275,5 +285,48 @@ public class WebAuthN {
         savableOptions.relyingPartyId = relyinPartyId;
         savableOptions.userEmail = userEmail;
         webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
+    }
+
+    public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
+            StorageQueryException {
+        // TODO
+        // find the recipe user with the email
+        String userId = ""; // TODO fetch user id from email
+
+        while (true) {
+            // we first generate a password reset token
+            byte[] random = new byte[64];
+            byte[] salt = new byte[64];
+
+            new SecureRandom().nextBytes(random);
+            new SecureRandom().nextBytes(salt);
+
+            int iterations = 1000;
+            String token = Utils
+                    .toHex(Utils.pbkdf2(Utils.bytesToString(random).toCharArray(), salt, iterations, 64 * 6));
+
+            // we make it URL safe:
+            token = Utils.convertToBase64(token);
+            token = token.replace("=", "");
+            token = token.replace("/", "");
+            token = token.replace("+", "");
+
+            String hashedToken = Utils.hashSHA256(token);
+
+            try {
+                StorageUtils.getWebAuthNStorage(storage).addRecoverAccountToken(
+                        tenantIdentifier.toAppIdentifier(), new PasswordResetTokenInfo(userId,
+                                hashedToken, System.currentTimeMillis() +
+                                getRecoverAccountTokenLifetime(tenantIdentifier, main), email));
+                return token;
+            } catch (DuplicateRecoverAccountTokenException ignored) {
+            }
+        }
+    }
+
+    private static long getRecoverAccountTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
+        return 300000; // TODO add config
     }
 }
