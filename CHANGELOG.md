@@ -7,6 +7,40 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.1]
+
+- Fixes slow queries for account linking
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS emailpassword_users_email_index ON emailpassword_users (app_id, email);
+CREATE INDEX IF NOT EXISTS emailpassword_user_to_tenant_email_index ON emailpassword_user_to_tenant (app_id, tenant_id, email);
+
+CREATE INDEX IF NOT EXISTS passwordless_users_email_index ON passwordless_users (app_id, email);
+CREATE INDEX IF NOT EXISTS passwordless_users_phone_number_index ON passwordless_users (app_id, phone_number);
+CREATE INDEX IF NOT EXISTS passwordless_user_to_tenant_email_index ON passwordless_user_to_tenant (app_id, tenant_id, email);
+CREATE INDEX IF NOT EXISTS passwordless_user_to_tenant_phone_number_index ON passwordless_user_to_tenant (app_id, tenant_id, phone_number);
+
+CREATE INDEX IF NOT EXISTS thirdparty_user_to_tenant_third_party_user_id_index ON thirdparty_user_to_tenant (app_id, tenant_id, third_party_id, third_party_user_id);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE INDEX emailpassword_users_email_index ON emailpassword_users (app_id, email);
+CREATE INDEX emailpassword_user_to_tenant_email_index ON emailpassword_user_to_tenant (app_id, tenant_id, email);
+
+CREATE INDEX passwordless_users_email_index ON passwordless_users (app_id, email);
+CREATE INDEX passwordless_users_phone_number_index ON passwordless_users (app_id, phone_number);
+CREATE INDEX passwordless_user_to_tenant_email_index ON passwordless_user_to_tenant (app_id, tenant_id, email);
+CREATE INDEX passwordless_user_to_tenant_phone_number_index ON passwordless_user_to_tenant (app_id, tenant_id, phone_number);
+
+CREATE INDEX thirdparty_user_to_tenant_third_party_user_id_index ON thirdparty_user_to_tenant (app_id, tenant_id, third_party_id, third_party_user_id);
+```
+
 ## [10.0.0]
 
 ### Added

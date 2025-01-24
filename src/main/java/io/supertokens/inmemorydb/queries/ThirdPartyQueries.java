@@ -85,6 +85,11 @@ public class ThirdPartyQueries {
         // @formatter:on
     }
 
+    static String getQueryToCreateThirdPartyUserToTenantThirdPartyUserIdIndex(Start start) {
+        return "CREATE INDEX thirdparty_user_to_tenant_third_party_user_id_index ON "
+                + Config.getConfig(start).getThirdPartyUserToTenantTable() + "(app_id, tenant_id, third_party_id, third_party_user_id);";
+    }
+
     public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier, String id, String email,
                                             LoginMethod.ThirdParty thirdParty, long timeJoined)
             throws StorageQueryException, StorageTransactionLogicException {
