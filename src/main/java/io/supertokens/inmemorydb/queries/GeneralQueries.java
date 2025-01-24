@@ -292,6 +292,9 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getEmailPasswordUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, EmailPasswordQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
+
+            // index
+            update(start, EmailPasswordQueries.getQueryToCreateEmailPasswordUsersEmailIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailPasswordUserToTenantTable())) {
@@ -351,7 +354,7 @@ public class GeneralQueries {
 
             // index
             update(start, PasswordlessQueries.getQueryToCreatePasswordlessUsersEmailIndex(start), NO_OP_SETTER);
-            update(start, PasswordlessQueries.getQueryToCreatePasswordlessUserToTenantEmailIndex(start), NO_OP_SETTER);
+            update(start, PasswordlessQueries.getQueryToCreatePasswordlessUsersPhoneNumberIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordlessUserToTenantTable())) {
