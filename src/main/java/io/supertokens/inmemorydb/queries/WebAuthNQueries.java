@@ -180,14 +180,33 @@ public class WebAuthNQueries {
         return credential;
     }
 
-    public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier, String userId, String email,
+    public static WebAuthNStoredCredential saveCredential_Transaction(Start start, Connection connection, TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
+            throws SQLException, StorageQueryException {
+        String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " (id, app_id, rp_id, user_id, counter, public_key, transports, created_at, updated_at) "
+                + " VALUES (?,?,?,?,?,?,?,?,?);";
+
+        update(connection, INSERT, pst -> {
+            pst.setString(1, credential.id);
+            pst.setString(2, credential.appId);
+            pst.setString(3, credential.rpId);
+            pst.setString(4, credential.userId);
+            pst.setLong(5, credential.counter);
+            pst.setBytes(6, credential.publicKey);
+            pst.setString(7, credential.transports);
+            pst.setLong(8, credential.createdAt);
+            pst.setLong(9, credential.updatedAt);
+        });
+
+        return credential;
+    }
+
+    public static AuthRecipeUserInfo signUp_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId, String email,
                                             String relyingPartyId)
             throws StorageTransactionLogicException, StorageQueryException {
         long timeJoined = System.currentTimeMillis();
-        start.startTransaction(transactionConnection -> {
-            try {
-                Connection sqlCon = (Connection) transactionConnection.getConnection();
 
+            try {
                 // app_id_to_user_id
                 String insertAppIdToUserId = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
                         + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
@@ -242,11 +261,7 @@ public class WebAuthNQueries {
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
-            return null;
-        });
-
-
-        return null; // TODO
+            return null; // TODO AuthUserInfo
     }
 
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {

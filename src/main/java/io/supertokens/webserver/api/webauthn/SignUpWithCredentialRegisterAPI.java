@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2024, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2025, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -20,11 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -33,15 +30,15 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class CredentialsRegisterAPI extends WebserverAPI {
+public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
-    public CredentialsRegisterAPI(Main main) {
+    public SignUpWithCredentialRegisterAPI(Main main) {
         super(main, "webauthn");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/credential/register";
+        return "/recipe/webauthn/user/signup";
     }
 
     @Override
@@ -52,29 +49,25 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
+            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId",
+                    false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
-            WebauthNSaveCredentialResponse savedCredential = WebAuthN
-                    .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
-                            webauthGeneratedOptionsId, credentialsDataString);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("webauthnCredentialId", savedCredential.webauthnCredentialId);
-            result.addProperty("recipeUserId", savedCredential.recipeUserId);
-            result.addProperty("email", savedCredential.email);
-            result.addProperty("relyingPartyId", savedCredential.relyingPartyId);
-            result.addProperty("relyingPartyName", savedCredential.relyingPartyName);
+//            result.addProperty("webauthnCredentialId", savedCredential.webauthnCredentialId);
+//            result.addProperty("recipeUserId", savedCredential.recipeUserId);
+//            result.addProperty("email", savedCredential.email);
+//            result.addProperty("relyingPartyId", savedCredential.relyingPartyId);
+//            result.addProperty("relyingPartyName", savedCredential.relyingPartyName);
 
             super.sendJsonResponse(200, result, resp);
-
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (
+                TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) { // TODO: make this more specific
             throw new RuntimeException(e);
         }

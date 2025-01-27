@@ -93,8 +93,8 @@ import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappi
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import org.sqlite.SQLiteException;
@@ -113,7 +113,7 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -3325,9 +3325,68 @@ public class Start
         }
     }
 
+
     @Override
-    public AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, String userId, String email,
-                                     String relyingPartyId) throws StorageQueryException {
-        return null; // TODO
+    public WebAuthNStoredCredential saveCredentials_Transaction(TenantIdentifier tenantIdentifier,
+                                                                TransactionConnection con,
+                                                                WebAuthNStoredCredential credential)
+            throws StorageQueryException {
+
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return WebAuthNQueries.saveCredential_Transaction(this, sqlCon, tenantIdentifier, credential);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public WebAuthNOptions loadOptionsById_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                                       String optionsId) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public AuthRecipeUserInfo signUp_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                                 String userId, String email, String relyingPartyId)
+            throws StorageQueryException, DuplicateUserIdException, TenantOrAppNotFoundException,
+            DuplicateEmailException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return WebAuthNQueries.signUp_Transaction(this, sqlCon, tenantIdentifier, userId, email, relyingPartyId);
+        } catch (StorageTransactionLogicException stle) {
+            if (stle.actualException instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = stle.actualException.getMessage();
+
+                if (isUniqueConstraintError(serverMessage, config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "email"})) {
+                    throw new DuplicateEmailException();
+                } else if (isPrimaryKeyError(serverMessage, config.getWebAuthNUsersTable(),
+                        new String[]{"app_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getUsersTable(),
+                        new String[]{"app_id", "tenant_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
+                        new String[]{"app_id", "user_id"})) {
+                    throw new DuplicateUserIdException();
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getAppsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{tenantIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
+
+            throw new StorageQueryException(stle.actualException);
+        }
     }
 }

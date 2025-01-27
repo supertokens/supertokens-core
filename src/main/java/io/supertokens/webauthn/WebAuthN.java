@@ -31,12 +31,14 @@ import com.webauthn4j.server.ServerProperty;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -142,6 +144,21 @@ public class WebAuthN {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
 
+        RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
+                generatedOptions);
+
+        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData,
+                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId, tenantIdentifier);
+
+        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
+
+        return mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
+                generatedOptions.relyingPartyName);
+    }
+
+    @NotNull
+    private static RegistrationData getRegistrationData(String registrationResponseJson,
+                                                        WebAuthNOptions generatedOptions) throws Exception {
         long now = System.currentTimeMillis();
         if(generatedOptions.expiresAt < now) {
             throw new Exception("expired"); // TODO make it some meaningful exception
@@ -151,20 +168,58 @@ public class WebAuthN {
         }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-        RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(registrationResponseJson);
+        RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(
+                registrationResponseJson);
 
         RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
 
-        RegistrationData verifiedRegistrationData = nonStrictWebAuthnManager.verify(registrationData,
+        return nonStrictWebAuthnManager.verify(registrationData,
                 registrationParameters);
+    }
 
-        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData,
-                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId, tenantIdentifier);
+    public static AuthRecipeUserInfo signUp(Storage storage, TenantIdentifier tenantIdentifier,
+                                            String optionsId, String credentialId, String registrationResponseJson) {
+        // create a new user in the auth recipe storage
+        // create new credentials
+        // all within a transaction
+        try {
+            WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+            webAuthNStorage.startTransaction(con -> {
 
-        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
+                while (true) {
+                    try {
 
-        return mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
-                generatedOptions.relyingPartyName);
+                        String recipeUserId = Utils.getUUID();
+                        WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
+                                con,
+                                optionsId);
+
+                        webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
+                                generatedOptions.relyingPartyId);
+
+
+                        RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
+                                generatedOptions);
+                        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(
+                                verifiedRegistrationData,
+                                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
+                                tenantIdentifier);
+                        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials_Transaction(
+                                tenantIdentifier,
+                                con, credentialToSave);
+
+                        // TODO return values /AuthRecipeUserInfo + webauthCredentialId
+                    } catch (DuplicateUserIdException duplicateUserIdException) {
+                        //ignore and retry
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e); // TODO! make it more specific
+        }
+        return null;
     }
 
     private static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(RegistrationData verifiedRegistrationData,
