@@ -1161,6 +1161,11 @@ public class GeneralQueries {
 
         userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email));
 
+        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email);
+        if(webauthnUserId != null) {
+            userIds.add(webauthnUserId);
+        }
+
         // remove duplicates from userIds
         Set<String> userIdsSet = new HashSet<>(userIds);
         userIds = new ArrayList<>(userIdsSet);
@@ -1307,6 +1312,7 @@ public class GeneralQueries {
         loginMethods.addAll(ThirdPartyQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
         loginMethods.addAll(
                 PasswordlessQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
+        loginMethods.addAll(WebAuthNQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
 
         Map<String, LoginMethod> recipeUserIdToLoginMethodMap = new HashMap<>();
         for (LoginMethod loginMethod : loginMethods) {

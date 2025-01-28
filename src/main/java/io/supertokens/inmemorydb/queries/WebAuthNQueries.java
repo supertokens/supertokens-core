@@ -17,11 +17,14 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
@@ -29,11 +32,13 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
-import static io.supertokens.pluginInterface.RECIPE_ID.PASSWORDLESS;
 import static io.supertokens.pluginInterface.RECIPE_ID.WEBAUTHN;
 
 public class WebAuthNQueries {
@@ -228,7 +233,7 @@ public class WebAuthNQueries {
                     pst.setString(2, tenantIdentifier.getTenantId());
                     pst.setString(3, userId);
                     pst.setString(4, userId);
-                    pst.setString(5, PASSWORDLESS.toString());
+                    pst.setString(5, WEBAUTHN.toString());
                     pst.setLong(6, timeJoined);
                     pst.setLong(7, timeJoined);
                 });
@@ -266,6 +271,63 @@ public class WebAuthNQueries {
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
+    }
+
+    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier) {
+        if (ids.size() > 0) {
+
+            String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
+            String credentialTable = getConfig(start).getWebAuthNCredentialsTable();
+            String QUERY =
+                    "SELECT " + webauthnUsersTable + ".user_id as userid, " + webauthnUsersTable + ".email as email, " +
+                            webauthnUsersTable + ".time_joined as timejoined, " + credentialTable +
+                            ".id as credentialid "
+                            + "FROM " + webauthnUsersTable + " JOIN " + credentialTable
+                            + " ON " + webauthnUsersTable + ".user_id = " + credentialTable + ".user_id"
+                            + " WHERE " + webauthnUsersTable + ".user_id IN (" +
+                            Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                            " ) AND " + webauthnUsersTable + ".app_id = ?";
+
+//            List<EmailPasswordQueries.UserInfoPartial> userInfos = execute(start, QUERY, pst -> {
+//                int index = 1;
+//                for (String id : ids) {
+//                    pst.setString(index, id);
+//                    index++;
+//                }
+//                pst.setString(index, appIdentifier.getAppId());
+//            }, result -> {
+//                List<EmailPasswordQueries.UserInfoPartial> finalResult = new ArrayList<>();
+//                while (result.next()) {
+//                    finalResult.add(EmailPasswordQueries.UserInfoRowMapper.getInstance().mapOrThrow(result));
+//                }
+//                return finalResult;
+//            });
+//            fillUserInfoWithTenantIds(start, appIdentifier, userInfos);
+//            fillUserInfoWithVerified(start, appIdentifier, userInfos);
+//            return userInfos.stream().map(EmailPasswordQueries.UserInfoPartial::toLoginMethod)
+//                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {
