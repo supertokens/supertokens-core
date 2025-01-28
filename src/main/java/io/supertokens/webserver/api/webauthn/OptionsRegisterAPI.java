@@ -21,7 +21,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -108,10 +107,6 @@ public class OptionsRegisterAPI extends WebserverAPI {
             throw new ServletException(e); //will be handled by WebserverAPI
         } catch (StorageQueryException e) {
             throw new RuntimeException(e);
-        } catch (UserIdNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("error", "USER_WITH_EMAIL_NOT_FOUND_ERROR");
-            super.sendJsonResponse(400, response, resp);
         }
     }
 }

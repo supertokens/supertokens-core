@@ -19,10 +19,7 @@ package io.supertokens.webauthn;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.webauthn4j.WebAuthnManager;
-import com.webauthn4j.converter.AttestedCredentialDataConverter;
-import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
@@ -40,6 +37,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
+import io.supertokens.webauthn.utils.WebauthMapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
@@ -53,7 +51,7 @@ public class WebAuthN {
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
                                              String userVerificitaion, JsonArray supportedAlgorithmIds)
-            throws StorageQueryException, UserIdNotFoundException {
+            throws StorageQueryException {
 
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
 
@@ -62,10 +60,6 @@ public class WebAuthN {
         AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
         if(usersWithEmail.length > 0) {
             id = usersWithEmail[0].getSupertokensUserId();
-        }
-
-        if(id == null){
-            throw new UserIdNotFoundException();
         }
 
         PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(id.getBytes(StandardCharsets.UTF_8), email, displayName);
@@ -94,7 +88,8 @@ public class WebAuthN {
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
                 options.getRp().getId(), origin, email, optionsId);
 
-        return createResponseFromOptions(options, optionsId, savedOptions.createdAt, savedOptions.expiresAt);
+        return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
+                savedOptions.expiresAt);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
@@ -147,12 +142,14 @@ public class WebAuthN {
         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                 generatedOptions);
 
-        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(verifiedRegistrationData,
-                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId, tenantIdentifier);
+        WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
+                verifiedRegistrationData,
+                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
+                tenantIdentifier);
 
         WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
 
-        return mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
+        return WebauthMapper.mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
                 generatedOptions.relyingPartyName);
     }
 
@@ -200,7 +197,7 @@ public class WebAuthN {
 
                         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                                 generatedOptions);
-                        WebAuthNStoredCredential credentialToSave = mapRegistrationDataToStoredCredential(
+                        WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                                 verifiedRegistrationData,
                                 recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
                                 tenantIdentifier);
@@ -220,26 +217,6 @@ public class WebAuthN {
             throw new RuntimeException(e); // TODO! make it more specific
         }
         return null;
-    }
-
-    private static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(RegistrationData verifiedRegistrationData,
-                                                              String userId, String credentialId, String userEmail,
-                                                              String relyingPartyId, TenantIdentifier tenantIdentifier) {
-        ObjectConverter objectConverter = new ObjectConverter();
-        WebAuthNStoredCredential storedCredential = new WebAuthNStoredCredential();
-        storedCredential.id = credentialId;
-        storedCredential.appId = tenantIdentifier.getAppId();
-        storedCredential.rpId = relyingPartyId;
-        storedCredential.userId = userId;
-        storedCredential.counter = verifiedRegistrationData.getAttestationObject().getAuthenticatorData().getSignCount();
-        AttestedCredentialDataConverter attestedCredentialDataConverter = new AttestedCredentialDataConverter(objectConverter);
-        storedCredential.publicKey = attestedCredentialDataConverter.convert(verifiedRegistrationData.getAttestationObject().getAuthenticatorData()
-                .getAttestedCredentialData());
-        storedCredential.transports = objectConverter.getJsonConverter().writeValueAsString(verifiedRegistrationData.getTransports());
-        storedCredential.createdAt = System.currentTimeMillis();
-        storedCredential.updatedAt = storedCredential.createdAt;
-
-        return storedCredential;
     }
 
     @NotNull
@@ -264,62 +241,6 @@ public class WebAuthN {
         return registrationParameters;
     }
 
-    private static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
-                                                        long createdAt, long expiresAt) {
-        JsonObject response = new JsonObject();
-        response.addProperty("webauthGeneratedOptionsId", id);
-
-        JsonObject rp = new JsonObject();
-        rp.addProperty("id", options.getRp().getId());
-        rp. addProperty("name", options.getRp().getName());
-        response.add("rp", rp);
-
-        JsonObject user = new JsonObject();
-        user.addProperty("id", new String(options.getUser().getId()));
-        user.addProperty("name", options.getUser().getName());
-        user.addProperty("displayName", options.getUser().getDisplayName());
-        response.add("user", user);
-
-        response.addProperty("timeout", options.getTimeout());
-        response.addProperty("challenge", Base64.getEncoder().encodeToString(options.getChallenge().getValue()));
-        response.addProperty("attestation", options.getAttestation().getValue());
-
-        response.addProperty("createdAt", createdAt);
-        response.addProperty("expiresAt", expiresAt);
-
-        JsonArray pubKeyCredParams = new JsonArray();
-        for(PublicKeyCredentialParameters params : options.getPubKeyCredParams()){
-            JsonObject pubKeyParam = new JsonObject();
-            pubKeyParam.addProperty("alg", params.getAlg().getValue());
-            pubKeyParam.addProperty("type", params.getType().getValue()); // should be always public-key
-            pubKeyCredParams.add(pubKeyParam);
-        }
-        response.add("pubKeyCredParams",pubKeyCredParams);
-
-        JsonArray excludeCredentials = new JsonArray();
-        if(options.getExcludeCredentials() != null){
-            for(PublicKeyCredentialDescriptor exclude : options.getExcludeCredentials()){
-                JsonObject excl = new JsonObject();
-                excl.addProperty("id", new String(exclude.getId()));
-                JsonArray transports = new JsonArray();
-                for(AuthenticatorTransport transp: exclude.getTransports()){
-                    transports.add(new JsonPrimitive(transp.getValue()));
-                }
-                excl.add("transport", transports);
-                excludeCredentials.add(excl);
-            }
-        }
-        response.add("excludeCredentials", excludeCredentials);
-
-        JsonObject authenticatorSelection = new JsonObject();
-        authenticatorSelection.addProperty("requireResidentKey", options.getAuthenticatorSelection().isRequireResidentKey() == null ? false : options.getAuthenticatorSelection().isRequireResidentKey());
-        authenticatorSelection.addProperty("residentKey", options.getAuthenticatorSelection().getResidentKey().getValue());
-        authenticatorSelection.addProperty("userVerification", options.getAuthenticatorSelection().getUserVerification().getValue());
-
-        response.add("authenticatorSelection", authenticatorSelection);
-        return response;
-    }
-
     private static WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
             Long timeout, String relyinPartyId, String origin, String userEmail, String id)
             throws StorageQueryException {
@@ -336,14 +257,4 @@ public class WebAuthN {
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
 
-    private static WebauthNSaveCredentialResponse mapStoredCredentialToResponse(WebAuthNStoredCredential credential,
-                                                                                String email, String relyingPartyName){
-        WebauthNSaveCredentialResponse response = new WebauthNSaveCredentialResponse();
-        response.email = email;
-        response.webauthnCredentialId = credential.id;
-        response.recipeUserId = credential.userId;
-        response.relyingPartyId = credential.rpId;
-        response.relyingPartyName = relyingPartyName;
-        return response;
-    }
 }

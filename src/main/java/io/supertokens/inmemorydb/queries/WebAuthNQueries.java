@@ -258,10 +258,14 @@ public class WebAuthNQueries {
                     pst.setString(4, relyingPartyId);
                     pst.setLong(5, timeJoined);
                 });
+
+                sqlCon.commit();
+
+                // TODO return AuthRecipeUserInfo.create(userId, false, );
+                return null;
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
-            return null; // TODO AuthUserInfo
     }
 
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {
