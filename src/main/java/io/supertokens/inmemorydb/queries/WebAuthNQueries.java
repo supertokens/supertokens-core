@@ -298,6 +298,9 @@ public class WebAuthNQueries {
 
             String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
             String credentialTable = getConfig(start).getWebAuthNCredentialsTable();
+            String usersTable = getConfig(start).getUsersTable();
+            String userIdMappingTable = getConfig(start).getUserIdMappingTable();
+            String emailVerificationTable = getConfig(start).getEmailVerificationTable();
             String QUERY =
                     "SELECT " + webauthnUsersTable + ".user_id as userid, " + webauthnUsersTable + ".email as email, " +
                             webauthnUsersTable + ".time_joined as timejoined, " + credentialTable +
@@ -315,14 +318,20 @@ public class WebAuthNQueries {
 
             // we need the external ids here
 
-//            StringBuilder QUERY = new StringBuilder(
-//                    "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? AND " +
-//                            "supertokens_user_id IN (");
+            StringBuilder external_id_mapping = new StringBuilder(
+                    "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? AND " +
+                            "supertokens_user_id IN (????)");
 //
-//            String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
-//                    + " WHERE app_id = ? AND user_id IN (" +
-//                    Utils.generateCommaSeperatedQuestionMarks(supertokensOrExternalUserIdsToQuery.size()) +
-//                    ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
+            String QUERY2 = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
+                    + " WHERE app_id = ? AND user_id IN (" +
+                    Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                    ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(0);//emails.size()) + ")";
+
+            String queryAllAtOnce =  "SELECT userid, external_userid, email, email_verified, time_joined, credentialid, tenant_id FROM " + getConfig(start).getUsersTable()
+                    + " WHERE app_id = ? AND user_id IN (" +
+                    Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                    ")";
+            //userid, external_userid, email, email_verified, time_joined, credentialid, tenant_id
 
         }
         return Collections.emptyList();
