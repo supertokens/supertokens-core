@@ -308,24 +308,22 @@ public class WebAuthNQueries {
                             Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
                             " ) AND " + webauthnUsersTable + ".app_id = ?";
 
-//            List<EmailPasswordQueries.UserInfoPartial> userInfos = execute(start, QUERY, pst -> {
-//                int index = 1;
-//                for (String id : ids) {
-//                    pst.setString(index, id);
-//                    index++;
-//                }
-//                pst.setString(index, appIdentifier.getAppId());
-//            }, result -> {
-//                List<EmailPasswordQueries.UserInfoPartial> finalResult = new ArrayList<>();
-//                while (result.next()) {
-//                    finalResult.add(EmailPasswordQueries.UserInfoRowMapper.getInstance().mapOrThrow(result));
-//                }
-//                return finalResult;
-//            });
-//            fillUserInfoWithTenantIds(start, appIdentifier, userInfos);
-//            fillUserInfoWithVerified(start, appIdentifier, userInfos);
-//            return userInfos.stream().map(EmailPasswordQueries.UserInfoPartial::toLoginMethod)
-//                    .collect(Collectors.toList());
+            String tenantInfoQuery = "SELECT user_id, tenant_id "
+                    + "FROM " + getConfig(start).getUsersTable();
+
+
+
+            // we need the external ids here
+
+//            StringBuilder QUERY = new StringBuilder(
+//                    "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? AND " +
+//                            "supertokens_user_id IN (");
+//
+//            String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
+//                    + " WHERE app_id = ? AND user_id IN (" +
+//                    Utils.generateCommaSeperatedQuestionMarks(supertokensOrExternalUserIdsToQuery.size()) +
+//                    ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
+
         }
         return Collections.emptyList();
     }
