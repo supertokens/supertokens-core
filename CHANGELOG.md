@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [10.0.1]
 
 - Fixes slow queries for account linking
+- Masks db password in 500 response
 
 ### Migration
 
