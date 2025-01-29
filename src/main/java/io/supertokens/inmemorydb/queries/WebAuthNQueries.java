@@ -32,9 +32,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -293,7 +291,8 @@ public class WebAuthNQueries {
         });
     }
 
-    public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier) {
+    public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
 
             String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
@@ -301,37 +300,44 @@ public class WebAuthNQueries {
             String usersTable = getConfig(start).getUsersTable();
             String userIdMappingTable = getConfig(start).getUserIdMappingTable();
             String emailVerificationTable = getConfig(start).getEmailVerificationTable();
-            String QUERY =
-                    "SELECT " + webauthnUsersTable + ".user_id as userid, " + webauthnUsersTable + ".email as email, " +
-                            webauthnUsersTable + ".time_joined as timejoined, " + credentialTable +
-                            ".id as credentialid "
-                            + "FROM " + webauthnUsersTable + " JOIN " + credentialTable
-                            + " ON " + webauthnUsersTable + ".user_id = " + credentialTable + ".user_id"
-                            + " WHERE " + webauthnUsersTable + ".user_id IN (" +
-                            Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
-                            " ) AND " + webauthnUsersTable + ".app_id = ?";
 
-            String tenantInfoQuery = "SELECT user_id, tenant_id "
-                    + "FROM " + getConfig(start).getUsersTable();
+            String queryAll = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
+                    "credentials.id as credential_id, email_verification.email_verified as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                    "all_users.tenant_id as tenant_id " +
+                    "FROM " + webauthnUsersTable + " as webauthn " +
+                    "JOIN " + credentialTable + " as credentials ON webauthn.user_id = credentials.user_id " +
+                    "JOIN " + usersTable + " as all_users ON webauthn.app_id = all_users.app_id AND webauthn.user_id = all_users.user_id " +
+                    "JOIN " + userIdMappingTable + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
+                    "JOIN " + emailVerificationTable + " as email_verification ON webauthn.app_id = email_verification.app_id AND user_id_mapping.external_user_id = email_verification.user_id " +
+                    "WHERE webauthn.app_id = ? AND webauthn.user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) + ")";
 
-
-
-            // we need the external ids here
-
-            StringBuilder external_id_mapping = new StringBuilder(
-                    "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? AND " +
-                            "supertokens_user_id IN (????)");
-//
-            String QUERY2 = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
-                    + " WHERE app_id = ? AND user_id IN (" +
-                    Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
-                    ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(0);//emails.size()) + ")";
-
-            String queryAllAtOnce =  "SELECT userid, external_userid, email, email_verified, time_joined, credentialid, tenant_id FROM " + getConfig(start).getUsersTable()
-                    + " WHERE app_id = ? AND user_id IN (" +
-                    Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
-                    ")";
-            //userid, external_userid, email, email_verified, time_joined, credentialid, tenant_id
+            return execute(start, queryAll, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                int index = 2;
+                for (String id : ids) {
+                    pst.setString(index++, id);
+                }
+            }, result -> {
+                Map<String, LoginMethod> users = new HashMap<>();
+                while (result.next()) {
+                    String userId = result.getString("user_id");
+                    String email = result.getString("email");
+                    long timeJoined = result.getLong("time_joined");
+                    String credentialId = result.getString("credential_id");
+                    boolean emailVerified = result.getBoolean("email_verified");
+                    String externalUserId = result.getString("external_user_id");
+                    String tenantId = result.getString("tenant_id");
+                    if(users.containsKey(userId)) {
+                        users.get(userId).webauthN.addCredentialId(credentialId);
+                        users.get(userId).tenantIds.add(tenantId);
+                    } else {
+                        LoginMethod loginMethod = new LoginMethod(userId, timeJoined, emailVerified, email, new LoginMethod.WebAuthN(Collections.singletonList(credentialId)), new String[]{tenantId});
+                        loginMethod.setExternalUserId(externalUserId);
+                        users.put(userId, loginMethod);
+                    }
+                }
+                return users.values();
+            });
 
         }
         return Collections.emptyList();
