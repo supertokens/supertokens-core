@@ -54,6 +54,7 @@ import io.supertokens.webserver.api.userroles.*;
 import io.supertokens.webserver.api.webauthn.CredentialsRegisterAPI;
 import io.supertokens.webserver.api.webauthn.OptionsRegisterAPI;
 import io.supertokens.webserver.api.webauthn.SignInOptionsAPI;
+import io.supertokens.webserver.api.webauthn.SignUpWithCredentialRegisterAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -308,6 +309,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new OptionsRegisterAPI(main));
         addAPI(new SignInOptionsAPI(main));
         addAPI(new CredentialsRegisterAPI(main));
+        addAPI(new SignUpWithCredentialRegisterAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

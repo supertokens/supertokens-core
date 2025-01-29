@@ -174,7 +174,7 @@ public class WebAuthN {
                 registrationParameters);
     }
 
-    public static AuthRecipeUserInfo signUp(Storage storage, TenantIdentifier tenantIdentifier,
+    public static WebAuthNSignUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
                                             String optionsId, String credentialId, String registrationResponseJson) {
         // create a new user in the auth recipe storage
         // create new credentials
@@ -191,7 +191,7 @@ public class WebAuthN {
                                 con,
                                 optionsId);
 
-                        webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
+                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
                                 generatedOptions.relyingPartyId);
 
 
@@ -205,7 +205,7 @@ public class WebAuthN {
                                 tenantIdentifier,
                                 con, credentialToSave);
 
-                        // TODO return values /AuthRecipeUserInfo + webauthCredentialId
+                        return new WebAuthNSignUpResult(savedCredential, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (Exception e) {
