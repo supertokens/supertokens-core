@@ -263,8 +263,13 @@ public class WebAuthNQueries {
                 });
 
                 sqlCon.commit();
+                Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList(start, Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
+                if(!loginMethods.isEmpty()) { //expecting it to be size 1
+                    for(LoginMethod loginMethod: loginMethods){
+                        return AuthRecipeUserInfo.create(userId, false, loginMethod);
+                    }
+                }
 
-                // TODO return AuthRecipeUserInfo.create(userId, false, );
                 return null;
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -293,6 +298,22 @@ public class WebAuthNQueries {
 
     public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
+        try {
+            return start.startTransaction(con -> {
+                Connection sqlConnection = (Connection) con.getConnection();
+                try {
+                    return getUsersInfoUsingIdList_Transaction(start, sqlConnection, ids, appIdentifier);
+                } catch (SQLException e) {
+                    throw new StorageQueryException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    public static Collection<? extends LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection connection, Set<String> ids, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
 
             String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
@@ -308,10 +329,10 @@ public class WebAuthNQueries {
                     "JOIN " + credentialTable + " as credentials ON webauthn.user_id = credentials.user_id " +
                     "JOIN " + usersTable + " as all_users ON webauthn.app_id = all_users.app_id AND webauthn.user_id = all_users.user_id " +
                     "JOIN " + userIdMappingTable + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
-                    "JOIN " + emailVerificationTable + " as email_verification ON webauthn.app_id = email_verification.app_id AND user_id_mapping.external_user_id = email_verification.user_id " +
+                    "JOIN " + emailVerificationTable + " as email_verification ON webauthn.app_id = email_verification.app_id AND user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id" +
                     "WHERE webauthn.app_id = ? AND webauthn.user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) + ")";
 
-            return execute(start, queryAll, pst -> {
+            return execute(connection, queryAll, pst -> {
                 pst.setString(1, appIdentifier.getAppId());
                 int index = 2;
                 for (String id : ids) {
