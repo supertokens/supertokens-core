@@ -19,9 +19,11 @@ package io.supertokens.webserver.api.webauthn;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -29,6 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
     public GenerateRecoverAccountTokenAPI(Main main) {
@@ -50,18 +54,19 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            String token = WebAuthN.generateRecoverAccountToken(storage, tenantIdentifier, email);
+            String token = WebAuthN.generateRecoverAccountToken(main, storage, tenantIdentifier, email);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("token", token);
 
             sendJsonResponse(200, response, resp);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
         } catch (WebAuthNEmailNotFoundException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "USER_WITH_EMAIL_NOT_FOUND_ERROR");
+            response.addProperty("status", "WEBAUTHN_USER_WITH_EMAIL_NOT_FOUND_ERROR");
             sendJsonResponse(200, response, resp);
+        } catch (TenantOrAppNotFoundException | StorageQueryException | NoSuchAlgorithmException |
+                 InvalidKeySpecException e) {
+            throw new ServletException(e);
         }
     }
 }

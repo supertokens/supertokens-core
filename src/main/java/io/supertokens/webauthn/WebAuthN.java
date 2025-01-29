@@ -26,11 +26,14 @@ import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.Challenge;
 import com.webauthn4j.server.ServerProperty;
 import io.supertokens.Main;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -44,6 +47,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
+import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
 import io.supertokens.webauthn.utils.WebauthMapper;
 import org.jetbrains.annotations.NotNull;
 
@@ -270,9 +274,23 @@ public class WebAuthN {
     public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
             StorageQueryException {
-        // TODO
         // find the recipe user with the email
-        String userId = ""; // TODO fetch user id from email
+        AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifier, storage, true, email, null,
+                null, null);
+
+        String userId = null;
+
+        for (AuthRecipeUserInfo user : users) {
+            for (LoginMethod lm : user.loginMethods) {
+                if (lm.recipeId == RECIPE_ID.WEBAUTHN && lm.email.equals(email)) {
+                    userId = lm.getSupertokensUserId();
+                }
+            }
+        }
+
+        if (userId == null) {
+            throw new WebAuthNEmailNotFoundException();
+        }
 
         while (true) {
             // we first generate a password reset token
