@@ -107,7 +107,7 @@ public class WebAuthN {
         String optionsId = Utils.getUUID();
 
         saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
-                null, optionsId); 
+                null, optionsId);
 
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
@@ -265,6 +265,12 @@ public class WebAuthN {
             throw new RuntimeException(e); // TODO! make it more specific
         }
         return null;
+    }
+
+    public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
+                                           String webauthGeneratedOptionsId) throws StorageQueryException {
+        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthGeneratedOptionsId);
     }
 
     @NotNull
