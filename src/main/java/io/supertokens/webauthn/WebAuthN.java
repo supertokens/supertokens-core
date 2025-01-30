@@ -56,10 +56,14 @@ public class WebAuthN {
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
 
         String id = null;
+        String optionsId = Utils.getUUID();
+
         AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
         AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
         if(usersWithEmail.length > 0) {
             id = usersWithEmail[0].getSupertokensUserId();
+        } else {
+            id = optionsId;
         }
 
         PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(id.getBytes(StandardCharsets.UTF_8), email, displayName);
@@ -74,7 +78,8 @@ public class WebAuthN {
             credentialParameters.add(param);
         };
 
-        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null, null,
+        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
+                residentKey.equalsIgnoreCase("required"),
                 ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerificitaion) );
 
         AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(attestation);
@@ -83,17 +88,17 @@ public class WebAuthN {
                 userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
                 null, attestationConveyancePreference, null);
 
-        String optionsId = Utils.getUUID();
+
 
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
-                options.getRp().getId(), origin, email, optionsId);
+                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId);
 
         return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
                 savedOptions.expiresAt);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
-                                                   String relyingPartyId, String origin, Long timeout,
+                                                   String relyingPartyId, String relyingPartyName, String origin, Long timeout,
                                                    String userVerification)
             throws StorageQueryException, UserIdNotFoundException {
 
@@ -101,7 +106,7 @@ public class WebAuthN {
 
         String optionsId = Utils.getUUID();
 
-        saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, origin,
+        saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
                 null, optionsId); // TODO is it sure that the email should be null? ask Victor
 
         JsonObject response = new JsonObject();
@@ -174,8 +179,8 @@ public class WebAuthN {
                 registrationParameters);
     }
 
-    public static WebAuthNSignUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
-                                            String optionsId, String credentialId, String registrationResponseJson) {
+    public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
+                                                String optionsId, String credentialId, String registrationResponseJson) {
         // create a new user in the auth recipe storage
         // create new credentials
         // all within a transaction
@@ -205,7 +210,50 @@ public class WebAuthN {
                                 tenantIdentifier,
                                 con, credentialToSave);
 
-                        return new WebAuthNSignUpResult(savedCredential, userInfo, generatedOptions);
+                        return new WebAuthNSignInUpResult(savedCredential, userInfo, generatedOptions);
+                    } catch (DuplicateUserIdException duplicateUserIdException) {
+                        //ignore and retry
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e); // TODO! make it more specific
+        }
+        return null;
+    }
+
+    public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
+                                              String webauthGeneratedOptionsId, String credentialsDataString,
+                                              String credentialId) {
+        try {
+            WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+            webAuthNStorage.startTransaction(con -> {
+
+                while (true) {
+                    try {
+
+                        String recipeUserId = Utils.getUUID();
+                        WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
+                                con,
+                                webauthGeneratedOptionsId);
+
+                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
+                                generatedOptions.relyingPartyId);
+
+
+                        RegistrationData verifiedRegistrationData = getRegistrationData(credentialsDataString,
+                                generatedOptions);
+                        WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
+                                verifiedRegistrationData,
+                                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
+                                tenantIdentifier);
+                        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials_Transaction(
+                                tenantIdentifier,
+                                con, credentialToSave);
+
+                        return new WebAuthNSignInUpResult(savedCredential, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (Exception e) {
@@ -242,7 +290,7 @@ public class WebAuthN {
     }
 
     private static WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
-            Long timeout, String relyinPartyId, String origin, String userEmail, String id)
+            Long timeout, String relyinPartyId, String relyingPartyName, String origin, String userEmail, String id)
             throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions savableOptions = new WebAuthNOptions();
@@ -253,8 +301,10 @@ public class WebAuthN {
         savableOptions.createdAt = System.currentTimeMillis();
         savableOptions.expiresAt = savableOptions.createdAt + savableOptions.timeout;
         savableOptions.relyingPartyId = relyinPartyId;
+        savableOptions.relyingPartyName = relyingPartyName;
         savableOptions.userEmail = userEmail;
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
+
 
 }

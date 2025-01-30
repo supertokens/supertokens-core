@@ -20,13 +20,13 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 
-public class WebAuthNSignUpResult {
+public class WebAuthNSignInUpResult {
 
     public final WebAuthNStoredCredential credential;
     public final AuthRecipeUserInfo userInfo;
     public final WebAuthNOptions options;
 
-    public WebAuthNSignUpResult(WebAuthNStoredCredential credential, AuthRecipeUserInfo userInfo, WebAuthNOptions options) {
+    public WebAuthNSignInUpResult(WebAuthNStoredCredential credential, AuthRecipeUserInfo userInfo, WebAuthNOptions options) {
         this.credential = credential;
         this.userInfo = userInfo;
         this.options = options;

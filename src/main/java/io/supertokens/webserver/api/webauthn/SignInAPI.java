@@ -18,7 +18,6 @@ package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -33,52 +32,46 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
+public class SignInAPI extends WebserverAPI {
 
-    public SignUpWithCredentialRegisterAPI(Main main) {
+    public SignInAPI(Main main) {
         super(main, "webauthn");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/signup";
+        return "/recipe/webauthn/signin";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
-            WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthGeneratedOptionsId,
-                                                            credentialId, credentialsDataString);
+            WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthGeneratedOptionsId,
+                    credentialsDataString, credentialId);
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    signUpResult.userInfo.getSupertokensUserId());
-
-            JsonObject userJson = signUpResult.userInfo.toJson();
+            if (signInResult == null) {
+                throw new ServletException("WebAuthN sign in failed");
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.add("user", userJson);
-            result.addProperty("webauthnCredentialId", signUpResult.credential.id);
-            result.addProperty("relyingPartyId", signUpResult.options.relyingPartyId);
-            result.addProperty("relyingPartyName", signUpResult.options.relyingPartyName);
-            result.addProperty("recipeUserId", signUpResult.credential.userId);
+            result.add("user", new Gson().fromJson(new Gson().toJson(signInResult.userInfo), JsonObject.class));
+            result.add("options", new Gson().fromJson(new Gson().toJson(signInResult.options), JsonObject.class));
 
             super.sendJsonResponse(200, result, resp);
-        } catch (
-                TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (Exception e) { // TODO: make this more specific
-            throw new RuntimeException(e);
         }
     }
 }

@@ -63,6 +63,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
             String relyingPartyName = InputParser.parseStringOrThrowError(input, "relyingPartyName", false);
             String relyingPartyId = InputParser.parseStringOrThrowError(input, "relyingPartyId", false);
             String origin = InputParser.parseStringOrThrowError(input, "origin", false);
+            //String origin = req.getHeader("Origin");
 
             Long timeout = InputParser.parseLongOrThrowError(input, "timeout", true);
             if(timeout == null) {
