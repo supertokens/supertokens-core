@@ -62,7 +62,7 @@ public class SignInOptionsAPI extends WebserverAPI {
                 timeout = 6000L;
             }
 
-            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerificitaion", true);
+            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerification", true);
             if(userVerificitaion == null || userVerificitaion.equals("")){
                 userVerificitaion = "preferred";
             }

@@ -107,12 +107,12 @@ public class WebAuthN {
         String optionsId = Utils.getUUID();
 
         saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
-                null, optionsId); // TODO is it sure that the email should be null? ask Victor
+                null, optionsId); 
 
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
         response.addProperty("rpId", relyingPartyId);
-        response.addProperty("challenge", Base64.getEncoder().encodeToString(challenge.getValue()));
+        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
         response.addProperty("timeout", timeout);
         response.addProperty("userVerification", userVerification);
 

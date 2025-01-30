@@ -85,7 +85,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
                 userVerificitaion = "preferred";
             }
 
-            JsonArray supportedAlgorithmIds = InputParser.parseArrayOrThrowError(input, "supportedAlgorithmIds", true);
+            JsonArray supportedAlgorithmIds = InputParser.parseArrayOrThrowError(input, "supportedAlgorithmIDs", true);
             if(supportedAlgorithmIds == null || supportedAlgorithmIds.isJsonNull()) {
                 supportedAlgorithmIds = new JsonArray();
 
