@@ -192,4 +192,6 @@ public class SQLiteConfig {
     public String getWebAuthNGeneratedOptionsTable() { return  "webauthn_generated_options"; }
 
     public String getWebAuthNCredentialsTable() { return "webauthn_credentials"; }
+
+    public String getWebAuthNAccountRecoveryTokenTable() { return "webauthn_account_recovery_tokens"; }
 }

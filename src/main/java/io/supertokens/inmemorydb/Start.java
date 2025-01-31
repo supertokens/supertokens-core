@@ -3393,9 +3393,13 @@ public class Start
     }
 
     @Override
-    public void addRecoverAccountToken(AppIdentifier appIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
+    public void addRecoverAccountToken(TenantIdentifier tenantIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
             throws DuplicateRecoverAccountTokenException, StorageQueryException {
-        throw new IllegalStateException("not implemented");
+        try {
+            WebAuthNQueries.addRecoverAccountToken(this, tenantIdentifier, accountRecoveryTokenInfo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -3403,13 +3407,35 @@ public class Start
                                                                                    TransactionConnection con,
                                                                                    String token)
             throws StorageQueryException {
-        throw new IllegalStateException("not implemented");
+
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return WebAuthNQueries.getAccountRecoveryTokenInfoByToken_Transaction(this, tenantIdentifier, sqlCon, token);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void deleteAccountRecoveryTokenByEmail_Transaction(TenantIdentifier tenantIdentifier,
                                                               TransactionConnection con, String email)
             throws StorageQueryException {
-        throw new IllegalStateException("not implemented");
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            WebAuthNQueries.deleteAccountRecoveryTokenByEmail_Transaction(this, sqlCon, tenantIdentifier, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteExpiredAccountRecoveryTokens_Transaction(TransactionConnection con)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            WebAuthNQueries.deleteExpiredAccountRecoveryTokens_Transaction(this, sqlCon);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

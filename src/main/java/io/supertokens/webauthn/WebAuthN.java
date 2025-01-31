@@ -310,23 +310,30 @@ public class WebAuthN {
 
             try {
                 StorageUtils.getWebAuthNStorage(storage).addRecoverAccountToken(
-                        tenantIdentifier.toAppIdentifier(), new AccountRecoveryTokenInfo(userId,
-                                hashedToken, System.currentTimeMillis() +
-                                getRecoverAccountTokenLifetime(tenantIdentifier, main), email));
+                        tenantIdentifier, new AccountRecoveryTokenInfo(userId,
+                                email, hashedToken, System.currentTimeMillis() +
+                                getRecoverAccountTokenLifetime(tenantIdentifier, main)));
                 return token;
             } catch (DuplicateRecoverAccountTokenException ignored) {
             }
         }
     }
 
-    public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token) throws StorageQueryException {
+    public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token)
+            throws StorageQueryException, NoSuchAlgorithmException {
         WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
+
+        String hashedToken = Utils.hashSHA256(token);
 
         try {
             AccountRecoveryTokenInfo tokenInfo = webauthnStorage.startTransaction(con -> {
-                AccountRecoveryTokenInfo recoveryTokenInfo = webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, token);
+                AccountRecoveryTokenInfo recoveryTokenInfo = webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, hashedToken);
 
                 if (recoveryTokenInfo != null) {
+                    if (recoveryTokenInfo.expiresAt < System.currentTimeMillis()) {
+                        return null;
+                    }
+
                     webauthnStorage.deleteAccountRecoveryTokenByEmail_Transaction(tenantIdentifier, con, recoveryTokenInfo.email);
                 }
 
@@ -346,13 +353,19 @@ public class WebAuthN {
         }
     }
 
-    public static AuthRecipeUserInfo getUserForToken(Storage storage, TenantIdentifier tenantIdentifier, String token) throws
-            InvalidTokenException, StorageQueryException {
-
+    public static AuthRecipeUserInfo getUserForToken(Storage storage, TenantIdentifier tenantIdentifier, String token)
+            throws
+            InvalidTokenException, StorageQueryException, NoSuchAlgorithmException {
         WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
+        String hashedToken = Utils.hashSHA256(token);
+
         try {
             AccountRecoveryTokenInfo tokenInfo = webauthnStorage.startTransaction(con -> {
-                return webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, token);
+                AccountRecoveryTokenInfo recoveryTokenInfo = webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, hashedToken);
+                if (recoveryTokenInfo != null && recoveryTokenInfo.expiresAt < System.currentTimeMillis()) {
+                    return null;
+                }
+                return recoveryTokenInfo;
             });
 
             if (tokenInfo == null) {

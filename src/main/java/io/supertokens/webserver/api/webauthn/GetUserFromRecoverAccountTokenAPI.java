@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
     public GetUserFromRecoverAccountTokenAPI(Main main) {
@@ -64,7 +65,9 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
 
             for (LoginMethod lm : user.loginMethods) {
                 if (lm.recipeId.equals(RECIPE_ID.WEBAUTHN)) {
-                    recipeUserId = lm.getSupertokensOrExternalUserId();
+                    if (lm.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        recipeUserId = lm.getSupertokensOrExternalUserId();
+                    }
                 }
             }
 
@@ -78,7 +81,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
             response.add("user", user.toJson());
 
             sendJsonResponse(200, response, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | NoSuchAlgorithmException e) {
             throw new ServletException(e);
         } catch (InvalidTokenException e) {
             JsonObject response = new JsonObject();
