@@ -73,7 +73,7 @@ public class WebauthMapper {
         response.add("user", user);
 
         response.addProperty("timeout", options.getTimeout());
-        response.addProperty("challenge", Base64.getEncoder().encodeToString(options.getChallenge().getValue()));
+        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
         response.addProperty("attestation", options.getAttestation().getValue());
 
         response.addProperty("createdAt", createdAt);
