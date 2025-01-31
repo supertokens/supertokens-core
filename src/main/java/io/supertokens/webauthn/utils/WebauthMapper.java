@@ -59,7 +59,7 @@ public class WebauthMapper {
     public static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
                                                        long createdAt, long expiresAt) {
         JsonObject response = new JsonObject();
-        response.addProperty("webauthGeneratedOptionsId", id);
+        response.addProperty("webauthnGeneratedOptionsId", id);
 
         JsonObject rp = new JsonObject();
         rp.addProperty("id", options.getRp().getId());
