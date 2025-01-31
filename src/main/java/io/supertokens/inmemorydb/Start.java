@@ -92,6 +92,8 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.DuplicateRecoverAccountTokenException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
@@ -3388,5 +3390,26 @@ public class Start
 
             throw new StorageQueryException(stle.actualException);
         }
+    }
+
+    @Override
+    public void addRecoverAccountToken(AppIdentifier appIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
+            throws DuplicateRecoverAccountTokenException, StorageQueryException {
+        throw new IllegalStateException("not implemented");
+    }
+
+    @Override
+    public AccountRecoveryTokenInfo getAccountRecoveryTokenInfoByToken_Transaction(TenantIdentifier tenantIdentifier,
+                                                                                   TransactionConnection con,
+                                                                                   String token)
+            throws StorageQueryException {
+        throw new IllegalStateException("not implemented");
+    }
+
+    @Override
+    public void deleteAccountRecoveryTokenByEmail_Transaction(TenantIdentifier tenantIdentifier,
+                                                              TransactionConnection con, String email)
+            throws StorageQueryException {
+        throw new IllegalStateException("not implemented");
     }
 }

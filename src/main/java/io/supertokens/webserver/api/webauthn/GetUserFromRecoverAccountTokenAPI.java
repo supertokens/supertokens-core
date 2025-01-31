@@ -18,11 +18,15 @@ package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.InvalidTokenException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -52,13 +56,29 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
             Storage storage = getTenantStorage(req);
 
             AuthRecipeUserInfo user = WebAuthN.getUserForToken(storage, tenantIdentifier, token);
+
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                    tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
+
+            String recipeUserId = null;
+
+            for (LoginMethod lm : user.loginMethods) {
+                if (lm.recipeId.equals(RECIPE_ID.WEBAUTHN)) {
+                    recipeUserId = lm.getSupertokensOrExternalUserId();
+                }
+            }
+
+            if (recipeUserId == null) {
+                throw new IllegalStateException("should never happen");
+            }
+
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            response.addProperty("recipeUserId", "TODO");
+            response.addProperty("recipeUserId", recipeUserId);
             response.add("user", user.toJson());
 
             sendJsonResponse(200, response, resp);
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         } catch (InvalidTokenException e) {
             JsonObject response = new JsonObject();

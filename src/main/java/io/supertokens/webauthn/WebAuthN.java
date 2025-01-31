@@ -27,7 +27,6 @@ import com.webauthn4j.data.client.challenge.Challenge;
 import com.webauthn4j.server.ServerProperty;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -36,17 +35,14 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
-import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.DuplicateRecoverAccountTokenException;
-import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
+import io.supertokens.webauthn.exception.InvalidTokenException;
 import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
 import io.supertokens.webauthn.utils.WebauthMapper;
 import org.jetbrains.annotations.NotNull;
@@ -314,7 +310,7 @@ public class WebAuthN {
 
             try {
                 StorageUtils.getWebAuthNStorage(storage).addRecoverAccountToken(
-                        tenantIdentifier.toAppIdentifier(), new PasswordResetTokenInfo(userId,
+                        tenantIdentifier.toAppIdentifier(), new AccountRecoveryTokenInfo(userId,
                                 hashedToken, System.currentTimeMillis() +
                                 getRecoverAccountTokenLifetime(tenantIdentifier, main), email));
                 return token;
@@ -323,9 +319,57 @@ public class WebAuthN {
         }
     }
 
+    public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token) throws StorageQueryException {
+        WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
+
+        try {
+            AccountRecoveryTokenInfo tokenInfo = webauthnStorage.startTransaction(con -> {
+                AccountRecoveryTokenInfo recoveryTokenInfo = webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, token);
+
+                if (recoveryTokenInfo != null) {
+                    webauthnStorage.deleteAccountRecoveryTokenByEmail_Transaction(tenantIdentifier, con, recoveryTokenInfo.email);
+                }
+
+                return recoveryTokenInfo;
+            });
+
+            if (tokenInfo == null) {
+                throw new InvalidTokenException();
+            }
+
+            return tokenInfo;
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
+            }
+            throw new IllegalStateException(e.actualException);
+        }
+    }
+
+    public static AuthRecipeUserInfo getUserForToken(Storage storage, TenantIdentifier tenantIdentifier, String token) throws
+            InvalidTokenException, StorageQueryException {
+
+        WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
+        try {
+            AccountRecoveryTokenInfo tokenInfo = webauthnStorage.startTransaction(con -> {
+                return webauthnStorage.getAccountRecoveryTokenInfoByToken_Transaction(tenantIdentifier, con, token);
+            });
+
+            if (tokenInfo == null) {
+                throw new InvalidTokenException();
+            }
+
+            return AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, tokenInfo.userId);
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
+            }
+            throw new IllegalStateException(e.actualException);
+        }
+    }
+
     private static long getRecoverAccountTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return 300000; // TODO add config
     }
-
 }
