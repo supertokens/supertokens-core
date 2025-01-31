@@ -24,6 +24,7 @@ import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
 
@@ -126,14 +127,25 @@ public class WebauthMapper {
         return response;
     }
 
-    public static JsonObject mapSignInOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
-                                                      String optionsId, Challenge challenge) {
+    public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
+                                                String optionsId, Challenge challenge) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
         response.addProperty("rpId", relyingPartyId);
         response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
         response.addProperty("timeout", timeout);
         response.addProperty("userVerification", userVerification);
+        return response;
+    }
+
+    public static JsonObject mapOptionsResponse(WebAuthNOptions options, JsonObject response) {
+
+        response.addProperty("webauthnGeneratedOptionsId", options.generatedOptionsId);
+        response.addProperty("rpId", options.relyingPartyId);
+        response.addProperty("challenge", options.challenge);
+        response.addProperty("timeout", options.timeout);
+        response.addProperty("origin", options.origin);
+
         return response;
     }
 }

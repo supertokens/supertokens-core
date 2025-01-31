@@ -473,7 +473,7 @@ public class WebAuthNQueries {
         @Override
         public WebAuthNOptions map(ResultSet rs) throws Exception {
             WebAuthNOptions result = new WebAuthNOptions();
-            result.timeout = rs.getLong("timeout");
+            result.timeout = rs.getLong("expires_at") - rs.getLong("created_at");
             result.expiresAt = rs.getLong("expires_at");
             result.createdAt = rs.getLong("created_at");
             result.relyingPartyId = rs.getString("rp_id");

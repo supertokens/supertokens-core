@@ -16,7 +16,6 @@
 
 package io.supertokens.webserver.api.webauthn;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
@@ -25,6 +24,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.utils.WebauthMapper;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -56,10 +56,7 @@ public class GetGeneratedOptionsAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-
-            new Gson().toJsonTree(options).getAsJsonObject().entrySet().forEach(entry -> {
-                result.add(entry.getKey(), entry.getValue());
-            });
+            WebauthMapper.mapOptionsResponse(options, result);
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {

@@ -109,7 +109,7 @@ public class WebAuthN {
         saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
                 null, optionsId);
 
-        return WebauthMapper.mapSignInOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge);
+        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge);
     }
 
 
@@ -282,7 +282,7 @@ public class WebAuthN {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions savableOptions = new WebAuthNOptions();
         savableOptions.generatedOptionsId = id;
-        savableOptions.challenge = Base64.getEncoder().encodeToString(challenge.getValue());
+        savableOptions.challenge = Base64.getUrlEncoder().encodeToString(challenge.getValue());
         savableOptions.origin = origin;
         savableOptions.timeout = timeout;
         savableOptions.createdAt = System.currentTimeMillis();
