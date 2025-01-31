@@ -67,7 +67,7 @@ public class WebauthMapper {
         response.add("rp", rp);
 
         JsonObject user = new JsonObject();
-        user.addProperty("id", new String(options.getUser().getId()));
+        user.addProperty("id", Base64.getUrlEncoder().encodeToString(options.getUser().getId()));
         user.addProperty("name", options.getUser().getName());
         user.addProperty("displayName", options.getUser().getDisplayName());
         response.add("user", user);
