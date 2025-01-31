@@ -148,10 +148,22 @@ public class WebAuthNQueries {
     }
 
     public static WebAuthNStoredCredential loadCredential(Start start, TenantIdentifier tenantIdentifier, String credentialId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        return start.startTransaction(con -> {
+            Connection sqlConnection = (Connection) con.getConnection();
+            try {
+                return loadCredentialById_Transaction(start, sqlConnection, tenantIdentifier, credentialId);
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
+        });
+    }
+
+    public static WebAuthNStoredCredential loadCredentialById_Transaction(Start start, Connection sqlConnection, TenantIdentifier tenantIdentifier, String credentialId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
                 + " WHERE app_id = ? AND id = ?";
-        return execute(start, QUERY, pst -> {
+        return execute(sqlConnection, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, credentialId);
         }, result -> {
@@ -362,6 +374,70 @@ public class WebAuthNQueries {
 
         }
         return Collections.emptyList();
+    }
+
+    public static AuthRecipeUserInfo getUserInfoByCredentialId_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String credentialId)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
+                "credentials.id as credential_id, email_verification.email_verified as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                "all_users.tenant_id as tenant_id " +
+                "FROM " + getConfig(start).getWebAuthNUsersTable() + " as webauthn " +
+                "JOIN " + getConfig(start).getWebAuthNCredentialsTable() + " as credentials ON webauthn.user_id = credentials.user_id " +
+                "JOIN " + getConfig(start).getUsersTable() + " as all_users ON webauthn.app_id = all_users.app_id AND webauthn.user_id = all_users.user_id " +
+                "JOIN " + getConfig(start).getUserIdMappingTable() + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
+                "JOIN " + getConfig(start).getEmailVerificationTable() + " as email_verification ON webauthn.app_id = email_verification.app_id AND user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id" +
+                "WHERE webauthn.app_id = ? AND credentials.id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, credentialId);
+        }, result -> {
+            if (result.next()) {
+                String userId = result.getString("user_id");
+                String email = result.getString("email");
+                long timeJoined = result.getLong("time_joined");
+                boolean emailVerified = result.getBoolean("email_verified");
+                String externalUserId = result.getString("external_user_id");
+                String tenantId = result.getString("tenant_id");
+                LoginMethod.WebAuthN webAuthNLM = new LoginMethod.WebAuthN(Collections.singletonList(credentialId));
+                LoginMethod loginMethod = new LoginMethod(userId, timeJoined, emailVerified, email, webAuthNLM, new String[]{tenantId});
+                if(externalUserId != null) {
+                    loginMethod.setExternalUserId(externalUserId);
+                }
+                return AuthRecipeUserInfo.create(userId, false, loginMethod);
+            }
+            return null;
+        });
+    }
+
+    public static WebAuthNOptions loadOptionsById_Transaction(Start start, Connection sqlCon,
+                                                              TenantIdentifier tenantIdentifier, String optionsId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
+                + " WHERE app_id = ? AND id = ?";
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, optionsId);
+        }, result -> {
+            if(result.next()){
+                return WebAuthNOptionsRowMapper.getInstance().mapOrThrow(result); // we are expecting one or zero results
+            }
+            return null;
+        });
+    }
+
+    public static void updateCounter_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String credentialId, long counter)
+            throws SQLException, StorageQueryException {
+        String UPDATE = "UPDATE " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " SET counter = ?, updated_at = ? WHERE app_id = ? AND id = ?";
+
+        update(sqlCon, UPDATE, pst -> {
+            pst.setLong(1, counter);
+            pst.setLong(2, System.currentTimeMillis());
+            pst.setString(3, tenantIdentifier.getAppId());
+            pst.setString(4, credentialId);
+        });
     }
 
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {

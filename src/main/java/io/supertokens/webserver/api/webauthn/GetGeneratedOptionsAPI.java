@@ -60,7 +60,7 @@ public class GetGeneratedOptionsAPI extends WebserverAPI {
             new Gson().toJsonTree(options).getAsJsonObject().entrySet().forEach(entry -> {
                 result.add(entry.getKey(), entry.getValue());
             });
-            
+
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);

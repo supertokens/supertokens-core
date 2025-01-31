@@ -109,15 +109,10 @@ public class WebAuthN {
         saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
                 null, optionsId);
 
-        JsonObject response = new JsonObject();
-        response.addProperty("webauthnGeneratedOptionsId", optionsId);
-        response.addProperty("rpId", relyingPartyId);
-        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
-        response.addProperty("timeout", timeout);
-        response.addProperty("userVerification", userVerification);
-
-        return response;
+        return WebauthMapper.mapSignInOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge);
     }
+
+
 
     @NotNull
     private static Challenge getChallenge() {
@@ -231,35 +226,21 @@ public class WebAuthN {
             WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
             webAuthNStorage.startTransaction(con -> {
 
-                while (true) {
-                    try {
+                WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
+                        con,
+                        webauthGeneratedOptionsId);
 
-                        String recipeUserId = Utils.getUUID();
-                        WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
-                                con,
-                                webauthGeneratedOptionsId);
+                AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier, con, credentialId);
+                WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId);
 
-                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
-                                generatedOptions.relyingPartyId);
-
-
-                        RegistrationData verifiedRegistrationData = getRegistrationData(credentialsDataString,
-                                generatedOptions);
-                        WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
-                                verifiedRegistrationData,
-                                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
-                                tenantIdentifier);
-                        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials_Transaction(
-                                tenantIdentifier,
-                                con, credentialToSave);
-
-                        return new WebAuthNSignInUpResult(savedCredential, userInfo, generatedOptions);
-                    } catch (DuplicateUserIdException duplicateUserIdException) {
-                        //ignore and retry
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                try {
+                    getRegistrationData(credentialsDataString, generatedOptions);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
+
+                webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
+                return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
             });
         } catch (Exception e) {
             throw new RuntimeException(e); // TODO! make it more specific

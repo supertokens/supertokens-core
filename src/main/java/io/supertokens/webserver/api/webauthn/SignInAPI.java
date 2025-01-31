@@ -67,7 +67,6 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.add("user", new Gson().fromJson(new Gson().toJson(signInResult.userInfo), JsonObject.class));
-            result.add("options", new Gson().fromJson(new Gson().toJson(signInResult.options), JsonObject.class));
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {

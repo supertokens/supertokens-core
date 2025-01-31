@@ -22,6 +22,7 @@ import com.google.gson.JsonPrimitive;
 import com.webauthn4j.converter.AttestedCredentialDataConverter;
 import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
+import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
@@ -122,6 +123,17 @@ public class WebauthMapper {
         response.recipeUserId = credential.userId;
         response.relyingPartyId = credential.rpId;
         response.relyingPartyName = relyingPartyName;
+        return response;
+    }
+
+    public static JsonObject mapSignInOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
+                                                      String optionsId, Challenge challenge) {
+        JsonObject response = new JsonObject();
+        response.addProperty("webauthnGeneratedOptionsId", optionsId);
+        response.addProperty("rpId", relyingPartyId);
+        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
+        response.addProperty("timeout", timeout);
+        response.addProperty("userVerification", userVerification);
         return response;
     }
 }
