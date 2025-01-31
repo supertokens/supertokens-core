@@ -94,7 +94,7 @@ public class WebAuthN {
                 options.getRp().getId(), options.getRp().getName(), origin, email, optionsId);
 
         return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
-                savedOptions.expiresAt);
+                savedOptions.expiresAt, savedOptions.userEmail);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,

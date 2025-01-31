@@ -58,7 +58,7 @@ public class WebauthMapper {
     }
 
     public static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
-                                                       long createdAt, long expiresAt) {
+                                                       long createdAt, long expiresAt, String email) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", id);
 
@@ -72,6 +72,8 @@ public class WebauthMapper {
         user.addProperty("name", options.getUser().getName());
         user.addProperty("displayName", options.getUser().getDisplayName());
         response.add("user", user);
+
+        response.addProperty("email", email);
 
         response.addProperty("timeout", options.getTimeout());
         //response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
@@ -137,7 +139,7 @@ public class WebauthMapper {
                                                 String optionsId, Challenge challenge) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
-        response.addProperty("rpId", relyingPartyId);
+        response.addProperty("relyingPartyId", relyingPartyId);
         response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
         response.addProperty("timeout", timeout);
         response.addProperty("userVerification", userVerification);
@@ -147,11 +149,16 @@ public class WebauthMapper {
     public static JsonObject mapOptionsResponse(WebAuthNOptions options, JsonObject response) {
 
         response.addProperty("webauthnGeneratedOptionsId", options.generatedOptionsId);
-        response.addProperty("rpId", options.relyingPartyId);
+        response.addProperty("relyingPartyId", options.relyingPartyId);
+        response.addProperty("relyingPartyName", options.relyingPartyName);
         response.addProperty("challenge", options.challenge);
         response.addProperty("timeout", options.timeout);
         response.addProperty("origin", options.origin);
-
+        response.addProperty("email", options.userEmail);
+        response.addProperty("createdAt", options.createdAt);
+        response.addProperty("expiresAt", options.expiresAt);
+        response.addProperty("timeout", options.timeout);
+        
         return response;
     }
 }
