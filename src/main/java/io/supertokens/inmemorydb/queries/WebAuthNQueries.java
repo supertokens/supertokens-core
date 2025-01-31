@@ -275,7 +275,7 @@ public class WebAuthNQueries {
                 });
 
                 sqlCon.commit();
-                Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList(start, Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
+                Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList_Transaction(start, sqlCon, Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
                 if(!loginMethods.isEmpty()) { //expecting it to be size 1
                     for(LoginMethod loginMethod: loginMethods){
                         return AuthRecipeUserInfo.create(userId, false, loginMethod);
@@ -335,7 +335,7 @@ public class WebAuthNQueries {
             String emailVerificationTable = getConfig(start).getEmailVerificationTable();
 
             String queryAll = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
-                    "credentials.id as credential_id, email_verification.email_verified as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                    "credentials.id as credential_id, email_verification.email as email_verified, user_id_mapping.external_user_id as external_user_id," +
                     "all_users.tenant_id as tenant_id " +
                     "FROM " + webauthnUsersTable + " as webauthn " +
                     "JOIN " + credentialTable + " as credentials ON webauthn.user_id = credentials.user_id " +
@@ -357,7 +357,7 @@ public class WebAuthNQueries {
                     String email = result.getString("email");
                     long timeJoined = result.getLong("time_joined");
                     String credentialId = result.getString("credential_id");
-                    boolean emailVerified = result.getBoolean("email_verified");
+                    boolean emailVerified = result.getString("email_verified") != null;
                     String externalUserId = result.getString("external_user_id");
                     String tenantId = result.getString("tenant_id");
                     if(users.containsKey(userId)) {
@@ -380,7 +380,7 @@ public class WebAuthNQueries {
             throws SQLException, StorageQueryException {
 
         String QUERY = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
-                "credentials.id as credential_id, email_verification.email_verified as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                "credentials.id as credential_id, email_verification.email as email_verified, user_id_mapping.external_user_id as external_user_id," +
                 "all_users.tenant_id as tenant_id " +
                 "FROM " + getConfig(start).getWebAuthNUsersTable() + " as webauthn " +
                 "JOIN " + getConfig(start).getWebAuthNCredentialsTable() + " as credentials ON webauthn.user_id = credentials.user_id " +
@@ -397,7 +397,7 @@ public class WebAuthNQueries {
                 String userId = result.getString("user_id");
                 String email = result.getString("email");
                 long timeJoined = result.getLong("time_joined");
-                boolean emailVerified = result.getBoolean("email_verified");
+                boolean emailVerified = result.getString("email_verified") != null;
                 String externalUserId = result.getString("external_user_id");
                 String tenantId = result.getString("tenant_id");
                 LoginMethod.WebAuthN webAuthNLM = new LoginMethod.WebAuthN(Collections.singletonList(credentialId));

@@ -158,7 +158,7 @@ public class WebauthMapper {
         response.addProperty("createdAt", options.createdAt);
         response.addProperty("expiresAt", options.expiresAt);
         response.addProperty("timeout", options.timeout);
-        
+
         return response;
     }
 }

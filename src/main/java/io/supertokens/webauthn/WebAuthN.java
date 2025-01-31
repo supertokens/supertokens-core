@@ -181,11 +181,10 @@ public class WebAuthN {
         // all within a transaction
         try {
             WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
-            webAuthNStorage.startTransaction(con -> {
+            return webAuthNStorage.startTransaction(con -> {
 
                 while (true) {
                     try {
-
                         String recipeUserId = Utils.getUUID();
                         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
                                 con,
@@ -216,7 +215,6 @@ public class WebAuthN {
         } catch (Exception e) {
             throw new RuntimeException(e); // TODO! make it more specific
         }
-        return null;
     }
 
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
@@ -266,7 +264,7 @@ public class WebAuthN {
                             @NotNull
                             @Override
                             public byte[] getValue() {
-                                return generatedOptions.challenge.getBytes(StandardCharsets.UTF_8);
+                                return Base64.getUrlDecoder().decode(generatedOptions.challenge);
                             }
                         }),
                 pubKeyCredParams,

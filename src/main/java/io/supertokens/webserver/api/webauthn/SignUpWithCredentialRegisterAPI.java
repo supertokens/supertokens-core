@@ -42,7 +42,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/signup";
+        return "/recipe/webauthn/signup";
     }
 
     @Override
