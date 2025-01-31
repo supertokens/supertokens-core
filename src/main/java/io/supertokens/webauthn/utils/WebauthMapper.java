@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class WebauthMapper {
@@ -67,13 +68,18 @@ public class WebauthMapper {
         response.add("rp", rp);
 
         JsonObject user = new JsonObject();
-        user.addProperty("id", Base64.getUrlEncoder().encodeToString(options.getUser().getId()));
+        user.addProperty("id", new String(Base64.getUrlEncoder().withoutPadding().encode(options.getUser().getId()), StandardCharsets.UTF_8));
         user.addProperty("name", options.getUser().getName());
         user.addProperty("displayName", options.getUser().getDisplayName());
         response.add("user", user);
 
         response.addProperty("timeout", options.getTimeout());
-        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
+        //response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
+        //response.addProperty("challenge", new String(Base64.getUrlEncoder().encode(options.getChallenge().getValue()), StandardCharsets.UTF_8));
+//        String challenge = "c29tZS1iYXNlNjQtZW5jb2RlZC1zdHJpbmc";
+//        byte[] challengeBytes = Base64.getUrlDecoder().decode(challenge);
+        String encodedChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(options.getChallenge().getValue());
+        response.addProperty("challenge", encodedChallenge);
         response.addProperty("attestation", options.getAttestation().getValue());
 
         response.addProperty("createdAt", createdAt);
