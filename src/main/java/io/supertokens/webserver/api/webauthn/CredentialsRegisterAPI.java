@@ -52,14 +52,14 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
             WebauthNSaveCredentialResponse savedCredential = WebAuthN
                     .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
-                            webauthGeneratedOptionsId, credentialsDataString);
+                            webauthnGeneratedOptionsId, credentialsDataString);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

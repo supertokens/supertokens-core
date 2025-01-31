@@ -54,7 +54,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL", true);
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
@@ -62,7 +62,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
             Logging.info(this.main, tenantIdentifier, "input request " +  input, true);
 
-            WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthGeneratedOptionsId,
+            WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
                                                             credentialId, credentialsDataString);
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,

@@ -192,6 +192,7 @@ public class WebAuthN {
 
                         AuthRecipeUserInfo userInfo = webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
                                 generatedOptions.relyingPartyId);
+                        userInfo.setExternalUserId(null);
 
 
                         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
@@ -214,6 +215,21 @@ public class WebAuthN {
             });
         } catch (Exception e) {
             throw new RuntimeException(e); // TODO! make it more specific
+        }
+    }
+
+    public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId) {
+        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        try {
+            return webAuthNStorage.startTransaction(con -> {
+                try {
+                    return webAuthNStorage.signUp_Transaction(tenantIdentifier, con, userId, email, "test.com");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
