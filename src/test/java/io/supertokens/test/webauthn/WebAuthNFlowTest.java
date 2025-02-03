@@ -29,6 +29,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webauthn.WebAuthN;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,13 +79,13 @@ public class WebAuthNFlowTest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/webauthn/options/register",
-                requestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
 
         System.out.println(response.toString());
 
-        String generatedOptionsId =  response.get("webauthGeneratedOptionsId").getAsString();
+        String generatedOptionsId =  response.get("webauthnGeneratedOptionsId").getAsString();
 
-        String credentialId = Base64.getEncoder().encodeToString(io.supertokens.utils.Utils.getUUID().getBytes(
+        String credentialId = Base64.getUrlEncoder().encodeToString(io.supertokens.utils.Utils.getUUID().getBytes(
                 StandardCharsets.UTF_8));
         System.out.println("CredentialId = " + credentialId);
 
@@ -94,16 +95,40 @@ public class WebAuthNFlowTest {
                 + ", 'type': 'webauthn.create'"
                 +"}";
 
-        JsonObject credential = new JsonObject();
-        credential.addProperty("id", credentialId);
         JsonObject credentialResponse = new JsonObject();
-        credentialResponse.addProperty("clientDataJson", Base64.getUrlEncoder().encodeToString(clientDataJson.getBytes(
-                StandardCharsets.UTF_8)));
-        credential.add("response", credentialResponse);
+        credentialResponse.addProperty("type", "public-key");
+        credentialResponse.addProperty("id", credentialId);
+        credentialResponse.addProperty("rawId", credentialId);
 
-        System.out.println(credential);
+        JsonObject responseObj = new JsonObject();
+        responseObj.addProperty("attestationObject", "o2NmbXRmcGFja2VkZ2F0dFN0bXSiY2FsZyZjc2lnWEgwRgIhAIxQByta1TIB0_gEG2k4ZUhZYWWXB7ItGz00sQsptELeAiEAwPobNP4IEXVTIdKps2OXznLR6W2-hSaBiJzDN_VkILdoYXV0aERhdGFYpKYbCoe63o889l_A5A0hNIQWx6EMYXbUdzEk7oCI-vkjRQAAAAAKsdMYwBjG-66Y9zSQW1qFACChmhVbEJe5T4JcIpEZueCTOcOwoHbzLb14LCuyWFtbsqUBAgMmIAEhWCCKY54Qll0PzBOgWIyt0Z6Q7A6Kir9JOrJXV6bY1D2KByJYIAi0OaNwchWW-qeBKdUvokiUkNn0-pWfe1v-cf7x5tvw");
+        responseObj.addProperty("clientDataJSON", "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoicjVIWWN2WFZsdzMtY0xfd0dzXzNSZzlrM29FbmgwbEJkcW5Ob2NnXzVEayIsIm9yaWdpbiI6Imh0dHBzOi8vc3VwZXJ0b2tlbnMuaW8ifQ");
+        credentialResponse.add("response", responseObj);
 
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("webauthnGeneratedOptionsId", generatedOptionsId);
+        signUpRequestBody.add("credential", credentialResponse);
 
+        System.out.println();
+        System.out.println(signUpRequestBody);
+
+        AuthRecipeUserInfo userInfo = WebAuthN.saveUser(StorageLayer.getStorage(process.getProcess()), tenantIdentifier, "anyadpicsaja@email.com", credentialId);
+
+//        JsonObject signupResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+//                "http://localhost:3567/recipe/webauthn/signup",
+//                signUpRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+
+    }
+
+    @Test
+    public void signUpFlow() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
     }
 }

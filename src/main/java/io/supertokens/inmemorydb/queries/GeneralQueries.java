@@ -475,6 +475,16 @@ public class GeneralQueries {
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNChallengeExpiresIndex(start), NO_OP_SETTER);
         }
 
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenTokenIndex(start), NO_OP_SETTER);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenEmailIndex(start), NO_OP_SETTER);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenExpiresAtIndex(start), NO_OP_SETTER);
+        }
+
         if(!doesTableExists(start, Config.getConfig(start).getWebAuthNCredentialsTable())){
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsTable(start), NO_OP_SETTER);

@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import org.jetbrains.annotations.Nullable;
@@ -105,9 +106,40 @@ public class WebAuthNQueries {
                 " created_at BIGINT NOT NULL," +
                 " updated_at BIGINT NOT NULL," +
                 " CONSTRAINT webauthn_user_credentials_pkey PRIMARY KEY (app_id, rp_id, id)," +
-                " CONSTRAINT webauthn_user_credentials_webauthn_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES " +
-                Config.getConfig(start).getWebAuthNUsersTable() + " (app_id, user_id) ON DELETE CASCADE" +
+                " CONSTRAINT webauthn_user_credentials_webauthn_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES " +
+                Config.getConfig(start).getWebAuthNUserToTenantTable() + " (app_id, tenant_id, user_id) ON DELETE CASCADE" +
                 ");";
+    }
+
+    public static String getQueryToCreateWebAuthNAccountRecoveryTokenTable(Start start) {
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + "(" +
+                " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
+                " tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
+                " user_id CHAR(36) NOT NULL," +
+                " email VARCHAR(256) NOT NULL," +
+                " token VARCHAR(256) NOT NULL," +
+                " CONSTRAINT webauthn_account_recovery_token_pkey PRIMARY KEY (app_id, tenant_id, user_id, token)," +
+                " CONSTRAINT webauthn_account_recovery_token_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES " +
+                Config.getConfig(start).getUsersTable() + " (app_id, tenant_id, user_id) ON DELETE CASCADE" +
+                ");";
+    }
+
+    public static String getQueryToCreateWebAuthNAccountRecoveryTokenTokenIndex(Start start) {
+        return "CREATE INDEX webauthn_account_recovery_token_token_index ON " +
+                Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() +
+                " (app_id, tenant_id, token);";
+    }
+
+    public static String getQueryToCreateWebAuthNAccountRecoveryTokenEmailIndex(Start start) {
+        return "CREATE INDEX webauthn_account_recovery_token_email_index ON " +
+                Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() +
+                " (app_id, tenant_id, email);";
+    }
+
+    public static String getQueryToCreateWebAuthNAccountRecoveryTokenExpiresAtIndex(Start start) {
+        return "CREATE INDEX webauthn_account_recovery_token_expires_at_index ON " +
+                Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() +
+                " (expires_at DESC);";
     }
 
     public static WebAuthNOptions saveOptions(Start start, TenantIdentifier tenantIdentifier, WebAuthNOptions options)
@@ -511,5 +543,70 @@ public class WebAuthNQueries {
             result.relyingPartyName = rs.getString("rp_name");
             return result;
         }
+    }
+
+    public static void addRecoverAccountToken(Start start, TenantIdentifier tenantIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
+            throws SQLException, StorageQueryException {
+        String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + " (app_id, tenant_id, user_id, email, token, expires_at) VALUES (?, ?, ?, ?, ?, ?)";
+        update(start, INSERT, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, accountRecoveryTokenInfo.userId);
+            pst.setString(4, accountRecoveryTokenInfo.email);
+            pst.setString(5, accountRecoveryTokenInfo.token);
+            pst.setLong(6, accountRecoveryTokenInfo.expiresAt);
+        });
+    }
+
+    public static AccountRecoveryTokenInfo getAccountRecoveryTokenInfoByToken_Transaction(Start start, TenantIdentifier tenantIdentifier, Connection con, String token)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + " WHERE app_id = ? AND tenant_id = ? AND token = ?";
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, token);
+        }, result -> {
+            if (result.next()) {
+                return AccountRecoveryTokenInfoRowMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
+    private static class AccountRecoveryTokenInfoRowMapper implements RowMapper<AccountRecoveryTokenInfo, ResultSet> {
+        private static final AccountRecoveryTokenInfoRowMapper INSTANCE = new AccountRecoveryTokenInfoRowMapper();
+
+        public static AccountRecoveryTokenInfoRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public AccountRecoveryTokenInfo map(ResultSet rs) throws Exception {
+            AccountRecoveryTokenInfo result = new AccountRecoveryTokenInfo(
+                rs.getString("user_id"),
+                rs.getString("email"),
+                rs.getString("token"),
+                rs.getLong("expires_at")
+            );
+            return result;
+        }
+    }
+
+    public static void deleteAccountRecoveryTokenByEmail_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier, String email)
+            throws SQLException, StorageQueryException {
+        String DELETE = "DELETE FROM " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + " WHERE app_id = ? AND tenant_id = ? AND email = ?";
+        update(con, DELETE, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        });
+    }
+
+    public static void deleteExpiredAccountRecoveryTokens_Transaction(Start start, Connection con)
+            throws SQLException, StorageQueryException {
+        String DELETE = "DELETE FROM " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + " WHERE expires_at < ?";
+        update(con, DELETE, pst -> {
+            pst.setLong(1, System.currentTimeMillis());
+        });
     }
 }

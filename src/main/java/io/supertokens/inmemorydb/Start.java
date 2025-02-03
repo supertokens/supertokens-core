@@ -92,6 +92,8 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.DuplicateRecoverAccountTokenException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
@@ -3474,6 +3476,53 @@ public class Start
         try {
             Connection sqlCon = (Connection) con.getConnection();
             WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, credentialId, counter);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addRecoverAccountToken(TenantIdentifier tenantIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
+            throws DuplicateRecoverAccountTokenException, StorageQueryException {
+        try {
+            WebAuthNQueries.addRecoverAccountToken(this, tenantIdentifier, accountRecoveryTokenInfo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AccountRecoveryTokenInfo getAccountRecoveryTokenInfoByToken_Transaction(TenantIdentifier tenantIdentifier,
+                                                                                   TransactionConnection con,
+                                                                                   String token)
+            throws StorageQueryException {
+
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return WebAuthNQueries.getAccountRecoveryTokenInfoByToken_Transaction(this, tenantIdentifier, sqlCon, token);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteAccountRecoveryTokenByEmail_Transaction(TenantIdentifier tenantIdentifier,
+                                                              TransactionConnection con, String email)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            WebAuthNQueries.deleteAccountRecoveryTokenByEmail_Transaction(this, sqlCon, tenantIdentifier, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteExpiredAccountRecoveryTokens_Transaction(TransactionConnection con)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            WebAuthNQueries.deleteExpiredAccountRecoveryTokens_Transaction(this, sqlCon);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
