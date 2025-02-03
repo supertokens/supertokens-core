@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -216,8 +217,8 @@ public class WebAuthNQueries {
         return credential;
     }
 
-    public static AuthRecipeUserInfo signUp_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId, String email,
-                                            String relyingPartyId)
+    public static void createUser_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId, String email,
+                                              String relyingPartyId)
             throws StorageTransactionLogicException, StorageQueryException {
         long timeJoined = System.currentTimeMillis();
 
@@ -274,18 +275,44 @@ public class WebAuthNQueries {
                     pst.setLong(5, timeJoined);
                 });
 
-                //sqlCon.commit();
-                Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList_Transaction(start, sqlCon, Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
-                if(!loginMethods.isEmpty()) { //expecting it to be size 1
-                    for(LoginMethod loginMethod: loginMethods){
-                        return AuthRecipeUserInfo.create(userId, false, loginMethod);
-                    }
-                }
-
-                return null;
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
+    }
+
+    public static AuthRecipeUserInfo signUp_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId, String email,
+                                              String relyingPartyId)
+            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+
+        createUser_Transaction(start, sqlCon, tenantIdentifier, userId, email, relyingPartyId);
+
+        return getAuthRecipeUserInfo(start, sqlCon,
+                tenantIdentifier, userId);
+    }
+
+    public static AuthRecipeUserInfo signUpWithCredentialRegister_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId, String email,
+                                                                              String relyingPartyId, WebAuthNStoredCredential credential)
+            throws StorageQueryException, StorageTransactionLogicException, SQLException {
+
+            createUser_Transaction(start, sqlCon, tenantIdentifier, userId, email, relyingPartyId);
+            saveCredential_Transaction(start, sqlCon, tenantIdentifier, credential);
+
+            return getAuthRecipeUserInfo(start, sqlCon,
+                tenantIdentifier, userId);
+    }
+
+    @Nullable
+    private static AuthRecipeUserInfo getAuthRecipeUserInfo(Start start, Connection sqlCon,
+                                                            TenantIdentifier tenantIdentifier, String userId)
+            throws SQLException, StorageQueryException {
+        Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList_Transaction(start, sqlCon,
+                Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
+        if (!loginMethods.isEmpty()) { //expecting it to be size 1
+            for (LoginMethod loginMethod : loginMethods) {
+                return AuthRecipeUserInfo.create(userId, false, loginMethod);
+            }
+        }
+        return null;
     }
 
     public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)

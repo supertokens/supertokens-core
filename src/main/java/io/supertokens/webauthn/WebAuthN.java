@@ -186,14 +186,10 @@ public class WebAuthN {
                 while (true) {
                     try {
                         String recipeUserId = Utils.getUUID();
+
                         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
                                 con,
                                 optionsId);
-
-                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
-                                generatedOptions.relyingPartyId);
-                        userInfo.setExternalUserId(null);
-
 
                         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                                 generatedOptions);
@@ -201,11 +197,11 @@ public class WebAuthN {
                                 verifiedRegistrationData,
                                 recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
                                 tenantIdentifier);
-                        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials_Transaction(
-                                tenantIdentifier,
-                                con, credentialToSave);
+                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUpWithCredentialsRegister_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
+                                generatedOptions.relyingPartyId, credentialToSave);
+                        userInfo.setExternalUserId(null);
 
-                        return new WebAuthNSignInUpResult(savedCredential, userInfo, generatedOptions);
+                        return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (Exception e) {

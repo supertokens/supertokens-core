@@ -78,6 +78,9 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             result.addProperty("relyingPartyName", signUpResult.options.relyingPartyName);
             result.addProperty("recipeUserId", signUpResult.credential.userId);
 
+            Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL RESPONSE " , true);
+            Logging.info(this.main, tenantIdentifier, result.toString(), true);
+
             super.sendJsonResponse(200, result, resp);
         } catch (
                 TenantOrAppNotFoundException e) {
