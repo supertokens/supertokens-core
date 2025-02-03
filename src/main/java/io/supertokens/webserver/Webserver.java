@@ -310,6 +310,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignUpWithCredentialRegisterAPI(main));
         addAPI(new GetGeneratedOptionsAPI(main));
         addAPI(new io.supertokens.webserver.api.webauthn.SignInAPI(main));
+        addAPI(new ConsumeRecoverAccountTokenAPI(main));
+        addAPI(new GenerateRecoverAccountTokenAPI(main));
+        addAPI(new GetUserFromRecoverAccountTokenAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
