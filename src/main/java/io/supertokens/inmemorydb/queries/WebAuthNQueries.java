@@ -97,7 +97,7 @@ public class WebAuthNQueries {
     public static String getQueryToCreateWebAuthNCredentialsTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS "+ Config.getConfig(start).getWebAuthNCredentialsTable() + "(" +
                 " id VARCHAR(256) NOT NULL," +
-                " app_id VARCHAR(64) DEFAULT 'public'," +
+                " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
                 " rp_id VARCHAR(256)," +
                 " user_id CHAR(36)," +
                 " counter BIGINT NOT NULL," +
@@ -106,8 +106,8 @@ public class WebAuthNQueries {
                 " created_at BIGINT NOT NULL," +
                 " updated_at BIGINT NOT NULL," +
                 " CONSTRAINT webauthn_user_credentials_pkey PRIMARY KEY (app_id, rp_id, id)," +
-                " CONSTRAINT webauthn_user_credentials_webauthn_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES " +
-                Config.getConfig(start).getWebAuthNUserToTenantTable() + " (app_id, tenant_id, user_id) ON DELETE CASCADE" +
+                " CONSTRAINT webauthn_user_credentials_webauthn_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES " +
+                Config.getConfig(start).getWebAuthNUsersTable() + " (app_id, user_id) ON DELETE CASCADE" +
                 ");";
     }
 
@@ -118,6 +118,7 @@ public class WebAuthNQueries {
                 " user_id CHAR(36) NOT NULL," +
                 " email VARCHAR(256) NOT NULL," +
                 " token VARCHAR(256) NOT NULL," +
+                " expires_at BIGINT UNSIGNED NOT NULL," +
                 " CONSTRAINT webauthn_account_recovery_token_pkey PRIMARY KEY (app_id, tenant_id, user_id, token)," +
                 " CONSTRAINT webauthn_account_recovery_token_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES " +
                 Config.getConfig(start).getUsersTable() + " (app_id, tenant_id, user_id) ON DELETE CASCADE" +
@@ -339,12 +340,17 @@ public class WebAuthNQueries {
             throws SQLException, StorageQueryException {
         Collection<? extends LoginMethod> loginMethods = getUsersInfoUsingIdList_Transaction(start, sqlCon,
                 Collections.singleton(userId), tenantIdentifier.toAppIdentifier());
-        if (!loginMethods.isEmpty()) { //expecting it to be size 1
+        AuthRecipeUserInfo userInfo = null;
+        if (!loginMethods.isEmpty()) {
             for (LoginMethod loginMethod : loginMethods) {
-                return AuthRecipeUserInfo.create(userId, false, loginMethod);
+                if(userInfo == null) {
+                    userInfo = AuthRecipeUserInfo.create(userId, false, loginMethod);
+                } else {
+                    userInfo.addLoginMethod(loginMethod);
+                }
             }
         }
-        return null;
+        return userInfo;
     }
 
     public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
