@@ -3345,12 +3345,75 @@ public class Start
     @Override
     public WebAuthNOptions loadOptionsById_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                                        String optionsId) throws StorageQueryException {
-        return null;
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return WebAuthNQueries.loadOptionsById_Transaction(this, sqlCon, tenantIdentifier, optionsId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public WebAuthNStoredCredential loadCredentialById_Transaction(TenantIdentifier tenantIdentifier,
+                                                                  TransactionConnection con, String credentialId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return WebAuthNQueries.loadCredentialById_Transaction(this, sqlCon, tenantIdentifier, credentialId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo signUpWithCredentialsRegister_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                                 String userId, String email, String relyingPartyId, WebAuthNStoredCredential credential)
+            throws StorageQueryException, DuplicateUserIdException, TenantOrAppNotFoundException,
+            DuplicateEmailException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return WebAuthNQueries.signUpWithCredentialRegister_Transaction(this, sqlCon, tenantIdentifier, userId, email, relyingPartyId, credential);
+        } catch (StorageTransactionLogicException stle) {
+            if (stle.actualException instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = stle.actualException.getMessage();
+
+                if (isUniqueConstraintError(serverMessage, config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "email"})) {
+                    throw new DuplicateEmailException();
+                } else if (isPrimaryKeyError(serverMessage, config.getWebAuthNUsersTable(),
+                        new String[]{"app_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getUsersTable(),
+                        new String[]{"app_id", "tenant_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "user_id"})
+                        || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
+                        new String[]{"app_id", "user_id"})) {
+                    throw new DuplicateUserIdException();
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getAppsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{tenantIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
+
+            throw new StorageQueryException(stle.actualException);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public AuthRecipeUserInfo signUp_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
-                                                 String userId, String email, String relyingPartyId)
+                                                                        String userId, String email, String relyingPartyId)
             throws StorageQueryException, DuplicateUserIdException, TenantOrAppNotFoundException,
             DuplicateEmailException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -3389,6 +3452,32 @@ public class Start
             }
 
             throw new StorageQueryException(stle.actualException);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo getUserInfoByCredentialId_Transaction(TenantIdentifier tenantIdentifier,
+                                                                    TransactionConnection con, String credentialId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return WebAuthNQueries.getUserInfoByCredentialId_Transaction(this, sqlCon, tenantIdentifier, credentialId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateCounter_Transaction(TenantIdentifier tenantIdentifier,
+                                                              TransactionConnection con, String credentialId,
+                                                              long counter) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, credentialId, counter);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
         }
     }
 

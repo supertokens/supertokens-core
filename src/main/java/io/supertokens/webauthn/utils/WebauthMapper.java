@@ -22,10 +22,13 @@ import com.google.gson.JsonPrimitive;
 import com.webauthn4j.converter.AttestedCredentialDataConverter;
 import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
+import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class WebauthMapper {
@@ -55,9 +58,9 @@ public class WebauthMapper {
     }
 
     public static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
-                                                       long createdAt, long expiresAt) {
+                                                       long createdAt, long expiresAt, String email) {
         JsonObject response = new JsonObject();
-        response.addProperty("webauthGeneratedOptionsId", id);
+        response.addProperty("webauthnGeneratedOptionsId", id);
 
         JsonObject rp = new JsonObject();
         rp.addProperty("id", options.getRp().getId());
@@ -65,13 +68,20 @@ public class WebauthMapper {
         response.add("rp", rp);
 
         JsonObject user = new JsonObject();
-        user.addProperty("id", new String(options.getUser().getId()));
+        user.addProperty("id", new String(Base64.getUrlEncoder().withoutPadding().encode(options.getUser().getId()), StandardCharsets.UTF_8));
         user.addProperty("name", options.getUser().getName());
         user.addProperty("displayName", options.getUser().getDisplayName());
         response.add("user", user);
 
+        response.addProperty("email", email);
+
         response.addProperty("timeout", options.getTimeout());
-        response.addProperty("challenge", Base64.getEncoder().encodeToString(options.getChallenge().getValue()));
+        //response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
+        //response.addProperty("challenge", new String(Base64.getUrlEncoder().encode(options.getChallenge().getValue()), StandardCharsets.UTF_8));
+//        String challenge = "c29tZS1iYXNlNjQtZW5jb2RlZC1zdHJpbmc";
+//        byte[] challengeBytes = Base64.getUrlDecoder().decode(challenge);
+        String encodedChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(options.getChallenge().getValue());
+        response.addProperty("challenge", encodedChallenge);
         response.addProperty("attestation", options.getAttestation().getValue());
 
         response.addProperty("createdAt", createdAt);
@@ -122,6 +132,33 @@ public class WebauthMapper {
         response.recipeUserId = credential.userId;
         response.relyingPartyId = credential.rpId;
         response.relyingPartyName = relyingPartyName;
+        return response;
+    }
+
+    public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
+                                                String optionsId, Challenge challenge) {
+        JsonObject response = new JsonObject();
+        response.addProperty("webauthnGeneratedOptionsId", optionsId);
+        response.addProperty("relyingPartyId", relyingPartyId);
+        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
+        response.addProperty("timeout", timeout);
+        response.addProperty("userVerification", userVerification);
+        return response;
+    }
+
+    public static JsonObject mapOptionsResponse(WebAuthNOptions options, JsonObject response) {
+
+        response.addProperty("webauthnGeneratedOptionsId", options.generatedOptionsId);
+        response.addProperty("relyingPartyId", options.relyingPartyId);
+        response.addProperty("relyingPartyName", options.relyingPartyName);
+        response.addProperty("challenge", options.challenge);
+        response.addProperty("timeout", options.timeout);
+        response.addProperty("origin", options.origin);
+        response.addProperty("email", options.userEmail);
+        response.addProperty("createdAt", options.createdAt);
+        response.addProperty("expiresAt", options.expiresAt);
+        response.addProperty("timeout", options.timeout);
+
         return response;
     }
 }

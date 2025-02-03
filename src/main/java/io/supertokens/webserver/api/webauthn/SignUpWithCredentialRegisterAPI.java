@@ -18,10 +18,14 @@ package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.WebAuthNSignInUpResult;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -38,7 +42,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/signup";
+        return "/recipe/webauthn/signup";
     }
 
     @Override
@@ -47,22 +51,35 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
+            Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL", true);
+
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-            String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId",
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
+            Logging.info(this.main, tenantIdentifier, "input request " +  input, true);
+
+            WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
+                                                            credentialId, credentialsDataString);
+
+            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
+                    signUpResult.userInfo.getSupertokensUserId());
+
+            JsonObject userJson = signUpResult.userInfo.toJson();
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-//            result.addProperty("webauthnCredentialId", savedCredential.webauthnCredentialId);
-//            result.addProperty("recipeUserId", savedCredential.recipeUserId);
-//            result.addProperty("email", savedCredential.email);
-//            result.addProperty("relyingPartyId", savedCredential.relyingPartyId);
-//            result.addProperty("relyingPartyName", savedCredential.relyingPartyName);
+            result.add("user", userJson);
+            result.addProperty("webauthnCredentialId", signUpResult.credential.id);
+            result.addProperty("relyingPartyId", signUpResult.options.relyingPartyId);
+            result.addProperty("relyingPartyName", signUpResult.options.relyingPartyName);
+            result.addProperty("recipeUserId", signUpResult.credential.userId);
+
+            Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL RESPONSE " , true);
+            Logging.info(this.main, tenantIdentifier, result.toString(), true);
 
             super.sendJsonResponse(200, result, resp);
         } catch (

@@ -54,6 +54,7 @@ public class SignInOptionsAPI extends WebserverAPI {
             Storage storage = getTenantStorage(req);
 
             String relyingPartyId = InputParser.parseStringOrThrowError(input, "relyingPartyId", false);
+            String relyingPartyName = InputParser.parseStringOrThrowError(input, "relyingPartyName", false);
             String origin = InputParser.parseStringOrThrowError(input, "origin", false);
 
             Long timeout = InputParser.parseLongOrThrowError(input, "timeout", true);
@@ -61,13 +62,13 @@ public class SignInOptionsAPI extends WebserverAPI {
                 timeout = 6000L;
             }
 
-            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerificitaion", true);
+            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerification", true);
             if(userVerificitaion == null || userVerificitaion.equals("")){
                 userVerificitaion = "preferred";
             }
 
 
-            JsonObject response = WebAuthN.generateSignInOptions(tenantIdentifier, storage, relyingPartyId, origin, timeout,
+            JsonObject response = WebAuthN.generateSignInOptions(tenantIdentifier, storage, relyingPartyId, relyingPartyName, origin, timeout,
                     userVerificitaion);
 
 

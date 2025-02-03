@@ -66,10 +66,14 @@ public class WebAuthN {
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
 
         String id = null;
+        String optionsId = Utils.getUUID();
+
         AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
         AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
         if(usersWithEmail.length > 0) {
             id = usersWithEmail[0].getSupertokensUserId();
+        } else {
+            id = optionsId;
         }
 
         PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(id.getBytes(StandardCharsets.UTF_8), email, displayName);
@@ -84,7 +88,8 @@ public class WebAuthN {
             credentialParameters.add(param);
         };
 
-        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null, null,
+        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
+                residentKey.equalsIgnoreCase("required"),
                 ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerificitaion) );
 
         AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(attestation);
@@ -93,17 +98,17 @@ public class WebAuthN {
                 userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
                 null, attestationConveyancePreference, null);
 
-        String optionsId = Utils.getUUID();
+
 
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
-                options.getRp().getId(), origin, email, optionsId);
+                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId);
 
         return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
-                savedOptions.expiresAt);
+                savedOptions.expiresAt, savedOptions.userEmail);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
-                                                   String relyingPartyId, String origin, Long timeout,
+                                                   String relyingPartyId, String relyingPartyName, String origin, Long timeout,
                                                    String userVerification)
             throws StorageQueryException, UserIdNotFoundException {
 
@@ -111,18 +116,13 @@ public class WebAuthN {
 
         String optionsId = Utils.getUUID();
 
-        saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, origin,
-                null, optionsId); // TODO is it sure that the email should be null? ask Victor
+        saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
+                null, optionsId);
 
-        JsonObject response = new JsonObject();
-        response.addProperty("webauthnGeneratedOptionsId", optionsId);
-        response.addProperty("rpId", relyingPartyId);
-        response.addProperty("challenge", Base64.getEncoder().encodeToString(challenge.getValue()));
-        response.addProperty("timeout", timeout);
-        response.addProperty("userVerification", userVerification);
-
-        return response;
+        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge);
     }
+
+
 
     @NotNull
     private static Challenge getChallenge() {
@@ -184,26 +184,22 @@ public class WebAuthN {
                 registrationParameters);
     }
 
-    public static AuthRecipeUserInfo signUp(Storage storage, TenantIdentifier tenantIdentifier,
-                                            String optionsId, String credentialId, String registrationResponseJson) {
+    public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
+                                                String optionsId, String credentialId, String registrationResponseJson) {
         // create a new user in the auth recipe storage
         // create new credentials
         // all within a transaction
         try {
             WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
-            webAuthNStorage.startTransaction(con -> {
+            return webAuthNStorage.startTransaction(con -> {
 
                 while (true) {
                     try {
-
                         String recipeUserId = Utils.getUUID();
+
                         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
                                 con,
                                 optionsId);
-
-                        webAuthNStorage.signUp_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
-                                generatedOptions.relyingPartyId);
-
 
                         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                                 generatedOptions);
@@ -211,11 +207,11 @@ public class WebAuthN {
                                 verifiedRegistrationData,
                                 recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
                                 tenantIdentifier);
-                        WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials_Transaction(
-                                tenantIdentifier,
-                                con, credentialToSave);
+                        AuthRecipeUserInfo userInfo = webAuthNStorage.signUpWithCredentialsRegister_Transaction(tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
+                                generatedOptions.relyingPartyId, credentialToSave);
+                        userInfo.setExternalUserId(null);
 
-                        // TODO return values /AuthRecipeUserInfo + webauthCredentialId
+                        return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (Exception e) {
@@ -226,7 +222,56 @@ public class WebAuthN {
         } catch (Exception e) {
             throw new RuntimeException(e); // TODO! make it more specific
         }
+    }
+
+    public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId) {
+        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        try {
+            return webAuthNStorage.startTransaction(con -> {
+                try {
+                    return webAuthNStorage.signUp_Transaction(tenantIdentifier, con, userId, email, "test.com");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
+                                              String webauthGeneratedOptionsId, String credentialsDataString,
+                                              String credentialId) {
+        try {
+            WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+            webAuthNStorage.startTransaction(con -> {
+
+                WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
+                        con,
+                        webauthGeneratedOptionsId);
+
+                AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier, con, credentialId);
+                WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId);
+
+                try {
+                    getRegistrationData(credentialsDataString, generatedOptions);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
+                return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e); // TODO! make it more specific
+        }
         return null;
+    }
+
+    public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
+                                           String webauthGeneratedOptionsId) throws StorageQueryException {
+        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthGeneratedOptionsId);
     }
 
     @NotNull
@@ -241,7 +286,7 @@ public class WebAuthN {
                             @NotNull
                             @Override
                             public byte[] getValue() {
-                                return generatedOptions.challenge.getBytes(StandardCharsets.UTF_8);
+                                return Base64.getUrlDecoder().decode(generatedOptions.challenge);
                             }
                         }),
                 pubKeyCredParams,
@@ -252,20 +297,22 @@ public class WebAuthN {
     }
 
     private static WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
-            Long timeout, String relyinPartyId, String origin, String userEmail, String id)
+            Long timeout, String relyinPartyId, String relyingPartyName, String origin, String userEmail, String id)
             throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions savableOptions = new WebAuthNOptions();
         savableOptions.generatedOptionsId = id;
-        savableOptions.challenge = Base64.getEncoder().encodeToString(challenge.getValue());
+        savableOptions.challenge = Base64.getUrlEncoder().encodeToString(challenge.getValue());
         savableOptions.origin = origin;
         savableOptions.timeout = timeout;
         savableOptions.createdAt = System.currentTimeMillis();
         savableOptions.expiresAt = savableOptions.createdAt + savableOptions.timeout;
         savableOptions.relyingPartyId = relyinPartyId;
+        savableOptions.relyingPartyName = relyingPartyName;
         savableOptions.userEmail = userEmail;
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
+
 
     public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
@@ -385,4 +432,5 @@ public class WebAuthN {
             throws TenantOrAppNotFoundException {
         return 300000; // TODO add config
     }
+
 }

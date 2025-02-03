@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.webserver.api.accountlinking.*;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
+import io.supertokens.webserver.api.emailpassword.SignInAPI;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
@@ -51,9 +52,7 @@ import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.userroles.*;
-import io.supertokens.webserver.api.webauthn.CredentialsRegisterAPI;
-import io.supertokens.webserver.api.webauthn.OptionsRegisterAPI;
-import io.supertokens.webserver.api.webauthn.SignInOptionsAPI;
+import io.supertokens.webserver.api.webauthn.*;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -308,6 +307,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new OptionsRegisterAPI(main));
         addAPI(new SignInOptionsAPI(main));
         addAPI(new CredentialsRegisterAPI(main));
+        addAPI(new SignUpWithCredentialRegisterAPI(main));
+        addAPI(new GetGeneratedOptionsAPI(main));
+        addAPI(new io.supertokens.webserver.api.webauthn.SignInAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
