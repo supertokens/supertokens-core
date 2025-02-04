@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.CredentialNotExistsException;
+import io.supertokens.pluginInterface.webauthn.OptionsNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -32,15 +32,15 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class RemoveCredentialAPI extends WebserverAPI {
+public class RemoveOptionsAPI extends WebserverAPI {
 
-    public RemoveCredentialAPI(Main main) {
+    public RemoveOptionsAPI(Main main) {
         super(main, "webauthn");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/credential/remove";
+        return "/recipe/webauthn/options/remove";
     }
 
     @Override
@@ -48,10 +48,10 @@ public class RemoveCredentialAPI extends WebserverAPI {
         try {
             Storage storage = getTenantStorage(req);
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            String userId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
-            String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
-            WebAuthN.removeCredential(storage, tenantIdentifier, userId, credentialId);
+            String optionsId = InputParser.getQueryParamOrThrowError(req, "webauthnGeneratedOptionsId", false);
+
+            WebAuthN.removeOptions(storage, tenantIdentifier, optionsId);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -60,9 +60,9 @@ public class RemoveCredentialAPI extends WebserverAPI {
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (CredentialNotExistsException e) {
+        } catch (OptionsNotExistsException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "CREDENTIAL_NOT_EXISTS_ERROR");
+            response.addProperty("status", "OPTIONS_NOT_EXISTS_ERROR");
             super.sendJsonResponse(200, response, resp);
         }
     }

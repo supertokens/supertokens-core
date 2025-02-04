@@ -3502,6 +3502,19 @@ public class Start
     }
 
     @Override
+    public void removeOptions(TenantIdentifier tenantIdentifier, String optionsId)
+            throws StorageQueryException, OptionsNotExistsException {
+        try {
+            int rowsUpdated = WebAuthNQueries.removeOptions(this, tenantIdentifier, optionsId);
+            if(rowsUpdated < 1) {
+                throw new OptionsNotExistsException();
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public List<WebAuthNStoredCredential> listCredentialsForUser(TenantIdentifier tenantIdentifier, String userId)
             throws StorageQueryException {
         try {

@@ -440,6 +440,13 @@ public class WebAuthN {
         webAuthNStorage.removeCredential(tenantIdentifier, userId, credentialId);
     }
 
+    public static void removeOptions(Storage storage, TenantIdentifier tenantIdentifier,
+                                    String optionsId)
+            throws StorageQueryException, OptionsNotExistsException {
+        WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
+        webAuthNStorage.removeOptions(tenantIdentifier, optionsId);
+    }
+
     public static List<WebAuthNStoredCredential> listCredentialsForUser(Storage storage, TenantIdentifier tenantIdentifier,
                                                                           String userId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);

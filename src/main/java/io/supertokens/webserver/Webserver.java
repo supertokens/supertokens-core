@@ -314,6 +314,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GenerateRecoverAccountTokenAPI(main));
         addAPI(new GetUserFromRecoverAccountTokenAPI(main));
         addAPI(new RemoveCredentialAPI(main));
+        addAPI(new RemoveOptionsAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
