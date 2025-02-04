@@ -77,10 +77,6 @@ public class WebauthMapper {
         response.addProperty("email", email);
 
         response.addProperty("timeout", options.getTimeout());
-        //response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(options.getChallenge().getValue()));
-        //response.addProperty("challenge", new String(Base64.getUrlEncoder().encode(options.getChallenge().getValue()), StandardCharsets.UTF_8));
-//        String challenge = "c29tZS1iYXNlNjQtZW5jb2RlZC1zdHJpbmc";
-//        byte[] challengeBytes = Base64.getUrlDecoder().decode(challenge);
         String encodedChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(options.getChallenge().getValue());
         response.addProperty("challenge", encodedChallenge);
         response.addProperty("attestation", options.getAttestation().getValue());
@@ -156,13 +152,15 @@ public class WebauthMapper {
 
 
     public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
-                                                String optionsId, Challenge challenge) {
+                                                String optionsId, Challenge challenge, Long createdAt) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
         response.addProperty("relyingPartyId", relyingPartyId);
-        response.addProperty("challenge", Base64.getUrlEncoder().encodeToString(challenge.getValue()));
+        response.addProperty("challenge", Base64.getUrlEncoder().withoutPadding().encodeToString(challenge.getValue()));
         response.addProperty("timeout", timeout);
         response.addProperty("userVerification", userVerification);
+        response.addProperty("createdAt", createdAt);
+        response.addProperty("expiresAt", createdAt + timeout);
         return response;
     }
 

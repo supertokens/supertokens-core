@@ -116,10 +116,10 @@ public class WebAuthN {
 
         String optionsId = Utils.getUUID();
 
-        saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
+        WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
                 null, optionsId);
 
-        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge);
+        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt);
     }
 
 
@@ -302,7 +302,7 @@ public class WebAuthN {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions savableOptions = new WebAuthNOptions();
         savableOptions.generatedOptionsId = id;
-        savableOptions.challenge = Base64.getUrlEncoder().encodeToString(challenge.getValue());
+        savableOptions.challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(challenge.getValue());
         savableOptions.origin = origin;
         savableOptions.timeout = timeout;
         savableOptions.createdAt = System.currentTimeMillis();
