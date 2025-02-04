@@ -43,7 +43,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/recover/token";
+        return "/recipe/webauthn/user/recover";
     }
 
     @Override

@@ -142,8 +142,8 @@ public class WebAuthN {
         return challenge;
     }
 
-    public static WebauthNSaveCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
-                                           String optionsId, String credentialId, String registrationResponseJson)
+    public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
+                                                                 String optionsId, String credentialId, String registrationResponseJson)
             throws Exception {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
@@ -190,7 +190,7 @@ public class WebAuthN {
         // create new credentials
         // all within a transaction
         try {
-            WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+            WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
             return webAuthNStorage.startTransaction(con -> {
 
                 while (true) {
@@ -225,7 +225,7 @@ public class WebAuthN {
     }
 
     public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId) {
-        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         try {
             return webAuthNStorage.startTransaction(con -> {
                 try {
@@ -243,7 +243,7 @@ public class WebAuthN {
                                               String webauthGeneratedOptionsId, String credentialsDataString,
                                               String credentialId) {
         try {
-            WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+            WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
             webAuthNStorage.startTransaction(con -> {
 
                 WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
@@ -270,7 +270,7 @@ public class WebAuthN {
 
     public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
                                            String webauthGeneratedOptionsId) throws StorageQueryException {
-        WebAuthNSQLStorage webAuthNStorage = (WebAuthNSQLStorage) storage;
+        WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthGeneratedOptionsId);
     }
 
@@ -433,4 +433,16 @@ public class WebAuthN {
         return 300000; // TODO add config
     }
 
+    public static void removeCredential(Storage storage, TenantIdentifier tenantIdentifier,
+                                        String userId, String credentialId)
+            throws StorageQueryException, CredentialNotExistsException {
+        WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
+        webAuthNStorage.removeCredential(tenantIdentifier, userId, credentialId);
+    }
+
+    public static List<WebAuthNStoredCredential> listCredentialsForUser(Storage storage, TenantIdentifier tenantIdentifier,
+                                                                          String userId) throws StorageQueryException {
+        WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
+        return webAuthNStorage.listCredentialsForUser(tenantIdentifier, userId);
+    }
 }

@@ -92,10 +92,7 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
-import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
-import io.supertokens.pluginInterface.webauthn.DuplicateRecoverAccountTokenException;
-import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
@@ -3486,6 +3483,29 @@ public class Start
             throws DuplicateRecoverAccountTokenException, StorageQueryException {
         try {
             WebAuthNQueries.addRecoverAccountToken(this, tenantIdentifier, accountRecoveryTokenInfo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeCredential(TenantIdentifier tenantIdentifier, String userId, String credentialId)
+            throws StorageQueryException, CredentialNotExistsException {
+        try {
+            int rowsUpdated = WebAuthNQueries.removeCredential(this, tenantIdentifier, userId, credentialId);
+            if(rowsUpdated < 1) {
+                throw new CredentialNotExistsException();
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public List<WebAuthNStoredCredential> listCredentialsForUser(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            return WebAuthNQueries.listCredentials(this, tenantIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

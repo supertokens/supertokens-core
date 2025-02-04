@@ -374,7 +374,7 @@ public class WebAuthNQueries {
     }
 
     public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
-            throws SQLException, StorageQueryException {
+            throws StorageQueryException {
         try {
             return start.startTransaction(con -> {
                 Connection sqlConnection = (Connection) con.getConnection();
@@ -502,6 +502,34 @@ public class WebAuthNQueries {
             pst.setLong(2, System.currentTimeMillis());
             pst.setString(3, tenantIdentifier.getAppId());
             pst.setString(4, credentialId);
+        });
+    }
+
+    public static int removeCredential(Start start, TenantIdentifier tenantIdentifier, String userId, String credentialId)
+            throws SQLException, StorageQueryException {
+        String UPDATE = "DELETE FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " WHERE app_id = ? AND id = ? AND user_id = ?";
+
+        return update(start, UPDATE, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, credentialId);
+            pst.setString(3, userId);
+        });
+    }
+
+    public static List<WebAuthNStoredCredential> listCredentials(Start start, TenantIdentifier tenantIdentifier,
+                                                          String recipeUserId) throws SQLException, StorageQueryException {
+        String LIST_QUERY =  "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable() +
+                " WHERE app_id = ? AND user_id = ?";
+        return execute(start, LIST_QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, recipeUserId);
+        }, result -> {
+            List<WebAuthNStoredCredential> credentials = new ArrayList<>();
+            while (result.next()) {
+                credentials.add(WebAuthnStoredCredentialRowMapper.getInstance().mapOrThrow(result));
+            }
+            return credentials;
         });
     }
 

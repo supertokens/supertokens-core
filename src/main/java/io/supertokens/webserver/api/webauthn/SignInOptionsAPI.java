@@ -82,7 +82,7 @@ public class SignInOptionsAPI extends WebserverAPI {
         } catch (UserIdNotFoundException e) {
             JsonObject response = new JsonObject();
             response.addProperty("error", "USER_WITH_EMAIL_NOT_FOUND_ERROR");
-            super.sendJsonResponse(400, response, resp);
+            super.sendJsonResponse(200, response, resp);
         }
     }
 }

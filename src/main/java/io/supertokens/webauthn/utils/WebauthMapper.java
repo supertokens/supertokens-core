@@ -26,10 +26,11 @@ import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
-import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
+import io.supertokens.webauthn.WebauthNCredentialResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 
 public class WebauthMapper {
     public static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(
@@ -124,16 +125,35 @@ public class WebauthMapper {
         return response;
     }
 
-    public static WebauthNSaveCredentialResponse mapStoredCredentialToResponse(WebAuthNStoredCredential credential,
-                                                                               String email, String relyingPartyName) {
-        WebauthNSaveCredentialResponse response = new WebauthNSaveCredentialResponse();
+    public static WebauthNCredentialResponse mapStoredCredentialToResponse(WebAuthNStoredCredential credential,
+                                                                           String email, String relyingPartyName) {
+        WebauthNCredentialResponse response = new WebauthNCredentialResponse();
         response.email = email;
         response.webauthnCredentialId = credential.id;
         response.recipeUserId = credential.userId;
         response.relyingPartyId = credential.rpId;
         response.relyingPartyName = relyingPartyName;
+        response.createdAt = credential.createdAt;
         return response;
     }
+
+    public static JsonObject mapStoredCredentialsToResponse(List<WebAuthNStoredCredential> credentials) {
+        JsonObject response = new JsonObject();
+        JsonArray credentialsArray = new JsonArray();
+        if(credentials != null) {
+            for(WebAuthNStoredCredential credential : credentials) {
+                JsonObject mappedCredential = new JsonObject();
+                mappedCredential.addProperty("webauthnCredentialId", credential.id);
+                mappedCredential.addProperty("recipeUserId", credential.userId);
+                mappedCredential.addProperty("relyingPartyId", credential.rpId);
+                mappedCredential.addProperty("createdAt", credential.createdAt);
+                credentialsArray.add(mappedCredential);
+            }
+        }
+        response.add("credentials", credentialsArray);
+        return response;
+    }
+
 
     public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
                                                 String optionsId, Challenge challenge) {

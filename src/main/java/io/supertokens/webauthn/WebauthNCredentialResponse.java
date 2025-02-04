@@ -16,10 +16,11 @@
 
 package io.supertokens.webauthn;
 
-public class WebauthNSaveCredentialResponse {
+public class WebauthNCredentialResponse {
     public String webauthnCredentialId;
     public String recipeUserId;
     public String email;
     public String relyingPartyId;
     public String relyingPartyName;
+    public Long createdAt;
 }

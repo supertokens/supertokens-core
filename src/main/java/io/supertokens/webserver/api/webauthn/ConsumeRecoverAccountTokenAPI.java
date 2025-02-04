@@ -24,7 +24,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.WebauthNSaveCredentialResponse;
+import io.supertokens.webauthn.WebauthNCredentialResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -61,7 +61,7 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
 
             String recipeUserId = WebAuthN.consumeRecoverAccountToken(main, tenantIdentifier, storage, token).userId;
 
-            WebauthNSaveCredentialResponse savedCredential = WebAuthN
+            WebauthNCredentialResponse savedCredential = WebAuthN
                     .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
                             webauthGeneratedOptionsId, credentialsDataString);
 
