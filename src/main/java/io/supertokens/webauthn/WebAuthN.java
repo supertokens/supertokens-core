@@ -41,6 +41,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.webauthn.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
+import io.supertokens.webauthn.data.WebauthNCredentialRecord;
 import io.supertokens.webauthn.exception.InvalidTokenException;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
@@ -150,6 +151,10 @@ public class WebAuthN {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
 
+        if(generatedOptions == null) {
+            throw new InvalidWebauthNOptionsException("Options not found");
+        }
+        
         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                 generatedOptions);
 
@@ -190,38 +195,47 @@ public class WebAuthN {
         }
     }
 
-//    private static RegistrationData getAuthenticationData(String registrationResponseJson,
-//                                                        WebAuthNOptions generatedOptions)
-//            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
-//        long now = System.currentTimeMillis();
-//        if(generatedOptions.expiresAt < now) {
-//            throw new InvalidWebauthNOptionsException("Options expired");
-//        }
-//        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
-//            throw new InvalidWebauthNOptionsException("Origin does not match relying party id");
-//        }
-//
-//        WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-//        AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(registrationResponseJson);
-//
-//        AuthenticationParameters authenticationParameters = new AuthenticationParameters(
-//                new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
-//                        new Challenge() {
-//                            @NotNull
-//                            @Override
-//                            public byte[] getValue() {
-//                                return Base64.getUrlDecoder().decode(generatedOptions.challenge);
-//                            }
-//                        }),
-//
-//        )
-//
-//        try {
-//            return nonStrictWebAuthnManager.verify(authenticationData, registrationParameters);
-//        } catch (VerificationException e) {
-//            throw new WebauthNVerificationFailedException(e.getMessage());
-//        }
-//    }
+    private static AuthenticationData getAuthenticationData(String authenticationResponseJson,
+                                                          WebAuthNOptions generatedOptions,
+                                                          WebAuthNStoredCredential storedCredential)
+            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
+        long now = System.currentTimeMillis();
+        if(generatedOptions.expiresAt < now) {
+            throw new InvalidWebauthNOptionsException("Options expired");
+        }
+        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
+            throw new InvalidWebauthNOptionsException("Origin does not match relying party id");
+        }
+
+        WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
+        AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(authenticationResponseJson);
+
+        List<byte[]> allowCredentials = null;
+        boolean userVerificationRequired = true;
+        boolean userPresenceRequired = true;
+
+        WebauthNCredentialRecord credentialRecord = new WebauthNCredentialRecord(storedCredential);
+
+        AuthenticationParameters authenticationParameters = new AuthenticationParameters(
+                new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
+                        new Challenge() {
+                            @NotNull
+                            @Override
+                            public byte[] getValue() {
+                                return Base64.getUrlDecoder().decode(generatedOptions.challenge);
+                            }
+                        }),
+                credentialRecord,
+                allowCredentials,
+                userVerificationRequired,
+                userPresenceRequired);
+
+        try {
+            return nonStrictWebAuthnManager.verify(authenticationData, authenticationParameters);
+        } catch (VerificationException e) {
+            throw new WebauthNVerificationFailedException(e.getMessage());
+        }
+    }
 
     public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
                                                 String optionsId, String credentialId, String registrationResponseJson)
@@ -309,7 +323,7 @@ public class WebAuthN {
                         con, credentialId);
 
                 try {
-                    getRegistrationData(credentialsDataString, generatedOptions);
+                    getAuthenticationData(credentialsDataString, generatedOptions, credential);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException e) {
                     throw new RuntimeException(e);
                 }
