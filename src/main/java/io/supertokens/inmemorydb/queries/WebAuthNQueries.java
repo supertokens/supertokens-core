@@ -682,10 +682,18 @@ public class WebAuthNQueries {
         });
     }
 
-    public static void deleteExpiredAccountRecoveryTokens_Transaction(Start start, Connection con)
+    public static void deleteExpiredAccountRecoveryTokens(Start start)
             throws SQLException, StorageQueryException {
         String DELETE = "DELETE FROM " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + " WHERE expires_at < ?";
-        update(con, DELETE, pst -> {
+        update(start, DELETE, pst -> {
+            pst.setLong(1, System.currentTimeMillis());
+        });
+    }
+
+    public static void deleteExpiredGeneratedOptions(Start start)
+            throws SQLException, StorageQueryException {
+        String DELETE = "DELETE FROM " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable() + " WHERE expires_at < ?";
+        update(start, DELETE, pst -> {
             pst.setLong(1, System.currentTimeMillis());
         });
     }

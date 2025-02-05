@@ -3577,11 +3577,18 @@ public class Start
     }
 
     @Override
-    public void deleteExpiredAccountRecoveryTokens_Transaction(TransactionConnection con)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
+    public void deleteExpiredAccountRecoveryTokens() throws StorageQueryException {
         try {
-            WebAuthNQueries.deleteExpiredAccountRecoveryTokens_Transaction(this, sqlCon);
+            WebAuthNQueries.deleteExpiredAccountRecoveryTokens(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteExpiredGeneratedOptions() throws StorageQueryException {
+        try {
+            WebAuthNQueries.deleteExpiredGeneratedOptions(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
