@@ -24,8 +24,11 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.WebAuthNSignInUpResult;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -50,8 +53,6 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
-
-            Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL", true);
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
@@ -78,15 +79,24 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             result.addProperty("relyingPartyName", signUpResult.options.relyingPartyName);
             result.addProperty("recipeUserId", signUpResult.credential.userId);
 
-            Logging.info(this.main, tenantIdentifier, "SIGNUP_WITH_CREDENTIAL RESPONSE " , true);
-            Logging.info(this.main, tenantIdentifier, result.toString(), true);
-
             super.sendJsonResponse(200, result, resp);
         } catch (
                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (Exception e) { // TODO: make this more specific
-            throw new RuntimeException(e);
+        } catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (DuplicateUserEmailException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNVerificationFailedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
     }
 }

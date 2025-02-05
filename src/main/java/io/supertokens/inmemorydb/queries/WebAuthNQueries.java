@@ -545,6 +545,40 @@ public class WebAuthNQueries {
         });
     }
 
+    public static void updateUserEmail(Start start, TenantIdentifier tenantIdentifier, String userId, String newEmail)
+            throws StorageQueryException {
+        try {
+            start.startTransaction(con -> {
+                Connection sqlConnection = (Connection) con.getConnection();
+                try {
+                    String UPDATE_USER_TO_TENANT_QUERY =
+                            "UPDATE " + Config.getConfig(start).getWebAuthNUserToTenantTable() +
+                                    " SET email = ? WHERE app_id = ? AND tenant_id = ? AND user_id = ?";
+                    String UPDATE_USER_QUERY = "UPDATE " + Config.getConfig(start).getWebAuthNUsersTable() +
+                            " SET email = ? WHERE app_id = ? AND user_id = ?";
+
+                    update(sqlConnection, UPDATE_USER_TO_TENANT_QUERY, pst -> {
+                        pst.setString(1, newEmail);
+                        pst.setString(2, tenantIdentifier.getAppId());
+                        pst.setString(3, tenantIdentifier.getTenantId());
+                        pst.setString(4, userId);
+                    });
+
+                    update(sqlConnection, UPDATE_USER_QUERY, pst -> {
+                        pst.setString(1, newEmail);
+                        pst.setString(2, tenantIdentifier.getAppId());
+                        pst.setString(3, userId);
+                    });
+                } catch (SQLException e) {
+                    throw new StorageQueryException(e);
+                }
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     private static class WebAuthnStoredCredentialRowMapper implements RowMapper<WebAuthNStoredCredential, ResultSet> {
         private static final WebAuthnStoredCredentialRowMapper INSTANCE = new WebAuthnStoredCredentialRowMapper();
 

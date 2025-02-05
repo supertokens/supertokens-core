@@ -20,11 +20,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.WebAuthNSignInUpResult;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -58,6 +61,9 @@ public class SignInAPI extends WebserverAPI {
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
+            Logging.info(this.main, tenantIdentifier, "SIGN IN CREDENTIALDATA" , true);
+            Logging.info(this.main, tenantIdentifier, credentialsDataString, true);
+
             WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthGeneratedOptionsId,
                     credentialsDataString, credentialId);
 
@@ -75,6 +81,16 @@ public class SignInAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+        } catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNVerificationFailedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
     }
 }
