@@ -60,8 +60,8 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
             WebauthNCredentialResponse savedCredential = WebAuthN
-                    .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
-                            webauthnGeneratedOptionsId, credentialsDataString);
+                    .registerCredentials(storage, tenantIdentifier, recipeUserId,
+                            webauthnGeneratedOptionsId, credentialId, credentialsDataString);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -62,7 +62,7 @@ public class WebAuthN {
 
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
-                                             String userVerificitaion, JsonArray supportedAlgorithmIds)
+                                             String userVerification, JsonArray supportedAlgorithmIds)
             throws StorageQueryException {
 
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
@@ -92,7 +92,7 @@ public class WebAuthN {
 
         AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
                 residentKey.equalsIgnoreCase("required"),
-                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerificitaion) );
+                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification) );
 
         AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(attestation);
 

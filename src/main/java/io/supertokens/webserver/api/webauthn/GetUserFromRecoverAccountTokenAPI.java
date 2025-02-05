@@ -84,7 +84,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
             throw new ServletException(e);
         } catch (InvalidTokenException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "INVALID_TOKEN_ERROR");
+            response.addProperty("status", "RECOVER_ACCOUNT_TOKEN_INVALID_ERROR");
             sendJsonResponse(200, response, resp);
         }
     }
