@@ -54,7 +54,7 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
 
             String token = InputParser.parseStringOrThrowError(input, "token", false);
 
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
+            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);

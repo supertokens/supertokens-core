@@ -54,7 +54,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
