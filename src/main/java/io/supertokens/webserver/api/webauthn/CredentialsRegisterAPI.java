@@ -25,6 +25,8 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.WebauthNCredentialResponse;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -52,7 +54,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
@@ -75,8 +77,16 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             throw new ServletException(e);
         } catch (StorageQueryException e) {
             throw new RuntimeException(e);
-        } catch (Exception e) { // TODO: make this more specific
-            throw new RuntimeException(e);
+        } catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNVerificationFailedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
     }
 }

@@ -55,7 +55,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             Storage storage = getTenantStorage(req);
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
+            String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);

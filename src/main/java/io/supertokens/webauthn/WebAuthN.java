@@ -146,7 +146,7 @@ public class WebAuthN {
 
     public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
                                                                  String optionsId, String credentialId, String registrationResponseJson)
-            throws Exception {
+            throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
@@ -154,7 +154,7 @@ public class WebAuthN {
         if(generatedOptions == null) {
             throw new InvalidWebauthNOptionsException("Options not found");
         }
-        
+
         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
                 generatedOptions);
 
