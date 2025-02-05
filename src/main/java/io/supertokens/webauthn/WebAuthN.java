@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.webauthn4j.WebAuthnManager;
+import com.webauthn4j.converter.exception.DataConversionException;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
@@ -182,15 +183,13 @@ public class WebAuthN {
         }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-        RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(
-                registrationResponseJson);
-
-        RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
-
         try {
+            RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(
+                    registrationResponseJson);
+            RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
             return nonStrictWebAuthnManager.verify(registrationData,
                     registrationParameters);
-        } catch (VerificationException e) {
+        } catch (DataConversionException | VerificationException e) {
             throw new WebauthNVerificationFailedException(e.getMessage());
         }
     }
