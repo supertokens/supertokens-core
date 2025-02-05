@@ -49,8 +49,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String token = InputParser.parseStringOrThrowError(input, "token", false);
+        String token = InputParser.getQueryParamOrThrowError(req, "token", false);
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
