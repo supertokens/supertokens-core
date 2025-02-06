@@ -429,7 +429,9 @@ public class WebAuthNQueries {
                         users.get(userId).webauthN.addCredentialId(credentialId);
                         users.get(userId).tenantIds.add(tenantId);
                     } else {
-                        LoginMethod loginMethod = new LoginMethod(userId, timeJoined, emailVerified, email, new LoginMethod.WebAuthN(Collections.singletonList(credentialId)), new String[]{tenantId});
+                        List<String> credentialIds = new ArrayList<>();
+                        credentialIds.add(credentialId);
+                        LoginMethod loginMethod = new LoginMethod(userId, timeJoined, emailVerified, email, new LoginMethod.WebAuthN(credentialIds), new String[]{tenantId});
                         loginMethod.setExternalUserId(externalUserId);
                         users.put(userId, loginMethod);
                     }
