@@ -64,8 +64,11 @@ public class SignInAPI extends WebserverAPI {
             Logging.info(this.main, tenantIdentifier, "SIGN IN CREDENTIALDATA" , true);
             Logging.info(this.main, tenantIdentifier, credentialsDataString, true);
 
+            Logging.info(this.main, tenantIdentifier, "SIGN IN CREDENTIALDATA" , true);
+            Logging.info(this.main, tenantIdentifier, credentialsDataString, true);
+
             WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthGeneratedOptionsId,
-                    credentialsDataString, credentialId);
+                    credentialsData, credentialId);
 
             if (signInResult == null) {
                 throw new ServletException("WebAuthN sign in failed");

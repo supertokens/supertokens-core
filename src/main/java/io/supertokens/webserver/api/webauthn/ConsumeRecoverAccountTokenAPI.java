@@ -16,15 +16,16 @@
 
 package io.supertokens.webserver.api.webauthn;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.WebauthNCredentialResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -54,24 +55,16 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
 
             String token = InputParser.parseStringOrThrowError(input, "token", false);
 
-            String webauthGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
-            JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
-            String credentialsDataString = new Gson().toJson(credentialsData);
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
+            AccountRecoveryTokenInfo recoveryTokenInfo = WebAuthN.consumeRecoverAccountToken(main, tenantIdentifier, storage, token);
+            
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+                    tenantIdentifier.toAppIdentifier(), storage, recoveryTokenInfo.userId, UserIdType.SUPERTOKENS);
 
-            String recipeUserId = WebAuthN.consumeRecoverAccountToken(main, tenantIdentifier, storage, token).userId;
-
-            WebauthNCredentialResponse savedCredential = WebAuthN
-                    .registerCredentials(storage, tenantIdentifier, recipeUserId, credentialId,
-                            webauthGeneratedOptionsId, credentialsDataString);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("webauthnCredentialId", savedCredential.webauthnCredentialId);
-            result.addProperty("recipeUserId", savedCredential.recipeUserId);
-            result.addProperty("email", savedCredential.email);
-            result.addProperty("relyingPartyId", savedCredential.relyingPartyId);
-            result.addProperty("relyingPartyName", savedCredential.relyingPartyName);
+            result.addProperty("userId", userIdMapping == null ? recoveryTokenInfo.userId : userIdMapping.externalUserId);
+            result.addProperty("email", recoveryTokenInfo.email);
 
             super.sendJsonResponse(200, result, resp);
 

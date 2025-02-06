@@ -16,6 +16,7 @@
 
 package io.supertokens.webauthn;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -194,7 +195,7 @@ public class WebAuthN {
         }
     }
 
-    private static AuthenticationData getAuthenticationData(String authenticationResponseJson,
+    private static AuthenticationData getAuthenticationData(JsonObject authenticationResponse,
                                                           WebAuthNOptions generatedOptions,
                                                           WebAuthNStoredCredential storedCredential)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
@@ -207,13 +208,13 @@ public class WebAuthN {
         }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-        AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(authenticationResponseJson);
+        AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(new Gson().toJson(authenticationResponse));
 
         List<byte[]> allowCredentials = null;
         boolean userVerificationRequired = true;
         boolean userPresenceRequired = true;
 
-        WebauthNCredentialRecord credentialRecord = new WebauthNCredentialRecord(storedCredential);
+        WebauthNCredentialRecord credentialRecord = new WebauthNCredentialRecord(storedCredential, authenticationResponse.get("response").getAsJsonObject());
 
         AuthenticationParameters authenticationParameters = new AuthenticationParameters(
                 new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
@@ -305,7 +306,7 @@ public class WebAuthN {
     }
 
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
-                                              String webauthnGeneratedOptionsId, String credentialsDataString,
+                                              String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               String credentialId)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
         try {
@@ -322,7 +323,7 @@ public class WebAuthN {
                         con, credentialId);
 
                 try {
-                    getAuthenticationData(credentialsDataString, generatedOptions, credential);
+                    getAuthenticationData(credentialsData, generatedOptions, credential);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException e) {
                     throw new RuntimeException(e);
                 }
