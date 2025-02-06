@@ -347,6 +347,9 @@ public class WebAuthNQueries {
                     userInfo = AuthRecipeUserInfo.create(userId, false, loginMethod);
                 } else {
                     userInfo.addLoginMethod(loginMethod);
+                    if(!loginMethod.getSupertokensUserId().equals(loginMethod.getSupertokensOrExternalUserId())){
+                        userInfo.setExternalUserId(loginMethod.getSupertokensOrExternalUserId());
+                    }
                 }
             }
         }
@@ -467,12 +470,16 @@ public class WebAuthNQueries {
                 boolean emailVerified = result.getString("email_verified") != null;
                 String externalUserId = result.getString("external_user_id");
                 String tenantId = result.getString("tenant_id");
-                LoginMethod.WebAuthN webAuthNLM = new LoginMethod.WebAuthN(Collections.singletonList(credentialId));
+                List<String> credentialIds = new ArrayList<>();
+                credentialIds.add(credentialId);
+                LoginMethod.WebAuthN webAuthNLM = new LoginMethod.WebAuthN(credentialIds);
                 LoginMethod loginMethod = new LoginMethod(userId, timeJoined, emailVerified, email, webAuthNLM, new String[]{tenantId});
                 if(externalUserId != null) {
                     loginMethod.setExternalUserId(externalUserId);
                 }
-                return AuthRecipeUserInfo.create(userId, false, loginMethod);
+                AuthRecipeUserInfo resultUserInfo = AuthRecipeUserInfo.create(userId, false, loginMethod);
+                resultUserInfo.setExternalUserId(externalUserId);
+                return resultUserInfo;
             }
             return null;
         });

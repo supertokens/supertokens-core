@@ -311,7 +311,7 @@ public class WebAuthN {
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-            webAuthNStorage.startTransaction(con -> {
+            return webAuthNStorage.startTransaction(con -> {
 
                 WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
                         con,
@@ -330,8 +330,6 @@ public class WebAuthN {
                 webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
                 return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
             });
-
-            return null;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new RuntimeException(e);
         } catch (RuntimeException runtimeException) {

@@ -71,7 +71,7 @@ public class SignInAPI extends WebserverAPI {
                     credentialsData, credentialId);
 
             if (signInResult == null) {
-                Logging.info(this.main, tenantIdentifier, "SIGN IN FAILED" , true);
+                Logging.info(this.main, tenantIdentifier, "SIGN IN FAILED signInResult is null" , true);
                 throw new WebauthNVerificationFailedException("WebAuthN sign in failed");
             }
 
@@ -81,6 +81,9 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.add("user", signInResult.userInfo.toJson());
+
+            Logging.info(this.main, tenantIdentifier, "SIGN IN RESULT" , true);
+            Logging.info(this.main, tenantIdentifier, new Gson().toJson(result) , true);
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {
