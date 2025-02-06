@@ -214,7 +214,7 @@ public class WebAuthN {
         boolean userVerificationRequired = true;
         boolean userPresenceRequired = true;
 
-        WebauthNCredentialRecord credentialRecord = new WebauthNCredentialRecord(storedCredential, authenticationResponse.get("response").getAsJsonObject());
+        WebauthNCredentialRecord credentialRecord = WebauthMapper.mapStoredCredentialToCredentialRecord(storedCredential);
 
         AuthenticationParameters authenticationParameters = new AuthenticationParameters(
                 new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
@@ -226,7 +226,7 @@ public class WebAuthN {
                             }
                         }),
                 credentialRecord,
-                allowCredentials,
+                null,
                 userVerificationRequired,
                 userPresenceRequired);
 

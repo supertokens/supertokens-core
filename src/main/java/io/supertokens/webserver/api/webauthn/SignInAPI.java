@@ -71,7 +71,8 @@ public class SignInAPI extends WebserverAPI {
                     credentialsData, credentialId);
 
             if (signInResult == null) {
-                throw new ServletException("WebAuthN sign in failed");
+                Logging.info(this.main, tenantIdentifier, "SIGN IN FAILED" , true);
+                throw new WebauthNVerificationFailedException("WebAuthN sign in failed");
             }
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
@@ -85,11 +86,13 @@ public class SignInAPI extends WebserverAPI {
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (InvalidWebauthNOptionsException e) {
+            Logging.info(this.main, new TenantIdentifier(null, null, null), "INVALID_OPTIONS_ERROR" , true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_OPTIONS_ERROR");
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
+            Logging.info(this.main, new TenantIdentifier(null, null, null), "WEBAUTHN_VERIFICATION_FAILED_ERROR" , true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
             result.addProperty("message", e.getMessage());

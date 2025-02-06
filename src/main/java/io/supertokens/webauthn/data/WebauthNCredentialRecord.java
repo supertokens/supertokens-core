@@ -16,10 +16,10 @@
 
 package io.supertokens.webauthn.data;
 
-import com.google.gson.JsonObject;
 import com.webauthn4j.credential.CredentialRecord;
 import com.webauthn4j.data.attestation.authenticator.AAGUID;
 import com.webauthn4j.data.attestation.authenticator.AttestedCredentialData;
+import com.webauthn4j.data.attestation.authenticator.COSEKey;
 import com.webauthn4j.data.client.CollectedClientData;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import org.jetbrains.annotations.NotNull;
@@ -27,12 +27,17 @@ import org.jetbrains.annotations.Nullable;
 
 public class WebauthNCredentialRecord implements CredentialRecord {
 
-    private WebAuthNStoredCredential storedCredential;
-    private JsonObject credentialResponse;
+    private AAGUID aaguid;
+    private byte[] credentialId;
+    private COSEKey coseKey;
 
-    public WebauthNCredentialRecord(WebAuthNStoredCredential storedCredential, JsonObject credentialResponse) {
+    private WebAuthNStoredCredential storedCredential;
+
+    public WebauthNCredentialRecord(AAGUID aaguid, byte[] credentialId, COSEKey coseKey, WebAuthNStoredCredential storedCredential) {
+        this.aaguid = aaguid;
+        this.credentialId = credentialId;
+        this.coseKey = coseKey;
         this.storedCredential = storedCredential;
-        this.credentialResponse = credentialResponse;
     }
     @Override
     public @Nullable CollectedClientData getClientData() {
@@ -74,7 +79,7 @@ public class WebauthNCredentialRecord implements CredentialRecord {
 
     @Override
     public @NotNull AttestedCredentialData getAttestedCredentialData() {
-        return new AttestedCredentialData(new AAGUID(credentialResponse.get("id").getAsString()), storedCredential.publicKey, null);
+        return new AttestedCredentialData(aaguid, credentialId, coseKey);
     }
 
     @Override

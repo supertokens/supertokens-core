@@ -56,7 +56,7 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
             String token = InputParser.parseStringOrThrowError(input, "token", false);
 
             AccountRecoveryTokenInfo recoveryTokenInfo = WebAuthN.consumeRecoverAccountToken(main, tenantIdentifier, storage, token);
-            
+
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
                     tenantIdentifier.toAppIdentifier(), storage, recoveryTokenInfo.userId, UserIdType.SUPERTOKENS);
 

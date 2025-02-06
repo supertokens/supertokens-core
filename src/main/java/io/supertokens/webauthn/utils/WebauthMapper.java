@@ -22,11 +22,14 @@ import com.google.gson.JsonPrimitive;
 import com.webauthn4j.converter.AttestedCredentialDataConverter;
 import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
+import com.webauthn4j.data.attestation.authenticator.AttestedCredentialData;
+import com.webauthn4j.data.attestation.authenticator.COSEKey;
 import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebauthNCredentialResponse;
+import io.supertokens.webauthn.data.WebauthNCredentialRecord;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -56,6 +59,15 @@ public class WebauthMapper {
         storedCredential.updatedAt = storedCredential.createdAt;
 
         return storedCredential;
+    }
+
+    public static WebauthNCredentialRecord mapStoredCredentialToCredentialRecord(WebAuthNStoredCredential credential){
+        ObjectConverter objectConverter = new ObjectConverter();
+        AttestedCredentialDataConverter attestedCredentialDataConverter = new AttestedCredentialDataConverter(
+                objectConverter);
+        AttestedCredentialData attestedCredentialData = attestedCredentialDataConverter.convert(credential.publicKey);
+        COSEKey coseKey = attestedCredentialData.getCOSEKey();
+        return new WebauthNCredentialRecord(attestedCredentialData.getAaguid(), attestedCredentialData.getCredentialId(), coseKey, credential);
     }
 
     public static JsonObject createResponseFromOptions(PublicKeyCredentialCreationOptions options, String id,
