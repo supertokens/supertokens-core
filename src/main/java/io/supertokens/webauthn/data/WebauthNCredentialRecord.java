@@ -84,7 +84,8 @@ public class WebauthNCredentialRecord implements CredentialRecord {
 
     @Override
     public long getCounter() {
-        return storedCredential.counter;
+        //return storedCredential.counter;
+        return 0;
     }
 
     @Override
