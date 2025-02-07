@@ -42,7 +42,7 @@ public class ListCredentialsAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/user/credentials";
+        return "/recipe/webauthn/user/credential/list";
     }
 
     @Override
