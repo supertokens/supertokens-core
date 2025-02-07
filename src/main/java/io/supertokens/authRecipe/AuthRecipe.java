@@ -25,7 +25,9 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.*;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -593,11 +595,27 @@ public class AuthRecipe {
         }
     }
 
+    //TODO: revisit this when writing tests!
+    @TestOnly
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
                                                              Storage storage,
                                                              boolean doUnionOfAccountInfo, String email,
                                                              String phoneNumber, String thirdPartyId,
-                                                             String thirdPartyUserId)
+                                                             String thirdPartyUserId) throws StorageQueryException {
+        return getUsersByAccountInfo(tenantIdentifier,
+                storage,
+                doUnionOfAccountInfo, email,
+                phoneNumber, thirdPartyId,
+                thirdPartyUserId,
+                null);
+    }
+
+    public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
+                                                             Storage storage,
+                                                             boolean doUnionOfAccountInfo, String email,
+                                                             String phoneNumber, String thirdPartyId,
+                                                             String thirdPartyUserId,
+                                                             String webauthnCredentialId)
             throws StorageQueryException {
         Set<AuthRecipeUserInfo> result = new HashSet<>();
 
@@ -614,6 +632,14 @@ public class AuthRecipe {
         if (thirdPartyId != null && thirdPartyUserId != null) {
             AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                     .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
+            if (user != null) {
+                result.add(user);
+            }
+        }
+
+        if(webauthnCredentialId != null){
+            AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
+                    .getPrimaryUserByWebauthNCredentialId(tenantIdentifier, webauthnCredentialId);
             if (user != null) {
                 result.add(user);
             }

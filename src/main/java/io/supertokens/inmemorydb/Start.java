@@ -1293,6 +1293,17 @@ public class Start
     }
 
     @Override
+    public AuthRecipeUserInfo getPrimaryUserByWebauthNCredentialId(TenantIdentifier tenantIdentifier,
+                                                                   String webauthNCredentialId)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.getPrimaryUserByWebauthNCredentialId(this, tenantIdentifier, webauthNCredentialId);
+        } catch (SQLException | StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo getPrimaryUserByThirdPartyInfo(TenantIdentifier tenantIdentifier, String thirdPartyId,
                                                              String thirdPartyUserId) throws StorageQueryException {
         try {

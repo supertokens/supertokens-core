@@ -394,7 +394,7 @@ public class WebAuthN {
             StorageQueryException {
         // find the recipe user with the email
         AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifier, storage, true, email, null,
-                null, null);
+                null, null, null);
 
         String userId = null;
 

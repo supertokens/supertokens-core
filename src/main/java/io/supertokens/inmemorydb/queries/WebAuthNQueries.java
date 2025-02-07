@@ -356,21 +356,36 @@ public class WebAuthNQueries {
         return userInfo;
     }
 
-    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+    public static String getPrimaryUserIdUsingEmail(Start start, AppIdentifier appIdentifier, String email)
+            throws StorageQueryException {
+        try {
+            return start.startTransaction(con -> {
+                try {
+                    Connection sqlConnection = (Connection) con.getConnection();
+                    return getPrimaryUserIdUsingEmail_Transaction(start, sqlConnection, appIdentifier, email);
+                } catch (SQLException e) {
+                    throw new StorageQueryException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    public static String getPrimaryUserIdUsingEmail_Transaction(Start start, Connection sqlConnection, AppIdentifier appIdentifier, String email)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
                 " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
                 " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
-                " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
+                " WHERE ep.app_id = ? AND ep.email = ?";
 
-        return execute(start, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, tenantIdentifier.getTenantId());
-            pst.setString(3, email);
+        return execute(sqlConnection, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
         }, result -> {
             if (result.next()) {
-                return result.getString("user_id");
+                 return result.getString("user_id");
             }
             return null;
         });
@@ -459,7 +474,7 @@ public class WebAuthNQueries {
                 "LEFT JOIN " + getConfig(start).getEmailVerificationTable() + " as email_verification ON webauthn.app_id = email_verification.app_id AND user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id " +
                 "WHERE webauthn.app_id = ? AND credentials.id = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(sqlCon, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, credentialId);
         }, result -> {

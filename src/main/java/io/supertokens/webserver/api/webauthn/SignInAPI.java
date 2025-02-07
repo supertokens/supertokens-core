@@ -81,7 +81,9 @@ public class SignInAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("user", signInResult.userInfo.toJson());
             for (LoginMethod loginMethod : signInResult.userInfo.loginMethods) {
-                if (loginMethod.recipeId.equals(RECIPE_ID.WEBAUTHN) && loginMethod.webauthN != null &&
+                if (loginMethod.recipeId.equals(RECIPE_ID.WEBAUTHN) &&
+                        loginMethod.webauthN != null &&
+                        loginMethod.webauthN.credentialIds != null &&
                         loginMethod.webauthN.credentialIds.contains(credentialId)) {
                     result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                     break;

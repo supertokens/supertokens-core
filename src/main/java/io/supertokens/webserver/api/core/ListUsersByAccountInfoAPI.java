@@ -16,10 +16,12 @@
 
 package io.supertokens.webserver.api.core;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -54,6 +56,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
                 InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
         String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", true);
         String thirdPartyUserId = InputParser.getQueryParamOrThrowError(req, "thirdPartyUserId", true);
+        String webauthnCredentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", true);
 
         String doUnionOfAccountInfoStr = InputParser.getQueryParamOrThrowError(req, "doUnionOfAccountInfo", false);
         if (!(doUnionOfAccountInfoStr.equals("false") || doUnionOfAccountInfoStr.equals("true"))) {
@@ -77,7 +80,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             Storage storage = this.getTenantStorage(req);
             AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
                     tenantIdentifier, storage, doUnionOfAccountInfo, email, phoneNumber, thirdPartyId,
-                    thirdPartyUserId);
+                    thirdPartyUserId, webauthnCredentialId);
             UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, users);
 
             JsonObject result = new JsonObject();
@@ -88,6 +91,10 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             }
 
             result.add("users", usersJson);
+
+            Logging.info(main, tenantIdentifier, "ListUsersByAccountInfoAPI - credentialId is " + webauthnCredentialId, true);
+            Logging.info(main, tenantIdentifier, new Gson().toJson(result), true);
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
