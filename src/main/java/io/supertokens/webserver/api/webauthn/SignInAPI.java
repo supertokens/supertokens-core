@@ -21,7 +21,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
@@ -64,9 +66,6 @@ public class SignInAPI extends WebserverAPI {
             Logging.info(this.main, tenantIdentifier, "SIGN IN CREDENTIALDATA" , true);
             Logging.info(this.main, tenantIdentifier, credentialsDataString, true);
 
-            Logging.info(this.main, tenantIdentifier, "SIGN IN CREDENTIALDATA" , true);
-            Logging.info(this.main, tenantIdentifier, credentialsDataString, true);
-
             WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthGeneratedOptionsId,
                     credentialsData, credentialId);
 
@@ -81,6 +80,13 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.add("user", signInResult.userInfo.toJson());
+            for (LoginMethod loginMethod : signInResult.userInfo.loginMethods) {
+                if (loginMethod.recipeId.equals(RECIPE_ID.WEBAUTHN) && loginMethod.webauthN != null &&
+                        loginMethod.webauthN.credentialIds.contains(credentialId)) {
+                    result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                    break;
+                }
+            }
 
             Logging.info(this.main, tenantIdentifier, "SIGN IN RESULT" , true);
             Logging.info(this.main, tenantIdentifier, new Gson().toJson(result) , true);
