@@ -71,18 +71,18 @@ public class OptionsRegisterAPI extends WebserverAPI {
             }
 
             String attestation = InputParser.parseStringOrThrowError(input, "attestation", true);
-            if(attestation == null || attestation.equals("")){
+            if(attestation == null || attestation.isEmpty()){
                 attestation = "none";
             }
 
             String residentKey = InputParser.parseStringOrThrowError(input, "residentKey", true);
-            if(residentKey == null || residentKey.equals("")){
+            if(residentKey == null || residentKey.isEmpty()){
                 residentKey = "required";
             }
 
-            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerificitaion", true);
-            if(userVerificitaion == null || userVerificitaion.equals("")){
-                userVerificitaion = "preferred";
+            String userVerification = InputParser.parseStringOrThrowError(input, "userVerification", true);
+            if(userVerification == null || userVerification.isEmpty()){
+                userVerification = "preferred";
             }
 
             JsonArray supportedAlgorithmIds = InputParser.parseArrayOrThrowError(input, "supportedAlgorithmIDs", true);
@@ -98,7 +98,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
             }
 
             JsonObject response = WebAuthN.generateOptions(tenantIdentifier, storage, email, displayName, relyingPartyName, relyingPartyId, origin, timeout, attestation, residentKey,
-                    userVerificitaion, supportedAlgorithmIds);
+                    userVerification, supportedAlgorithmIds);
 
 
             response.addProperty("status", "OK");

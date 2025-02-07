@@ -211,8 +211,8 @@ public class WebAuthN {
         AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(new Gson().toJson(authenticationResponse));
 
         List<byte[]> allowCredentials = null;
-        boolean userVerificationRequired = true;
-        boolean userPresenceRequired = true;
+        boolean userVerificationRequired = true; //should be part of the options
+        boolean userPresenceRequired = true; //should be part of the options
 
         WebauthNCredentialRecord credentialRecord = WebauthMapper.mapStoredCredentialToCredentialRecord(storedCredential);
 
@@ -352,7 +352,7 @@ public class WebAuthN {
     @NotNull
     private static RegistrationParameters getRegistrationParameters(WebAuthNOptions generatedOptions) {
         List<PublicKeyCredentialParameters> pubKeyCredParams = null; //TODO: Specify the same value as the pubKeyCredParams provided in PublicKeyCredentialCreationOptions
-        boolean userVerificationRequired = false;
+        boolean userVerificationRequired = true;
         boolean userPresenceRequired = true;
 
         RegistrationParameters registrationParameters = new RegistrationParameters(

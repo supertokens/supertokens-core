@@ -62,14 +62,14 @@ public class SignInOptionsAPI extends WebserverAPI {
                 timeout = 6000L;
             }
 
-            String userVerificitaion = InputParser.parseStringOrThrowError(input, "userVerification", true);
-            if(userVerificitaion == null || userVerificitaion.equals("")){
-                userVerificitaion = "preferred";
+            String userVerification = InputParser.parseStringOrThrowError(input, "userVerification", true);
+            if(userVerification == null || userVerification.equals("")){
+                userVerification = "preferred";
             }
 
 
             JsonObject response = WebAuthN.generateSignInOptions(tenantIdentifier, storage, relyingPartyId, relyingPartyName, origin, timeout,
-                    userVerificitaion);
+                    userVerification);
 
 
             response.addProperty("status", "OK");

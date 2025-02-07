@@ -104,6 +104,7 @@ public class SignInAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             Logging.info(this.main, new TenantIdentifier(null, null, null), "WEBAUTHN_VERIFICATION_FAILED_ERROR" , true);
+            Logging.info(this.main, new TenantIdentifier(null, null, null), e.getMessage() , true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
             result.addProperty("message", e.getMessage());
