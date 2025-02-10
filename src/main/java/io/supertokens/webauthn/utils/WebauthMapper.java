@@ -28,8 +28,8 @@ import com.webauthn4j.data.client.challenge.Challenge;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
-import io.supertokens.webauthn.WebauthNCredentialResponse;
 import io.supertokens.webauthn.data.WebauthNCredentialRecord;
+import io.supertokens.webauthn.data.WebauthNCredentialResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

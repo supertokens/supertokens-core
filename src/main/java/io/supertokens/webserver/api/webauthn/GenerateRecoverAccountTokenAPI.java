@@ -62,7 +62,7 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
             sendJsonResponse(200, response, resp);
         } catch (WebAuthNEmailNotFoundException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "WEBAUTHN_USER_WITH_EMAIL_NOT_FOUND_ERROR");
+            response.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, response, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | NoSuchAlgorithmException |
                  InvalidKeySpecException e) {

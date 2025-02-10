@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.InvalidTokenException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -33,6 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
 
@@ -69,10 +71,12 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | NoSuchAlgorithmException | StorageQueryException e) {
             throw new ServletException(e);
-        } catch (Exception e) { // TODO be more specific
-            throw new ServletException(e);
+        } catch (InvalidTokenException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "RECOVER_ACCOUNT_TOKEN_INVALID_ERROR");
+            sendJsonResponse(200, result, resp);
         }
     }
 }

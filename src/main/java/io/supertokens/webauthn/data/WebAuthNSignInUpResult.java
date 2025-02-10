@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webauthn;
+package io.supertokens.webauthn.data;
 
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;

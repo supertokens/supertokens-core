@@ -112,7 +112,7 @@ public class WebAuthNFlowTest {
         System.out.println();
         System.out.println(signUpRequestBody);
 
-        AuthRecipeUserInfo userInfo = WebAuthN.saveUser(StorageLayer.getStorage(process.getProcess()), tenantIdentifier, "anyadpicsaja@email.com", credentialId);
+        AuthRecipeUserInfo userInfo = WebAuthN.saveUser(StorageLayer.getStorage(process.getProcess()), tenantIdentifier, "testing@email.com", credentialId, "test.com");
 
 //        JsonObject signupResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
 //                "http://localhost:3567/recipe/webauthn/signup",

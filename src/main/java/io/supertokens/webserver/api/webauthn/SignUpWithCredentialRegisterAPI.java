@@ -22,11 +22,12 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.WebAuthNSignInUpResult;
+import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
@@ -81,7 +82,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, result, resp);
         } catch (
-                TenantOrAppNotFoundException e) {
+                TenantOrAppNotFoundException | StorageQueryException  e) {
             throw new ServletException(e);
         } catch (InvalidWebauthNOptionsException e) {
             JsonObject result = new JsonObject();
@@ -94,7 +95,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
+            result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         }

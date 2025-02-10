@@ -14,13 +14,10 @@
  *    under the License.
  */
 
-package io.supertokens.webauthn;
+package io.supertokens.webauthn.exception;
 
-public class WebauthNCredentialResponse {
-    public String webauthnCredentialId;
-    public String recipeUserId;
-    public String email;
-    public String relyingPartyId;
-    public String relyingPartyName;
-    public Long createdAt;
+public class WebauthNOptionsNotFoundException extends Exception {
+    public WebauthNOptionsNotFoundException(String message) {
+        super(message);
+    }
 }

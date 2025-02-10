@@ -24,8 +24,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.WebauthNCredentialResponse;
+import io.supertokens.webauthn.data.WebauthNCredentialResponse;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNInvalidFormatException;
+import io.supertokens.webauthn.exception.WebauthNOptionsNotFoundException;
 import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -79,12 +81,22 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             throw new RuntimeException(e);
         } catch (InvalidWebauthNOptionsException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("status", "INVALID_GENERATED_OPTIONS_ERROR");
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "WEBAUTHN_VERIFICATION_FAILED_ERROR");
+            result.addProperty("status", "INVALID_CREDENTIALS_ERROR"); // I think not this
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNInvalidFormatException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNOptionsNotFoundException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "GENERATED_OPTIONS_NOT_FOUND_ERROR");
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         }

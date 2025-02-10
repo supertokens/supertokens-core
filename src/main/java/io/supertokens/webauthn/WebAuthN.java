@@ -43,13 +43,13 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.webauthn.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
+import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.data.WebauthNCredentialRecord;
-import io.supertokens.webauthn.exception.InvalidTokenException;
-import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
-import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
-import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
+import io.supertokens.webauthn.data.WebauthNCredentialResponse;
+import io.supertokens.webauthn.exception.*;
 import io.supertokens.webauthn.utils.WebauthMapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -148,13 +148,14 @@ public class WebAuthN {
 
     public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
                                                                  String optionsId, String credentialId, String registrationResponseJson)
-            throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException {
+            throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
+            WebauthNInvalidFormatException, WebauthNOptionsNotFoundException {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
 
         if(generatedOptions == null) {
-            throw new InvalidWebauthNOptionsException("Options not found");
+            throw new WebauthNOptionsNotFoundException("Options not found");
         }
 
         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
@@ -174,7 +175,8 @@ public class WebAuthN {
     @NotNull
     private static RegistrationData getRegistrationData(String registrationResponseJson,
                                                         WebAuthNOptions generatedOptions)
-            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
+            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
+            WebauthNInvalidFormatException {
         long now = System.currentTimeMillis();
         if(generatedOptions.expiresAt < now) {
             throw new InvalidWebauthNOptionsException("Options expired");
@@ -190,15 +192,18 @@ public class WebAuthN {
             RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
             return nonStrictWebAuthnManager.verify(registrationData,
                     registrationParameters);
-        } catch (DataConversionException | VerificationException e) {
+        } catch ( VerificationException e) {
             throw new WebauthNVerificationFailedException(e.getMessage());
+        } catch (DataConversionException e) {
+            throw new WebauthNInvalidFormatException(e.getMessage());
         }
     }
 
     private static AuthenticationData getAuthenticationData(JsonObject authenticationResponse,
                                                           WebAuthNOptions generatedOptions,
                                                           WebAuthNStoredCredential storedCredential)
-            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
+            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
+            WebauthNInvalidFormatException {
         long now = System.currentTimeMillis();
         if(generatedOptions.expiresAt < now) {
             throw new InvalidWebauthNOptionsException("Options expired");
@@ -208,38 +213,40 @@ public class WebAuthN {
         }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-        AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(new Gson().toJson(authenticationResponse));
-
-        List<byte[]> allowCredentials = null;
-        boolean userVerificationRequired = generatedOptions.userVerification.equalsIgnoreCase("required");
-        boolean userPresenceRequired = generatedOptions.userPresenceRequired;
-
-        WebauthNCredentialRecord credentialRecord = WebauthMapper.mapStoredCredentialToCredentialRecord(storedCredential);
-
-        AuthenticationParameters authenticationParameters = new AuthenticationParameters(
-                new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
-                        new Challenge() {
-                            @NotNull
-                            @Override
-                            public byte[] getValue() {
-                                return Base64.getUrlDecoder().decode(generatedOptions.challenge);
-                            }
-                        }),
-                credentialRecord,
-                null,
-                userVerificationRequired,
-                userPresenceRequired);
-
         try {
+            AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(new Gson().toJson(authenticationResponse));
+
+            List<byte[]> allowCredentials = null;
+            boolean userVerificationRequired = generatedOptions.userVerification.equalsIgnoreCase("required");
+            boolean userPresenceRequired = generatedOptions.userPresenceRequired;
+
+            WebauthNCredentialRecord credentialRecord = WebauthMapper.mapStoredCredentialToCredentialRecord(storedCredential);
+
+            AuthenticationParameters authenticationParameters = new AuthenticationParameters(
+                    new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
+                            new Challenge() {
+                                @NotNull
+                                @Override
+                                public byte[] getValue() {
+                                    return Base64.getUrlDecoder().decode(generatedOptions.challenge);
+                                }
+                            }),
+                    credentialRecord,
+                    null,
+                    userVerificationRequired,
+                    userPresenceRequired);
+
             return nonStrictWebAuthnManager.verify(authenticationData, authenticationParameters);
         } catch (VerificationException e) {
             throw new WebauthNVerificationFailedException(e.getMessage());
+        } catch (DataConversionException e) {
+            throw new WebauthNInvalidFormatException(e.getMessage());
         }
     }
 
     public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
                                                 String optionsId, String credentialId, String registrationResponseJson)
-            throws InvalidWebauthNOptionsException, DuplicateUserEmailException, WebauthNVerificationFailedException {
+            throws InvalidWebauthNOptionsException, DuplicateUserEmailException, WebauthNVerificationFailedException, StorageQueryException {
         // create a new user in the auth recipe storage
         // create new credentials
         // all within a transaction
@@ -270,45 +277,59 @@ public class WebAuthN {
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (InvalidWebauthNOptionsException | TenantOrAppNotFoundException |
-                             DuplicateUserEmailException | WebauthNVerificationFailedException e) {
-                        throw new RuntimeException(e);
+                             DuplicateUserEmailException | WebauthNVerificationFailedException |
+                             WebauthNInvalidFormatException e) {
+                        throw new StorageQueryException(e);
                     }
                 }
             });
 
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
-            throw new RuntimeException(e);
-        } catch (RuntimeException runtimeException) {
-            if (runtimeException.getCause() instanceof InvalidWebauthNOptionsException) {
-                throw (InvalidWebauthNOptionsException) runtimeException.getCause();
-            } else if (runtimeException.getCause() instanceof DuplicateUserEmailException) {
-                throw (DuplicateUserEmailException) runtimeException.getCause();
-            } else if (runtimeException.getCause() instanceof WebauthNVerificationFailedException) {
-                throw (WebauthNVerificationFailedException) runtimeException.getCause();
+        } catch (StorageQueryException exception) {
+            if (exception.getCause() instanceof InvalidWebauthNOptionsException) {
+                throw (InvalidWebauthNOptionsException) exception.getCause();
+            } else if (exception.getCause() instanceof DuplicateUserEmailException) {
+                throw (DuplicateUserEmailException) exception.getCause();
+            } else if (exception.getCause() instanceof WebauthNVerificationFailedException) {
+                throw (WebauthNVerificationFailedException) exception.getCause();
             } else {
-                throw runtimeException;
+                throw exception;
             }
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
         }
     }
-        public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId) {
+
+    @TestOnly
+    public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId, String rpId)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateUserEmailException,
+            DuplicateUserIdException {
         WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         try {
             return webAuthNStorage.startTransaction(con -> {
                 try {
-                    return webAuthNStorage.signUp_Transaction(tenantIdentifier, con, userId, email, "test.com");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    return webAuthNStorage.signUp_Transaction(tenantIdentifier, con, userId, email, rpId);
+                } catch (TenantOrAppNotFoundException | DuplicateUserEmailException | DuplicateUserIdException e) {
+                    throw new StorageTransactionLogicException(e);
                 }
             });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (StorageTransactionLogicException  e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            } else if (e.actualException instanceof DuplicateUserEmailException) {
+                throw (DuplicateUserEmailException) e.actualException;
+            } else if (e.actualException instanceof DuplicateUserIdException) {
+                throw (DuplicateUserIdException) e.actualException;
+            } else {
+                throw new StorageQueryException(e.actualException);
+            }
         }
     }
 
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
                                               String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               String credentialId)
-            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException {
+            throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
+            WebauthNInvalidFormatException, StorageQueryException {
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
             return webAuthNStorage.startTransaction(con -> {
@@ -324,21 +345,22 @@ public class WebAuthN {
 
                 try {
                     getAuthenticationData(credentialsData, generatedOptions, credential);
-                } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException e) {
-                    throw new RuntimeException(e);
+                } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
+                         WebauthNInvalidFormatException e) {
+                    throw new StorageTransactionLogicException(e);
                 }
                 webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
                 return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
             });
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
-            throw new RuntimeException(e);
-        } catch (RuntimeException runtimeException) {
-            if (runtimeException.getCause() instanceof InvalidWebauthNOptionsException) {
-                throw (InvalidWebauthNOptionsException) runtimeException.getCause();
-            } else if (runtimeException.getCause() instanceof WebauthNVerificationFailedException) {
-                throw (WebauthNVerificationFailedException) runtimeException.getCause();
+        } catch (StorageTransactionLogicException e) {
+            if (e.getCause() instanceof InvalidWebauthNOptionsException) {
+                throw (InvalidWebauthNOptionsException) e.getCause();
+            } else if (e.getCause() instanceof WebauthNVerificationFailedException) {
+                throw (WebauthNVerificationFailedException) e.getCause();
+            } else if (e.getCause() instanceof WebauthNInvalidFormatException) {
+                throw (WebauthNInvalidFormatException) e.getCause();
             } else {
-                throw runtimeException;
+                throw new StorageQueryException(e);
             }
         }
     }
