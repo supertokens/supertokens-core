@@ -64,7 +64,7 @@ public class WebAuthN {
 
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
-                                             String userVerification, JsonArray supportedAlgorithmIds)
+                                             String userVerification, JsonArray supportedAlgorithmIds, boolean userPresenceRequired)
             throws StorageQueryException {
 
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
@@ -94,7 +94,7 @@ public class WebAuthN {
 
         AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
                 residentKey.equalsIgnoreCase("required"),
-                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification) );
+                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification));
 
         AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(attestation);
 
@@ -105,7 +105,7 @@ public class WebAuthN {
 
 
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
-                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId);
+                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId, userVerification, userPresenceRequired);
 
         return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
                 savedOptions.expiresAt, savedOptions.userEmail);
@@ -113,7 +113,7 @@ public class WebAuthN {
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
                                                    String relyingPartyId, String relyingPartyName, String origin, Long timeout,
-                                                   String userVerification)
+                                                   String userVerification, boolean userPresenceRequired)
             throws StorageQueryException, UserIdNotFoundException {
 
         Challenge challenge = getChallenge();
@@ -121,7 +121,7 @@ public class WebAuthN {
         String optionsId = Utils.getUUID();
 
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
-                null, optionsId);
+                null, optionsId, userVerification, userPresenceRequired);
 
         return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt);
     }
@@ -211,8 +211,8 @@ public class WebAuthN {
         AuthenticationData authenticationData = nonStrictWebAuthnManager.parseAuthenticationResponseJSON(new Gson().toJson(authenticationResponse));
 
         List<byte[]> allowCredentials = null;
-        boolean userVerificationRequired = false; //should be part of the options
-        boolean userPresenceRequired = false; //should be part of the options
+        boolean userVerificationRequired = generatedOptions.userVerification.equalsIgnoreCase("required");
+        boolean userPresenceRequired = generatedOptions.userPresenceRequired;
 
         WebauthNCredentialRecord credentialRecord = WebauthMapper.mapStoredCredentialToCredentialRecord(storedCredential);
 
@@ -351,9 +351,9 @@ public class WebAuthN {
 
     @NotNull
     private static RegistrationParameters getRegistrationParameters(WebAuthNOptions generatedOptions) {
-        List<PublicKeyCredentialParameters> pubKeyCredParams = null; //TODO: Specify the same value as the pubKeyCredParams provided in PublicKeyCredentialCreationOptions
-        boolean userVerificationRequired = false;
-        boolean userPresenceRequired = false;
+        List<PublicKeyCredentialParameters> pubKeyCredParams = null;
+        boolean userVerificationRequired = generatedOptions.userVerification.equalsIgnoreCase("required");
+        boolean userPresenceRequired = generatedOptions.userPresenceRequired;
 
         RegistrationParameters registrationParameters = new RegistrationParameters(
                 new ServerProperty(new Origin(generatedOptions.origin), generatedOptions.relyingPartyId,
@@ -372,7 +372,8 @@ public class WebAuthN {
     }
 
     private static WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, Storage storage, Challenge challenge,
-            Long timeout, String relyingPartyId, String relyingPartyName, String origin, String userEmail, String id)
+            Long timeout, String relyingPartyId, String relyingPartyName, String origin, String userEmail, String id,
+                                                        String userVerification, boolean userPresenceRequired)
             throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions savableOptions = new WebAuthNOptions();
@@ -385,6 +386,8 @@ public class WebAuthN {
         savableOptions.relyingPartyId = relyingPartyId;
         savableOptions.relyingPartyName = relyingPartyName;
         savableOptions.userEmail = userEmail;
+        savableOptions.userVerification = userVerification;
+        savableOptions.userPresenceRequired = userPresenceRequired;
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
 

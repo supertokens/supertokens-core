@@ -82,6 +82,8 @@ public class WebAuthNQueries {
                 " origin VARCHAR(256) NOT NULL," +
                 " expires_at BIGINT UNSIGNED NOT NULL," +
                 " created_at BIGINT UNSIGNED NOT NULL," +
+                " user_presence_required BOOLEAN DEFAULT FALSE NOT NULL," +
+                " user_verification VARCHAR(12) DEFAULT `preferred` NOT NULL," +
                 " CONSTRAINT webauthn_user_challenges_pkey PRIMARY KEY (app_id, tenant_id, id)," +
                 " CONSTRAINT webauthn_user_challenges_tenant_id_fkey FOREIGN KEY (app_id, tenant_id) " +
                 "  REFERENCES " + Config.getConfig(start).getTenantsTable() + " (app_id, tenant_id) ON DELETE CASCADE" +
@@ -146,8 +148,8 @@ public class WebAuthNQueries {
     public static WebAuthNOptions saveOptions(Start start, TenantIdentifier tenantIdentifier, WebAuthNOptions options)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
-                + " (app_id, tenant_id, id, challenge, email, rp_id, origin, expires_at, created_at, rp_name) "
-                + " VALUES (?,?,?,?,?,?,?,?,?, ?);";
+                + " (app_id, tenant_id, id, challenge, email, rp_id, origin, expires_at, created_at, rp_name, user_verification, user_presence_required) "
+                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?);";
 
         update(start, INSERT, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -160,6 +162,8 @@ public class WebAuthNQueries {
             pst.setLong(8, options.expiresAt);
             pst.setLong(9, options.createdAt);
             pst.setString(10, options.relyingPartyName);
+            pst.setString(11, options.userVerification);
+            pst.setBoolean(12, options.userPresenceRequired);
         });
 
         return options;
@@ -645,6 +649,8 @@ public class WebAuthNQueries {
             result.userEmail = rs.getString("email");
             result.generatedOptionsId = rs.getString("id");
             result.relyingPartyName = rs.getString("rp_name");
+            result.userPresenceRequired = rs.getBoolean("user_presence_required");
+            result.userVerification = rs.getString("user_verification");
             return result;
         }
     }

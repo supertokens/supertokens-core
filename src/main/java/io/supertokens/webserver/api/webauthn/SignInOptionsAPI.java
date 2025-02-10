@@ -63,13 +63,18 @@ public class SignInOptionsAPI extends WebserverAPI {
             }
 
             String userVerification = InputParser.parseStringOrThrowError(input, "userVerification", true);
-            if(userVerification == null || userVerification.equals("")){
+            if(userVerification == null || userVerification.isEmpty()){
                 userVerification = "preferred";
+            }
+
+            Boolean userPresence = InputParser.parseBooleanOrThrowError(input, "userPresence", true);
+            if(userPresence == null){
+                userPresence = Boolean.FALSE;
             }
 
 
             JsonObject response = WebAuthN.generateSignInOptions(tenantIdentifier, storage, relyingPartyId, relyingPartyName, origin, timeout,
-                    userVerification);
+                    userVerification, userPresence);
 
 
             response.addProperty("status", "OK");

@@ -85,6 +85,11 @@ public class OptionsRegisterAPI extends WebserverAPI {
                 userVerification = "preferred";
             }
 
+            Boolean userPresence = InputParser.parseBooleanOrThrowError(input, "userPresence", true);
+            if(userPresence == null){
+                userPresence = Boolean.FALSE;
+            }
+
             JsonArray supportedAlgorithmIds = InputParser.parseArrayOrThrowError(input, "supportedAlgorithmIDs", true);
             if(supportedAlgorithmIds == null || supportedAlgorithmIds.isJsonNull()) {
                 supportedAlgorithmIds = new JsonArray();
@@ -98,7 +103,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
             }
 
             JsonObject response = WebAuthN.generateOptions(tenantIdentifier, storage, email, displayName, relyingPartyName, relyingPartyId, origin, timeout, attestation, residentKey,
-                    userVerification, supportedAlgorithmIds);
+                    userVerification, supportedAlgorithmIds, userPresence);
 
 
             response.addProperty("status", "OK");
