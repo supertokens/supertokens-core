@@ -1,0 +1,145 @@
+{
+  "users": [
+    {
+      "id": "5e1ea023-8787-4c38-8409-ea0b0230662e",
+      "externalUserId": "b263cfe8-f27f-4264-a405-de1527906fb7",
+      "userMetadata": {
+        "key1": "value1",
+        "key2": {
+          "key3": "value3"
+        }
+      },
+      "userRoles": [],
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": true,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "emailpassword",
+          "email": "user0@example.com",
+          "passwordHash": "$2a",
+          "hashingAlgorithm": "BCRYPT"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "thirdparty",
+          "email": "user0@example.com",
+          "thirdPartyId": "thirdPartyId0",
+          "thirdPartyUserId": "thirdPartyUserId0"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "passwordless",
+          "email": "user0@example.com"
+        }
+      ]
+    },
+    {
+      "id": "2e66fcec-09ea-4cd3-ad4f-817099872b5c",
+      "externalUserId": "0afd9119-d613-43e6-82a0-556d93d61421",
+      "userMetadata": {
+        "key1": "value1",
+        "key2": {
+          "key3": "value3"
+        }
+      },
+      "userRoles": [],
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": true,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "emailpassword",
+          "email": "user1@example.com",
+          "passwordHash": "$2a",
+          "hashingAlgorithm": "BCRYPT"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "thirdparty",
+          "email": "user1@example.com",
+          "thirdPartyId": "thirdPartyId1",
+          "thirdPartyUserId": "thirdPartyUserId1"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "passwordless",
+          "email": "user1@example.com"
+        }
+      ]
+    },
+    {
+      "id": "a9c828d1-a8db-4eb3-8e0a-1c985dba9fc9",
+      "externalUserId": "5a6fccfb-5778-40b1-be1c-2d8c25421253",
+      "userMetadata": {
+        "key1": "value1",
+        "key2": {
+          "key3": "value3"
+        }
+      },
+      "userRoles": [],
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": true,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "emailpassword",
+          "email": "user2@example.com",
+          "passwordHash": "$2a",
+          "hashingAlgorithm": "BCRYPT"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "thirdparty",
+          "email": "user2@example.com",
+          "thirdPartyId": "thirdPartyId2",
+          "thirdPartyUserId": "thirdPartyUserId2"
+        },
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "isPrimary": false,
+          "timeJoinedInMSSinceEpoch": 1712067215922,
+          "recipeId": "passwordless",
+          "email": "user2@example.com"
+        }
+      ]
+    }
+  ]
+}
