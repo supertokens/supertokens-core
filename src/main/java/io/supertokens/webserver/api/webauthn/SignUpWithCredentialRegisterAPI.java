@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNOptionsNotFoundException;
 import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -96,6 +97,11 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
+            result.addProperty("message", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNOptionsNotFoundException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "GENERATED_OPTIONS_NOT_FOUND_ERROR");
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         }

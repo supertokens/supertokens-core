@@ -86,7 +86,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "INVALID_CREDENTIALS_ERROR"); // I think not this
+            result.addProperty("status", "INVALID_GENERATED_OPTIONS_ERROR"); // I think not this
             result.addProperty("message", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNInvalidFormatException e) {
