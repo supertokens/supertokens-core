@@ -123,7 +123,7 @@ public class WebAuthN {
         WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, challenge, timeout, relyingPartyId, relyingPartyName, origin,
                 null, optionsId, userVerification, userPresenceRequired);
 
-        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt);
+        return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt, userPresenceRequired);
     }
 
 

@@ -125,9 +125,9 @@ public class WebauthMapper {
                 options.getAuthenticatorSelection().isRequireResidentKey() == null ? false :
                         options.getAuthenticatorSelection().isRequireResidentKey());
         authenticatorSelection.addProperty("residentKey",
-                options.getAuthenticatorSelection().getResidentKey().getValue());
+                options.getAuthenticatorSelection().getResidentKey().getValue().toLowerCase());
         authenticatorSelection.addProperty("userVerification",
-                options.getAuthenticatorSelection().getUserVerification().getValue());
+                options.getAuthenticatorSelection().getUserVerification().getValue().toLowerCase());
 
         response.add("authenticatorSelection", authenticatorSelection);
         return response;
@@ -164,13 +164,14 @@ public class WebauthMapper {
 
 
     public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
-                                                String optionsId, Challenge challenge, Long createdAt) {
+                                                String optionsId, Challenge challenge, Long createdAt, boolean userPresence) {
         JsonObject response = new JsonObject();
         response.addProperty("webauthnGeneratedOptionsId", optionsId);
         response.addProperty("relyingPartyId", relyingPartyId);
         response.addProperty("challenge", Base64.getUrlEncoder().withoutPadding().encodeToString(challenge.getValue()));
         response.addProperty("timeout", timeout);
         response.addProperty("userVerification", userVerification);
+        response.addProperty("userPresence", userPresence);
         response.addProperty("createdAt", createdAt);
         response.addProperty("expiresAt", createdAt + timeout);
         return response;
@@ -188,6 +189,8 @@ public class WebauthMapper {
         response.addProperty("createdAt", options.createdAt);
         response.addProperty("expiresAt", options.expiresAt);
         response.addProperty("timeout", options.timeout);
+        response.addProperty("userVerification", options.userVerification);
+        response.addProperty("userPresence", options.userPresenceRequired);
 
         return response;
     }
