@@ -169,7 +169,7 @@ public class WebAuthN {
             throw new WebauthNOptionsNotExistsException();
         }
 
-        RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
+        RegistrationData verifiedRegistrationData = verifyRegistrationData(registrationResponseJson,
                 generatedOptions);
 
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
@@ -184,8 +184,8 @@ public class WebAuthN {
     }
 
     @NotNull
-    private static RegistrationData getRegistrationData(String registrationResponseJson,
-                                                        WebAuthNOptions generatedOptions)
+    private static RegistrationData verifyRegistrationData(String registrationResponseJson,
+                                                           WebAuthNOptions generatedOptions)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException {
         long now = System.currentTimeMillis();
@@ -210,9 +210,9 @@ public class WebAuthN {
         }
     }
 
-    private static AuthenticationData getAuthenticationData(JsonObject authenticationResponse,
-                                                          WebAuthNOptions generatedOptions,
-                                                          WebAuthNStoredCredential storedCredential)
+    private static AuthenticationData verifyAuthenticationData(JsonObject authenticationResponse,
+                                                               WebAuthNOptions generatedOptions,
+                                                               WebAuthNStoredCredential storedCredential)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException {
         long now = System.currentTimeMillis();
@@ -278,7 +278,7 @@ public class WebAuthN {
                             throw new WebauthNOptionsNotExistsException();
                         }
 
-                        RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
+                        RegistrationData verifiedRegistrationData = verifyRegistrationData(registrationResponseJson,
                                 generatedOptions);
                         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                                 verifiedRegistrationData,
@@ -377,7 +377,7 @@ public class WebAuthN {
                     }
 
 
-                    getAuthenticationData(credentialsData, generatedOptions, credential);
+                    verifyAuthenticationData(credentialsData, generatedOptions, credential);
                     webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
                     return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
@@ -599,8 +599,7 @@ public class WebAuthN {
     }
 
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String newEmail)
-            throws StorageQueryException,
-            UserIdNotFoundException, DuplicateUserEmailException {
+            throws StorageQueryException, UserIdNotFoundException, DuplicateUserEmailException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         webAuthNStorage.updateUserEmail(tenantIdentifier, userId, newEmail);
     }
