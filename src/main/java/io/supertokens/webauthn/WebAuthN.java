@@ -349,32 +349,41 @@ public class WebAuthN {
                                               String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               String credentialId)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
-            WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotExistsException {
+            WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotExistsException,
+            WebauthNCredentialNotExistsException, UserIdNotFoundException {
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
             return webAuthNStorage.startTransaction(con -> {
 
-                WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
-                        con,
-                        webauthnGeneratedOptionsId);
-
-                if(generatedOptions == null) {
-                    throw new StorageTransactionLogicException(new WebauthNOptionsNotExistsException());
-                }
-
-                AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
-                        con, credentialId);
-                WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
-                        con, credentialId);
-
                 try {
+                    WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
+                            con,
+                            webauthnGeneratedOptionsId);
+
+                    if(generatedOptions == null) {
+                        throw new StorageTransactionLogicException(new WebauthNOptionsNotExistsException());
+                    }
+
+                    AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
+                            con, credentialId);
+                    if(userInfo == null) {
+                        throw new StorageTransactionLogicException(new UserIdNotFoundException());
+                    }
+
+                    WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
+                            con, credentialId);
+                    if(credential==null) {
+                        throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
+                    }
+
+
                     getAuthenticationData(credentialsData, generatedOptions, credential);
+                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
+                    return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {
                     throw new StorageTransactionLogicException(e);
                 }
-                webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
-                return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.getCause() instanceof InvalidWebauthNOptionsException) {
@@ -385,6 +394,10 @@ public class WebAuthN {
                 throw (WebauthNInvalidFormatException) e.getCause();
             } else if (e.getCause() instanceof WebauthNOptionsNotExistsException) {
                 throw (WebauthNOptionsNotExistsException) e.getCause();
+            } else if (e.getCause() instanceof WebauthNCredentialNotExistsException) {
+                throw (WebauthNCredentialNotExistsException) e.getCause();
+            } else if (e.getCause() instanceof UserIdNotFoundException) {
+                throw (UserIdNotFoundException) e.getCause();
             } else {
                 throw new StorageQueryException(e);
             }
