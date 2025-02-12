@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.OptionsNotExistsException;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -60,7 +60,7 @@ public class RemoveOptionsAPI extends WebserverAPI {
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (OptionsNotExistsException e) {
+        } catch (WebauthNOptionsNotExistsException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
             super.sendJsonResponse(200, response, resp);

@@ -22,8 +22,8 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.CredentialNotExistsException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNCredentialNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.utils.WebauthMapper;
 import io.supertokens.webserver.InputParser;
@@ -52,11 +52,12 @@ public class GetCredentialAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
+            String recipeUserId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
             String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
-            WebAuthNStoredCredential credential = WebAuthN.loadCredentialById(storage, tenantIdentifier, credentialId);
+            WebAuthNStoredCredential credential = WebAuthN.loadCredentialByIdForUser(storage, tenantIdentifier, credentialId, recipeUserId);
             if(credential == null) {
-                throw new CredentialNotExistsException();
+                throw new WebauthNCredentialNotExistsException();
             }
 
             JsonObject result = new JsonObject();
@@ -66,7 +67,7 @@ public class GetCredentialAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
-        } catch (CredentialNotExistsException e) {
+        } catch (WebauthNCredentialNotExistsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
             sendJsonResponse(200, result, resp);

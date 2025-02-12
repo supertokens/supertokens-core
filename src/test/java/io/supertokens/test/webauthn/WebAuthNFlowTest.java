@@ -16,7 +16,9 @@
 
 package io.supertokens.test.webauthn;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -77,6 +79,11 @@ public class WebAuthNFlowTest {
         requestBody.addProperty("relyingPartyId","supertokens.com");
         requestBody.addProperty("origin","supertokens.com");
         requestBody.addProperty("userVerification","some-bogus-value");
+        requestBody.addProperty("attestation","some-bogus-value");
+        requestBody.add("supportedAlgorithmIDs", new JsonArray());
+        requestBody.get("supportedAlgorithmIDs").getAsJsonArray().add(new JsonPrimitive(-100));
+
+        System.out.println(requestBody);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/webauthn/options/register",

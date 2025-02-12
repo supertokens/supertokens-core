@@ -22,7 +22,8 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -59,7 +60,7 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new RuntimeException(e);
-        } catch (io.supertokens.pluginInterface.webauthn.UserIdNotFoundException e) {
+        } catch (UserIdNotFoundException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, result, resp);

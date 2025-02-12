@@ -105,7 +105,6 @@ public class OptionsRegisterAPI extends WebserverAPI {
             JsonObject response = WebAuthN.generateOptions(tenantIdentifier, storage, email, displayName, relyingPartyName, relyingPartyId, origin, timeout, attestation, residentKey,
                     userVerification, supportedAlgorithmIds, userPresence);
 
-
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 

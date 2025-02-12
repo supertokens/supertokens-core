@@ -40,7 +40,11 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.*;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
@@ -162,13 +166,13 @@ public class WebAuthN {
     public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
                                                                  String optionsId, String credentialId, String registrationResponseJson)
             throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
-            WebauthNInvalidFormatException, WebauthNOptionsNotFoundException {
+            WebauthNInvalidFormatException, WebauthNOptionsNotExistsException {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
 
         if(generatedOptions == null) {
-            throw new WebauthNOptionsNotFoundException("Options not found");
+            throw new WebauthNOptionsNotExistsException();
         }
 
         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
@@ -260,7 +264,7 @@ public class WebAuthN {
     public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
                                                 String optionsId, String credentialId, String registrationResponseJson)
             throws InvalidWebauthNOptionsException, DuplicateUserEmailException, WebauthNVerificationFailedException,
-            StorageQueryException, WebauthNOptionsNotFoundException, WebauthNInvalidFormatException{
+            StorageQueryException, WebauthNOptionsNotExistsException, WebauthNInvalidFormatException{
         // create a new user in the auth recipe storage
         // create new credentials
         // all within a transaction
@@ -277,7 +281,7 @@ public class WebAuthN {
                                 optionsId);
 
                         if(generatedOptions == null) {
-                            throw new WebauthNOptionsNotFoundException("Options not found");
+                            throw new WebauthNOptionsNotExistsException();
                         }
 
                         RegistrationData verifiedRegistrationData = getRegistrationData(registrationResponseJson,
@@ -296,7 +300,7 @@ public class WebAuthN {
                         //ignore and retry
                     } catch (InvalidWebauthNOptionsException | TenantOrAppNotFoundException |
                              DuplicateUserEmailException | WebauthNVerificationFailedException |
-                             WebauthNInvalidFormatException | WebauthNOptionsNotFoundException e) {
+                             WebauthNInvalidFormatException | WebauthNOptionsNotExistsException e) {
                         throw new StorageQueryException(e);
                     }
                 }
@@ -309,8 +313,8 @@ public class WebAuthN {
                 throw (DuplicateUserEmailException) exception.getCause();
             } else if (exception.getCause() instanceof WebauthNVerificationFailedException) {
                 throw (WebauthNVerificationFailedException) exception.getCause();
-            } else if (exception.getCause() instanceof WebauthNOptionsNotFoundException) {
-                throw (WebauthNOptionsNotFoundException) exception.getCause();
+            } else if (exception.getCause() instanceof WebauthNOptionsNotExistsException) {
+                throw (WebauthNOptionsNotExistsException) exception.getCause();
             } else if (exception.getCause() instanceof WebauthNInvalidFormatException) {
                 throw (WebauthNInvalidFormatException) exception.getCause();
             } else {
@@ -351,7 +355,7 @@ public class WebAuthN {
                                               String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               String credentialId)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
-            WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotFoundException {
+            WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotExistsException {
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
             return webAuthNStorage.startTransaction(con -> {
@@ -361,7 +365,7 @@ public class WebAuthN {
                         webauthnGeneratedOptionsId);
 
                 if(generatedOptions == null) {
-                    throw new StorageTransactionLogicException(new WebauthNOptionsNotFoundException("Options not found"));
+                    throw new StorageTransactionLogicException(new WebauthNOptionsNotExistsException());
                 }
 
                 AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
@@ -385,8 +389,8 @@ public class WebAuthN {
                 throw (WebauthNVerificationFailedException) e.getCause();
             } else if (e.getCause() instanceof WebauthNInvalidFormatException) {
                 throw (WebauthNInvalidFormatException) e.getCause();
-            } else if (e.getCause() instanceof WebauthNOptionsNotFoundException) {
-                throw (WebauthNOptionsNotFoundException) e.getCause();
+            } else if (e.getCause() instanceof WebauthNOptionsNotExistsException) {
+                throw (WebauthNOptionsNotExistsException) e.getCause();
             } else {
                 throw new StorageQueryException(e);
             }
@@ -394,15 +398,15 @@ public class WebAuthN {
     }
 
     public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
-                                           String webauthGeneratedOptionsId) throws StorageQueryException {
+                                           String webauthnGeneratedOptionsId) throws StorageQueryException {
         WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthGeneratedOptionsId);
+        return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthnGeneratedOptionsId);
     }
 
-    public static WebAuthNStoredCredential loadCredentialById(Storage storage, TenantIdentifier tenantIdentifier,
-                                                              String credentialId) throws StorageQueryException {
+    public static WebAuthNStoredCredential loadCredentialByIdForUser(Storage storage, TenantIdentifier tenantIdentifier,
+                                                              String credentialId, String recipeUserId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        return webAuthNStorage.loadCredentialById(tenantIdentifier, credentialId);
+        return webAuthNStorage.loadCredentialByIdForUser(tenantIdentifier, credentialId, recipeUserId);
     }
 
     @NotNull
@@ -569,14 +573,14 @@ public class WebAuthN {
 
     public static void removeCredential(Storage storage, TenantIdentifier tenantIdentifier,
                                         String userId, String credentialId)
-            throws StorageQueryException, CredentialNotExistsException {
+            throws StorageQueryException, WebauthNCredentialNotExistsException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         webAuthNStorage.removeCredential(tenantIdentifier, userId, credentialId);
     }
 
     public static void removeOptions(Storage storage, TenantIdentifier tenantIdentifier,
                                     String optionsId)
-            throws StorageQueryException, OptionsNotExistsException {
+            throws StorageQueryException, WebauthNOptionsNotExistsException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         webAuthNStorage.removeOptions(tenantIdentifier, optionsId);
     }
@@ -589,7 +593,7 @@ public class WebAuthN {
 
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String newEmail)
             throws StorageQueryException,
-            io.supertokens.pluginInterface.webauthn.UserIdNotFoundException, DuplicateUserEmailException {
+            UserIdNotFoundException, DuplicateUserEmailException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         webAuthNStorage.updateUserEmail(tenantIdentifier, userId, newEmail);
     }

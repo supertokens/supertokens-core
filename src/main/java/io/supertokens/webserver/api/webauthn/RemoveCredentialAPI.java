@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.CredentialNotExistsException;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNCredentialNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -60,7 +60,7 @@ public class RemoveCredentialAPI extends WebserverAPI {
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (CredentialNotExistsException e) {
+        } catch (WebauthNCredentialNotExistsException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
             super.sendJsonResponse(200, response, resp);

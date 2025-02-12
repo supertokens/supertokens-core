@@ -23,8 +23,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.exception.WebauthNOptionsNotFoundException;
 import io.supertokens.webauthn.utils.WebauthMapper;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -55,7 +55,7 @@ public class GetGeneratedOptionsAPI extends WebserverAPI {
 
             WebAuthNOptions options = WebAuthN.loadGeneratedOptionsById(storage, tenantIdentifier, optionsId);
             if(options == null) {
-                throw new WebauthNOptionsNotFoundException("Options not found");
+                throw new WebauthNOptionsNotExistsException();
             }
 
             JsonObject result = new JsonObject();
@@ -65,10 +65,9 @@ public class GetGeneratedOptionsAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
-        } catch (WebauthNOptionsNotFoundException e) {
+        } catch (WebauthNOptionsNotExistsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
-            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         }
     }

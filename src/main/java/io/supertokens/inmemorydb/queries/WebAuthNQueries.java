@@ -185,20 +185,20 @@ public class WebAuthNQueries {
         });
     }
 
-    public static WebAuthNStoredCredential loadCredentialById(Start start, TenantIdentifier tenantIdentifier, String credentialId)
-            throws StorageQueryException {
-        try {
-            return start.startTransaction(con -> {
-                Connection sqlConnection = (Connection) con.getConnection();
-                try {
-                    return loadCredentialById_Transaction(start, sqlConnection, tenantIdentifier, credentialId);
-                } catch (SQLException e) {
-                    throw new StorageQueryException(e);
-                }
-            });
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e);
-        }
+    public static WebAuthNStoredCredential loadCredentialByIdForUser(Start start, TenantIdentifier tenantIdentifier, String credentialId, String recipeUserId)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " WHERE app_id = ? AND id = ? AND user_id = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, credentialId);
+            pst.setString(3, recipeUserId);
+        }, result -> {
+            if(result.next()){
+                return WebAuthnStoredCredentialRowMapper.getInstance().mapOrThrow(result); // we are expecting one or zero results
+            }
+            return null;
+        });
     }
 
     public static WebAuthNStoredCredential loadCredentialById_Transaction(Start start, Connection sqlConnection, TenantIdentifier tenantIdentifier, String credentialId)

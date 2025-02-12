@@ -92,7 +92,13 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
-import io.supertokens.pluginInterface.webauthn.*;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateRecoverAccountTokenException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNCredentialNotExistsException;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
@@ -3336,9 +3342,13 @@ public class Start
     }
 
     @Override
-    public WebAuthNStoredCredential loadCredentialById(TenantIdentifier tenantIdentifier, String credentialId)
+    public WebAuthNStoredCredential loadCredentialByIdForUser(TenantIdentifier tenantIdentifier, String credentialId, String recipeUserId)
             throws StorageQueryException {
-        return WebAuthNQueries.loadCredentialById(this, tenantIdentifier, credentialId);
+        try {
+            return WebAuthNQueries.loadCredentialByIdForUser(this, tenantIdentifier, credentialId, recipeUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
 
@@ -3382,7 +3392,7 @@ public class Start
     @Override
     public AuthRecipeUserInfo signUpWithCredentialsRegister_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                                  String userId, String email, String relyingPartyId, WebAuthNStoredCredential credential)
-            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.DuplicateUserIdException, TenantOrAppNotFoundException,
+            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException, TenantOrAppNotFoundException,
             DuplicateUserEmailException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -3403,7 +3413,7 @@ public class Start
                         new String[]{"app_id", "tenant_id", "user_id"})
                         || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
                         new String[]{"app_id", "user_id"})) {
-                    throw new io.supertokens.pluginInterface.webauthn.DuplicateUserIdException();
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException();
                 } else if (isForeignKeyConstraintError(
                         serverMessage,
                         config.getAppsTable(),
@@ -3429,7 +3439,7 @@ public class Start
     public AuthRecipeUserInfo signUp_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                                                         String userId, String email, String relyingPartyId)
             throws StorageQueryException, TenantOrAppNotFoundException, DuplicateUserEmailException,
-            io.supertokens.pluginInterface.webauthn.DuplicateUserIdException {
+            io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return WebAuthNQueries.signUp_Transaction(this, sqlCon, tenantIdentifier, userId, email, relyingPartyId);
@@ -3449,7 +3459,7 @@ public class Start
                         new String[]{"app_id", "tenant_id", "user_id"})
                         || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
                         new String[]{"app_id", "user_id"})) {
-                    throw new io.supertokens.pluginInterface.webauthn.DuplicateUserIdException();
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException();
                 } else if (isForeignKeyConstraintError(
                         serverMessage,
                         config.getAppsTable(),
@@ -3507,11 +3517,11 @@ public class Start
 
     @Override
     public void removeCredential(TenantIdentifier tenantIdentifier, String userId, String credentialId)
-            throws StorageQueryException, CredentialNotExistsException {
+            throws StorageQueryException, WebauthNCredentialNotExistsException {
         try {
             int rowsUpdated = WebAuthNQueries.removeCredential(this, tenantIdentifier, userId, credentialId);
             if(rowsUpdated < 1) {
-                throw new CredentialNotExistsException();
+                throw new WebauthNCredentialNotExistsException();
             }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -3520,11 +3530,11 @@ public class Start
 
     @Override
     public void removeOptions(TenantIdentifier tenantIdentifier, String optionsId)
-            throws StorageQueryException, OptionsNotExistsException {
+            throws StorageQueryException, WebauthNOptionsNotExistsException {
         try {
             int rowsUpdated = WebAuthNQueries.removeOptions(this, tenantIdentifier, optionsId);
             if(rowsUpdated < 1) {
-                throw new OptionsNotExistsException();
+                throw new WebauthNOptionsNotExistsException();
             }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -3543,7 +3553,7 @@ public class Start
 
     @Override
     public void updateUserEmail(TenantIdentifier tenantIdentifier, String userId, String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.UserIdNotFoundException,
+            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException,
             DuplicateUserEmailException {
         try {
             WebAuthNQueries.updateUserEmail(this, tenantIdentifier, userId, newEmail);
@@ -3560,7 +3570,7 @@ public class Start
                         config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "user_id"},
                         new Object[]{tenantIdentifier.getAppId(), userId})) {
-                    throw new io.supertokens.pluginInterface.webauthn.UserIdNotFoundException();
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
                 }
             }
             throw new StorageQueryException(e);

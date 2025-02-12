@@ -24,12 +24,12 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webauthn.exception.WebauthNInvalidFormatException;
-import io.supertokens.webauthn.exception.WebauthNOptionsNotFoundException;
 import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -97,10 +97,9 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             result.addProperty("status", "INVALID_AUTHENTICATOR_ERROR");
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
-        } catch (WebauthNOptionsNotFoundException e) {
+        } catch (WebauthNOptionsNotExistsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
-            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNInvalidFormatException e) {
             JsonObject result = new JsonObject();
