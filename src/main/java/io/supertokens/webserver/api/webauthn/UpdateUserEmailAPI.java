@@ -59,7 +59,7 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
-            throw new RuntimeException(e);
+            throw new ServletException(e);
         } catch (UserIdNotFoundException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
