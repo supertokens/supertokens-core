@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -57,7 +58,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             String displayName = InputParser.parseStringOrThrowError(input, "displayName", true);
-            if(displayName == null || displayName.equals("")){
+            if(displayName == null || displayName.isEmpty()){
                 displayName = email;
             }
             String relyingPartyName = InputParser.parseStringOrThrowError(input, "relyingPartyName", false);
@@ -108,10 +109,14 @@ public class OptionsRegisterAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e); //will be handled by WebserverAPI
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
+        } catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("reason", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
+
     }
 }

@@ -22,8 +22,10 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.OptionsNotExistsException;
+import io.supertokens.pluginInterface.webauthn.CredentialNotExistsException;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.utils.WebauthMapper;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -32,38 +34,42 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class RemoveOptionsAPI extends WebserverAPI {
+public class GetCredentialAPI extends WebserverAPI {
 
-    public RemoveOptionsAPI(Main main) {
+
+    public GetCredentialAPI(Main main) {
         super(main, "webauthn");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/webauthn/options/remove";
+        return "/recipe/webauthn/user/credential/";
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            Storage storage = getTenantStorage(req);
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
 
-            String optionsId = InputParser.getQueryParamOrThrowError(req, "webauthnGeneratedOptionsId", false);
+            String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
-            WebAuthN.removeOptions(storage, tenantIdentifier, optionsId);
+            WebAuthNStoredCredential credential = WebAuthN.loadCredentialById(storage, tenantIdentifier, credentialId);
+            if(credential == null) {
+                throw new CredentialNotExistsException();
+            }
 
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OK");
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            WebauthMapper.mapStoredCredentialToResponse(credential);
 
-            super.sendJsonResponse(200, response, resp);
-
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+            sendJsonResponse(200, result, resp);
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
-        } catch (OptionsNotExistsException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
-            super.sendJsonResponse(200, response, resp);
+        } catch (CredentialNotExistsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
+            sendJsonResponse(200, result, resp);
         }
     }
 }

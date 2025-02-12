@@ -22,8 +22,8 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.UserIdNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -66,6 +66,11 @@ public class SignInOptionsAPI extends WebserverAPI {
             if(userVerification == null || userVerification.isEmpty()){
                 userVerification = "preferred";
             }
+            if(!(userVerification.equalsIgnoreCase("required")
+                    || userVerification.equalsIgnoreCase("preferred")
+                    || userVerification.equalsIgnoreCase("discouraged"))){
+                throw new InvalidWebauthNOptionsException("userVerification should be one of 'required', 'preferred', 'discouraged'");
+            }
 
             Boolean userPresence = InputParser.parseBooleanOrThrowError(input, "userPresence", true);
             if(userPresence == null){
@@ -80,14 +85,13 @@ public class SignInOptionsAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e); //will be handled by WebserverAPI
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
-        } catch (UserIdNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("error", "USER_WITH_EMAIL_NOT_FOUND_ERROR");
-            super.sendJsonResponse(200, response, resp);
+        }  catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("reason", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
     }
 }

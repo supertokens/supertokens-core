@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -29,6 +28,7 @@ import io.supertokens.pluginInterface.webauthn.DuplicateUserEmailException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
+import io.supertokens.webauthn.exception.WebauthNInvalidFormatException;
 import io.supertokens.webauthn.exception.WebauthNOptionsNotFoundException;
 import io.supertokens.webauthn.exception.WebauthNVerificationFailedException;
 import io.supertokens.webserver.InputParser;
@@ -63,8 +63,6 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             String credentialsDataString = new Gson().toJson(credentialsData);
             String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
-            Logging.info(this.main, tenantIdentifier, "input request " +  input, true);
-
             WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
                                                             credentialId, credentialsDataString);
 
@@ -88,7 +86,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
         } catch (InvalidWebauthNOptionsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_OPTIONS_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (DuplicateUserEmailException e) {
             JsonObject result = new JsonObject();
@@ -96,13 +94,18 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("status", "INVALID_AUTHENTICATOR_ERROR");
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNOptionsNotFoundException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "GENERATED_OPTIONS_NOT_FOUND_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
+            result.addProperty("reason", e.getMessage());
+            sendJsonResponse(200, result, resp);
+        } catch (WebauthNInvalidFormatException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         }
     }

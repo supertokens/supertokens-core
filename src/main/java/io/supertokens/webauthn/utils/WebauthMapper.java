@@ -162,6 +162,16 @@ public class WebauthMapper {
         return response;
     }
 
+    public static JsonObject mapStoredCredentialToResponse(WebAuthNStoredCredential credential) {
+        JsonObject response = new JsonObject();
+        if(credential != null) {
+            response.addProperty("webauthnCredentialId", credential.id);
+            response.addProperty("recipeUserId", credential.userId);
+            response.addProperty("relyingPartyId", credential.rpId);
+            response.addProperty("createdAt", credential.createdAt);
+        }
+        return response;
+    }
 
     public static JsonObject mapOptionsResponse(String relyingPartyId, Long timeout, String userVerification,
                                                 String optionsId, Challenge challenge, Long createdAt, boolean userPresence) {

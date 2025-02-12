@@ -185,16 +185,20 @@ public class WebAuthNQueries {
         });
     }
 
-    public static WebAuthNStoredCredential loadCredential(Start start, TenantIdentifier tenantIdentifier, String credentialId)
-            throws StorageQueryException, StorageTransactionLogicException {
-        return start.startTransaction(con -> {
-            Connection sqlConnection = (Connection) con.getConnection();
-            try {
-                return loadCredentialById_Transaction(start, sqlConnection, tenantIdentifier, credentialId);
-            } catch (SQLException e) {
-                throw new StorageQueryException(e);
-            }
-        });
+    public static WebAuthNStoredCredential loadCredentialById(Start start, TenantIdentifier tenantIdentifier, String credentialId)
+            throws StorageQueryException {
+        try {
+            return start.startTransaction(con -> {
+                Connection sqlConnection = (Connection) con.getConnection();
+                try {
+                    return loadCredentialById_Transaction(start, sqlConnection, tenantIdentifier, credentialId);
+                } catch (SQLException e) {
+                    throw new StorageQueryException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     public static WebAuthNStoredCredential loadCredentialById_Transaction(Start start, Connection sqlConnection, TenantIdentifier tenantIdentifier, String credentialId)

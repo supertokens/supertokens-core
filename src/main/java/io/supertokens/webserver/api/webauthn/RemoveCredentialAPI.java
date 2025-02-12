@@ -62,7 +62,7 @@ public class RemoveCredentialAPI extends WebserverAPI {
             throw new ServletException(e);
         } catch (CredentialNotExistsException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "CREDENTIAL_NOT_EXISTS_ERROR");
+            response.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
             super.sendJsonResponse(200, response, resp);
         }
     }

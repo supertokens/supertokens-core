@@ -3335,6 +3335,12 @@ public class Start
         }
     }
 
+    @Override
+    public WebAuthNStoredCredential loadCredentialById(TenantIdentifier tenantIdentifier, String credentialId)
+            throws StorageQueryException {
+        return WebAuthNQueries.loadCredentialById(this, tenantIdentifier, credentialId);
+    }
+
 
     @Override
     public WebAuthNStoredCredential saveCredentials_Transaction(TenantIdentifier tenantIdentifier,

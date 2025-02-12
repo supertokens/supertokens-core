@@ -61,7 +61,7 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             throw new RuntimeException(e);
         } catch (io.supertokens.pluginInterface.webauthn.UserIdNotFoundException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "USER_ID_NOT_FOUND_ERROR");
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, result, resp);
         } catch (DuplicateUserEmailException e) {
             JsonObject result = new JsonObject();

@@ -76,6 +76,7 @@ public class WebAuthNFlowTest {
         requestBody.addProperty("relyingPartyName","supertokens.com");
         requestBody.addProperty("relyingPartyId","supertokens.com");
         requestBody.addProperty("origin","supertokens.com");
+        requestBody.addProperty("userVerification","some-bogus-value");
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/webauthn/options/register",

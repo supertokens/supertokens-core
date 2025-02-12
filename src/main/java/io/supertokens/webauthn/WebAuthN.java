@@ -65,56 +65,69 @@ public class WebAuthN {
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
                                              String userVerification, JsonArray supportedAlgorithmIds, boolean userPresenceRequired)
-            throws StorageQueryException {
+            throws StorageQueryException, InvalidWebauthNOptionsException {
+        try {
+            PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
+                    relyingPartyName);
 
-        PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId, relyingPartyName);
+            String id = null;
+            String optionsId = Utils.getUUID();
 
-        String id = null;
-        String optionsId = Utils.getUUID();
+            AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
+            AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
+            if (usersWithEmail.length > 0) {
+                id = usersWithEmail[0].getSupertokensUserId();
+            } else {
+                id = optionsId;
+            }
 
-        AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
-        AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
-        if(usersWithEmail.length > 0) {
-            id = usersWithEmail[0].getSupertokensUserId();
-        } else {
-            id = optionsId;
+            PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(
+                    id.getBytes(StandardCharsets.UTF_8), email, displayName);
+
+            Challenge challenge = getChallenge();
+
+            List<PublicKeyCredentialParameters> credentialParameters = new ArrayList<>();
+            for (int i = 0; i < supportedAlgorithmIds.size(); i++) {
+                JsonElement supportedAlgoId = supportedAlgorithmIds.get(i);
+                COSEAlgorithmIdentifier algorithmIdentifier = COSEAlgorithmIdentifier.create(
+                        supportedAlgoId.getAsLong());
+                PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
+                        PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
+                credentialParameters.add(param);
+            }
+            ;
+
+            AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
+                    residentKey.equalsIgnoreCase("required"),
+                    ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification));
+
+            AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(
+                    attestation);
+
+            PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(relyingPartyEntity,
+                    userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
+                    null, attestationConveyancePreference, null);
+
+
+            WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(),
+                    options.getTimeout(),
+                    options.getRp().getId(), options.getRp().getName(), origin, email, optionsId, userVerification,
+                    userPresenceRequired);
+
+            return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
+                    savedOptions.expiresAt, savedOptions.userEmail);
+        } catch (Exception e) {
+            if(e instanceof StorageQueryException){
+                throw e;
+            }
+            throw new InvalidWebauthNOptionsException(e.getMessage());
         }
-
-        PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(id.getBytes(StandardCharsets.UTF_8), email, displayName);
-
-        Challenge challenge = getChallenge();
-
-        List<PublicKeyCredentialParameters> credentialParameters = new ArrayList<>();
-        for(int i = 0; i< supportedAlgorithmIds.size(); i++){
-            JsonElement supportedAlgoId = supportedAlgorithmIds.get(i);
-            COSEAlgorithmIdentifier algorithmIdentifier = COSEAlgorithmIdentifier.create(supportedAlgoId.getAsLong());
-            PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
-            credentialParameters.add(param);
-        };
-
-        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
-                residentKey.equalsIgnoreCase("required"),
-                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification));
-
-        AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(attestation);
-
-        PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(relyingPartyEntity,
-                userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
-                null, attestationConveyancePreference, null);
-
-
-
-        WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(), options.getTimeout(),
-                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId, userVerification, userPresenceRequired);
-
-        return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
-                savedOptions.expiresAt, savedOptions.userEmail);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
                                                    String relyingPartyId, String relyingPartyName, String origin, Long timeout,
                                                    String userVerification, boolean userPresenceRequired)
-            throws StorageQueryException, UserIdNotFoundException {
+            throws StorageQueryException {
 
         Challenge challenge = getChallenge();
 
@@ -247,7 +260,7 @@ public class WebAuthN {
     public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
                                                 String optionsId, String credentialId, String registrationResponseJson)
             throws InvalidWebauthNOptionsException, DuplicateUserEmailException, WebauthNVerificationFailedException,
-            StorageQueryException, WebauthNOptionsNotFoundException {
+            StorageQueryException, WebauthNOptionsNotFoundException, WebauthNInvalidFormatException{
         // create a new user in the auth recipe storage
         // create new credentials
         // all within a transaction
@@ -298,6 +311,8 @@ public class WebAuthN {
                 throw (WebauthNVerificationFailedException) exception.getCause();
             } else if (exception.getCause() instanceof WebauthNOptionsNotFoundException) {
                 throw (WebauthNOptionsNotFoundException) exception.getCause();
+            } else if (exception.getCause() instanceof WebauthNInvalidFormatException) {
+                throw (WebauthNInvalidFormatException) exception.getCause();
             } else {
                 throw exception;
             }
@@ -378,10 +393,16 @@ public class WebAuthN {
         }
     }
 
-        public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
+    public static WebAuthNOptions loadGeneratedOptionsById(Storage storage, TenantIdentifier tenantIdentifier,
                                            String webauthGeneratedOptionsId) throws StorageQueryException {
         WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthGeneratedOptionsId);
+    }
+
+    public static WebAuthNStoredCredential loadCredentialById(Storage storage, TenantIdentifier tenantIdentifier,
+                                                              String credentialId) throws StorageQueryException {
+        WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
+        return webAuthNStorage.loadCredentialById(tenantIdentifier, credentialId);
     }
 
     @NotNull
@@ -567,7 +588,7 @@ public class WebAuthN {
     }
 
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String newEmail)
-            throws UserIdNotFoundException, StorageQueryException,
+            throws StorageQueryException,
             io.supertokens.pluginInterface.webauthn.UserIdNotFoundException, DuplicateUserEmailException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         webAuthNStorage.updateUserEmail(tenantIdentifier, userId, newEmail);

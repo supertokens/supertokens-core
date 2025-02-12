@@ -92,22 +92,22 @@ public class SignInAPI extends WebserverAPI {
         } catch (InvalidWebauthNOptionsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_OPTIONS_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "INVALID_CREDENTIALS_ERROR"); // I think not this
-            result.addProperty("message", e.getMessage());
+            result.addProperty("status", "INVALID_AUTHENTICATOR_ERROR");
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNInvalidFormatException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNOptionsNotFoundException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "GENERATED_OPTIONS_NOT_FOUND_ERROR");
-            result.addProperty("message", e.getMessage());
+            result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
+            result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
 
         }
