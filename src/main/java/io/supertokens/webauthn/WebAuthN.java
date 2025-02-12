@@ -69,63 +69,57 @@ public class WebAuthN {
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
                                              String userVerification, JsonArray supportedAlgorithmIds, boolean userPresenceRequired)
-            throws StorageQueryException, InvalidWebauthNOptionsException {
-        try {
-            PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
-                    relyingPartyName);
+            throws StorageQueryException {
 
-            String id = null;
-            String optionsId = Utils.getUUID();
+        PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
+                relyingPartyName);
 
-            AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
-            AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
-            if (usersWithEmail.length > 0) {
-                id = usersWithEmail[0].getSupertokensUserId();
-            } else {
-                id = optionsId;
-            }
+        String id = null;
+        String optionsId = Utils.getUUID();
 
-            PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(
-                    id.getBytes(StandardCharsets.UTF_8), email, displayName);
-
-            Challenge challenge = getChallenge();
-
-            List<PublicKeyCredentialParameters> credentialParameters = new ArrayList<>();
-            for (int i = 0; i < supportedAlgorithmIds.size(); i++) {
-                JsonElement supportedAlgoId = supportedAlgorithmIds.get(i);
-                COSEAlgorithmIdentifier algorithmIdentifier = COSEAlgorithmIdentifier.create(
-                        supportedAlgoId.getAsLong());
-                PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
-                        PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
-                credentialParameters.add(param);
-            }
-            ;
-
-            AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
-                    residentKey.equalsIgnoreCase("required"),
-                    ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification));
-
-            AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(
-                    attestation);
-
-            PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(relyingPartyEntity,
-                    userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
-                    null, attestationConveyancePreference, null);
-
-
-            WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(),
-                    options.getTimeout(),
-                    options.getRp().getId(), options.getRp().getName(), origin, email, optionsId, userVerification,
-                    userPresenceRequired);
-
-            return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
-                    savedOptions.expiresAt, savedOptions.userEmail);
-        } catch (Exception e) {
-            if(e instanceof StorageQueryException){
-                throw e;
-            }
-            throw new InvalidWebauthNOptionsException(e.getMessage());
+        AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
+        AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
+        if (usersWithEmail.length > 0) {
+            id = usersWithEmail[0].getSupertokensUserId();
+        } else {
+            id = optionsId;
         }
+
+        PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(
+                id.getBytes(StandardCharsets.UTF_8), email, displayName);
+
+        Challenge challenge = getChallenge();
+
+        List<PublicKeyCredentialParameters> credentialParameters = new ArrayList<>();
+        for (int i = 0; i < supportedAlgorithmIds.size(); i++) {
+            JsonElement supportedAlgoId = supportedAlgorithmIds.get(i);
+            COSEAlgorithmIdentifier algorithmIdentifier = COSEAlgorithmIdentifier.create(
+                    supportedAlgoId.getAsLong());
+            PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
+                    PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
+            credentialParameters.add(param);
+        }
+        ;
+
+        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
+                residentKey.equalsIgnoreCase("required"),
+                ResidentKeyRequirement.create(residentKey), UserVerificationRequirement.create(userVerification));
+
+        AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(
+                attestation);
+
+        PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(relyingPartyEntity,
+                userEntity, challenge, credentialParameters, timeout, null, authenticatorSelectionCriteria,
+                null, attestationConveyancePreference, null);
+
+
+        WebAuthNOptions savedOptions = saveGeneratedOptions(tenantIdentifier, storage, options.getChallenge(),
+                options.getTimeout(),
+                options.getRp().getId(), options.getRp().getName(), origin, email, optionsId, userVerification,
+                userPresenceRequired);
+
+        return WebauthMapper.createResponseFromOptions(options, optionsId, savedOptions.createdAt,
+                savedOptions.expiresAt, savedOptions.userEmail);
     }
 
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
