@@ -34,4 +34,5 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/supertokens-core:dev-branch-${{ github.ref }}
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/supertokens-core:dev-branch-${{ github.sha }}
+          file: .github/helpers/Dockerfile
