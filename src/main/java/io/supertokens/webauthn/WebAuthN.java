@@ -52,6 +52,7 @@ import io.supertokens.webauthn.data.WebauthNCredentialRecord;
 import io.supertokens.webauthn.data.WebauthNCredentialResponse;
 import io.supertokens.webauthn.exception.*;
 import io.supertokens.webauthn.utils.WebauthMapper;
+import io.supertokens.webauthn.validator.OptionsValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 
@@ -59,6 +60,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -69,7 +72,9 @@ public class WebAuthN {
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
                                              String userVerification, JsonArray supportedAlgorithmIds, boolean userPresenceRequired)
-            throws StorageQueryException {
+            throws StorageQueryException, InvalidWebauthNOptionsException {
+
+        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, attestation, userVerification, residentKey);
 
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
                 relyingPartyName);
@@ -99,7 +104,7 @@ public class WebAuthN {
                     PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
             credentialParameters.add(param);
         }
-        ;
+
 
         AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
                 residentKey.equalsIgnoreCase("required"),
@@ -125,7 +130,9 @@ public class WebAuthN {
     public static JsonObject generateSignInOptions(TenantIdentifier tenantIdentifier, Storage storage,
                                                    String relyingPartyId, String relyingPartyName, String origin, Long timeout,
                                                    String userVerification, boolean userPresenceRequired)
-            throws StorageQueryException {
+            throws StorageQueryException, InvalidWebauthNOptionsException {
+
+        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, "none", "preferred", "required");
 
         Challenge challenge = getChallenge();
 
@@ -136,7 +143,6 @@ public class WebAuthN {
 
         return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt, userPresenceRequired);
     }
-
 
 
     @NotNull
@@ -289,12 +295,13 @@ public class WebAuthN {
                                 generatedOptions.relyingPartyId, credentialToSave);
                         userInfo.setExternalUserId(null);
 
+                        ((Connection) con.getConnection()).commit();
                         return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (InvalidWebauthNOptionsException | TenantOrAppNotFoundException |
                              DuplicateUserEmailException | WebauthNVerificationFailedException |
-                             WebauthNInvalidFormatException | WebauthNOptionsNotExistsException e) {
+                             WebauthNInvalidFormatException | WebauthNOptionsNotExistsException | SQLException e) {
                         throw new StorageQueryException(e);
                     }
                 }
@@ -364,21 +371,21 @@ public class WebAuthN {
                         throw new StorageTransactionLogicException(new WebauthNOptionsNotExistsException());
                     }
 
-                    AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
-                            con, credentialId);
-                    if(userInfo == null) {
-                        throw new StorageTransactionLogicException(new UserIdNotFoundException());
-                    }
-
                     WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
                             con, credentialId);
                     if(credential==null) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
 
-
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
                     webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
+
+                    AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
+                            con, credentialId);
+                    if(userInfo == null) {
+                        // this shouldn't ever happen!
+                        throw new StorageTransactionLogicException(new UserIdNotFoundException());
+                    }
                     return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {

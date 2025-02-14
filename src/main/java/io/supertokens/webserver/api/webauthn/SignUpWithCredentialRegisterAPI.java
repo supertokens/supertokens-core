@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Base64;
 
 public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
@@ -61,7 +62,20 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
             String credentialsDataString = new Gson().toJson(credentialsData);
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
+
+            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", true);
+            if(credentialId == null || credentialId.isEmpty()) {
+                throw new WebauthNInvalidFormatException("Credential ID is invalid");
+            }
+
+            try {
+                Base64.getUrlDecoder().decode(credentialId);
+            } catch (IllegalStateException e) {
+                throw new WebauthNInvalidFormatException("Credential ID has to be base64 url encoded");
+            }
+            // validation:
+            // id should be base64url decodable
+            // validation errors should result in WebauthNInvalidFormatException
 
             WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
                                                             credentialId, credentialsDataString);

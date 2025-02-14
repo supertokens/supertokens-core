@@ -417,7 +417,7 @@ public class WebAuthNQueries {
 
     public static Collection<? extends LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection connection, Set<String> ids, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-        if (ids.size() > 0) {
+        if (!ids.isEmpty()) {
 
             String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
             String credentialTable = getConfig(start).getWebAuthNCredentialsTable();

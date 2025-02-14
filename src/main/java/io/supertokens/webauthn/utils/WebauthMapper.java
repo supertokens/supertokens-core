@@ -42,7 +42,7 @@ public class WebauthMapper {
             String relyingPartyId, TenantIdentifier tenantIdentifier) {
         ObjectConverter objectConverter = new ObjectConverter();
         WebAuthNStoredCredential storedCredential = new WebAuthNStoredCredential();
-        storedCredential.id = credentialId;
+        storedCredential.id = credentialId; // it's also a base64 encoded, but this doesn't matter for us
         storedCredential.appId = tenantIdentifier.getAppId();
         storedCredential.rpId = relyingPartyId;
         storedCredential.userId = userId;

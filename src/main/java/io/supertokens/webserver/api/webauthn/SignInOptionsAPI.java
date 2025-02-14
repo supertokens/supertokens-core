@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -81,6 +82,11 @@ public class SignInOptionsAPI extends WebserverAPI {
 
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e); //will be handled by WebserverAPI
+        } catch (InvalidWebauthNOptionsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_OPTIONS_ERROR");
+            result.addProperty("reason", e.getMessage());
+            sendJsonResponse(200, result, resp);
         }
     }
 }
