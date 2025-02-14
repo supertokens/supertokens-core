@@ -71,10 +71,11 @@ public class WebAuthN {
 
     public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
                                              String origin, Long timeout, String attestation, String residentKey,
-                                             String userVerification, JsonArray supportedAlgorithmIds, boolean userPresenceRequired)
+                                             String userVerification, JsonArray supportedAlgorithmIds, Boolean userPresenceRequired)
             throws StorageQueryException, InvalidWebauthNOptionsException {
 
-        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, attestation, userVerification, residentKey);
+        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, attestation, userVerification, residentKey,
+                supportedAlgorithmIds, userPresenceRequired);
 
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
                 relyingPartyName);
@@ -132,7 +133,8 @@ public class WebAuthN {
                                                    String userVerification, boolean userPresenceRequired)
             throws StorageQueryException, InvalidWebauthNOptionsException {
 
-        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, "none", "preferred", "required");
+        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, "none", "preferred", "required",
+        new JsonArray(), userPresenceRequired);
 
         Challenge challenge = getChallenge();
 

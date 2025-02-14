@@ -16,6 +16,8 @@
 
 package io.supertokens.webauthn.validator;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 
 import java.net.MalformedURLException;
@@ -25,13 +27,16 @@ import java.util.List;
 public class OptionsValidator {
 
     public static void validateOptions(String origin, String rpId, Long timeout, String attestation,
-                                        String userVerification, String residentKey)
+                                       String userVerification, String residentKey, JsonElement supportedAlgorithmIds,
+                                       Boolean userPresence)
             throws InvalidWebauthNOptionsException {
         validateOrigin(origin, rpId);
         validateTimeout(timeout);
         validateUserVerification(userVerification);
         validateAttestation(attestation);
         validateResidentKey(residentKey);
+        validateSupportedAlgorithmIds(supportedAlgorithmIds);
+        validateUserPresence(userPresence);
     }
 
     private static void validateOrigin(String origin, String rpId) throws InvalidWebauthNOptionsException {
@@ -46,7 +51,7 @@ public class OptionsValidator {
     }
 
     private static void validateTimeout(Long timeout) throws InvalidWebauthNOptionsException {
-        if (timeout == null || timeout < 0) {
+        if (timeout == null || timeout < 0L) {
             throw new InvalidWebauthNOptionsException("Timeout must be a positive long value");
         }
     }
@@ -69,5 +74,30 @@ public class OptionsValidator {
 
     private static void validateResidentKey(String residentKey) throws InvalidWebauthNOptionsException {
         validateEnumeratedStrValues(residentKey, List.of("required", "discouraged", "preferred"), "residentKey");
+    }
+
+    private static void validateSupportedAlgorithmIds(JsonElement supportedAlgorithmIds) throws InvalidWebauthNOptionsException {
+        if (supportedAlgorithmIds == null){
+            throw new InvalidWebauthNOptionsException("supportedAlgorithmIds should not be null");
+        }
+        try {
+            JsonArray supportedAlgos = supportedAlgorithmIds.getAsJsonArray();
+            for(int i = 0; i < supportedAlgos.size(); i++){
+                try {
+                    supportedAlgos.get(i).getAsLong();
+                } catch (NumberFormatException | IllegalStateException e) {
+                    throw new InvalidWebauthNOptionsException(e.getMessage());
+                }
+            }
+        } catch (IllegalStateException e) {
+            throw new InvalidWebauthNOptionsException("supportedAlgorithmIds has to be a JsonArray");
+        }
+
+    }
+
+    private static void validateUserPresence(Boolean userPresence) throws InvalidWebauthNOptionsException {
+        if (userPresence == null ){
+            throw new InvalidWebauthNOptionsException("userPresence can't be null");
+        }
     }
 }
