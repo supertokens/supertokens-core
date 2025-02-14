@@ -37,12 +37,11 @@ public class OptionsValidator {
     private static void validateOrigin(String origin, String rpId) throws InvalidWebauthNOptionsException {
         try {
             URL originUrl = new URL(origin);
-            URL rpIdUrl = new URL(rpId);
-            if (!originUrl.getHost().contains(rpIdUrl.getHost())) {
+            if (!originUrl.getHost().contains(rpId)) {
                 throw new InvalidWebauthNOptionsException("Origin does not match RelyingParty Id");
             }
         } catch (MalformedURLException e) {
-            throw new InvalidWebauthNOptionsException("Origin and rpId have to be valid urls!");
+            throw new InvalidWebauthNOptionsException("Origin has to be a valid url!");
         }
     }
 
