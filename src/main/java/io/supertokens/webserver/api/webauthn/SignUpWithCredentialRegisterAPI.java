@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -38,7 +39,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Base64;
 
 public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
 
@@ -61,24 +61,10 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
-            String credentialsDataString = new Gson().toJson(credentialsData);
-
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", true);
-            if(credentialId == null || credentialId.isEmpty()) {
-                throw new WebauthNInvalidFormatException("Credential ID is invalid");
-            }
-
-            try {
-                Base64.getUrlDecoder().decode(credentialId);
-            } catch (IllegalStateException e) {
-                throw new WebauthNInvalidFormatException("Credential ID has to be base64 url encoded");
-            }
-            // validation:
-            // id should be base64url decodable
-            // validation errors should result in WebauthNInvalidFormatException
+            Logging.error(main, new TenantIdentifier(null, null, null), new Gson().toJson(credentialsData), true);
 
             WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
-                                                            credentialId, credentialsDataString);
+                    credentialsData);
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     signUpResult.userInfo.getSupertokensUserId());

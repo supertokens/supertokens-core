@@ -52,6 +52,7 @@ import io.supertokens.webauthn.data.WebauthNCredentialRecord;
 import io.supertokens.webauthn.data.WebauthNCredentialResponse;
 import io.supertokens.webauthn.exception.*;
 import io.supertokens.webauthn.utils.WebauthMapper;
+import io.supertokens.webauthn.validator.CredentialsValidator;
 import io.supertokens.webauthn.validator.OptionsValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
@@ -133,7 +134,7 @@ public class WebAuthN {
                                                    String userVerification, boolean userPresenceRequired)
             throws StorageQueryException, InvalidWebauthNOptionsException {
 
-        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, "none", "preferred", "required",
+        OptionsValidator.validateOptions(origin, relyingPartyId, timeout, "none", userVerification, "required",
         new JsonArray(), userPresenceRequired);
 
         Challenge challenge = getChallenge();
@@ -166,9 +167,11 @@ public class WebAuthN {
     }
 
     public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
-                                                                 String optionsId, String credentialId, String registrationResponseJson)
+                                                                 String optionsId, JsonObject credentialsDataJson)
             throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException, WebauthNOptionsNotExistsException {
+
+
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
@@ -177,9 +180,11 @@ public class WebAuthN {
             throw new WebauthNOptionsNotExistsException();
         }
 
-        RegistrationData verifiedRegistrationData = verifyRegistrationData(registrationResponseJson,
+        CredentialsValidator.validateCredential(credentialsDataJson);
+        RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialsDataJson,
                 generatedOptions);
 
+        String credentialId = getCredentialId(credentialsDataJson);
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                 verifiedRegistrationData,
                 recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
@@ -192,7 +197,7 @@ public class WebAuthN {
     }
 
     @NotNull
-    private static RegistrationData verifyRegistrationData(String registrationResponseJson,
+    private static RegistrationData verifyRegistrationData(JsonObject registrationResponseJson,
                                                            WebAuthNOptions generatedOptions)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException {
@@ -200,14 +205,11 @@ public class WebAuthN {
         if(generatedOptions.expiresAt < now) {
             throw new InvalidWebauthNOptionsException("Options expired");
         }
-        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
-            throw new InvalidWebauthNOptionsException("Origin does not match relying party id");
-        }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
         try {
             RegistrationData registrationData = nonStrictWebAuthnManager.parseRegistrationResponseJSON(
-                    registrationResponseJson);
+                    new Gson().toJson(registrationResponseJson));
             RegistrationParameters registrationParameters = getRegistrationParameters(generatedOptions);
             return nonStrictWebAuthnManager.verify(registrationData,
                     registrationParameters);
@@ -224,11 +226,8 @@ public class WebAuthN {
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException {
         long now = System.currentTimeMillis();
-        if(generatedOptions.expiresAt < now) {
+        if (generatedOptions.expiresAt < now) {
             throw new InvalidWebauthNOptionsException("Options expired");
-        }
-        if(!generatedOptions.origin.contains(generatedOptions.relyingPartyId)) {
-            throw new InvalidWebauthNOptionsException("Origin does not match relying party id");
         }
 
         WebAuthnManager nonStrictWebAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
@@ -264,7 +263,7 @@ public class WebAuthN {
     }
 
     public static WebAuthNSignInUpResult signUp(Storage storage, TenantIdentifier tenantIdentifier,
-                                                String optionsId, String credentialId, String registrationResponseJson)
+                                                String optionsId, JsonObject credentialDataJson)
             throws InvalidWebauthNOptionsException, DuplicateUserEmailException, WebauthNVerificationFailedException,
             StorageQueryException, WebauthNOptionsNotExistsException, WebauthNInvalidFormatException{
         // create a new user in the auth recipe storage
@@ -286,7 +285,9 @@ public class WebAuthN {
                             throw new WebauthNOptionsNotExistsException();
                         }
 
-                        RegistrationData verifiedRegistrationData = verifyRegistrationData(registrationResponseJson,
+                        CredentialsValidator.validateCredential(credentialDataJson);
+                        String credentialId = getCredentialId(credentialDataJson);
+                        RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialDataJson,
                                 generatedOptions);
                         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                                 verifiedRegistrationData,
@@ -328,6 +329,14 @@ public class WebAuthN {
         }
     }
 
+    private static String getCredentialId(JsonObject credentialsJson) {
+        String credentialId = null;
+        if(credentialsJson.has("id")){
+            credentialId = credentialsJson.get("id").getAsString();
+        }
+        return credentialId;
+    }
+
     @TestOnly
     public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId, String rpId)
             throws StorageQueryException, TenantOrAppNotFoundException, DuplicateUserEmailException,
@@ -355,8 +364,7 @@ public class WebAuthN {
     }
 
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
-                                              String webauthnGeneratedOptionsId, JsonObject credentialsData,
-                                              String credentialId)
+                                              String webauthnGeneratedOptionsId, JsonObject credentialsData)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotExistsException,
             WebauthNCredentialNotExistsException, UserIdNotFoundException {
@@ -372,6 +380,10 @@ public class WebAuthN {
                     if(generatedOptions == null) {
                         throw new StorageTransactionLogicException(new WebauthNOptionsNotExistsException());
                     }
+
+                    CredentialsValidator.validateCredential(credentialsData);
+
+                    String credentialId = getCredentialId(credentialsData);
 
                     WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
                             con, credentialId);

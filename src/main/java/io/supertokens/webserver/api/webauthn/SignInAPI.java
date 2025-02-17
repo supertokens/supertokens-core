@@ -16,6 +16,7 @@
 
 package io.supertokens.webserver.api.webauthn;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
@@ -56,6 +57,7 @@ public class SignInAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        Logging.info(main, new TenantIdentifier(null, null, null), new Gson().toJson(input), true);
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
@@ -64,13 +66,9 @@ public class SignInAPI extends WebserverAPI {
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", true);
-            if(credentialId == null || credentialId.isEmpty()) {
-                throw new WebauthNInvalidFormatException("Credential ID is invalid");
-            }
 
             WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthnGeneratedOptionsId,
-                    credentialsData, credentialId);
+                    credentialsData);
 
             if (signInResult == null) {
                 throw new WebauthNVerificationFailedException("WebAuthN sign in failed");
@@ -82,6 +80,9 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.add("user", signInResult.userInfo.toJson());
+
+            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
+
             for (LoginMethod loginMethod : signInResult.userInfo.loginMethods) {
                 if (loginMethod.recipeId.equals(RECIPE_ID.WEBAUTHN) &&
                         loginMethod.webauthN != null &&
@@ -119,9 +120,10 @@ public class SignInAPI extends WebserverAPI {
             result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
             sendJsonResponse(200, result, resp);
         } catch (WebauthNCredentialNotExistsException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNCredentialNotExistsException Error in WebAuthN sign in " + e.getMessage(), true);
+            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNCredentialNotExistsException Error in WebAuthN sign in " + e, true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
+            Logging.info(main, new TenantIdentifier(null, null, null), new Gson().toJson(result) + e, true);
             sendJsonResponse(200, result, resp);
         } catch (UserIdNotFoundException e) {
             Logging.info(main, new TenantIdentifier(null, null, null), "UserIdNotFoundException Error in WebAuthN sign in " + e.getMessage(), true);

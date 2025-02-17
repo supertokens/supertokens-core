@@ -56,7 +56,7 @@ public class GetCredentialAPI extends WebserverAPI {
             String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
             WebAuthNStoredCredential credential = WebAuthN.loadCredentialByIdForUser(storage, tenantIdentifier, credentialId, recipeUserId);
-            if(credential == null) {
+            if (credential == null) {
                 throw new WebauthNCredentialNotExistsException();
             }
 

@@ -16,7 +16,6 @@
 
 package io.supertokens.webserver.api.webauthn;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
@@ -58,12 +57,10 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
-            String credentialsDataString = new Gson().toJson(credentialsData);
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
 
             WebauthNCredentialResponse savedCredential = WebAuthN
                     .registerCredentials(storage, tenantIdentifier, recipeUserId,
-                            webauthnGeneratedOptionsId, credentialId, credentialsDataString);
+                            webauthnGeneratedOptionsId, credentialsData);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
