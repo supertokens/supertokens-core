@@ -679,7 +679,7 @@ public class GeneralQueries {
                         // attach email tags to queries
                         QUERY = QUERY +
                                 " WHERE (emailpasswordTable.app_id = ? AND emailpasswordTable.tenant_id = ?) AND"
-                                + " (emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ?)";
+                                + " ( emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ? ";
                         queryList.add(tenantIdentifier.getAppId());
                         queryList.add(tenantIdentifier.getTenantId());
                         queryList.add(dashboardSearchTags.emails.get(0) + "%");
@@ -689,6 +689,8 @@ public class GeneralQueries {
                             queryList.add(dashboardSearchTags.emails.get(i) + "%");
                             queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                         }
+
+                        QUERY += " )";
 
                         USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
                                 .append(" LIMIT 1000) AS emailpasswordResultTable");
