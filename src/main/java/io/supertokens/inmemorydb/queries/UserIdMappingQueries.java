@@ -107,12 +107,16 @@ public class UserIdMappingQueries {
                                                                                               String userId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
-                + " WHERE app_id = ? AND (supertokens_user_id = ? OR external_user_id = ?)";
+                + " WHERE app_id = ? AND supertokens_user_id = ?"
+                + " UNION ALL "
+                + "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
+                + " WHERE app_id = ? AND external_user_id = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
-            pst.setString(3, userId);
+            pst.setString(3, appIdentifier.getAppId());
+            pst.setString(4, userId);
         }, result -> {
             ArrayList<UserIdMapping> userIdMappingArray = new ArrayList<>();
             while (result.next()) {
@@ -129,12 +133,16 @@ public class UserIdMappingQueries {
                                                                                                           String userId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
-                + " WHERE app_id = ? AND (supertokens_user_id = ? OR external_user_id = ?)";
+                + " WHERE app_id = ? AND supertokens_user_id = ?"
+                + " UNION ALL "
+                + "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
+                + " WHERE app_id = ? AND external_user_id = ?";
 
         return execute(sqlCon, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
-            pst.setString(3, userId);
+            pst.setString(3, appIdentifier.getAppId());
+            pst.setString(4, userId);
         }, result -> {
             ArrayList<UserIdMapping> userIdMappingArray = new ArrayList<>();
             while (result.next()) {

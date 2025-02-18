@@ -18,7 +18,6 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -97,6 +96,16 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                         task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
                 instance.tasks.add(task);
             }
+        }
+    }
+
+    public static boolean isCronjobLoaded(Main main, CronTask task) {
+        if (getInstance(main) == null) {
+            init(main);
+        }
+        Cronjobs instance = getInstance(main);
+        synchronized (instance.lock) {
+            return instance.tasks.contains(task);
         }
     }
 

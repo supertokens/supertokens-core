@@ -5,7 +5,7 @@ on:
       - "**"
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: set tag
         id: set_tag
@@ -38,5 +38,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ vars.DOCKERHUB_USERNAME }}/supertokens-core:dev-branch-${{ steps.set_tag.outputs.TAG }}
           file: .github/helpers/Dockerfile

@@ -16,18 +16,17 @@
 
 package io.supertokens.test.oauth.api;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 public class OAuthAPIHelper {
     public static void resetOAuthProvider() {
@@ -47,7 +46,7 @@ public class OAuthAPIHelper {
             HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/jwks.json", new HashMap<>(), new HashMap<>());
             Thread.sleep(1000);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            //ignore error. later on the tests would fail anyway
         }
     }
 

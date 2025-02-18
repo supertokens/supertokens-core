@@ -30,6 +30,8 @@ import io.supertokens.utils.MetadataUtils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class UserMetadata {
 
@@ -67,6 +69,42 @@ public class UserMetadata {
                 }
 
                 return updatedMetadata;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw e;
+        }
+    }
+
+    public static void updateMultipleUsersMetadata(AppIdentifier appIdentifier, Storage storage,
+                                                @Nonnull Map<String, JsonObject> metadataToUpdateByUserId)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
+        UserMetadataSQLStorage umdStorage = StorageUtils.getUserMetadataStorage(storage);
+
+        try {
+            umdStorage.startTransaction(con -> {
+                Map<String, JsonObject> originalMetadatas = umdStorage.getMultipleUsersMetadatas_Transaction(appIdentifier, con,
+                        new ArrayList<>(metadataToUpdateByUserId.keySet()));
+
+                // updating only the already existing ones. The others don't need update
+                for(Map.Entry<String, JsonObject> metadataByUserId : originalMetadatas.entrySet()){
+                    JsonObject originalMetadata = metadataByUserId.getValue();
+                    String userId = metadataByUserId.getKey();
+                    JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+                    MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataToUpdateByUserId.get(userId));
+                    metadataToUpdateByUserId.put(userId, updatedMetadata);
+                }
+
+                try {
+                    umdStorage.setMultipleUsersMetadatas_Transaction(appIdentifier, con, metadataToUpdateByUserId);
+                    umdStorage.commitTransaction(con);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+
+                return null;
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof TenantOrAppNotFoundException) {

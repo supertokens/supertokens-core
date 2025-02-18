@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -33,8 +34,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.*;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
 import static java.lang.System.currentTimeMillis;
 
@@ -101,6 +101,32 @@ public class EmailVerificationQueries {
                 pst.setString(3, email);
             });
         }
+    }
+
+    public static void updateMultipleUsersIsEmailVerified_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                                      Map<String, String> emailToUserIds,
+                                                                      boolean isEmailVerified)
+            throws SQLException, StorageQueryException {
+
+        String QUERY;
+        if (isEmailVerified) {
+            QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTable()
+                    + "(app_id, user_id, email) VALUES(?, ?, ?)";
+        } else {
+            QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTable()
+                    + " WHERE app_id = ? AND user_id = ? AND email = ?";
+        }
+
+        List<PreparedStatementValueSetter> setters = new ArrayList<>();
+        for (Map.Entry<String, String> emailToUser : emailToUserIds.entrySet()) {
+            setters.add(pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, emailToUser.getValue());
+                pst.setString(3, emailToUser.getKey());
+            });
+        }
+
+        executeBatch(con, QUERY, setters);
     }
 
     public static void deleteAllEmailVerificationTokensForUser_Transaction(Start start, Connection con,

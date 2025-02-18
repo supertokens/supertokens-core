@@ -130,7 +130,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            input.addProperty("owner", appIdentifier.getAppId());
+            input.addProperty("owner", appIdentifier.getConnectionUriDomain() + "_" + appIdentifier.getAppId());
 
             HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyJsonPOST(
                 main, req, resp, 

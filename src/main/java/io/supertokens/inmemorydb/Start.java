@@ -26,11 +26,13 @@ import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
@@ -65,12 +67,14 @@ import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChalle
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
+import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -109,10 +113,7 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
@@ -148,6 +149,30 @@ public class Start
         this.processId = processId;
         Start.silent = silent;
         Start.isTesting = isTesting;
+    }
+
+    @Override
+    public Storage createBulkImportProxyStorageInstance() {
+        throw new UnsupportedOperationException("'createBulkImportProxyStorageInstance' is not supported for in-memory db");
+        
+    }
+
+    @Override
+    public void closeConnectionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "closeConnectionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void commitTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "commitTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void rollbackTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "rollbackTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
     }
 
     @Override
@@ -216,7 +241,8 @@ public class Start
             tries++;
             try {
                 return startTransactionHelper(logic);
-            } catch (SQLException | StorageQueryException | StorageTransactionLogicException e) {
+            } catch (SQLException | StorageQueryException | StorageTransactionLogicException |
+                     TenantOrAppNotFoundException e) {
                 if ((e instanceof SQLTransactionRollbackException
                         || (e.getMessage() != null && e.getMessage().toLowerCase().contains("deadlock")))
                         && tries < 3) {
@@ -235,7 +261,7 @@ public class Start
     }
 
     private <T> T startTransactionHelper(TransactionLogic<T> logic)
-            throws StorageQueryException, StorageTransactionLogicException, SQLException {
+            throws StorageQueryException, StorageTransactionLogicException, SQLException, TenantOrAppNotFoundException {
         Connection con = null;
         try {
             con = ConnectionPool.getConnection(this);
@@ -636,6 +662,14 @@ public class Start
         }
     }
 
+    @Override
+    public Map<String, List<String>> findNonAuthRecipesWhereForUserIdsUsed(AppIdentifier appIdentifier,
+                                                                           List<String> userIds)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'findNonAuthRecipesWhereForUserIdsUsed' is not supported for in-memory db");
+
+    }
+
     @TestOnly
     @Override
     public void addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier tenantIdentifier, String className, String userId)
@@ -724,6 +758,8 @@ public class Start
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
+        } else if (className.equals(BulkImportStorage.class.getName())){
+            //ignore
         } else if (className.equals(OAuthStorage.class.getName())) {
             /* Since OAuth tables store client-related data, we don't add user-specific data here */
         } else if (className.equals(ActiveUsersStorage.class.getName())) {
@@ -903,6 +939,13 @@ public class Start
     }
 
     @Override
+    public void signUpMultipleViaBulkImport_Transaction(TransactionConnection connection,
+                                                        List<EmailPasswordImportUser> users)
+            throws StorageQueryException, StorageTransactionLogicException {
+        throw new UnsupportedOperationException("'signUpMultipleViaBulkImport_Transaction' is not supported for in-memory db");
+    }
+
+    @Override
     public void deleteExpiredEmailVerificationTokens() throws StorageQueryException {
         try {
             EmailVerificationQueries.deleteExpiredEmailVerificationTokens(this);
@@ -948,6 +991,40 @@ public class Start
         try {
             EmailVerificationQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, appIdentifier, userId,
                     email, isEmailVerified);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = e.getMessage();
+
+                if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{appIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(appIdentifier);
+                }
+            }
+
+            boolean isPSQLPrimKeyError = e instanceof SQLiteException && isPrimaryKeyError(
+                    e.getMessage(),
+                    Config.getConfig(this).getEmailVerificationTable(),
+                    new String[]{"app_id", "user_id", "email"});
+
+            if (!isEmailVerified || !isPSQLPrimKeyError) {
+                throw new StorageQueryException(e);
+            }
+            // we do not throw an error since the email is already verified
+        }
+    }
+
+    @Override
+    public void updateMultipleIsEmailVerified_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                          Map<String, String> emailToUserId, boolean isEmailVerified)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            EmailVerificationQueries.updateMultipleUsersIsEmailVerified_Transaction(this, sqlCon, appIdentifier,
+                    emailToUserId, isEmailVerified);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
                 SQLiteConfig config = Config.getConfig(this);
@@ -1085,6 +1162,13 @@ public class Start
     }
 
     @Override
+    public void updateMultipleIsEmailVerifiedToExternalUserIds(AppIdentifier appIdentifier,
+                                                               Map<String, String> supertokensUserIdToExternalUserId)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'updateMultipleIsEmailVerifiedToExternalUserIds' is not supported for in-memory db");
+    }
+
+    @Override
     public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
         try {
             EmailPasswordQueries.deleteExpiredPasswordResetTokens(this);
@@ -1116,6 +1200,20 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void importThirdPartyUsers_Transaction(TransactionConnection con,
+                                                  List<ThirdPartyImportUser> usersToImport)
+            throws StorageQueryException, StorageTransactionLogicException {
+        throw new UnsupportedOperationException("'importThirdPartyUsers_Transaction' is not supported for in-memory db");
+    }
+
+    @Override
+    public void importPasswordlessUsers_Transaction(TransactionConnection con,
+                                                    List<PasswordlessImportUser> users)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'importPasswordlessUsers_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -1256,6 +1354,12 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<String> findExistingUserIds(AppIdentifier appIdentifier, List<String> userIds)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'findExistingUserIds' is not supported for in-memory db");
     }
 
     @Override
@@ -1829,6 +1933,16 @@ public class Start
     }
 
     @Override
+    public Map<String, JsonObject> getMultipleUsersMetadatas_Transaction(AppIdentifier appIdentifier,
+                                                                         TransactionConnection con,
+                                                                         List<String> userIds)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'getMultipleUsersMetadatas_Transaction' is not supported for in-memory db");
+    }
+
+
+
+    @Override
     public int setUserMetadata_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
                                            JsonObject metadata)
             throws StorageQueryException, TenantOrAppNotFoundException {
@@ -1851,6 +1965,13 @@ public class Start
             }
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void setMultipleUsersMetadatas_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                     Map<String, JsonObject> metadataByUserId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        throw new UnsupportedOperationException("'setMultipleUsersMetadatas_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -2098,6 +2219,13 @@ public class Start
     }
 
     @Override
+    public List<String> doesMultipleRoleExist_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                           List<String> roles) throws StorageQueryException {
+        throw new UnsupportedOperationException("'doesMultipleRoleExist_Transaction' is not supported for in-memory db");
+
+    }
+
+    @Override
     public void deleteAllRolesForUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
@@ -2106,6 +2234,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void addRolesToUsers_Transaction(TransactionConnection connection,
+                                            Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenants)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'addRolesToUsers_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -2146,6 +2281,13 @@ public class Start
 
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void createBulkUserIdMapping(AppIdentifier appIdentifier,
+                                        Map<String, String> superTokensUserIdToExternalUserId)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'createBulkUserIdMapping' is not supported for in-memory db");
     }
 
     @Override
@@ -2650,6 +2792,13 @@ public class Start
     }
 
     @Override
+    public void createDevices_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
+                                          List<TOTPDevice> devices)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        throw new UnsupportedOperationException("'createDevices_Transaction' is not supported for in-memory db");
+    }
+
+    @Override
     public TOTPDevice getDeviceByName_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId,
                                                   String deviceName) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -2858,6 +3007,18 @@ public class Start
     }
 
     @Override
+    public List<AuthRecipeUserInfo> getPrimaryUsersByIds_Transaction(AppIdentifier appIdentifier,
+                                                                     TransactionConnection con, List<String> userIds)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.getPrimaryUsersInfoForUserIds_Transaction(this, sqlCon, appIdentifier, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(AppIdentifier appIdentifier,
                                                                     TransactionConnection con, String email)
             throws StorageQueryException {
@@ -2867,6 +3028,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction(
+            AppIdentifier appIdentifier, TransactionConnection con, List<String> emails, List<String> phones,
+            Map<String, String> thirdpartyIdToThirdpartyUserId) throws StorageQueryException {
+        throw new UnsupportedOperationException("'listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -2925,6 +3093,19 @@ public class Start
     }
 
     @Override
+    public void makePrimaryUsers_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                             List<String> userIds) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            // we do not bother returning if a row was updated here or not, cause it's happening
+            // in a transaction anyway.
+            GeneralQueries.makePrimaryUsers_Transaction(this, sqlCon, appIdentifier, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
                                          String primaryUserId) throws StorageQueryException {
         try {
@@ -2935,6 +3116,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void linkMultipleAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                 Map<String, String> recipeUserIdByPrimaryUserId)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'linkMultipleAccounts_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -3012,6 +3200,14 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<UserIdMapping> getMultipleUserIdMapping_Transaction(TransactionConnection connection,
+                                                                    AppIdentifier appIdentifier, List<String> userIds,
+                                                                    boolean isSupertokensIds)
+            throws StorageQueryException {
+        throw new UnsupportedOperationException("'getMultipleUserIdMapping_Transaction' is not supported for in-memory db");
     }
 
     @Override
