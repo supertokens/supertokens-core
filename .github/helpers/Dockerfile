@@ -34,7 +34,7 @@ RUN mkdir -p supertokens-core
 COPY ./ supertokens-core
 RUN echo "org.gradle.vfs.watch=false" >> ./gradle.properties
 RUN ./loadModules
-RUN ./utils/setupTestEnv --cicd
+RUN ./utils/setupTestEnv --local
 
 
 FROM debian:bookworm-slim
