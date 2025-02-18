@@ -17,6 +17,9 @@
 package io.supertokens.test.webauthn;
 
 import com.google.gson.JsonObject;
+import com.webauthn4j.test.EmulatorUtil;
+import com.webauthn4j.test.client.ClientPlatform;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -28,6 +31,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -35,12 +39,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.junit.Assert.assertNotNull;
 
 public class WebAuthNFlowTest {
+
+
+//        },
+//    {
+//      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE.jar",
+//      "name": "webauthn4j-test 0.28.5.RELEASE",
+//      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE-sources.jar"
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -129,6 +141,21 @@ public class WebAuthNFlowTest {
         System.out.println(signupResponse.toString());
     }
 
+    private JsonObject registerOptions(Main main, String email) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email",email);
+        requestBody.addProperty("relyingPartyName","supertokens.com");
+        requestBody.addProperty("relyingPartyId","supertokens.com");
+        requestBody.addProperty("origin","supertokens.com");
+        requestBody.addProperty("timeout",10000);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/options/register",
+                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+
+        return response;
+    }
+
     @Test
     public void signUpFlow() throws Exception {
         String[] args = {"../"};
@@ -138,6 +165,8 @@ public class WebAuthNFlowTest {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ClientPlatform clientPlatform = EmulatorUtil.createClientPlatform();
 
     }
 }
