@@ -66,7 +66,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Random;
 
 public class WebAuthN {
 
@@ -154,7 +153,7 @@ public class WebAuthN {
             private final byte[] challenge = new byte[32];
 
             { //initializer block
-                new Random().nextBytes(challenge);
+                new SecureRandom().nextBytes(challenge);
             }
 
             @NotNull

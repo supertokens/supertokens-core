@@ -1,0 +1,213 @@
+/*
+ *    Copyright (c) 2025, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.test.webauthn;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.webauthn4j.data.*;
+import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
+import com.webauthn4j.data.client.challenge.Challenge;
+import com.webauthn4j.data.client.challenge.DefaultChallenge;
+import com.webauthn4j.data.extension.client.AuthenticationExtensionClientOutput;
+import com.webauthn4j.data.extension.client.RegistrationExtensionClientOutput;
+import com.webauthn4j.test.EmulatorUtil;
+import com.webauthn4j.test.client.ClientPlatform;
+import com.webauthn4j.util.Base64UrlUtil;
+import io.supertokens.Main;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class Utils {
+
+    public static List<JsonObject> registerUsers(Main main, int numberOfUser) throws HttpResponseException, IOException{
+        List<JsonObject> users = new ArrayList<>();
+        for(int i = 0; i < numberOfUser; i++){
+            JsonObject user = registerUserWithCredentials(main, "user" + i + "@example.com");
+            users.add(user);
+            //System.out.println("User " + i + " registered");
+        }
+        return users;
+    }
+
+    public static JsonObject registerUserWithCredentials(Main main, String email)
+            throws HttpResponseException, IOException {
+        ClientPlatform clientPlatform = EmulatorUtil.createClientPlatform(EmulatorUtil.FIDO_U2F_AUTHENTICATOR);
+
+        JsonObject registerOptionsResponse = registerOptions(main, email);
+        Map<String, PublicKeyCredentialCreationOptions> options = createPublicKeyCreationOptions(registerOptionsResponse);
+        PublicKeyCredential<AuthenticatorAttestationResponse, RegistrationExtensionClientOutput> credential = createPasskey(clientPlatform, options.values().stream().findFirst().get());
+
+        return signUp(main, options.keySet().stream().findFirst().get(), credential);
+    }
+
+    private static JsonObject registerOptions(Main main, String email) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email",email);
+        requestBody.addProperty("relyingPartyName","supertokens.com");
+        requestBody.addProperty("relyingPartyId","example.com");
+        requestBody.addProperty("origin","http://example.com");
+        requestBody.addProperty("timeout",10000);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/options/register",
+                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+
+        return response;
+    }
+
+    private static JsonObject signInOptions(Main main) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("relyingPartyName","supertokens.com");
+        requestBody.addProperty("relyingPartyId","example.com");
+        requestBody.addProperty("origin","http://example.com");
+        requestBody.addProperty("timeout",10000);
+        requestBody.addProperty("userVerification","preferred");
+        requestBody.addProperty("userPresence",false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/options/signin",
+                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+
+        return response;
+    }
+
+    private static JsonObject signIn(Main main, String optionsId, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput> credential)
+            throws HttpResponseException, IOException {
+        JsonObject signInRequestBody = new JsonObject();
+        signInRequestBody.addProperty("webauthnGeneratedOptionsId",optionsId);
+        String signature = Base64UrlUtil.encodeToString(credential.getResponse().getSignature());
+        String clientDataJson = Base64UrlUtil.encodeToString(credential.getAuthenticatorResponse().getClientDataJSON());
+        String rawId = Base64UrlUtil.encodeToString(credential.getRawId());
+        String authenticatorData = Base64UrlUtil.encodeToString(credential.getResponse().getAuthenticatorData());
+        //System.out.println(Base64UrlUtil.decode(clientDataJson));
+        signInRequestBody.add("credential", new Gson().toJsonTree(credential));
+        signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("signature", signature);
+        signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("clientDataJSON", clientDataJson);
+        signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("authenticatorData", authenticatorData);
+        signInRequestBody.getAsJsonObject("credential").addProperty("type", credential.getType());
+        signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").remove("transports");
+        signInRequestBody.getAsJsonObject("credential").remove("clientExtensionResults");
+        signInRequestBody.getAsJsonObject("credential").addProperty("rawId", rawId);
+
+        System.out.println("Sign in Request body: " + new Gson().toJsonTree(signInRequestBody));
+
+        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/signin",
+                signInRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+
+        return signInResponse;
+    }
+
+    public static JsonObject signInWithUser(Main main, JsonObject userJson ) throws HttpResponseException, IOException {
+        ClientPlatform clientPlatform = EmulatorUtil.createClientPlatform(EmulatorUtil.FIDO_U2F_AUTHENTICATOR);
+        JsonObject signInOptionsResponse = signInOptions(main);
+        Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> pubkeysToOptions = createPublicKeyRequestOptions(
+                signInOptionsResponse, clientPlatform, userJson.get("webauthnCredentialId").getAsString());
+        return signIn(main, pubkeysToOptions.keySet().stream().findFirst().get(),
+                pubkeysToOptions.values().stream().findFirst().get());
+    }
+
+    private static Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> createPublicKeyRequestOptions(
+            JsonObject signInOptionsResponse, ClientPlatform clientPlatform, String credentialId) {
+
+        System.out.println("Challenge: " + Base64UrlUtil.encodeToString(signInOptionsResponse.get("challenge").getAsString().getBytes(StandardCharsets.UTF_8)));
+
+        PublicKeyCredentialDescriptor credentialDescriptor = new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY,
+                Base64UrlUtil.decode(credentialId.getBytes(StandardCharsets.UTF_8)), null);
+        Challenge challenge = new DefaultChallenge(signInOptionsResponse.get("challenge").getAsString());
+        PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(challenge,
+                10000L,
+                signInOptionsResponse.get("relyingPartyId").getAsString(),
+                List.of(credentialDescriptor),
+                UserVerificationRequirement.create(signInOptionsResponse.get("userVerification").getAsString()),
+                null, null );
+
+        PublicKeyCredential<AuthenticatorAssertionResponse,AuthenticationExtensionClientOutput> publicKeyCredential = clientPlatform.get(requestOptions);
+        return Map.of(signInOptionsResponse.get("webauthnGeneratedOptionsId").getAsString(), publicKeyCredential);
+    }
+
+    private static JsonObject signUp(Main main, String optionsId, PublicKeyCredential<AuthenticatorAttestationResponse, RegistrationExtensionClientOutput> credential)
+            throws HttpResponseException, IOException {
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("webauthnGeneratedOptionsId",optionsId);
+        String attestationObject = Base64UrlUtil.encodeToString(credential.getAuthenticatorResponse().getAttestationObject());
+        String clientDataJson = Base64UrlUtil.encodeToString(credential.getAuthenticatorResponse().getClientDataJSON());
+        String rawId = Base64UrlUtil.encodeToString(credential.getRawId());
+
+        signUpRequestBody.add("credential", new Gson().toJsonTree(credential));
+        signUpRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("attestationObject", attestationObject);
+        signUpRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("clientDataJSON", clientDataJson);
+        signUpRequestBody.getAsJsonObject("credential").addProperty("type", credential.getType());
+        signUpRequestBody.getAsJsonObject("credential").getAsJsonObject("response").remove("transports");
+        signUpRequestBody.getAsJsonObject("credential").remove("clientExtensionResults");
+        signUpRequestBody.getAsJsonObject("credential").addProperty("rawId", rawId);
+
+        JsonObject signupResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/signup",
+                signUpRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+
+        return signupResponse;
+    }
+
+    private static Map<String, PublicKeyCredentialCreationOptions> createPublicKeyCreationOptions(JsonObject registerResponse){
+        PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(registerResponse.getAsJsonObject("rp").get("id").getAsString(),
+                registerResponse.getAsJsonObject("rp").get("name").getAsString());
+
+        JsonObject userJson = registerResponse.getAsJsonObject("user");
+        PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(
+                userJson.get("id").getAsString().getBytes(StandardCharsets.UTF_8), userJson.get("name").getAsString(), userJson.get("displayName").getAsString());
+
+        Challenge challenge = new DefaultChallenge(registerResponse.get("challenge").getAsString());
+
+        List<PublicKeyCredentialParameters> credentialParameters = new ArrayList<>();
+        for (int i = 0; i < registerResponse.getAsJsonArray("pubKeyCredParams").size(); i++) {
+            Long supportedAlgoId = registerResponse.getAsJsonArray("pubKeyCredParams").get(i).getAsJsonObject().get("alg").getAsLong();
+            COSEAlgorithmIdentifier algorithmIdentifier = COSEAlgorithmIdentifier.create(
+                    supportedAlgoId);
+            PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
+                    PublicKeyCredentialType.PUBLIC_KEY, algorithmIdentifier);
+            credentialParameters.add(param);
+        }
+
+        AuthenticatorSelectionCriteria authenticatorSelectionCriteria = new AuthenticatorSelectionCriteria(null,
+                registerResponse.getAsJsonObject("authenticatorSelection").get("residentKey").getAsString().equalsIgnoreCase("required"),
+                ResidentKeyRequirement.create(registerResponse.getAsJsonObject("authenticatorSelection").get("residentKey").getAsString()), UserVerificationRequirement.create(registerResponse.getAsJsonObject("authenticatorSelection").get("userVerification").getAsString()));
+
+        AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.create(
+                registerResponse.get("attestation").getAsString());
+
+        PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(relyingPartyEntity,
+                userEntity, challenge, credentialParameters, 10000L, null, authenticatorSelectionCriteria,
+                null, attestationConveyancePreference, null);
+
+        Map<String, PublicKeyCredentialCreationOptions> optionsMap = Map.of(registerResponse.get("webauthnGeneratedOptionsId").getAsString(), options);
+        return optionsMap;
+    }
+
+    public static PublicKeyCredential<AuthenticatorAttestationResponse, RegistrationExtensionClientOutput> createPasskey(
+            ClientPlatform clientPlatform, PublicKeyCredentialCreationOptions pkCreationOptions) {
+        return clientPlatform.create(pkCreationOptions);
+    }
+
+}

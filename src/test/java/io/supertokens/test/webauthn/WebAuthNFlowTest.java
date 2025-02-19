@@ -16,43 +16,26 @@
 
 package io.supertokens.test.webauthn;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.webauthn4j.test.EmulatorUtil;
-import com.webauthn4j.test.client.ClientPlatform;
-import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
 
 public class WebAuthNFlowTest {
-
-
-//        },
-//    {
-//      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE.jar",
-//      "name": "webauthn4j-test 0.28.5.RELEASE",
-//      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE-sources.jar"
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -68,7 +51,7 @@ public class WebAuthNFlowTest {
     }
 
     @Test
-    public void optionsRegisterAPITest() throws Exception {
+    public void createUsers() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -80,93 +63,12 @@ public class WebAuthNFlowTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, null);
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@test.com", "password");
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email","test@test.com");
-        requestBody.addProperty("relyingPartyName","supertokens.com");
-        requestBody.addProperty("relyingPartyId","supertokens.com");
-        requestBody.addProperty("origin","supertokens.com");
-        requestBody.addProperty("timeout",10000);
 
-        System.out.println(requestBody);
+        List<JsonObject> users = io.supertokens.test.webauthn.Utils.registerUsers(process.getProcess(), 10);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/webauthn/options/register",
-                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+        JsonObject signInResponse = io.supertokens.test.webauthn.Utils.signInWithUser(process.getProcess(), users.get(0));
 
-        System.out.println(response.toString());
-
-        String generatedOptionsId =  response.get("webauthnGeneratedOptionsId").getAsString();
-
-        String credentialId = Base64.getUrlEncoder().encodeToString(io.supertokens.utils.Utils.getUUID().getBytes(
-                StandardCharsets.UTF_8));
-        System.out.println("CredentialId = " + credentialId);
-
-        String clientDataJson = "{\"challenge\": \"" + response.get("challenge").getAsString() + "\""
-                + ", \"crossorigin\": " + false
-                + ", \"origin\": \"supertokens.com\""
-                + ", \"type\": \"webauthn.create\""
-                +"}";
-
-        JsonObject credentialResponse = new JsonObject();
-        credentialResponse.addProperty("type", "public-key");
-        credentialResponse.addProperty("id", credentialId);
-        credentialResponse.addProperty("rawId", credentialId);
-
-        System.out.println("ATTESTATION:: ");
-        System.out.println(Base64.getUrlDecoder().decode("o2NmbXRmcGFja2VkZ2F0dFN0bXSiY2FsZyZjc2lnWEgwRgIhAIxQByta1TIB0_gEG2k4ZUhZYWWXB7ItGz00sQsptELeAiEAwPobNP4IEXVTIdKps2OXznLR6W2-hSaBiJzDN_VkILdoYXV0aERhdGFYpKYbCoe63o889l_A5A0hNIQWx6EMYXbUdzEk7oCI-vkjRQAAAAAKsdMYwBjG-66Y9zSQW1qFACChmhVbEJe5T4JcIpEZueCTOcOwoHbzLb14LCuyWFtbsqUBAgMmIAEhWCCKY54Qll0PzBOgWIyt0Z6Q7A6Kir9JOrJXV6bY1D2KByJYIAi0OaNwchWW-qeBKdUvokiUkNn0-pWfe1v-cf7x5tvw"));
-
-        JsonObject responseObj = new JsonObject();
-        responseObj.addProperty("attestationObject", "o2NmbXRmcGFja2VkZ2F0dFN0bXSiY2FsZyZjc2lnWEgwRgIhAIxQByta1TIB0_gEG2k4ZUhZYWWXB7ItGz00sQsptELeAiEAwPobNP4IEXVTIdKps2OXznLR6W2-hSaBiJzDN_VkILdoYXV0aERhdGFYpKYbCoe63o889l_A5A0hNIQWx6EMYXbUdzEk7oCI-vkjRQAAAAAKsdMYwBjG-66Y9zSQW1qFACChmhVbEJe5T4JcIpEZueCTOcOwoHbzLb14LCuyWFtbsqUBAgMmIAEhWCCKY54Qll0PzBOgWIyt0Z6Q7A6Kir9JOrJXV6bY1D2KByJYIAi0OaNwchWW-qeBKdUvokiUkNn0-pWfe1v-cf7x5tvw");
-        //responseObj.addProperty("clientDataJSON", "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoicjVIWWN2WFZsdzMtY0xfd0dzXzNSZzlrM29FbmgwbEJkcW5Ob2NnXzVEayIsIm9yaWdpbiI6Imh0dHBzOi8vc3VwZXJ0b2tlbnMuaW8ifQ");
-        responseObj.addProperty("clientDataJSON", Base64.getUrlEncoder().withoutPadding().encodeToString(clientDataJson.getBytes(StandardCharsets.UTF_8)));
-        credentialResponse.add("response", responseObj);
-
-        JsonObject signUpRequestBody = new JsonObject();
-        signUpRequestBody.addProperty("webauthnGeneratedOptionsId", generatedOptionsId);
-        signUpRequestBody.add("credential", credentialResponse);
-
-        System.out.println();
-        System.out.println(signUpRequestBody);
-
-        //AuthRecipeUserInfo userInfo = WebAuthN.saveUser(StorageLayer.getStorage(process.getProcess()), tenantIdentifier, "testing@email.com", credentialId, "test.com");
-
-        JsonObject signupResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/webauthn/signup",
-                signUpRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
-
-
-        System.out.println("========= SIGNUP RESPONSE =========");
-        System.out.println(signupResponse.toString());
+        System.out.println("SignInResponse: " + new Gson().toJson(signInResponse));
     }
 
-    private JsonObject registerOptions(Main main, String email) throws HttpResponseException, IOException {
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email",email);
-        requestBody.addProperty("relyingPartyName","supertokens.com");
-        requestBody.addProperty("relyingPartyId","supertokens.com");
-        requestBody.addProperty("origin","supertokens.com");
-        requestBody.addProperty("timeout",10000);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/webauthn/options/register",
-                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
-
-        return response;
-    }
-
-    @Test
-    public void signUpFlow() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        ClientPlatform clientPlatform = EmulatorUtil.createClientPlatform();
-
-    }
 }
