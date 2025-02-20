@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -86,7 +87,7 @@ public class GetUserByIdAPI extends WebserverAPI {
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                JsonObject userJson = user.toJson();
+                JsonObject userJson = user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3));
 
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);

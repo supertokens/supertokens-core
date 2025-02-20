@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
 import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
@@ -69,7 +70,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     signUpResult.userInfo.getSupertokensUserId());
 
-            JsonObject userJson = signUpResult.userInfo.toJson();
+            JsonObject userJson = signUpResult.userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3));
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

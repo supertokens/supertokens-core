@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.exception.InvalidTokenException;
 import io.supertokens.webserver.InputParser;
@@ -77,7 +78,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("recipeUserId", recipeUserId);
-            response.add("user", user.toJson());
+            response.add("user", user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
 
             sendJsonResponse(200, response, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | NoSuchAlgorithmException e) {
