@@ -30,6 +30,7 @@ import com.webauthn4j.server.ServerProperty;
 import com.webauthn4j.verifier.exception.VerificationException;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -46,6 +47,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.exceptions.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.data.WebauthNCredentialRecord;
@@ -146,7 +148,6 @@ public class WebAuthN {
         return WebauthMapper.mapOptionsResponse(relyingPartyId, timeout, userVerification, optionsId, challenge, savedOptions.createdAt, userPresenceRequired);
     }
 
-
     @NotNull
     private static Challenge getChallenge() {
         Challenge challenge = new Challenge() {
@@ -169,8 +170,6 @@ public class WebAuthN {
                                                                  String optionsId, JsonObject credentialsDataJson)
             throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException, WebauthNOptionsNotExistsException {
-
-
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
@@ -478,7 +477,6 @@ public class WebAuthN {
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
 
-
     public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
             StorageQueryException {
@@ -595,7 +593,7 @@ public class WebAuthN {
 
     private static long getRecoverAccountTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        return 300000; // TODO add config
+        return Config.getConfig(tenantIdentifier, main).getWebauthnRecoverAccountTokenLifetime();
     }
 
     public static void removeCredential(Storage storage, TenantIdentifier tenantIdentifier,

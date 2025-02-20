@@ -1051,6 +1051,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 300);
         intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 86400);
+        intervals.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthnExpiredDataCron", 86400);
 
         Map<String, Integer> delays = new HashMap<>();
         delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
@@ -1068,9 +1069,10 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 0);
         delays.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 0);
+        delays.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthnExpiredDataCron", 0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
-        assertEquals(12, allTasks.size());
+        assertEquals(13, allTasks.size());
 
         for (CronTask task : allTasks) {
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());

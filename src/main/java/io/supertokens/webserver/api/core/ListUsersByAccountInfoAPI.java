@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -87,7 +88,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonArray();
             for (AuthRecipeUserInfo userInfo : users) {
-                usersJson.add(userInfo.toJson());
+                usersJson.add(userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
             }
 
             result.add("users", usersJson);

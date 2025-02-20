@@ -864,6 +864,45 @@ public class GeneralQueries {
                     }
                 }
 
+                {
+                    // check if we should search through the webauthn table
+                    if (dashboardSearchTags.shouldWebauthnTableBeSearched()) {
+                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
+                                + " AS allAuthUsersTable" +
+                                " JOIN " + getConfig(start).getWebAuthNUserToTenantTable()
+                                + " AS webauthnTable ON allAuthUsersTable.app_id = webauthnTable.app_id AND "
+                                + "allAuthUsersTable.tenant_id = webauthnTable.tenant_id AND "
+                                + "allAuthUsersTable.user_id = webauthnTable.user_id";
+
+                        // attach email tags to queries
+                        QUERY = QUERY +
+                                " WHERE (webauthnTable.app_id = ? AND webauthnTable.tenant_id = ?) AND"
+                                + " ( webauthnTable.email LIKE ? OR webauthnTable.email LIKE ? ";
+                        queryList.add(tenantIdentifier.getAppId());
+                        queryList.add(tenantIdentifier.getTenantId());
+                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
+                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                            QUERY += " OR webauthnTable.email LIKE ? OR webauthnTable.email LIKE ?";
+                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                        }
+
+                        QUERY += " )";
+
+                        // check if we need to append this to an existing search query
+                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
+                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000) AS webauthnResultTable");
+
+                        } else {
+                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000) AS webauthnResultTable");
+
+                        }
+                    }
+                }
+
                 if (USER_SEARCH_TAG_CONDITION.toString().length() == 0) {
                     usersFromQuery = new ArrayList<>();
                 } else {

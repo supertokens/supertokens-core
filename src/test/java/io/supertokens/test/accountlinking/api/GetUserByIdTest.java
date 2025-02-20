@@ -135,7 +135,7 @@ public class GetUserByIdTest {
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
-                    WebserverAPI.getLatestCDIVersion().get(), "");
+                    SemVer.v5_2.get(), "");
             JsonObject user = response.get("user").getAsJsonObject();
             assertEquals(user.entrySet().size(), 8);
             assertTrue(user.get("isPrimaryUser").getAsBoolean());
