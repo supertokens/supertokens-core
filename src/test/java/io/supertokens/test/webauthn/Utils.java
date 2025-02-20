@@ -71,7 +71,7 @@ public class Utils {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/options/register",
-                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+                requestBody, 10000, 10000, null, SemVer.v5_3.get(), null);
 
         return response;
     }
@@ -87,7 +87,7 @@ public class Utils {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/options/signin",
-                requestBody, 10000, 10000, null, SemVer.v5_2.get(), null);
+                requestBody, 10000, 10000, null, SemVer.v5_3.get(), null);
 
         return response;
     }
@@ -100,7 +100,7 @@ public class Utils {
         String clientDataJson = Base64UrlUtil.encodeToString(credential.getAuthenticatorResponse().getClientDataJSON());
         String rawId = Base64UrlUtil.encodeToString(credential.getRawId());
         String authenticatorData = Base64UrlUtil.encodeToString(credential.getResponse().getAuthenticatorData());
-        //System.out.println(Base64UrlUtil.decode(clientDataJson));
+
         signInRequestBody.add("credential", new Gson().toJsonTree(credential));
         signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("signature", signature);
         signInRequestBody.getAsJsonObject("credential").getAsJsonObject("response").addProperty("clientDataJSON", clientDataJson);
@@ -114,7 +114,7 @@ public class Utils {
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/signin",
-                signInRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+                signInRequestBody, 10000, 1000, null, SemVer.v5_3.get(), null);
 
         return signInResponse;
     }
@@ -165,7 +165,7 @@ public class Utils {
 
         JsonObject signupResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/signup",
-                signUpRequestBody, 10000, 1000, null, SemVer.v5_2.get(), null);
+                signUpRequestBody, 10000, 1000, null, SemVer.v5_3.get(), null);
 
         return signupResponse;
     }
