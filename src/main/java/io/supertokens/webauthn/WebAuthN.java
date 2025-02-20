@@ -47,7 +47,7 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.exceptions.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.data.WebAuthNSignInUpResult;
 import io.supertokens.webauthn.data.WebauthNCredentialRecord;
@@ -294,7 +294,7 @@ public class WebAuthN {
                         AuthRecipeUserInfo userInfo = webAuthNStorage.signUpWithCredentialsRegister_Transaction(
                                 tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
                                 generatedOptions.relyingPartyId, credentialToSave);
-                        userInfo.setExternalUserId(null);
+                        userInfo.setExternalUserId(null); //TODO revisit this
 
                         ((Connection) con.getConnection()).commit();
                         return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
@@ -392,13 +392,13 @@ public class WebAuthN {
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
                     webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
 
-                    AuthRecipeUserInfo userInfo = webAuthNStorage.getUserInfoByCredentialId_Transaction(tenantIdentifier,
-                            con, credentialId);
-                    if(userInfo == null) {
+                    AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId(tenantIdentifier, credentialId);
+                    if(fullyLoadedUserInfo == null) {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UserIdNotFoundException());
                     }
-                    return new WebAuthNSignInUpResult(credential, userInfo, generatedOptions);
+                    UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
+                    return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {
                     throw new StorageTransactionLogicException(e);
