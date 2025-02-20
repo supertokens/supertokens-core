@@ -128,11 +128,11 @@ public class TestWithNonAuthRecipes {
         // Check that get user by ID works fine
         JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(),
                 process.getProcess());
-        assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+        assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
         JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                 process.getProcess());
-        assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+        assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
 
         JsonObject metadata = new JsonObject();
         metadata.addProperty("key", "value");
@@ -143,7 +143,7 @@ public class TestWithNonAuthRecipes {
                     process.getProcess());
 
             jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(), process.getProcess());
-            assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+            assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
 
             try {
                 TestMultitenancyAPIHelper.getUserById(t1, user2.getSupertokensUserId(),
@@ -170,7 +170,7 @@ public class TestWithNonAuthRecipes {
                     process.getProcess());
 
             jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(), process.getProcess());
-            assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+            assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
             try {
                 TestMultitenancyAPIHelper.getUserById(t1, user1.getSupertokensUserId(), process.getProcess());
@@ -239,11 +239,11 @@ public class TestWithNonAuthRecipes {
             // Check that get user by ID works fine
             JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+            assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
             JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+            assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
         }
 
         TestMultitenancyAPIHelper.createRole(t0, "role1", process.getProcess());
@@ -263,11 +263,11 @@ public class TestWithNonAuthRecipes {
             // Check that get user by ID works fine
             JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+            assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
             JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+            assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
         }
 
         {
@@ -312,11 +312,11 @@ public class TestWithNonAuthRecipes {
             // Check that get user by ID works fine
             JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+            assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
             JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                     process.getProcess());
-            assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+            assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
         }
     }
 
@@ -348,11 +348,11 @@ public class TestWithNonAuthRecipes {
         // Check that get user by ID works fine
         JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(),
                 process.getProcess());
-        assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+        assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
         JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                 process.getProcess());
-        assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+        assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
 
         {
             // Add email verification for user2 using t1 and ensure get user works fine
@@ -361,7 +361,7 @@ public class TestWithNonAuthRecipes {
 
             jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(), process.getProcess());
             user2.loginMethods[0].setVerified();
-            assertEquals(user2.toJson(), jsonUser2.get("user").getAsJsonObject());
+            assertEquals(user2.toJson(false), jsonUser2.get("user").getAsJsonObject());
 
             try {
                 TestMultitenancyAPIHelper.getUserById(t1, user2.getSupertokensUserId(),
@@ -379,7 +379,7 @@ public class TestWithNonAuthRecipes {
 
             jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(), process.getProcess());
             user1.loginMethods[0].setVerified();
-            assertEquals(user1.toJson(), jsonUser1.get("user").getAsJsonObject());
+            assertEquals(user1.toJson(false), jsonUser1.get("user").getAsJsonObject());
 
             try {
                 TestMultitenancyAPIHelper.getUserById(t1, user1.getSupertokensUserId(), process.getProcess());
