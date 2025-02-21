@@ -89,7 +89,7 @@ public class SignInAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+            JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)) :
                     user.toJsonWithoutAccountLinking();
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 userJson.remove("tenantIds");

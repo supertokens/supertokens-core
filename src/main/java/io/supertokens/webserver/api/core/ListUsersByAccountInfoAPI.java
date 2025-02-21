@@ -16,16 +16,19 @@
 
 package io.supertokens.webserver.api.core;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -54,6 +57,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
                 InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
         String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", true);
         String thirdPartyUserId = InputParser.getQueryParamOrThrowError(req, "thirdPartyUserId", true);
+        String webauthnCredentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", true);
 
         String doUnionOfAccountInfoStr = InputParser.getQueryParamOrThrowError(req, "doUnionOfAccountInfo", false);
         if (!(doUnionOfAccountInfoStr.equals("false") || doUnionOfAccountInfoStr.equals("true"))) {
@@ -77,17 +81,21 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             Storage storage = this.getTenantStorage(req);
             AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
                     tenantIdentifier, storage, doUnionOfAccountInfo, email, phoneNumber, thirdPartyId,
-                    thirdPartyUserId);
+                    thirdPartyUserId, webauthnCredentialId);
             UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonArray();
             for (AuthRecipeUserInfo userInfo : users) {
-                usersJson.add(userInfo.toJson());
+                usersJson.add(userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
             }
 
             result.add("users", usersJson);
+
+            Logging.info(main, tenantIdentifier, "ListUsersByAccountInfoAPI - credentialId is " + webauthnCredentialId, true);
+            Logging.info(main, tenantIdentifier, new Gson().toJson(result), true);
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {

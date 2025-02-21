@@ -67,7 +67,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonArray();
             for (AuthRecipeUserInfo userInfo : users) {
-                usersJson.add(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? userInfo.toJson() :
+                usersJson.add(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)) :
                         userInfo.toJsonWithoutAccountLinking());
             }
 

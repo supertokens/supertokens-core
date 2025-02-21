@@ -157,7 +157,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
                 JsonObject userJson =
-                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)) :
                                 response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {

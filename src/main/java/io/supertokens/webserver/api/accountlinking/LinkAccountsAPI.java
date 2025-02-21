@@ -35,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -111,7 +112,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
-            response.add("user", linkAccountsResult.user.toJson());
+            response.add("user", linkAccountsResult.user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
 
             if (!linkAccountsResult.wasAlreadyLinked) {
                 try {
@@ -153,7 +154,7 @@ public class LinkAccountsAPI extends WebserverAPI {
                         new AuthRecipeUserInfo[]{e.recipeUser});
                 response.addProperty("primaryUserId", e.recipeUser.getSupertokensOrExternalUserId());
                 response.addProperty("description", e.getMessage());
-                response.add("user", e.recipeUser.toJson());
+                response.add("user", e.recipeUser.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
                 super.sendJsonResponse(200, response, resp);
             } catch (StorageQueryException ex) {
                 throw new ServletException(ex);
