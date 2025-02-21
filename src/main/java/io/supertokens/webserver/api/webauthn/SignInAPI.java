@@ -16,11 +16,9 @@
 
 package io.supertokens.webserver.api.webauthn;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -58,8 +56,6 @@ public class SignInAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        Logging.info(main, new TenantIdentifier(null, null, null), new Gson().toJson(input), true);
-
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
@@ -98,36 +94,29 @@ public class SignInAPI extends WebserverAPI {
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         } catch (InvalidWebauthNOptionsException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "InvalidWebauthNOptionsException Error in WebAuthN sign in " + e.getMessage(), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_OPTIONS_ERROR");
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNVerificationFailedException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNVerificationFailedException Error in WebAuthN sign in " + e.getMessage(), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_AUTHENTICATOR_ERROR");
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNInvalidFormatException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNInvalidFormatException Error in WebAuthN sign in " + e.getMessage(), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_CREDENTIALS_ERROR");
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         } catch (WebauthNOptionsNotExistsException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNOptionsNotExistsException Error in WebAuthN sign in " + e.getMessage(), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
             sendJsonResponse(200, result, resp);
         } catch (WebauthNCredentialNotExistsException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "WebauthNCredentialNotExistsException Error in WebAuthN sign in " + e, true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "CREDENTIAL_NOT_FOUND_ERROR");
-            Logging.info(main, new TenantIdentifier(null, null, null), new Gson().toJson(result) + e, true);
             sendJsonResponse(200, result, resp);
         } catch (UserIdNotFoundException e) {
-            Logging.info(main, new TenantIdentifier(null, null, null), "UserIdNotFoundException Error in WebAuthN sign in " + e.getMessage(), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, result, resp);

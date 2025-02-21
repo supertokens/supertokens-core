@@ -63,8 +63,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -296,13 +294,12 @@ public class WebAuthN {
                                 generatedOptions.relyingPartyId, credentialToSave);
                         userInfo.setExternalUserId(null); //TODO revisit this
 
-                        ((Connection) con.getConnection()).commit();
                         return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (InvalidWebauthNOptionsException | TenantOrAppNotFoundException |
                              DuplicateUserEmailException | WebauthNVerificationFailedException |
-                             WebauthNInvalidFormatException | WebauthNOptionsNotExistsException | SQLException e) {
+                             WebauthNInvalidFormatException | WebauthNOptionsNotExistsException e) {
                         throw new StorageQueryException(e);
                     }
                 }
