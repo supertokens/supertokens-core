@@ -1359,13 +1359,25 @@ public class GeneralQueries {
         AuthRecipeUserInfo webauthnUser = start.startTransaction(con -> {
             try {
                 Connection sqlCon = (Connection) con.getConnection();
-                return WebAuthNQueries.getUserInfoByCredentialId_Transaction(start, sqlCon, tenantIdentifier,
+                return getPrimaryUserByWebauthNCredentialId_Transaction(start, sqlCon, tenantIdentifier,
                         credentialId);
             } catch (SQLException e) {
                 throw new StorageQueryException(e);
             }
         });
-        return getPrimaryUserInfoForUserId(start, tenantIdentifier.toAppIdentifier(), webauthnUser.getSupertokensUserId());
+        return webauthnUser;
+    }
+
+    public static AuthRecipeUserInfo getPrimaryUserByWebauthNCredentialId_Transaction(Start start,
+                                                                                      Connection connection,
+                                                                                      TenantIdentifier tenantIdentifier,
+                                                                                      String credentialId)
+            throws StorageQueryException, SQLException, StorageTransactionLogicException {
+
+        AuthRecipeUserInfo webauthnUser = WebAuthNQueries.getUserInfoByCredentialId_Transaction(start, connection,
+                tenantIdentifier, credentialId);
+        return getPrimaryUserInfoForUserId_Transaction(start, connection, tenantIdentifier.toAppIdentifier(),
+                webauthnUser.getSupertokensUserId());
     }
 
     public static String getPrimaryUserIdStrForUserId(Start start, AppIdentifier appIdentifier, String id)

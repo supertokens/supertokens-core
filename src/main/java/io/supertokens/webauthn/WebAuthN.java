@@ -392,7 +392,7 @@ public class WebAuthN {
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
                     webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
 
-                    AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId(tenantIdentifier, credentialId);
+                    AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId_Transaction(tenantIdentifier, con, credentialId);
                     if(fullyLoadedUserInfo == null) {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UserIdNotFoundException());
