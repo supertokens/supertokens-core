@@ -118,12 +118,12 @@ public class Config extends ResourceDistributor.SingletonResource {
         // At this point, we know that all configs are valid.
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
-                try {
-                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                            main.getResourceDistributor()
-                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                    main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-                    for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                    try {
                         ResourceDistributor.SingletonResource resource = existingResources.get(
                                 new ResourceDistributor.KeyClass(
                                         key.getTenantIdentifier(),
@@ -137,19 +137,16 @@ public class Config extends ResourceDistributor.SingletonResource {
                             main.getResourceDistributor()
                                     .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                                             new Config(main, normalisedConfigs.get(key)));
-
                         }
+                    } catch (Exception e) {
+                        Logging.error(main, key.getTenantIdentifier(), e.getMessage(), false);
+                        // continue loading other resources
                     }
-                } catch (InvalidConfigException | IOException e) {
-                    throw new ResourceDistributor.FuncException(e);
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            if (e.getCause() instanceof InvalidConfigException) {
-                throw (InvalidConfigException) e.getCause();
-            }
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 
