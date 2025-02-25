@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
 import io.supertokens.webserver.InputParser;
@@ -49,6 +50,7 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
         // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
+        email = Utils.normaliseEmail(email);
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);

@@ -31,7 +31,6 @@ import com.webauthn4j.verifier.exception.VerificationException;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
@@ -485,7 +484,7 @@ public class WebAuthN {
 
         for (AuthRecipeUserInfo user : users) {
             for (LoginMethod lm : user.loginMethods) {
-                if (lm.recipeId == RECIPE_ID.WEBAUTHN && lm.email.equals(email)) {
+                if (lm.email.equals(email)) {
                     userId = lm.getSupertokensUserId();
                 }
             }
