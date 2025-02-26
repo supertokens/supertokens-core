@@ -3768,7 +3768,35 @@ public class Start
             WebAuthNQueries.updateUserEmail(this, tenantIdentifier, userId, newEmail);
         } catch (StorageQueryException e) {
             if (e.getCause() instanceof SQLiteException){
-                String errorMessage = e.getMessage();
+                String errorMessage = e.getCause().getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isUniqueConstraintError(errorMessage, config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "email"})) {
+                    throw new DuplicateUserEmailException();
+                } else if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getWebAuthNUserToTenantTable(),
+                        new String[]{"app_id", "tenant_id", "user_id"},
+                        new Object[]{tenantIdentifier.getAppId(), userId})) {
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con, String userId,
+                                            String newEmail)
+            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException,
+            DuplicateUserEmailException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            WebAuthNQueries.updateUserEmail_Transaction(this, sqlCon, tenantIdentifier, userId, newEmail);
+        } catch (StorageQueryException e) {
+            if (e.getCause() instanceof SQLiteException){
+                String errorMessage = e.getCause().getMessage();
                 SQLiteConfig config = Config.getConfig(this);
 
                 if (isUniqueConstraintError(errorMessage, config.getWebAuthNUserToTenantTable(),

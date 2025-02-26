@@ -303,6 +303,19 @@ public class Utils {
         return response;
     }
 
+    public static JsonObject updateEmail(Main main, String recipeUserId, String newEmail)
+            throws HttpResponseException, IOException {
+        JsonObject generateTokenRequestBody = new JsonObject();
+        generateTokenRequestBody.addProperty("recipeUserId", recipeUserId);
+        generateTokenRequestBody.addProperty("email", newEmail);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/user/email",
+                generateTokenRequestBody, 10000, 1000, null, SemVer.v5_3.get(), null);
+
+        return response;
+    }
+
     public static void createUserIdMapping(Main main, String supertokensId, String externalUserId)
             throws Exception {
         String externalUserIdInfo = "whatever";

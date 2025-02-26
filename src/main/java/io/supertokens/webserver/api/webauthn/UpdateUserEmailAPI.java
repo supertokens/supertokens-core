@@ -20,11 +20,13 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
 import io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException;
 import io.supertokens.webauthn.WebAuthN;
+import io.supertokens.webauthn.exception.EmailChangeNotAllowedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -50,15 +52,16 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            String userId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
-            String newEmail = InputParser.getQueryParamOrThrowError(req, "email", false);
+            JsonObject requestBody = InputParser.parseJsonObjectOrThrowError(req);
+            String userId = InputParser.parseStringOrThrowError(requestBody, "recipeUserId", false);
+            String newEmail = InputParser.parseStringOrThrowError(requestBody, "email", false);
 
             WebAuthN.updateUserEmail(storage, tenantIdentifier, userId, newEmail);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             sendJsonResponse(200, result, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         } catch (UserIdNotFoundException e) {
             JsonObject result = new JsonObject();
@@ -67,6 +70,10 @@ public class UpdateUserEmailAPI extends WebserverAPI {
         } catch (DuplicateUserEmailException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            sendJsonResponse(200, result, resp);
+        } catch (EmailChangeNotAllowedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "USER_WITH_EMAIL_ALREADY_EXISTS_ERROR");
             sendJsonResponse(200, result, resp);
         }
     }
