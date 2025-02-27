@@ -80,6 +80,30 @@ public class GetCredentialFlowTest {
     }
 
     @Test
+    public void getCredentialWithNotExistingId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
+        assertEquals(1, users.size());
+        assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+
+        String userId = users.get(0).getAsJsonObject("user").get("id").getAsString();
+
+        JsonObject getCredentialResponse = Utils.getCredential(process.getProcess(), userId, "notexistingid");
+        assertEquals("CREDENTIAL_NOT_FOUND_ERROR", getCredentialResponse.get("status").getAsString());
+    }
+
+    @Test
     public void getCredentialWithUserIdMapping() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
