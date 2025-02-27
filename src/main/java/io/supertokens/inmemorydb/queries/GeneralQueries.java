@@ -318,6 +318,9 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateEmailVerificationTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, getQueryToCreateEmailVerificationVerifiedEmailsAppIdIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTokensTable())) {
@@ -483,6 +486,9 @@ public class GeneralQueries {
         if(!doesTableExists(start, Config.getConfig(start).getWebAuthNUserToTenantTable())){
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNUsersToTenantTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUserToTenantEmailIndex(start), NO_OP_SETTER);
         }
 
         if(!doesTableExists(start, Config.getConfig(start).getWebAuthNGeneratedOptionsTable())){
@@ -505,6 +511,9 @@ public class GeneralQueries {
         if(!doesTableExists(start, Config.getConfig(start).getWebAuthNCredentialsTable())){
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsUserIdIndex(start), NO_OP_SETTER);
         }
     }
 

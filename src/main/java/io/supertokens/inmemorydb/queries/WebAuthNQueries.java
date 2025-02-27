@@ -70,6 +70,12 @@ public class WebAuthNQueries {
                 ");";
     }
 
+    public static String getQueryToCreateWebAuthNUserToTenantEmailIndex(Start start) {
+        return "CREATE INDEX webauthn_user_to_tenant_email_index ON " +
+                Config.getConfig(start).getWebAuthNUserToTenantTable() +
+                " (app_id, email);";
+    }
+
     public static String getQueryToCreateWebAuthNGeneratedOptionsTable(Start start){
         return  "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable() + "(" +
                 " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
@@ -111,6 +117,12 @@ public class WebAuthNQueries {
                 " CONSTRAINT webauthn_user_credentials_webauthn_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES " +
                 Config.getConfig(start).getWebAuthNUsersTable() + " (app_id, user_id) ON DELETE CASCADE" +
                 ");";
+    }
+
+    public static String getQueryToCreateWebAuthNCredentialsUserIdIndex(Start start) {
+        return "CREATE INDEX IF NOT EXISTS webauthn_credentials_user_id_index ON " +
+                Config.getConfig(start).getWebAuthNCredentialsTable() +
+                " (user_id);";
     }
 
     public static String getQueryToCreateWebAuthNAccountRecoveryTokenTable(Start start) {
