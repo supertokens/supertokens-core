@@ -437,7 +437,9 @@ public class WebAuthN {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
         WebAuthNStoredCredential loadedCredential = webAuthNStorage.loadCredentialByIdForUser(tenantIdentifier, credentialId, supertokensUserId);
-        loadedCredential.userId = recipeUserId;
+        if(loadedCredential != null) {
+            loadedCredential.userId = recipeUserId;
+        }
         return loadedCredential;
     }
 
