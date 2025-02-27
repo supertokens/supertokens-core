@@ -70,7 +70,6 @@ public class Utils {
         for(int i = 0; i < numberOfUser; i++){
             JsonObject user = registerUserWithCredentials(main, "user" + i + "@example.com");
             users.add(user);
-            System.out.println("User " + i + " registered");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -377,6 +376,33 @@ public class Utils {
 
             assertFalse(result.wasAlreadyLinked);
         }
+    }
+
+    public static JsonObject listCredentials(Main main, String userId)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/user/credential/list",
+                Map.of("recipeUserId", userId), 10000, 1000, null, SemVer.v5_3.get(), null);
+
+        return response;
+    }
+
+    public static JsonObject removeCredential(Main main, String userId, String credentialId)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(main, "",
+                "http://localhost:3567/recipe/webauthn/user/credential/remove",
+                Map.of("recipeUserId", userId, "webauthnCredentialId", credentialId), 10000, 1000, null, SemVer.v5_3.get(), null);
+
+        return response;
+    }
+
+    public static JsonObject getCredential(Main main, String userId, String credentialId)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/user/credential/",
+                Map.of("recipeUserId", userId, "webauthnCredentialId", credentialId), 10000, 1000, null, SemVer.v5_3.get(), null);
+
+        return response;
     }
 
 }

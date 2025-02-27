@@ -181,16 +181,21 @@ public class WebAuthN {
         RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialsDataJson,
                 generatedOptions);
 
+        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
         String credentialId = getCredentialId(credentialsDataJson);
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                 verifiedRegistrationData,
-                recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
+                supertokensUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
                 tenantIdentifier);
 
         WebAuthNStoredCredential savedCredential = webAuthNStorage.saveCredentials(tenantIdentifier, credentialToSave);
 
-        return WebauthMapper.mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
+        WebauthNCredentialResponse response = WebauthMapper.mapStoredCredentialToResponse(savedCredential, generatedOptions.userEmail,
                 generatedOptions.relyingPartyName);
+
+        response.recipeUserId = recipeUserId;
+
+        return response;
     }
 
     @NotNull
@@ -430,7 +435,10 @@ public class WebAuthN {
     public static WebAuthNStoredCredential loadCredentialByIdForUser(Storage storage, TenantIdentifier tenantIdentifier,
                                                               String credentialId, String recipeUserId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        return webAuthNStorage.loadCredentialByIdForUser(tenantIdentifier, credentialId, recipeUserId);
+        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
+        WebAuthNStoredCredential loadedCredential = webAuthNStorage.loadCredentialByIdForUser(tenantIdentifier, credentialId, supertokensUserId);
+        loadedCredential.userId = recipeUserId;
+        return loadedCredential;
     }
 
     @NotNull
@@ -598,7 +606,8 @@ public class WebAuthN {
                                         String userId, String credentialId)
             throws StorageQueryException, WebauthNCredentialNotExistsException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        webAuthNStorage.removeCredential(tenantIdentifier, userId, credentialId);
+        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, userId);
+        webAuthNStorage.removeCredential(tenantIdentifier, supertokensUserId, credentialId);
     }
 
     public static void removeOptions(Storage storage, TenantIdentifier tenantIdentifier,
@@ -611,7 +620,21 @@ public class WebAuthN {
     public static List<WebAuthNStoredCredential> listCredentialsForUser(Storage storage, TenantIdentifier tenantIdentifier,
                                                                           String userId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        return webAuthNStorage.listCredentialsForUser(tenantIdentifier, userId);
+        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, userId);
+        List<WebAuthNStoredCredential> loadedCredentials = webAuthNStorage.listCredentialsForUser(tenantIdentifier, supertokensUserId);
+        for (WebAuthNStoredCredential credential : loadedCredentials) {
+            credential.userId = userId; //change back to the external user id
+        }
+        return loadedCredentials;
+    }
+
+    private static String translateToInternalUserId(Storage storage,
+                                                    TenantIdentifier tenantIdentifier,
+                                                    String userId)
+            throws StorageQueryException {
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                UserIdMapping.getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, userId, null);
+        return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String email)

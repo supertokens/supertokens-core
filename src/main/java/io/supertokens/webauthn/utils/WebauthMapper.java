@@ -169,6 +169,7 @@ public class WebauthMapper {
             response.addProperty("recipeUserId", credential.userId);
             response.addProperty("relyingPartyId", credential.rpId);
             response.addProperty("createdAt", credential.createdAt);
+            response.addProperty("updatedAt", credential.updatedAt);
         }
         return response;
     }

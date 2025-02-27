@@ -60,9 +60,8 @@ public class GetCredentialAPI extends WebserverAPI {
                 throw new WebauthNCredentialNotExistsException();
             }
 
-            JsonObject result = new JsonObject();
+            JsonObject result = WebauthMapper.mapStoredCredentialToResponse(credential);
             result.addProperty("status", "OK");
-            WebauthMapper.mapStoredCredentialToResponse(credential);
 
             sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
