@@ -184,7 +184,7 @@ public class UsersAPI extends WebserverAPI {
                     jsonObj.add("user", userJson);
                     usersJson.add(jsonObj);
                 } else {
-                    usersJson.add(user.toJson());
+                    usersJson.add(user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
                 }
             }
 

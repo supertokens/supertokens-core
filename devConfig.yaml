@@ -175,3 +175,6 @@ disable_telemetry: true
 # the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
 
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 300000) long value. Time in milliseconds for how long a webauthn
+# account recovery token is valid for.
+# webauthn_recover_account_token_lifetime:

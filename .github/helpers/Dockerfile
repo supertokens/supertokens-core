@@ -34,7 +34,7 @@ RUN mkdir -p supertokens-core
 COPY ./ supertokens-core
 RUN echo "org.gradle.vfs.watch=false" >> ./gradle.properties
 RUN ./loadModules
-RUN ./utils/setupTestEnv --cicd
+RUN ./utils/setupTestEnv --local
 
 
 FROM debian:bookworm-slim
@@ -70,5 +70,5 @@ RUN echo "$(md5sum /usr/lib/supertokens/config.yaml | awk '{ print $1 }')" >> /C
 RUN ln -s /usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
 EXPOSE 3567
 USER "supertokens"
-CMD ["/usr/lib/supertokens/jre/bin/java", "-classpath", "/usr/lib/supertokens/core/*:/usr/lib/supertokens/plugin-interface/*:/usr/lib/supertokens/ee/*", "io.supertokens.Main", "/usr/lib/supertokens", "DEV", "host=0.0.0.0", "test_mode"]
+CMD ["/usr/lib/supertokens/jre/bin/java", "-classpath", "/usr/lib/supertokens/core/*:/usr/lib/supertokens/plugin-interface/*:/usr/lib/supertokens/ee/*", "io.supertokens.Main", "/usr/lib/supertokens", "DEV", "host=0.0.0.0", "test_mode", "tempDirLocation=/usr/lib/supertokens/temp", "configFile=/usr/lib/supertokens/temp/config.yaml"]
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

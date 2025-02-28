@@ -115,6 +115,16 @@
       "jar": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25.jar",
       "name": "Libphonenumber 8.13.25",
       "src": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.3.RELEASE/webauthn4j-core-0.28.5.RELEASE.jar",
+      "name": "webauthn4j-core 0.28.3.RELEASE",
+      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.3.RELEASE/webauthn4j-core-0.28.5.RELEASE-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE.jar",
+      "name": "webauthn4j-test 0.28.5.RELEASE",
+      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-test/0.28.5.RELEASE/webauthn4j-test-0.28.5.RELEASE-sources.jar"
     }
   ]
 }
