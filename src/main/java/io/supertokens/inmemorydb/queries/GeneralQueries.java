@@ -1364,7 +1364,6 @@ public class GeneralQueries {
                                                                           TenantIdentifier tenantIdentifier,
                                                                           String credentialId)
             throws StorageQueryException, SQLException, StorageTransactionLogicException {
-        // TODO: revisit this. Seems like we are loading the same data multiple times
         AuthRecipeUserInfo webauthnUser = start.startTransaction(con -> {
             try {
                 Connection sqlCon = (Connection) con.getConnection();

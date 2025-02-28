@@ -16,5 +16,5 @@
 
 package io.supertokens.webauthn.exception;
 
-public class InvalidTokenException extends RuntimeException {
+public class InvalidTokenException extends Exception {
 }

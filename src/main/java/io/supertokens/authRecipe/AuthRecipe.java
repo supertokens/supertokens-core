@@ -1051,7 +1051,7 @@ public class AuthRecipe {
                 null);
     }
 
-    // TODO: revisit this when writing tests
+
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
                                                              Storage storage,
                                                              boolean doUnionOfAccountInfo, String email,

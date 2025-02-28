@@ -16,5 +16,5 @@
 
 package io.supertokens.webauthn.exception;
 
-public class WebAuthNEmailNotFoundException extends RuntimeException {
+public class WebAuthNEmailNotFoundException extends Exception {
 }

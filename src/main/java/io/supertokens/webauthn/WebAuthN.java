@@ -298,7 +298,7 @@ public class WebAuthN {
                         AuthRecipeUserInfo userInfo = webAuthNStorage.signUpWithCredentialsRegister_Transaction(
                                 tenantIdentifier, con, recipeUserId, generatedOptions.userEmail,
                                 generatedOptions.relyingPartyId, credentialToSave);
-                        userInfo.setExternalUserId(null); //TODO revisit this
+                        userInfo.setExternalUserId(null);
 
                         return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
@@ -487,7 +487,7 @@ public class WebAuthN {
 
     public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
-            StorageQueryException {
+            StorageQueryException, WebAuthNEmailNotFoundException {
         // find the recipe user with the email
         AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifier, storage, true, email, null,
                 null, null, null);
@@ -538,7 +538,7 @@ public class WebAuthN {
     }
 
     public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token)
-            throws StorageQueryException, NoSuchAlgorithmException {
+            throws StorageQueryException, NoSuchAlgorithmException, InvalidTokenException {
         WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
 
         String hashedToken = Utils.hashSHA256(token);
