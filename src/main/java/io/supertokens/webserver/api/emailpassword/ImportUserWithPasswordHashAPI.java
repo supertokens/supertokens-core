@@ -109,7 +109,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson =
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? importUserResponse.user.toJson() :
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? importUserResponse.user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)) :
                             importUserResponse.user.toJsonWithoutAccountLinking();
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {

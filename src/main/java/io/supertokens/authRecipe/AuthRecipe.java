@@ -1037,12 +1037,27 @@ public class AuthRecipe {
         }
     }
 
+    @TestOnly
+    public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
+                                                             Storage storage,
+                                                             boolean doUnionOfAccountInfo, String email,
+                                                             String phoneNumber, String thirdPartyId,
+                                                             String thirdPartyUserId) throws StorageQueryException {
+        return getUsersByAccountInfo(tenantIdentifier,
+                storage,
+                doUnionOfAccountInfo, email,
+                phoneNumber, thirdPartyId,
+                thirdPartyUserId,
+                null);
+    }
+
 
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
                                                              Storage storage,
                                                              boolean doUnionOfAccountInfo, String email,
                                                              String phoneNumber, String thirdPartyId,
-                                                             String thirdPartyUserId)
+                                                             String thirdPartyUserId,
+                                                             String webauthnCredentialId)
             throws StorageQueryException {
         Set<AuthRecipeUserInfo> result = new HashSet<>();
 
@@ -1059,6 +1074,14 @@ public class AuthRecipe {
         if (thirdPartyId != null && thirdPartyUserId != null) {
             AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                     .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
+            if (user != null) {
+                result.add(user);
+            }
+        }
+
+        if(webauthnCredentialId != null){
+            AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
+                    .getPrimaryUserByWebauthNCredentialId(tenantIdentifier, webauthnCredentialId);
             if (user != null) {
                 result.add(user);
             }

@@ -32,6 +32,7 @@ import io.supertokens.webserver.api.bulkimport.DeleteBulkImportUserAPI;
 import io.supertokens.webserver.api.bulkimport.ImportUserAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
+import io.supertokens.webserver.api.emailpassword.SignInAPI;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
@@ -55,6 +56,7 @@ import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.userroles.*;
+import io.supertokens.webserver.api.webauthn.*;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -309,6 +311,22 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RevokeOAuthTokensAPI(main));
         addAPI(new RevokeOAuthSessionAPI(main));
         addAPI(new OAuthLogoutAPI(main));
+
+        //webauthn
+        addAPI(new OptionsRegisterAPI(main));
+        addAPI(new SignInOptionsAPI(main));
+        addAPI(new CredentialsRegisterAPI(main));
+        addAPI(new SignUpWithCredentialRegisterAPI(main));
+        addAPI(new GetGeneratedOptionsAPI(main));
+        addAPI(new io.supertokens.webserver.api.webauthn.SignInAPI(main));
+        addAPI(new ConsumeRecoverAccountTokenAPI(main));
+        addAPI(new GenerateRecoverAccountTokenAPI(main));
+        addAPI(new GetUserFromRecoverAccountTokenAPI(main));
+        addAPI(new RemoveCredentialAPI(main));
+        addAPI(new RemoveOptionsAPI(main));
+        addAPI(new ListCredentialsAPI(main));
+        addAPI(new GetCredentialAPI(main));
+        addAPI(new UpdateUserEmailAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

@@ -48,3 +48,6 @@ local.properties
 ee/bin
 addDevTag
 addReleaseTag
+
+install-linux.sh
+install-windows.bat

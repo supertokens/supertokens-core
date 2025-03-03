@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.NotNull;
@@ -317,6 +318,9 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateEmailVerificationTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, getQueryToCreateEmailVerificationVerifiedEmailsAppIdIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTokensTable())) {
@@ -472,6 +476,44 @@ public class GeneralQueries {
 
             // index
             update(start, OAuthQueries.getQueryToCreateOAuthLogoutChallengesTimeCreatedIndex(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNUsersTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUsersTable(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNUserToTenantTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUsersToTenantTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNUserToTenantEmailIndex(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNGeneratedOptionsTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNGeneratedOptionsTable(start), NO_OP_SETTER);
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNChallengeExpiresIndex(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenTokenIndex(start), NO_OP_SETTER);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenEmailIndex(start), NO_OP_SETTER);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNAccountRecoveryTokenExpiresAtIndex(start), NO_OP_SETTER);
+        }
+
+        if(!doesTableExists(start, Config.getConfig(start).getWebAuthNCredentialsTable())){
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsTable(start), NO_OP_SETTER);
+
+            //index
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsUserIdIndex(start), NO_OP_SETTER);
         }
     }
 
@@ -826,6 +868,45 @@ public class GeneralQueries {
                         } else {
                             USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
                                     .append(" LIMIT 1000) AS passwordlessResultTable");
+
+                        }
+                    }
+                }
+
+                {
+                    // check if we should search through the webauthn table
+                    if (dashboardSearchTags.shouldWebauthnTableBeSearched()) {
+                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
+                                + " AS allAuthUsersTable" +
+                                " JOIN " + getConfig(start).getWebAuthNUserToTenantTable()
+                                + " AS webauthnTable ON allAuthUsersTable.app_id = webauthnTable.app_id AND "
+                                + "allAuthUsersTable.tenant_id = webauthnTable.tenant_id AND "
+                                + "allAuthUsersTable.user_id = webauthnTable.user_id";
+
+                        // attach email tags to queries
+                        QUERY = QUERY +
+                                " WHERE (webauthnTable.app_id = ? AND webauthnTable.tenant_id = ?) AND"
+                                + " ( webauthnTable.email LIKE ? OR webauthnTable.email LIKE ? ";
+                        queryList.add(tenantIdentifier.getAppId());
+                        queryList.add(tenantIdentifier.getTenantId());
+                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
+                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                            QUERY += " OR webauthnTable.email LIKE ? OR webauthnTable.email LIKE ?";
+                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                        }
+
+                        QUERY += " )";
+
+                        // check if we need to append this to an existing search query
+                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
+                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000) AS webauthnResultTable");
+
+                        } else {
+                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000) AS webauthnResultTable");
 
                         }
                     }
@@ -1193,6 +1274,12 @@ public class GeneralQueries {
 
         userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail_Transaction(start, sqlCon, appIdentifier, email));
 
+        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdUsingEmail_Transaction(start, sqlCon, appIdentifier, email);
+        if(webauthnUserId != null) {
+            userIds.add(webauthnUserId);
+        }
+
+
         // remove duplicates from userIds
         Set<String> userIdsSet = new HashSet<>(userIds);
         userIds = new ArrayList<>(userIdsSet);
@@ -1223,6 +1310,11 @@ public class GeneralQueries {
         }
 
         userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email));
+
+        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier.toAppIdentifier(), email);
+        if(webauthnUserId != null) {
+            userIds.add(webauthnUserId);
+        }
 
         // remove duplicates from userIds
         Set<String> userIdsSet = new HashSet<>(userIds);
@@ -1266,6 +1358,34 @@ public class GeneralQueries {
         String userId = ThirdPartyQueries.getUserIdByThirdPartyInfo(start, tenantIdentifier,
                 thirdPartyId, thirdPartyUserId);
         return getPrimaryUserInfoForUserId(start, tenantIdentifier.toAppIdentifier(), userId);
+    }
+
+    public static AuthRecipeUserInfo getPrimaryUserByWebauthNCredentialId(Start start,
+                                                                          TenantIdentifier tenantIdentifier,
+                                                                          String credentialId)
+            throws StorageQueryException, SQLException, StorageTransactionLogicException {
+        AuthRecipeUserInfo webauthnUser = start.startTransaction(con -> {
+            try {
+                Connection sqlCon = (Connection) con.getConnection();
+                return getPrimaryUserByWebauthNCredentialId_Transaction(start, sqlCon, tenantIdentifier,
+                        credentialId);
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
+        });
+        return webauthnUser;
+    }
+
+    public static AuthRecipeUserInfo getPrimaryUserByWebauthNCredentialId_Transaction(Start start,
+                                                                                      Connection connection,
+                                                                                      TenantIdentifier tenantIdentifier,
+                                                                                      String credentialId)
+            throws StorageQueryException, SQLException, StorageTransactionLogicException {
+
+        AuthRecipeUserInfo webauthnUser = WebAuthNQueries.getUserInfoByCredentialId_Transaction(start, connection,
+                tenantIdentifier, credentialId);
+        return getPrimaryUserInfoForUserId_Transaction(start, connection, tenantIdentifier.toAppIdentifier(),
+                webauthnUser.getSupertokensUserId());
     }
 
     public static String getPrimaryUserIdStrForUserId(Start start, AppIdentifier appIdentifier, String id)
@@ -1381,6 +1501,7 @@ public class GeneralQueries {
         loginMethods.addAll(ThirdPartyQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
         loginMethods.addAll(
                 PasswordlessQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
+        loginMethods.addAll(WebAuthNQueries.getUsersInfoUsingIdList(start, recipeUserIdsToFetch, appIdentifier));
 
         Map<String, LoginMethod> recipeUserIdToLoginMethodMap = new HashMap<>();
         for (LoginMethod loginMethod : loginMethods) {
@@ -1480,6 +1601,8 @@ public class GeneralQueries {
         loginMethods.addAll(
                 PasswordlessQueries.getUsersInfoUsingIdList_Transaction(start, sqlCon, recipeUserIdsToFetch,
                         appIdentifier));
+        loginMethods.addAll(WebAuthNQueries.getUsersInfoUsingIdList_Transaction(start, sqlCon, recipeUserIdsToFetch,
+                appIdentifier));
 
         Map<String, LoginMethod> recipeUserIdToLoginMethodMap = new HashMap<>();
         for (LoginMethod loginMethod : loginMethods) {

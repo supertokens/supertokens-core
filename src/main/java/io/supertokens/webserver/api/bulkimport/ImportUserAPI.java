@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -85,7 +86,7 @@ public class ImportUserAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.add("user", importedUser.toJson());
+            result.add("user", importedUser.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
             super.sendJsonResponse(200, result, resp);
         } catch (BulkImportBatchInsertException e) {
             JsonArray errors = new JsonArray();

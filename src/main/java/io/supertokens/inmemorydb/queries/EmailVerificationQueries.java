@@ -51,6 +51,11 @@ public class EmailVerificationQueries {
                 + ");";
     }
 
+    static String getQueryToCreateEmailVerificationVerifiedEmailsAppIdIndex(Start start) {
+        return "CREATE INDEX emailverification_verified_emails_verified_appid_emails_index ON "
+                + Config.getConfig(start).getEmailVerificationTable() + "(app_id, email);";
+    }
+
     static String getQueryToCreateEmailVerificationTokensTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getEmailVerificationTokensTable() + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
