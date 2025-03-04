@@ -47,8 +47,9 @@ public interface QueryExecutorTemplate {
 
     static void executeBatch(Connection connection, String QUERY, List<PreparedStatementValueSetter> setters)
             throws SQLException, StorageQueryException {
-        assert setters != null;
-        assert !setters.isEmpty();
+        if(setters == null || setters.isEmpty()) {
+            return;
+        }
         try (PreparedStatement pst = connection.prepareStatement(QUERY)) {
             int counter = 0;
             for(PreparedStatementValueSetter setter: setters) {
