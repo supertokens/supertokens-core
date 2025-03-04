@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
@@ -47,6 +48,7 @@ import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.webauthn.WebAuthN;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -188,6 +190,14 @@ public class TestAppData {
         ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
         OAuth.createOrUpdateOauthSession(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "test-gid", null, null, "sessionHandle", "jti", 0);
+
+        WebAuthN.saveUser(appStorage, app, "test@example.com", "webauthnid", "authenticator");
+        JsonObject options = WebAuthN.generateOptions(app, appStorage, "test@example.com", "Test", "authenticator", "example.com", "http://example.com", (long)300000, "none", "preferred", "preferred", new JsonArray(), false);
+        JsonObject credential = new JsonObject();
+        credential.addProperty("id", "webauthnid");
+        credential.addProperty("type", "public-key");
+        WebAuthN.registerCredentials(appStorage, app, "webauthnid", options.get("webauthnGeneratedOptionsId").getAsString(), credential);
+        WebAuthN.generateRecoverAccountToken(process.getProcess(), appStorage, app, "test@example.com");
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
