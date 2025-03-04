@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.3]
+
+- Fixes issue with reloading all resources when exception occurs while loading a resource, other valid resources were offloaded from the memory. Now we log the exception and continue loading other resources.
+- Adds `USE_STRUCTURED_LOGGING` environment variable to control the logging format.
+
 ## [10.0.2]
 
 - Fixes `NullPointerException` in user search API.
