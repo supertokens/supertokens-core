@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.3]
+
+- Fixes `StorageTransactionLogicException` in bulk import when not using userRoles and totpDevices in import json.
+- MFA only required in Bulk Import if it's used in input data
+
 ## [10.0.2]
 
 - Fixes `NullPointerException` in user search API.
