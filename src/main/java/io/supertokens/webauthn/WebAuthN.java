@@ -168,7 +168,8 @@ public class WebAuthN {
     public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
                                                                  String optionsId, JsonObject credentialsDataJson)
             throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
-            WebauthNInvalidFormatException, WebauthNOptionsNotExistsException {
+            WebauthNInvalidFormatException, WebauthNOptionsNotExistsException, DuplicateCredentialException,
+            UserIdNotFoundException, TenantOrAppNotFoundException {
 
         WebAuthNStorage webAuthNStorage = (WebAuthNStorage) storage;
         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById(tenantIdentifier, optionsId);
@@ -485,14 +486,14 @@ public class WebAuthN {
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
 
-    public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email, String recipeUserId)
+    public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email, String userIdFromRequest)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
             StorageQueryException, UserIdNotFoundException {
 
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.
-                getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, recipeUserId, null);
+                getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, userIdFromRequest, null);
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userIdMapping == null ? recipeUserId : userIdMapping.superTokensUserId);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userIdMapping == null ? userIdFromRequest : userIdMapping.superTokensUserId);
 
         if (user == null) {
             throw new UserIdNotFoundException();

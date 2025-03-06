@@ -99,10 +99,7 @@ import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateRecoverAccountTokenException;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
-import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNCredentialNotExistsException;
-import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
+import io.supertokens.pluginInterface.webauthn.exceptions.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
@@ -3523,10 +3520,38 @@ public class Start
 
     @Override
     public WebAuthNStoredCredential saveCredentials(TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
-            throws StorageQueryException {
+            throws StorageQueryException, DuplicateCredentialException,
+            io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException, TenantOrAppNotFoundException {
         try {
              return WebAuthNQueries.saveCredential(this, tenantIdentifier, credential);
         } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = e.getMessage();
+
+                if (isPrimaryKeyError(serverMessage, config.getWebAuthNCredentialsTable(),
+                        new String[]{"app_id", "user_id", "id"})) {
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateCredentialException();
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getWebAuthNUsersTable(),
+                        new String[]{"user_id"},
+                        new Object[]{tenantIdentifier.getAppId()})) {
+                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
             throw new StorageQueryException(e);
         }
     }

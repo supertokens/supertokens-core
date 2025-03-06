@@ -50,14 +50,14 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
         // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
-        String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         email = Utils.normaliseEmail(email);
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            String token = WebAuthN.generateRecoverAccountToken(main, storage, tenantIdentifier, email, recipeUserId);
+            String token = WebAuthN.generateRecoverAccountToken(main, storage, tenantIdentifier, email, userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("token", token);

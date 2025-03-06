@@ -278,11 +278,11 @@ public class Utils {
         return clientPlatform.create(pkCreationOptions);
     }
 
-    public static JsonObject generateRecoverAccountTokenForEmail(Main main, String email, String recipeUserId)
+    public static JsonObject generateRecoverAccountTokenForEmail(Main main, String email, String userId)
             throws HttpResponseException, IOException {
         JsonObject generateTokenRequestBody = new JsonObject();
         generateTokenRequestBody.addProperty("email", email);
-        generateTokenRequestBody.addProperty("recipeUserId", recipeUserId);
+        generateTokenRequestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/user/recover/token",

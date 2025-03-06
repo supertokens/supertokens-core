@@ -22,6 +22,8 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateCredentialException;
+import io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webauthn.data.WebauthNCredentialResponse;
@@ -92,6 +94,14 @@ public class CredentialsRegisterAPI extends WebserverAPI {
         } catch (WebauthNOptionsNotExistsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OPTIONS_NOT_FOUND_ERROR");
+            sendJsonResponse(200, result, resp);
+        } catch (DuplicateCredentialException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "CREDENTIAL_ALREADY_EXISTS_ERROR");
+            sendJsonResponse(200, result, resp);
+        } catch (UserIdNotFoundException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, result, resp);
         }
     }
