@@ -59,7 +59,7 @@ public class OptionsValidator {
     private static void validateEnumeratedStrValues(String toValidate, List<String> possibleValues, String fieldName)
             throws InvalidWebauthNOptionsException {
         if (!possibleValues.contains(toValidate)) {
-            throw new InvalidWebauthNOptionsException("Invalid value '" + toValidate + "' for " + fieldName);
+            throw new InvalidWebauthNOptionsException("Invalid value '" + toValidate + "' for " + fieldName + ". Must be one of: " + String.join(", ", possibleValues));
         }
     }
 
