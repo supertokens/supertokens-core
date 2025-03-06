@@ -303,7 +303,6 @@ public class UpdateEmailFlowTest {
         JsonObject signInResponse = Utils.signInWithUser(process.getProcess(), users.get(0));
         assertEquals("user3@example.com", signInResponse.getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
         assertFalse(signInResponse.getAsJsonObject("user").get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("verified").getAsBoolean());
-        System.out.println(signInResponse);
     }
 
 
