@@ -106,5 +106,52 @@ public class WebAuthNFlowTest {
         assertEquals(signInResponse, ePSignInResponse);
     }
 
+    @Test
+    public void registerEPUserNoAccountLinkingRegisterWANUserSameEmailShouldFail() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY,
+                        EE_FEATURES.ACCOUNT_LINKING});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        AuthRecipeUserInfo epUser = epUsers.get(0);
+
+        Utils.createUserIdMapping(process.getProcess(), epUser.getSupertokensUserId(), "external_" + epUser.getSupertokensUserId());
+        //Utils.verifyEmailFor(process.getProcess(), epUser.getSupertokensUserId(), "user1@example.com");
+
+
+        //create webauthn user with same email
+        List<JsonObject> users = io.supertokens.test.webauthn.Utils.registerUsers(process.getProcess(), 1);
+
+        JsonObject wanUser = users.get(0);
+
+        System.out.println(users);
+
+        String userId = wanUser.getAsJsonObject("user").get("id").getAsString();
+        Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
+        Utils.verifyEmailFor(process.getProcess(), userId, "user1@example.com");
+//
+//        JsonObject signInEPRequest = new JsonObject();
+//        signInEPRequest.addProperty("email", "user0@example.com");
+//        signInEPRequest.addProperty("password", "password");
+//
+//        Thread.sleep(1);
+//        JsonObject ePSignInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+//                "http://localhost:3567/recipe/signin", signInEPRequest, 1000, 1000, null, SemVer.v5_3.get(),
+//                "emailpassword");
+//        assertEquals("OK", ePSignInResponse.get("status").getAsString());
+//
+//        ePSignInResponse.remove("recipeUserId");
+//        signInResponse.remove("recipeUserId");
+//        assertEquals(signInResponse, ePSignInResponse);
+    }
+
 
 }

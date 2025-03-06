@@ -70,9 +70,9 @@ import java.util.List;
 
 public class WebAuthN {
 
-    public static JsonObject generateOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
-                                             String origin, Long timeout, String attestation, String residentKey,
-                                             String userVerification, JsonArray supportedAlgorithmIds, Boolean userPresenceRequired)
+    public static JsonObject generateRegisterOptions(TenantIdentifier tenantIdentifier, Storage storage, String email, String displayName, String relyingPartyName, String relyingPartyId,
+                                                     String origin, Long timeout, String attestation, String residentKey,
+                                                     String userVerification, JsonArray supportedAlgorithmIds, Boolean userPresenceRequired)
             throws StorageQueryException, InvalidWebauthNOptionsException {
 
         OptionsValidator.validateOptions(origin, relyingPartyId, timeout, attestation, userVerification, residentKey,
@@ -150,16 +150,16 @@ public class WebAuthN {
     @NotNull
     private static Challenge getChallenge() {
         Challenge challenge = new Challenge() {
-            private final byte[] challenge = new byte[32];
+            private final byte[] challengeRaw = new byte[32];
 
             { //initializer block
-                new SecureRandom().nextBytes(challenge);
+                new SecureRandom().nextBytes(challengeRaw);
             }
 
             @NotNull
             @Override
             public byte[] getValue() {
-                return challenge;
+                return challengeRaw;
             }
         };
         return challenge;
@@ -393,7 +393,7 @@ public class WebAuthN {
                     }
 
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
-                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter + 1);
+                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
 
                     AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId_Transaction(tenantIdentifier, con, credentialId);
                     if(fullyLoadedUserInfo == null) {
@@ -485,26 +485,19 @@ public class WebAuthN {
         return webAuthNStorage.saveGeneratedOptions(tenantIdentifier, savableOptions);
     }
 
-    public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email)
+    public static String generateRecoverAccountToken(Main main, Storage storage, TenantIdentifier tenantIdentifier, String email, String recipeUserId)
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
-            StorageQueryException, WebAuthNEmailNotFoundException {
-        // find the recipe user with the email
-        AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifier, storage, true, email, null,
-                null, null, null);
+            StorageQueryException, UserIdNotFoundException {
 
-        String userId = null;
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.
+                getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, recipeUserId, null);
 
-        for (AuthRecipeUserInfo user : users) {
-            for (LoginMethod lm : user.loginMethods) {
-                if (lm.email.equals(email)) {
-                    userId = lm.getSupertokensUserId();
-                }
-            }
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userIdMapping == null ? recipeUserId : userIdMapping.superTokensUserId);
+
+        if (user == null) {
+            throw new UserIdNotFoundException();
         }
-
-        if (userId == null) {
-            throw new WebAuthNEmailNotFoundException();
-        }
+        String userId = user.getSupertokensUserId();
 
         while (true) {
             // we first generate a password reset token

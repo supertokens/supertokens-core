@@ -67,7 +67,7 @@ public class RecoverAccountFlowTest {
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
         assertEquals(1, users.size());
 
-        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com");
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", users.get(0).getAsJsonObject("user").get("id").getAsString());
         assertTrue(recoverAccountToken.has("token"));
 
 
@@ -101,7 +101,7 @@ public class RecoverAccountFlowTest {
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
         assertEquals(1, users.size());
 
-        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user1@example.com");
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user1@example.com", "not-existing");
         assertFalse(recoverAccountToken.has("token"));
         assertTrue(recoverAccountToken.has("status"));
         assertEquals("UNKNOWN_USER_ID_ERROR", recoverAccountToken.get("status").getAsString());
@@ -131,7 +131,7 @@ public class RecoverAccountFlowTest {
                 Collectors.toList()), users.stream().map(u -> u.getAsJsonObject("user").get("id").getAsString()).collect(
                 Collectors.toList()));
 
-        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com");
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", emailPasswordUsers.get(0).getSupertokensUserId());
         assertTrue(recoverAccountToken.has("token"));
 
 
@@ -165,7 +165,7 @@ public class RecoverAccountFlowTest {
         List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
         assertEquals(1, emailPasswordUsers.size());
 
-        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com");
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", emailPasswordUsers.get(0).getSupertokensUserId());
         assertTrue(recoverAccountToken.has("token"));
     }
 

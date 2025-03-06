@@ -59,7 +59,7 @@ public class SignInOptionsAPI extends WebserverAPI {
 
             Long timeout = InputParser.parseLongOrThrowError(input, "timeout", true);
             if(timeout == null) {
-                timeout = 6000L;
+                timeout = 6000L; // 6 seconds
             }
 
             String userVerification = InputParser.parseStringOrThrowError(input, "userVerification", true);

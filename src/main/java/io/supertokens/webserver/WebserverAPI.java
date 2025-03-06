@@ -258,7 +258,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private String  getTenantId(HttpServletRequest req) {
+    private String getTenantId(HttpServletRequest req) {
         String path = req.getServletPath().toLowerCase();
         String apiPath = getPath().toLowerCase();
         if (!apiPath.startsWith("/")) {

@@ -16,11 +16,9 @@
 
 package io.supertokens.webserver.api.webauthn;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -62,7 +60,6 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId",
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
-            Logging.error(main, new TenantIdentifier(null, null, null), new Gson().toJson(credentialsData), true);
 
             WebAuthNSignInUpResult signUpResult = WebAuthN.signUp(storage, tenantIdentifier, webauthnGeneratedOptionsId,
                     credentialsData);

@@ -22,9 +22,9 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.WebAuthN;
-import io.supertokens.webauthn.exception.WebAuthNEmailNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -50,19 +50,20 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
         // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
+        String recipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         email = Utils.normaliseEmail(email);
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            String token = WebAuthN.generateRecoverAccountToken(main, storage, tenantIdentifier, email);
+            String token = WebAuthN.generateRecoverAccountToken(main, storage, tenantIdentifier, email, recipeUserId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("token", token);
 
             sendJsonResponse(200, response, resp);
-        } catch (WebAuthNEmailNotFoundException e) {
+        } catch (UserIdNotFoundException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, response, resp);

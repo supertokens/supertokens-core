@@ -102,7 +102,7 @@ public class GetUserByAccountInfoTest {
 
     AuthRecipeUserInfo createWebauthnUser(Main main, String email) throws HttpResponseException, IOException {
         JsonObject responseUser = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(main, email).getAsJsonObject("user");
-        
+
         List<String> tenantIds = new ArrayList<>();
         List<String> credentialIds = new ArrayList<>();
         responseUser.getAsJsonObject("webauthn").getAsJsonArray("credentialIds").forEach(e -> credentialIds.add(e.getAsString()));
