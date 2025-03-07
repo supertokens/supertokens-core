@@ -60,6 +60,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
             String webauthnGeneratedOptionsId = InputParser.parseStringOrThrowError(input, "webauthnGeneratedOptionsId", false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
 
+            // useridmapping is not required to be called separately here because it is handled in the underlying parts
             WebauthNCredentialResponse savedCredential = WebAuthN
                     .registerCredentials(storage, tenantIdentifier, recipeUserId,
                             webauthnGeneratedOptionsId, credentialsData);

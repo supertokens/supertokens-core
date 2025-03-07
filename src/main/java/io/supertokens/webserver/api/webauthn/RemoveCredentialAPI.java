@@ -51,6 +51,7 @@ public class RemoveCredentialAPI extends WebserverAPI {
             String userId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
             String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
+            // useridmapping is not required to be called separately here because it is handled in the underlying parts
             WebAuthN.removeCredential(storage, tenantIdentifier, userId, credentialId);
 
             JsonObject response = new JsonObject();

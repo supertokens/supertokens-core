@@ -504,15 +504,13 @@ public class WebAuthN {
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
             StorageQueryException, UserIdNotFoundException {
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.
-                getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, userIdFromRequest, null);
+        String userId = translateToInternalUserId(storage, tenantIdentifier, userIdFromRequest);
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userIdMapping == null ? userIdFromRequest : userIdMapping.superTokensUserId);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
 
         if (user == null) {
             throw new UserIdNotFoundException();
         }
-        String userId = user.getSupertokensUserId();
 
         while (true) {
             // we first generate a password reset token
@@ -655,10 +653,7 @@ public class WebAuthN {
         try {
             webAuthNStorage.startTransaction(con -> {
 
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                        UserIdMapping.getUserIdMapping(con, tenantIdentifier.toAppIdentifier(), storage, userId, null);
-
-                String userIdFromMapping = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+                String userIdFromMapping = translateToInternalUserId(storage, tenantIdentifier, userId);
 
                 AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                         .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userIdFromMapping);

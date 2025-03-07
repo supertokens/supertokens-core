@@ -25,6 +25,10 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * This class is needed for the webauthn4j library. It expects the credential to be a `CredentialRecord` object.
+ * Because of this, we are wrapping our own Credential and other required objects in this class.
+ */
 public class WebauthNCredentialRecord implements CredentialRecord {
 
     private AAGUID aaguid;
