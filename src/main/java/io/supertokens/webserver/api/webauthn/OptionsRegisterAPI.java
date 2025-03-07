@@ -116,6 +116,5 @@ public class OptionsRegisterAPI extends WebserverAPI {
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         }
-
     }
 }

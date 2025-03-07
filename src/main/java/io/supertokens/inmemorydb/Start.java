@@ -3557,10 +3557,32 @@ public class Start
     }
 
     @Override
-    public WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, WebAuthNOptions optionsToSave) throws StorageQueryException {
+    public WebAuthNOptions saveGeneratedOptions(TenantIdentifier tenantIdentifier, WebAuthNOptions optionsToSave)
+            throws StorageQueryException, DuplicateOptionsIdException, TenantOrAppNotFoundException {
         try {
             return WebAuthNQueries.saveOptions(this, tenantIdentifier, optionsToSave);
         } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = e.getMessage();
+
+                if (isPrimaryKeyError(serverMessage, config.getWebAuthNGeneratedOptionsTable(),
+                        new String[]{"app_id", "tenant_id", "id"})) {
+                    throw new DuplicateOptionsIdException();
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                } else if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
             throw new StorageQueryException(e);
         }
     }
@@ -3580,21 +3602,6 @@ public class Start
             throws StorageQueryException {
         try {
             return WebAuthNQueries.loadCredentialByIdForUser(this, tenantIdentifier, credentialId, recipeUserId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-
-    @Override
-    public WebAuthNStoredCredential saveCredentials_Transaction(TenantIdentifier tenantIdentifier,
-                                                                TransactionConnection con,
-                                                                WebAuthNStoredCredential credential)
-            throws StorageQueryException {
-
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            return WebAuthNQueries.saveCredential_Transaction(this, sqlCon, tenantIdentifier, credential);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
