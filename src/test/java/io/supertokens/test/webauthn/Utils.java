@@ -278,10 +278,11 @@ public class Utils {
         return clientPlatform.create(pkCreationOptions);
     }
 
-    public static JsonObject generateRecoverAccountTokenForEmail(Main main, String email)
+    public static JsonObject generateRecoverAccountTokenForEmail(Main main, String email, String userId)
             throws HttpResponseException, IOException {
         JsonObject generateTokenRequestBody = new JsonObject();
         generateTokenRequestBody.addProperty("email", email);
+        generateTokenRequestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/user/recover/token",
@@ -339,9 +340,18 @@ public class Utils {
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, UnknownUserIdException {
+        return createEmailPasswordUsers(main, noUsers, makePrimary, 0);
+    }
+
+    public static List<AuthRecipeUserInfo> createEmailPasswordUsers(Main main, int noUsers, boolean makePrimary, int emailIndexStart)
+            throws DuplicateEmailException, StorageQueryException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, UnknownUserIdException {
+
         List<AuthRecipeUserInfo> epUsers = new ArrayList<>();
         for(int i = 0; i < noUsers; i++){
-            AuthRecipeUserInfo user = EmailPassword.signUp(main, "user" + i + "@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, "user" + (emailIndexStart + i) + "@example.com", "password");
             if(makePrimary) {
                 makePrimaryUserFrom(main, user.getSupertokensUserId());
             }

@@ -102,7 +102,7 @@ public class OptionsRegisterAPI extends WebserverAPI {
                 supportedAlgorithmIds.add(min257);
             }
 
-            JsonObject response = WebAuthN.generateOptions(tenantIdentifier, storage, email, displayName, relyingPartyName, relyingPartyId, origin, timeout, attestation, residentKey,
+            JsonObject response = WebAuthN.generateRegisterOptions(tenantIdentifier, storage, email, displayName, relyingPartyName, relyingPartyId, origin, timeout, attestation, residentKey,
                     userVerification, supportedAlgorithmIds, userPresence);
 
             response.addProperty("status", "OK");
@@ -116,6 +116,5 @@ public class OptionsRegisterAPI extends WebserverAPI {
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
         }
-
     }
 }

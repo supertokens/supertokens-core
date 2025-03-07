@@ -106,5 +106,4 @@ public class WebAuthNFlowTest {
         assertEquals(signInResponse, ePSignInResponse);
     }
 
-
 }
