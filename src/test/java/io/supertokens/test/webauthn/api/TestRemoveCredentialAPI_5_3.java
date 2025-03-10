@@ -209,6 +209,18 @@ public class TestRemoveCredentialAPI_5_3 {
         } catch (HttpResponseException e) {
             fail(e.getMessage());
         }
+
+        try { // try deleting again
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", recipeUserId);
+            params.put("webauthnCredentialId", credentialId);
+            JsonObject resp = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
+                    "http://localhost:3567/recipe/webauthn/user/credential/remove", params, 1000, 1000, null,
+                    SemVer.v5_3.get(), "webauthn");
+            assertEquals("CREDENTIAL_NOT_FOUND_ERROR", resp.get("status").getAsString());
+        } catch (HttpResponseException e) {
+            fail(e.getMessage());
+        }
     }
 
     private JsonObject generateCredential(JsonObject registerOptionsResponse) throws Exception {
