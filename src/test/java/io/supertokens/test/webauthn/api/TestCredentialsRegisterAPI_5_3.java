@@ -235,7 +235,7 @@ public class TestCredentialsRegisterAPI_5_3 {
             JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/webauthn/user/credential/register", req, 1000, 1000, null,
                     SemVer.v5_3.get(), "webauthn");
-            assertEquals("RECIPE_USER_NOT_FOUND_ERROR", resp.get("status").getAsString());
+            assertEquals("UNKNOWN_USER_ID_ERROR", resp.get("status").getAsString());
         } catch (HttpResponseException e) {
             fail(e.getMessage());
         }
