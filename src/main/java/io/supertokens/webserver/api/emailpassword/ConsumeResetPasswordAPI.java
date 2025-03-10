@@ -71,7 +71,6 @@ public class ConsumeResetPasswordAPI extends WebserverAPI {
             EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
                     tenantIdentifier, storage, token);
 
-            //TODO I'm not sure it's needed.
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
                     tenantIdentifier.toAppIdentifier(), storage, result.userId, UserIdType.SUPERTOKENS);
 

@@ -32,8 +32,7 @@ import org.junit.rules.TestRule;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class UpdateEmailFlowTest {
 
@@ -178,9 +177,132 @@ public class UpdateEmailFlowTest {
         assertEquals("user1@example.com", epUsers.get(1).loginMethods[0].email);
 
 
-        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "user1@example.com");
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
+                "user1@example.com");
 
         assertEquals("OK", updateEmailResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void updateEmailForUserForAlreadyExistingEmailInEmailPasswordWithBothPrimary() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
+        assertEquals(1, users.size());
+        assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+
+        Utils.makePrimaryUserFrom(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString());
+
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 2, false);
+        assertEquals(2, epUsers.size());
+        assertEquals("user1@example.com", epUsers.get(1).loginMethods[0].email);
+        Utils.makePrimaryUserFrom(process.getProcess(), epUsers.get(1).getSupertokensUserId()); // make the target user email's account primary
+
+
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
+                "user1@example.com");
+
+        assertEquals("USER_WITH_EMAIL_ALREADY_EXISTS_ERROR", updateEmailResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void updateEmailForUserForAlreadyExistingEmailInEmailPasswordWithNoAccountLinking() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
+        assertEquals(1, users.size());
+        assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+
+        Utils.verifyEmailFor(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "user0@example.com");
+
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, false, 1);
+        assertEquals(1, epUsers.size());
+        assertEquals("user1@example.com", epUsers.get(0).loginMethods[0].email);
+
+
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
+                "user1@example.com");
+        assertEquals("OK", updateEmailResponse.get("status").getAsString());
+
+        JsonObject signInResponse = Utils.signInWithUser(process.getProcess(), users.get(0));
+        System.out.println(signInResponse);
+
+    }
+
+    @Test
+    public void updateEmailForUserForAlreadyExistingWithNoAccountLinking() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 2);
+        assertEquals(2, users.size());
+        assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+        assertEquals("user1@example.com", users.get(1).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+
+        Utils.verifyEmailFor(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "user0@example.com");
+
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
+                "user1@example.com");
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", updateEmailResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void updateEmailForUserForNewEmailBecomesUnverifiedWithNoAccountLinking() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 2);
+        assertEquals(2, users.size());
+        assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+        assertEquals("user1@example.com", users.get(1).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+
+        Utils.verifyEmailFor(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "user0@example.com");
+
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
+                "user3@example.com");
+        assertEquals("OK", updateEmailResponse.get("status").getAsString());
+
+        JsonObject signInResponse = Utils.signInWithUser(process.getProcess(), users.get(0));
+        assertEquals("user3@example.com", signInResponse.getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
+        assertFalse(signInResponse.getAsJsonObject("user").get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("verified").getAsBoolean());
     }
 
 

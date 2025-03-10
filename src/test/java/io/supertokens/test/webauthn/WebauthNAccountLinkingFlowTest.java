@@ -130,7 +130,7 @@ public class WebauthNAccountLinkingFlowTest {
             return;
         }
 
-        int numberOfUsers = 1;  //10k users
+        int numberOfUsers = 1;
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), numberOfUsers);
@@ -142,7 +142,6 @@ public class WebauthNAccountLinkingFlowTest {
             String userId = user.getAsJsonObject("user").get("id").getAsString();
             Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
         }
-
 
         //create userid mapping and verify email for ep users
         int i = 0;

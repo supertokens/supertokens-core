@@ -56,6 +56,7 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             String userId = InputParser.parseStringOrThrowError(requestBody, "recipeUserId", false);
             String newEmail = InputParser.parseStringOrThrowError(requestBody, "email", false);
 
+            //useridmapping is handled in the updateUserEmail method
             WebAuthN.updateUserEmail(storage, tenantIdentifier, userId, newEmail);
 
             JsonObject result = new JsonObject();

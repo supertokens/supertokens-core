@@ -27,19 +27,19 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 
 import java.util.List;
 
-public class CleanUpWebauthnExpiredDataCron extends CronTask {
+public class CleanUpWebauthNExpiredDataCron extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupWebauthnExpiredData" +
             ".CleanUpWebauthnExpiredDataCron";
 
-    private CleanUpWebauthnExpiredDataCron(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+    private CleanUpWebauthNExpiredDataCron(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("CleanUpWebauthnExpiredDataCron", main, tenantsInfo, true);
     }
 
-    public static CleanUpWebauthnExpiredDataCron init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        return (CleanUpWebauthnExpiredDataCron) main.getResourceDistributor()
+    public static CleanUpWebauthNExpiredDataCron init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (CleanUpWebauthNExpiredDataCron) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                        new CleanUpWebauthnExpiredDataCron(main, tenantsInfo));
+                        new CleanUpWebauthNExpiredDataCron(main, tenantsInfo));
     }
 
     @Override
