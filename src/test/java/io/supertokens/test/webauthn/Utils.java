@@ -238,7 +238,7 @@ public class Utils {
         return signupResponse;
     }
 
-    private static Map<String, PublicKeyCredentialCreationOptions> createPublicKeyCreationOptions(JsonObject registerResponse){
+    public static Map<String, PublicKeyCredentialCreationOptions> createPublicKeyCreationOptions(JsonObject registerResponse){
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(registerResponse.getAsJsonObject("rp").get("id").getAsString(),
                 registerResponse.getAsJsonObject("rp").get("name").getAsString());
 
