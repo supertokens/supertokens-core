@@ -21,6 +21,9 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -107,13 +110,38 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
         try {
             msg = msg.trim();
-            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
-                getInstance(main).infoLogger.debug(msg);
+                getInstance(main).infoLogger.debug(getFormattedMessage(tenantIdentifier, msg));
             }
         } catch (NullPointerException e) {
             // sometimes logger.debug throws a null pointer exception...
         }
+    }
+
+    private static String getFormattedMessage(TenantIdentifier tenantIdentifier, String msg, Exception e) {
+        JsonObject msgObj = new JsonObject();
+        msgObj.addProperty("message", msg);
+        msgObj.add("tenant", new JsonObject());
+        msgObj.getAsJsonObject("tenant").addProperty("connectionUriDomain", tenantIdentifier.getConnectionUriDomain());
+        msgObj.getAsJsonObject("tenant").addProperty("appId", tenantIdentifier.getAppId());
+        msgObj.getAsJsonObject("tenant").addProperty("tenantId", tenantIdentifier.getTenantId());
+
+        if (e != null) {
+            String stackTrace = Utils.throwableStacktraceToString(e);
+            String[] stackTraceArr = stackTrace.split("\n");
+            JsonArray stackTraceArrObj = new JsonArray();
+            for (String stackTraceElement : stackTraceArr) {
+                stackTraceArrObj.add(new JsonPrimitive(stackTraceElement));
+            }
+
+            msgObj.add("exception", stackTraceArrObj);
+        }
+
+        return msgObj.toString();
+    }
+
+    private static String getFormattedMessage(TenantIdentifier tenantIdentifier, String msg) {
+        return getFormattedMessage(tenantIdentifier, msg, null);
     }
 
     public static void info(Main main, TenantIdentifier tenantIdentifier, String msg, boolean toConsoleAsWell) {
@@ -129,7 +157,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
                     systemOut(prependTenantIdentifierToMessage(tenantIdentifier, msg));
                 }
             }
-            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
+            msg = getFormattedMessage(tenantIdentifier, msg);
+
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.info(msg);
             }
@@ -143,7 +172,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
         try {
             msg = msg.trim();
-            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
+            msg = getFormattedMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
                 getInstance(main).errorLogger.warn(msg);
             }
@@ -164,12 +193,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
         try {
             err = err.trim();
-            err = prependTenantIdentifierToMessage(tenantIdentifier, err);
             if (getInstance(main) != null) {
-                getInstance(main).errorLogger.error(err);
+                getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, err));
             }
             if (toConsoleAsWell || getInstance(main) == null) {
-                systemErr(err);
+                systemErr(prependTenantIdentifierToMessage(tenantIdentifier, err));
             }
         } catch (NullPointerException ignored) {
         }
@@ -190,19 +218,19 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             String err = Utils.throwableStacktraceToString(e).trim();
             if (getInstance(main) != null) {
-                err = prependTenantIdentifierToMessage(tenantIdentifier, err);
-                getInstance(main).errorLogger.error(err);
+                // Not required to log here as the error is already included in the formatted message
+                // err = getFormattedMessage(tenantIdentifier, err);
+                // getInstance(main).errorLogger.error(err);
             } else if (Main.isTesting) {
                 systemErr(err);
             }
             if (message != null) {
                 message = message.trim();
-                message = prependTenantIdentifierToMessage(tenantIdentifier, message);
                 if (getInstance(main) != null) {
-                    getInstance(main).errorLogger.error(message);
+                    getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, message, e));
                 }
                 if (toConsoleAsWell || getInstance(main) == null) {
-                    systemErr(message);
+                    systemErr(prependTenantIdentifierToMessage(tenantIdentifier, message));
                 }
             }
         } catch (NullPointerException ignored) {

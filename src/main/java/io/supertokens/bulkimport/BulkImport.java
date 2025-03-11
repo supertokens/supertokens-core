@@ -674,8 +674,9 @@ public class BulkImport {
             }
         }
         try {
-
-            UserRoles.addMultipleRolesToMultipleUsers(main, appIdentifier, storage, rolesToUserByTenant);
+            if(!rolesToUserByTenant.isEmpty()){
+                UserRoles.addMultipleRolesToMultipleUsers(main, appIdentifier, storage, rolesToUserByTenant);
+            }
         } catch (TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(new Exception("E033: " + e.getMessage()));
         } catch (StorageTransactionLogicException e) {
@@ -740,7 +741,9 @@ public class BulkImport {
             }
         }
         try {
-            Totp.createDevices(main, appIdentifier, storage, devices);
+            if(!devices.isEmpty()){
+                Totp.createDevices(main, appIdentifier, storage, devices);
+            }
         } catch (StorageQueryException e) {
             throw new StorageTransactionLogicException(new Exception("E036: " + e.getMessage()));
         } catch (FeatureNotEnabledException e) {

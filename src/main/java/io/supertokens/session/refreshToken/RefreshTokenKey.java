@@ -94,14 +94,15 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                                     .setResource(app, RESOURCE_KEY,
                                             new RefreshTokenKey(app, main));
                         } catch (TenantOrAppNotFoundException e) {
-                            throw new IllegalStateException(e);
+                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                            // continue loading other resources
                         }
                     }
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 
