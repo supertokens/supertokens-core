@@ -147,9 +147,9 @@ do
           coreY=$(cut -d'.' -f2 <<<"$coreVersion")
           if [[ $currPinnedDb == "sqlite" ]]
           then
-            echo -e "core,feat/webauthn-base\nplugin-interface,feat/webauthn-base" > modules.txt
+            echo -e "core,master\nplugin-interface,master" > modules.txt
           else
-            echo -e "core,feat/webauthn-base\nplugin-interface,feat/webauthn-base\n$currPinnedDb-plugin,feat/webauthn-base" > modules.txt
+            echo -e "core,master\nplugin-interface,master\n$currPinnedDb-plugin,master" > modules.txt
           fi
           ./loadModules
           cd supertokens-core
@@ -168,7 +168,7 @@ do
           cd ../
           echo $SUPERTOKENS_API_KEY > apiPassword
 
-          ./startTestingEnv --local
+          ./startTestingEnv
 
           TEST_EXIT_CODE=$?
 
