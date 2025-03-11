@@ -147,22 +147,22 @@ do
           coreY=$(cut -d'.' -f2 <<<"$coreVersion")
           if [[ $currPinnedDb == "sqlite" ]]
           then
-            echo -e "core,$coreX.$coreY\nplugin-interface,$piVersion" > modules.txt
+            echo -e "core,master\nplugin-interface,master" > modules.txt
           else
-            echo -e "core,$coreX.$coreY\nplugin-interface,$piVersion\n$currPinnedDb-plugin,$pinnedDbVersionX2" > modules.txt
+            echo -e "core,master\nplugin-interface,master\n$currPinnedDb-plugin,master" > modules.txt
           fi
           ./loadModules
           cd supertokens-core
-          git checkout dev-v$coreVersion
+          # git checkout dev-v$coreVersion
           cd ../supertokens-plugin-interface
-          git checkout $currTag
+          git checkout feat/webauthn-base
           if [[ $currPinnedDb == "sqlite" ]]
           then
             # shellcheck disable=SC2034
             continue=1
           else
             cd ../supertokens-$currPinnedDb-plugin
-            git checkout $pinnedDbVersionTag
+            git checkout feat/webauthn-base
           fi
           cd ../
           echo $SUPERTOKENS_API_KEY > apiPassword
