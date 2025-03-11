@@ -110,26 +110,28 @@ do
             # shellcheck disable=SC2034
             continue=1
           else
-            response=$(curl -s -X GET \
-            "https://api.supertokens.io/0/plugin-interface/dependency/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$piVersion&pluginName=$currPinnedDb" \
-            -H 'api-version: 0')
-            if [[ $(echo "$response" | jq .plugin) == "null" ]]
-            then
-                echo "fetching latest X.Y version for $currPinnedDb given plugin-interface X.Y version: $piVersion gave response: $response"
-                exit 1
-            fi
-            pinnedDbVersionX2=$(echo $response | jq .plugin | tr -d '"')
+            # response=$(curl -s -X GET \
+            # "https://api.supertokens.io/0/plugin-interface/dependency/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$piVersion&pluginName=$currPinnedDb" \
+            # -H 'api-version: 0')
+            # if [[ $(echo "$response" | jq .plugin) == "null" ]]
+            # then
+            #     echo "fetching latest X.Y version for $currPinnedDb given plugin-interface X.Y version: $piVersion gave response: $response"
+            #     exit 1
+            # fi
+            # pinnedDbVersionX2=$(echo $response | jq .plugin | tr -d '"')
 
-            response=$(curl -s -X GET \
-            "https://api.supertokens.io/0/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$pinnedDbVersionX2&name=$currPinnedDb" \
-            -H 'api-version: 0')
-            if [[ $(echo "$response" | jq .tag) == "null" ]]
-            then
-                echo "fetching latest X.Y.Z version for $currPinnedDb, X.Y version: $pinnedDbVersionX2 gave response: $response"
-                exit 1
-            fi
-            pinnedDbVersionTag=$(echo "$response" | jq .tag | tr -d '"')
-            pinnedDbVersion=$(echo "$response" | jq .version | tr -d '"')
+            # response=$(curl -s -X GET \
+            # "https://api.supertokens.io/0/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$pinnedDbVersionX2&name=$currPinnedDb" \
+            # -H 'api-version: 0')
+            # if [[ $(echo "$response" | jq .tag) == "null" ]]
+            # then
+            #     echo "fetching latest X.Y.Z version for $currPinnedDb, X.Y version: $pinnedDbVersionX2 gave response: $response"
+            #     exit 1
+            # fi
+            pinnedDbVersionTag="feat/webauthn-base"
+            pinnedDbVersion="8.1"
+            # pinnedDbVersionTag=$(echo "$response" | jq .tag | tr -d '"')
+            # pinnedDbVersion=$(echo "$response" | jq .version | tr -d '"')
             ./startDb.sh "$currPinnedDb"
           fi
 

@@ -18,4 +18,4 @@ touch pluginInterfaceExactVersionsOutput
 #     echo $response >> pluginInterfaceExactVersionsOutput
 # done
 
-echo "feat/webauthn-base" > pluginInterfaceExactVersionsOutput
+echo "7.1" > pluginInterfaceExactVersionsOutput
