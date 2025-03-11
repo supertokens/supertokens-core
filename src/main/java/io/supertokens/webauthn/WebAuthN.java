@@ -514,16 +514,9 @@ public class WebAuthN {
 
         while (true) {
             // we first generate a password reset token
-            byte[] random = new byte[64];
-            new SecureRandom().nextBytes(new byte[64]);
-
-            int iterations = 1000;
-            String token = Utils
-                    .toHex(Utils.pbkdf2(Utils.bytesToString(random).toCharArray(), random, iterations, 64 * 6));
-
-            // we make it URL safe:
-            token = Utils.convertToBase64Url(token);
-
+            byte[] random = new byte[32];
+            new SecureRandom().nextBytes(random);
+            String token = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
             String hashedToken = Utils.hashSHA256(token);
 
             try {
