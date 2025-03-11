@@ -196,7 +196,7 @@ public class Utils {
                 pubkeysToOptions.values().stream().findFirst().get());
     }
 
-    private static Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> createPublicKeyRequestOptions(
+    public static Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> createPublicKeyRequestOptions(
             JsonObject signInOptionsResponse, ClientPlatform clientPlatform, String credentialId) {
 
         //System.out.println("Challenge: " + Base64UrlUtil.encodeToString(signInOptionsResponse.get("challenge").getAsString().getBytes(StandardCharsets.UTF_8)));
