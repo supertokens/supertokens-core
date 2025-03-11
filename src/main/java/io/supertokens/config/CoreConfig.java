@@ -352,8 +352,8 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 300000 (5 mins)]")
-    private long webauthn_recover_account_token_lifetime = 300000;
+    @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
+    private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;

@@ -42,7 +42,7 @@ public class OptionsValidator {
     private static void validateOrigin(String origin, String rpId) throws InvalidWebauthNOptionsException {
         try {
             URL originUrl = new URL(origin);
-            if (!originUrl.getHost().contains(rpId)) {
+            if (!originUrl.getHost().endsWith(rpId)) {
                 throw new InvalidWebauthNOptionsException("Origin does not match RelyingParty Id");
             }
         } catch (MalformedURLException e) {
