@@ -81,8 +81,13 @@ public class TestGetGeneratedOptionsAPI_5_3 {
     @Test
     public void testValidInput() throws Exception {
         String[] args = {"../"};
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         JsonObject req = new JsonObject();
         req.addProperty("email", "test@example.com");

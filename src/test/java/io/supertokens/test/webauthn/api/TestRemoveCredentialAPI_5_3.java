@@ -164,8 +164,13 @@ public class TestRemoveCredentialAPI_5_3 {
     @Test
     public void testValidInput() throws Exception {
         String[] args = {"../"};
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         String recipeUserId = null;
         String credentialId = null;
