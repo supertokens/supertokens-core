@@ -153,6 +153,7 @@ do
           fi
           ./loadModules
           cd supertokens-core
+          git checkout feat/webauthn-base
           # git checkout dev-v$coreVersion
           cd ../supertokens-plugin-interface
           git checkout feat/webauthn-base
