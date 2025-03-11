@@ -74,14 +74,14 @@ do
         continue
     fi
     i=0
-    currTag=$(echo "$line" | jq .tag)
-    currTag=$(echo "$currTag" | tr -d '"')
+    # currTag=$(echo "$line" | jq .tag)
+    # currTag=$(echo "$currTag" | tr -d '"')
 
-    currVersion=$(echo "$line" | jq .version)
-    currVersion=$(echo "$currVersion" | tr -d '"')
-    piX=$(cut -d'.' -f1 <<<"$currVersion")
-    piY=$(cut -d'.' -f2 <<<"$currVersion")
-    piVersion="$piX.$piY"
+    # currVersion=$(echo "$line" | jq .version)
+    # currVersion=$(echo "$currVersion" | tr -d '"')
+    # piX=$(cut -d'.' -f1 <<<"$currVersion")
+    # piY=$(cut -d'.' -f2 <<<"$currVersion")
+    # piVersion="$piX.$piY"
     
     while [ $i -lt "$pinnedDBLength" ]; do
         someTestsRan=true
