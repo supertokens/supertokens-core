@@ -196,7 +196,7 @@ public class Utils {
                 pubkeysToOptions.values().stream().findFirst().get());
     }
 
-    private static Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> createPublicKeyRequestOptions(
+    public static Map<String, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput>> createPublicKeyRequestOptions(
             JsonObject signInOptionsResponse, ClientPlatform clientPlatform, String credentialId) {
 
         //System.out.println("Challenge: " + Base64UrlUtil.encodeToString(signInOptionsResponse.get("challenge").getAsString().getBytes(StandardCharsets.UTF_8)));
@@ -238,7 +238,7 @@ public class Utils {
         return signupResponse;
     }
 
-    private static Map<String, PublicKeyCredentialCreationOptions> createPublicKeyCreationOptions(JsonObject registerResponse){
+    public static Map<String, PublicKeyCredentialCreationOptions> createPublicKeyCreationOptions(JsonObject registerResponse){
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(registerResponse.getAsJsonObject("rp").get("id").getAsString(),
                 registerResponse.getAsJsonObject("rp").get("name").getAsString());
 
