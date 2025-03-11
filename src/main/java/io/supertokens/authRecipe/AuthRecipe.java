@@ -44,6 +44,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
@@ -1037,76 +1038,112 @@ public class AuthRecipe {
         }
     }
 
-
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifier tenantIdentifier,
                                                              Storage storage,
                                                              boolean doUnionOfAccountInfo, String email,
                                                              String phoneNumber, String thirdPartyId,
-                                                             String thirdPartyUserId)
+                                                             String thirdPartyUserId,
+                                                             String webauthnCredentialId)
+            throws StorageQueryException {
+        Set<AuthRecipeUserInfo> result = loadAuthRecipeUserInfosByVariousIds(
+                tenantIdentifier, storage, email, phoneNumber, thirdPartyId, thirdPartyUserId, webauthnCredentialId);
+
+        if (doUnionOfAccountInfo) {
+            return mergeAuthRecipeUserInfosResultWithORMatch(result); // matches any of the provided: email, thirdparty, phone number, webauthnCredential
+        } else {
+            return mergeAuthRecipeUserInfosResultWithANDMatch(email, phoneNumber, thirdPartyId, thirdPartyUserId, webauthnCredentialId,
+                    result); // matches all the provided: email, thirdparty, phone number, webauthnCredential
+        }
+
+    }
+
+    private static AuthRecipeUserInfo[] mergeAuthRecipeUserInfosResultWithANDMatch(String email, String phoneNumber,
+                                                                                             String thirdPartyId, String thirdPartyUserId,
+                                                                                             String webauthnCredentialId,
+                                                                                             Set<AuthRecipeUserInfo> result) {
+        List<AuthRecipeUserInfo> finalList = new ArrayList<>();
+        for (AuthRecipeUserInfo user : result) {
+            boolean emailMatch = email == null;
+            boolean phoneNumberMatch = phoneNumber == null;
+            boolean thirdPartyMatch = thirdPartyId == null;
+            boolean webauthnCredentialIdMatch = webauthnCredentialId == null;
+            for (LoginMethod lM : user.loginMethods) {
+                if (email != null && email.equals(lM.email)) {
+                    emailMatch = true;
+                }
+                if (phoneNumber != null && phoneNumber.equals(lM.phoneNumber)) {
+                    phoneNumberMatch = true;
+                }
+                if (thirdPartyId != null &&
+                        (new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId)).equals(lM.thirdParty)) {
+                    thirdPartyMatch = true;
+                }
+                if(webauthnCredentialId != null
+                        && lM.webauthN != null
+                        && lM.webauthN.credentialIds.contains(webauthnCredentialId)){
+                    webauthnCredentialIdMatch = true;
+                }
+            }
+            if (emailMatch && phoneNumberMatch && thirdPartyMatch && webauthnCredentialIdMatch) {
+                finalList.add(user);
+            }
+        }
+        finalList.sort((o1, o2) -> {
+            if (o1.timeJoined < o2.timeJoined) {
+                return -1;
+            } else if (o1.timeJoined > o2.timeJoined) {
+                return 1;
+            }
+            return 0;
+        });
+        return finalList.toArray(new AuthRecipeUserInfo[0]);
+    }
+
+    private static AuthRecipeUserInfo[] mergeAuthRecipeUserInfosResultWithORMatch(Set<AuthRecipeUserInfo> result) {
+        AuthRecipeUserInfo[] finalResult = result.toArray(new AuthRecipeUserInfo[0]);
+        return Arrays.stream(finalResult).sorted((o1, o2) -> {
+            if (o1.timeJoined < o2.timeJoined) {
+                return -1;
+            } else if (o1.timeJoined > o2.timeJoined) {
+                return 1;
+            }
+            return 0;
+        }).toArray(AuthRecipeUserInfo[]::new);
+    }
+
+    @NotNull
+    private static Set<AuthRecipeUserInfo> loadAuthRecipeUserInfosByVariousIds(TenantIdentifier tenantIdentifier, Storage storage,
+                                                                  String email, String phoneNumber, String thirdPartyId,
+                                                                  String thirdPartyUserId, String webauthnCredentialId)
             throws StorageQueryException {
         Set<AuthRecipeUserInfo> result = new HashSet<>();
 
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         if (email != null) {
-            AuthRecipeUserInfo[] users = StorageUtils.getAuthRecipeStorage(storage)
+            AuthRecipeUserInfo[] users = authRecipeStorage
                     .listPrimaryUsersByEmail(tenantIdentifier, email);
             result.addAll(List.of(users));
         }
         if (phoneNumber != null) {
-            AuthRecipeUserInfo[] users = StorageUtils.getAuthRecipeStorage(storage)
+            AuthRecipeUserInfo[] users = authRecipeStorage
                     .listPrimaryUsersByPhoneNumber(tenantIdentifier, phoneNumber);
             result.addAll(List.of(users));
         }
         if (thirdPartyId != null && thirdPartyUserId != null) {
-            AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
+            AuthRecipeUserInfo user = authRecipeStorage
                     .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
             if (user != null) {
                 result.add(user);
             }
         }
-
-        if (doUnionOfAccountInfo) {
-            AuthRecipeUserInfo[] finalResult = result.toArray(new AuthRecipeUserInfo[0]);
-            return Arrays.stream(finalResult).sorted((o1, o2) -> {
-                if (o1.timeJoined < o2.timeJoined) {
-                    return -1;
-                } else if (o1.timeJoined > o2.timeJoined) {
-                    return 1;
-                }
-                return 0;
-            }).toArray(AuthRecipeUserInfo[]::new);
-        } else {
-            List<AuthRecipeUserInfo> finalList = new ArrayList<>();
-            for (AuthRecipeUserInfo user : result) {
-                boolean emailMatch = email == null;
-                boolean phoneNumberMatch = phoneNumber == null;
-                boolean thirdPartyMatch = thirdPartyId == null;
-                for (LoginMethod lM : user.loginMethods) {
-                    if (email != null && email.equals(lM.email)) {
-                        emailMatch = true;
-                    }
-                    if (phoneNumber != null && phoneNumber.equals(lM.phoneNumber)) {
-                        phoneNumberMatch = true;
-                    }
-                    if (thirdPartyId != null &&
-                            (new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId)).equals(lM.thirdParty)) {
-                        thirdPartyMatch = true;
-                    }
-                }
-                if (emailMatch && phoneNumberMatch && thirdPartyMatch) {
-                    finalList.add(user);
-                }
+        if(webauthnCredentialId != null){
+            AuthRecipeUserInfo user = authRecipeStorage
+                    .getPrimaryUserByWebauthNCredentialId(tenantIdentifier, webauthnCredentialId);
+            if (user != null) {
+                result.add(user);
             }
-            finalList.sort((o1, o2) -> {
-                if (o1.timeJoined < o2.timeJoined) {
-                    return -1;
-                } else if (o1.timeJoined > o2.timeJoined) {
-                    return 1;
-                }
-                return 0;
-            });
-            return finalList.toArray(new AuthRecipeUserInfo[0]);
         }
-
+        return result;
     }
 
     public static long getUsersCountForTenant(TenantIdentifier tenantIdentifier,

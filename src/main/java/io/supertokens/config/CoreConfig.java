@@ -350,6 +350,11 @@ public class CoreConfig {
             "migration of users. (Default: number of available processor cores).")
     private int bulk_migration_parallelism =  Runtime.getRuntime().availableProcessors();
 
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
+    private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
+
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -589,6 +594,10 @@ public class CoreConfig {
         return bulk_migration_parallelism;
     }
 
+    public long getWebauthnRecoverAccountTokenLifetime() {
+        return webauthn_recover_account_token_lifetime;
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -784,6 +793,10 @@ public class CoreConfig {
 
         if (bulk_migration_parallelism < 1) {
             throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
+        }
+
+        if (webauthn_recover_account_token_lifetime <= 0) {
+            throw new InvalidConfigException("Provided webauthn_recover_account_token_lifetime must be > 0");
         }
 
         for (String fieldId : CoreConfig.getValidFields()) {

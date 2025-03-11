@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "10.0.3"
+version = "10.1.0"
 
 repositories {
     mavenCentral()
@@ -73,6 +73,12 @@ dependencies {
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
     implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
 
+    // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-core
+    implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.5.RELEASE'
+
+    // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-test
+    implementation group: 'com.webauthn4j', name: 'webauthn4j-test', version: '0.28.5.RELEASE'
+
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 
@@ -86,7 +92,6 @@ dependencies {
     testImplementation group: 'org.reflections', name: 'reflections', version: '0.9.10'
 
     testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
-
 }
 
 application {
