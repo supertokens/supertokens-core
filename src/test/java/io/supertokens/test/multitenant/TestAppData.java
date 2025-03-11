@@ -27,6 +27,13 @@ import java.util.Arrays;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -195,6 +202,42 @@ public class TestAppData {
         ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
         OAuth.createOrUpdateOauthSession(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "test-gid", null, null, "sessionHandle", "jti", 0);
+
+        WebAuthNStoredCredential credential = new WebAuthNStoredCredential();
+        credential.id = "abcd";
+        credential.appId = app.getAppId();
+        credential.rpId = "example.com";
+        credential.userId = "userId";
+        credential.counter = 0;
+        credential.publicKey = new byte[0];
+        credential.transports = "abcd";
+        credential.createdAt = 0;
+        credential.updatedAt = 0;
+
+        ((WebAuthNSQLStorage) appStorage).startTransaction((con) -> {
+            try {
+                ((WebAuthNSQLStorage) appStorage).signUpWithCredentialsRegister_Transaction(app, con, "userId", "test2@example.com", "example.com", credential);
+            } catch (DuplicateUserIdException e) {
+                throw new RuntimeException(e);
+            } catch (DuplicateUserEmailException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        });
+        ((WebAuthNStorage) appStorage).addRecoverAccountToken(app, new AccountRecoveryTokenInfo("userId", "test@example.com", "abcd", System.currentTimeMillis() + 3600));
+        WebAuthNOptions options = new WebAuthNOptions();
+        options.generatedOptionsId = "abcd";
+        options.relyingPartyId = "example.com";
+        options.relyingPartyName = "Example";
+        options.userEmail = "test@example.com";
+        options.timeout = 3600L;
+        options.challenge = "abcd"; //base64 url encoded
+        options.origin = "abcd";
+        options.expiresAt = System.currentTimeMillis() + 3600;
+        options.createdAt = System.currentTimeMillis();
+        options.userPresenceRequired = false;
+        options.userVerification = "required";
+        ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());

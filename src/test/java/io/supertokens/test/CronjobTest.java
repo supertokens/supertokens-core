@@ -964,7 +964,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(12, tenantsInfos.size());
+            assertEquals(13, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -974,7 +974,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(11, count);
+            assertEquals(12, count);
         }
 
         process.kill(false);
@@ -991,7 +991,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(12, tenantsInfos.size());
+            assertEquals(13, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -1001,7 +1001,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(11, count);
+            assertEquals(12, count);
         }
 
         process.kill();
@@ -1051,7 +1051,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 300);
         intervals.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 86400);
-        intervals.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthnExpiredDataCron", 86400);
+        intervals.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron", 86400);
 
         Map<String, Integer> delays = new HashMap<>();
         delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
@@ -1069,12 +1069,13 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers", 0);
         delays.put("io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges",
                 0);
-        delays.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthnExpiredDataCron", 0);
+        delays.put("io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron", 0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
         assertEquals(13, allTasks.size());
 
         for (CronTask task : allTasks) {
+            System.out.println(task.getClass().getName());
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());
             assertEquals(delays.get(task.getClass().getName()).intValue(), task.getInitialWaitTimeSeconds());
         }
