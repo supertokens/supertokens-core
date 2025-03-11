@@ -127,6 +127,35 @@ public class TestSignInAPI_5_3 {
             return;
         }
 
+        String credentialId = null;
+        { // Sign up
+            JsonObject optionsResponse = null;
+            {
+                JsonObject req = new JsonObject();
+                req.addProperty("email", "test@example.com");
+                req.addProperty("relyingPartyName", "Example");
+                req.addProperty("relyingPartyId", "example.com");
+                req.addProperty("origin", "http://example.com");
+
+                optionsResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/webauthn/options/register", req, 1000, 1000, null,
+                        SemVer.v5_3.get(), "webauthn");
+            }
+
+            JsonObject req = new JsonObject();
+            req.addProperty("webauthnGeneratedOptionsId", optionsResponse.get("webauthnGeneratedOptionsId").getAsString());
+            req.add("credential", generateCredentialForSignUp(optionsResponse));
+
+            try {
+                JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/webauthn/signup", req, 1000, 1000, null,
+                        SemVer.v5_3.get(), "webauthn");
+                credentialId = resp.get("webauthnCredentialId").getAsString();
+            } catch (HttpResponseException e) {
+                fail(e.getMessage());
+            }
+        }
+
         JsonObject optionsResponse = null;
         {
             JsonObject req = new JsonObject();
@@ -144,7 +173,7 @@ public class TestSignInAPI_5_3 {
 
         JsonObject req = new JsonObject();
         req.addProperty("webauthnGeneratedOptionsId", optionsResponse.get("webauthnGeneratedOptionsId").getAsString());
-        req.add("credential", generateCredential(optionsResponse, "someId"));
+        req.add("credential", generateCredential(optionsResponse, credentialId));
 
         try {
             JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -233,7 +262,6 @@ public class TestSignInAPI_5_3 {
                 JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/webauthn/signup", req, 1000, 1000, null,
                         SemVer.v5_3.get(), "webauthn");
-                System.out.println(resp);
                 credentialId = resp.get("webauthnCredentialId").getAsString();
             } catch (HttpResponseException e) {
                 fail(e.getMessage());
