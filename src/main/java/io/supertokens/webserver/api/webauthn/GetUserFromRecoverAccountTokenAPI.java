@@ -71,10 +71,6 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
                 }
             }
 
-            if (recipeUserId == null) {
-                throw new IllegalStateException("should never happen");
-            }
-
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("recipeUserId", recipeUserId);
