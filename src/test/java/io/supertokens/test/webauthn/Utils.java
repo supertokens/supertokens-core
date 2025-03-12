@@ -303,6 +303,16 @@ public class Utils {
         return response;
     }
 
+    public static JsonObject getUserFromToken(Main main, String token)
+            throws HttpResponseException, IOException {
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                "http://localhost:3567/recipe/webauthn/user/recover",
+                Map.of("token", token), 10000, 1000, null, SemVer.v5_3.get(), null);
+
+        return response;
+    }
+
     public static JsonObject updateEmail(Main main, String recipeUserId, String newEmail)
             throws HttpResponseException, IOException {
         JsonObject generateTokenRequestBody = new JsonObject();

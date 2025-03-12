@@ -71,6 +71,12 @@ public class RecoverAccountFlowTest {
         assertTrue(recoverAccountToken.has("token"));
 
 
+        JsonObject userFromToken = Utils.getUserFromToken(process.getProcess(), recoverAccountToken.get("token").getAsString());
+        assertTrue(userFromToken.has("user"));
+        assertTrue(userFromToken.has("recipeUserId"));
+        assertFalse(userFromToken.get("recipeUserId").isJsonNull());
+        assertEquals(users.get(0).get("recipeUserId").getAsString(), userFromToken.get("recipeUserId").getAsString());
+
         JsonObject registerCredentialResponse = Utils.registerCredentialForUser(process.getProcess(), "user0@example.com", users.get(0).get("recipeUserId").getAsString());
         assertTrue(registerCredentialResponse.has("status"));
         assertTrue(registerCredentialResponse.has("webauthnCredentialId"));
@@ -135,6 +141,12 @@ public class RecoverAccountFlowTest {
         assertTrue(recoverAccountToken.has("token"));
 
 
+        JsonObject userFromToken = Utils.getUserFromToken(process.getProcess(), recoverAccountToken.get("token").getAsString());
+        assertTrue(userFromToken.has("user"));
+        assertTrue(userFromToken.has("recipeUserId"));
+        assertEquals(users.get(0).get("recipeUserId").getAsString(), userFromToken.get("recipeUserId").getAsString());
+
+
         JsonObject registerCredentialResponse = Utils.registerCredentialForUser(process.getProcess(), "user0@example.com", users.get(0).get("recipeUserId").getAsString());
         assertTrue(registerCredentialResponse.has("status"));
         assertTrue(registerCredentialResponse.has("webauthnCredentialId"));
@@ -168,6 +180,12 @@ public class RecoverAccountFlowTest {
         JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", emailPasswordUsers.get(0).getSupertokensUserId());
         assertTrue(recoverAccountToken.has("token"));
 
+        JsonObject userFromToken = Utils.getUserFromToken(process.getProcess(), recoverAccountToken.get("token").getAsString());
+        assertTrue(userFromToken.has("user"));
+        assertTrue(userFromToken.has("recipeUserId"));
+        assertTrue(userFromToken.get("recipeUserId").isJsonNull());
+        assertEquals(emailPasswordUsers.get(0).getSupertokensUserId(), userFromToken.get("user").getAsJsonObject().get("id").getAsString());
+
         JsonObject consumeTokenRespone = Utils.consumeToken(process.getProcess(), recoverAccountToken.get("token").getAsString());
         String userIdFromConsumeResponse = consumeTokenRespone.get("userId").getAsString();
         assertEquals(emailPasswordUsers.get(0).getSupertokensUserId(), userIdFromConsumeResponse);
@@ -179,10 +197,8 @@ public class RecoverAccountFlowTest {
 
         Utils.linkAccounts(process.getProcess(), List.of(emailPasswordUsers.get(0).getSupertokensUserId()),
                 List.of(signupWithCredentialRegister.get("user").getAsJsonObject().get("id").getAsString()));
-        System.out.println(signupWithCredentialRegister);
 
         JsonObject signInResponse = Utils.signInWithUser(process.getProcess(), signupWithCredentialRegister);
-        System.out.println(signInResponse);
         assertEquals("OK", signInResponse.get("status").getAsString());
         assertEquals(2, signInResponse.getAsJsonObject("user").get("loginMethods").getAsJsonArray().size());
 
