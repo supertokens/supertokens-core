@@ -16,16 +16,9 @@
 
 package io.supertokens.bulkimport;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
 import io.supertokens.config.CoreConfig;
@@ -37,16 +30,18 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.Utils;
 import io.supertokens.utils.JsonValidatorUtils.ValueType;
+import io.supertokens.utils.Utils;
+
+import java.util.*;
 
 import static io.supertokens.utils.JsonValidatorUtils.parseAndValidateFieldType;
 import static io.supertokens.utils.JsonValidatorUtils.validateJsonFieldType;
@@ -224,7 +219,7 @@ public class BulkImportUserUtils {
                         passwordHash, errors);
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, null, null, null, null));
+                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, plainTextPassword, null, null, null));
             } else if ("thirdparty".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
                         String.class, errors, " for a thirdparty recipe.");
