@@ -90,17 +90,27 @@ public class ImportUserAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (BulkImportBatchInsertException e) {
             JsonArray errors = new JsonArray();
-            errors.addAll(
-            e.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
-                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
-            );
+            if(e.exceptionByUserId == null || e.exceptionByUserId.isEmpty()) {
+                errors.add(new JsonPrimitive(e.getMessage()));
+            } else {
+                errors.addAll(
+                        e.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
+                                .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
+                );
+            }
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
-            JsonArray errors = e.errors.stream()
-                    .map(JsonPrimitive::new)
-                    .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+            JsonArray errors = new JsonArray();
+            if(e.errors != null && !e.errors.isEmpty()) {
+                errors.addAll(e.errors.stream()
+                        .map(JsonPrimitive::new)
+                        .collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            } else {
+                errors.add(new JsonPrimitive(e.getMessage()));
+            }
+
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
