@@ -352,8 +352,8 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("If specified, the supertokens core will load the specified number of users for migrating in one" +
-            "single batch. (Default: 8000).")
+    @ConfigDescription("If specified, the supertokens core will load the specified number of users for migrating in " +
+            "one single batch. (Default: 8000)")
     private int bulk_migration_batch_size =  8000;
 
     @NotConflictingInApp
