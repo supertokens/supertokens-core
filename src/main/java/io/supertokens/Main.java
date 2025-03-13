@@ -91,6 +91,9 @@ public class Main {
     private boolean waitToEnableFeatureFlag = false;
     private final Object waitToEnableFeatureFlagLock = new Object();
 
+    //setting to true by default
+    private final Boolean bulkMigrationCronEnabled = System.getenv("BULK_MIGRATION_CRON_ENABLED") == null || Boolean.parseBoolean(System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+
 
     private boolean forceInMemoryDB = false;
 
@@ -262,7 +265,9 @@ public class Main {
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
         // initializes ProcessBulkImportUsers cronjob to process bulk import users
-        Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
+        if(bulkMigrationCronEnabled) {
+            Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
+        }
 
         Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
 

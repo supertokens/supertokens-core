@@ -27,6 +27,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - DELETE `/recipe/webauthn/options/remove`
 - Adds additional indexing for `emailverification_verified_emails`
 - Introduces `bulk_migration_batch_size` core config
+- Introduces `BULK_MIGRATION_CRON_ENABLED` environment variable to control the bulk migration cron job
 
 ### Migration
 
