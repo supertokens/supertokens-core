@@ -50,8 +50,7 @@ import org.junit.rules.TestRule;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
-import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUserWithRoles;
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -91,6 +90,54 @@ public class ProcessBulkImportUsersCronJobTest {
 
         int usersCount = 1;
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        BulkImportUser bulkImportUser = users.get(0);
+
+        Thread.sleep(20000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
+        assertEquals(usersCount, container.users.length);
+
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage, container.users);
+
+        TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
+
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, publicTenant, storage,
+                bulkImportUser,
+                container.users[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldProcessPlainTextPasswordBulkImportUsersInTheSameTenant() throws Exception {
+        TestingProcess process = startCronProcess();
+        if(process == null) {
+            return;
+        }
+
+        Main main = process.getProcess();
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        int usersCount = 1;
+        List<BulkImportUser> users = generateBulkImportUserPlainTextPasswordAndRoles(usersCount, List.of("public", "t1"), 0, List.of("role1", "role2"));
         BulkImport.addUsers(appIdentifier, storage, users);
 
         BulkImportUser bulkImportUser = users.get(0);
