@@ -599,11 +599,12 @@ public class BulkImport {
             }
         }
         try {
-            List<UserIdMapping.UserIdBulkMappingResult> mappingResults = UserIdMapping.createMultipleUserIdMappings(
-                    appIdentifier, storages,
-                    superTokensUserIdToExternalUserId,
-                    false,  true);
-
+            if(!superTokensUserIdToExternalUserId.isEmpty()) {
+                List<UserIdMapping.UserIdBulkMappingResult> mappingResults = UserIdMapping.createMultipleUserIdMappings(
+                        appIdentifier, storages,
+                        superTokensUserIdToExternalUserId,
+                        false, true);
+            }
         } catch (StorageQueryException e) {
             if(e.getCause() instanceof BulkImportBatchInsertException) {
                 Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
@@ -640,7 +641,9 @@ public class BulkImport {
         }
 
         try {
-            UserMetadata.updateMultipleUsersMetadata(appIdentifier, storage, usersMetadata);
+            if(!usersMetadata.isEmpty()) {
+                UserMetadata.updateMultipleUsersMetadata(appIdentifier, storage, usersMetadata);
+            }
         } catch (TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(new Exception("E040: " + e.getMessage()));
         } catch (StorageQueryException e) {
@@ -707,18 +710,18 @@ public class BulkImport {
         }
 
         try {
+            if(!emailToUserId.isEmpty()) {
+                EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
+                        .getEmailVerificationStorage(storage);
+                emailVerificationSQLStorage.startTransaction(con -> {
+                    emailVerificationSQLStorage
+                            .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
+                                    emailToUserId, true);
 
-            EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
-                    .getEmailVerificationStorage(storage);
-            emailVerificationSQLStorage.startTransaction(con -> {
-                emailVerificationSQLStorage
-                        .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
-                                emailToUserId, true);
-
-                emailVerificationSQLStorage.commitTransaction(con);
-                return null;
-            });
-
+                    emailVerificationSQLStorage.commitTransaction(con);
+                    return null;
+                });
+            }
         } catch (StorageQueryException e) {
             throw new StorageTransactionLogicException(e);
         }

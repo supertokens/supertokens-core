@@ -203,6 +203,9 @@ public class UserIdMapping {
         // race condition is fixed.
 
         List<UserIdBulkMappingResult> mappingResults = new ArrayList<>();
+        if(superTokensUserIdToExternalUserId == null || superTokensUserIdToExternalUserId.isEmpty()) {
+            return mappingResults;
+        }
 
         // with external id
         List<StorageAndUserIdMapping> mappingAndStorageWithExternal =
