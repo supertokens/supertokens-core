@@ -1129,6 +1129,8 @@ public class CronjobTest {
     public void testThatBulkMigrationCronJobLoadedWhenNoEnvVarSet() throws Exception {
         String[] args = {"../"};
 
+        setEnv(Collections.emptyMap());
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -1143,6 +1145,8 @@ public class CronjobTest {
         assertNull(System.getenv("BULK_MIGRATION_CRON_ENABLED"));
         assertNotNull(bulkImportCron);
         assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
+
+        setEnv(Collections.emptyMap());
     }
 
     @Test
@@ -1164,6 +1168,8 @@ public class CronjobTest {
         assertEquals("true", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
         assertNotNull(bulkImportCron);
         assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
+
+        setEnv(Collections.emptyMap());
     }
 
     @Test
@@ -1184,6 +1190,8 @@ public class CronjobTest {
         ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
         assertEquals("false", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
         assertNull(bulkImportCron);
+
+        setEnv(Collections.emptyMap());
     }
 
     protected static void setEnv(Map<String, String> newenv) throws Exception {
