@@ -9,7 +9,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [10.1.1]
 
-
 - Adds debug logging for the bulk migration process
 
 ## [10.1.0]
