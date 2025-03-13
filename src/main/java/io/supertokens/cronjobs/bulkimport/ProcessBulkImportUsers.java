@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 
 public class ProcessBulkImportUsers extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.ProcessBulkImportUsers";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.ProcessBulkImportUsers";
 
     private ExecutorService executorService;
 

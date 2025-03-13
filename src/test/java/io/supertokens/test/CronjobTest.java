@@ -19,9 +19,11 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -40,6 +42,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1121,4 +1124,93 @@ public class CronjobTest {
 
         assertTrue(isLoaded);
     }
+
+    @Test
+    public void testThatBulkMigrationCronJobLoadedWhenNoEnvVarSet() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        ResourceDistributor resourceDistributor = main.getResourceDistributor();
+        ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
+        assertNull(System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+        assertNotNull(bulkImportCron);
+        assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
+    }
+
+    @Test
+    public void testThatBulkMigrationCronJobLoadedWhenEnvVarSetToTrue() throws Exception {
+        String[] args = {"../"};
+        setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "true"));
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        ResourceDistributor resourceDistributor = main.getResourceDistributor();
+        ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
+        assertEquals("true", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+        assertNotNull(bulkImportCron);
+        assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
+    }
+
+    @Test
+    public void testThatBulkMigrationCronJobNotLoadedWhenEnvVarSetToFalse() throws Exception {
+        String[] args = {"../"};
+        setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "false"));
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        ResourceDistributor resourceDistributor = main.getResourceDistributor();
+        ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
+        assertEquals("false", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+        assertNull(bulkImportCron);
+    }
+
+    protected static void setEnv(Map<String, String> newenv) throws Exception {
+        try {
+            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
+            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
+            theEnvironmentField.setAccessible(true);
+            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
+            env.putAll(newenv);
+            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
+            theCaseInsensitiveEnvironmentField.setAccessible(true);
+            Map<String, String> cienv = (Map<String, String>) theCaseInsensitiveEnvironmentField.get(null);
+            cienv.putAll(newenv);
+        } catch (NoSuchFieldException e) {
+            Class[] classes = Collections.class.getDeclaredClasses();
+            Map<String, String> env = System.getenv();
+            for(Class cl : classes) {
+                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                    Field field = cl.getDeclaredField("m");
+                    field.setAccessible(true);
+                    Object obj = field.get(env);
+                    Map<String, String> map = (Map<String, String>) obj;
+                    map.clear();
+                    map.putAll(newenv);
+                }
+            }
+        }
+    }
+
 }
