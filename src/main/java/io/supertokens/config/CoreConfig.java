@@ -352,6 +352,12 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("If specified, the supertokens core will load the specified number of users for migrating in one" +
+            "single batch. (Default: 8000).")
+    private int bulk_migration_batch_size =  8000;
+
+    @NotConflictingInApp
+    @JsonProperty
     @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
     private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
@@ -598,6 +604,10 @@ public class CoreConfig {
         return webauthn_recover_account_token_lifetime;
     }
 
+    public int getBulkMigrationBatchSize() {
+        return bulk_migration_batch_size;
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -793,6 +803,10 @@ public class CoreConfig {
 
         if (bulk_migration_parallelism < 1) {
             throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
+        }
+
+        if (bulk_migration_batch_size < 1) {
+            throw new InvalidConfigException("Provided bulk_migration_batch_size must be >= 1");
         }
 
         if (webauthn_recover_account_token_lifetime <= 0) {

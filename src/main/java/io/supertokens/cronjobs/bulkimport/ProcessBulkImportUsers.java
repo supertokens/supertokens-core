@@ -87,7 +87,7 @@ public class ProcessBulkImportUsers extends CronTask {
         while(usersProcessed < (newUsers + processingUsers)) {
 
             List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
-                    BulkImport.PROCESS_USERS_BATCH_SIZE);
+                    Config.getConfig(app.getAsPublicTenantIdentifier(), main).getBulkMigrationBatchSize());
             if (users == null || users.isEmpty()) {
                 // "No more users to process!"
                 break;

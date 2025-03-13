@@ -26,6 +26,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - DELETE `/recipe/webauthn/user/credential/remove`
   - DELETE `/recipe/webauthn/options/remove`
 - Adds additional indexing for `emailverification_verified_emails`
+- Introduces `bulk_migration_batch_size` core config
 
 ### Migration
 

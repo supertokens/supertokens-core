@@ -175,6 +175,10 @@ core_config_version: 0
 # the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
 
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 8000) int value. If specified, the supertokens core will load the
+# specified number of users for migrating in one single batch.
+# bulk_migration_batch_size:
+
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a webauthn
 # account recovery token is valid for.
 # webauthn_recover_account_token_lifetime:
