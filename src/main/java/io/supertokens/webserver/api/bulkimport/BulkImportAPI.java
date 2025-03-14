@@ -16,6 +16,7 @@
 
 package io.supertokens.webserver.api.bulkimport;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -170,7 +171,7 @@ public class BulkImportAPI extends WebserverAPI {
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), Utils.getUUID());
+                BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject());
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -203,6 +204,7 @@ public class BulkImportAPI extends WebserverAPI {
 
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
+        result.add("users", new Gson().toJsonTree(usersToAdd));
         super.sendJsonResponse(200, result, resp);
     }
 }

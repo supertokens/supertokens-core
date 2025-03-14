@@ -92,7 +92,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     // Validate the user
                     try {
                         validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier,
-                                user.toJsonObject(), user.id));
+                                user.toJsonObject()));
                     } catch (InvalidBulkImportDataException exception) {
                         validationErrorsBeforeActualProcessing.put(user.id, new Exception(
                                 String.valueOf(exception.errors)));

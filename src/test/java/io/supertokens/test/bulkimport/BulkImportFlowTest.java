@@ -455,6 +455,7 @@ public class BulkImportFlowTest {
 
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
+        System.out.println(response);
 
         // wait for the cron job to process them
         // periodically check the remaining unprocessed users

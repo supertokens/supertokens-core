@@ -55,8 +55,7 @@ public class BulkImportUserUtils {
         this.allExternalUserIds = new HashSet<>();
     }
 
-    public BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            String id)
+    public BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData)
             throws InvalidBulkImportDataException, StorageQueryException, TenantOrAppNotFoundException {
         List<String> errors = new ArrayList<>();
 
@@ -68,7 +67,7 @@ public class BulkImportUserUtils {
         List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
         List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
-
+        generateIdsForLoginMethods(loginMethods);
         externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
 
         validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
@@ -76,7 +75,16 @@ public class BulkImportUserUtils {
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
         }
+        String id = getPrimaryLoginMethod(loginMethods).superTokensUserId;
         return new BulkImportUser(id, externalUserId, userMetadata, userRoles, totpDevices, loginMethods);
+    }
+
+    private void generateIdsForLoginMethods(List<LoginMethod> loginMethods) {
+        if(loginMethods != null && !loginMethods.isEmpty()) {
+            for (LoginMethod loginMethod : loginMethods) {
+                loginMethod.superTokensUserId = Utils.getUUID();
+            }
+        }
     }
 
     private List<UserRole> getParsedUserRoles(Main main, AppIdentifier appIdentifier, JsonObject userData,
@@ -570,5 +578,25 @@ public class BulkImportUserUtils {
                 }
             }
         }
+    }
+
+    public static BulkImportUser.LoginMethod getPrimaryLoginMethod(BulkImportUser user) {
+        return getPrimaryLoginMethod(user.loginMethods);
+    }
+
+    // Returns the primary loginMethod of the user. If no loginMethod is marked as
+    // primary, then the oldest loginMethod is returned.
+    public static BulkImportUser.LoginMethod getPrimaryLoginMethod(List<LoginMethod> loginMethods) {
+        BulkImportUser.LoginMethod oldestLM = loginMethods.get(0);
+        for (BulkImportUser.LoginMethod lm : loginMethods) {
+            if (lm.isPrimary) {
+                return lm;
+            }
+
+            if (lm.timeJoinedInMSSinceEpoch < oldestLM.timeJoinedInMSSinceEpoch) {
+                oldestLM = lm;
+            }
+        }
+        return oldestLM;
     }
 }
