@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.1]
+
+- Bulk migration users upload now returns the ids of the users.
+
 ## [10.1.0]
 
 - Adds Webauthn (Passkeys) support to core
