@@ -170,7 +170,8 @@ public class ImportUserTest {
 
        BulkImportUser user = new BulkImportUser("random-id-lol", "random", null, List.of(), List.of(), List.of(
                new BulkImportUser.LoginMethod(List.of("public"), "emailpassword", true, false, System.currentTimeMillis(),
-                       "test@testing.com", "$2a", "BCRYPT", null, null, null, null)));
+                       "test@testing.com", "$2a", "BCRYPT", null, null,
+                       null, null, io.supertokens.utils.Utils.getUUID())));
         JsonObject request = user.toJsonObject();
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
@@ -201,7 +202,8 @@ public class ImportUserTest {
 
         BulkImportUser user = new BulkImportUser("random-id-lol", null, null, List.of(), List.of(), List.of(
                 new BulkImportUser.LoginMethod(List.of("public"), "emailpassword", true, false, System.currentTimeMillis(),
-                        "test@testing.com", "$2a", "BCRYPT", null, null, null, null)));
+                        "test@testing.com", "$2a", "BCRYPT", null, null,
+                        null, null, io.supertokens.utils.Utils.getUUID())));
         JsonObject request = user.toJsonObject();
         request.remove("totpDevices");
         request.remove("userRoles");

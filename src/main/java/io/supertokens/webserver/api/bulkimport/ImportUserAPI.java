@@ -78,7 +78,7 @@ public class ImportUserAPI extends WebserverAPI {
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
 
         try {
-            BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser);
+            BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser, BulkImportUserUtils.IDMode.GENERATE);
 
             AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
 

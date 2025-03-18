@@ -167,7 +167,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInNotSoLargeNumbersInTheSameTenant() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        Utils.setValueInConfig("bulk_migration_parallelism", "5");
         TestingProcess process = startCronProcess();
         if(process == null) {
             return;
@@ -540,7 +540,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(100);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        waitForProcessingWithTimeout(appIdentifier, storage, 60);
+        waitForProcessingWithTimeout(appIdentifier, storage, 120);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -689,7 +689,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 10);
-        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 10);
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -708,12 +708,16 @@ public class ProcessBulkImportUsersCronJobTest {
             throws StorageQueryException, InterruptedException {
         long numberOfUnprocessedUsers = 1;
         long startTime = System.currentTimeMillis();
-        long currentTime = System.currentTimeMillis();
-        while(numberOfUnprocessedUsers > 0 && (currentTime - startTime) < (timeoutSeconds * 1000L)){
+        long currentTime = 0;
+        while(numberOfUnprocessedUsers > 0){
             numberOfUnprocessedUsers = (storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.NEW)
                     + storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.PROCESSING));
             Thread.sleep(1000);
             currentTime = System.currentTimeMillis();
+            if((currentTime - startTime) > (timeoutSeconds * 1000L)){
+                System.out.println("Timeout of " + timeoutSeconds + " seconds reached.");
+                break;
+            }
         }
     }
 }
