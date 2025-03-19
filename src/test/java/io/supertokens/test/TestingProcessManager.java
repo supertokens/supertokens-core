@@ -16,12 +16,17 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.multitenancy.*;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -29,21 +34,13 @@ public class TestingProcessManager {
 
     private static final ArrayList<TestingProcess> alive = new ArrayList<>();
 
-    static void deleteAllInformation() throws Exception {
-        System.out.println("----------DELETE ALL INFORMATION----------");
-        String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
-        process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
-        process.main.deleteAllInformationForTesting();
-        process.kill();
-        System.out.println("----------DELETE ALL INFORMATION----------");
-    }
+    private static TestingProcess singletonProcess = null;
 
     static void killAll() {
         synchronized (alive) {
             for (TestingProcess testingProcess : alive) {
                 try {
-                    testingProcess.kill();
+                    testingProcess.kill(true, 1);
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -51,7 +48,35 @@ public class TestingProcessManager {
         }
     }
 
+    private static void createAppForTesting() {
+        assertNotNull(singletonProcess);
+
+        // Create a new app and use that for testing
+        String appId = UUID.randomUUID().toString();
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(singletonProcess.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, appId, null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    null, null, new JsonObject()
+            ), false);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        singletonProcess.setAppForTesting(new TenantIdentifier(null, appId, null));
+        ResourceDistributor.setAppForTesting(new TenantIdentifier(null, appId, null));
+        ProcessState.getInstance(singletonProcess.getProcess()).addState(ProcessState.PROCESS_STATE.STARTED, null);
+    }
+
     public static TestingProcess start(String[] args, boolean startProcess, boolean killActiveProcesses) throws InterruptedException {
+        if (singletonProcess != null) {
+            createAppForTesting();
+            return singletonProcess;
+        }
+
         if (alive.size() > 0 && killActiveProcesses) {
             killAll();
         }
@@ -89,6 +114,11 @@ public class TestingProcessManager {
                 waitForInit.wait();
             }
             alive.add(mainProcess);
+            singletonProcess = mainProcess;
+
+            mainProcess.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
+
+            createAppForTesting();
             return mainProcess;
         }
     }
@@ -108,6 +138,7 @@ public class TestingProcessManager {
         public Main main;
         boolean waitToStartNotified = false;
         private boolean killed = false;
+        TenantIdentifier appForTesting = TenantIdentifier.BASE_TENANT;
 
         TestingProcess(String[] args) {
             this.args = args;
@@ -129,10 +160,18 @@ public class TestingProcessManager {
         }
 
         public void kill() throws InterruptedException {
-            kill(true);
+            kill(false, 0);
         }
 
-        public void kill(boolean removeAllInfo) throws InterruptedException {
+        public void kill(int confirm) throws InterruptedException {
+            kill(true, confirm);
+        }
+
+        public void kill(boolean removeAllInfo, int confirm) throws InterruptedException {
+            if (confirm == 0) {
+                return;
+            }
+
             if (killed) {
                 return;
             }
@@ -149,17 +188,16 @@ public class TestingProcessManager {
             }
             main.killForTestingAndWaitForShutdown();
             killed = true;
-        }
 
-        public void killWithoutDeletingData() throws InterruptedException {
-            if (killed) {
-                return;
+            if (singletonProcess == this) {
+                singletonProcess = null;
             }
-            main.killForTestingAndWaitForShutdown();
-            killed = true;
         }
 
         public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
+            if (state == PROCESS_STATE.STOPPED && Main.isTesting) {
+                return new EventAndException(PROCESS_STATE.STOPPED, null);
+            }
             return checkOrWaitForEvent(state, 15000);
         }
 
@@ -175,6 +213,14 @@ public class TestingProcessManager {
                 }
             }
             return e;
+        }
+
+        public void setAppForTesting(TenantIdentifier tenantIdentifier) {
+            appForTesting = tenantIdentifier;
+        }
+
+        public TenantIdentifier getAppForTesting() {
+            return appForTesting;
         }
     }
 

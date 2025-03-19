@@ -180,7 +180,7 @@ public class RemoveUserRoleAPITest {
 
         {
             // check that the user has the role
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -197,7 +197,7 @@ public class RemoveUserRoleAPITest {
         assertTrue(response.get("didUserHaveRole").getAsBoolean());
 
         // check that user doesnt have any role
-        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+        String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();

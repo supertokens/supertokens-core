@@ -17,6 +17,7 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -90,7 +91,7 @@ public class EmailPassword {
             throws DuplicateEmailException, StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return signUp(new TenantIdentifier(null, null, null), storage,
+            return signUp(ResourceDistributor.getAppForTesting(), storage,
                     main, email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);

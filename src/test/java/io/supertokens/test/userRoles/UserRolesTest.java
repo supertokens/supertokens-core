@@ -77,10 +77,10 @@ public class UserRolesTest {
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
 
             // check if permissions are created
-            assertArrayEquals(storage.getPermissionsForRole(new AppIdentifier(null, null), role), permissions);
+            assertArrayEquals(storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role), permissions);
 
         }
 
@@ -89,8 +89,8 @@ public class UserRolesTest {
             boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
             assertFalse(wasRoleCreated);
             // check that roles and permissions still exist
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
-            checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
+            checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role));
         }
 
         process.kill();
@@ -123,10 +123,10 @@ public class UserRolesTest {
             // check that role and permissions were created
 
             // check if role is created
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
 
             // check if permissions are created
-            String[] createdPermissions_1 = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+            String[] createdPermissions_1 = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
             checkThatArraysAreEqual(oldPermissions, createdPermissions_1);
         }
 
@@ -138,7 +138,7 @@ public class UserRolesTest {
             // since only permissions were modified and no role was created, this should be false
             assertFalse(wasRoleCreated);
 
-            String[] createdPermissions_2 = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+            String[] createdPermissions_2 = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
             Arrays.sort(newPermissions);
             Arrays.sort(createdPermissions_2);
 
@@ -173,9 +173,9 @@ public class UserRolesTest {
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
             // check that no permissions exist for the role
-            assertEquals(0, storage.getPermissionsForRole(new AppIdentifier(null, null), role).length);
+            assertEquals(0, storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role).length);
         }
 
         {
@@ -183,9 +183,9 @@ public class UserRolesTest {
             String role = "role2";
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[]{});
             // check if role is created
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
             // check that no permissions exist for the role
-            assertEquals(0, storage.getPermissionsForRole(new AppIdentifier(null, null), role).length);
+            assertEquals(0, storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role).length);
         }
 
         process.kill();
@@ -218,10 +218,10 @@ public class UserRolesTest {
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
 
             // retrieve permissions for role
-            String[] createdPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+            String[] createdPermissions = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
 
             // check that permissions are the same
             checkThatArraysAreEqual(oldPermissions, createdPermissions);
@@ -236,10 +236,10 @@ public class UserRolesTest {
             assertFalse(wasRoleCreated);
 
             // check that the role still exists
-            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
 
             // retrieve permissions for role
-            String[] createdPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+            String[] createdPermissions = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
 
             // check that newly added permission is added
             String[] allPermissions = new String[]{"permission1", "permission2", "permission3"};
@@ -288,7 +288,7 @@ public class UserRolesTest {
             assertTrue(wasRoleAddedToUser);
 
             // check that the user actually has the role
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -299,7 +299,7 @@ public class UserRolesTest {
             assertFalse(wasRoleAddedToUser);
 
             // check that the user still has the same role/ no additional role has been added
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
 
         }
@@ -315,7 +315,7 @@ public class UserRolesTest {
             assertTrue(wasRoleAddedToUser);
 
             // check that user has two roles
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(newRoles, userRoles);
         }
 
@@ -368,7 +368,7 @@ public class UserRolesTest {
 
         {
             // check that the user has roles
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -378,7 +378,7 @@ public class UserRolesTest {
             assertTrue(didUserHaveRole);
 
             // check that the user has no roles
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             assertEquals(0, userRoles.length);
         }
         {
@@ -415,7 +415,7 @@ public class UserRolesTest {
 
         {
             // check that the user actually has the roles
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -425,7 +425,7 @@ public class UserRolesTest {
 
         {
             String[] currentUserRoles = new String[]{"role2", "role3"};
-            String[] retrievedUserRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] retrievedUserRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
 
             // check that the user has the correct roles
             Utils.checkThatArraysAreEqual(currentUserRoles, retrievedUserRoles);
@@ -855,7 +855,7 @@ public class UserRolesTest {
         assertTrue(error instanceof UnknownRoleException);
 
         // check that the role-permission mapping doesnt exist in the db
-        String[] retrievedPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+        String[] retrievedPermissions = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
         assertEquals(0, retrievedPermissions.length);
 
         // check that user has no roles
@@ -863,7 +863,7 @@ public class UserRolesTest {
         assertEquals(0, retrievedRoles.length);
 
         // check that the user-role mapping doesnt exist in the db
-        String[] retrievedRolesFromDb = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+        String[] retrievedRolesFromDb = storage.getRolesForUser(process.getAppForTesting(), userId);
         assertEquals(0, retrievedRolesFromDb.length);
 
         // check that role doesnt exist
@@ -1026,7 +1026,7 @@ public class UserRolesTest {
             assertEquals(0, retrievedRoles.length);
 
             // check that the mapping for user role doesnt exist
-            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null),
+            String[] roleUserMapping = storage.getRolesForUser(process.getAppForTesting(),
                     userInfo.getSupertokensUserId());
             assertEquals(0, roleUserMapping.length);
         }

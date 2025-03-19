@@ -19,12 +19,11 @@ package io.supertokens.test.httpRequest;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.io.*;
 import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -64,6 +63,12 @@ public class HttpRequestForTesting {
                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
                                        String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+
+        if (!url.contains("appid-")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
         StringBuilder paramBuilder = new StringBuilder();
 
         if (params != null) {
@@ -134,9 +139,16 @@ public class HttpRequestForTesting {
                                         String method,
                                         String apiKey, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        // If the url doesn't contain the app id deliberately, add app id used for testing
+        if (!url.contains("appid-")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
         URL obj = getURL(main, requestID, url);
         InputStream inputStream = null;
         HttpURLConnection con = null;
+
         try {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
@@ -236,6 +248,12 @@ public class HttpRequestForTesting {
                                                              int connectionTimeoutMS, int readTimeoutMS,
                                                              Integer version, String cdiVersion, String rid)
             throws IOException, HttpResponseException {
+        // If the url doesn't contain the app id deliberately, add app id used for testing
+        if (!url.contains("appid-")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
         StringBuilder paramBuilder = new StringBuilder();
 
         if (params != null) {

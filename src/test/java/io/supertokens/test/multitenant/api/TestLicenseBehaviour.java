@@ -180,7 +180,7 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         // Restart the core
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         String[] args = {"../"};

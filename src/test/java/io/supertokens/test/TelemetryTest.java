@@ -123,7 +123,7 @@ public class TelemetryTest extends Mockito {
         }
 
         // Restarting the process to send telemetry again
-        process.kill(false);
+        process.kill(false, 1);
         process = TestingProcessManager.start(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -204,7 +204,7 @@ public class TelemetryTest extends Mockito {
                 new AppIdentifier(null, null), "https://example.com", "https://api.example.com");
 
         // Restarting the process to send telemetry again
-        process.kill(false);
+        process.kill(false, 1);
         process = TestingProcessManager.start(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -320,7 +320,7 @@ public class TelemetryTest extends Mockito {
 
             telemetryId = telemetryData.get("telemetryId").getAsString();
 
-            process.kill(false);
+            process.kill(false, 1);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
 

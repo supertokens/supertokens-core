@@ -171,7 +171,7 @@ public class CreateRoleAPITest {
 
             // retrieve all roles and check that the newly created role is returned
             UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-            String[] roles = storage.getRoles(new AppIdentifier(null, null));
+            String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -191,7 +191,7 @@ public class CreateRoleAPITest {
 
             // retrieve all roles and check that no new role has been created
             UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-            String[] roles = storage.getRoles(new AppIdentifier(null, null));
+            String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -225,7 +225,7 @@ public class CreateRoleAPITest {
 
         // retrieve all roles and check that the newly created role is returned
         UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-        String[] roles = storage.getRoles(new AppIdentifier(null, null));
+        String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
@@ -261,12 +261,12 @@ public class CreateRoleAPITest {
 
         // check if role is created
         UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-        String[] roles = storage.getRoles(new AppIdentifier(null, null));
+        String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
         // check if permissions have been added
-        String[] rolePermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+        String[] rolePermissions = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
 
         Utils.checkThatArraysAreEqual(permissions, rolePermissions);
 

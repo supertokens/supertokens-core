@@ -974,7 +974,7 @@ public class CronjobTest {
             assertEquals(12, count);
         }
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
 

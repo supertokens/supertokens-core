@@ -410,9 +410,10 @@ public class Main {
 
     @TestOnly
     public void killForTestingAndWaitForShutdown() throws InterruptedException {
-        assertIsTesting();
-        wakeUpMainThreadToShutdown();
-        mainThread.join();
+        // Do not kill for now
+         assertIsTesting();
+         wakeUpMainThreadToShutdown();
+         mainThread.join();
     }
 
     // must not throw any error

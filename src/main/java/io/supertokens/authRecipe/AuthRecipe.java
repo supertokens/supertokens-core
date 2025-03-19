@@ -17,6 +17,7 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
@@ -1394,7 +1395,7 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
         UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
                 storage, userId, UserIdType.ANY);
 

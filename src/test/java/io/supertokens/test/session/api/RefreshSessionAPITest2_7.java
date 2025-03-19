@@ -78,7 +78,7 @@ public class RefreshSessionAPITest2_7 {
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -133,7 +133,7 @@ public class RefreshSessionAPITest2_7 {
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -158,7 +158,7 @@ public class RefreshSessionAPITest2_7 {
             checkRefreshSessionResponse(response, process, userId, userDataInJWT, false);
         }
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         process = TestingProcessManager.start(args);

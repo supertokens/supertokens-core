@@ -86,7 +86,7 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost", true, true, true, coreConfig);
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
@@ -174,7 +174,7 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost.org", true, true, true, coreConfig);
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
@@ -220,7 +220,7 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost.org", true, true, true, coreConfig);
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");

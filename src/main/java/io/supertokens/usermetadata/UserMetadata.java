@@ -18,6 +18,7 @@ package io.supertokens.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -42,7 +43,7 @@ public class UserMetadata {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return updateUserMetadata(
-                    new AppIdentifier(null, null), storage,
+                    ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                     userId, metadataUpdate);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -117,7 +118,7 @@ public class UserMetadata {
     @TestOnly
     public static JsonObject getUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUserMetadata(new AppIdentifier(null, null), storage, userId);
+        return getUserMetadata(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     public static JsonObject getUserMetadata(AppIdentifier appIdentifier, Storage storage,
@@ -137,7 +138,7 @@ public class UserMetadata {
     @TestOnly
     public static void deleteUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        deleteUserMetadata(new AppIdentifier(null, null), storage, userId);
+        deleteUserMetadata(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     public static void deleteUserMetadata(AppIdentifier appIdentifier, Storage storage,

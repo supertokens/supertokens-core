@@ -113,7 +113,7 @@ public class RefreshTokenTest {
         TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
                 "parentRefreshTokenHash1", "antiCsrfToken");
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {

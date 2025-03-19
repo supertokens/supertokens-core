@@ -238,7 +238,7 @@ public class ApiVersionAPITest {
         HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/appid-a1/apiversion", params, 1000, 1000, null, null, "");
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

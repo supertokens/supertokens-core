@@ -115,7 +115,7 @@ public class LogTest {
 
         assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 
-        process.kill(false);
+        process.kill(false, 1);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();

@@ -878,7 +878,7 @@ public class FeatureFlagTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
         ProcessState.getInstance(process.getProcess()).clear();
 
-        process.kill(false);
+        process.kill(false, 1);
 
 
         // Restart core and check if the call was made during init
@@ -949,7 +949,7 @@ public class FeatureFlagTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
             ProcessState.getInstance(process.getProcess()).clear();
 
-            process.kill(false);
+            process.kill(false, 1);
 
             // Restart core and check if the call was made during init
             process = TestingProcessManager.start(args);
