@@ -161,10 +161,7 @@ public class BulkImportFlowTest {
 
         // upload a bunch of users through the API
         JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
-        System.out.println(usersJson);
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
-        System.out.println("response");
-        System.out.println(response);
         assertEquals("OK", response.get("status").getAsString());
 
         // wait for the cron job to process them
