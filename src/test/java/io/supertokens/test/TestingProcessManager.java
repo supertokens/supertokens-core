@@ -169,6 +169,11 @@ public class TestingProcessManager {
 
         public void kill(boolean removeAllInfo, int confirm) throws InterruptedException {
             if (confirm == 0) {
+                try {
+                    Multitenancy.deleteApp(appForTesting.toAppIdentifier(), getProcess());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 return;
             }
 
