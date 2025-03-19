@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
 
@@ -52,7 +51,11 @@ public class TestingProcessManager {
         }
     }
 
-    public static TestingProcess start(String[] args, boolean startProcess) throws InterruptedException {
+    public static TestingProcess start(String[] args, boolean startProcess, boolean killActiveProcesses) throws InterruptedException {
+        if (alive.size() > 0 && killActiveProcesses) {
+            killAll();
+        }
+
         final Object waitForInit = new Object();
         synchronized (alive) {
             TestingProcess mainProcess = new TestingProcess(args) {
@@ -90,8 +93,12 @@ public class TestingProcessManager {
         }
     }
 
+    public static TestingProcess start(String[] args, boolean startProcess) throws InterruptedException {
+        return start(args, startProcess, true);
+    }
+
     public static TestingProcess start(String[] args) throws InterruptedException {
-        return start(args, true);
+        return start(args, true, true);
     }
 
     public static abstract class TestingProcess extends Thread {

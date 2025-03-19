@@ -856,8 +856,7 @@ public class InMemoryDBTest {
     @Test
     public void forceInMemDBIsFalseByDefault() throws InterruptedException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertFalse(process.getProcess().isForceInMemoryDB());
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }

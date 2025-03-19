@@ -592,10 +592,10 @@ public class WebserverTest extends Mockito {
     @Test
     public void samePortTwoServersError() throws InterruptedException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.start(args, true, true);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        TestingProcess process2 = TestingProcessManager.start(args);
+        TestingProcess process2 = TestingProcessManager.start(args, true, false);
         EventAndException e = process2.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException && e.exception.getMessage().equals(
                 "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "

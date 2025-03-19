@@ -344,10 +344,9 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("refresh_token_validity", "144001");
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -383,10 +382,9 @@ public class SuperTokensSaaSSecretTest {
         String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -456,10 +454,9 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -539,10 +536,9 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -632,10 +628,9 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {

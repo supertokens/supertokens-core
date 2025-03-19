@@ -48,27 +48,27 @@ public class DotStartedFileTest {
     public void fiveProcessInParallelDotStartedFileTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process1 = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process1 = TestingProcessManager.start(args, true, true);
         assertNotNull(process1.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8081");
 
-        TestingProcessManager.TestingProcess process2 = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process2 = TestingProcessManager.start(args, true, false);
         assertNotNull(process2.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8082");
 
-        TestingProcessManager.TestingProcess process3 = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process3 = TestingProcessManager.start(args, true, false);
         assertNotNull(process3.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8083");
 
-        TestingProcessManager.TestingProcess process4 = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process4 = TestingProcessManager.start(args, true, false);
         assertNotNull(process4.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8084");
 
-        TestingProcessManager.TestingProcess process5 = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process5 = TestingProcessManager.start(args, true, false);
         assertNotNull(process5.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         File[] flist = new File("../.started").listFiles();
