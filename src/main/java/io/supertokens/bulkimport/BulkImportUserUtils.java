@@ -607,6 +607,7 @@ public class BulkImportUserUtils {
         READ_STORED;
     }
 
+    // Returns a map of recipe user ids -> primary user ids
     public static Map<String, String> collectRecipeIdsToPrimaryIds(List<BulkImportUser> users) {
         Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
         if(users == null){
@@ -625,7 +626,7 @@ public class BulkImportUserUtils {
         return recipeUserIdByPrimaryUserId;
     }
 
-    public static LoginMethod findLoginMethodForUser(List<BulkImportUser> users, String recipeUserId) {
+    public static LoginMethod findLoginMethodByRecipeUserId(List<BulkImportUser> users, String recipeUserId) {
         if(users == null || users.isEmpty() || recipeUserId == null){
             return null;
         }

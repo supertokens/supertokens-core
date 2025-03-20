@@ -198,6 +198,40 @@ public class BulkImportTestUtils {
         }
     }
 
+    public static void createTenantsWithinOneUserPool(Main main)
+            throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
+            FeatureNotEnabledException, IOException, InvalidConfigException,
+            CannotModifyBaseConfigException, BadPermissionException {
+        // User pool 1 - (null, null, null), (null, null, t1), (null, null, t2)
+
+        { // tenant 1
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    main,
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, new JsonObject()));
+        }
+        { // tenant 2
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    main,
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, new JsonObject()));
+        }
+    }
+
     public static void assertBulkImportUserAndAuthRecipeUserAreEqual(Main main, AppIdentifier appIdentifier,
             TenantIdentifier tenantIdentifier, Storage storage, BulkImportUser bulkImportUser,
             AuthRecipeUserInfo authRecipeUser) throws StorageQueryException, TenantOrAppNotFoundException {

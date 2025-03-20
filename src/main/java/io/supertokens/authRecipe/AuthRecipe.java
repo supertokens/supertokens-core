@@ -311,8 +311,8 @@ public class AuthRecipe {
             for(Map.Entry<String, String> recipeUserByPrimaryUser : recipeUserIdByPrimaryUserId.entrySet()) {
                 String recipeUserId = recipeUserByPrimaryUser.getKey();
                 String primaryUserId = recipeUserByPrimaryUser.getValue();
-                BulkImportUser.LoginMethod primaryUser = BulkImportUserUtils.findLoginMethodForUser(users, primaryUserId);
-                BulkImportUser.LoginMethod recipeUser = BulkImportUserUtils.findLoginMethodForUser(users, recipeUserId);
+                BulkImportUser.LoginMethod primaryUser = BulkImportUserUtils.findLoginMethodByRecipeUserId(users, primaryUserId);
+                BulkImportUser.LoginMethod recipeUser = BulkImportUserUtils.findLoginMethodByRecipeUserId(users, recipeUserId);
                 if(primaryUser == null || recipeUser == null) {
                     results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, new UnknownUserIdException(), null));
                 } else if(recipeUser.isPrimary) {
@@ -597,16 +597,10 @@ public class AuthRecipe {
             authRecipeStorage.startTransaction(con -> {
                 List<CanLinkAccountsBulkResult> canLinkAccounts = canLinkMultipleAccountsHelperForBulkImport(con, appIdentifier,
                         authRecipeStorage, users, usersWithSameExtraData);
-                List<LinkAccountsBulkResult> results = new ArrayList<>();
                 Map<String, String> recipeUserByPrimaryUserNeedsLinking = new HashMap<>();
                 if(!canLinkAccounts.isEmpty()){
                     for(CanLinkAccountsBulkResult canLinkAccountsBulkResult : canLinkAccounts) {
-                        if (canLinkAccountsBulkResult.alreadyLinked) {
-                            results.add(new LinkAccountsBulkResult(
-                                    canLinkAccountsBulkResult.bulkImportUser, true, null));
-                        } else if(canLinkAccountsBulkResult.error != null) {
-                            results.add(new LinkAccountsBulkResult(
-                                    canLinkAccountsBulkResult.bulkImportUser, false, canLinkAccountsBulkResult.error)); // preparing to return the error
+                        if(!canLinkAccountsBulkResult.alreadyLinked && canLinkAccountsBulkResult.error != null) {
                             errorByUserId.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.error);
                         } else {
                             recipeUserByPrimaryUserNeedsLinking.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.primaryUserId);
@@ -620,7 +614,7 @@ public class AuthRecipe {
                 if(!errorByUserId.isEmpty()) {
                     throw new StorageQueryException(new BulkImportBatchInsertException("link accounts errors", errorByUserId));
                 }
-                return results;
+                return null;
             });
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e);

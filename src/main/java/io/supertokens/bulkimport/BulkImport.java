@@ -514,7 +514,6 @@ public class BulkImport {
     private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage,
                                                     List<BulkImportUser> users, List<AuthRecipeUserInfo> allUsersWithSameExtraData)
             throws StorageTransactionLogicException {
-        Map<String, String> recipeUserIdByPrimaryUserId = BulkImportUserUtils.collectRecipeIdsToPrimaryIds(users);
         try {
             AuthRecipe.linkMultipleAccountsForBulkImport(main, appIdentifier, storage,
                     users, allUsersWithSameExtraData);
@@ -524,6 +523,8 @@ public class BulkImport {
             throw new StorageTransactionLogicException(new Exception("E024: " + e.getMessage()));
         } catch (StorageQueryException e) {
             if (e.getCause() instanceof BulkImportBatchInsertException) {
+                Map<String, String> recipeUserIdByPrimaryUserId = BulkImportUserUtils.collectRecipeIdsToPrimaryIds(users);
+
                 Map<String, Exception> errorByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
                 for (String userId : errorByPosition.keySet()) {
                     Exception currentException = errorByPosition.get(userId);
