@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [10.1.1]
 
 - Bulk migration users upload now returns the ids of the users.
+- Bulk Migration now requires Account Linking to be enabled only if the input data justifies it
+- Speed up Bulk Migration's account linking and primary user making
 
 ## [10.1.0]
 
