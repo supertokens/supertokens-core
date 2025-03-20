@@ -436,13 +436,13 @@ public class CreatePrimaryUserAPITest {
         }
 
         JsonObject coreConfig = new JsonObject();
-        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+        StorageLayer.getStorage(new TenantIdentifier(null, process.getAppForTesting().getAppId(), null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
 
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1");
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantIdentifier(null, null, null),
+                new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
                 new TenantConfig(
                         tenantIdentifier,
                         new EmailPasswordConfig(true),
