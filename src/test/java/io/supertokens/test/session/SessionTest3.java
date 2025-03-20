@@ -88,11 +88,11 @@ public class SessionTest3 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                .getNumberOfSessions(process.getAppForTesting()), 2);
 
         Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
@@ -194,12 +194,12 @@ public class SessionTest3 {
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 4);
+                .getNumberOfSessions(process.getAppForTesting()), 4);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 3);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true,
                 false);
@@ -219,12 +219,13 @@ public class SessionTest3 {
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60.0);
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredSessions.RESOURCE_KEY, 1);
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -248,13 +249,13 @@ public class SessionTest3 {
         assert sessionInfo3.accessToken != null;
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 3);
+                .getNumberOfSessions(process.getAppForTesting()), 3);
 
         Thread.sleep(2500);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

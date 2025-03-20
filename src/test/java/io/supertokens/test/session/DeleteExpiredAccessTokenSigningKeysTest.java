@@ -69,12 +69,13 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
     public void jobCleansOldKeysTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
         CronTaskTest.getInstance(process.getProcess())
                 .setIntervalInSeconds(DeleteExpiredAccessTokenSigningKeys.RESOURCE_KEY, 1);
         process.startProcess();
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
 
@@ -88,20 +89,20 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {
             try {
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("clean!", 100));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("clean!",
                                 System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("clean!",
                                 System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("keep!",
                                 System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                sqlStorage.addAccessTokenSigningKey_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                         new KeyValueInfo("keep!", System.currentTimeMillis()));
             } catch (TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
@@ -112,7 +113,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
         Thread.sleep(1500);
 
         sqlStorage.startTransaction(con -> {
-            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
+            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(process.getAppForTesting().toAppIdentifier(), con);
             assertEquals(keys.length, 4);
             for (KeyValueInfo key : keys) {
                 assertNotEquals("clean!", key.value);

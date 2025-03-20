@@ -98,7 +98,7 @@ public class UserIdMappingTest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -205,7 +205,7 @@ public class UserIdMappingTest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);

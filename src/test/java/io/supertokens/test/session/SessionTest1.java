@@ -74,7 +74,7 @@ public class SessionTest1 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
@@ -110,7 +110,7 @@ public class SessionTest1 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -178,7 +178,7 @@ public class SessionTest1 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -217,7 +217,7 @@ public class SessionTest1 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -260,7 +260,7 @@ public class SessionTest1 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -428,7 +428,7 @@ public class SessionTest1 {
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true, true, false);
@@ -454,7 +454,7 @@ public class SessionTest1 {
                 refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true,
                 AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -515,7 +515,7 @@ public class SessionTest1 {
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, null, false, true, false);
@@ -540,7 +540,7 @@ public class SessionTest1 {
                 refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false,
                 AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -592,8 +592,9 @@ public class SessionTest1 {
         Utils.setValueInConfig("refresh_token_validity", "" + 1.5 / 60.0);
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         Main main = process.getProcess();
 
@@ -615,7 +616,7 @@ public class SessionTest1 {
             assert newRefreshedSession.refreshToken != null;
 
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                    .getNumberOfSessions(process.getAppForTesting()), 1);
 
             Session.getSession(main, sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
@@ -629,7 +630,7 @@ public class SessionTest1 {
 
             }
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                    .getNumberOfSessions(process.getAppForTesting()), 1);
         }
 
         // Part 2
@@ -639,7 +640,7 @@ public class SessionTest1 {
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                    .getNumberOfSessions(process.getAppForTesting()), 2);
 
             SessionInformationHolder newRefreshedSession = Session.refreshSession(main, sessionInfo.refreshToken.token,
                     sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
@@ -648,7 +649,7 @@ public class SessionTest1 {
             assertNotEquals(newRefreshedSession.accessToken.token, sessionInfo.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                    .getNumberOfSessions(process.getAppForTesting()), 2);
 
             Thread.sleep(500);
 
@@ -660,7 +661,7 @@ public class SessionTest1 {
             assertNotEquals(newRefreshedSession.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, newRefreshedSession2.refreshToken.token);
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                    .getNumberOfSessions(process.getAppForTesting()), 2);
 
             Thread.sleep(500);
 
@@ -672,12 +673,11 @@ public class SessionTest1 {
             assertNotEquals(newRefreshedSession3.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession3.refreshToken.token, newRefreshedSession2.refreshToken.token);
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                    .getNumberOfSessions(process.getAppForTesting()), 2);
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
     }
 
 }

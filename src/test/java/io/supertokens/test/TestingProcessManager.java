@@ -38,6 +38,8 @@ public class TestingProcessManager {
 
     private static boolean restartedProcess = false;
 
+    private static String retainAppId = null;
+
     static void killAll() {
         synchronized (alive) {
             for (TestingProcess testingProcess : alive) {
@@ -53,29 +55,9 @@ public class TestingProcessManager {
     private static void createAppForTesting() {
         assertNotNull(singletonProcess);
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(singletonProcess.getProcess());
-        try {
-            for (TenantConfig tenant : allTenants) {
-                if (!tenant.tenantIdentifier.getTenantId().equals("public")) {
-                    Multitenancy.deleteTenant(tenant.tenantIdentifier, singletonProcess.getProcess());
-                }
-            }
-            for (TenantConfig tenant : allTenants) {
-                if (!tenant.tenantIdentifier.getAppId().equals("public")) {
-                    Multitenancy.deleteApp(tenant.tenantIdentifier.toAppIdentifier(), singletonProcess.getProcess());
-                }
-            }
-            for (TenantConfig tenant : allTenants) {
-                if (!tenant.tenantIdentifier.getConnectionUriDomain().equals("")) {
-                    Multitenancy.deleteConnectionUriDomain(tenant.tenantIdentifier.getConnectionUriDomain(), singletonProcess.getProcess());
-                }
-            }
-        } catch (Exception e) {
-            // ignore
-        }
-
         // Create a new app and use that for testing
-        String appId = UUID.randomUUID().toString();
+        String appId = retainAppId != null ? retainAppId : UUID.randomUUID().toString();
+        retainAppId = null;
 
         try {
             Multitenancy.addNewOrUpdateAppOrTenant(singletonProcess.getProcess(), new TenantConfig(
@@ -229,6 +211,27 @@ public class TestingProcessManager {
         public void kill(boolean removeAllInfo, int confirm) throws InterruptedException {
             if (!restartedProcess) {
                 if (confirm == 0 && !appForTesting.getAppId().equals("public")) {
+                    TenantConfig[] allTenants = Multitenancy.getAllTenants(singletonProcess.getProcess());
+                    try {
+                        for (TenantConfig tenant : allTenants) {
+                            if (!tenant.tenantIdentifier.getTenantId().equals("public")) {
+                                Multitenancy.deleteTenant(tenant.tenantIdentifier, singletonProcess.getProcess());
+                            }
+                        }
+                        for (TenantConfig tenant : allTenants) {
+                            if (!tenant.tenantIdentifier.getAppId().equals("public")) {
+                                Multitenancy.deleteApp(tenant.tenantIdentifier.toAppIdentifier(), singletonProcess.getProcess());
+                            }
+                        }
+                        for (TenantConfig tenant : allTenants) {
+                            if (!tenant.tenantIdentifier.getConnectionUriDomain().equals("")) {
+                                Multitenancy.deleteConnectionUriDomain(tenant.tenantIdentifier.getConnectionUriDomain(), singletonProcess.getProcess());
+                            }
+                        }
+                    } catch (Exception e) {
+                        // ignore
+                    }
+
                     return;
                 }
             }
@@ -238,6 +241,11 @@ public class TestingProcessManager {
             if (killed) {
                 return;
             }
+
+            if (!removeAllInfo) {
+                retainAppId = appForTesting.getAppId();
+            }
+
             if (removeAllInfo) {
                 try {
                     main.deleteAllInformationForTesting();

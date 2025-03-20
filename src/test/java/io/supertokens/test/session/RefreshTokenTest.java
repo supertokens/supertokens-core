@@ -137,7 +137,6 @@ public class RefreshTokenTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
     }
 
     @Test

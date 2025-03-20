@@ -78,9 +78,9 @@ public class AccessTokenSigningKeyTest {
         String signingKey = rsaKeys.toString();
         KeyValueInfo newKey = new KeyValueInfo(signingKey, System.currentTimeMillis());
         SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
-        sessionStorage.removeAccessTokenSigningKeysBefore(new AppIdentifier(null, null),
+        sessionStorage.removeAccessTokenSigningKeysBefore(process.getAppForTesting().toAppIdentifier(),
                 System.currentTimeMillis() + 1000);
-        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
+        sessionStorage.setKeyValue(process.getAppForTesting(), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
         assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 2);
@@ -88,7 +88,7 @@ public class AccessTokenSigningKeyTest {
         assertEquals(keys.size(), 1);
         assertEquals(keys.get(0).createdAtTime, newKey.createdAtTime);
         assertEquals(keys.get(0).value, newKey.value);
-        assertNull(sessionStorage.getKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key"));
+        assertNull(sessionStorage.getKeyValue(process.getAppForTesting(), "access_token_signing_key"));
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
@@ -109,9 +109,9 @@ public class AccessTokenSigningKeyTest {
         // 2 seconds in the past
 
         SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
-        sessionStorage.removeAccessTokenSigningKeysBefore(new AppIdentifier(null, null),
+        sessionStorage.removeAccessTokenSigningKeysBefore(process.getAppForTesting().toAppIdentifier(),
                 System.currentTimeMillis() + 1000);
-        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
+        sessionStorage.setKeyValue(process.getAppForTesting(), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
@@ -194,7 +194,7 @@ public class AccessTokenSigningKeyTest {
             sessionStorage.deleteAllInformation();
             expectedSize = 1;
         }
-        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
+        sessionStorage.setKeyValue(process.getAppForTesting(), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();

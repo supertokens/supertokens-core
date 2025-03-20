@@ -68,7 +68,7 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
@@ -102,7 +102,7 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
@@ -137,11 +137,11 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
@@ -175,11 +175,11 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+        sessionInfo = Session.refreshSession(process.getAppForTesting().toAppIdentifier(), process.getProcess(),
                 sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
