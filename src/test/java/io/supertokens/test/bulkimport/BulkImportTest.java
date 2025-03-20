@@ -715,4 +715,41 @@ public class BulkImportTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void shouldLinkBulkMigratedAccounts() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> users = generateBulkImportUser(1);
+
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+
+        assertTrue(importedUser.isPrimaryUser);
+        assertEquals(3, importedUser.loginMethods.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
