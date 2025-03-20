@@ -54,16 +54,17 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
     public void checkingCronJob() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("password_reset_token_lifetime", "4000");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
         CronTaskTest.getInstance(process.getProcess())
                 .setIntervalInSeconds(DeleteExpiredPasswordResetTokens.RESOURCE_KEY, 1);
-        Utils.setValueInConfig("password_reset_token_lifetime", "4000");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(),
@@ -79,13 +80,13 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
                 user.getSupertokensUserId());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null),
+                .getAllPasswordResetTokenInfoForUser(process.getAppForTesting().toAppIdentifier(),
                         user.getSupertokensUserId()).length == 4);
 
         Thread.sleep(3500);
 
         PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getSupertokensUserId());
+                .getAllPasswordResetTokenInfoForUser(process.getAppForTesting().toAppIdentifier(), user.getSupertokensUserId());
 
         assert (tokens.length == 2);
 
@@ -98,5 +99,4 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }

@@ -98,13 +98,13 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON,
         PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
         INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG,
-        LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB
+        LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB, CREATED_TEST_APP
     }
 
     public static class EventAndException {
         public Exception exception;
         public JsonObject data;
-        PROCESS_STATE state;
+        public PROCESS_STATE state;
 
         public EventAndException(PROCESS_STATE state, Exception e) {
             this.state = state;

@@ -333,7 +333,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(process.getAppForTesting(), "userId", email, combinedPasswordHash, timeJoined);
 
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", email);
@@ -375,7 +375,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(process.getAppForTesting(), "userId", email, combinedPasswordHash, timeJoined);
 
         // sign in should result in 500 error since the firebase signer key is not set
         JsonObject signInRequestBody = new JsonObject();

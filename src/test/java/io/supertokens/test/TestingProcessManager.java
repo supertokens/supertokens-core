@@ -36,6 +36,8 @@ public class TestingProcessManager {
 
     private static TestingProcess singletonProcess = null;
 
+    private static boolean restartedProcess = false;
+
     static void killAll() {
         synchronized (alive) {
             for (TestingProcess testingProcess : alive) {
@@ -50,6 +52,27 @@ public class TestingProcessManager {
 
     private static void createAppForTesting() {
         assertNotNull(singletonProcess);
+
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(singletonProcess.getProcess());
+        try {
+            for (TenantConfig tenant : allTenants) {
+                if (!tenant.tenantIdentifier.getTenantId().equals("public")) {
+                    Multitenancy.deleteTenant(tenant.tenantIdentifier, singletonProcess.getProcess());
+                }
+            }
+            for (TenantConfig tenant : allTenants) {
+                if (!tenant.tenantIdentifier.getAppId().equals("public")) {
+                    Multitenancy.deleteApp(tenant.tenantIdentifier.toAppIdentifier(), singletonProcess.getProcess());
+                }
+            }
+            for (TenantConfig tenant : allTenants) {
+                if (!tenant.tenantIdentifier.getConnectionUriDomain().equals("")) {
+                    Multitenancy.deleteConnectionUriDomain(tenant.tenantIdentifier.getConnectionUriDomain(), singletonProcess.getProcess());
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
 
         // Create a new app and use that for testing
         String appId = UUID.randomUUID().toString();
@@ -69,10 +92,12 @@ public class TestingProcessManager {
         singletonProcess.setAppForTesting(new TenantIdentifier(null, appId, null));
         ResourceDistributor.setAppForTesting(new TenantIdentifier(null, appId, null));
         ProcessState.getInstance(singletonProcess.getProcess()).addState(ProcessState.PROCESS_STATE.STARTED, null);
+        ProcessState.getInstance(singletonProcess.getProcess()).addState(PROCESS_STATE.CREATED_TEST_APP, null);
     }
 
     public static TestingProcess start(String[] args, boolean startProcess, boolean killActiveProcesses) throws InterruptedException {
         if (singletonProcess != null) {
+            ProcessState.getInstance(singletonProcess.getProcess()).clear();
             createAppForTesting();
             return singletonProcess;
         }
@@ -116,9 +141,32 @@ public class TestingProcessManager {
             alive.add(mainProcess);
             singletonProcess = mainProcess;
 
-            mainProcess.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
+            if (startProcess) {
+                EventAndException e = singletonProcess.checkOrWaitForEvents(
+                        new PROCESS_STATE[]{
+                                PROCESS_STATE.STARTED,
+                                PROCESS_STATE.INIT_FAILURE}
+                );
 
-            createAppForTesting();
+                if (e != null && e.state == PROCESS_STATE.STARTED) {
+                    createAppForTesting();
+                }
+            } else {
+                new Thread(() -> {
+                    try {
+                        EventAndException e = singletonProcess.checkOrWaitForEvents(
+                                new PROCESS_STATE[]{
+                                        PROCESS_STATE.STARTED,
+                                        PROCESS_STATE.INIT_FAILURE}
+                        );
+
+                        if (e != null && e.state == PROCESS_STATE.STARTED) {
+                            createAppForTesting();
+                        }
+                    } catch (Exception e) {}
+                }).start();
+            }
+
             return mainProcess;
         }
     }
@@ -129,6 +177,17 @@ public class TestingProcessManager {
 
     public static TestingProcess start(String[] args) throws InterruptedException {
         return start(args, true, true);
+    }
+
+    public static TestingProcess restart(String[] args) throws InterruptedException {
+        return restart(args, true);
+    }
+
+    public static TestingProcess restart(String[] args, boolean startProcess) throws InterruptedException {
+        killAll();
+        singletonProcess = null;
+        restartedProcess = true;
+        return start(args, startProcess);
     }
 
     public static abstract class TestingProcess extends Thread {
@@ -168,14 +227,13 @@ public class TestingProcessManager {
         }
 
         public void kill(boolean removeAllInfo, int confirm) throws InterruptedException {
-            if (confirm == 0) {
-                try {
-                    Multitenancy.deleteApp(appForTesting.toAppIdentifier(), getProcess());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+            if (!restartedProcess) {
+                if (confirm == 0 && !appForTesting.getAppId().equals("public")) {
+                    return;
                 }
-                return;
             }
+
+            restartedProcess = false;
 
             if (killed) {
                 return;
@@ -218,6 +276,30 @@ public class TestingProcessManager {
                 }
             }
             return e;
+        }
+
+        public EventAndException checkOrWaitForEvents(PROCESS_STATE[] states)
+                throws InterruptedException {
+            return checkOrWaitForEvents(states, 15000);
+        }
+
+        public EventAndException checkOrWaitForEvents(PROCESS_STATE[] states, long timeToWaitMS)
+                throws InterruptedException {
+
+            // we shall now wait until some time as passed.
+            final long startTime = System.currentTimeMillis();
+            while ((System.currentTimeMillis() - startTime) < timeToWaitMS) {
+                for (PROCESS_STATE state : states) {
+                    EventAndException e = ProcessState.getInstance(main).getLastEventByName(state);
+
+                    if (e != null) {
+                        return e;
+                    }
+                }
+
+                Thread.sleep(100);
+            }
+            return null;
         }
 
         public void setAppForTesting(TenantIdentifier tenantIdentifier) {

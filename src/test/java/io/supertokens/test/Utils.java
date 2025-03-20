@@ -282,4 +282,20 @@ public abstract class Utils extends Mockito {
         }
         return queryParams;
     }
+
+    public static void testFlaky(TestFunction test) throws Exception {
+        for (int i = 0; i < 5; i++) {
+            try {
+                test.run();
+                return;
+            } catch (Exception e) {
+                // retry
+            }
+        }
+    }
+
+    @FunctionalInterface
+    public interface TestFunction {
+        void run() throws Exception;
+    }
 }

@@ -75,7 +75,7 @@ public class EmailPassword {
     @TestOnly
     public static long getPasswordResetTokenLifetimeForTests(Main main) {
         try {
-            return getPasswordResetTokenLifetime(new TenantIdentifier(null, null, null), main);
+            return getPasswordResetTokenLifetime(ResourceDistributor.getAppForTesting(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -158,7 +158,7 @@ public class EmailPassword {
             Storage storage = StorageLayer.getStorage(main);
 
             return importUserWithPasswordHash(
-                    new TenantIdentifier(null, null, null), storage, main, email,
+                    ResourceDistributor.getAppForTesting(), storage, main, email,
                     passwordHash, hashingAlgorithm);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -277,7 +277,7 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return importUserWithPasswordHash(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, email, passwordHash, null);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -290,7 +290,7 @@ public class EmailPassword {
             throws StorageQueryException, WrongCredentialsException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return signIn(new TenantIdentifier(null, null, null), storage,
+            return signIn(ResourceDistributor.getAppForTesting(), storage,
                     main, email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -354,7 +354,7 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetTokenBeforeCdi4_0(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, userId);
         } catch (TenantOrAppNotFoundException | BadPermissionException | WebserverAPI.BadRequestException e) {
             throw new IllegalStateException(e);
@@ -367,7 +367,7 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, userId, null);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -380,7 +380,7 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, userId, email);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -457,7 +457,7 @@ public class EmailPassword {
             StorageTransactionLogicException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return resetPassword(new TenantIdentifier(null, null, null), storage,
+            return resetPassword(ResourceDistributor.getAppForTesting(), storage,
                     main, token, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -531,7 +531,7 @@ public class EmailPassword {
             StorageTransactionLogicException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return consumeResetPasswordToken(new TenantIdentifier(null, null, null), storage,
+            return consumeResetPasswordToken(ResourceDistributor.getAppForTesting(), storage,
                     token);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -629,7 +629,7 @@ public class EmailPassword {
             UnknownUserIdException, DuplicateEmailException, EmailChangeNotAllowedException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            updateUsersEmailOrPassword(new AppIdentifier(null, null), storage,
+            updateUsersEmailOrPassword(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                     main, userId, email, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -726,7 +726,7 @@ public class EmailPassword {
             throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUserUsingId(new AppIdentifier(null, null), storage, userId);
+            return getUserUsingId(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
