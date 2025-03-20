@@ -796,7 +796,10 @@ public class AuthRecipe {
             BulkImportUser.LoginMethod primaryLoginMethod = BulkImportUserUtils.getPrimaryLoginMethod(targetUser);
 
             for (BulkImportUser.LoginMethod loginMethod : targetUser.loginMethods) {
-
+                // note here: account takeover risk checks are done in the sdk. The situation in which someone registers
+                // for example with a thirparty which also verifies email address and later someone else tries to register
+                // with the same email address but with emailpassword is not handled here. This is because the sdk
+                // will handle this. In the bulk import we have no means to check this.
                 boolean errorFound = false;
                 for (String tenantId : loginMethod.tenantIds) {
                     if (loginMethod.email != null) {
