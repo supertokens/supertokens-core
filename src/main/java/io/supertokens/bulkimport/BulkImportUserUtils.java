@@ -55,8 +55,7 @@ public class BulkImportUserUtils {
         this.allExternalUserIds = new HashSet<>();
     }
 
-    public BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            String id)
+    public BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData, IDMode idMode)
             throws InvalidBulkImportDataException, StorageQueryException, TenantOrAppNotFoundException {
         List<String> errors = new ArrayList<>();
 
@@ -67,7 +66,7 @@ public class BulkImportUserUtils {
                 JsonObject.class, errors, ".");
         List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
-        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
+        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode);
 
         externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
 
@@ -76,6 +75,7 @@ public class BulkImportUserUtils {
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
         }
+        String id = getPrimaryLoginMethod(loginMethods).superTokensUserId;
         return new BulkImportUser(id, externalUserId, userMetadata, userRoles, totpDevices, loginMethods);
     }
 
@@ -150,7 +150,7 @@ public class BulkImportUserUtils {
     }
 
     private List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            List<String> errors)
+            List<String> errors, IDMode idMode)
             throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT,
                 true, JsonArray.class, errors, ".");
@@ -188,6 +188,7 @@ public class BulkImportUserUtils {
             Long timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.LONG,
                     false, Long.class, errors, " for a loginMethod");
 
+
             recipeId = validateAndNormaliseRecipeId(recipeId, errors);
             List<String> normalisedTenantIds = validateAndNormaliseTenantIds(main, appIdentifier, tenantIds, errors,
                     " for " + recipeId + " recipe.");
@@ -195,6 +196,12 @@ public class BulkImportUserUtils {
             isVerified = validateAndNormaliseIsVerified(isVerified);
 
             long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined, errors);
+
+            String supertokensUserId = switch (idMode) {
+                case READ_STORED -> parseAndValidateFieldType(jsonLoginMethodObj, "superTokensUserId", ValueType.STRING,
+                        true, String.class, errors, " for a loginMethod");
+                case GENERATE -> Utils.getUUID();
+            };
 
             if ("emailpassword".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
@@ -219,7 +226,8 @@ public class BulkImportUserUtils {
                         passwordHash, errors);
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, plainTextPassword, null, null, null));
+                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, plainTextPassword,
+                        null, null, null, supertokensUserId));
             } else if ("thirdparty".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
                         String.class, errors, " for a thirdparty recipe.");
@@ -233,7 +241,8 @@ public class BulkImportUserUtils {
                 thirdPartyUserId = validateAndNormaliseThirdPartyUserId(thirdPartyUserId, errors);
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, null, null, null, thirdPartyId, thirdPartyUserId, null));
+                        timeJoinedInMSSinceEpoch, email, null, null, null,
+                        thirdPartyId, thirdPartyUserId, null, supertokensUserId));
             } else if ("passwordless".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, false,
                         String.class, errors, " for a passwordless recipe.");
@@ -248,7 +257,8 @@ public class BulkImportUserUtils {
                 }
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, null, null, null, null, null, phoneNumber));
+                        timeJoinedInMSSinceEpoch, email, null, null, null,
+                        null, null, phoneNumber, supertokensUserId));
             }
         }
         return loginMethods;
@@ -570,5 +580,75 @@ public class BulkImportUserUtils {
                 }
             }
         }
+    }
+
+    public static BulkImportUser.LoginMethod getPrimaryLoginMethod(BulkImportUser user) {
+        return getPrimaryLoginMethod(user.loginMethods);
+    }
+
+    // Returns the primary loginMethod of the user. If no loginMethod is marked as
+    // primary, then the oldest loginMethod is returned.
+    public static BulkImportUser.LoginMethod getPrimaryLoginMethod(List<LoginMethod> loginMethods) {
+        BulkImportUser.LoginMethod oldestLM = loginMethods.get(0);
+        for (BulkImportUser.LoginMethod lm : loginMethods) {
+            if (lm.isPrimary) {
+                return lm;
+            }
+
+            if (lm.timeJoinedInMSSinceEpoch < oldestLM.timeJoinedInMSSinceEpoch) {
+                oldestLM = lm;
+            }
+        }
+        return oldestLM;
+    }
+
+    public enum IDMode {
+        GENERATE,
+        READ_STORED;
+    }
+
+    // Returns a map of recipe user ids -> primary user ids
+    public static Map<String, String> collectRecipeIdsToPrimaryIds(List<BulkImportUser> users) {
+        Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
+        if(users == null){
+            return recipeUserIdByPrimaryUserId;
+        }
+        for(BulkImportUser user: users){
+            LoginMethod primaryLM = BulkImportUserUtils.getPrimaryLoginMethod(user);
+            for (LoginMethod lm : user.loginMethods) {
+                if (lm.getSuperTokenOrExternalUserId().equals(primaryLM.getSuperTokenOrExternalUserId())) {
+                    continue;
+                }
+                recipeUserIdByPrimaryUserId.put(lm.getSuperTokenOrExternalUserId(),
+                        primaryLM.getSuperTokenOrExternalUserId());
+            }
+        }
+        return recipeUserIdByPrimaryUserId;
+    }
+
+    public static LoginMethod findLoginMethodByRecipeUserId(List<BulkImportUser> users, String recipeUserId) {
+        if(users == null || users.isEmpty() || recipeUserId == null){
+            return null;
+        }
+        for(BulkImportUser user: users) {
+            for (LoginMethod loginMethod : user.loginMethods) {
+                if (recipeUserId.equals(loginMethod.superTokensUserId)) {
+                    return loginMethod;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static BulkImportUser findUserByPrimaryId(List<BulkImportUser> users, String primaryUserId) {
+        if(users == null || users.isEmpty() || primaryUserId == null){
+            return null;
+        }
+        for(BulkImportUser user: users) {
+            if(primaryUserId.equals(user.primaryUserId)){
+                return user;
+            }
+        }
+        return null;
     }
 }

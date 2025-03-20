@@ -16,48 +16,51 @@
 
 package io.supertokens.test.bulkimport;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserPaginationContainer;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.userroles.UserRoles;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUserWithEmailPasswordAndRoles;
+import static org.junit.Assert.*;
 
 public class BulkImportTest {
     @Rule
@@ -533,7 +536,7 @@ public class BulkImportTest {
 
         // Set passwordHash to null and plainTextPassword to a value to ensure we do a plainTextPassword import
         for (LoginMethod lm : bulkImportUser.loginMethods) {
-            if (lm.recipeId == "emailpassword") {
+            if (Objects.equals(lm.recipeId, "emailpassword")) {
                 lm.passwordHash = null;
                 lm.hashingAlgorithm = null;
                 lm.plainTextPassword = "testPass@123";
@@ -549,4 +552,313 @@ public class BulkImportTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void shouldFailIfUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(main, "user0@example.com", "somePasswqord");
+
+        List<BulkImportUser> users = generateBulkImportUser(1); //generates BM user with multiple login methods
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //expected
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+
+    @Test
+    public void shouldFailIfPrimaryUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(main, "user0@example.com", "somePasswqord");
+        AuthRecipe.createPrimaryUser(main, emailPasswordUser.getSupertokensUserId());
+
+        List<BulkImportUser> users = generateBulkImportUser(1); //generates BM user with multiple login methods
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //expected
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldSucceedIfThirdpartyUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        ThirdParty.SignInUpResponse thirdPartyUser = ThirdParty.signInUp(main, "google", "123123", "user0@example.com");
+
+        List<BulkImportUser> users = generateBulkImportUserWithEmailPasswordAndRoles(1, List.of("public", "t1"), 0, List.of("role1", "role2"));
+
+
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+
+        assertNotEquals(thirdPartyUser.user.getSupertokensUserId(), importedUser.getSupertokensUserId());
+        assertTrue(importedUser.isPrimaryUser);
+        assertFalse(thirdPartyUser.user.isPrimaryUser);
+
+        AuthRecipeUserInfo thirdPartyUserAgain = AuthRecipe.getUserById(main, thirdPartyUser.user.getSupertokensUserId());
+        assertFalse(thirdPartyUserAgain.isPrimaryUser);
+        assertEquals(1, thirdPartyUserAgain.loginMethods.length); // assert that it's not a linked user
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailIfThirdpartyUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        ThirdParty.SignInUpResponse thirdpartyUser = ThirdParty.signInUp(main, "google", "123123", "user0@example.com");
+        AuthRecipe.createPrimaryUser(main, thirdpartyUser.user.getSupertokensUserId());
+
+        List<BulkImportUser> users = generateBulkImportUserWithEmailPasswordAndRoles(1, List.of("public", "t1"), 0, List.of("role1", "role2"));
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //expected
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldLinkBulkMigratedAccounts() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> users = generateBulkImportUser(1);
+
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+
+        assertTrue(importedUser.isPrimaryUser);
+        assertEquals(3, importedUser.loginMethods.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailLinkingBulkMigratedAccountsOnTwoTenants() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        //set up an existing primary user on public tenant with email B
+        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(new TenantIdentifier(null, null, null),
+                StorageLayer.getStorage(main),main, "google", "123123", "emailB@example.com",
+                true);
+        AuthRecipe.createPrimaryUser(main, thirdpartyResponse.user.getSupertokensUserId());
+
+        BulkImportUser user = generateBulkImportUser(1).get(0);
+        user.loginMethods.get(0).email = "emailA@example.com";
+        user.loginMethods.get(0).tenantIds = List.of("public");
+
+        // one of the "recipeUsers" has the same email as the primary user but on a different tenant
+        user.loginMethods.get(1).email = "emailB@example.com";
+        user.loginMethods.get(1).tenantIds = List.of("t1");
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //ignore
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailLinkingBulkMigratedAccountsOnThreeTenants() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenantsWithinOneUserPool(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        //set up an existing primary user on public tenant with email B
+        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(new TenantIdentifier(null, null, "t1"),
+                StorageLayer.getStorage(main),main, "google", "123123", "emailB@example.com",
+                true);
+        AuthRecipe.createPrimaryUser(main, thirdpartyResponse.user.getSupertokensUserId());
+
+        BulkImportUser user = generateBulkImportUser(1).get(0);
+        user.loginMethods.get(0).email = "emailA@example.com"; //this is the primary user
+        user.loginMethods.get(0).tenantIds = List.of("public");
+
+        user.loginMethods.get(1).email = "emailC@example.com";
+        user.loginMethods.get(1).tenantIds = List.of("t1");
+
+        // one of the "recipeUsers" has the same email as the primary user but on a different tenant
+        user.loginMethods.get(2).email = "emailB@example.com";
+        user.loginMethods.get(2).tenantIds = List.of("t2");
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //ignore
+            Map<String, Exception> exceptionByUserId = expected.exceptionByUserId;
+            for (Exception e : exceptionByUserId.values()){
+                assertTrue(e.getMessage().contains("E027"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

@@ -35,7 +35,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.SemVer;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -79,8 +78,7 @@ public class ImportUserAPI extends WebserverAPI {
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
 
         try {
-            BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser,
-                    Utils.getUUID());
+            BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, jsonUser, BulkImportUserUtils.IDMode.GENERATE);
 
             AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
 

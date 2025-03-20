@@ -170,7 +170,7 @@ public class BulkImportAPI extends WebserverAPI {
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), Utils.getUUID());
+                BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), BulkImportUserUtils.IDMode.GENERATE);
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -203,6 +203,11 @@ public class BulkImportAPI extends WebserverAPI {
 
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
+        JsonArray responseUsers = new JsonArray();
+        for(BulkImportUser user : usersToAdd){
+            responseUsers.add(user.toResponseJson());
+        }
+        result.add("users", responseUsers);
         super.sendJsonResponse(200, result, resp);
     }
 }

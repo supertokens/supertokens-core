@@ -170,7 +170,8 @@ public class ImportUserTest {
 
        BulkImportUser user = new BulkImportUser("random-id-lol", "random", null, List.of(), List.of(), List.of(
                new BulkImportUser.LoginMethod(List.of("public"), "emailpassword", true, false, System.currentTimeMillis(),
-                       "test@testing.com", "$2a", "BCRYPT", null, null, null, null)));
+                       "test@testing.com", "$2a", "BCRYPT", null, null,
+                       null, null, io.supertokens.utils.Utils.getUUID())));
         JsonObject request = user.toJsonObject();
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
@@ -201,7 +202,8 @@ public class ImportUserTest {
 
         BulkImportUser user = new BulkImportUser("random-id-lol", null, null, List.of(), List.of(), List.of(
                 new BulkImportUser.LoginMethod(List.of("public"), "emailpassword", true, false, System.currentTimeMillis(),
-                        "test@testing.com", "$2a", "BCRYPT", null, null, null, null)));
+                        "test@testing.com", "$2a", "BCRYPT", null, null,
+                        null, null, io.supertokens.utils.Utils.getUUID())));
         JsonObject request = user.toJsonObject();
         request.remove("totpDevices");
         request.remove("userRoles");
@@ -245,6 +247,35 @@ public class ImportUserTest {
                     e.getMessage().contains("E019: Account linking feature is not enabled for this app. Please contact support to enable it."));
 
         }
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldImportSucceedWithoutAccountLinkingEnabled() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY});
+
+        String userJsonStr = "{\"id\":\"random-id-lol\",\"loginMethods\":[{\"tenantIds\":[\"public\"],\"isVerified\":true,\"isPrimary\":false,\"timeJoinedInMSSinceEpoch\":1741077729471,\"recipeId\":\"emailpassword\",\"email\":\"test@sometestmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"BCRYPT\"}]}";
+        JsonObject request = new Gson().fromJson(userJsonStr, JsonObject.class);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/bulk-import/import",
+                request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertNotNull(response.get("user"));
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
