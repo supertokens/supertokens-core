@@ -185,16 +185,16 @@ public class AuthRecipe {
         public String recipeUserId;
         public String primaryUserId;
         public Exception error;
-        public BulkImportUser authRecipeUserInfo;
+        public BulkImportUser bulkImportUser;
         public boolean alreadyLinked;
 
         public CanLinkAccountsBulkResult(String recipeUserId, String primaryUserId, boolean alreadyLinked, Exception error,
-                                         BulkImportUser authRecipeUserInfo) {
+                                         BulkImportUser bulkImportUser) {
             this.recipeUserId = recipeUserId;
             this.primaryUserId = primaryUserId;
             this.alreadyLinked = alreadyLinked;
             this.error = error;
-            this.authRecipeUserInfo = authRecipeUserInfo;
+            this.bulkImportUser = bulkImportUser;
         }
     }
 
@@ -337,7 +337,7 @@ public class AuthRecipe {
                                     currLoginMethod, primaryUserId, allUsersWithExtraData);
                         }
 
-                        results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, null, null)); //TODO: last one should not be null
+                        results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, null, currentPrimaryUser));
 
                     } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException exception) {
                         results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, exception, null));
@@ -594,7 +594,7 @@ public class AuthRecipe {
         Map<String, Exception> errorByUserId = new HashMap<>();
         try {
 
-            List<LinkAccountsBulkResult> linkAccountsResults = authRecipeStorage.startTransaction(con -> {
+            authRecipeStorage.startTransaction(con -> {
                 List<CanLinkAccountsBulkResult> canLinkAccounts = canLinkMultipleAccountsHelperForBulkImport(con, appIdentifier,
                         authRecipeStorage, users, usersWithSameExtraData);
                 List<LinkAccountsBulkResult> results = new ArrayList<>();
@@ -603,10 +603,10 @@ public class AuthRecipe {
                     for(CanLinkAccountsBulkResult canLinkAccountsBulkResult : canLinkAccounts) {
                         if (canLinkAccountsBulkResult.alreadyLinked) {
                             results.add(new LinkAccountsBulkResult(
-                                    canLinkAccountsBulkResult.authRecipeUserInfo, true, null));
+                                    canLinkAccountsBulkResult.bulkImportUser, true, null));
                         } else if(canLinkAccountsBulkResult.error != null) {
                             results.add(new LinkAccountsBulkResult(
-                                    canLinkAccountsBulkResult.authRecipeUserInfo, false, canLinkAccountsBulkResult.error)); // preparing to return the error
+                                    canLinkAccountsBulkResult.bulkImportUser, false, canLinkAccountsBulkResult.error)); // preparing to return the error
                             errorByUserId.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.error);
                         } else {
                             recipeUserByPrimaryUserNeedsLinking.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.primaryUserId);
