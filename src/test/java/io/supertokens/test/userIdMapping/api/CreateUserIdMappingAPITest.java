@@ -301,7 +301,7 @@ public class CreateUserIdMappingAPITest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -366,7 +366,7 @@ public class CreateUserIdMappingAPITest {
 
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 userInfo.getSupertokensUserId(),
                 true);
 

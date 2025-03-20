@@ -43,7 +43,6 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;

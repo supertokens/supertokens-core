@@ -198,7 +198,7 @@ public class UserIdMappingTest {
 
         // check that the mapping exists
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(
-                new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
+                process.getAppForTesting().toAppIdentifier(), userInfo.getSupertokensUserId(),
                 true);
         assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
@@ -315,7 +315,7 @@ public class UserIdMappingTest {
             // query with the storage layer and check that the db returns two entries
             UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping[] storageResponse = storage
-                    .getUserIdMapping(new AppIdentifier(null, null), newExternalUserId);
+                    .getUserIdMapping(process.getAppForTesting().toAppIdentifier(), newExternalUserId);
             assertEquals(2, storageResponse.length);
 
             assertNotNull(response);
@@ -825,7 +825,7 @@ public class UserIdMappingTest {
 
             // create entry in nonAuth table
             StorageLayer.getStorage(process.main)
-                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
+                    .addInfoToNonAuthRecipesBasedOnUserId(process.getAppForTesting(), className, userId);
             // try to create the mapping with superTokensId
             String errorMessage = null;
             try {
@@ -865,7 +865,7 @@ public class UserIdMappingTest {
         Exception error = null;
         try {
             StorageLayer.getStorage(process.main)
-                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, "unknownRecipe", "testUserId");
+                    .addInfoToNonAuthRecipesBasedOnUserId(process.getAppForTesting(), "unknownRecipe", "testUserId");
         } catch (IllegalStateException e) {
             error = e;
         }
@@ -912,7 +912,7 @@ public class UserIdMappingTest {
 
             // create entry in nonAuth table with externalId
             StorageLayer.getStorage(process.main)
-                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
+                    .addInfoToNonAuthRecipesBasedOnUserId(process.getAppForTesting(), className, externalId);
 
             // try to delete UserIdMapping
             String errorMessage = null;
