@@ -1176,7 +1176,7 @@ public class AuthRecipe {
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsersCountForTenant(TenantIdentifier.BASE_TENANT, storage, includeRecipeIds);
+            return getUsersCountForTenant(ResourceDistributor.getAppForTesting(), storage, includeRecipeIds);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }

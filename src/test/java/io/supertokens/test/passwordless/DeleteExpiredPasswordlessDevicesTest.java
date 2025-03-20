@@ -54,7 +54,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
     public void jobDeletesDevicesWithOnlyExpiredCodesTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
         CronTaskTest.getInstance(process.getProcess())
                 .setIntervalInSeconds(DeleteExpiredPasswordlessDevices.RESOURCE_KEY, 1);
         process.startProcess();
@@ -71,13 +71,13 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         String codeId = "deletedCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode(new TenantIdentifier(null, null, null), "test@example.com", null,
+        passwordlessStorage.createDeviceWithCode(process.getAppForTesting(), "test@example.com", null,
                 "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
 
         Thread.sleep(1500);
 
-        assertNull(passwordlessStorage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
+        assertNull(passwordlessStorage.getDevice(process.getAppForTesting(), deviceIdHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -104,16 +104,16 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         String codeId = "expiredCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode(new TenantIdentifier(null, null, null), "test@example.com", null,
+        passwordlessStorage.createDeviceWithCode(process.getAppForTesting(), "test@example.com", null,
                 "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
         passwordlessStorage
-                .createCode(new TenantIdentifier(null, null, null),
+                .createCode(process.getAppForTesting(),
                         new PasswordlessCode("id", deviceIdHash, "linkCodeHash2", System.currentTimeMillis()));
 
         Thread.sleep(1500);
 
-        assertNotNull(passwordlessStorage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
+        assertNotNull(passwordlessStorage.getDevice(process.getAppForTesting(), deviceIdHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

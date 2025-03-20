@@ -175,8 +175,7 @@ public class ApiVersionAPITest {
 
             assertEquals("https://example.com",
                     Multitenancy.getWebsiteDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                            new AppIdentifier(null,
-                                    null)));
+                            process.getAppForTesting().toAppIdentifier()));
         }
         {
             Map<String, String> params = new HashMap<>();
@@ -187,8 +186,7 @@ public class ApiVersionAPITest {
 
             assertEquals("https://api.example.com",
                     Multitenancy.getAPIDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                            new AppIdentifier(null,
-                                    null)));
+                            process.getAppForTesting().toAppIdentifier()));
         }
 
         process.kill();

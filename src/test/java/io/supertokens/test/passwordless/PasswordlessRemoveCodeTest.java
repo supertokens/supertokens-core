@@ -91,7 +91,7 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
 
         for (int counter = 0; counter < devices.length; counter++) {
@@ -104,7 +104,7 @@ public class PasswordlessRemoveCodeTest {
             assertEquals(PHONE_NUMBER, device.phoneNumber);
             assertEquals(0, device.failedAttempts);
 
-            PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+            PasswordlessCode[] codes = storage.getCodesOfDevice(process.getAppForTesting(),
                     device.deviceIdHash);
             assertEquals(NUMBER_OF_CODES_TO_GENERATE, codes.length);
 
@@ -146,7 +146,7 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
         assertEquals(0, devices.length);
 
@@ -180,11 +180,11 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), "1234");
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+        PasswordlessCode[] codes = storage.getCodesOfDevice(process.getAppForTesting(),
                 createCodeResponse.deviceIdHash);
         assertEquals(1, codes.length);
 
@@ -227,13 +227,13 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCodesByEmail(process.getProcess(), EMAIL);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), alternate_email);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), alternate_email);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+        PasswordlessCode[] codes = storage.getCodesOfDevice(process.getAppForTesting(),
                 devices[0].deviceIdHash);
         assertEquals(1, codes.length);
 
@@ -276,14 +276,14 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCodesByPhoneNumber(process.getProcess(), PHONE_NUMBER);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), alternate_phoneNumber);
+        devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(), alternate_phoneNumber);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+        PasswordlessCode[] codes = storage.getCodesOfDevice(process.getAppForTesting(),
                 devices[0].deviceIdHash);
         assertEquals(1, codes.length);
 
