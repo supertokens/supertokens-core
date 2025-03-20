@@ -73,7 +73,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), numberOfUsers);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), numberOfUsers, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, numberOfUsers, true);
 
         //create userid mapping and verify email for all wa users
         int w = 0;
@@ -132,7 +132,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), numberOfUsers);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), numberOfUsers, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, numberOfUsers, true);
 
         //create userid mapping and verify email for all wa users
         int w = 0;
@@ -189,7 +189,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), numberOfUsers);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), numberOfUsers, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, numberOfUsers, true);
 
         //create userid mapping and verify email for all wa users
         int w = 0;
@@ -245,12 +245,12 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, false);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, false);
 
         JsonObject user = users.get(0);
         String userId = user.getAsJsonObject("user").get("id").getAsString();
         Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
-        Utils.makePrimaryUserFrom(process.getProcess(), userId);
+        Utils.makePrimaryUserFrom(process, userId);
 
         AuthRecipeUserInfo auser = epUsers.get(0);
         Utils.createUserIdMapping(process.getProcess(), auser.getSupertokensUserId(), "external_" + auser.getSupertokensUserId());
@@ -307,14 +307,14 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, false);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, false);
 
         //create userid mapping and verify email for all wa users
 
         String userId = users.get(0).getAsJsonObject("user").get("id").getAsString();
         Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
         Utils.verifyEmailFor(process.getProcess(), userId, "user0@example.com");
-        Utils.makePrimaryUserFrom(process.getProcess(), userId);
+        Utils.makePrimaryUserFrom(process, userId);
 
 
         //create userid mapping
@@ -366,7 +366,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, true);
 
         //create userid mapping and verify email for all wa users
 
@@ -374,7 +374,7 @@ public class WebauthNAccountLinkingFlowTest {
         Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
         Utils.verifyEmailFor(process.getProcess(), userId, "user0@example.com");
         try {
-            Utils.makePrimaryUserFrom(process.getProcess(), userId);
+            Utils.makePrimaryUserFrom(process, userId);
             fail();
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException ignored) {
             //expected
@@ -397,7 +397,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, true);
 
         String userId = users.get(0).getAsJsonObject("user").get("id").getAsString();
         Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);
@@ -438,7 +438,7 @@ public class WebauthNAccountLinkingFlowTest {
 
         //create users - webauthn and emailpassword
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, false);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, false);
 
         String userId = users.get(0).getAsJsonObject("user").get("id").getAsString();
         Utils.createUserIdMapping(process.getProcess(), userId, "waexternal_" + userId);

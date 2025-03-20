@@ -47,6 +47,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
@@ -345,15 +346,15 @@ public class Utils {
         assertEquals(userIdMapping, retrievedMapping);
     }
 
-    public static List<AuthRecipeUserInfo> createEmailPasswordUsers(Main main, int noUsers, boolean makePrimary)
+    public static List<AuthRecipeUserInfo> createEmailPasswordUsers(TestingProcessManager.TestingProcess process, int noUsers, boolean makePrimary)
             throws DuplicateEmailException, StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, UnknownUserIdException {
-        return createEmailPasswordUsers(main, noUsers, makePrimary, 0);
+        return createEmailPasswordUsers(process, noUsers, makePrimary, 0);
     }
 
-    public static List<AuthRecipeUserInfo> createEmailPasswordUsers(Main main, int noUsers, boolean makePrimary, int emailIndexStart)
+    public static List<AuthRecipeUserInfo> createEmailPasswordUsers(TestingProcessManager.TestingProcess process, int noUsers, boolean makePrimary, int emailIndexStart)
             throws DuplicateEmailException, StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
@@ -361,21 +362,21 @@ public class Utils {
 
         List<AuthRecipeUserInfo> epUsers = new ArrayList<>();
         for(int i = 0; i < noUsers; i++){
-            AuthRecipeUserInfo user = EmailPassword.signUp(main, "user" + (emailIndexStart + i) + "@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "user" + (emailIndexStart + i) + "@example.com", "password");
             if(makePrimary) {
-                makePrimaryUserFrom(main, user.getSupertokensUserId());
+                makePrimaryUserFrom(process, user.getSupertokensUserId());
             }
             epUsers.add(user);
         }
         return epUsers;
     }
 
-    public static void makePrimaryUserFrom(Main main, String supertokensUserId)
+    public static void makePrimaryUserFrom(TestingProcessManager.TestingProcess process, String supertokensUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
-        AuthRecipe.createPrimaryUser(main,
-                new AppIdentifier(null, null), StorageLayer.getStorage(main), supertokensUserId);
+        AuthRecipe.createPrimaryUser(process.getProcess(),
+                process.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(process.getProcess()), supertokensUserId);
     }
 
     public static void verifyEmailFor(Main main, String userId, String emailAddress)

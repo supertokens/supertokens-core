@@ -69,7 +69,7 @@ public class WebAuthNFlowTest {
         int numberOfUsers = 1;  //10k users
 
         List<JsonObject> users = io.supertokens.test.webauthn.Utils.registerUsers(process.getProcess(), numberOfUsers);
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), numberOfUsers, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, numberOfUsers, true);
 
         int w = 0;
         for (JsonObject user : users) {

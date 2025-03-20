@@ -127,7 +127,7 @@ public class RecoverAccountFlowTest {
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
         assertEquals(1, users.size());
 
-        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process, 1, true);
         assertEquals(1, emailPasswordUsers.size());
 
         Utils.linkAccounts(process.getProcess(), emailPasswordUsers.stream().map(AuthRecipeUserInfo::getSupertokensUserId).collect(
@@ -170,7 +170,7 @@ public class RecoverAccountFlowTest {
             return;
         }
 
-        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process, 1, true);
         assertEquals(1, emailPasswordUsers.size());
 
         JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", emailPasswordUsers.get(0).getSupertokensUserId());

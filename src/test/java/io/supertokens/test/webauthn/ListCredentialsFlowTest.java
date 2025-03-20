@@ -139,7 +139,7 @@ public class ListCredentialsFlowTest {
         Utils.createUserIdMapping(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "external_id");
         String userId = "external_id";
 
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, true);
         Utils.linkAccounts(process.getProcess(), epUsers.stream().map(AuthRecipeUserInfo::getSupertokensUserId).collect(
                 Collectors.toList()), users.stream().map(user -> user.getAsJsonObject("user").get("id").getAsString()).collect(Collectors.toList()));
 

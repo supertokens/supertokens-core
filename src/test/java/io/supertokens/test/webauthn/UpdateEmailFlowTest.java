@@ -167,7 +167,7 @@ public class UpdateEmailFlowTest {
         assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
 
 
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 2, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 2, true);
         assertEquals(2, epUsers.size());
         assertEquals("user1@example.com", epUsers.get(1).loginMethods[0].email);
 
@@ -195,12 +195,12 @@ public class UpdateEmailFlowTest {
         assertEquals(1, users.size());
         assertEquals("user0@example.com", users.get(0).getAsJsonObject("user").get("emails").getAsJsonArray().get(0).getAsString());
 
-        Utils.makePrimaryUserFrom(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString());
+        Utils.makePrimaryUserFrom(process, users.get(0).getAsJsonObject("user").get("id").getAsString());
 
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 2, false);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 2, false);
         assertEquals(2, epUsers.size());
         assertEquals("user1@example.com", epUsers.get(1).loginMethods[0].email);
-        Utils.makePrimaryUserFrom(process.getProcess(), epUsers.get(1).getSupertokensUserId()); // make the target user email's account primary
+        Utils.makePrimaryUserFrom(process, epUsers.get(1).getSupertokensUserId()); // make the target user email's account primary
 
 
         JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(),
@@ -228,7 +228,7 @@ public class UpdateEmailFlowTest {
 
         Utils.verifyEmailFor(process.getProcess(), users.get(0).getAsJsonObject("user").get("id").getAsString(), "user0@example.com");
 
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, false, 1);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, false, 1);
         assertEquals(1, epUsers.size());
         assertEquals("user1@example.com", epUsers.get(0).loginMethods[0].email);
 

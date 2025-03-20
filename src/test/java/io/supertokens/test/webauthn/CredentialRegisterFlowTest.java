@@ -136,7 +136,7 @@ public class CredentialRegisterFlowTest {
         assertEquals("external_id", signInResponse.getAsJsonObject("user").get("id").getAsString());
         assertEquals("external_id", signInResponse.get("recipeUserId").getAsString());
 
-        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> epUsers = Utils.createEmailPasswordUsers(process, 1, true);
         Utils.linkAccounts(process.getProcess(), epUsers.stream().map(AuthRecipeUserInfo::getSupertokensUserId).collect(
                 Collectors.toList()), users.stream().map(user -> user.getAsJsonObject("user").get("id").getAsString()).collect(Collectors.toList()));
 
