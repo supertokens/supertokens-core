@@ -390,7 +390,7 @@ public class ThirdParty {
     @TestOnly
     public static AuthRecipeUserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUser(new AppIdentifier(null, null), storage, userId);
+        return getUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     public static AuthRecipeUserInfo getUser(TenantIdentifier tenantIdentifier, Storage storage,
