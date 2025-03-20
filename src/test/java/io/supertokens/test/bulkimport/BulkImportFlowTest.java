@@ -811,6 +811,8 @@ public class BulkImportFlowTest {
 
         // set processing thread number
         Utils.setValueInConfig("bulk_migration_parallelism", parallelism);
+        //Utils.setValueInConfig("bulk_migration_batch_size", "1000");
+        Utils.setValueInConfig("log_level", "DEBUG");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Main main = process.getProcess();
