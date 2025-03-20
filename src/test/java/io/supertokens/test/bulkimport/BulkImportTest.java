@@ -40,6 +40,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUserWithEmailPasswordAndRoles;
 import static org.junit.Assert.*;
 
 public class BulkImportTest {
@@ -616,8 +618,92 @@ public class BulkImportTest {
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(main, "user0@example.com", "somePasswqord");
         AuthRecipe.createPrimaryUser(main, emailPasswordUser.getSupertokensUserId());
-        
+
         List<BulkImportUser> users = generateBulkImportUser(1); //generates BM user with multiple login methods
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //expected
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldSucceedIfThirdpartyUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        ThirdParty.SignInUpResponse thirdPartyUser = ThirdParty.signInUp(main, "google", "123123", "user0@example.com");
+
+        List<BulkImportUser> users = generateBulkImportUserWithEmailPasswordAndRoles(1, List.of("public", "t1"), 0, List.of("role1", "role2"));
+
+
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+
+        assertNotEquals(thirdPartyUser.user.getSupertokensUserId(), importedUser.getSupertokensUserId());
+        assertTrue(importedUser.isPrimaryUser);
+        assertFalse(thirdPartyUser.user.isPrimaryUser);
+
+        AuthRecipeUserInfo thirdPartyUserAgain = AuthRecipe.getUserById(main, thirdPartyUser.user.getSupertokensUserId());
+        assertFalse(thirdPartyUserAgain.isPrimaryUser);
+        assertEquals(1, thirdPartyUserAgain.loginMethods.length); // assert that it's not a linked user
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailIfThirdpartyUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        ThirdParty.SignInUpResponse thirdpartyUser = ThirdParty.signInUp(main, "google", "123123", "user0@example.com");
+        AuthRecipe.createPrimaryUser(main, thirdpartyUser.user.getSupertokensUserId());
+
+        List<BulkImportUser> users = generateBulkImportUserWithEmailPasswordAndRoles(1, List.of("public", "t1"), 0, List.of("role1", "role2"));
 
         try {
             AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));

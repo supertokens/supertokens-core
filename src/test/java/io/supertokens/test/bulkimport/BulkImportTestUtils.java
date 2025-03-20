@@ -129,6 +129,36 @@ public class BulkImportTestUtils {
         return users;
     }
 
+    public static List<BulkImportUser> generateBulkImportUserWithEmailPasswordAndRoles(int numberOfUsers, List<String> tenants, int startIndex, List<String> roles) {
+        List<BulkImportUser> users = new ArrayList<>();
+        JsonParser parser = new JsonParser();
+
+        for (int i = startIndex; i < numberOfUsers + startIndex; i++) {
+            String email = "user" + i + "@example.com";
+            String id = io.supertokens.utils.Utils.getUUID();
+            String externalId = io.supertokens.utils.Utils.getUUID();
+
+            JsonObject userMetadata = parser.parse("{\"key1\":\""+id+"\",\"key2\":{\"key3\":\"value3\"}}")
+                    .getAsJsonObject();
+
+            List<UserRole> userRoles = new ArrayList<>();
+            for(String roleName : roles) {
+                userRoles.add(new UserRole(roleName, tenants));
+            }
+
+            List<TotpDevice> totpDevices = new ArrayList<>();
+            totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
+
+            List<LoginMethod> loginMethods = new ArrayList<>();
+            long currentTimeMillis = System.currentTimeMillis();
+            loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, null,
+                    null, "password"+i, null, null, null, io.supertokens.utils.Utils.getUUID()));
+            id = loginMethods.get(0).superTokensUserId;
+            users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
+        }
+        return users;
+    }
+
     public static void createTenants(Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             FeatureNotEnabledException, IOException, InvalidConfigException,
