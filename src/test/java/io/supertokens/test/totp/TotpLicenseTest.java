@@ -70,10 +70,15 @@ public class TotpLicenseTest {
     }
 
     public TestSetupResult defaultInit() throws InterruptedException {
+        return defaultInit(false);
+    }
+
+    public TestSetupResult defaultInit(boolean restart) throws InterruptedException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = restart ? TestingProcessManager.restart(args) : TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return null;
@@ -85,7 +90,7 @@ public class TotpLicenseTest {
 
     @Test
     public void testTotpWithoutLicense() throws Exception {
-        TestSetupResult result = defaultInit();
+        TestSetupResult result = defaultInit(true);
         if (result == null) {
             return;
         }
@@ -158,7 +163,7 @@ public class TotpLicenseTest {
 
     @Test
     public void testTotpWithLicense() throws Exception {
-        TestSetupResult result = defaultInit();
+        TestSetupResult result = defaultInit(true);
         if (result == null) {
             return;
         }
