@@ -107,7 +107,6 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             // Since all the tenants of a user must share the storage, we will just use the
             // storage of the first tenantId of the first loginMethod
 
-            validUsers.stream().map(bulkImportUser -> bulkImportUser.id).forEach(System.out::println);
             Map<SQLStorage, List<BulkImportUser>> partitionedUsers = partitionUsersByStorage(appIdentifier, validUsers);
             for(SQLStorage bulkImportProxyStorage : partitionedUsers.keySet()) {
                 boolean shouldRetryImmediatley = true;

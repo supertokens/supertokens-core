@@ -457,31 +457,15 @@ public class BulkImport {
                                                           List<BulkImportUser> users)
             throws StorageTransactionLogicException, StorageQueryException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
-        List<String> userIds =
-                users.stream()
-                        .map(bulkImportUser -> BulkImportUserUtils.getPrimaryLoginMethod(bulkImportUser).getSuperTokenOrExternalUserId())
-                        .collect(Collectors.toList());
-        Set<String> allEmails = new HashSet<>();
-        Set<String> allPhoneNumber = new HashSet<>();
-        Map<String, String> allThirdParty = new HashMap<>();
-        for (BulkImportUser user : users) {
-            for (LoginMethod loginMethod : user.loginMethods) {
-                if (loginMethod.email != null) {
-                    allEmails.add(loginMethod.email);
-                }
-                if (loginMethod.phoneNumber != null) {
-                    allPhoneNumber.add(loginMethod.phoneNumber);
-                }
-                if (loginMethod.thirdPartyId != null && loginMethod.thirdPartyUserId != null) {
-                    allThirdParty.put(loginMethod.thirdPartyUserId, loginMethod.thirdPartyId);
-                }
 
-            }
+        List<BulkImportUser> usersForAccountLinking = filterUsersInNeedOfAccountLinking(users);
+
+        if(usersForAccountLinking.isEmpty()){
+            return;
         }
-
+        AuthRecipe.CreatePrimaryUsersResultHolder resultHolder;
         try {
-            AuthRecipe.createPrimaryUsers(main, appIdentifier, storage, userIds, new ArrayList<>(allEmails),
-                    new ArrayList<>(allPhoneNumber), allThirdParty);
+            resultHolder = AuthRecipe.createPrimaryUsersForBulkImport(main, appIdentifier, storage, usersForAccountLinking);
         } catch (StorageQueryException e) {
             if(e.getCause() instanceof BulkImportBatchInsertException){
                 Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
@@ -513,21 +497,27 @@ public class BulkImport {
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E019: " + e.getMessage()));
         }
+        if(resultHolder != null && resultHolder.usersWithSameExtraData != null){
+            linkAccountsForMultipleUser(main, appIdentifier, storage, usersForAccountLinking, resultHolder.usersWithSameExtraData);
+        }
+    }
 
-        linkAccountsForMultipleUser(main, appIdentifier, storage, users, new ArrayList<>(allEmails),
-                    new ArrayList<>(allPhoneNumber), allThirdParty);
+    private static List<BulkImportUser> filterUsersInNeedOfAccountLinking(List<BulkImportUser> allUsers) {
+        if (allUsers == null || allUsers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return allUsers.stream().filter(bulkImportUser -> bulkImportUser.loginMethods.stream()
+                .anyMatch(loginMethod -> loginMethod.isPrimary) || bulkImportUser.loginMethods.size() > 1)
+                .collect(Collectors.toList());
     }
 
     private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                    List<BulkImportUser> users,
-                                                    List<String> allDistinctEmails,
-                                                    List<String> allDistinctPhones,
-                                                    Map<String, String> thirdpartyUserIdsToThirdpartyIds)
+                                                    List<BulkImportUser> users, List<AuthRecipeUserInfo> allUsersWithSameExtraData)
             throws StorageTransactionLogicException {
-        Map<String, String> recipeUserIdByPrimaryUserId = collectRecipeIdsToPrimaryIds(users);
+        Map<String, String> recipeUserIdByPrimaryUserId = BulkImportUserUtils.collectRecipeIdsToPrimaryIds(users);
         try {
-            AuthRecipe.linkMultipleAccounts(main, appIdentifier, storage, recipeUserIdByPrimaryUserId,
-                    allDistinctEmails, allDistinctPhones, thirdpartyUserIdsToThirdpartyIds);
+            AuthRecipe.linkMultipleAccountsForBulkImport(main, appIdentifier, storage,
+                    users, allUsersWithSameExtraData);
         } catch (TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(new Exception("E023: " + e.getMessage()));
         } catch (FeatureNotEnabledException e) {
@@ -565,21 +555,6 @@ public class BulkImport {
             }
             throw new StorageTransactionLogicException(e);
         }
-    }
-
-    private static Map<String, String> collectRecipeIdsToPrimaryIds(List<BulkImportUser> users) {
-        Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
-        for(BulkImportUser user: users){
-            LoginMethod primaryLM = BulkImportUserUtils.getPrimaryLoginMethod(user);
-            for (LoginMethod lm : user.loginMethods) {
-                if (lm.getSuperTokenOrExternalUserId().equals(primaryLM.getSuperTokenOrExternalUserId())) {
-                    continue;
-                }
-                recipeUserIdByPrimaryUserId.put(lm.getSuperTokenOrExternalUserId(),
-                        primaryLM.getSuperTokenOrExternalUserId());
-            }
-        }
-        return recipeUserIdByPrimaryUserId;
     }
 
     public static void createMultipleUserIdMapping(AppIdentifier appIdentifier,

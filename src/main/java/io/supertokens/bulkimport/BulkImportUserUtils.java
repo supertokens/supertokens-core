@@ -606,4 +606,48 @@ public class BulkImportUserUtils {
         GENERATE,
         READ_STORED;
     }
+
+    public static Map<String, String> collectRecipeIdsToPrimaryIds(List<BulkImportUser> users) {
+        Map<String, String> recipeUserIdByPrimaryUserId = new HashMap<>();
+        if(users == null){
+            return recipeUserIdByPrimaryUserId;
+        }
+        for(BulkImportUser user: users){
+            LoginMethod primaryLM = BulkImportUserUtils.getPrimaryLoginMethod(user);
+            for (LoginMethod lm : user.loginMethods) {
+                if (lm.getSuperTokenOrExternalUserId().equals(primaryLM.getSuperTokenOrExternalUserId())) {
+                    continue;
+                }
+                recipeUserIdByPrimaryUserId.put(lm.getSuperTokenOrExternalUserId(),
+                        primaryLM.getSuperTokenOrExternalUserId());
+            }
+        }
+        return recipeUserIdByPrimaryUserId;
+    }
+
+    public static LoginMethod findLoginMethodForUser(List<BulkImportUser> users, String recipeUserId) {
+        if(users == null || users.isEmpty() || recipeUserId == null){
+            return null;
+        }
+        for(BulkImportUser user: users) {
+            for (LoginMethod loginMethod : user.loginMethods) {
+                if (recipeUserId.equals(loginMethod.superTokensUserId)) {
+                    return loginMethod;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static BulkImportUser findUserByPrimaryId(List<BulkImportUser> users, String primaryUserId) {
+        if(users == null || users.isEmpty() || primaryUserId == null){
+            return null;
+        }
+        for(BulkImportUser user: users) {
+            if(primaryUserId.equals(user.primaryUserId)){
+                return user;
+            }
+        }
+        return null;
+    }
 }
