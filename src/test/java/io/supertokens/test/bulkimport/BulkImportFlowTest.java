@@ -161,7 +161,6 @@ public class BulkImportFlowTest {
 
         // upload a bunch of users through the API
         JsonObject usersJson = generateUsersJson(NUMBER_OF_USERS_TO_UPLOAD, 0);
-
         JsonObject response = uploadBulkImportUsersJson(main, usersJson);
         assertEquals("OK", response.get("status").getAsString());
 
@@ -705,7 +704,7 @@ public class BulkImportFlowTest {
         for (int i = 0; i < numberOfUsers; i++) {
             JsonObject user = new JsonObject();
 
-            user.addProperty("externalUserId", UUID.randomUUID().toString());
+            user.addProperty("externalUserId", "external_" + UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":"+ UUID.randomUUID().toString() + ",\"key2\":{\"key3\":\"value3\"}}"));
             user.add("userRoles", parser.parse(
                     "[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
@@ -816,7 +815,7 @@ public class BulkImportFlowTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Main main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
-                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, intervalInSeconds);

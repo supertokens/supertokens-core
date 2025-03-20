@@ -92,7 +92,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     // Validate the user
                     try {
                         validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier,
-                                user.toJsonObject(), user.id));
+                                user.toJsonObject(), BulkImportUserUtils.IDMode.READ_STORED));
                     } catch (InvalidBulkImportDataException exception) {
                         validationErrorsBeforeActualProcessing.put(user.id, new Exception(
                                 String.valueOf(exception.errors)));
@@ -106,6 +106,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             }
             // Since all the tenants of a user must share the storage, we will just use the
             // storage of the first tenantId of the first loginMethod
+
             Map<SQLStorage, List<BulkImportUser>> partitionedUsers = partitionUsersByStorage(appIdentifier, validUsers);
             for(SQLStorage bulkImportProxyStorage : partitionedUsers.keySet()) {
                 boolean shouldRetryImmediatley = true;

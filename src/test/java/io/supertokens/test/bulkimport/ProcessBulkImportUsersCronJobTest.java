@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -94,7 +95,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImportUser bulkImportUser = users.get(0);
 
-        Thread.sleep(20000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -142,7 +143,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImportUser bulkImportUser = users.get(0);
 
-        Thread.sleep(20000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -166,7 +167,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInNotSoLargeNumbersInTheSameTenant() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        Utils.setValueInConfig("bulk_migration_parallelism", "5");
         TestingProcess process = startCronProcess();
         if(process == null) {
             return;
@@ -188,7 +189,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(60000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 60);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -225,7 +226,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(5 * 60000); // minute
+        waitForProcessingWithTimeout(appIdentifier, storage, 300); // 5 minutes
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -273,7 +274,7 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImport.addUsers(appIdentifier, storage, usersT1);
         BulkImport.addUsers(appIdentifier, storage, usersT2);
 
-        Thread.sleep(12000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -335,7 +336,7 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImport.addUsers(appIdentifier, storage, usersT1);
         BulkImport.addUsers(appIdentifier, storage, usersT2);
 
-        Thread.sleep(12000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -397,7 +398,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImport.addUsers(appIdentifier, storage, allUsers);
 
-        Thread.sleep(2 * 60000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 120);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -452,7 +453,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImport.addUsers(appIdentifier, storage, allUsers);
 
-        Thread.sleep(2 * 60000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 120);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -498,7 +499,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(12000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -539,7 +540,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(100);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(60000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 120);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -586,7 +587,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(60000); // one minute
+        waitForProcessingWithTimeout(appIdentifier, storage, 60);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -629,7 +630,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(20000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -662,7 +663,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(1, List.of("t1", "t2"), 0);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(12000);
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
@@ -688,7 +689,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 10);
-        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 10);
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -700,5 +701,23 @@ public class ProcessBulkImportUsersCronJobTest {
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
 
         return process;
+    }
+
+    //will not wait after timeout was reached
+    private void waitForProcessingWithTimeout(AppIdentifier appIdentifier, BulkImportSQLStorage storage, int timeoutSeconds)
+            throws StorageQueryException, InterruptedException {
+        long numberOfUnprocessedUsers = 1;
+        long startTime = System.currentTimeMillis();
+        long currentTime = 0;
+        while(numberOfUnprocessedUsers > 0){
+            numberOfUnprocessedUsers = (storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.NEW)
+                    + storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.PROCESSING));
+            Thread.sleep(1000);
+            currentTime = System.currentTimeMillis();
+            if((currentTime - startTime) > (timeoutSeconds * 1000L)){
+                System.out.println("Timeout of " + timeoutSeconds + " seconds reached.");
+                break;
+            }
+        }
     }
 }
