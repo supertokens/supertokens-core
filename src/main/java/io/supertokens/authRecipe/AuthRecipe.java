@@ -1226,7 +1226,7 @@ public class AuthRecipe {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsers(TenantIdentifier.BASE_TENANT, storage,
+            return getUsers(ResourceDistributor.getAppForTesting(), storage,
                     limit, timeJoinedOrder, paginationToken, includeRecipeIds, dashboardSearchTags);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

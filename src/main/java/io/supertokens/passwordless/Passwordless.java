@@ -665,7 +665,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserById(
-                new AppIdentifier(null, null), storage, userId);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     @Deprecated
@@ -741,7 +741,7 @@ public class Passwordless {
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
             PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
-        updateUser(new AppIdentifier(null, null), storage,
+        updateUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, emailUpdate, phoneNumberUpdate);
     }
 

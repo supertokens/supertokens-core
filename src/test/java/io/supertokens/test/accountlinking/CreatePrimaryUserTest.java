@@ -128,7 +128,7 @@ public class CreatePrimaryUserTest {
     @Test
     public void testThatCreationOfPrimaryUserRequiresAccountLinkingFeatureToBeEnabled() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -138,7 +138,7 @@ public class CreatePrimaryUserTest {
 
         try {
             AuthRecipe.createPrimaryUser(process.main,
-                    new AppIdentifier(null, null), StorageLayer.getStorage(process.main), "");
+                    process.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(process.main), "");
             assert (false);
         } catch (FeatureNotEnabledException e) {
             assert (e.getMessage()
@@ -416,13 +416,13 @@ public class CreatePrimaryUserTest {
             return;
         }
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
-                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
+                new TenantConfig(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
         Storage storage = (StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
@@ -434,7 +434,7 @@ public class CreatePrimaryUserTest {
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
-        Multitenancy.addUserIdToTenant(process.main, new TenantIdentifier(null, null, "t1"),
+        Multitenancy.addUserIdToTenant(process.main, new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage,
                 signInUpResponse.user.getSupertokensUserId());
 
@@ -464,13 +464,13 @@ public class CreatePrimaryUserTest {
             return;
         }
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
-                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
+                new TenantConfig(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
         Storage storage = (StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");

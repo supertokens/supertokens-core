@@ -461,14 +461,14 @@ public class SessionTests {
         Storage baseTenant = (StorageLayer.getBaseStorage(process.getProcess()));
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
             assertEquals(session1.session.handle, sessions[0]);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
@@ -476,13 +476,13 @@ public class SessionTests {
         }
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
@@ -522,7 +522,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(), true);
 
             try {
@@ -549,7 +549,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(), true);
 
             try {
@@ -576,7 +576,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(), false);
 
             try {
@@ -599,7 +599,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(), false);
 
             Session.getSession(process.getProcess(), session1.session.handle);

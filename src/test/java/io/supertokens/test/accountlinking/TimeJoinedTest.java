@@ -120,9 +120,9 @@ public class TimeJoinedTest {
 
         Storage baseTenant = (StorageLayer.getStorage(process.getProcess()));
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId(), null);
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId(), null);
 
         {
@@ -130,7 +130,7 @@ public class TimeJoinedTest {
             assertEquals(user1.timeJoined, userInfo.timeJoined);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId());
 
         {
@@ -138,7 +138,7 @@ public class TimeJoinedTest {
             assertEquals(user1.timeJoined, userInfo.timeJoined);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId());
 
         {
@@ -224,7 +224,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId(), null);
 
         {
@@ -233,7 +233,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId());
 
         {
@@ -328,7 +328,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId(), null);
 
         {
@@ -339,7 +339,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId());
 
         {
