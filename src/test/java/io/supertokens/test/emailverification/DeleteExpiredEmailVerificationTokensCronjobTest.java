@@ -55,12 +55,13 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
     public void checkingCronJob() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Utils.setValueInConfig("email_verification_token_lifetime", "4000");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
         CronTaskTest.getInstance(process.getProcess())
                 .setIntervalInSeconds(DeleteExpiredEmailVerificationTokens.RESOURCE_KEY, 1);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -80,7 +81,7 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
                 user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assert (((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null),
+                .getAllEmailVerificationTokenInfoForUser(process.getAppForTesting(),
                         user.getSupertokensUserId(), user.loginMethods[0].email).length ==
                 4);
 
@@ -88,7 +89,7 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
 
         EmailVerificationTokenInfo[] tokens = ((EmailVerificationSQLStorage) StorageLayer.getStorage(
                 process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null),
+                .getAllEmailVerificationTokenInfoForUser(process.getAppForTesting(),
                         user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assert (tokens.length == 2);

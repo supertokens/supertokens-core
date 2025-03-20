@@ -183,7 +183,7 @@ public class EmailVerification {
     public static boolean isEmailVerified(Main main, String userId,
                                           String email) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return isEmailVerified(new AppIdentifier(null, null), storage,
+        return isEmailVerified(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, email);
     }
 
@@ -212,7 +212,7 @@ public class EmailVerification {
                                      String email) throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            unverifyEmail(new AppIdentifier(null, null), storage, userId, email);
+            unverifyEmail(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, email);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
