@@ -113,7 +113,7 @@ public class SignInAPITest {
                 PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
                 System.currentTimeMillis());
         ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .createNewDashboardUser(new AppIdentifier(null, null), user);
+                .createNewDashboardUser(process.getAppForTesting().toAppIdentifier(), user);
 
         // try signing in with the valid user
         {
