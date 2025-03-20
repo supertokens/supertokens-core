@@ -102,7 +102,7 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
         TenantConfig baseTenantConfig = tenantConfigs[0];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
@@ -184,7 +184,7 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
         TenantConfig baseTenantConfig = tenantConfigs[0];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
@@ -288,8 +288,8 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
-        TenantConfig baseTenantConfig = tenantConfigs[0];
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
+        TenantConfig baseTenantConfig = tenantConfigs[0].tenantIdentifier.equals(TenantIdentifier.BASE_TENANT) ? tenantConfigs[0] : tenantConfigs[1];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
@@ -390,8 +390,8 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
-        TenantConfig baseTenantConfig = tenantConfigs[0];
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
+        TenantConfig baseTenantConfig = tenantConfigs[0].tenantIdentifier.equals(TenantIdentifier.BASE_TENANT) ? tenantConfigs[0] : tenantConfigs[1];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
@@ -483,8 +483,8 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
-        TenantConfig baseTenantConfig = tenantConfigs[0];
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
+        TenantConfig baseTenantConfig = tenantConfigs[0].tenantIdentifier.equals(TenantIdentifier.BASE_TENANT) ? tenantConfigs[0] : tenantConfigs[1];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
@@ -527,7 +527,7 @@ public class StorageLayerTest {
             DuplicateThirdPartyIdException, DuplicateClientTypeException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -549,8 +549,8 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
-        TenantConfig baseTenantConfig = tenantConfigs[0];
+        assertEquals(1+1, tenantConfigs.length); // + 1 app created for test
+        TenantConfig baseTenantConfig = tenantConfigs[0].tenantIdentifier.equals(TenantIdentifier.BASE_TENANT) ? tenantConfigs[0] : tenantConfigs[1];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
@@ -789,7 +789,7 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(2, tenantConfigs.length);
+        assertEquals(2 + 1, tenantConfigs.length); // + 1 app created for test
         TenantConfig newTenantConfig = tenantConfigs[1];
 
         assertEquals(new TenantIdentifier(null, null, "t1"), newTenantConfig.tenantIdentifier);
@@ -1712,7 +1712,7 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1, tenantConfigs.length);
+        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
         TenantConfig baseTenantConfig = tenantConfigs[0];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);

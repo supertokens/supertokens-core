@@ -236,14 +236,14 @@ public class TestingProcessManager {
                 }
             }
 
+            if (!removeAllInfo && !restartedProcess) {
+                retainAppId = appForTesting.getAppId();
+            }
+
             restartedProcess = false;
 
             if (killed) {
                 return;
-            }
-
-            if (!removeAllInfo) {
-                retainAppId = appForTesting.getAppId();
             }
 
             if (removeAllInfo) {

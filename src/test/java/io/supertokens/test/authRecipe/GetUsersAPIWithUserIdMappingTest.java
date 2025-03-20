@@ -77,7 +77,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
         }
 
@@ -118,7 +118,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
         }
 

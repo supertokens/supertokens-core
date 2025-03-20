@@ -896,7 +896,7 @@ public class ConfigTest {
         }
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
-        assertEquals(3, allTenants.length);
+        assertEquals(3 + 1, allTenants.length); // + one app created for test
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
