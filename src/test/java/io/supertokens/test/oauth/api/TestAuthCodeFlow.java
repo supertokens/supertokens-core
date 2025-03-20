@@ -62,13 +62,14 @@ public class TestAuthCodeFlow {
     public void testAuthCodeGrantFlow() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
         Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
         Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
         Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
         Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
