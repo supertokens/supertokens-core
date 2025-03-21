@@ -42,6 +42,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.webauthn.WebAuthN;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -633,6 +634,49 @@ public class BulkImportTest {
     }
 
     @Test
+    public void shouldFailIfPrimaryWebAuthNUserWithSameEmailAlreadyExists() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        AuthRecipeUserInfo webauthnUser = WebAuthN.saveUser(StorageLayer.getStorage(main),
+                new TenantIdentifier(null, null, null),
+                "user0@example.com", io.supertokens.utils.Utils.getUUID(), "example.com");
+        AuthRecipe.createPrimaryUser(main, webauthnUser.getSupertokensUserId());
+
+        List<BulkImportUser> users = generateBulkImportUser(1); //generates BM user with multiple login methods
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //expected
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void shouldSucceedIfThirdpartyUserWithSameEmailAlreadyExists() throws Exception {
         String[] args = { "../" };
 
@@ -835,6 +879,64 @@ public class BulkImportTest {
                 StorageLayer.getStorage(main),main, "google", "123123", "emailB@example.com",
                 true);
         AuthRecipe.createPrimaryUser(main, thirdpartyResponse.user.getSupertokensUserId());
+
+        BulkImportUser user = generateBulkImportUser(1).get(0);
+        user.loginMethods.get(0).email = "emailA@example.com"; //this is the primary user
+        user.loginMethods.get(0).tenantIds = List.of("public");
+
+        user.loginMethods.get(1).email = "emailC@example.com";
+        user.loginMethods.get(1).tenantIds = List.of("t1");
+
+        // one of the "recipeUsers" has the same email as the primary user but on a different tenant
+        user.loginMethods.get(2).email = "emailB@example.com";
+        user.loginMethods.get(2).tenantIds = List.of("t2");
+
+        try {
+            AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, user);
+            fail();
+        } catch (BulkImportBatchInsertException expected) {
+            //ignore
+            Map<String, Exception> exceptionByUserId = expected.exceptionByUserId;
+            for (Exception e : exceptionByUserId.values()){
+                assertTrue(e.getMessage().contains("E027"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailLinkingBulkMigratedAccountsOnThreeTenantsWithWebAuthNUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenantsWithinOneUserPool(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        //set up an existing primary user on public tenant with email B
+        AuthRecipeUserInfo webauthnUser = WebAuthN.saveUser(StorageLayer.getStorage(main),
+                new TenantIdentifier(null, null, null),
+                "emailB@example.com", io.supertokens.utils.Utils.getUUID(), "example.com");
+        AuthRecipe.createPrimaryUser(main, webauthnUser.getSupertokensUserId());
 
         BulkImportUser user = generateBulkImportUser(1).get(0);
         user.loginMethods.get(0).email = "emailA@example.com"; //this is the primary user
