@@ -60,11 +60,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void canLinkReturnsTrue() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -112,11 +111,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void canLinkReturnsTrueWithUserIdMapping() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -166,11 +164,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void canLinkUserBadInput() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -256,11 +253,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void linkingUsersFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -307,11 +303,10 @@ public class CanLinkAccountsAPITest {
     public void linkingUsersFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUserWithUserIdMapping()
             throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -362,11 +357,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void linkingUserFailsCauseAlreadyLinkedToAnotherAccount() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -410,11 +404,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccountWithUserIdMapping() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -461,11 +454,10 @@ public class CanLinkAccountsAPITest {
     @Test
     public void inputUserIsNotAPrimaryUserTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
