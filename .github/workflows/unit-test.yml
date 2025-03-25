@@ -26,4 +26,4 @@ jobs:
       - name: Checkout supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
       - name: Load Modules
-        run: cd ../supertokens-root && echo "core,${{ github.ref_name }}\nplugin-interface,master\nsqlite-plugin,master" > modules.txt && ./loadModules
+        run: cd ../supertokens-root && echo "core,${{ github.sha }}\nplugin-interface,master\nsqlite-plugin,master" > modules.txt && ./loadModules
