@@ -15,7 +15,7 @@ on:
 
 jobs:
   test-inmemory:
-    name: Unit Tests (In-Memory)
+    name: In-memory
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 15.0.1
@@ -53,7 +53,7 @@ jobs:
           reporter: java-junit
           working-directory: ./supertokens-root
   test-postgresql:
-    name: Unit Tests (In-Memory)
+    name: PostgreSQL Plugin
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 15.0.1
