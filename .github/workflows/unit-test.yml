@@ -30,9 +30,8 @@ jobs:
       - name: Checkout supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
       - name: Checkout core
-        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && cd supertokens-core && git checkout ${GITHUB_REF}
+        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && cd supertokens-core && git checkout ${GITHUB_SHA}
       - name: Checkout plugin-interface
         run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-plugin-interface.git && cd supertokens-plugin-interface && git checkout master
       - name: Load Modules
         run: cd ../supertokens-root && echo "core,master\nplugin-interface,master\nsqlite-plugin,master" > modules.txt && ./loadModules
-
