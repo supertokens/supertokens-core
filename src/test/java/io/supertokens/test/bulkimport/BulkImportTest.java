@@ -657,10 +657,10 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         AuthRecipeUserInfo webauthnUser = WebAuthN.saveUser(StorageLayer.getStorage(main),
-                new TenantIdentifier(null, null, null),
+                process.getAppForTesting(),
                 "user0@example.com", io.supertokens.utils.Utils.getUUID(), "example.com");
         AuthRecipe.createPrimaryUser(main, webauthnUser.getSupertokensUserId());
 
@@ -700,7 +700,7 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
         ThirdParty.SignInUpResponse thirdPartyUser = ThirdParty.signInUp(main, "google", "123123", "user0@example.com");
 
         List<BulkImportUser> users = generateBulkImportUserWithEmailPasswordAndRoles(1, List.of("public", "t1"), 0, List.of("role1", "role2"));
@@ -784,7 +784,7 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         List<BulkImportUser> users = generateBulkImportUser(1);
 
@@ -821,10 +821,10 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         //set up an existing primary user on public tenant with email B
-        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(new TenantIdentifier(null, null, null),
+        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(process.getAppForTesting(),
                 StorageLayer.getStorage(main),main, "google", "123123", "emailB@example.com",
                 true);
         AuthRecipe.createPrimaryUser(main, thirdpartyResponse.user.getSupertokensUserId());
@@ -864,7 +864,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenantsWithinOneUserPool(main);
+        BulkImportTestUtils.createTenantsWithinOneUserPool(process);
 
         // Create user roles
         {
@@ -872,10 +872,10 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         //set up an existing primary user on public tenant with email B
-        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(new TenantIdentifier(null, null, "t1"),
+        ThirdParty.SignInUpResponse thirdpartyResponse = ThirdParty.signInUp(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 StorageLayer.getStorage(main),main, "google", "123123", "emailB@example.com",
                 true);
         AuthRecipe.createPrimaryUser(main, thirdpartyResponse.user.getSupertokensUserId());
@@ -922,7 +922,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenantsWithinOneUserPool(main);
+        BulkImportTestUtils.createTenantsWithinOneUserPool(process);
 
         // Create user roles
         {
@@ -930,11 +930,11 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         //set up an existing primary user on public tenant with email B
         AuthRecipeUserInfo webauthnUser = WebAuthN.saveUser(StorageLayer.getStorage(main),
-                new TenantIdentifier(null, null, null),
+                process.getAppForTesting(),
                 "emailB@example.com", io.supertokens.utils.Utils.getUUID(), "example.com");
         AuthRecipe.createPrimaryUser(main, webauthnUser.getSupertokensUserId());
 

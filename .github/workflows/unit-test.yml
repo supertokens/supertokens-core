@@ -18,25 +18,30 @@ jobs:
     name: Unit Tests (In-Memory)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
       - name: Set up JDK 15.0.1
         uses: actions/setup-java@v2
         with:
           java-version: 15.0.1
           distribution: zulu
-      - name: Checkout supertokens-root
-        run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
-      - name: Clone repositories and load modules
-        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && git clone https://github.com/supertokens/supertokens-plugin-interface.git && ./loadModules
-      - name: Checkout core
-        if: github.event_name == 'pull_request'
-        run: cd ../supertokens-root/supertokens-core && git checkout ${{ github.head_ref }}
-      - name: Checkout plugin-interface
-        run: cd ../supertokens-root/supertokens-plugin-interface && git checkout 7.1
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-root
+          path: .
+          ref: master
+      - uses: actions/checkout@v2
+        with:
+          path: ./supertokens-core
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: .
+          ref: 7.1
+      - name: Load Modules
+        run: ./loadModules
       - name: Setup test env
-        run: cd ../supertokens-root && ./utils/setupTestEnv --local
+        run: ./utils/setupTestEnv --local
       - name: Run tests
-        run: cd ../supertokens-root && ./gradlew test
+        run: ./gradlew test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: success() || failure() # always run even if the previous step fails
