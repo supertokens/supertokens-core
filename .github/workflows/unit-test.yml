@@ -30,7 +30,7 @@ jobs:
       - name: Checkout supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
       - name: Checkout core
-        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && cd supertokens-core && git checkout ${GITHUB_SHA}
+        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && cd supertokens-core && git checkout ${{ github.ref_name }}
       - name: Checkout plugin-interface
         run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-plugin-interface.git && cd supertokens-plugin-interface && git checkout master
       - name: Load Modules
