@@ -31,6 +31,8 @@ jobs:
       - name: Checkout core
         if: github.event_name == 'pull_request'
         run: cd ../supertokens-root/supertokens-core && git checkout ${{ github.head_ref }}
+      - name: Checkout plugin-interface
+        run: cd ../supertokens-root/supertokens-plugin-interface && git checkout 7.1
       - name: Setup test env
         run: cd ../supertokens-root && ./utils/setupTestEnv --local
       - name: Run tests
