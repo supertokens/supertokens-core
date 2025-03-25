@@ -42,10 +42,8 @@ jobs:
         run: cd supertokens-root && ./utils/setupTestEnv --local
       - name: Run OAuth Provider
         run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
-      - name: Curl
-        run: curl http://localhost:4444
       - name: Run tests
-        run: cd supertokens-root && ./gradlew test --tests "io.supertokens.test.oauth.*"
+        run: cd supertokens-root && ./gradlew test
       - name: Publish Test Report
         uses: dorny/test-reporter@v2
         if: success() || failure() # always run even if the previous step fails
