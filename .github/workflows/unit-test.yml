@@ -41,10 +41,7 @@ jobs:
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
       - name: Run OAuth Provider
-        uses: addnab/docker-run-action@v3
-        with:
-          image: rishabhpoddar/oauth-server-cicd
-          options: -p 4444:4444 -p 4445:4445
+        run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd
       - name: Curl
         run: curl http://localhost:4444
       - name: Run tests
