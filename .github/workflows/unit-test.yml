@@ -40,6 +40,11 @@ jobs:
         run: cd supertokens-root && ./loadModules
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
+      - name: Run OAuth Provider
+        uses: addnab/docker-run-action@v3
+        with:
+          image: rishabhpoddar/oauth-server-cicd
+          options: -p 4444:4444 -p 4445:4445
       - name: Run tests
         run: cd supertokens-root && ./gradlew test
       - name: Publish Test Report
@@ -48,4 +53,3 @@ jobs:
         with:
           report_paths: 'supertokens-root/**/build/test-results/test/TEST-*.xml'
           detailed_summary: true
-          include_passed: true
