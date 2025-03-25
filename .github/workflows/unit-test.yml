@@ -50,5 +50,6 @@ jobs:
         uses: dorny/test-reporter@v2
         if: success() || failure() # always run even if the previous step fails
         with:
+          name: "Unit Tests"
           path: 'supertokens-root/**/build/test-results/test/TEST-*.xml'
           reporter: java-junit
