@@ -80,7 +80,7 @@ jobs:
           path: ./supertokens-root/supertokens-postgresql-plugin
           ref: fix/test-speed
       - name: Load Modules
-        run: cd supertokens-root && echo "core,master\nplugin-interface,master\npostgresql-plugin,master\n" > modules.txt && ./loadModules
+        run: cd supertokens-root && echo "core,master\nplugin-interface,master\npostgresql-plugin,master\n" > modules.txt && cat modules.txt && ./loadModules
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
       - name: Start PostgreSQL
