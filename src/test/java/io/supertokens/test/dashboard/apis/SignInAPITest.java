@@ -102,7 +102,7 @@ public class SignInAPITest {
         {
             for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
                 Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", "password123");
-                Thread.sleep(2);
+                Thread.sleep(10);
             }
         }
         // create a user above the free limit

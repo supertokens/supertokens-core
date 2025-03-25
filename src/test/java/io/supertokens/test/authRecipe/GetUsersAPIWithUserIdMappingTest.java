@@ -120,7 +120,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             // create a userId mapping
             storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
-            Thread.sleep(2);
+            Thread.sleep(10);
         }
 
         HashMap<String, String> queryParams = new HashMap<>();

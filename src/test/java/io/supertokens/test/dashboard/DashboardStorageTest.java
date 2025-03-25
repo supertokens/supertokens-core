@@ -176,7 +176,7 @@ public class DashboardStorageTest {
                     "testPasswordHash", System.currentTimeMillis());
             ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .createNewDashboardUser(process.getAppForTesting().toAppIdentifier(), user);
-            Thread.sleep(2);
+            Thread.sleep(10);
         }
 
         // retrieve all dashboard users, check that correctly created and returned in
