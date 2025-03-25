@@ -86,7 +86,7 @@ public class JWKSAPITest2_21 {
     public void testThatNewDynamicKeysAreReflectedIfAddedByAnotherCore() throws Exception {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

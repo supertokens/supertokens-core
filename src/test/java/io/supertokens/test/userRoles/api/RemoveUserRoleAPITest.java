@@ -170,13 +170,13 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
 
         // assign the role to a user
-        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+        UserRoles.addRoleToUser(process.getProcess(), userId, roles[0]);
 
         {
             // check that the user has the role
@@ -217,10 +217,10 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
 
         // remove the role from the user
         JsonObject request = new JsonObject();

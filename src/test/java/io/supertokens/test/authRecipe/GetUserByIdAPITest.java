@@ -77,9 +77,9 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -142,17 +142,17 @@ public class GetUserByIdAPITest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
 
         Thread.sleep(50);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -224,9 +224,9 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = signInUpRespone.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();

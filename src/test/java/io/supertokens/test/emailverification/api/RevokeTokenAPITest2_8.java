@@ -55,7 +55,7 @@ public class RevokeTokenAPITest2_8 {
 
     @Test
     public void testThrowBadRequest() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -74,14 +74,14 @@ public class RevokeTokenAPITest2_8 {
 
     @Test
     public void testRevokeTokenForValidParameters() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
 
-            String token = EmailVerification.generateEmailVerificationToken(process.main, "someUserId",
+            String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), "someUserId",
                     "someemail@gmail.com");
 
             JsonObject body = new JsonObject();
@@ -94,7 +94,7 @@ public class RevokeTokenAPITest2_8 {
             assertEquals("OK", responseStatus);
 
             try {
-                EmailVerification.verifyEmail(process.main, token);
+                EmailVerification.verifyEmail(process.getProcess(), token);
                 assert (false);
             } catch (EmailVerificationInvalidTokenException ignored) {
 

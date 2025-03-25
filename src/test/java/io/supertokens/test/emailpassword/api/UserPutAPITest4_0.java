@@ -67,10 +67,10 @@ public class UserPutAPITest4_0 {
         }
 
         AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user0.getSupertokensUserId());
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
         JsonObject body = new JsonObject();
         body.addProperty("recipeUserId", user.getSupertokensUserId());

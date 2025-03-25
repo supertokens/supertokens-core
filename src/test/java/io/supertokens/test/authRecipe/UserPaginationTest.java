@@ -353,7 +353,7 @@ public class UserPaginationTest {
 
     @Test
     public void testUserPaginationWithSameTimeJoined() throws Exception {
-        if (StorageLayer.getBaseStorage(process.main).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 

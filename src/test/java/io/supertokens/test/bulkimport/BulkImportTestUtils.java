@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.totp.Totp;
 import io.supertokens.usermetadata.UserMetadata;
@@ -127,19 +128,20 @@ public class BulkImportTestUtils {
         return users;
     }
 
-    public static void createTenants(Main main)
+    public static void createTenants(TestingProcessManager.TestingProcess process)
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
+        Main main = process.getProcess();
         // User pool 1 - (null, null, null), (null, null, t1)
         // User pool 2 - (null, null, t2)
 
         { // tenant 1
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1");
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     main,
-                    new TenantIdentifier(null, null, null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -149,14 +151,14 @@ public class BulkImportTestUtils {
         }
         { // tenant 2
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t2");
 
-            StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
+            StorageLayer.getStorage(new TenantIdentifier(null, process.getAppForTesting().getAppId(), null), main)
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     main,
-                    new TenantIdentifier(null, null, null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),

@@ -79,7 +79,7 @@ public class SigningKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getAllKeys()
                         .size(), 2);
 
         process.kill();
@@ -131,16 +131,16 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
-                        new AppIdentifier(null, null), process.main)
+                        new AppIdentifier(null, null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c1", null), process.main)
+                        new AppIdentifier("c1", null), process.getProcess())
                 .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
@@ -205,22 +205,22 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
-                        new AppIdentifier(null, null), process.main)
+                        new AppIdentifier(null, null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c1", null), process.main)
+                        new AppIdentifier("c1", null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c2Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c2", null), process.main)
+                        new AppIdentifier("c2", null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c3Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c3", null), process.main)
+                        new AppIdentifier("c3", null), process.getProcess())
                 .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);

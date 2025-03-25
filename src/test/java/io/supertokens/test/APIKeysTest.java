@@ -16,7 +16,6 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -67,7 +66,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", "abctijenbogweg=-2438243u98"); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String[] apiKeys = Config.getConfig(process.getProcess()).getAPIKeys();
@@ -84,7 +83,7 @@ public class APIKeysTest {
     public void testGetApiKeysReturnsNullWhenAPIKeyIsNotSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNull(Config.getConfig(process.getProcess()).getAPIKeys());
 
@@ -101,7 +100,7 @@ public class APIKeysTest {
         // api key length less that minimum length 20
         Utils.setValueInConfig("api_keys", "abc"); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -114,7 +113,7 @@ public class APIKeysTest {
 
         // setting api key with non-supported symbols
         Utils.setValueInConfig("api_keys", "abC&^0t4t3t40t4@#%greognr"); // set api_keys
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
@@ -135,7 +134,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", validKey + "," + invalidKey); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -155,7 +154,7 @@ public class APIKeysTest {
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -207,7 +206,7 @@ public class APIKeysTest {
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
         Utils.setValueInConfig("port", "3568");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -242,7 +241,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", apiKey1 + "," + apiKey2 + "," + apiKey3); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -314,7 +313,7 @@ public class APIKeysTest {
         Utils.setValueInConfig("api_keys", " " + apiKey1 + ", " + apiKey2 + ", " + apiKey3 + "," + apiKey4); // set
         // api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -390,7 +389,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", apiKey1); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";

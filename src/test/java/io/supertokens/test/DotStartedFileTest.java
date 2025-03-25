@@ -48,27 +48,27 @@ public class DotStartedFileTest {
     public void fiveProcessInParallelDotStartedFileTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process1 = TestingProcessManager.start(args, true, true);
+        TestingProcessManager.TestingProcess process1 = TestingProcessManager.startIsolatedProcess(args, true);
         assertNotNull(process1.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8081");
 
-        TestingProcessManager.TestingProcess process2 = TestingProcessManager.start(args, true, false);
+        TestingProcessManager.TestingProcess process2 = TestingProcessManager.startIsolatedProcess(args, true);
         assertNotNull(process2.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8082");
 
-        TestingProcessManager.TestingProcess process3 = TestingProcessManager.start(args, true, false);
+        TestingProcessManager.TestingProcess process3 = TestingProcessManager.startIsolatedProcess(args, true);
         assertNotNull(process3.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8083");
 
-        TestingProcessManager.TestingProcess process4 = TestingProcessManager.start(args, true, false);
+        TestingProcessManager.TestingProcess process4 = TestingProcessManager.startIsolatedProcess(args, true);
         assertNotNull(process4.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Utils.setValueInConfig("port", "8084");
 
-        TestingProcessManager.TestingProcess process5 = TestingProcessManager.start(args, true, false);
+        TestingProcessManager.TestingProcess process5 = TestingProcessManager.startIsolatedProcess(args, true);
         assertNotNull(process5.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         File[] flist = new File("../.started").listFiles();
@@ -127,7 +127,7 @@ public class DotStartedFileTest {
 
         Utils.setValueInConfig("port", port);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         File loc = new File("../.started");
@@ -141,7 +141,7 @@ public class DotStartedFileTest {
         String line = dotStartedContent[0];
         assertEquals(line, Long.toString(ProcessHandle.current().pid()));
         line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
-        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, Config.getConfig(process.getProcess()).getBasePath());
         assertEquals(line, "");
 
         process.kill();
@@ -150,7 +150,7 @@ public class DotStartedFileTest {
         // Ensure that base_path is set in .started file
         Utils.setValueInConfig("base_path", basePathCheck);
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         dotStartedNameAndContent = loc.listFiles();
@@ -162,7 +162,7 @@ public class DotStartedFileTest {
         line = dotStartedContent[0];
         assertEquals(line, Long.toString(ProcessHandle.current().pid()));
         line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
-        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, Config.getConfig(process.getProcess()).getBasePath());
         assertEquals(line, basePathCheck);
 
         process.kill();
@@ -176,7 +176,7 @@ public class DotStartedFileTest {
 
         Utils.setValueInConfig("access_token_validity", "-1");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE));
 
         File dotStartedFile = new File("../.started/localhost-3567");
@@ -197,7 +197,7 @@ public class DotStartedFileTest {
 
         Utils.setValueInConfig("port", port);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         File loc = new File(tempDirLocation + "/.started");
@@ -211,7 +211,7 @@ public class DotStartedFileTest {
         String line = dotStartedContent[0];
         assertEquals(line, Long.toString(ProcessHandle.current().pid()));
         line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
-        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, Config.getConfig(process.getProcess()).getBasePath());
         assertEquals(line, "");
 
         process.kill();

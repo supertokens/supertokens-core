@@ -23,7 +23,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
@@ -592,9 +591,8 @@ public class SessionTest1 {
         Utils.setValueInConfig("refresh_token_validity", "" + 1.5 / 60.0);
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         Main main = process.getProcess();
 

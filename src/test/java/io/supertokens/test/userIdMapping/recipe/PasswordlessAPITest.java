@@ -68,20 +68,20 @@ public class PasswordlessAPITest {
         String superTokensUserId;
         // create a passwordless User
         {
-            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.main,
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(),
                     "test@example.com", null, null, null);
-            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main,
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
             superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId, null, false);
 
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNotNull(response);
             assertEquals(response.superTokensUserId, superTokensUserId);
             assertEquals(response.externalUserId, externalId);
@@ -107,11 +107,11 @@ public class PasswordlessAPITest {
 
         {
             // delete User and check that the mapping is also deleted
-            AuthRecipe.deleteUser(process.main, superTokensUserId);
+            AuthRecipe.deleteUser(process.getProcess(), superTokensUserId);
 
             // check that mapping no longer exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNull(response);
         }
 
@@ -135,20 +135,20 @@ public class PasswordlessAPITest {
         String email = "test@example.com";
         // create a passwordless User
         {
-            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.main, email, null,
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
                     null, null);
-            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main,
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
             superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId, null, false);
 
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNotNull(response);
             assertEquals(response.superTokensUserId, superTokensUserId);
             assertEquals(response.externalUserId, externalId);
@@ -213,20 +213,20 @@ public class PasswordlessAPITest {
         String phoneNumber = "+911234567890";
         // create a passwordless User
         {
-            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.main, null,
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                     phoneNumber, null, null);
-            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main,
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
             superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId, null, false);
 
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNotNull(response);
             assertEquals(response.superTokensUserId, superTokensUserId);
             assertEquals(response.externalUserId, externalId);
@@ -263,14 +263,14 @@ public class PasswordlessAPITest {
         String superTokensUserId;
 
         // create a passwordless user
-        Passwordless.CreateCodeResponse response = Passwordless.createCode(process.main, "test@example.com", null, null,
+        Passwordless.CreateCodeResponse response = Passwordless.createCode(process.getProcess(), "test@example.com", null, null,
                 null);
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main, response.deviceId,
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), response.deviceId,
                 response.deviceIdHash, response.userInputCode, null);
         superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
         // map their userId
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId, null, false);
 
         // call the update API and update email
         String newEmail = "testnew@example.com";
@@ -285,7 +285,7 @@ public class PasswordlessAPITest {
             assertEquals(updateUserResponse.get("status").getAsString(), "OK");
 
             // check that user got updated
-            AuthRecipeUserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
+            AuthRecipeUserInfo userInfo = Passwordless.getUserByEmail(process.getProcess(), newEmail);
             assertNotNull(userInfo);
             assertEquals(userInfo.getSupertokensUserId(), superTokensUserId);
         }

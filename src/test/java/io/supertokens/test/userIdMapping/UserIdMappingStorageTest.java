@@ -64,7 +64,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         Exception error = null;
 
@@ -93,10 +93,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPassword");
 
         String externalUserId = "external-test";
         String externalUserIdInfo = "external-info";
@@ -127,10 +127,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPassword");
         String externalUserId = "external-test";
 
         storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), userInfo.getSupertokensUserId(), externalUserId,
@@ -176,7 +176,7 @@ public class UserIdMappingStorageTest {
         {
             // duplicate exception with externalUserId
 
-            AuthRecipeUserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            AuthRecipeUserInfo newUser = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
             Exception error = null;
             try {
                 storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), newUser.getSupertokensUserId(),
@@ -208,10 +208,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String externalUserId = "externalUserId";
 
         // create a userId mapping
@@ -248,7 +248,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(), "unknownId",
@@ -282,10 +282,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
@@ -340,7 +340,7 @@ public class UserIdMappingStorageTest {
         // superTokensUserId
 
         {
-            AuthRecipeUserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            AuthRecipeUserInfo newUserInfo = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
             String externalUserId2 = userInfo.getSupertokensUserId();
 
             storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), newUserInfo.getSupertokensUserId(),
@@ -383,7 +383,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         assertFalse(storage.deleteUserIdMapping(process.getAppForTesting().toAppIdentifier(), "unknownUserId", true));
 
@@ -403,10 +403,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalUserId";
         {
@@ -465,7 +465,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         String userId = "unknownId";
 
@@ -497,10 +497,10 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
@@ -575,13 +575,13 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         // create users equal to the User Pagination limit
         for (int i = 1; i <= AuthRecipe.USER_PAGINATION_LIMIT; i++) {
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com",
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com",
                     "testPass123");
             superTokensUserIdList.add(userInfo.getSupertokensUserId());
             String superTokensUserId = userInfo.getSupertokensUserId();
@@ -613,7 +613,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> emptyList = new ArrayList<>();
 
         HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
@@ -634,11 +634,11 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com",
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com",
                     "testPass123");
             superTokensUserIdList.add(userInfo.getSupertokensUserId());
         }
@@ -661,13 +661,13 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
         ArrayList<String> userIdList = new ArrayList<>();
 
         // create users equal to the User Pagination limit
         for (int i = 1; i <= 10; i++) {
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com",
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com",
                     "testPass123");
             superTokensUserIdList.add(userInfo.getSupertokensUserId());
 

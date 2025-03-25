@@ -132,7 +132,7 @@ public class AppTenantUserTest {
                 String userId = user.getSupertokensUserId();
 
                 // create entry in nonAuth table
-                StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(app, className, userId);
+                StorageLayer.getStorage(process.getProcess()).addInfoToNonAuthRecipesBasedOnUserId(app, className, userId);
 
                 try {
                     UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(

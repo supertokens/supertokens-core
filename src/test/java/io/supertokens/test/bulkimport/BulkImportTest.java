@@ -87,7 +87,7 @@ public class BulkImportTest {
 
         List<BulkImportUser> users = generateBulkImportUser(10);
 
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.getProcess());
         BulkImport.addUsers(new AppIdentifier(null, null), storage, users);
 
         List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 100,
@@ -128,7 +128,7 @@ public class BulkImportTest {
 
         List<String> initialIds = users.stream().map(user -> user.id).collect(Collectors.toList());
 
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.getProcess());
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
         BulkImport.addUsers(appIdentifier, storage, users);
 
@@ -163,8 +163,8 @@ public class BulkImportTest {
             return;
         }
 
-        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.getProcess());
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         // Test with status = 'NEW'
         {
@@ -224,7 +224,7 @@ public class BulkImportTest {
     public void randomPaginationTest() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
         // We are setting a high initial wait time to ensure the cron job doesn't run while we are running the tests
         CronTaskTest.getInstance(process.getProcess()).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY,
@@ -239,7 +239,7 @@ public class BulkImportTest {
             return;
         }
 
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.getProcess());
 
         int numberOfUsers = 500;
         // Insert users in batches
@@ -309,7 +309,7 @@ public class BulkImportTest {
             return;
         }
 
-        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.getProcess());
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
         // Test with status = 'NEW'
@@ -379,7 +379,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         // Create user roles
         {
@@ -387,7 +387,7 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
         List<BulkImportUser> users = generateBulkImportUser(1);
 
         AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
@@ -415,7 +415,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         // Create user roles
         {
@@ -423,13 +423,13 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
-        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t2");
 
         Storage storageT1 = StorageLayer.getStorage(t1, main);
         Storage storageT2 = StorageLayer.getStorage(t2, main);
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         List<BulkImportUser> usersT1 = generateBulkImportUser(1, List.of(t1.getTenantId()), 0);
         List<BulkImportUser> usersT2 = generateBulkImportUser(1, List.of(t2.getTenantId()), 1);
@@ -467,7 +467,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         // Create user roles
         {
@@ -475,7 +475,7 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
         List<BulkImportUser> users = generateBulkImportUser(10);
 
         // Concurrently import users
@@ -519,7 +519,7 @@ public class BulkImportTest {
                 new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
         // Create tenants
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         // Create user roles
         {
@@ -527,7 +527,7 @@ public class BulkImportTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImportUser bulkImportUser = users.get(0);
 

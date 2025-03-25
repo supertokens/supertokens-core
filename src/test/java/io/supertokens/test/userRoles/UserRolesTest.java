@@ -67,13 +67,13 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
         String role = "role";
         String[] permissions = new String[]{"permission"};
 
         {
             // create a new role
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
             // check if role is created
             assertTrue(wasRoleCreated);
@@ -86,7 +86,7 @@ public class UserRolesTest {
 
         {
             // create the same role again, should not throw an exception and no new role should be created
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
             assertFalse(wasRoleCreated);
             // check that roles and permissions still exist
             assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
@@ -110,14 +110,14 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String[] oldPermissions = new String[]{"permission1", "permission2"};
         String role = "role";
 
         {
             // create a new role
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, oldPermissions);
             assertTrue(wasRoleCreated);
 
             // check that role and permissions were created
@@ -134,7 +134,7 @@ public class UserRolesTest {
             // modify role with a new permission
             String[] newPermissions = new String[]{"permission1", "permission2", "permission3"};
 
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, newPermissions);
             // since only permissions were modified and no role was created, this should be false
             assertFalse(wasRoleCreated);
 
@@ -162,12 +162,12 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             // create a role with null permissions
             String role = "role";
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
             // check that role and permissions were created
 
@@ -181,7 +181,7 @@ public class UserRolesTest {
         {
             // create role with empty array permissions
             String role = "role2";
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[]{});
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, new String[]{});
             // check if role is created
             assertTrue(storage.doesRoleExist(process.getAppForTesting().toAppIdentifier(), role));
             // check that no permissions exist for the role
@@ -206,14 +206,14 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
         String role = "role";
 
         {
             // create a new role
             String[] oldPermissions = new String[]{"permission1", "permission2"};
 
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, oldPermissions);
             // check that role and permissions were created
 
             // check if role is created
@@ -232,7 +232,7 @@ public class UserRolesTest {
             String[] newPermission = new String[]{"permission3"};
 
             // add additional permission to role
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, newPermission);
             assertFalse(wasRoleCreated);
 
             // check that the role still exists
@@ -263,14 +263,14 @@ public class UserRolesTest {
         }
         String[] roles = new String[]{"role"};
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // assign an unknown role to a user, it should throw UNKNOWN_ROLE_EXCEPTION
         {
             Exception error = null;
             try {
 
-                UserRoles.addRoleToUser(process.main, userId, "unknown_role");
+                UserRoles.addRoleToUser(process.getProcess(), userId, "unknown_role");
             } catch (Exception e) {
                 error = e;
             }
@@ -282,9 +282,9 @@ public class UserRolesTest {
         // create a role and assign the role to a user, check that the user has the role
         {
             // create role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
             // assign role to user
-            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.getProcess(), userId, roles[0]);
             assertTrue(wasRoleAddedToUser);
 
             // check that the user actually has the role
@@ -295,7 +295,7 @@ public class UserRolesTest {
         // assign the same role to the user again, it should not be added and not throw an exception
         {
             // assign the role to the user again
-            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.getProcess(), userId, roles[0]);
             assertFalse(wasRoleAddedToUser);
 
             // check that the user still has the same role/ no additional role has been added
@@ -309,9 +309,9 @@ public class UserRolesTest {
             String[] newRoles = new String[]{"role", "role2"};
 
             // create another role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), newRoles[1], null);
             // assign role to user and check that the role was added
-            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.getProcess(), userId, newRoles[1]);
             assertTrue(wasRoleAddedToUser);
 
             // check that user has two roles
@@ -336,7 +336,7 @@ public class UserRolesTest {
 
         Exception error = null;
         try {
-            UserRoles.removeUserRole(process.main, "userId", "unknown_role");
+            UserRoles.removeUserRole(process.getProcess(), "userId", "unknown_role");
         } catch (Exception e) {
             error = e;
         }
@@ -360,11 +360,11 @@ public class UserRolesTest {
 
         String userId = "userId";
         String[] roles = new String[]{"role"};
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role and assign the role to a user
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
-        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
+        UserRoles.addRoleToUser(process.getProcess(), userId, roles[0]);
 
         {
             // check that the user has roles
@@ -374,7 +374,7 @@ public class UserRolesTest {
 
         {
             // remove the roles from the user
-            boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, roles[0]);
+            boolean didUserHaveRole = UserRoles.removeUserRole(process.getProcess(), userId, roles[0]);
             assertTrue(didUserHaveRole);
 
             // check that the user has no roles
@@ -383,7 +383,7 @@ public class UserRolesTest {
         }
         {
             // remove a role from a user where the user does not have the role
-            boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, roles[0]);
+            boolean didUserHaveRole = UserRoles.removeUserRole(process.getProcess(), userId, roles[0]);
             assertFalse(didUserHaveRole);
         }
 
@@ -402,15 +402,15 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "userId";
 
         // create multiple roles and assign them to a user
         for (String role : roles) {
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         {
@@ -420,7 +420,7 @@ public class UserRolesTest {
         }
 
         // remove a role from the user
-        boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, "role1");
+        boolean didUserHaveRole = UserRoles.removeUserRole(process.getProcess(), userId, "role1");
         assertTrue(didUserHaveRole);
 
         {
@@ -447,7 +447,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create multiple roles and add them to a user
         String[] roles = new String[]{"role1", "role2", "role3"};
@@ -455,13 +455,13 @@ public class UserRolesTest {
 
         for (String role : roles) {
             // create role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
             // add role to user
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         // retrieve roles and check that user has roles
-        String[] userRoles = UserRoles.getRolesForUser(process.main, userId);
+        String[] userRoles = UserRoles.getRolesForUser(process.getProcess(), userId);
         Utils.checkThatArraysAreEqual(roles, userRoles);
 
         process.kill();
@@ -482,7 +482,7 @@ public class UserRolesTest {
         String userId = "userId";
 
         // retrieve roles and check that user has no roles
-        String[] userRoles = UserRoles.getRolesForUser(process.main, userId);
+        String[] userRoles = UserRoles.getRolesForUser(process.getProcess(), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();
@@ -502,16 +502,16 @@ public class UserRolesTest {
 
         // create a role
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
         // add role to users
         String[] userIds = new String[]{"user1", "user2", "user3"};
         for (String userId : userIds) {
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         // retrieve users with the input role and check that it is correct
-        String[] usersWithTheSameRole = UserRoles.getUsersForRole(process.main, role);
+        String[] usersWithTheSameRole = UserRoles.getUsersForRole(process.getProcess(), role);
         Utils.checkThatArraysAreEqual(userIds, usersWithTheSameRole);
 
         process.kill();
@@ -532,7 +532,7 @@ public class UserRolesTest {
         // retrieve users with an unknown role
         Exception error = null;
         try {
-            UserRoles.getUsersForRole(process.main, "unknownRole");
+            UserRoles.getUsersForRole(process.getProcess(), "unknownRole");
         } catch (Exception e) {
             error = e;
         }
@@ -556,9 +556,9 @@ public class UserRolesTest {
 
         // create a role
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
-        String[] userIdsWithRole = UserRoles.getUsersForRole(process.main, role);
+        String[] userIdsWithRole = UserRoles.getUsersForRole(process.getProcess(), role);
 
         assertEquals(0, userIdsWithRole.length);
 
@@ -579,10 +579,10 @@ public class UserRolesTest {
         // create a role
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // check that role has permissions
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
 
         process.kill();
@@ -601,9 +601,9 @@ public class UserRolesTest {
 
         // create a role
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         assertEquals(0, retrievedPermissions.length);
 
         process.kill();
@@ -622,7 +622,7 @@ public class UserRolesTest {
 
         Exception error = null;
         try {
-            UserRoles.getPermissionsForRole(process.main, "unknownRole");
+            UserRoles.getPermissionsForRole(process.getProcess(), "unknownRole");
         } catch (Exception e) {
             error = e;
         }
@@ -647,14 +647,14 @@ public class UserRolesTest {
         // create a role with permissions
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // remove permissions from role
         String[] permissionsToRemove = new String[]{"permission1", "permission2"};
-        UserRoles.deletePermissionsFromRole(process.main, role, permissionsToRemove);
+        UserRoles.deletePermissionsFromRole(process.getProcess(), role, permissionsToRemove);
 
         // check that permissions have been removed
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         assertEquals(1, retrievedPermissions.length);
         assertEquals("permission3", retrievedPermissions[0]);
 
@@ -675,13 +675,13 @@ public class UserRolesTest {
         // create a role with permissions
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // remove all permissions from role
-        UserRoles.deletePermissionsFromRole(process.main, role, null);
+        UserRoles.deletePermissionsFromRole(process.getProcess(), role, null);
 
         // check that permissions have been removed
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         assertEquals(0, retrievedPermissions.length);
 
         process.kill();
@@ -701,14 +701,14 @@ public class UserRolesTest {
         // create a role with permissions
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // remove all permissions from role
         String[] permissionToRemove = new String[]{"permission4"};
-        UserRoles.deletePermissionsFromRole(process.main, role, permissionToRemove);
+        UserRoles.deletePermissionsFromRole(process.getProcess(), role, permissionToRemove);
 
         // check that no permissions have been removed
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
 
         process.kill();
@@ -728,7 +728,7 @@ public class UserRolesTest {
         // remove permissions from an unknown role
         Exception error = null;
         try {
-            UserRoles.deletePermissionsFromRole(process.main, "unknownRole", null);
+            UserRoles.deletePermissionsFromRole(process.getProcess(), "unknownRole", null);
         } catch (Exception e) {
             error = e;
         }
@@ -752,13 +752,13 @@ public class UserRolesTest {
         // create a role with permissions
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // remove all permissions from role
-        UserRoles.deletePermissionsFromRole(process.main, role, new String[]{});
+        UserRoles.deletePermissionsFromRole(process.getProcess(), role, new String[]{});
 
         // check that no permissions have been removed
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
 
         process.kill();
@@ -781,18 +781,18 @@ public class UserRolesTest {
         String permission2 = "permission2";
 
         // create role1 with permission [permission1]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[]{permission1});
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], new String[]{permission1});
         // create role2 with permissions [permission1, permission2]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[1],
                 new String[]{permission1, permission2});
 
         {
-            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, permission1);
+            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.getProcess(), permission1);
             Utils.checkThatArraysAreEqual(roles, retrievedRoles);
         }
 
         {
-            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, permission2);
+            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.getProcess(), permission2);
             assertEquals(1, retrievedRoles.length);
             assertEquals(roles[1], retrievedRoles[0]);
         }
@@ -812,7 +812,7 @@ public class UserRolesTest {
         }
 
         // check that no roles are returned
-        String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, "unknownPermission");
+        String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.getProcess(), "unknownPermission");
         assertEquals(0, retrievedRoles.length);
 
         process.kill();
@@ -829,25 +829,25 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role with permissions and assign it to a user
         String role = "role";
         String userId = "userId";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
 
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
-        UserRoles.addRoleToUser(process.main, userId, role);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
+        UserRoles.addRoleToUser(process.getProcess(), userId, role);
 
         // delete role
 
-        boolean didRoleExist = UserRoles.deleteRole(process.main, role);
+        boolean didRoleExist = UserRoles.deleteRole(process.getProcess(), role);
         assertTrue(didRoleExist);
 
         // retrieving permission should throw unknownRoleException
         Exception error = null;
         try {
-            UserRoles.getPermissionsForRole(process.main, role);
+            UserRoles.getPermissionsForRole(process.getProcess(), role);
         } catch (Exception e) {
             error = e;
         }
@@ -859,7 +859,7 @@ public class UserRolesTest {
         assertEquals(0, retrievedPermissions.length);
 
         // check that user has no roles
-        String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userId);
+        String[] retrievedRoles = UserRoles.getRolesForUser(process.getProcess(), userId);
         assertEquals(0, retrievedRoles.length);
 
         // check that the user-role mapping doesnt exist in the db
@@ -867,7 +867,7 @@ public class UserRolesTest {
         assertEquals(0, retrievedRolesFromDb.length);
 
         // check that role doesnt exist
-        assertFalse(UserRoles.doesRoleExist(process.main, role));
+        assertFalse(UserRoles.doesRoleExist(process.getProcess(), role));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -883,7 +883,7 @@ public class UserRolesTest {
             return;
         }
 
-        boolean didRoleExist = UserRoles.deleteRole(process.main, "unknownRole");
+        boolean didRoleExist = UserRoles.deleteRole(process.getProcess(), "unknownRole");
         assertFalse(didRoleExist);
 
         process.kill();
@@ -902,19 +902,19 @@ public class UserRolesTest {
 
         {
             // call getRoles when no roles exist
-            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            String[] retrievedRoles = UserRoles.getRoles(process.getProcess());
             assertEquals(0, retrievedRoles.length);
         }
 
         // create roles
         String[] roles = new String[]{"role1", "role2", "role3"};
         for (String role : roles) {
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
         }
 
         // retrieve all role and check for correct output
         {
-            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            String[] retrievedRoles = UserRoles.getRoles(process.getProcess());
             Utils.checkThatArraysAreEqual(roles, retrievedRoles);
         }
 
@@ -935,15 +935,15 @@ public class UserRolesTest {
         // create roles
         String[] roles = new String[]{"role1", "role2", "role3"};
         for (String role : roles) {
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
         }
 
         // delete all roles for a user
-        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.main, "userId");
+        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.getProcess(), "userId");
         assertEquals(0, numberOfRolesDeleted);
 
         // check that no roles have been deleted
-        String[] retrievedRoles = UserRoles.getRoles(process.main);
+        String[] retrievedRoles = UserRoles.getRoles(process.getProcess());
         Utils.checkThatArraysAreEqual(roles, retrievedRoles);
 
         process.kill();
@@ -964,23 +964,23 @@ public class UserRolesTest {
         String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "user";
         for (String role : roles) {
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         // delete all roles for the user
-        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.main, userId);
+        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.getProcess(), userId);
         assertEquals(roles.length, numberOfRolesDeleted);
 
         // check that roles were removed from the user
         {
-            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userId);
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.getProcess(), userId);
             assertEquals(0, retrievedRoles.length);
         }
 
         // check that no roles were removed
         {
-            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            String[] retrievedRoles = UserRoles.getRoles(process.getProcess());
             Utils.checkThatArraysAreEqual(roles, retrievedRoles);
         }
 
@@ -998,31 +998,31 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
         // Create an Auth User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPassword");
 
         // assign role to user
-        UserRoles.addRoleToUser(process.main, userInfo.getSupertokensUserId(), role);
+        UserRoles.addRoleToUser(process.getProcess(), userInfo.getSupertokensUserId(), role);
 
         {
             // check that user has role
-            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getSupertokensUserId());
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.getProcess(), userInfo.getSupertokensUserId());
             assertEquals(1, retrievedRoles.length);
             assertEquals(role, retrievedRoles[0]);
         }
 
         // delete User
-        AuthRecipe.deleteUser(process.main, userInfo.getSupertokensUserId());
+        AuthRecipe.deleteUser(process.getProcess(), userInfo.getSupertokensUserId());
 
         {
             // check that user has no roles
-            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getSupertokensUserId());
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.getProcess(), userInfo.getSupertokensUserId());
             assertEquals(0, retrievedRoles.length);
 
             // check that the mapping for user role doesnt exist
@@ -1033,7 +1033,7 @@ public class UserRolesTest {
 
         {
             // check that role still exists
-            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            String[] retrievedRoles = UserRoles.getRoles(process.getProcess());
             assertEquals(1, retrievedRoles.length);
             assertEquals(role, retrievedRoles[0]);
         }

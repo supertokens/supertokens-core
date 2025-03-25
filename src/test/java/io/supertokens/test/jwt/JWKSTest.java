@@ -64,7 +64,7 @@ public class JWKSTest {
     @Test
     public void testThatThereAreTheSameNumberOfJWKSAsSupportedAlgorithmsBeforeJWTCreation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
@@ -82,7 +82,7 @@ public class JWKSTest {
     @Test
     public void testThatNoNewJWKIsCreatedDuringJWTCreation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         List<JsonObject> keysFromStorageBeforeJWTCreation = SigningKeys.getInstance(process.getProcess()).getJWKS();

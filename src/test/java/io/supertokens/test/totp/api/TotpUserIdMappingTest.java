@@ -48,17 +48,17 @@ public class TotpUserIdMappingTest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         JsonObject body = new JsonObject();
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 
         // Create user id mapping first:
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         body.addProperty("userId", externalUserId);
         body.addProperty("deviceName", "d1");

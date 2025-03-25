@@ -178,7 +178,7 @@ public class RemovePermissionsForRoleAPITest {
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         String role = "role";
 
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // call api to remove some permissions
         String[] permissionsToRemove = new String[]{"permission1", "permission2"};
@@ -195,7 +195,7 @@ public class RemovePermissionsForRoleAPITest {
         assertEquals("OK", response.get("status").getAsString());
 
         // check that only 1 permission exists for role
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         assertEquals(1, retrievedPermissions.length);
         assertEquals("permission3", retrievedPermissions[0]);
 
@@ -218,7 +218,7 @@ public class RemovePermissionsForRoleAPITest {
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         String role = "role";
 
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         // call api to remove all permissions
         JsonObject requestBody = new JsonObject();
@@ -233,7 +233,7 @@ public class RemovePermissionsForRoleAPITest {
         assertEquals("OK", response.get("status").getAsString());
 
         // check that there are no permissions for the role
-        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.getProcess(), role);
         assertEquals(0, retrievedPermissions.length);
 
         process.kill();

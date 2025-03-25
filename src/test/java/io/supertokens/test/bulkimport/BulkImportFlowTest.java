@@ -813,7 +813,7 @@ public class BulkImportFlowTest {
         // set processing thread number
         Utils.setValueInConfig("bulk_migration_parallelism", parallelism);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Main main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });

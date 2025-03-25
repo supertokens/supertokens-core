@@ -24,7 +24,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -55,7 +54,7 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         String[] args = {"../"};
 
         Utils.setValueInConfig("password_reset_token_lifetime", "4000");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         CronTaskTest.getInstance(process.getProcess())
                 .setIntervalInSeconds(DeleteExpiredPasswordResetTokens.RESOURCE_KEY, 1);
         process.startProcess();
@@ -64,7 +63,6 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
             return;
         }
 
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(),

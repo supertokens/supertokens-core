@@ -67,7 +67,7 @@ public class SignInAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");
@@ -118,8 +118,8 @@ public class SignInAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");
@@ -173,15 +173,15 @@ public class SignInAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user0 = EmailPassword.signUp(process.main, "random1@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user0.getSupertokensUserId(), "e0", null, false);
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "random1@gmail.com", "validPass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user0.getSupertokensUserId(), "e0", null, false);
 
         Thread.sleep(1); // add a small delay to ensure a unique timestamp
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, user0.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user0.getSupertokensUserId(), user.getSupertokensUserId());
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");

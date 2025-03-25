@@ -64,7 +64,7 @@ public class CDIVersionTest {
     @Test
     public void testThatAPIUsesLatestVersionByDefault() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -102,7 +102,7 @@ public class CDIVersionTest {
     @Test
     public void testThatAPIUsesVersionSpecifiedInTheRequest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -146,7 +146,7 @@ public class CDIVersionTest {
     public void testThatAPIUsesVersionSpecifiedInConfigAsDefault() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         process.startProcess();
 
@@ -188,7 +188,7 @@ public class CDIVersionTest {
     public void testThatAPIUsesVersionSpecifiedInRequestWhenTheConfigIsPresent() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         process.startProcess();
 
@@ -230,7 +230,7 @@ public class CDIVersionTest {
     public void testCDIVersionWorksPerApp() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
@@ -307,7 +307,7 @@ public class CDIVersionTest {
         {
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             {
@@ -340,7 +340,7 @@ public class CDIVersionTest {
         {
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             Utils.setValueInConfig("supertokens_max_cdi_version", "2.9");
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -376,7 +376,7 @@ public class CDIVersionTest {
     public void testInvalidSemanticVersion() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "2.x");
         process.startProcess();
 
@@ -393,7 +393,7 @@ public class CDIVersionTest {
     public void testUnsupportedVersion() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "2.1");
         process.startProcess();
 
@@ -409,7 +409,7 @@ public class CDIVersionTest {
     public void testThatGreatedThanMaxCDIVersionIsNotAllowed() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "\"2.20\"");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -448,7 +448,7 @@ public class CDIVersionTest {
     public void testAPIVersionsWhenMaxCDIVersionIsSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("supertokens_max_cdi_version", "\"2.20\"");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

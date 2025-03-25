@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -175,13 +174,12 @@ public class DashboardTest {
 
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY,
                 1);
         process.startProcess();
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -319,7 +317,7 @@ public class DashboardTest {
         }
 
         // enable the dashboard feature
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_DASHBOARD_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_DASHBOARD_FEATURE);
 
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

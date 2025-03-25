@@ -63,7 +63,7 @@ public class LoadOnlyCUDTest {
     @Test
     public void testAPIChecksForLoadOnlyCUD() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -86,11 +86,11 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost", true, true, true, coreConfig);
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -115,7 +115,7 @@ public class LoadOnlyCUDTest {
         String[] args = {"../"};
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
@@ -152,7 +152,7 @@ public class LoadOnlyCUDTest {
     @Test
     public void testThatResourcesAreNotLoadedWithLoadOnlyCUD() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -174,11 +174,11 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost.org", true, true, true, coreConfig);
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -198,7 +198,7 @@ public class LoadOnlyCUDTest {
     @Test
     public void testCronDoesNotRunForOtherCUDsWithLoadOnlyCUD() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -220,11 +220,11 @@ public class LoadOnlyCUDTest {
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost.org", true, true, true, coreConfig);
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

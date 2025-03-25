@@ -145,7 +145,7 @@ public class ActiveUserTest {
 
         {
             // Link accounts
-            AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId());
 
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", user1.getSupertokensUserId());

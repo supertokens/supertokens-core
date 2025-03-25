@@ -54,7 +54,7 @@ public class ConfigAPITest2_7 {
     public void inputErrorConfigAPITest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // null for parameters
@@ -89,7 +89,7 @@ public class ConfigAPITest2_7 {
     public void testVersion2InputErrorConfigAPITest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // null for parameters
@@ -126,7 +126,7 @@ public class ConfigAPITest2_7 {
         String path = new File("../temp/config.yaml").getAbsolutePath();
         String[] args = {"../", "configFile=" + path};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // map to store pid as parameter
@@ -150,7 +150,7 @@ public class ConfigAPITest2_7 {
         String path = new File("../temp/config.yaml").getAbsolutePath();
         String[] args = {"../", "configFile=" + path};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // map to store pid as parameter
@@ -173,7 +173,7 @@ public class ConfigAPITest2_7 {
     public void outputPossibilitiesConfigAPITest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Main main = process.getProcess();
@@ -213,7 +213,7 @@ public class ConfigAPITest2_7 {
     public void testVersion2OutputPossibilitiesConfigAPITest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Main main = process.getProcess();

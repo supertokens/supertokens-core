@@ -55,7 +55,7 @@ public class CLIOptionsTest {
     @Test
     public void cli0ArgsTest() throws TestingProcessManagerException, InterruptedException {
         String[] args = {};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null
                 && e.exception.getMessage().equals("Please provide installation path location for SuperTokens"));
@@ -66,7 +66,7 @@ public class CLIOptionsTest {
     @Test
     public void cli1ArgsTest() throws TestingProcessManagerException, InterruptedException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         process.kill();
@@ -77,7 +77,7 @@ public class CLIOptionsTest {
         // testing that when badInput is given to second cli argument, default values for host and port are used
         String[] args = {"../", "random"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
@@ -89,7 +89,7 @@ public class CLIOptionsTest {
         // custom host and port
         args = new String[]{"../", "host=127.0.0.1", "port=8081"};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "127.0.0.1");
@@ -116,19 +116,19 @@ public class CLIOptionsTest {
             p1 = pb.start();
             p1.waitFor();
 
-            TestingProcess process = TestingProcessManager.start(args, true, true);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8081",
                     "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath()};
 
-            TestingProcess process1 = TestingProcessManager.start(args, true, false);
+            TestingProcess process1 = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process1.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8082",
                     "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath()};
 
-            TestingProcess process2 = TestingProcessManager.start(args, true, false);
+            TestingProcess process2 = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
@@ -292,7 +292,7 @@ public class CLIOptionsTest {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
@@ -304,7 +304,7 @@ public class CLIOptionsTest {
         //process starts with tempDirLocation param too.
         args = new String[]{"../", "tempDirLocation=" + new File("../tempDir/").getAbsolutePath()};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");

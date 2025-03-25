@@ -255,11 +255,10 @@ public class UserPaginationTest {
         // emailpassword users
         for (int i = 0; i < 200; i++) {
             AuthRecipeUserInfo user = createEmailPasswordUser(process.getProcess(), "epuser" + i + "@gmail.com",
-                    "password" + i);
+                    "password1");
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             emailPasswordUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // passwordless users with email
@@ -269,7 +268,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             passwordlessUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // passwordless users with phone
@@ -278,7 +276,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             passwordlessUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // thirdparty users
@@ -288,7 +285,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             thirdPartyUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         Map<String, String> primaryUserIdMap = new HashMap<>();
@@ -323,6 +319,7 @@ public class UserPaginationTest {
             } else {
                 primaryUserIds.add(userIdsToLink.get(0));
             }
+            Thread.sleep(10);
         }
 
         // Pagination tests

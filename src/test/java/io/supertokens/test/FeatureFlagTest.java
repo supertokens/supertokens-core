@@ -62,6 +62,7 @@ public class FeatureFlagTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        TestingProcessManager.killAllIsolatedProcesses();
     }
 
     @Test
@@ -69,16 +70,16 @@ public class FeatureFlagTest {
             throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        Assert.assertNotNull(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance());
+        Assert.assertNotNull(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance());
 
-        if (StorageLayer.isInMemDb(process.main)) {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length,
                     EE_FEATURES.values().length);
         } else {
@@ -107,13 +108,13 @@ public class FeatureFlagTest {
         FeatureFlag.clearURLClassLoader();
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.EE_FOLDER_LOCATION, "random");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Assert.assertNull(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance());
+        Assert.assertNull(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance());
 
         Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length, 0);
 
@@ -133,7 +134,7 @@ public class FeatureFlagTest {
     public void testThatCallingGetFeatureFlagAPIReturnsEmptyArray() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -145,7 +146,7 @@ public class FeatureFlagTest {
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
         Assert.assertNotNull(response.get("features"));
-        if (StorageLayer.isInMemDb(process.main)) {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             Assert.assertEquals(EE_FEATURES.values().length, response.get("features").getAsJsonArray().size());
         } else {
             Assert.assertEquals(0, response.get("features").getAsJsonArray().size());
@@ -162,14 +163,14 @@ public class FeatureFlagTest {
     public void testThatCallingGetFeatureFlagAPIReturnsMfaStats() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MFA_MULTITENANCY_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MFA_MULTITENANCY_FEATURE);
 
         // Get the stats without any users/activity
         {
@@ -182,7 +183,7 @@ public class FeatureFlagTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
-            if (StorageLayer.isInMemDb(process.main)) {
+            if (StorageLayer.isInMemDb(process.getProcess())) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
                 assert features.size() == 2; // MFA + MULTITENANCY
@@ -242,7 +243,7 @@ public class FeatureFlagTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
-            if (StorageLayer.isInMemDb(process.main)) {
+            if (StorageLayer.isInMemDb(process.getProcess())) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
                 assert features.size() == 2; // MFA + MULTITENANCY
@@ -286,7 +287,7 @@ public class FeatureFlagTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
-            if (StorageLayer.isInMemDb(process.main)) {
+            if (StorageLayer.isInMemDb(process.getProcess())) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
                 assert features.size() == 2; // MFA + MULTITENANCY
@@ -405,7 +406,7 @@ public class FeatureFlagTest {
     public void testFeatureFlagWithMultitenancyFor500Tenants() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -413,7 +414,7 @@ public class FeatureFlagTest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         for (int i = 0; i < 500; i++) {
             TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t" + i);
@@ -463,7 +464,7 @@ public class FeatureFlagTest {
     public void testThatMultitenantStatsAreAccurate() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -471,7 +472,7 @@ public class FeatureFlagTest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         for (int i = 0; i < 5; i++) {
             JsonObject coreConfig = new JsonObject();
@@ -572,7 +573,7 @@ public class FeatureFlagTest {
     public void testThatMultitenantStatsAreAccurateForAnApp() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -580,7 +581,7 @@ public class FeatureFlagTest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -695,7 +696,7 @@ public class FeatureFlagTest {
     public void testThatMultitenantStatsAreAccurateForACud() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -707,7 +708,7 @@ public class FeatureFlagTest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         {
             JsonObject coreConfig = new JsonObject();
@@ -826,7 +827,7 @@ public class FeatureFlagTest {
     public void testPaidFeaturesAreEnabledIfUsingInMemoryDatabase() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -861,7 +862,7 @@ public class FeatureFlagTest {
     public void testNetworkCallIsMadeInCoreInit() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -878,11 +879,11 @@ public class FeatureFlagTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
         ProcessState.getInstance(process.getProcess()).clear();
 
-        process.kill(false, 1);
+        process.kill(false);
 
 
         // Restart core and check if the call was made during init
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
@@ -932,7 +933,7 @@ public class FeatureFlagTest {
 
         for (String license : licenses) {
             Utils.reset();
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -949,10 +950,10 @@ public class FeatureFlagTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
             ProcessState.getInstance(process.getProcess()).clear();
 
-            process.kill(false, 1);
+            process.kill(false);
 
             // Restart core and check if the call was made during init
-            process = TestingProcessManager.start(args);
+            process = TestingProcessManager.startIsolatedProcess(args);
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
             ProcessState.EventAndException event = process.checkOrWaitForEvent(

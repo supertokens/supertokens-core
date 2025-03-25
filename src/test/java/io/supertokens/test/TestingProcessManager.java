@@ -24,6 +24,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -32,156 +33,159 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestingProcessManager {
 
-    private static final ArrayList<TestingProcess> alive = new ArrayList<>();
+    private static final ArrayList<TestingProcess> isolatedProcesses = new ArrayList<>();
 
-    private static TestingProcess singletonProcess = null;
-
-    private static boolean restartedProcess = false;
-
-    private static String retainAppId = null;
-
-    static void killAll() {
-        synchronized (alive) {
-            for (TestingProcess testingProcess : alive) {
+    static void killAllIsolatedProcesses() {
+        synchronized (isolatedProcesses) {
+            for (TestingProcess testingProcess : isolatedProcesses) {
                 try {
-                    testingProcess.kill(true, 1);
+                    testingProcess.kill(true);
+                    testingProcess.endProcess();
                 } catch (InterruptedException ignored) {
                 }
             }
-            alive.clear();
+            isolatedProcesses.clear();
         }
     }
 
-    private static void createAppForTesting() {
-        assertNotNull(singletonProcess);
-
-        // Create a new app and use that for testing
-        String appId = retainAppId != null ? retainAppId : UUID.randomUUID().toString();
-        retainAppId = null;
-
-        try {
-            Multitenancy.addNewOrUpdateAppOrTenant(singletonProcess.getProcess(), new TenantConfig(
-                    new TenantIdentifier(null, appId, null),
-                    new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
-                    new PasswordlessConfig(true),
-                    null, null, new JsonObject()
-            ), false);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        singletonProcess.setAppForTesting(new TenantIdentifier(null, appId, null));
-        ResourceDistributor.setAppForTesting(new TenantIdentifier(null, appId, null));
-        ProcessState.getInstance(singletonProcess.getProcess()).addState(ProcessState.PROCESS_STATE.STARTED, null);
-        ProcessState.getInstance(singletonProcess.getProcess()).addState(PROCESS_STATE.CREATED_TEST_APP, null);
+    public static TestingProcess start(String[] args) throws InterruptedException {
+        killAllIsolatedProcesses();
+        return SharedProcess.start(args);
     }
 
-    public static TestingProcess start(String[] args, boolean startProcess, boolean killActiveProcesses) throws InterruptedException {
-        if (singletonProcess != null) {
-            ProcessState.getInstance(singletonProcess.getProcess()).clear();
-            createAppForTesting();
-            return singletonProcess;
-        }
+    public static TestingProcess startIsolatedProcess(String[] args) throws InterruptedException {
+        return startIsolatedProcess(args, true);
+    }
 
-        if (alive.size() > 0 && killActiveProcesses) {
-            killAll();
-        }
+    public static TestingProcess startIsolatedProcess(String[] args, boolean startProcess) throws InterruptedException {
+        SharedProcess.end();
 
-        final Object waitForInit = new Object();
-        synchronized (alive) {
-            TestingProcess mainProcess = new TestingProcess(args) {
+        return IsolatedProcess.start(args, startProcess);
+    }
 
-                @Override
-                public void run() {
-                    try {
+    public static interface TestingProcess {
+        public void startProcess();
+        public void endProcess() throws InterruptedException;
+        public Main getProcess();
 
-                        this.main = new Main();
-                        synchronized (waitForInit) {
-                            waitForInit.notifyAll();
-                        }
+        public void kill() throws InterruptedException;
+        public void kill(boolean removeData) throws InterruptedException;
 
-                        if (startProcess) {
-                            this.getProcess().start(getArgs());
-                        } else {
-                            synchronized (waitToStart) {
-                                if (!waitToStartNotified) {
-                                    waitToStart.wait();
-                                }
+        public TenantIdentifier getAppForTesting();
+
+        public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException;
+        public EventAndException checkOrWaitForEvent(PROCESS_STATE state, long timeToWaitMS) throws InterruptedException;
+    }
+
+    public static abstract class SharedProcess extends Thread implements TestingProcess {
+        final Object waitToStart = new Object();
+        private final String[] args;
+        public Main main;
+        boolean waitToStartNotified = false;
+
+        private static SharedProcess instance = null;
+        TenantIdentifier appForTesting = TenantIdentifier.BASE_TENANT;
+
+        private static void startProcessAndDeleteInfo(String[] args) throws InterruptedException {
+            final Object waitForInit = new Object();
+            synchronized (isolatedProcesses) {
+                instance = new SharedProcess(args) {
+
+                    @Override
+                    public void run() {
+                        try {
+                            this.main = new Main();
+                            synchronized (waitForInit) {
+                                waitForInit.notifyAll();
                             }
+
                             this.getProcess().start(getArgs());
+
+                        } catch (Exception ignored) {
                         }
-
-                    } catch (Exception ignored) {
                     }
-                }
-            };
-            synchronized (waitForInit) {
-                mainProcess.start();
-                waitForInit.wait();
-            }
-            alive.add(mainProcess);
-            singletonProcess = mainProcess;
+                };
 
-            if (startProcess) {
-                EventAndException e = singletonProcess.checkOrWaitForEvents(
+                synchronized (waitForInit) {
+                    instance.start();
+                    waitForInit.wait();
+                }
+
+                EventAndException e = instance.checkOrWaitForEvents(
                         new PROCESS_STATE[]{
                                 PROCESS_STATE.STARTED,
                                 PROCESS_STATE.INIT_FAILURE}
                 );
 
                 if (e != null && e.state == PROCESS_STATE.STARTED) {
-                    createAppForTesting();
-                }
-            } else {
-                new Thread(() -> {
                     try {
-                        EventAndException e = singletonProcess.checkOrWaitForEvents(
-                                new PROCESS_STATE[]{
-                                        PROCESS_STATE.STARTED,
-                                        PROCESS_STATE.INIT_FAILURE}
-                        );
+                        instance.getProcess().deleteAllInformationForTesting();
+                        StorageLayer.getBaseStorage(instance.getProcess()).initStorage(true, new ArrayList<>());
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+            end();
+        }
 
-                        if (e != null && e.state == PROCESS_STATE.STARTED) {
-                            createAppForTesting();
-                        }
-                    } catch (Exception e) {}
-                }).start();
+        public static TestingProcess start(String[] args) throws InterruptedException {
+            if (instance != null) {
+                ProcessState.getInstance(instance.getProcess()).clear();
+                instance.createAppForTesting();
+                ProcessState.getInstance(instance.getProcess()).addState(PROCESS_STATE.STARTED, null);
+                return instance;
             }
 
-            return mainProcess;
+            startProcessAndDeleteInfo(args);
+
+            final Object waitForInit = new Object();
+            synchronized (isolatedProcesses) {
+                instance = new SharedProcess(args) {
+
+                    @Override
+                    public void run() {
+                        try {
+                            this.main = new Main();
+                            synchronized (waitForInit) {
+                                waitForInit.notifyAll();
+                            }
+
+                            this.getProcess().start(getArgs());
+
+                        } catch (Exception ignored) {
+                        }
+                    }
+                };
+
+                synchronized (waitForInit) {
+                    instance.start();
+                    waitForInit.wait();
+                }
+
+                EventAndException e = instance.checkOrWaitForEvents(
+                        new PROCESS_STATE[]{
+                                PROCESS_STATE.STARTED,
+                                PROCESS_STATE.INIT_FAILURE}
+                );
+
+                if (e != null && e.state == PROCESS_STATE.STARTED) {
+                    instance.createAppForTesting();
+                }
+
+                return instance;
+            }
         }
-    }
 
-    public static TestingProcess start(String[] args, boolean startProcess) throws InterruptedException {
-        return start(args, startProcess, true);
-    }
+        public static void end() throws InterruptedException {
+            if (instance != null) {
+                instance.endProcess();
 
-    public static TestingProcess start(String[] args) throws InterruptedException {
-        return start(args, true, true);
-    }
+            }
+            instance = null;
+        }
 
-    public static TestingProcess restart(String[] args) throws InterruptedException {
-        return restart(args, true);
-    }
-
-    public static TestingProcess restart(String[] args, boolean startProcess) throws InterruptedException {
-        killAll();
-        singletonProcess = null;
-        restartedProcess = true;
-        return start(args, startProcess);
-    }
-
-    public static abstract class TestingProcess extends Thread {
-
-        final Object waitToStart = new Object();
-        private final String[] args;
-        public Main main;
-        boolean waitToStartNotified = false;
-        private boolean killed = false;
-        TenantIdentifier appForTesting = TenantIdentifier.BASE_TENANT;
-
-        TestingProcess(String[] args) {
+        SharedProcess(String[] args) {
             this.args = args;
         }
 
@@ -200,48 +204,202 @@ public class TestingProcessManager {
             return args;
         }
 
-        public void kill() throws InterruptedException {
-            kill(false, 0);
-        }
-
-        public void kill(int confirm) throws InterruptedException {
-            kill(true, confirm);
-        }
-
-        public void kill(boolean removeAllInfo, int confirm) throws InterruptedException {
-            if (!restartedProcess) {
-                if (confirm == 0 && !appForTesting.getAppId().equals("public")) {
-                    TenantConfig[] allTenants = Multitenancy.getAllTenants(singletonProcess.getProcess());
-                    try {
-                        for (TenantConfig tenant : allTenants) {
-                            if (!tenant.tenantIdentifier.getTenantId().equals("public")) {
-                                Multitenancy.deleteTenant(tenant.tenantIdentifier, singletonProcess.getProcess());
-                            }
+        private void createAppForTesting() {
+            {
+                TenantConfig[] allTenants = Multitenancy.getAllTenants(getProcess());
+                try {
+                    for (TenantConfig tenantConfig : allTenants) {
+                        if (!tenantConfig.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                            Multitenancy.deleteTenant(tenantConfig.tenantIdentifier, getProcess());
                         }
-                        for (TenantConfig tenant : allTenants) {
-                            if (!tenant.tenantIdentifier.getAppId().equals("public")) {
-                                Multitenancy.deleteApp(tenant.tenantIdentifier.toAppIdentifier(), singletonProcess.getProcess());
-                            }
-                        }
-                        for (TenantConfig tenant : allTenants) {
-                            if (!tenant.tenantIdentifier.getConnectionUriDomain().equals("")) {
-                                Multitenancy.deleteConnectionUriDomain(tenant.tenantIdentifier.getConnectionUriDomain(), singletonProcess.getProcess());
-                            }
-                        }
-                    } catch (Exception e) {
-                        // ignore
                     }
-
-                    return;
+                    for (TenantConfig tenantConfig : allTenants) {
+                        if (!tenantConfig.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                            Multitenancy.deleteApp(tenantConfig.tenantIdentifier.toAppIdentifier(), getProcess());
+                        }
+                    }
+                    for (TenantConfig tenantConfig : allTenants) {
+                        if (!tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                            Multitenancy.deleteConnectionUriDomain(tenantConfig.tenantIdentifier.getConnectionUriDomain(), getProcess());
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
 
-            if (!removeAllInfo && !restartedProcess) {
-                retainAppId = appForTesting.getAppId();
+            // Create a new app and use that for testing
+            String appId = UUID.randomUUID().toString();
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(this.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, appId, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, new JsonObject()
+                ), false);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
-            restartedProcess = false;
+            this.setAppForTesting(new TenantIdentifier(null, appId, null));
+            ResourceDistributor.setAppForTesting(new TenantIdentifier(null, appId, null));
+        }
 
+        public void setAppForTesting(TenantIdentifier tenantIdentifier) {
+            appForTesting = tenantIdentifier;
+        }
+
+        public TenantIdentifier getAppForTesting() {
+            return appForTesting;
+        }
+
+        public void kill() throws InterruptedException {
+            kill(true);
+        }
+
+        public void kill(boolean removeAllInfo) throws InterruptedException {
+            assert removeAllInfo;
+            ProcessState.getInstance(main).addState(PROCESS_STATE.STOPPED, null);
+        }
+
+        public void endProcess() throws InterruptedException {
+            try {
+                main.deleteAllInformationForTesting();
+            } catch (Exception e) {
+                if (!e.getMessage().contains("Please call initPool before getConnection")) {
+                    // we ignore this type of message because it's due to tests in which the init failed
+                    // and here we try and delete assuming that init had succeeded.
+                    throw new RuntimeException(e);
+                }
+            }
+            main.killForTestingAndWaitForShutdown();
+            instance = null;
+        }
+
+        public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
+            return checkOrWaitForEvent(state, 15000);
+        }
+
+        public EventAndException checkOrWaitForEvent(PROCESS_STATE state, long timeToWaitMS)
+                throws InterruptedException {
+            EventAndException e = ProcessState.getInstance(main).getLastEventByName(state);
+            if (e == null) {
+                // we shall now wait until some time as passed.
+                final long startTime = System.currentTimeMillis();
+                while (e == null && (System.currentTimeMillis() - startTime) < timeToWaitMS) {
+                    Thread.sleep(100);
+                    e = ProcessState.getInstance(main).getLastEventByName(state);
+                }
+            }
+            return e;
+        }
+
+        public EventAndException checkOrWaitForEvents(PROCESS_STATE[] states)
+                throws InterruptedException {
+            return checkOrWaitForEvents(states, 15000);
+        }
+
+        public EventAndException checkOrWaitForEvents(PROCESS_STATE[] states, long timeToWaitMS)
+                throws InterruptedException {
+
+            // we shall now wait until some time as passed.
+            final long startTime = System.currentTimeMillis();
+            while ((System.currentTimeMillis() - startTime) < timeToWaitMS) {
+                for (PROCESS_STATE state : states) {
+                    EventAndException e = ProcessState.getInstance(main).getLastEventByName(state);
+
+                    if (e != null) {
+                        return e;
+                    }
+                }
+
+                Thread.sleep(100);
+            }
+            return null;
+        }
+    }
+
+    public static abstract class IsolatedProcess extends Thread implements TestingProcess {
+
+        final Object waitToStart = new Object();
+        private final String[] args;
+        public Main main;
+        boolean waitToStartNotified = false;
+        private boolean killed = false;
+
+        public static TestingProcess start(String[] args) throws InterruptedException {
+            return start(args, true);
+        }
+
+        public static TestingProcess start(String[] args, boolean startProcess) throws InterruptedException {
+            final Object waitForInit = new Object();
+            synchronized (isolatedProcesses) {
+                IsolatedProcess mainProcess = new IsolatedProcess(args) {
+                    @Override
+                    public void run() {
+                        try {
+
+                            this.main = new Main();
+                            synchronized (waitForInit) {
+                                waitForInit.notifyAll();
+                            }
+
+                            if (startProcess) {
+                                this.getProcess().start(getArgs());
+                            } else {
+                                synchronized (waitToStart) {
+                                    if (!waitToStartNotified) {
+                                        waitToStart.wait();
+                                    }
+                                }
+                                this.getProcess().start(getArgs());
+                            }
+
+                        } catch (Exception ignored) {
+                        }
+                    }
+                };
+
+                synchronized (waitForInit) {
+                    mainProcess.start();
+                    waitForInit.wait();
+                }
+                isolatedProcesses.add(mainProcess);
+
+                return mainProcess;
+            }
+        }
+
+        IsolatedProcess(String[] args) {
+            this.args = args;
+        }
+
+        public void startProcess() {
+            synchronized (waitToStart) {
+                waitToStartNotified = true;
+                waitToStart.notify();
+            }
+        }
+
+        public Main getProcess() {
+            return main;
+        }
+
+        public void endProcess() {
+            // no-op
+        }
+
+        String[] getArgs() {
+            return args;
+        }
+
+        public void kill() throws InterruptedException {
+            kill(true);
+        }
+
+        public void kill(boolean removeAllInfo) throws InterruptedException {
             if (killed) {
                 return;
             }
@@ -250,25 +408,14 @@ public class TestingProcessManager {
                 try {
                     main.deleteAllInformationForTesting();
                 } catch (Exception e) {
-                    if (!e.getMessage().contains("Please call initPool before getConnection")) {
-                        // we ignore this type of message because it's due to tests in which the init failed
-                        // and here we try and delete assuming that init had succeeded.
-                        throw new RuntimeException(e);
-                    }
+                    // ignore
                 }
             }
             main.killForTestingAndWaitForShutdown();
             killed = true;
-
-            if (singletonProcess == this) {
-                singletonProcess = null;
-            }
         }
 
         public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
-            if (state == PROCESS_STATE.STOPPED && Main.isTesting) {
-                return new EventAndException(PROCESS_STATE.STOPPED, null);
-            }
             return checkOrWaitForEvent(state, 15000);
         }
 
@@ -310,19 +457,15 @@ public class TestingProcessManager {
             return null;
         }
 
-        public void setAppForTesting(TenantIdentifier tenantIdentifier) {
-            appForTesting = tenantIdentifier;
-        }
-
         public TenantIdentifier getAppForTesting() {
-            return appForTesting;
+            return TenantIdentifier.BASE_TENANT;
         }
     }
 
     /**
      * Utility function to wrap tests with, as they require TestingProcess
      */
-    public static void withProcess(ProcessConsumer consumer) throws Exception {
+    public static void withSharedProcess(ProcessConsumer consumer) throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

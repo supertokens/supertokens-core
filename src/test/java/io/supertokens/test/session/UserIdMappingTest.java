@@ -68,15 +68,15 @@ public class UserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
 
-        AuthRecipe.createPrimaryUser(process.main, userInfo.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), userInfo.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, userInfo2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), userInfo2.getSupertokensUserId(),
                 userInfo.getSupertokensUserId());
 
         String superTokensUserId = userInfo.getSupertokensUserId();
@@ -175,15 +175,15 @@ public class UserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
 
-        AuthRecipe.createPrimaryUser(process.main, userInfo.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), userInfo.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, userInfo2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), userInfo2.getSupertokensUserId(),
                 userInfo.getSupertokensUserId());
 
         String superTokensUserId = userInfo2.getSupertokensUserId();

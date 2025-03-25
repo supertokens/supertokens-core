@@ -107,13 +107,13 @@ public class RefreshTokenTest {
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             StorageQueryException, StorageTransactionLogicException, UnauthorisedException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
                 "parentRefreshTokenHash1", "antiCsrfToken");
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -121,7 +121,7 @@ public class RefreshTokenTest {
             return;
         }
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         RefreshTokenInfo infoFromToken = RefreshToken.getInfoFromRefreshToken(process.getProcess(), tokenInfo.token);

@@ -63,7 +63,7 @@ public class ApiVersionAPITest {
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         StringBuilder fileContent = new StringBuilder();
@@ -96,7 +96,7 @@ public class ApiVersionAPITest {
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // without setting cdi-version header
@@ -122,7 +122,7 @@ public class ApiVersionAPITest {
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -145,7 +145,7 @@ public class ApiVersionAPITest {
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -163,7 +163,7 @@ public class ApiVersionAPITest {
     public void testThatWebsiteAndAPIDomainAreSaved() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
@@ -197,7 +197,7 @@ public class ApiVersionAPITest {
     public void testAPIVersionWorksEvenIfThereIsAnException() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -236,7 +236,7 @@ public class ApiVersionAPITest {
         HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/appid-a1/apiversion", params, 1000, 1000, null, null, "");
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

@@ -170,7 +170,7 @@ public class TestGetUserSpeed {
     //@Test
     public void testUserCreationLinkingAndGetByIdSpeedsWithoutMinIdle() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("postgresql_connection_pool_size", "100");
         Utils.setValueInConfig("mysql_connection_pool_size", "100");
 
@@ -190,7 +190,7 @@ public class TestGetUserSpeed {
         Utils.setValueInConfig("mysql_connection_pool_size", "100");
         Utils.setValueInConfig("postgresql_minimum_idle_connections", "1");
         Utils.setValueInConfig("mysql_minimum_idle_connections", "1");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{

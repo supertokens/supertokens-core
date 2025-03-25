@@ -19,8 +19,11 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -49,6 +52,8 @@ public abstract class Utils extends Mockito {
     private static ByteArrayOutputStream byteArrayOutputStream;
 
     public static void afterTesting() {
+        TestingProcessManager.killAllIsolatedProcesses();
+
         String installDir = "../";
         try {
 
@@ -82,12 +87,18 @@ public abstract class Utils extends Mockito {
     }
 
     public static void reset() {
+        TestingProcessManager.killAllIsolatedProcesses();
+
         Main.isTesting = true;
         Main.isTesting_skipBulkImportUserValidationInCronJob = false;
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
+        HttpRequestForTesting.disableAddingAppId = false;
         String installDir = "../";
         CoreConfig.setDisableOAuthValidationForTest(false);
+        ResourceDistributor.setAppForTesting(TenantIdentifier.BASE_TENANT);
+        PasswordHashing.bypassHashCachingInTesting = false;
+
         try {
 
             // if the default config is not the same as the current config, we must reset the storage layer

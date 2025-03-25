@@ -543,7 +543,7 @@ public class AccessTokenTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain,
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, accessTokenPayload, jwksDomain,
                 validity, false);
 
         String header = jwt.split("\\.")[0];

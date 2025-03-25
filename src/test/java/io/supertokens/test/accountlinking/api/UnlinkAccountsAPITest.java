@@ -76,12 +76,12 @@ public class UnlinkAccountsAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
-        Session.createNewSession(process.main, user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
+        Session.createNewSession(process.getProcess(), user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getSupertokensUserId());
         assert (sessions.length == 1);
 
         {
@@ -97,20 +97,20 @@ public class UnlinkAccountsAPITest {
         }
 
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId());
         assert (!refetchUser2.isPrimaryUser);
         assert (refetchUser2.getSupertokensUserId().equals(user2.getSupertokensUserId()));
         assert (refetchUser2.loginMethods.length == 1);
         assert (refetchUser2.loginMethods[0].getSupertokensUserId().equals(user2.getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.getProcess(), user.getSupertokensUserId());
         assert (!refetchUser2.equals(refetchUser));
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
         assert (refetchUser.loginMethods[0].getSupertokensUserId().equals(user.getSupertokensUserId()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getSupertokensUserId());
         assert (sessions.length == 0);
 
         process.kill();
@@ -168,11 +168,11 @@ public class UnlinkAccountsAPITest {
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
@@ -187,13 +187,13 @@ public class UnlinkAccountsAPITest {
         }
 
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId());
         assert (!refetchUser2.isPrimaryUser);
         assert (refetchUser2.getSupertokensUserId().equals(user2.getSupertokensUserId()));
         assert (refetchUser2.loginMethods.length == 1);
         assert (refetchUser2.loginMethods[0].getSupertokensUserId().equals(user2.getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.getProcess(), user.getSupertokensUserId());
         assert (!refetchUser2.equals(refetchUser));
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
@@ -287,9 +287,9 @@ public class UnlinkAccountsAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();

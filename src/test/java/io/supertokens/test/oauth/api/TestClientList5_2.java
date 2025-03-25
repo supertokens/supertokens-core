@@ -65,20 +65,14 @@ public class TestClientList5_2 {
     public void testClientList() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         Set<String> clientIds = new HashSet<>();
@@ -104,22 +98,16 @@ public class TestClientList5_2 {
     public void testClientListWithPagination() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         Set<String> clientIds = new HashSet<>();
@@ -159,22 +147,16 @@ public class TestClientList5_2 {
     public void testClientListWithClientNameFilter() throws Exception {
         String[] args = {"../"};
 
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.restart(args, false);
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.CREATED_TEST_APP));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         Set<String> clientIds = new HashSet<>();

@@ -84,7 +84,7 @@ public class CanCreatePrimaryUserAPITest {
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -116,7 +116,7 @@ public class CanCreatePrimaryUserAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "r1", null, false);
 
         {
             Map<String, String> params = new HashMap<>();
@@ -130,7 +130,7 @@ public class CanCreatePrimaryUserAPITest {
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -213,11 +213,11 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
         {
@@ -257,8 +257,8 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(),
+        AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), emailPasswordUser2.getSupertokensUserId(),
                 emailPasswordUser1.getSupertokensUserId());
 
         {
@@ -296,13 +296,13 @@ public class CanCreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), emailPasswordUser.getSupertokensUserId(), "r1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
         {
@@ -339,12 +339,12 @@ public class CanCreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getSupertokensUserId(), "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), emailPasswordUser1.getSupertokensUserId(), "r1", null, false);
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(),
+        AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), emailPasswordUser2.getSupertokensUserId(),
                 emailPasswordUser1.getSupertokensUserId());
 
         {

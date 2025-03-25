@@ -29,6 +29,7 @@ import java.util.Map;
 
 public class HttpRequestForTesting {
     private static final int STATUS_CODE_ERROR_THRESHOLD = 400;
+    public static boolean disableAddingAppId = false;
 
     private static URL getURL(Main main, String requestID, String url) throws MalformedURLException {
         URL obj = new URL(url);
@@ -64,7 +65,7 @@ public class HttpRequestForTesting {
                                        String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
 
-        if (!url.contains("appid-")) {
+        if (!disableAddingAppId && !url.contains("appid-") && !url.contains(":3567/config")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
         }
@@ -140,7 +141,7 @@ public class HttpRequestForTesting {
                                         String apiKey, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
-        if (!url.contains("appid-")) {
+        if (!disableAddingAppId && !url.contains("appid-")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
         }
@@ -249,7 +250,7 @@ public class HttpRequestForTesting {
                                                              Integer version, String cdiVersion, String rid)
             throws IOException, HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
-        if (!url.contains("appid-")) {
+        if (!disableAddingAppId && !url.contains("appid-")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
         }

@@ -373,7 +373,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
         assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
 
-        SessionInformationHolder sessionInfo2 = Session.refreshSession(process.main, sessionInfo.refreshToken.token,
+        SessionInformationHolder sessionInfo2 = Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token,
                 null, false, AccessToken.getLatestVersion());
 
         assertFalse(sessionInfo.accessToken.token.equals(sessionInfo2.accessToken.token));
@@ -408,10 +408,10 @@ public class SessionTest4 {
         JsonObject jwtData = new JsonObject();
         jwtData.addProperty("test", "value");
 
-        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData,
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, sessionData, jwtData,
                 AccessToken.getLatestVersion());
 
-        io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.main,
+        io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle);
 
         assertEquals(sessionInfo2.expiry - sessionInfo2.timeCreated, twoYearsInSeconds * 1000);

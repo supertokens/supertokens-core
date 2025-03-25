@@ -75,7 +75,7 @@ public class TestConnectionUriDomain3_0 {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
@@ -377,7 +377,7 @@ public class TestConnectionUriDomain3_0 {
 
         for (int i = 0; i < valueForCreate.length; i++) {
             String[] args = {"../"};
-            this.process = TestingProcessManager.start(args);
+            this.process = TestingProcessManager.startIsolatedProcess(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();

@@ -50,7 +50,7 @@ public class UnverifyEmailAPITest2_8 {
 
     @Test
     public void testThrowBadRequestRequest() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -72,7 +72,7 @@ public class UnverifyEmailAPITest2_8 {
 
     @Test
     public void testSucceedUnverifyEmail() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -87,7 +87,7 @@ public class UnverifyEmailAPITest2_8 {
             String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
             EmailVerification.verifyEmail(main, token);
 
-            assert (EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
+            assert (EmailVerification.isEmailVerified(process.getProcess(), "mockUserId", "john.doe@example.com"));
 
             // when
             JsonObject response = unverifyEmail(main, body);
@@ -97,7 +97,7 @@ public class UnverifyEmailAPITest2_8 {
             // then
             Assert.assertEquals("OK", responseStatus);
 
-            assertFalse(EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
+            assertFalse(EmailVerification.isEmailVerified(process.getProcess(), "mockUserId", "john.doe@example.com"));
         });
     }
 

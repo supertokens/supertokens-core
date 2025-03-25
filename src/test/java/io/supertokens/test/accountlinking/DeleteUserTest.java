@@ -66,20 +66,20 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r1.getSupertokensUserId(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.getSupertokensUserId()));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId()));
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
 
         assert (user.loginMethods.length == 1);
         assert (user.isPrimaryUser);
@@ -103,20 +103,20 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r2.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r2.getSupertokensUserId(), false);
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getSupertokensUserId());
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId());
 
         assert (user.loginMethods.length == 1);
         assert (user.isPrimaryUser);
@@ -141,20 +141,20 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.deleteUser(process.getProcess(), r2.getSupertokensUserId());
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getSupertokensUserId());
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId());
 
         assert (user == null && userP == null);
 
@@ -176,20 +176,20 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId());
+        AuthRecipe.deleteUser(process.getProcess(), r1.getSupertokensUserId());
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getSupertokensUserId());
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId());
 
         assert (user == null && userP == null);
 
@@ -215,36 +215,36 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
-        UserMetadata.updateUserMetadata(process.main, "e1", metadata);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e1", metadata);
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.getSupertokensUserId(), "e2", null, false);
-        UserMetadata.updateUserMetadata(process.main, "e2", metadata);
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), "e2", null, false);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e2", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r1.getSupertokensUserId(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.getSupertokensUserId()));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId()));
 
-        assertNull(AuthRecipe.getUserById(process.main, "e2"));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), "e2"));
 
-        assertNotNull(AuthRecipe.getUserById(process.main, r2.getSupertokensUserId()));
+        assertNotNull(AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId()));
 
-        assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getSupertokensUserId()), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
-        assertEquals(UserMetadata.getUserMetadata(process.main, r2.getSupertokensUserId()), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e1"), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), r1.getSupertokensUserId()), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e2"), metadata);
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), r2.getSupertokensUserId()), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
                 null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+        assert (UserIdMapping.getUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                 null);
 
 
@@ -269,36 +269,36 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
-        UserMetadata.updateUserMetadata(process.main, "e1", metadata);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e1", metadata);
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.getSupertokensUserId(), "e2", null, false);
-        UserMetadata.updateUserMetadata(process.main, "e2", metadata);
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), "e2", null, false);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e2", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId());
+        AuthRecipe.deleteUser(process.getProcess(), r1.getSupertokensUserId());
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.getSupertokensUserId()));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId()));
 
-        assertNull(AuthRecipe.getUserById(process.main, "e2"));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), "e2"));
 
-        assertNull(AuthRecipe.getUserById(process.main, r2.getSupertokensUserId()));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId()));
 
-        assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getSupertokensUserId()), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r2.getSupertokensUserId()), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e1"), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), r1.getSupertokensUserId()), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e2"), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), r2.getSupertokensUserId()), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                 null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+        assert (UserIdMapping.getUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                 null);
 
 
@@ -325,79 +325,79 @@ public class DeleteUserTest {
             return;
         }
 
-        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
-        UserMetadata.updateUserMetadata(process.main, "e1", metadata);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e1", metadata);
 
-        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.getSupertokensUserId(), "e2", null, false);
-        UserMetadata.updateUserMetadata(process.main, "e2", metadata);
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), "e2", null, false);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e2", metadata);
 
-        AuthRecipeUserInfo r3 = EmailPassword.signUp(process.main, "test3@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r3.getSupertokensUserId(), "e3", null, false);
-        UserMetadata.updateUserMetadata(process.main, "e3", metadata);
+        AuthRecipeUserInfo r3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "pass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), r3.getSupertokensUserId(), "e3", null, false);
+        UserMetadata.updateUserMetadata(process.getProcess(), "e3", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r1.getSupertokensUserId(),
                 r2.getSupertokensUserId()).wasAlreadyLinked);
-        assert (!AuthRecipe.linkAccounts(process.main, r3.getSupertokensUserId(),
+        assert (!AuthRecipe.linkAccounts(process.getProcess(), r3.getSupertokensUserId(),
                 r1.getSupertokensUserId()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r1.getSupertokensUserId(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.getSupertokensUserId()));
+        assertNull(AuthRecipe.getUserById(process.getProcess(), r1.getSupertokensUserId()));
 
-        assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getSupertokensUserId()), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e1"), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.getProcess(), r1.getSupertokensUserId()), new JsonObject());
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getSupertokensUserId());
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.getProcess(), r3.getSupertokensUserId());
             assert (userR2.equals(userR3));
             assert (userR2.loginMethods.length == 2);
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e2"), metadata);
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e3"), metadata);
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                     null);
         }
 
-        AuthRecipe.deleteUser(process.main, r2.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r2.getSupertokensUserId(), false);
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getSupertokensUserId());
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.getProcess(), r3.getSupertokensUserId());
             assert (userR2.equals(userR3));
             assert (userR2.loginMethods.length == 1);
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e2"), metadata);
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e3"), metadata);
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                     null);
         }
 
-        AuthRecipe.deleteUser(process.main, r3.getSupertokensUserId(), false);
+        AuthRecipe.deleteUser(process.getProcess(), r3.getSupertokensUserId(), false);
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getSupertokensUserId());
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getSupertokensUserId());
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.getProcess(), r2.getSupertokensUserId());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.getProcess(), r3.getSupertokensUserId());
             assert (userR2 == null && userR3 == null);
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
-            assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), new JsonObject());
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e2"), new JsonObject());
+            assertEquals(UserMetadata.getUserMetadata(process.getProcess(), "e3"), new JsonObject());
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                     null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+            assert (UserIdMapping.getUserIdMapping(process.getProcess(), r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
                     null);
         }
 

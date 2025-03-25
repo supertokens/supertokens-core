@@ -100,7 +100,7 @@ public class TOTPRecipeTest {
         }
         TOTPStorage storage = (TOTPStorage) StorageLayer.getStorage(process.getProcess());
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         return new TestSetupResult(storage, process);
@@ -342,7 +342,7 @@ public class TOTPRecipeTest {
             }
 
             try {
-                FeatureFlagTestContent.getInstance(process.main)
+                FeatureFlagTestContent.getInstance(process.getProcess())
                         .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
                 Main main = process.getProcess();
@@ -672,7 +672,7 @@ public class TOTPRecipeTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

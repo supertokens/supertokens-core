@@ -84,7 +84,7 @@ public class TestTenantUserAssociation {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
@@ -219,7 +219,7 @@ public class TestTenantUserAssociation {
         for (String className : classNames) {
             String userId = "userId";
 
-            StorageLayer.getStorage(t2, process.main).addInfoToNonAuthRecipesBasedOnUserId(t2, className, userId);
+            StorageLayer.getStorage(t2, process.getProcess()).addInfoToNonAuthRecipesBasedOnUserId(t2, className, userId);
 
             JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId,
                     process.getProcess());

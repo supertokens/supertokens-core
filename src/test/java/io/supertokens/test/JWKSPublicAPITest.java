@@ -73,7 +73,7 @@ public class JWKSPublicAPITest {
     public void testCacheControlValue() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "1");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

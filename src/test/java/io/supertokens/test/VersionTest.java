@@ -50,7 +50,7 @@ public class VersionTest {
     @Test
     public void simpleLoadingOfVersionTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -86,7 +86,7 @@ public class VersionTest {
             process1.waitFor();
 
             String[] args = {"../"};
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);

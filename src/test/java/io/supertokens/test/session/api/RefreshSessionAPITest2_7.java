@@ -58,7 +58,7 @@ public class RefreshSessionAPITest2_7 {
 
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -78,7 +78,7 @@ public class RefreshSessionAPITest2_7 {
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -86,7 +86,7 @@ public class RefreshSessionAPITest2_7 {
             return;
         }
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
@@ -113,7 +113,7 @@ public class RefreshSessionAPITest2_7 {
 
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -133,7 +133,7 @@ public class RefreshSessionAPITest2_7 {
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -141,7 +141,7 @@ public class RefreshSessionAPITest2_7 {
             return;
         }
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
@@ -158,10 +158,10 @@ public class RefreshSessionAPITest2_7 {
             checkRefreshSessionResponse(response, process, userId, userDataInJWT, false);
         }
 
-        process.kill(false, 1);
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
