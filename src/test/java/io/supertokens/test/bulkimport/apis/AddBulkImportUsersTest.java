@@ -498,6 +498,8 @@ public class AddBulkImportUsersTest {
                 "http://localhost:3567/bulk-import/users",
                 request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.has("users"));
+        assertTrue(response.getAsJsonArray("users").get(0).getAsJsonObject().has("userId"));
 
         JsonObject getResponse = HttpRequestForTesting.sendGETRequest(main, "",
                 "http://localhost:3567/bulk-import/users",

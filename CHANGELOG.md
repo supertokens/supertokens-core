@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.1]
+
+- Adds debug logging for the bulk migration process
+- Bulk migration users upload now returns the ids of the users.
+- Bulk Migration now requires Account Linking to be enabled only if the input data justifies it
+- Speed up Bulk Migration's account linking and primary user making
+
 ## [10.1.0]
 
 - Adds Webauthn (Passkeys) support to core
