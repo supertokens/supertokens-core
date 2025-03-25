@@ -26,15 +26,15 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: supertokens/supertokens-root
-          path: .
+          path: ./supertokens-root
           ref: master
       - uses: actions/checkout@v2
         with:
-          path: ./supertokens-core
+          path: ./supertokens-root/supertokens-core
       - uses: actions/checkout@v2
         with:
           repository: supertokens/supertokens-plugin-interface
-          path: .
+          path: ./supertokens-root/supertokens-plugin-interface
           ref: 7.1
       - name: Load Modules
         run: ./loadModules
