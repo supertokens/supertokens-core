@@ -29,9 +29,8 @@ jobs:
           distribution: zulu
       - name: Checkout supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
+      - name: Clone repositories and load modules
+        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && git clone https://github.com/supertokens/supertokens-plugin-interface.git && ./loadModules
       - name: Checkout core
-        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-core.git && cd supertokens-core && git checkout ${{ github.ref_name }}
-      - name: Checkout plugin-interface
-        run: cd ../supertokens-root && git clone https://github.com/supertokens/supertokens-plugin-interface.git && cd supertokens-plugin-interface && git checkout master
-      - name: Load Modules
-        run: cd ../supertokens-root && echo "core,master\nplugin-interface,master\nsqlite-plugin,master" > modules.txt && ./loadModules
+        if: github.event_name == 'pull_request'
+        run: cd ../supertokens-root/supertokens-core && git checkout ${{ github.head_ref }}
