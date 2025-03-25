@@ -52,6 +52,8 @@ jobs:
           path: '**/build/test-results/test/TEST-*.xml'
           reporter: java-junit
           working-directory: ./supertokens-root
+          list-suites: failed
+          list-tests: failed
   test-postgresql:
     name: PostgreSQL Plugin
     runs-on: ubuntu-latest
@@ -104,3 +106,5 @@ jobs:
           path: '**/build/test-results/test/TEST-*.xml'
           reporter: java-junit
           working-directory: ./supertokens-root
+          list-suites: failed
+          list-tests: failed
