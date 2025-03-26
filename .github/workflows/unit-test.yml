@@ -14,8 +14,22 @@ on:
       - "(dev-)?v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
+  dependency-branches:
+    name: Dependency Branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.result.outputs.branches }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        id: result
+        with:
+          plugin-version: ${{ fromJson('${{ github.workspace }}/pluginInterfaceSupported.json').versions[0] }}
+
   test:
     name: Unit tests
+    needs: dependency-branches
     strategy:
       matrix:
         plugin:
