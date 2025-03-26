@@ -62,6 +62,7 @@ jobs:
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
       - name: Start ${{ matrix.plugin }} server
+        if: matrix.plugin != 'sqlite'
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
       - name: Run OAuth Provider
         run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
