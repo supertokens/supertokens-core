@@ -25,7 +25,7 @@ jobs:
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
-          plugin-version: ${{ fromJson('${{ github.workspace }}/pluginInterfaceSupported.json').versions[0] }}
+          plugin-version: 7.1
 
   test:
     name: Unit tests
