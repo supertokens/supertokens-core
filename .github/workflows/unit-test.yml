@@ -55,13 +55,13 @@ jobs:
         with:
           repository: supertokens/supertokens-plugin-interface
           path: ./supertokens-root/supertokens-plugin-interface
-          ref: 7.1
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
       - uses: actions/checkout@v2
         if: matrix.plugin != 'sqlite'
         with:
           repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
           path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
-          ref: fix/test-speed
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}
       - name: Load Modules
         run: |
           cd supertokens-root
