@@ -18,48 +18,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-inmemory:
-    name: In-memory
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up JDK 15.0.1
-        uses: actions/setup-java@v2
-        with:
-          java-version: 15.0.1
-          distribution: zulu
-      - uses: actions/checkout@v2
-        with:
-          repository: supertokens/supertokens-root
-          path: ./supertokens-root
-          ref: master
-      - uses: actions/checkout@v2
-        with:
-          path: ./supertokens-root/supertokens-core
-      - uses: actions/checkout@v2
-        with:
-          repository: supertokens/supertokens-plugin-interface
-          path: ./supertokens-root/supertokens-plugin-interface
-          ref: 7.1
-      - name: Load Modules
-        run: cd supertokens-root && ./loadModules
-      - name: Setup test env
-        run: cd supertokens-root && ./utils/setupTestEnv --local
-      - name: Run OAuth Provider
-        run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
-      - name: Run tests
-        run: cd supertokens-root && ./gradlew test
-      - name: Publish Test Report
-        uses: dorny/test-reporter@v2
-        if: success() || failure() # always run even if the previous step fails
-        with:
-          name: "Unit Tests"
-          path: '**/build/test-results/test/TEST-*.xml'
-          reporter: java-junit
-          working-directory: ./supertokens-root
-          list-suites: failed
-          list-tests: failed
-  test-postgresql:
-    name: PostgreSQL Plugin
+  test:
+    name: Unit tests
+    strategy:
+      matrix:
+        plugin:
+          - sqlite
+          - postgresql
+          - mysql
+          - mongodb
+
     runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 15.0.1
@@ -81,34 +49,30 @@ jobs:
           path: ./supertokens-root/supertokens-plugin-interface
           ref: 7.1
       - uses: actions/checkout@v2
+        if: matrix.plugin != 'sqlite'
         with:
-          repository: supertokens/supertokens-postgresql-plugin
-          path: ./supertokens-root/supertokens-postgresql-plugin
+          repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
+          path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
           ref: fix/test-speed
       - name: Load Modules
         run: |
           cd supertokens-root
           echo "core,master
           plugin-interface,master
-          postgresql-plugin,master
+          ${{ matrix.plugin }}-plugin,master
           " > modules.txt
           cat modules.txt
           ./loadModules
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
-      - name: Start PostgreSQL
-        run: cd supertokens-root/supertokens-postgresql-plugin && ./startDb.sh
+      - name: Start ${{ matrix.plugin }} server
+        run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
       - name: Run OAuth Provider
         run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
       - name: Run tests
         run: cd supertokens-root && ./gradlew test
       - name: Publish Test Report
-        uses: dorny/test-reporter@v2
-        if: success() || failure() # always run even if the previous step fails
+        uses: mikepenz/action-junit-report@v5
+        if: always()
         with:
-          name: "Unit Tests"
-          path: '**/build/test-results/test/TEST-*.xml'
-          reporter: java-junit
-          working-directory: ./supertokens-root
-          list-suites: failed
-          list-tests: failed
+          report_paths: '**/build/test-results/test/TEST-*.xml'
