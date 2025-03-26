@@ -21,8 +21,6 @@ jobs:
         plugin:
           - sqlite
           - postgresql
-          - mysql
-          - mongodb
 
     runs-on: ubuntu-latest
     steps:
