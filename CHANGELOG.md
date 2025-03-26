@@ -7,6 +7,27 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.2]
+
+
+- Adds user_id index to the user roles table
+- Adds more debug logging to bulk migration
+- Adds more tests to bulk migration
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS user_roles_app_id_user_id_index ON user_roles (app_id, user_id);
+```
+
+If using MySQL, run the following SQL script:
+```sql
+CREATE INDEX user_roles_app_id_user_id_index ON user_roles (app_id, user_id);
+```
+
+
 ## [10.1.1]
 
 - Adds debug logging for the bulk migration process
