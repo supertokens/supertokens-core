@@ -66,6 +66,11 @@ public class UserRolesQueries {
                 + Config.getConfig(start).getUserRolesPermissionsTable() + "(app_id, permission);";
     }
 
+    public static String getQueryToCreateUserRolesUserIdAppIdIndex(Start start) {
+        return "CREATE INDEX user_roles_app_id_user_id_index ON " + Config.getConfig(start).getUserRolesTable() +
+                "(app_id, user_id)";
+    }
+
     public static String getQueryToCreateUserRolesTable(Start start) {
         String tableName = Config.getConfig(start).getUserRolesTable();
         // @formatter:off

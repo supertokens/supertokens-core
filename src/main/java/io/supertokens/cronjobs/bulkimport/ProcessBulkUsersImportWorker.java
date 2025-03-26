@@ -113,7 +113,8 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                 while (shouldRetryImmediatley) {
                     shouldRetryImmediatley = bulkImportProxyStorage.startTransaction(con -> {
                         try {
-                            BulkImport.processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage, partitionedUsers.get(bulkImportProxyStorage),
+                            BulkImport.processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage,
+                                    partitionedUsers.get(bulkImportProxyStorage),
                                     allStoragesForApp);
 
                             bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
@@ -123,8 +124,16 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                                 toDelete[i] = validUsers.get(i).id;
                             }
 
-                            baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
-                        } catch (StorageTransactionLogicException e) {
+                            while (true){
+                                try {
+                                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
+                                    break;
+                                } catch (Exception e) {
+                                    // ignore and retry delete. The import transaction is already committed, the delete should happen no matter what
+                                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Exception while deleting bulk import users: " + e.getMessage());
+                                }
+                            }
+                        } catch (StorageTransactionLogicException | StorageQueryException e) {
                             // We need to rollback the transaction manually because we have overridden that in the proxy
                             // storage
                             bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();

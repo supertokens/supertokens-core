@@ -411,7 +411,7 @@ public class BulkImport {
 
                 TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                         appIdentifier.getAppId(), tenantId);
-                Multitenancy.addUserIdToTenant(main, tenantIdentifier, storage, lm.getSuperTokenOrExternalUserId());
+                Multitenancy.addUserIdToTenant(main, tenantIdentifier, storage, lm.superTokensUserId);
             } catch (TenantOrAppNotFoundException e) {
                 throw new StorageTransactionLogicException(new Exception("E009: " + e.getMessage()));
             } catch (StorageQueryException e) {
