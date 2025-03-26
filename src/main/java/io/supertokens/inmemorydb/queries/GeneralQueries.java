@@ -402,7 +402,6 @@ public class GeneralQueries {
             update(start, UserRolesQueries.getQueryToCreateRolePermissionsTable(start), NO_OP_SETTER);
             // index
             update(start, UserRolesQueries.getQueryToCreateRolePermissionsPermissionIndex(start), NO_OP_SETTER);
-            update(start, UserRolesQueries.getQueryToCreateUserRolesUserIdAppIdIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserRolesTable())) {
@@ -411,6 +410,7 @@ public class GeneralQueries {
 
             // index
             update(start, UserRolesQueries.getQueryToCreateUserRolesRoleIndex(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateUserRolesUserIdAppIdIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserIdMappingTable())) {
