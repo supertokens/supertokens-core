@@ -13,10 +13,6 @@ on:
     tags:
       - "(dev-)?v[0-9]+.[0-9]+.[0-9]+"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     name: Unit tests
