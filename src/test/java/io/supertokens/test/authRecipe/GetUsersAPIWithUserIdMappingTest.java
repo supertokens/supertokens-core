@@ -79,6 +79,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             // create a userId mapping
             storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
+            Thread.sleep(20);
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

@@ -200,9 +200,13 @@ public class AuthRecipeTest {
         }
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        Thread.sleep(20);
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        Thread.sleep(20);
         AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test20@example.com", "password2");
+        Thread.sleep(20);
         AuthRecipeUserInfo user4 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        Thread.sleep(20);
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
