@@ -62,7 +62,7 @@ public class GetRolesAPITest {
         // create multiple roles
         String[] roles = new String[]{"role1", "role2", "role3"};
         for (String role : roles) {
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
         }
 
         // retrieve all created roles

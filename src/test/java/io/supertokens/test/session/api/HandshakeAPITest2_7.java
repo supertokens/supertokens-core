@@ -146,7 +146,7 @@ public class HandshakeAPITest2_7 {
         String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String jsonInput = "{" + "\"deviceDriverInfo\": {" + "\"frontendSDK\": [{" + "\"name\": \"hName\","
@@ -159,7 +159,7 @@ public class HandshakeAPITest2_7 {
         assertEquals(response.entrySet().size(), 6);
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), new io.supertokens.utils.Utils.PubPriKey(
-                SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey);
+                SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().value).publicKey);
 
         Thread.sleep(4000);
 
@@ -173,7 +173,7 @@ public class HandshakeAPITest2_7 {
         // the previous signing key
         assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
                 .equals(new io.supertokens.utils.Utils.PubPriKey(
-                        SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey)
+                        SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().value).publicKey)
                 && !(changedResponse.get("jwtSigningPublicKey").getAsString()
                 .equals(response.get("jwtSigningPublicKey").getAsString())));
 
@@ -189,7 +189,7 @@ public class HandshakeAPITest2_7 {
 
         // check jwtSigningPublicKey
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), new io.supertokens.utils.Utils.PubPriKey(
-                SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey);
+                SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().value).publicKey);
 
         // check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),

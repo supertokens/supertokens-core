@@ -103,11 +103,11 @@ public class ConsumeResetPasswordAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String userId = user.getSupertokensUserId();
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, userId, "random@gmail.com");
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), userId, "random@gmail.com");
 
         JsonObject resetPasswordBody = new JsonObject();
         resetPasswordBody.addProperty("token", token);
@@ -135,12 +135,12 @@ public class ConsumeResetPasswordAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
 
         String userId = user.getSupertokensUserId();
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, userId, "random@gmail.com");
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), userId, "random@gmail.com");
 
         JsonObject resetPasswordBody = new JsonObject();
         resetPasswordBody.addProperty("token", token);

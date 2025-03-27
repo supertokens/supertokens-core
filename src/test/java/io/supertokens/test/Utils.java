@@ -19,8 +19,11 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -32,6 +35,7 @@ import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.mockito.Mockito;
 
 import java.io.*;
@@ -49,6 +53,8 @@ public abstract class Utils extends Mockito {
     private static ByteArrayOutputStream byteArrayOutputStream;
 
     public static void afterTesting() {
+        TestingProcessManager.killAllIsolatedProcesses();
+
         String installDir = "../";
         try {
 
@@ -82,12 +88,18 @@ public abstract class Utils extends Mockito {
     }
 
     public static void reset() {
+        TestingProcessManager.killAllIsolatedProcesses();
+
         Main.isTesting = true;
         Main.isTesting_skipBulkImportUserValidationInCronJob = false;
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
+        HttpRequestForTesting.disableAddingAppId = false;
         String installDir = "../";
         CoreConfig.setDisableOAuthValidationForTest(false);
+        ResourceDistributor.setAppForTesting(TenantIdentifier.BASE_TENANT);
+        PasswordHashing.bypassHashCachingInTesting = false;
+
         try {
 
             // if the default config is not the same as the current config, we must reset the storage layer
@@ -109,10 +121,6 @@ public abstract class Utils extends Mockito {
             // in devConfig, it's set to false. However, in config, it's commented. So we comment it out so that it
             // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
             commentConfigValue("disable_telemetry");
-
-            TestingProcessManager.killAll();
-            TestingProcessManager.deleteAllInformation();
-            TestingProcessManager.killAll();
 
             byteArrayOutputStream = new ByteArrayOutputStream();
             System.setErr(new PrintStream(byteArrayOutputStream));
@@ -169,6 +177,38 @@ public abstract class Utils extends Mockito {
             @Override
             protected void failed(Throwable e, Description description) {
                 System.out.println(byteArrayOutputStream.toString(StandardCharsets.UTF_8));
+            }
+        };
+    }
+
+    public static TestRule retryFlakyTest() {
+        return new TestRule() {
+            private final int retryCount = 3;
+
+            public Statement apply(Statement base, Description description) {
+                return statement(base, description);
+            }
+
+            private Statement statement(final Statement base, final Description description) {
+                return new Statement() {
+                    @Override
+                    public void evaluate() throws Throwable {
+                        Throwable caughtThrowable = null;
+
+                        // implement retry logic here
+                        for (int i = 0; i < retryCount; i++) {
+                            try {
+                                base.evaluate();
+                                return;
+                            } catch (Throwable t) {
+                                caughtThrowable = t;
+                                System.err.println(description.getDisplayName() + ": run " + (i+1) + " failed");
+                            }
+                        }
+                        System.err.println(description.getDisplayName() + ": giving up after " + retryCount + " failures");
+                        throw caughtThrowable;
+                    }
+                };
             }
         };
     }
@@ -285,5 +325,21 @@ public abstract class Utils extends Mockito {
             queryParams.put(key, value);
         }
         return queryParams;
+    }
+
+    public static void testFlaky(TestFunction test) throws Exception {
+        for (int i = 0; i < 5; i++) {
+            try {
+                test.run();
+                return;
+            } catch (Exception e) {
+                // retry
+            }
+        }
+    }
+
+    @FunctionalInterface
+    public interface TestFunction {
+        void run() throws Exception;
     }
 }

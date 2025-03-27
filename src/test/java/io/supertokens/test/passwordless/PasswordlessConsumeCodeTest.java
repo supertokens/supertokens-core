@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -87,9 +86,9 @@ public class PasswordlessConsumeCodeTest {
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
                 createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
         assertNotNull(consumeCodeResponse);
-        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+        checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -126,9 +125,9 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
 
         assertNotNull(consumeCodeResponse);
-        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+        checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -162,9 +161,9 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceIdHash + "=", null, createCodeResponse.linkCode + "=");
 
         assertNotNull(consumeCodeResponse);
-        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+        checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -198,9 +197,9 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
         assert (consumeCodeResponse.createdNewUser);
-        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+        checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -236,7 +235,7 @@ public class PasswordlessConsumeCodeTest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertNotNull(consumeCodeResponse);
-            user = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+            user = checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
         }
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
@@ -248,12 +247,12 @@ public class PasswordlessConsumeCodeTest {
                     null);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -288,7 +287,7 @@ public class PasswordlessConsumeCodeTest {
             Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
-            user = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+            user = checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, consumeStart);
         }
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
@@ -299,12 +298,12 @@ public class PasswordlessConsumeCodeTest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(process, storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -340,11 +339,11 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(process.getAppForTesting().toAppIdentifier(),
                 consumeCodeResponse.user.getSupertokensUserId());
         Passwordless.updateUser(process.getProcess(), authUser.getSupertokensUserId(), null,
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
-        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+        authUser = storage.getPrimaryUserById(process.getAppForTesting().toAppIdentifier(),
                 consumeCodeResponse.user.getSupertokensUserId());
         assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
@@ -368,21 +367,21 @@ public class PasswordlessConsumeCodeTest {
                 null, null);
 
         // 4 codes should be available
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
         assertEquals(2, devices.length);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(2, devices.length);
 
         // consume code
         Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, codeResponse.userInputCode, null);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(), PHONE_NUMBER);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -417,11 +416,11 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(process.getAppForTesting().toAppIdentifier(),
                 consumeCodeResponse.user.getSupertokensUserId());
         Passwordless.updateUser(process.getProcess(), authUser.getSupertokensUserId(), null,
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
-        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+        authUser = storage.getPrimaryUserById(process.getAppForTesting().toAppIdentifier(),
                 consumeCodeResponse.user.getSupertokensUserId());
         assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
@@ -445,21 +444,21 @@ public class PasswordlessConsumeCodeTest {
                 null, null);
 
         // 4 codes should be available
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(),
                 PHONE_NUMBER);
         assertEquals(2, devices.length);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(2, devices.length);
 
         // consume code
         Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, null, codeResponse.linkCode);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        devices = storage.getDevicesByPhoneNumber(process.getAppForTesting(), PHONE_NUMBER);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -498,7 +497,7 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(error);
         assert (error instanceof Base64EncodingException);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -540,7 +539,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -580,7 +579,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof IncorrectUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -622,7 +621,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -664,7 +663,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof ExpiredUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -702,7 +701,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof ExpiredUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         Passwordless.CreateCodeResponse newCodeResponse = Passwordless.createCode(process.getProcess(), null, null,
@@ -764,7 +763,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have been cleared, since max attempt reached
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -811,7 +810,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -863,7 +862,7 @@ public class PasswordlessConsumeCodeTest {
         }
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertNotEquals(0, devices.length);
 
         // kill process and restart with increased max code input attempts
@@ -890,18 +889,18 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(error);
         assert (error instanceof RestartFlowException);
 
-        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        devices = storage.getDevicesByEmail(process.getAppForTesting(), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private AuthRecipeUserInfo checkUserWithConsumeResponse(PasswordlessStorage storage,
+    private AuthRecipeUserInfo checkUserWithConsumeResponse(TestingProcessManager.TestingProcess process, PasswordlessStorage storage,
                                                             Passwordless.ConsumeCodeResponse resp,
                                                             String email, String phoneNumber, long joinedAfter)
             throws StorageQueryException {
-        AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null),
+        AuthRecipeUserInfo user = storage.getPrimaryUserById(process.getAppForTesting().toAppIdentifier(),
                 resp.user.getSupertokensUserId());
         assertNotNull(user);
 

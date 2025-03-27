@@ -173,7 +173,7 @@ public class PasswordlessUserGetAPITest2_11 {
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userIdEmail, email, null, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
@@ -199,7 +199,7 @@ public class PasswordlessUserGetAPITest2_11 {
         /*
          * get user with phone number
          */
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userIdPhone, null, phoneNumber, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();

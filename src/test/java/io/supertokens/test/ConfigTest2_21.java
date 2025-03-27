@@ -48,7 +48,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -70,7 +70,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -92,7 +92,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(startEvent);

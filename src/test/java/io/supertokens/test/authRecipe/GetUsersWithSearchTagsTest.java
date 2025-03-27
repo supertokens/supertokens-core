@@ -20,6 +20,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 
+import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.pluginInterface.StorageUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -273,10 +275,14 @@ public class GetUsersWithSearchTagsTest {
         // create 1005 emailpassword users
         ArrayList<String> userIds = new ArrayList<>();
 
+        String hashedPassword = PasswordHashing.getInstance(process.getProcess())
+                .createHashWithSalt(process.getAppForTesting().toAppIdentifier(), "testPass123");
+
         for (int i = 0; i < 1005; i++) {
-            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123")
-                    .getSupertokensUserId());
-            Thread.sleep(10);
+            String userId = io.supertokens.utils.Utils.getUUID();
+            StorageUtils.getEmailPasswordStorage(StorageLayer.getBaseStorage(process.getProcess()))
+                    .signUp(process.getAppForTesting(), userId, "test" + i + "@example.com", hashedPassword, System.currentTimeMillis());
+            userIds.add(userId);
         }
 
         // retrieve users

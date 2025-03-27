@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class OAuthAPIHelper {
+    private static boolean warmedUp = false;
+
     public static void resetOAuthProvider() {
         try {
             HttpRequestForOAuthProvider.Response clientsResponse = HttpRequestForOAuthProvider
@@ -42,9 +44,13 @@ public class OAuthAPIHelper {
             }
 
             // We query these in an effort to help with possible warm up issues
-            HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/openid-configuration", new HashMap<>(), new HashMap<>());
-            HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/jwks.json", new HashMap<>(), new HashMap<>());
-            Thread.sleep(1000);
+            if (!warmedUp) {
+                HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/openid-configuration", new HashMap<>(), new HashMap<>());
+                HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/jwks.json", new HashMap<>(), new HashMap<>());
+                Thread.sleep(1000);
+
+                warmedUp = true;
+            }
         } catch (Exception e) {
             //ignore error. later on the tests would fail anyway
         }

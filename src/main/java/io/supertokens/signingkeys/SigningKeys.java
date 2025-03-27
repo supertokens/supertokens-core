@@ -63,7 +63,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static SigningKeys getInstance(Main main) {
         try {
-            return getInstance(new AppIdentifier(null, null), main);
+            return getInstance(ResourceDistributor.getAppForTesting().toAppIdentifier(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

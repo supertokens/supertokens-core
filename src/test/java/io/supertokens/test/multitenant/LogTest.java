@@ -61,10 +61,9 @@ public class LogTest {
         String[] args = {"../"};
         Utils.setValueInConfig("log_level", "DEBUG");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -126,7 +125,7 @@ public class LogTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
         Main.makeConsolePrintSilent = false;
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});

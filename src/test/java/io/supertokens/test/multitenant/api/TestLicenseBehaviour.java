@@ -63,7 +63,7 @@ public class TestLicenseBehaviour {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }
 
@@ -184,7 +184,7 @@ public class TestLicenseBehaviour {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -327,7 +327,7 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         JsonObject config = new JsonObject();
-        TestMultitenancyAPIHelper.createConnectionUriDomain(process.main, new TenantIdentifier(null, null, null), null,
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), new TenantIdentifier(null, null, null), null,
                 true, true, true, new JsonObject());
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(
                 new TenantIdentifier(null, null, null),

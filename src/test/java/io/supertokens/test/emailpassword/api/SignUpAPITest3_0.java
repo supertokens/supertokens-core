@@ -86,7 +86,7 @@ public class SignUpAPITest3_0 {
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
         assert (activeUsers == 1);
         AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
-                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), "random@gmail.com")[0];
+                .listPrimaryUsersByEmail(process.getAppForTesting(), "random@gmail.com")[0];
         assertEquals(user.loginMethods[0].email, signUpUser.get("email").getAsString());
         assertEquals(user.getSupertokensUserId(), signUpUser.get("id").getAsString());
 

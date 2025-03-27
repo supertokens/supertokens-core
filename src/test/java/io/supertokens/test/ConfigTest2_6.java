@@ -54,7 +54,7 @@ public class ConfigTest2_6 {
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -72,7 +72,7 @@ public class ConfigTest2_6 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -95,7 +95,7 @@ public class ConfigTest2_6 {
         // out of range core_config_version
         Utils.setValueInConfig("core_config_version", "-1");
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -109,7 +109,7 @@ public class ConfigTest2_6 {
 
         // out of range value for access_token_validity
         Utils.setValueInConfig("access_token_validity", "-1");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -123,7 +123,7 @@ public class ConfigTest2_6 {
         Utils.reset();
 
         Utils.setValueInConfig("max_server_pool_size", "-1");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -142,7 +142,7 @@ public class ConfigTest2_6 {
 
         Utils.setValueInConfig("totp_max_attempts", "0");
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -155,7 +155,7 @@ public class ConfigTest2_6 {
         Utils.reset();
 
         Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "0");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -176,7 +176,7 @@ public class ConfigTest2_6 {
     public void testThatNonTestingConfigValuesThrowErrors() throws Exception {
         String[] args = {"../"};
         Utils.setValueInConfig("refresh_token_validity", "-1");
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
                 true);
         process.startProcess();
@@ -201,7 +201,7 @@ public class ConfigTest2_6 {
         Process process1 = pb.start();
         process1.waitFor();
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(),
@@ -215,9 +215,9 @@ public class ConfigTest2_6 {
     @Test
     public void testCustomLocationForConfigLoadsCorrectly() throws Exception {
         // relative file path
-        String[] args = {"../", "configFile=../temp/config.yaml"};
+        String[] args = {"../", "configFile=./temp/config.yaml"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(), "configPath option must be an absolute path only");
@@ -229,7 +229,7 @@ public class ConfigTest2_6 {
         File f = new File("../temp/config.yaml");
         args = new String[]{"../", "configFile=" + f.getAbsolutePath()};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         checkConfigValues(Config.getConfig(process.getProcess()), process, true);

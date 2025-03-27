@@ -385,9 +385,9 @@ public class CreateDashboardUserAPITests {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestBody, 5000, 1000, null,
                         SemVer.v2_18.get(), "dashboard");
-                assert StorageLayer.isInMemDb(process.main);
+                assert StorageLayer.isInMemDb(process.getProcess());
             } catch (HttpResponseException e) {
-                assert !StorageLayer.isInMemDb(process.main);
+                assert !StorageLayer.isInMemDb(process.getProcess());
                 assertTrue(e.statusCode == 402 && e.getMessage().equals(
                         "Http error. Status Code: 402. Message:"
                                 +

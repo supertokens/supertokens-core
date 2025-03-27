@@ -67,17 +67,17 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         {
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNotNull(response);
             assertEquals(response.superTokensUserId, superTokensUserId);
             assertEquals(response.externalUserId, externalUserId);
@@ -98,9 +98,9 @@ public class EmailPasswordAPITest {
 
         // delete User and check that the mapping no longer exists
         {
-            AuthRecipe.deleteUser(process.main, superTokensUserId);
+            AuthRecipe.deleteUser(process.getProcess(), superTokensUserId);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
             assertNull(response);
         }
 
@@ -122,12 +122,12 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         // call GeneratePasswordResetTokenAPI api with externalId
         String passwordResetToken = null;
@@ -160,7 +160,7 @@ public class EmailPasswordAPITest {
         }
 
         // sign in with the new password and check that it works
-        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.getProcess(), email, newPassword);
         assertNotNull(userInfo1);
 
         process.kill();
@@ -181,12 +181,12 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         // retrieving UserInfo with userId
         {
@@ -227,12 +227,12 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         // update the users email
         String newEmail = "testnew123@example.com";
@@ -248,7 +248,7 @@ public class EmailPasswordAPITest {
         }
 
         // check that you can now sign in with the new email
-        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.getProcess(), newEmail, password);
         assertNotNull(userInfo1);
 
         process.kill();

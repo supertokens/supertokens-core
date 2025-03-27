@@ -35,8 +35,20 @@ public class ResourceDistributor {
     private final Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
     private final Main main;
 
+    private static TenantIdentifier appUsedForTesting = TenantIdentifier.BASE_TENANT;
+
     public ResourceDistributor(Main main) {
         this.main = main;
+    }
+
+    @TestOnly
+    public static void setAppForTesting(TenantIdentifier app) {
+        appUsedForTesting = app;
+    }
+
+    @TestOnly
+    public static TenantIdentifier getAppForTesting() {
+        return appUsedForTesting;
     }
 
     public synchronized SingletonResource getResource(AppIdentifier appIdentifier, @Nonnull String key)
@@ -90,7 +102,7 @@ public class ResourceDistributor {
 
     @TestOnly
     public synchronized SingletonResource getResource(@Nonnull String key) {
-        return resources.get(new KeyClass(new TenantIdentifier(null, null, null), key));
+        return resources.get(new KeyClass(appUsedForTesting, key));
     }
 
     public synchronized SingletonResource setResource(TenantIdentifier tenantIdentifier,
@@ -150,7 +162,7 @@ public class ResourceDistributor {
     @TestOnly
     public synchronized SingletonResource setResource(@Nonnull String key,
                                                       SingletonResource resource) {
-        return setResource(new TenantIdentifier(null, null, null), key, resource);
+        return setResource(appUsedForTesting, key, resource);
     }
 
     public interface Func<T> {

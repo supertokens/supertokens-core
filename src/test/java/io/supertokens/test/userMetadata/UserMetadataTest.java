@@ -212,12 +212,13 @@ public class UserMetadataTest {
         AtomicBoolean success1 = new AtomicBoolean(false);
         AtomicBoolean success2 = new AtomicBoolean(false);
 
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
+
         Runnable r1 = () -> {
             try {
                 sqlStorage.startTransaction(con -> {
                     tryCount1.incrementAndGet();
-                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(new AppIdentifier(null, null),
-                            con, userId);
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(appIdentifier, con, userId);
 
                     synchronized (syncObject) {
                         t1State.set("read");
@@ -237,7 +238,7 @@ public class UserMetadataTest {
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update1);
 
                     try {
-                        sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId,
+                        sqlStorage.setUserMetadata_Transaction(appIdentifier, con, userId,
                                 updatedMetadata);
                     } catch (TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -259,8 +260,7 @@ public class UserMetadataTest {
                 sqlStorage.startTransaction(con -> {
                     tryCount2.incrementAndGet();
 
-                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(new AppIdentifier(null, null),
-                            con, userId);
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(appIdentifier, con, userId);
 
                     synchronized (syncObject) {
                         t2State.set("read");
@@ -280,7 +280,7 @@ public class UserMetadataTest {
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update2);
 
                     try {
-                        sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId,
+                        sqlStorage.setUserMetadata_Transaction(appIdentifier, con, userId,
                                 updatedMetadata);
                     } catch (TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -317,7 +317,7 @@ public class UserMetadataTest {
         // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
 
         // The end result is as expected
-        assertEquals(expected, sqlStorage.getUserMetadata(new AppIdentifier(null, null), userId));
+        assertEquals(expected, sqlStorage.getUserMetadata(appIdentifier, userId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -129,12 +129,12 @@ public class UserMigrationTest {
             String passwordHash = "$2a$10$GzEm3vKoAqnJCTWesRARCe/ovjt/07qjvcH9jbLUg44Fn77gMZkmm";
 
             // migrate user with passwordHash
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.main,
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.getProcess(),
                     email, passwordHash);
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, plainTextPassword);
 
             assertEquals(userInfo.getSupertokensUserId(), importUserResponse.user.getSupertokensUserId());
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
@@ -148,12 +148,12 @@ public class UserMigrationTest {
             String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$VG1Oa1lMbzZLbzk5azQ2Qg$kjcNNtZ/b0t/8HgXUiQ76A";
 
             // migrate user with passwordHash
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.main,
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.getProcess(),
                     email, passwordHash);
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, plainTextPassword);
 
             assertEquals(userInfo.getSupertokensUserId(), importUserResponse.user.getSupertokensUserId());
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
@@ -178,13 +178,13 @@ public class UserMigrationTest {
         String email = "test@example.com";
         String originalPassword = "testPass123";
 
-        AuthRecipeUserInfo signUpUserInfo = EmailPassword.signUp(process.main, email, originalPassword);
+        AuthRecipeUserInfo signUpUserInfo = EmailPassword.signUp(process.getProcess(), email, originalPassword);
 
         // update passwordHash with new passwordHash
         String newPassword = "newTestPass123";
         String newPasswordHash = "$2a$10$uV17z2rVB3W5Rp4MeJeB4OdRX/Z7oFMLpUbdzyX9bDrk6kvZiOT1G";
 
-        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                 newPasswordHash);
         // check that the user already exists
         assertTrue(response.didUserAlreadyExist);
@@ -192,14 +192,14 @@ public class UserMigrationTest {
         // try signing in with the old password and check that it does not work
         Exception error = null;
         try {
-            EmailPassword.signIn(process.main, email, originalPassword);
+            EmailPassword.signIn(process.getProcess(), email, originalPassword);
         } catch (WrongCredentialsException e) {
             error = e;
         }
         assertNotNull(error);
 
         // sign in with the newPassword and check that it works
-        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, newPassword);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, newPassword);
         assertEquals(userInfo.loginMethods[0].email, signUpUserInfo.loginMethods[0].email);
         assertEquals(userInfo.getSupertokensUserId(), signUpUserInfo.getSupertokensUserId());
         assertEquals(userInfo.timeJoined, signUpUserInfo.timeJoined);
@@ -227,12 +227,12 @@ public class UserMigrationTest {
         String password = "testPass123";
         String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                 passwordHash);
         assertFalse(response.didUserAlreadyExist);
 
         // test that sign in works
-        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
         assertEquals(userInfo.loginMethods[0].email, email);
         assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
@@ -257,12 +257,12 @@ public class UserMigrationTest {
         // length =16
         String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$Z/a978a9nPSlmwIFb5Mrjw";
 
-        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                 passwordHash);
         assertFalse(response.didUserAlreadyExist);
 
         // test that sign in works
-        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
         assertEquals(userInfo.loginMethods[0].email, email);
         assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
@@ -287,12 +287,12 @@ public class UserMigrationTest {
             String password = "testing123";
             String passwordHash = "$argon2i$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$mThT4E5LULSyn/XhCZc9Hw";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -303,12 +303,12 @@ public class UserMigrationTest {
             String password = "testing123";
             String passwordHash = "$argon2d$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$Ktlqf9xi1Toyx1XcbCwVUQ";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -335,12 +335,12 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -351,12 +351,12 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2b$10$Tix3Vpu93kiaZRLPPzD6QOIm62x0l5gRdvlyark5S.MLn/NY6t4gS";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -367,12 +367,12 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2x$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -383,12 +383,12 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2y$10$lib5x4nbosKuK31FI8gG1OPVi/EuVHRVM7qmg1EiGADYYcIxTMJfa";
 
-            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(), email,
                     passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(userInfo.loginMethods[0].email, email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }

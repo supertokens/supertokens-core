@@ -111,7 +111,7 @@ public class TestAppData {
     public void testThatDeletingAppDeleteDataFromAllTables() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
                         new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});

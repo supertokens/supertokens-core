@@ -140,13 +140,13 @@ public class RemoveRoleAPITest {
 
         String role = "role";
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[]{"permission"});
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, new String[]{"permission"});
 
         // assign the role to a user
-        UserRoles.addRoleToUser(process.main, userId, role);
+        UserRoles.addRoleToUser(process.getProcess(), userId, role);
 
         // remove the role
         JsonObject request = new JsonObject();
@@ -166,7 +166,7 @@ public class RemoveRoleAPITest {
         // check that unknownRoleException is thrown when retrieving the permissions
         Exception error = null;
         try {
-            UserRoles.getPermissionsForRole(process.main, role);
+            UserRoles.getPermissionsForRole(process.getProcess(), role);
         } catch (Exception e) {
             error = e;
         }
@@ -177,7 +177,7 @@ public class RemoveRoleAPITest {
         assertEquals(0, retrievedPermissions.length);
 
         // check that role doesnt exist
-        assertFalse(UserRoles.doesRoleExist(process.main, role));
+        assertFalse(UserRoles.doesRoleExist(process.getProcess(), role));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

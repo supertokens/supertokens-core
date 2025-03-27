@@ -62,7 +62,7 @@ public class LoggingTest {
     @Test
     public void noErrorLogsOnCoreStart() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         boolean errorFlag = false;
@@ -90,7 +90,7 @@ public class LoggingTest {
     @Test
     public void defaultLogging() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From test", false);
@@ -137,7 +137,7 @@ public class LoggingTest {
             Utils.setValueInConfig("info_log_path", "\"tempLogging/info.log\"");
             Utils.setValueInConfig("error_log_path", "\"tempLogging/error.log\"");
 
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From Test", false);
@@ -185,7 +185,7 @@ public class LoggingTest {
     public void confirmLoggerClosed() throws Exception {
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -217,12 +217,10 @@ public class LoggingTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         try {
-            process.startProcess();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
             Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
             Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
 
@@ -251,14 +249,13 @@ public class LoggingTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         try {
-            FeatureFlagTestContent.getInstance(process.getProcess())
-                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                            EE_FEATURES.MULTI_TENANCY});
-            process.startProcess();
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
@@ -328,11 +325,10 @@ public class LoggingTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         try {
-            process.startProcess();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
             Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
@@ -353,7 +349,7 @@ public class LoggingTest {
     public void testThatSubFoldersAreCreated() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         try {
             Utils.setValueInConfig("info_log_path", "../temp/a/b/info.log");
             process.startProcess();
@@ -381,7 +377,7 @@ public class LoggingTest {
     @Test
     public void testDefaultLoggingFilePath() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 

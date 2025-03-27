@@ -65,7 +65,7 @@ public class TelemetryTest extends Mockito {
 
         Utils.setValueInConfig("disable_telemetry", "true");
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertNull(process.checkOrWaitForEvent(PROCESS_STATE.SENDING_TELEMETRY, 2000));
@@ -78,7 +78,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryDoesNotSendOneIfInMemDb() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (!Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -95,7 +95,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryDoesNotSendOneIfInMemDbButActualDBThere() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -115,8 +115,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryWorks() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
-        process.startProcess();
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
@@ -125,7 +124,7 @@ public class TelemetryTest extends Mockito {
 
         // Restarting the process to send telemetry again
         process.kill(false);
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -194,8 +193,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryWorksWithApiDomainAndWebsiteDomainSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
-        process.startProcess();
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
@@ -207,7 +205,7 @@ public class TelemetryTest extends Mockito {
 
         // Restarting the process to send telemetry again
         process.kill(false);
-        process = TestingProcessManager.start(args, false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -280,7 +278,7 @@ public class TelemetryTest extends Mockito {
         {
             String[] args = {"../"};
 
-            TestingProcess process = TestingProcessManager.start(args, false);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -329,7 +327,7 @@ public class TelemetryTest extends Mockito {
         {
             String[] args = {"../"};
 
-            TestingProcess process = TestingProcessManager.start(args, false);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -384,7 +382,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryWillNotGoIfTestingAndNoMockRequest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {

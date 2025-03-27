@@ -17,6 +17,7 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.StorageAndUserIdMappingForBulkImport;
 import io.supertokens.pluginInterface.Storage;
@@ -408,7 +409,7 @@ public class UserIdMapping {
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            createUserIdMapping(new AppIdentifier(null, null), new Storage[]{storage}, superTokensUserId,
+            createUserIdMapping(ResourceDistributor.getAppForTesting().toAppIdentifier(), new Storage[]{storage}, superTokensUserId,
                     externalUserId, externalUserIdInfo, force, makeExceptionForEmailVerification);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -500,7 +501,7 @@ public class UserIdMapping {
             UserIdType userIdType)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUserIdMapping(new AppIdentifier(null, null), storage, userId, userIdType);
+        return getUserIdMapping(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, userIdType);
     }
 
     public static boolean deleteUserIdMapping(AppIdentifier appIdentifier, Storage storage, String userId,
@@ -554,7 +555,7 @@ public class UserIdMapping {
             throws StorageQueryException, ServletException {
         Storage storage = StorageLayer.getStorage(main);
         return deleteUserIdMapping(
-                new AppIdentifier(null, null), storage, userId, userIdType, force);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, userIdType, force);
     }
 
     public static boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, Storage storage,
@@ -591,7 +592,7 @@ public class UserIdMapping {
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), storage,
+        return updateOrDeleteExternalUserIdInfo(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, userIdType, externalUserIdInfo);
     }
 
@@ -610,7 +611,7 @@ public class UserIdMapping {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserIdMappingForSuperTokensUserIds(
-                new AppIdentifier(null, null), storage, userIds);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userIds);
     }
 
     public static List<String> findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(

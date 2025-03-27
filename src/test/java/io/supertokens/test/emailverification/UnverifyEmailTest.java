@@ -47,7 +47,7 @@ public class UnverifyEmailTest {
 
     @Test
     public void testEmailIsUnverified() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;

@@ -80,9 +80,9 @@ public class ImportTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -201,9 +201,9 @@ public class ImportTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

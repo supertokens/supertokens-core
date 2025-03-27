@@ -50,7 +50,7 @@ public class UserPutAPITest2_8 {
 
     @Test
     public void testQueryingOfUnknownUserId() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -70,7 +70,7 @@ public class UserPutAPITest2_8 {
 
     @Test
     public void testQueryingWithEmailThatAlreadyExists() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -93,7 +93,7 @@ public class UserPutAPITest2_8 {
 
     @Test
     public void testUpdatingEmailNormalisesIt() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -117,7 +117,7 @@ public class UserPutAPITest2_8 {
 
     @Test
     public void testQueryingWithoutEmailAndPassword() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -139,7 +139,7 @@ public class UserPutAPITest2_8 {
 
     @Test
     public void testSuccessfulUpdate() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -157,13 +157,13 @@ public class UserPutAPITest2_8 {
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
 
-            EmailPassword.signIn(process.main, "someotheremail@gmail.com", "somePass");
+            EmailPassword.signIn(process.getProcess(), "someotheremail@gmail.com", "somePass");
         });
     }
 
     @Test
     public void testSuccessfulUpdateWithOnlyPassword() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -181,7 +181,7 @@ public class UserPutAPITest2_8 {
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
 
-            EmailPassword.signIn(process.main, "someemail@gmail.com", "somePass123");
+            EmailPassword.signIn(process.getProcess(), "someemail@gmail.com", "somePass123");
         });
     }
 

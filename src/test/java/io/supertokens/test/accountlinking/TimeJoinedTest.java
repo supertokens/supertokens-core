@@ -60,11 +60,10 @@ public class TimeJoinedTest {
     @Test
     public void testThatTimeJoinedIsCorrectWhileLinkingAndUnlinking() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -97,11 +96,10 @@ public class TimeJoinedTest {
     @Test
     public void testThatTimeJoinedIsCorrectWhileAssociatingTenants() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -122,9 +120,9 @@ public class TimeJoinedTest {
 
         Storage baseTenant = (StorageLayer.getStorage(process.getProcess()));
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId(), null);
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId(), null);
 
         {
@@ -132,7 +130,7 @@ public class TimeJoinedTest {
             assertEquals(user1.timeJoined, userInfo.timeJoined);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId());
 
         {
@@ -140,7 +138,7 @@ public class TimeJoinedTest {
             assertEquals(user1.timeJoined, userInfo.timeJoined);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId());
 
         {
@@ -155,11 +153,10 @@ public class TimeJoinedTest {
     @Test
     public void testUserPaginationIsFineWithUnlinkAndUnlinkAccounts() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -202,11 +199,10 @@ public class TimeJoinedTest {
     @Test
     public void testUserPaginationIsFineWithTenantAssociation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -228,7 +224,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId(), null);
 
         {
@@ -237,7 +233,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user1.getSupertokensUserId());
 
         {
@@ -253,11 +249,10 @@ public class TimeJoinedTest {
     @Test
     public void testUserSearchWorksWithUnlinkAndLinkAccounts() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -306,11 +301,10 @@ public class TimeJoinedTest {
     @Test
     public void testUserSearchWorksWithTenantAssociation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -334,7 +328,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId(), null);
 
         {
@@ -345,7 +339,7 @@ public class TimeJoinedTest {
             assertEquals(1, users.users.length);
         }
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+        Multitenancy.addUserIdToTenant(process.getProcess(), process.getAppForTesting(), baseTenant,
                 user2.getSupertokensUserId());
 
         {

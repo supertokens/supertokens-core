@@ -19,6 +19,7 @@ package io.supertokens.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -100,7 +101,7 @@ public class Session {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return createNewSession(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     recipeUserId, userDataInJWT, userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -120,7 +121,7 @@ public class Session {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return createNewSession(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     recipeUserId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -200,7 +201,7 @@ public class Session {
             InvalidKeyException, JWT.JWTException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TryRefreshTokenException {
         try {
-            return regenerateToken(new AppIdentifier(null, null), main, token, userDataInJWT);
+            return regenerateToken(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, token, userDataInJWT);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -326,7 +327,7 @@ public class Session {
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
-            return getSession(new AppIdentifier(null, null), main, token, antiCsrfToken, enableAntiCsrf,
+            return getSession(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, token, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck, checkDatabase);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -532,7 +533,7 @@ public class Session {
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
-            return refreshSession(new AppIdentifier(null, null), main, refreshToken, antiCsrfToken,
+            return refreshSession(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, refreshToken, antiCsrfToken,
                     enableAntiCsrf, accessTokenVersion, null);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -768,7 +769,7 @@ public class Session {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return revokeSessionUsingSessionHandles(main,
-                new AppIdentifier(null, null), storage,
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 sessionHandles);
     }
 
@@ -860,7 +861,7 @@ public class Session {
     public static String[] revokeAllSessionsForUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return revokeAllSessionsForUser(main,
-                new AppIdentifier(null, null), storage, userId, true);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, true);
     }
 
     public static String[] revokeAllSessionsForUser(Main main, AppIdentifier appIdentifier,
@@ -886,7 +887,7 @@ public class Session {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getAllNonExpiredSessionHandlesForUser(main,
-                new AppIdentifier(null, null), storage, userId, true);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, true);
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
@@ -957,7 +958,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException {
         Storage storage = StorageLayer.getStorage(main);
         return getSessionData(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 sessionHandle);
     }
 
@@ -978,7 +979,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException {
         Storage storage = StorageLayer.getStorage(main);
         return getJWTData(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 sessionHandle);
     }
 
@@ -998,7 +999,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException {
         Storage storage = StorageLayer.getStorage(main);
         return getSession(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 sessionHandle);
     }
 
@@ -1028,7 +1029,7 @@ public class Session {
                                      AccessToken.VERSION version)
             throws StorageQueryException, UnauthorisedException, AccessTokenPayloadError {
         Storage storage = StorageLayer.getStorage(main);
-        updateSession(new TenantIdentifier(null, null, null), storage,
+        updateSession(ResourceDistributor.getAppForTesting(), storage,
                 sessionHandle, sessionData, jwtData, version);
     }
 

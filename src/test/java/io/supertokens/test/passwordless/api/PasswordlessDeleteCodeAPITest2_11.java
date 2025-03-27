@@ -69,7 +69,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
-        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
+        storage.createDeviceWithCode(process.getAppForTesting(), null, phoneNumber, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
@@ -81,8 +81,8 @@ public class PasswordlessDeleteCodeAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId));
-        assertNull(storage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
+        assertNull(storage.getCode(process.getAppForTesting(), codeId));
+        assertNull(storage.getDevice(process.getAppForTesting(), deviceIdHash));
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

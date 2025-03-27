@@ -116,9 +116,9 @@ public class GetUserRolesAPITest {
 
             for (String role : roles) {
                 // create role
-                UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+                UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
                 // add role to User
-                UserRoles.addRoleToUser(process.main, userId, role);
+                UserRoles.addRoleToUser(process.getProcess(), userId, role);
             }
 
             HashMap<String, String> QUERY_PARAMS = new HashMap<>();

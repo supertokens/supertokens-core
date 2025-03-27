@@ -56,7 +56,7 @@ public class IpAllowDenyRegexTest extends Mockito {
     @Test
     public void defaultIpDenyAllowIsNull() throws InterruptedException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
@@ -74,7 +74,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "\"  \"");
             Utils.setValueInConfig("ip_deny_regex", "\"\"");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
@@ -93,7 +93,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "");
             Utils.setValueInConfig("ip_deny_regex", "");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
@@ -111,7 +111,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "\"*\"");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
             assertTrue(e.exception.getMessage()
@@ -127,7 +127,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "\"*\"");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
             assertTrue(e.exception.getMessage()
@@ -143,7 +143,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "192.123.3.4");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -164,7 +164,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
@@ -180,7 +180,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
@@ -196,7 +196,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex", "'127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+'");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
@@ -213,7 +213,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_allow_regex",
                     "\"127\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\"");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
@@ -230,7 +230,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -250,7 +250,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -270,7 +270,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "'127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+'");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -290,7 +290,7 @@ public class IpAllowDenyRegexTest extends Mockito {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "\"127\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\"");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -312,7 +312,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
             Utils.setValueInConfig("ip_allow_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
@@ -339,7 +339,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             Utils.setValueInConfig("info_log_path", "\"null\"");
             Utils.setValueInConfig("error_log_path", "\"null\"");
 
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             System.setOut(new PrintStream(stdOutput));
@@ -370,7 +370,7 @@ public class IpAllowDenyRegexTest extends Mockito {
 
         { // test allow works
             Utils.reset();
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
@@ -416,7 +416,7 @@ public class IpAllowDenyRegexTest extends Mockito {
 
         { // test deny works
             Utils.reset();
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();

@@ -328,7 +328,7 @@ public class VerifySessionAPITest4_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v3_0.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getAppForTesting().toAppIdentifier(),
                 process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
@@ -384,7 +384,7 @@ public class VerifySessionAPITest4_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v3_0.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getAppForTesting().toAppIdentifier(),
                 process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 

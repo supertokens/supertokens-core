@@ -107,12 +107,12 @@ public class GetUsersForRoleAPITest {
         }
 
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
         // add role to users
         String[] userIds = new String[]{"user1", "user2", "user3"};
         for (String userId : userIds) {
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         // retrieve users for role

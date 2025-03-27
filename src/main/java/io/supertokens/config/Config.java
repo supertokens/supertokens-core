@@ -305,7 +305,7 @@ public class Config extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static CoreConfig getConfig(Main main) {
         try {
-            return getConfig(new TenantIdentifier(null, null, null), main);
+            return getConfig(ResourceDistributor.getAppForTesting(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

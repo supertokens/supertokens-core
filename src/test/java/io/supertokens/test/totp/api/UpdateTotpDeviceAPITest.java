@@ -76,7 +76,7 @@ public class UpdateTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         // Setup user and devices:
