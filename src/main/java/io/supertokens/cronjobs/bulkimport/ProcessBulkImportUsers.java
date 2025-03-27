@@ -78,6 +78,7 @@ public class ProcessBulkImportUsers extends CronTask {
         int bulkMigrationBatchSize = Config.getConfig(app.getAsPublicTenantIdentifier(), main)
                 .getBulkMigrationBatchSize();
 
+        Logging.debug(main, app.getAsPublicTenantIdentifier(), "CronTask starts. Instance: " + this);
         Logging.debug(main, app.getAsPublicTenantIdentifier(), "CronTask starts. Processing bulk import users with " + bulkMigrationBatchSize
                 + " batch size, one batch split into " + numberOfBatchChunks + " chunks");
 
@@ -119,8 +120,10 @@ public class ProcessBulkImportUsers extends CronTask {
 
                 for (Future<?> task : tasks) {
                     while (!task.isDone()) {
+                        Logging.debug(main, app.getAsPublicTenantIdentifier(), "Waiting for task " + task + " to finish");
                         Thread.sleep(1000);
                     }
+                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Task " + task + " finished");
                     Void result = (Void) task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
                     usersProcessed += loadedUsersChunks.get(tasks.indexOf(task)).size();
                     failedUsers = bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);

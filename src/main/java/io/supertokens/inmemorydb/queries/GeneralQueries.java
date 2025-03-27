@@ -410,6 +410,7 @@ public class GeneralQueries {
 
             // index
             update(start, UserRolesQueries.getQueryToCreateUserRolesRoleIndex(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateUserRolesUserIdAppIdIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserIdMappingTable())) {

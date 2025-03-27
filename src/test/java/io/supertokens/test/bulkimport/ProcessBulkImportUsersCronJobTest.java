@@ -531,6 +531,7 @@ public class ProcessBulkImportUsersCronJobTest {
         Main main = process.getProcess();
 
         BulkImportTestUtils.createTenants(process);
+        Thread.sleep(1000);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);

@@ -127,7 +127,7 @@ public class BulkImportFlowTest {
                         throw e;
                     }
                 }
-                Thread.sleep(5000);
+                Thread.sleep(1000);
             }
         }
 
@@ -144,6 +144,120 @@ public class BulkImportFlowTest {
         }
 
     }
+
+
+    @Test
+    public void testCoreRestartMidImportShouldResultInSuccessfulImport() throws Exception {
+        String[] args = { "../" };
+
+        // set processing thread number
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        Utils.setValueInConfig("bulk_migration_batch_size", "1000");
+        Utils.setValueInConfig("log_level", "DEBUG");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, true);
+        Main main = process.getProcess();
+        setFeatureFlags(main, new EE_FEATURES[] {
+                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+        // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
+        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 60);
+
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 10000;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        // upload a bunch of users through the API
+        {
+            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 1000); i++) {
+                JsonObject request = generateUsersJson(1000, i * 1000); // API allows 10k users upload at once
+                JsonObject response = uploadBulkImportUsersJson(main, request);
+                assertEquals("OK", response.get("status").getAsString());
+            }
+
+        }
+
+        long processingStarted = System.currentTimeMillis();
+        boolean restartHappened = false;
+        // wait for the cron job to process them
+        // periodically check the remaining unprocessed users
+        // Note1: the cronjob starts the processing automatically
+        // Note2: the successfully processed users get deleted from the bulk_import_users table
+        {
+            long count = NUMBER_OF_USERS_TO_UPLOAD;
+            while(true) {
+                try {
+                    JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
+                    assertEquals("OK", response.get("status").getAsString());
+                    count = response.get("count").getAsLong();
+                    int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+                    int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+                    int failedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                            BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+                    count = newUsersNumber + processingUsersNumber;
+                    System.out.println("Remaining users: " + count);
+
+                    if (count == 0) {
+                        break;
+                    }
+                    if((System.currentTimeMillis() - processingStarted > 10000) && !restartHappened) {
+                        System.out.println("Killing core");
+                        process.kill(false);
+                        Utils.setValueInConfig("bulk_migration_parallelism", "14");
+                        Utils.setValueInConfig("bulk_migration_batch_size", "4000");
+                        System.out.println("Started new core");
+                        process = TestingProcessManager.start(args, true);
+                        main = process.getProcess();
+                        setFeatureFlags(main, new EE_FEATURES[] {
+                                EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+                        // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
+                        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
+                        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 60);
+
+                        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+                        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
+                        restartHappened = true;
+                    }
+                } catch (Exception e) {
+                    if(e instanceof SocketTimeoutException)  {
+                        //ignore
+                    } else {
+                        throw e;
+                    }
+                }
+                Thread.sleep(1000);
+            }
+        }
+
+        long processingFinished = System.currentTimeMillis();
+        System.out.println("Processed " + NUMBER_OF_USERS_TO_UPLOAD + " users in " + (processingFinished - processingStarted) / 1000
+                + " seconds ( or " + (processingFinished - processingStarted) / 60000 + " minutes)");
+
+        // after processing finished, make sure every user got processed correctly
+        {
+            int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+            int usersInCore = loadUsersCount(main).get("count").getAsInt();
+            assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore + failedImportedUsersNumber);
+            assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore);
+        }
+
+    }
+
 
     @Test
     public void testBatchWithOneUser() throws Exception {
@@ -801,7 +915,7 @@ public class BulkImportFlowTest {
 
     @NotNull
     private Main startCronProcess(String parallelism) throws IOException, InterruptedException, TenantOrAppNotFoundException {
-        return startCronProcess(parallelism, 5*60);
+        return startCronProcess(parallelism, 5 * 60);
     }
 
 
@@ -814,7 +928,7 @@ public class BulkImportFlowTest {
         //Utils.setValueInConfig("bulk_migration_batch_size", "1000");
         Utils.setValueInConfig("log_level", "DEBUG");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
         Main main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
@@ -822,7 +936,6 @@ public class BulkImportFlowTest {
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, intervalInSeconds);
 
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
