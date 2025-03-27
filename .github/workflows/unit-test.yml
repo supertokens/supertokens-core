@@ -86,10 +86,16 @@ jobs:
         id: discover
         run: |
           cd supertokens-root
-          TESTS=$(find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g')
-          echo "test_classes<<EOF" >> $GITHUB_OUTPUT
-          echo "$TESTS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g' > test_classes.txt
+      - name: Determine tests for this worker
+        run: |
+          cd supertokens-root
+          TOTAL_TESTS=$(wc -l < test_classes.txt)
+          CHUNK_SIZE=$(( (TOTAL_TESTS + 4) / 5 ))
+          START=$(( ${{ matrix.chunk }} * CHUNK_SIZE + 1 ))
+          END=$(( START + CHUNK_SIZE - 1 ))
+          CHUNK_TESTS=$(sed -n "${START},${END}p" test_classes.txt | tr '\n' ',' | sed 's/,$//')
+          echo $CHUNK_TESTS
       - name: Run tests
         run: |
           cd supertokens-root
