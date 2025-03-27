@@ -209,13 +209,12 @@ public class TestingProcessManager {
         private void createAppForTesting() {
             {
                 if (StorageLayer.getStorage(this.getProcess()).getType() != STORAGE_TYPE.SQL) {
-                    return;
-                } else {
                     try {
                         StorageLayer.getStorage(this.getProcess()).deleteAllInformation();
                     } catch (StorageQueryException e) {
                         throw new RuntimeException(e);
                     }
+                    return;
                 }
                 TenantConfig[] allTenants = Multitenancy.getAllTenants(getProcess());
                 try {
