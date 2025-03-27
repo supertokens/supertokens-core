@@ -38,6 +38,7 @@ jobs:
           - postgresql
           - mysql
           - mongodb
+        chunk: [0, 1, 2, 3, 4]
 
     runs-on: ubuntu-latest
     steps:
@@ -80,9 +81,27 @@ jobs:
         if: matrix.plugin != 'sqlite'
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
       - name: Run OAuth Provider
-        run: docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
+        run: cd supertokens-root && docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
+      - name: Discover test classes
+        id: discover
+        run: |
+          cd supertokens-root
+          TESTS=$(find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g')
+          echo "test_classes<<EOF" >> $GITHUB_OUTPUT
+          echo "$TESTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Run tests
-        run: cd supertokens-root && ./gradlew test
+        run: |
+          cd supertokens-root
+          TESTS="${{ steps.discover.outputs.test_classes }}"
+          TOTAL_TESTS=$(echo "$TESTS" | wc -l)
+          CHUNK_SIZE=$(( (TOTAL_TESTS + 4) / 5 ))
+          START=$(( ${{ matrix.chunk }} * CHUNK_SIZE + 1 ))
+          END=$(( START + CHUNK_SIZE - 1 ))
+          CHUNK_TESTS=$(echo "$TESTS" | sed -n "${START},${END}p" | tr '\n' ',' | sed 's/,$//')
+          if [ ! -z "$CHUNK_TESTS" ]; then
+            ./gradlew test --tests "${CHUNK_TESTS}"
+          fi
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: always()
