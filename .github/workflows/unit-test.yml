@@ -87,7 +87,7 @@ jobs:
         run: |
           cd supertokens-root
           find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g' > test_classes.txt
-      - name: Determine tests for this worker
+      - name: Run tests
         run: |
           cd supertokens-root
           TOTAL_TESTS=$(wc -l < test_classes.txt)
@@ -96,18 +96,7 @@ jobs:
           END=$(( START + CHUNK_SIZE - 1 ))
           CHUNK_TESTS=$(sed -n "${START},${END}p" test_classes.txt | tr '\n' ',' | sed 's/,$//')
           echo $CHUNK_TESTS
-      - name: Run tests
-        run: |
-          cd supertokens-root
-          TESTS="${{ steps.discover.outputs.test_classes }}"
-          TOTAL_TESTS=$(echo "$TESTS" | wc -l)
-          CHUNK_SIZE=$(( (TOTAL_TESTS + 4) / 5 ))
-          START=$(( ${{ matrix.chunk }} * CHUNK_SIZE + 1 ))
-          END=$(( START + CHUNK_SIZE - 1 ))
-          CHUNK_TESTS=$(echo "$TESTS" | sed -n "${START},${END}p" | tr '\n' ',' | sed 's/,$//')
-          if [ ! -z "$CHUNK_TESTS" ]; then
-            ./gradlew test --tests "${CHUNK_TESTS}"
-          fi
+          ./gradlew test --tests "${CHUNK_TESTS}"
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: always()
