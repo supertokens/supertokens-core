@@ -94,9 +94,10 @@ jobs:
           CHUNK_SIZE=$(( (TOTAL_TESTS + 4) / 5 ))
           START=$(( ${{ matrix.chunk }} * CHUNK_SIZE + 1 ))
           END=$(( START + CHUNK_SIZE - 1 ))
-          CHUNK_TESTS=$(sed -n "${START},${END}p" test_classes.txt | tr '\n' ',' | sed 's/,$//')
-          echo $CHUNK_TESTS
-          ./gradlew test --tests "${CHUNK_TESTS}"
+          sed -n "${START},${END}p" test_classes.txt > updated_test_classes.txt
+          cat updated_test_classes.txt
+          ./gradlew test $(cat updated_test_classes.txt | awk '{print "--tests "$1}')
+
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: always()
