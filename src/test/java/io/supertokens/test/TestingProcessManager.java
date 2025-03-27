@@ -24,6 +24,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -209,6 +210,12 @@ public class TestingProcessManager {
             {
                 if (StorageLayer.getStorage(this.getProcess()).getType() != STORAGE_TYPE.SQL) {
                     return;
+                } else {
+                    try {
+                        StorageLayer.getStorage(this.getProcess()).deleteAllInformation();
+                    } catch (StorageQueryException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 TenantConfig[] allTenants = Multitenancy.getAllTenants(getProcess());
                 try {
