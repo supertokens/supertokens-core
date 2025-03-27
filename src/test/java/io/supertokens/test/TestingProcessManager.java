@@ -23,6 +23,7 @@ import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -206,6 +207,9 @@ public class TestingProcessManager {
 
         private void createAppForTesting() {
             {
+                if (StorageLayer.getStorage(this.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                    return;
+                }
                 TenantConfig[] allTenants = Multitenancy.getAllTenants(getProcess());
                 try {
                     for (TenantConfig tenantConfig : allTenants) {
