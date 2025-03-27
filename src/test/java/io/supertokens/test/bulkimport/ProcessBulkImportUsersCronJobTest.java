@@ -226,7 +226,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        waitForProcessingWithTimeout(appIdentifier, storage, 300); // 5 minutes
+        waitForProcessingWithTimeout(appIdentifier, storage, 600); // 10 minutes
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);

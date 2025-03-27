@@ -69,7 +69,7 @@ public class AccessTokenSigningKeyTest {
             StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);

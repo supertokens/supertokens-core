@@ -149,12 +149,19 @@ public class UserPaginationTest {
         }
 
         AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test1@example.com", "password");
+        Thread.sleep(20);
         AuthRecipeUserInfo user2 = createEmailPasswordUser(process.getProcess(), "test2@example.com", "password");
+        Thread.sleep(20);
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithEmail(process.getProcess(), "test4@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user5 = createPasswordlessUserWithPhone(process.getProcess(), "+1234567890");
+        Thread.sleep(20);
         AuthRecipeUserInfo user6 = createPasswordlessUserWithPhone(process.getProcess(), "+1234567891");
+        Thread.sleep(20);
         AuthRecipeUserInfo user7 = createThirdPartyUser(process.getProcess(), "google", "test7", "test7@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user8 = createThirdPartyUser(process.getProcess(), "google", "test8", "test8@example.com");
 
         {

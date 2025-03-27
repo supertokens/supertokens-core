@@ -88,7 +88,7 @@ public class StorageLayerTest {
     public void testDefaultTenant() throws InterruptedException, StorageQueryException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -102,7 +102,7 @@ public class StorageLayerTest {
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
 
-        assertEquals(1 + 1, tenantConfigs.length); // + 1 app created for test
+        assertEquals(1, tenantConfigs.length);
         TenantConfig baseTenantConfig = tenantConfigs[0];
 
         assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
