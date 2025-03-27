@@ -153,7 +153,7 @@ public class SessionTest3 {
     public void revokeAllSessionsForUserWithoutBlacklisting() throws Exception {
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";

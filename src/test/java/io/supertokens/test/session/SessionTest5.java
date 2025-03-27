@@ -298,7 +298,7 @@ public class SessionTest5 {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -341,7 +341,7 @@ public class SessionTest5 {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 3 seconds
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         AccessTokenSigningKey.getInstance(process.getProcess()).setDynamicSigningKeyOverlapMS(1000);

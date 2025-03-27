@@ -98,7 +98,7 @@ public class AccessTokenSigningKeyTest {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -152,7 +152,7 @@ public class AccessTokenSigningKeyTest {
         Utils.setValueInConfig("access_token_validity", "1");
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -179,7 +179,7 @@ public class AccessTokenSigningKeyTest {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);

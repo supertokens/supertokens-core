@@ -145,7 +145,7 @@ public class RefreshTokenTest {
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
@@ -156,7 +156,7 @@ public class RefreshTokenTest {
 
         Utils.reset();
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         try {

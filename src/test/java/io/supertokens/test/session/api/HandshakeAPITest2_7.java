@@ -146,7 +146,7 @@ public class HandshakeAPITest2_7 {
         String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String jsonInput = "{" + "\"deviceDriverInfo\": {" + "\"frontendSDK\": [{" + "\"name\": \"hName\","
