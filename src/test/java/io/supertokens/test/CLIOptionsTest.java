@@ -116,19 +116,19 @@ public class CLIOptionsTest {
             p1 = pb.start();
             p1.waitFor();
 
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.start(args, true, true);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8081",
                     "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath()};
 
-            TestingProcess process1 = TestingProcessManager.start(args);
+            TestingProcess process1 = TestingProcessManager.start(args, true, false);
             assertNotNull(process1.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8082",
                     "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath()};
 
-            TestingProcess process2 = TestingProcessManager.start(args);
+            TestingProcess process2 = TestingProcessManager.start(args, true, false);
             assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
