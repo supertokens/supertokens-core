@@ -155,7 +155,7 @@ public class BulkImportFlowTest {
         Utils.setValueInConfig("bulk_migration_batch_size", "1000");
         Utils.setValueInConfig("log_level", "DEBUG");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, true);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
         Main main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
@@ -220,7 +220,7 @@ public class BulkImportFlowTest {
                         Utils.setValueInConfig("bulk_migration_parallelism", "14");
                         Utils.setValueInConfig("bulk_migration_batch_size", "4000");
                         System.out.println("Started new core");
-                        process = TestingProcessManager.start(args, true);
+                        process = TestingProcessManager.startIsolatedProcess(args, true);
                         main = process.getProcess();
                         setFeatureFlags(main, new EE_FEATURES[] {
                                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
