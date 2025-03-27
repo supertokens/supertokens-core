@@ -81,7 +81,7 @@ public class ConfigTest {
 
         Utils.setValueInConfig("refresh_token_validity", "144001");
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

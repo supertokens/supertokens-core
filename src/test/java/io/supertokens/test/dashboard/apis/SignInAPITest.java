@@ -105,6 +105,8 @@ public class SignInAPITest {
                 Thread.sleep(10);
             }
         }
+
+        Thread.sleep(500);
         // create a user above the free limit
         String email = "suspended@example.com";
         String password = "testPass123";
