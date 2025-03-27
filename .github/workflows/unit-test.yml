@@ -87,6 +87,7 @@ jobs:
         run: |
           cd supertokens-root
           find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g' > test_classes.txt
+          sort -o test_classes.txt test_classes.txt
       - name: Run tests
         run: |
           cd supertokens-root
