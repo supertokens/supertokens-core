@@ -60,7 +60,7 @@ public abstract class Utils extends Mockito {
             // if the default config is not the same as the current config, we must reset the storage layer
             File ogConfig = new File("../../temp/config.yaml");
             String workerId = System.getProperty("org.gradle.test.worker", "");
-            File currentConfig = new File("../config" + workerId + ".yaml");
+            File currentConfig = new File("../../config" + workerId + ".yaml");
             if (currentConfig.isFile()) {
                 byte[] ogConfigContent = Files.readAllBytes(ogConfig.toPath());
                 byte[] currentConfigContent = Files.readAllBytes(currentConfig.toPath());
@@ -98,14 +98,15 @@ public abstract class Utils extends Mockito {
         String newStr = "\n# " + key + ":";
 
         StringBuilder originalFileContent = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader("../../config.yaml"))) {
+        String workerId = System.getProperty("org.gradle.test.worker", "");
+        try (BufferedReader reader = new BufferedReader(new FileReader("../../config" + workerId + ".yaml"))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config.yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config" + workerId + ".yaml"))) {
                 writer.write(modifiedFileContent);
             }
         }
@@ -120,14 +121,14 @@ public abstract class Utils extends Mockito {
         String newStr = "\n" + key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();
         String workerId = System.getProperty("org.gradle.test.worker", "");
-        try (BufferedReader reader = new BufferedReader(new FileReader("../config" + workerId + ".yaml"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("../../config" + workerId + ".yaml"))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../config" + workerId + ".yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config" + workerId + ".yaml"))) {
                 writer.write(modifiedFileContent);
             }
         }
