@@ -39,7 +39,7 @@ jobs:
           # - mysql
           # - mongodb
 
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 15.0.1
         uses: actions/setup-java@v2
