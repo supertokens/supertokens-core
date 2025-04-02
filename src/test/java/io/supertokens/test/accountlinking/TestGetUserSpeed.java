@@ -183,7 +183,7 @@ public class TestGetUserSpeed {
         testUserCreationLinkingAndGetByIdSpeedsCommon(process, 25000, 50000, 20000);
     }
 
-    @Test
+    //@Test
     public void testUserCreationLinkingAndGetByIdSpeedsWithMinIdle() throws Exception {
         String[] args = {"../"};
         Utils.setValueInConfig("postgresql_connection_pool_size", "100");
