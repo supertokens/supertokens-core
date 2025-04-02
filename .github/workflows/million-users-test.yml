@@ -30,7 +30,7 @@ jobs:
   test:
     name: Million Users Test
     needs: dependency-branches
-    if: github.event.review.state == 'approved'
+    # if: github.event_name != 'pull_request' || github.event.review.state == 'approved'
     strategy:
       fail-fast: false
       matrix:

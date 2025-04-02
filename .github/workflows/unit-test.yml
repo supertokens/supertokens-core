@@ -38,7 +38,6 @@ jobs:
           - postgresql
           - mysql
           - mongodb
-        chunk: [0, 1, 2, 3, 4]
 
     runs-on: ubuntu-latest
     steps:
@@ -82,22 +81,10 @@ jobs:
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
       - name: Run OAuth Provider
         run: cd supertokens-root && docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
-      - name: Discover test classes
-        id: discover
-        run: |
-          cd supertokens-root
-          find . -path "*/src/test/**/*.java" | sed 's/.*src\/test\/java\///' | sed 's/\.java$//' | sed 's/\//./g' > test_classes.txt
-          sort -o test_classes.txt test_classes.txt
       - name: Run tests
         run: |
           cd supertokens-root
-          TOTAL_TESTS=$(wc -l < test_classes.txt)
-          CHUNK_SIZE=$(( (TOTAL_TESTS + 4) / 5 ))
-          START=$(( ${{ matrix.chunk }} * CHUNK_SIZE + 1 ))
-          END=$(( START + CHUNK_SIZE - 1 ))
-          sed -n "${START},${END}p" test_classes.txt > updated_test_classes.txt
-          cat updated_test_classes.txt
-          ./gradlew test $(cat updated_test_classes.txt | awk '{print "--tests "$1}')
+          ./gradlew test
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
