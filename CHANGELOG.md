@@ -7,8 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [10.1.2]
+## [10.1.3]
 
+- Version bumped for re-release
+
+## [10.1.2]
 
 - Adds user_id index to the user roles table
 - Adds more debug logging to bulk migration
