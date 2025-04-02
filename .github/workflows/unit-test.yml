@@ -35,7 +35,7 @@ jobs:
       matrix:
         plugin:
           - sqlite
-          # - postgresql
+          - postgresql
           # - mysql
           # - mongodb
 
@@ -82,6 +82,8 @@ jobs:
       - name: Run OAuth Provider
         run: cd supertokens-root && docker run -p 4444:4444 -p 4445:4445 -d --rm --name oauth-cicd rishabhpoddar/oauth-server-cicd && sleep 2
       - name: Run tests
+        env:
+          ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
           ./gradlew test
