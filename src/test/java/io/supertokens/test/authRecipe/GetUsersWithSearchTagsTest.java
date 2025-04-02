@@ -194,13 +194,17 @@ public class GetUsersWithSearchTagsTest {
         ArrayList<String> userIds = new ArrayList<>();
         userIds.add(
                 EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
         userIds.add(
                 EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
         userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
 
         // create thirdparty user
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
                 "test2@example.com").user.getSupertokensUserId());
+        Thread.sleep(20);
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
