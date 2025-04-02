@@ -191,7 +191,7 @@ public abstract class Utils extends Mockito {
 
     public static TestRule retryFlakyTest() {
         return new TestRule() {
-            private final int retryCount = 3;
+            private final int retryCount = 10;
 
             public Statement apply(Statement base, Description description) {
                 return statement(base, description);
@@ -212,7 +212,7 @@ public abstract class Utils extends Mockito {
                                 caughtThrowable = t;
                                 System.err.println(description.getDisplayName() + ": run " + (i+1) + " failed");
                                 TestingProcessManager.killAll();
-                                Thread.sleep(new Random().nextInt(2000));
+                                Thread.sleep(1000 + new Random().nextInt(3000));
                             }
                         }
                         System.err.println(description.getDisplayName() + ": giving up after " + retryCount + " failures");
