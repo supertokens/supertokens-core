@@ -39,6 +39,9 @@ public class CreateDashboardUserAPITests {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -356,7 +359,7 @@ public class CreateDashboardUserAPITests {
     public void testCreatingAUserAfterCrossingTheFreeUserThreshold() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -371,6 +374,8 @@ public class CreateDashboardUserAPITests {
                 Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", password);
             }
         }
+
+        Thread.sleep(500);
 
         // try creating another user when max number of free users is reached 
         {

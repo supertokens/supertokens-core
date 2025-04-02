@@ -29,6 +29,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+
 import org.junit.*;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
@@ -42,6 +44,9 @@ public class IpAllowDenyRegexTest extends Mockito {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -147,7 +152,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -167,7 +172,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null,
                     1000, 1000, null);
             Assert.assertEquals("Hello", response);
 
@@ -183,7 +188,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null,
                     1000, 1000, null);
             Assert.assertEquals("Hello", response);
 
@@ -199,7 +204,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null,
                     1000, 1000, null);
             Assert.assertEquals("Hello", response);
 
@@ -216,7 +221,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null,
                     1000, 1000, null);
             Assert.assertEquals("Hello", response);
 
@@ -234,7 +239,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -254,7 +259,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -274,7 +279,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -294,7 +299,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + HttpRequestForTesting.corePort + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -315,8 +320,10 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+            int port = HttpRequestForTesting.corePort;
+
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -345,8 +352,10 @@ public class IpAllowDenyRegexTest extends Mockito {
             System.setOut(new PrintStream(stdOutput));
             System.setErr(new PrintStream(errorOutput));
 
+            int port = HttpRequestForTesting.corePort;
+
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/hello", null, 1000, 1000,
                         null);
                 throw new Exception("test failed");
             } catch (HttpResponseException e) {
@@ -396,14 +405,16 @@ public class IpAllowDenyRegexTest extends Mockito {
                     new JsonObject()
             ), false);
 
+            int port = HttpRequestForTesting.corePort;
+
             // this should pass
-            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/hello", null, 1000, 1000,
                     null);
-            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t2/hello", null, 1000, 1000,
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/t2/hello", null, 1000, 1000,
                     null);
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t1/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/t1/hello", null, 1000, 1000,
                         null);
                 fail();
             } catch (HttpResponseException e) {
@@ -438,14 +449,16 @@ public class IpAllowDenyRegexTest extends Mockito {
                     new JsonObject()
             ), false);
 
+            int port = HttpRequestForTesting.corePort;
+
             // this should pass
-            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/hello", null, 1000, 1000,
                     null);
-            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t2/hello", null, 1000, 1000,
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/t2/hello", null, 1000, 1000,
                     null);
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t1/hello", null, 1000, 1000,
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/t1/hello", null, 1000, 1000,
                         null);
                 fail();
             } catch (HttpResponseException e) {

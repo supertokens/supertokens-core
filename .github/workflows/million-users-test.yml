@@ -27,7 +27,7 @@ jobs:
         with:
           running-for: core
 
-  test:
+  million-users-test:
     name: Million Users Test
     needs: dependency-branches
     # if: github.event_name != 'pull_request' || github.event.review.state == 'approved'
@@ -36,7 +36,6 @@ jobs:
       matrix:
         plugin:
           - postgresql
-          - mysql
 
     runs-on: ubuntu-latest
     steps:

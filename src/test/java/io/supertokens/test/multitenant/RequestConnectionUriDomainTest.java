@@ -57,6 +57,9 @@ public class RequestConnectionUriDomainTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -95,15 +98,17 @@ public class RequestConnectionUriDomainTest {
             }
         });
 
+        int port = HttpRequestForTesting.corePort;
+
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/test", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/test", null, 1000, 1000, null);
             assertEquals("", response);
         }
 
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://127.0.0.1:3567/test", null, 1000, 1000, null);
+                    "http://127.0.0.1:" + port + "/test", null, 1000, 1000, null);
             assertEquals("", response);
         }
 

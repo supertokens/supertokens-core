@@ -30,6 +30,7 @@ import java.util.Map;
 public class HttpRequestForTesting {
     private static final int STATUS_CODE_ERROR_THRESHOLD = 400;
     public static boolean disableAddingAppId = false;
+    public static Integer corePort = null;
 
     private static URL getURL(Main main, String requestID, String url) throws MalformedURLException {
         URL obj = new URL(url);
@@ -68,6 +69,10 @@ public class HttpRequestForTesting {
         if (!disableAddingAppId && !url.contains("appid-") && !url.contains(":3567/config")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
         }
 
         StringBuilder paramBuilder = new StringBuilder();
@@ -144,6 +149,10 @@ public class HttpRequestForTesting {
         if (!disableAddingAppId && !url.contains("appid-")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
         }
 
         URL obj = getURL(main, requestID, url);
@@ -253,6 +262,10 @@ public class HttpRequestForTesting {
         if (!disableAddingAppId && !url.contains("appid-")) {
             String appId = ResourceDistributor.getAppForTesting().getAppId();
             url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
         }
 
         StringBuilder paramBuilder = new StringBuilder();

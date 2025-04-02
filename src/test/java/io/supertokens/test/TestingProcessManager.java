@@ -27,8 +27,10 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.Assert.assertNotNull;
@@ -36,6 +38,11 @@ import static org.junit.Assert.assertNotNull;
 public class TestingProcessManager {
 
     private static final ArrayList<TestingProcess> isolatedProcesses = new ArrayList<>();
+
+    public static void killAll() throws InterruptedException {
+        killAllIsolatedProcesses();
+        SharedProcess.end();
+    }
 
     static void killAllIsolatedProcesses() {
         synchronized (isolatedProcesses) {
@@ -77,6 +84,32 @@ public class TestingProcessManager {
 
         public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException;
         public EventAndException checkOrWaitForEvent(PROCESS_STATE state, long timeToWaitMS) throws InterruptedException;
+    }
+
+    public static int getFreePort() {
+        while (true) {
+            int randomPort = 10000 + (int)(Math.random() * (20000 - 10000));
+            try {
+                java.net.Socket socket = new java.net.Socket("localhost", randomPort);
+                socket.close();
+                Thread.sleep(100);
+            } catch (java.net.ConnectException e1) {
+                // confirm again
+                try {
+                    Thread.sleep(new Random().nextInt(100));
+                    java.net.Socket socket = new java.net.Socket("localhost", randomPort);
+                    socket.close();
+                } catch (java.net.ConnectException e2) {
+                    // Port is available
+                    return randomPort;
+                } catch (Exception e3) {
+                    throw new RuntimeException(e3);
+                }
+
+            } catch (Exception e4) {
+                throw new RuntimeException(e4);
+            }
+        }
     }
 
     public static abstract class SharedProcess extends Thread implements TestingProcess {
@@ -139,7 +172,19 @@ public class TestingProcessManager {
                 return instance;
             }
 
+
+            int port = getFreePort();
+
+            assert args.length == 1;
+            args = new String[]{args[0], "port="+port};
+            HttpRequestForTesting.corePort = port;
+
             startProcessAndDeleteInfo(args);
+
+            port = getFreePort();
+
+            args = new String[]{args[0], "port="+port};
+            HttpRequestForTesting.corePort = port;
 
             final Object waitForInit = new Object();
             synchronized (isolatedProcesses) {
@@ -182,7 +227,6 @@ public class TestingProcessManager {
         public static void end() throws InterruptedException {
             if (instance != null) {
                 instance.endProcess();
-
             }
             instance = null;
         }
@@ -344,6 +388,13 @@ public class TestingProcessManager {
         }
 
         public static TestingProcess start(String[] args, boolean startProcess) throws InterruptedException {
+            if (args.length == 1) {
+                int port = getFreePort();
+
+                args = new String[]{args[0], "port="+port};
+                HttpRequestForTesting.corePort = port;
+            }
+
             final Object waitForInit = new Object();
             synchronized (isolatedProcesses) {
                 IsolatedProcess mainProcess = new IsolatedProcess(args) {

@@ -51,6 +51,9 @@ public class CDIVersionTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -313,7 +316,7 @@ public class CDIVersionTest {
             {
                 // check regular output
                 JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/.well-known/jwks.json", null,
+                        "http://localhost:" + HttpRequestForTesting.corePort + "/.well-known/jwks.json", null,
                         1000, 1000, null);
 
                 assertEquals(response.entrySet().size(), 1);
@@ -348,7 +351,7 @@ public class CDIVersionTest {
             {
                 // check regular output
                 JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/.well-known/jwks.json", null,
+                        "http://localhost:" + HttpRequestForTesting.corePort + "/.well-known/jwks.json", null,
                         1000, 1000, null);
 
                 assertEquals(response.entrySet().size(), 1);

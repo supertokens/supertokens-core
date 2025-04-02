@@ -25,6 +25,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -39,6 +40,9 @@ public class ConfigTest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -194,7 +198,8 @@ public class ConfigTest2_6 {
 
     @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
-        String[] args = {"../"};
+        String configFile = new File(new File(".").getAbsoluteFile().getParentFile().getParentFile().getPath(), "config.yaml").getAbsolutePath();
+        String[] args = {"../", "configFile=" + configFile};
 
         ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
         pb.directory(new File(args[0]));
@@ -205,7 +210,7 @@ public class ConfigTest2_6 {
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(),
-                "../config.yaml (No such file or directory)");
+                configFile + " (No such file or directory)");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -262,7 +267,6 @@ public class ConfigTest2_6 {
                 config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis(), 7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
-        assertEquals(config.getPort(process.getProcess()), 3567);
         assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());

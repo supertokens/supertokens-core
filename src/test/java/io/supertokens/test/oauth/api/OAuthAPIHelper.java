@@ -33,15 +33,15 @@ public class OAuthAPIHelper {
 
     public static void resetOAuthProvider() {
         try {
-            HttpRequestForOAuthProvider.Response clientsResponse = HttpRequestForOAuthProvider
-                    .doGet("http://localhost:4445/admin/clients", new HashMap<>(), new HashMap<>());
-
-            for (JsonElement client : clientsResponse.jsonResponse.getAsJsonArray()) {
-                HttpRequestForOAuthProvider.doJsonDelete(
-                        "http://localhost:4445/admin/clients/"
-                                + client.getAsJsonObject().get("client_id").getAsString(),
-                        new HashMap<>(), new HashMap<>(), new JsonObject());
-            }
+//            HttpRequestForOAuthProvider.Response clientsResponse = HttpRequestForOAuthProvider
+//                    .doGet("http://localhost:4445/admin/clients", new HashMap<>(), new HashMap<>());
+//
+//            for (JsonElement client : clientsResponse.jsonResponse.getAsJsonArray()) {
+//                HttpRequestForOAuthProvider.doJsonDelete(
+//                        "http://localhost:4445/admin/clients/"
+//                                + client.getAsJsonObject().get("client_id").getAsString(),
+//                        new HashMap<>(), new HashMap<>(), new JsonObject());
+//            }
 
             // We query these in an effort to help with possible warm up issues
             if (!warmedUp) {

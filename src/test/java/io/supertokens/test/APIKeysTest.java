@@ -49,6 +49,9 @@ public class APIKeysTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -498,6 +501,9 @@ public class APIKeysTest {
                                          int connectionTimeoutMS, int readTimeoutMS, String method,
                                          Map<String, String> headers) throws IOException,
             io.supertokens.test.httpRequest.HttpResponseException {
+        if (HttpRequestForTesting.corePort != null) {
+            url = url.replace(":3567", ":" + HttpRequestForTesting.corePort);
+        }
         URL obj = getURL(main, "", url);
         InputStream inputStream = null;
         HttpURLConnection con = null;

@@ -95,8 +95,13 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private static String getConfigFilePath(Main main) {
+        String configFile = "config.yaml";
+        if (Main.isTesting) {
+            String workerId = System.getProperty("org.gradle.test.worker", "");
+            configFile = "config" + workerId + ".yaml";
+        }
         return CLIOptions.get(main).getConfigFilePath() == null
-                ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
+                ? CLIOptions.get(main).getInstallationPath() + configFile
                 : CLIOptions.get(main).getConfigFilePath();
     }
 

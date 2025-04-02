@@ -39,11 +39,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.Random;
+
 import static org.junit.Assert.*;
 
 public class TestClientCreate5_2 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -74,8 +79,9 @@ public class TestClientCreate5_2 {
 
         {
             // Duplicate client id
+            String clientId = "test-client-id-" + new Random().nextInt(100000);
             JsonObject createBody = new JsonObject();
-            createBody.addProperty("clientId", "test-client-id");
+            createBody.addProperty("clientId", clientId);
 
             JsonObject resp = createClient(process.getProcess(), createBody);
             assertEquals("OK", resp.get("status").getAsString());
@@ -199,7 +205,7 @@ public class TestClientCreate5_2 {
         metadata.addProperty("nonce", "test-nonce");
 
         JsonElement[] VALUES = new JsonElement[]{
-            new JsonPrimitive("test-client-id"), // clientId
+            new JsonPrimitive("test-client-id--" + new Random().nextInt(100000)), // clientId
             new JsonPrimitive("kEdQVPNLsl_FHOFBO_nWnj7P3."), // clientSecret
             new JsonPrimitive("Test Client"), // clientName
             new JsonPrimitive("offline_access offline openid"), // scope

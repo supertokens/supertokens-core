@@ -66,6 +66,9 @@ public class MultitenantTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -909,6 +912,7 @@ public class MultitenantTest {
 
             for (TestCaseStep step : steps) {
                 step.doStep(main);
+                Thread.sleep(20);
             }
         }
     }

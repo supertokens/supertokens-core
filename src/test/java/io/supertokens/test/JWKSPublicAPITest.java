@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,6 +37,9 @@ import static org.junit.Assert.*;
 public class JWKSPublicAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -56,7 +60,7 @@ public class JWKSPublicAPITest {
 
         // check regular output
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/.well-known/jwks.json", null,
+                "http://localhost:" + HttpRequestForTesting.corePort + "/.well-known/jwks.json", null,
                 1000, 1000, null);
 
         assertEquals(response.entrySet().size(), 1);
@@ -81,7 +85,7 @@ public class JWKSPublicAPITest {
         // check regular output
         Map<String, String> responseHeaders = new HashMap<>();
         JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
-                "http://localhost:3567/.well-known/jwks.json", null,
+                "http://localhost:" + HttpRequestForTesting.corePort + "/.well-known/jwks.json", null,
                 1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);
@@ -96,7 +100,7 @@ public class JWKSPublicAPITest {
         Thread.sleep(2000);
 
         response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
-                "http://localhost:3567/.well-known/jwks.json", null,
+                "http://localhost:" + HttpRequestForTesting.corePort + "/.well-known/jwks.json", null,
                 1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);

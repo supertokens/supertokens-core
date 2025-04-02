@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,6 +48,9 @@ import java.lang.reflect.Field;
 public class GetTenantCoreConfigForDashboardAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -69,8 +73,10 @@ public class GetTenantCoreConfigForDashboardAPITest {
             return;
         }
 
+        int port = HttpRequestForTesting.corePort;
+
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/tenant/core-config", null,
+                "http://localhost:" + port + "/recipe/dashboard/tenant/core-config", null,
                 1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");

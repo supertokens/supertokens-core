@@ -364,12 +364,16 @@ public class Main {
     }
 
     private void createDotStartedFileForThisProcess() throws IOException {
+        String startedDir = ".started";
+        if (isTesting) {
+            startedDir = ".started" + System.getProperty("org.gradle.test.worker", "");
+        }
         CoreConfig config = Config.getBaseConfig(this);
         String fileLocation = CLIOptions.get(this).getTempDirLocation() == null ? CLIOptions.get(this).getInstallationPath() : CLIOptions.get(this).getTempDirLocation();
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
-                ? fileLocation + ".started\\" + config.getHost(this) + "-"
+                ? fileLocation + startedDir + "\\" + config.getHost(this) + "-"
                 + config.getPort(this)
-                : fileLocation + ".started/" + config.getHost(this) + "-"
+                : fileLocation + startedDir + "/" + config.getHost(this) + "-"
                 + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {

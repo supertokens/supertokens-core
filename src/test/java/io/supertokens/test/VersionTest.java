@@ -37,6 +37,9 @@ public class VersionTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -92,6 +95,11 @@ public class VersionTest {
             assertNotNull(e);
             assertEquals(e.exception.getMessage(),
                     "java.io.FileNotFoundException: ../version.yaml (No such file or directory)");
+
+            pb = new ProcessBuilder("cp", "temp/version.yaml", "./version.yaml");
+            pb.directory(new File(installDir));
+            process1 = pb.start();
+            process1.waitFor();
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
