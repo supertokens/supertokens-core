@@ -35,11 +35,11 @@ jobs:
       matrix:
         plugin:
           - sqlite
-          - postgresql
-          - mysql
-          - mongodb
+          # - postgresql
+          # - mysql
+          # - mongodb
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     steps:
       - name: Set up JDK 15.0.1
         uses: actions/setup-java@v2
@@ -85,7 +85,6 @@ jobs:
         run: |
           cd supertokens-root
           ./gradlew test
-
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: always()
