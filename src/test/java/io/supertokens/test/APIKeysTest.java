@@ -204,20 +204,21 @@ public class APIKeysTest {
 
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
-        Utils.setValueInConfig("port", "3568");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        HttpRequestForTesting.disableAddingAppId = true;
+
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3568/hello", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
+                "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
         assertEquals(response, "Hello");
 
         // map to store pid as parameter
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
         JsonObject response2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3568/config", map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
+                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
 
         File f = new File(CLIOptions.get(process.getProcess()).getInstallationPath() + "config.yaml");
         String path = f.getAbsolutePath();
