@@ -32,16 +32,16 @@ public class TestServiceUtils {
 
     public static void startServices() {
         try {
-            PostgresqlService.startService();
             OAuthProviderService.startService();
+            PostgresqlService.startService();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void killServices() throws InterruptedException, IOException {
-        PostgresqlService.killService();
+    public static void killServices() throws InterruptedException, IOException {
         OAuthProviderService.killService();
+        PostgresqlService.killService();
     }
 
     private static class CmdHelper {

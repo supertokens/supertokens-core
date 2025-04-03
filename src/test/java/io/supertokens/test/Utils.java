@@ -212,6 +212,8 @@ public abstract class Utils extends Mockito {
                                 caughtThrowable = t;
                                 System.err.println(description.getDisplayName() + ": run " + (i+1) + " failed");
                                 TestingProcessManager.killAll();
+                                TestServiceUtils.killServices();
+                                TestServiceUtils.startServices();
                                 Thread.sleep(1000 + new Random().nextInt(3000));
                             }
                         }
