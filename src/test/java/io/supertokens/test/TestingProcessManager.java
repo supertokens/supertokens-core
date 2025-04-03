@@ -35,6 +35,10 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestingProcessManager {
 
+    static {
+        TestServiceUtils.startServices();
+    }
+
     private static final ArrayList<TestingProcess> isolatedProcesses = new ArrayList<>();
 
     public static void killAll() throws InterruptedException {
@@ -70,89 +74,6 @@ public class TestingProcessManager {
         return IsolatedProcess.start(args, startProcess);
     }
 
-
-    static {
-        int databasePort = new Random().nextInt(2000) + 13000;
-        System.setProperty("ST_PLUGIN_SERVER_PORT", "" + databasePort);
-
-        if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("postgresql")) {
-            try {
-                String workerId = System.getProperty("org.gradle.test.worker", "base");
-
-                ProcessBuilder processBuilder = new ProcessBuilder();
-                List<String> command = new ArrayList<>(Arrays.asList(
-                        "docker", "run", "--rm", "--name", "postgres_" + workerId,
-                        "-e", "POSTGRES_USER=root",
-                        "-e", "POSTGRES_PASSWORD=root",
-                        "-d", "-p", databasePort + ":5432",
-                        "-v", System.getProperty("user.home") + "/Desktop/db/pstgres/" + workerId + ":/var/lib/postgresql/data",
-                        "postgres",
-                        "-c", "max_connections=1000"
-                ));
-                processBuilder.command(command);
-                Process process = processBuilder.start();
-                process.waitFor();
-
-                // Wait for PostgreSQL to start by polling connection
-                int maxRetries = 100; // Maximum number of retries
-                int retryIntervalMs = 500; // Retry every 500ms
-                boolean isPostgresUp = false;
-                
-                for (int i = 0; i < maxRetries && !isPostgresUp; i++) {
-                    try {
-                        ProcessBuilder checkBuilder = new ProcessBuilder();
-                        List<String> checkCommand = Arrays.asList(
-                                "docker", "exec", "postgres_" + workerId, "pg_isready", "-U", "root"
-                        );
-                        checkBuilder.command(checkCommand);
-                        Process checkProcess = checkBuilder.start();
-                        int exitCode = checkProcess.waitFor();
-                        
-                        if (exitCode == 0) {
-                            isPostgresUp = true;
-                        } else {
-                            Thread.sleep(retryIntervalMs);
-                        }
-                    } catch (Exception e) {
-                        Thread.sleep(retryIntervalMs);
-                    }
-                }
-                
-                if (!isPostgresUp) {
-                    System.out.println("PostgreSQL failed to start after " + (maxRetries * retryIntervalMs / 1000) + " seconds");
-                    throw new RuntimeException("PostgreSQL failed to start after " + (maxRetries * retryIntervalMs / 1000) + " seconds");
-                }
-
-                Thread.sleep(5000 + new Random().nextInt(2000));
-
-                // Create the supertokens database
-                ProcessBuilder createSuperTokensDbBuilder = new ProcessBuilder();
-                List<String> createDbCommand = Arrays.asList(
-                        "docker", "exec", "postgres_" + workerId, "psql", "-U", "root", "postgres",
-                        "-c", "create database supertokens;"
-                );
-                createSuperTokensDbBuilder.command(createDbCommand);
-                Process createDbProcess = createSuperTokensDbBuilder.start();
-                createDbProcess.waitFor();
-
-                // Create databases for testing
-                ProcessBuilder dbCreationBuilder = new ProcessBuilder();
-                for (int i = 0; i <= 50; i++) {
-                    List<String> dbCommand = Arrays.asList(
-                            "docker", "exec", "postgres_" + workerId, "psql", "-U", "root", "postgres",
-                            "-c", "create database st" + i + ";"
-                    );
-                    dbCreationBuilder.command(dbCommand);
-                    Process dbProcess = dbCreationBuilder.start();
-                    dbProcess.waitFor();
-                    Thread.sleep(new Random().nextInt(300));
-                    System.out.println("st"+i);
-                }
-                System.out.println("Database creation complete!");
-            } catch (Exception e) {
-            }
-        }
-    }
 
     public static interface TestingProcess {
         public void startProcess();
@@ -203,49 +124,6 @@ public class TestingProcessManager {
         private static SharedProcess instance = null;
         TenantIdentifier appForTesting = TenantIdentifier.BASE_TENANT;
 
-        private static void startProcessAndDeleteInfo(String[] args) throws InterruptedException {
-//            final Object waitForInit = new Object();
-//            synchronized (isolatedProcesses) {
-//                instance = new SharedProcess(args) {
-//
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            this.main = new Main();
-//                            synchronized (waitForInit) {
-//                                waitForInit.notifyAll();
-//                            }
-//
-//                            this.getProcess().start(getArgs());
-//
-//                        } catch (Exception ignored) {
-//                        }
-//                    }
-//                };
-//
-//                synchronized (waitForInit) {
-//                    instance.start();
-//                    waitForInit.wait();
-//                }
-//
-//                EventAndException e = instance.checkOrWaitForEvents(
-//                        new PROCESS_STATE[]{
-//                                PROCESS_STATE.STARTED,
-//                                PROCESS_STATE.INIT_FAILURE}
-//                );
-//
-//                if (e != null && e.state == PROCESS_STATE.STARTED) {
-//                    try {
-//                        instance.getProcess().deleteAllInformationForTesting();
-//                        StorageLayer.getBaseStorage(instance.getProcess()).initStorage(true, new ArrayList<>());
-//                    } catch (Exception ex) {
-//                        throw new RuntimeException(ex);
-//                    }
-//                }
-//            }
-//            end();
-        }
-
         public static TestingProcess start(String[] args) throws InterruptedException {
             if (instance != null) {
                 ProcessState.getInstance(instance.getProcess()).clear();
@@ -254,17 +132,9 @@ public class TestingProcessManager {
                 return instance;
             }
 
-
             int port = getFreePort();
 
             assert args.length == 1;
-            args = new String[]{args[0], "port="+port};
-            HttpRequestForTesting.corePort = port;
-
-            startProcessAndDeleteInfo(args);
-
-            port = getFreePort();
-
             args = new String[]{args[0], "port="+port};
             HttpRequestForTesting.corePort = port;
 
