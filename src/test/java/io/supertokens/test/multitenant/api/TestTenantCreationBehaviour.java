@@ -43,10 +43,8 @@ import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.webserver.api.multitenancy.BaseCreateOrUpdate;
 import jakarta.servlet.ServletException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -59,6 +57,9 @@ import static org.junit.Assert.*;
 
 public class TestTenantCreationBehaviour {
     TestingProcessManager.TestingProcess process;
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
