@@ -34,7 +34,7 @@ jobs:
           - sqlite
           - postgresql
           - mysql
-          # - mongodb
+          - mongodb
 
     runs-on: ubuntu-latest
     steps:
