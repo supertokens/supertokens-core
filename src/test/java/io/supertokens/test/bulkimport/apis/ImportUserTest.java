@@ -103,7 +103,7 @@ public class ImportUserTest {
         new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
     // Create tenants
-    BulkImportTestUtils.createTenants(main);
+    BulkImportTestUtils.createTenants(process);
 
     // Create user roles
     {

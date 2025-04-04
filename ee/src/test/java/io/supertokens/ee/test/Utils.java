@@ -24,7 +24,8 @@ public abstract class Utils extends Mockito {
         try {
 
             // remove config.yaml file
-            ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
+            String workerId = System.getProperty("org.gradle.test.worker", "");
+            ProcessBuilder pb = new ProcessBuilder("rm", "config" + workerId + ".yaml");
             pb.directory(new File(installDir));
             Process process = pb.start();
             process.waitFor();
@@ -58,7 +59,8 @@ public abstract class Utils extends Mockito {
 
             // if the default config is not the same as the current config, we must reset the storage layer
             File ogConfig = new File("../../temp/config.yaml");
-            File currentConfig = new File("../../config.yaml");
+            String workerId = System.getProperty("org.gradle.test.worker", "");
+            File currentConfig = new File("../../config" + workerId + ".yaml");
             if (currentConfig.isFile()) {
                 byte[] ogConfigContent = Files.readAllBytes(ogConfig.toPath());
                 byte[] currentConfigContent = Files.readAllBytes(currentConfig.toPath());
@@ -67,7 +69,7 @@ public abstract class Utils extends Mockito {
                 }
             }
 
-            ProcessBuilder pb = new ProcessBuilder("cp", "temp/config.yaml", "./config.yaml");
+            ProcessBuilder pb = new ProcessBuilder("cp", "temp/config.yaml", "./config" + workerId + ".yaml");
             pb.directory(new File(installDir));
             Process process = pb.start();
             process.waitFor();
@@ -96,14 +98,15 @@ public abstract class Utils extends Mockito {
         String newStr = "\n# " + key + ":";
 
         StringBuilder originalFileContent = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader("../../config.yaml"))) {
+        String workerId = System.getProperty("org.gradle.test.worker", "");
+        try (BufferedReader reader = new BufferedReader(new FileReader("../../config" + workerId + ".yaml"))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config.yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config" + workerId + ".yaml"))) {
                 writer.write(modifiedFileContent);
             }
         }
@@ -117,14 +120,15 @@ public abstract class Utils extends Mockito {
         String oldStr = "\n((#\\s)?)" + key + "(:|((:\\s).+))\n";
         String newStr = "\n" + key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader("../../config.yaml"))) {
+        String workerId = System.getProperty("org.gradle.test.worker", "");
+        try (BufferedReader reader = new BufferedReader(new FileReader("../../config" + workerId + ".yaml"))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config.yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../../config" + workerId + ".yaml"))) {
                 writer.write(modifiedFileContent);
             }
         }

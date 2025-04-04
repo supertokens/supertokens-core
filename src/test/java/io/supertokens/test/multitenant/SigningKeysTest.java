@@ -55,6 +55,9 @@ public class SigningKeysTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -71,16 +74,15 @@ public class SigningKeysTest {
             TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getAllKeys()
                         .size(), 2);
 
         process.kill();
@@ -95,10 +97,9 @@ public class SigningKeysTest {
             BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -133,16 +134,16 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
-                        new AppIdentifier(null, null), process.main)
+                        new AppIdentifier(null, null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c1", null), process.main)
+                        new AppIdentifier("c1", null), process.getProcess())
                 .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
@@ -162,10 +163,9 @@ public class SigningKeysTest {
             BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -208,22 +208,22 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.getProcess()).getDynamicKeys()
                         .size(), 1);
         SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
-                        new AppIdentifier(null, null), process.main)
+                        new AppIdentifier(null, null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c1", null), process.main)
+                        new AppIdentifier("c1", null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c2Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c2", null), process.main)
+                        new AppIdentifier("c2", null), process.getProcess())
                 .getDynamicKeys().get(0);
         SigningKeys.KeyInfo c3Tenant = SigningKeys.getInstance(
-                        new AppIdentifier("c3", null), process.main)
+                        new AppIdentifier("c3", null), process.getProcess())
                 .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);

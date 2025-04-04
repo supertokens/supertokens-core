@@ -2,6 +2,7 @@ package io.supertokens.totp;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.mfa.Mfa;
@@ -77,7 +78,7 @@ public class Totp {
             throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
             FeatureNotEnabledException {
         try {
-            return registerDevice(new AppIdentifier(null, null), StorageLayer.getStorage(main),
+            return registerDevice(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main),
                     main, userId, deviceName, skew, period);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -359,7 +360,7 @@ public class Totp {
             throws UnknownDeviceException, InvalidTotpException,
             LimitReachedException, StorageQueryException, StorageTransactionLogicException {
         try {
-            return verifyDevice(new TenantIdentifier(null, null, null),
+            return verifyDevice(ResourceDistributor.getAppForTesting(),
                     StorageLayer.getStorage(main), main, userId, deviceName, code);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -425,7 +426,7 @@ public class Totp {
             throws InvalidTotpException, UnknownTotpUserIdException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException {
         try {
-            verifyCode(new TenantIdentifier(null, null, null), StorageLayer.getStorage(main), main,
+            verifyCode(ResourceDistributor.getAppForTesting(), StorageLayer.getStorage(main), main,
                     userId, code);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -469,7 +470,7 @@ public class Totp {
             throws StorageQueryException, UnknownDeviceException,
             StorageTransactionLogicException {
         try {
-            removeDevice(new AppIdentifier(null, null), StorageLayer.getStorage(main),
+            removeDevice(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main),
                     userId, deviceName);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -518,7 +519,7 @@ public class Totp {
                                         String oldDeviceName, String newDeviceName)
             throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException {
         try {
-            updateDeviceName(new AppIdentifier(null, null), StorageLayer.getStorage(main),
+            updateDeviceName(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main),
                     userId, oldDeviceName, newDeviceName);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -537,7 +538,7 @@ public class Totp {
     public static TOTPDevice[] getDevices(Main main, String userId)
             throws StorageQueryException {
         try {
-            return getDevices(new AppIdentifier(null, null), StorageLayer.getStorage(main),
+            return getDevices(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main),
                     userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

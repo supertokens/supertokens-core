@@ -21,6 +21,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -43,6 +44,9 @@ public class HttpRequestTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -59,6 +63,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         // Json Response API
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -104,23 +110,23 @@ public class HttpRequestTest {
         // jsonResponse with post request
 
         JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/jsonResponse", null, 1000, 1000, null);
+                "http://localhost:" + port + "/jsonResponse", null, 1000, 1000, null);
 
         assertEquals(response.get("key").getAsString(), "value");
 
         // jsonResponse with get request
 
-        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null,
+        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/jsonResponse", null,
                 1000, 1000, null);
         assertEquals(response.get("key1").getAsString(), "value1");
 
         // jsonResponse with put request
-        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null,
+        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:" + port + "/jsonResponse", null,
                 1000, 1000, null);
         assertEquals(response.get("key2").getAsString(), "value2");
 
         // jsonResponse with delete request
-        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/jsonResponse",
+        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:" + port + "/jsonResponse",
                 null, 1000, 1000, null);
         assertEquals(response.get("key3").getAsString(), "value3");
 
@@ -134,6 +140,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -5953383281218376801L;
@@ -175,21 +183,21 @@ public class HttpRequestTest {
 
         // nonJson Post request
         String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/nonJsonResponse", null, 1000, 1000, null);
+                "http://localhost:" + port + "/nonJsonResponse", null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
         // nonJson Get request
-        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null,
+        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/nonJsonResponse", null,
                 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
         // nonJson Put request
-        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse",
+        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:" + port + "/nonJsonResponse",
                 null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
         // nonJson Delete request
-        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse",
+        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:" + port + "/nonJsonResponse",
                 null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
@@ -203,6 +211,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         // error request api
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -243,7 +253,7 @@ public class HttpRequestTest {
 
         // Post error request
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:" + port + "/errorRequest", null, 1000,
                     1000, null);
             fail();
         } catch (HttpResponseException e) {
@@ -252,7 +262,7 @@ public class HttpRequestTest {
 
         // Get error Request
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:" + port + "/errorRequest", null, 1000,
                     1000, null);
             fail();
         } catch (HttpResponseException e) {
@@ -261,7 +271,7 @@ public class HttpRequestTest {
 
         // Put error Request
         try {
-            HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+            HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:" + port + "/errorRequest", null, 1000,
                     1000, null);
             fail();
         } catch (HttpResponseException e) {
@@ -270,7 +280,7 @@ public class HttpRequestTest {
 
         // Delete error Request
         try {
-            HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null,
+            HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:" + port + "/errorRequest", null,
                     1000, 1000, null);
             fail();
         } catch (HttpResponseException e) {
@@ -288,6 +298,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         // api to check with Body
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -361,14 +373,14 @@ public class HttpRequestTest {
         // Post Request with Body
         {
             JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
+                    "http://localhost:" + port + "/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
         }
         // Put Request with Body
         {
             JsonObject response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
+                    "http://localhost:" + port + "/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
 
@@ -377,7 +389,7 @@ public class HttpRequestTest {
         // Delete Request with Body
         {
             JsonObject response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
-                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
+                    "http://localhost:" + port + "/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
 
@@ -452,7 +464,7 @@ public class HttpRequestTest {
         // post request without body
         {
             JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
@@ -461,7 +473,7 @@ public class HttpRequestTest {
         // put request without body
         {
             JsonObject response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
@@ -470,7 +482,7 @@ public class HttpRequestTest {
         // Delete request without body
         {
             JsonObject response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
@@ -487,6 +499,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         // api to check withVersion
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -543,7 +557,7 @@ public class HttpRequestTest {
 
         // Get Request
         {
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/withVersion",
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:" + port + "/withVersion",
                     null, 1000, 1000, 0);
             assertEquals(response, "0");
 
@@ -552,7 +566,7 @@ public class HttpRequestTest {
         // Post Request
         {
             String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withVersion", null, 1000, 1000, 0);
+                    "http://localhost:" + port + "/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
@@ -560,7 +574,7 @@ public class HttpRequestTest {
         // Put Request
         {
             String response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withVersion", null, 1000, 1000, 0);
+                    "http://localhost:" + port + "/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
@@ -568,7 +582,7 @@ public class HttpRequestTest {
         // Delete Request
         {
             String response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
-                    "http://localhost:3567/withVersion", null, 1000, 1000, 0);
+                    "http://localhost:" + port + "/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
@@ -625,7 +639,7 @@ public class HttpRequestTest {
         {
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
@@ -633,7 +647,7 @@ public class HttpRequestTest {
         // Post Request
         {
             String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
@@ -641,7 +655,7 @@ public class HttpRequestTest {
         // Put Request
         {
             String response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
@@ -649,7 +663,7 @@ public class HttpRequestTest {
         // Delete Request
         {
             String response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
-                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
@@ -664,6 +678,8 @@ public class HttpRequestTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int port = HttpRequestForTesting.corePort;
 
         // api to check getRequestWithParams
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -701,7 +717,7 @@ public class HttpRequestTest {
 
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/getTestWithParams", map, 1000, 1000, null);
+                    "http://localhost:" + port + "/getTestWithParams", map, 1000, 1000, null);
             assertEquals(response, "200");
         }
 
@@ -729,7 +745,7 @@ public class HttpRequestTest {
 
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/getTestWithoutParams", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/getTestWithoutParams", null, 1000, 1000, null);
             assertEquals(response, "200");
         }
         process.kill();

@@ -42,6 +42,9 @@ public class VerifySessionAPITest3_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -278,7 +281,7 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getAppForTesting().toAppIdentifier(),
                 process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
@@ -355,7 +358,7 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getAppForTesting().toAppIdentifier(),
                 process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
@@ -411,7 +414,7 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getAppForTesting().toAppIdentifier(),
                 process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 

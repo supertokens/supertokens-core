@@ -44,14 +44,14 @@ public class TestMultitenancyStats {
         String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
+        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        if (StorageLayer.isInMemDb(process.main)) {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             // cause we keep all features enabled in memdb anyway
             return;
         }

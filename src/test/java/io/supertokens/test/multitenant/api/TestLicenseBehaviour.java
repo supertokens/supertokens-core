@@ -32,10 +32,8 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import java.io.IOException;
 
@@ -43,6 +41,9 @@ import static org.junit.Assert.*;
 
 public class TestLicenseBehaviour {
     TestingProcessManager.TestingProcess process;
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -63,7 +64,7 @@ public class TestLicenseBehaviour {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }
 
@@ -184,7 +185,7 @@ public class TestLicenseBehaviour {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -327,7 +328,7 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         JsonObject config = new JsonObject();
-        TestMultitenancyAPIHelper.createConnectionUriDomain(process.main, new TenantIdentifier(null, null, null), null,
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), new TenantIdentifier(null, null, null), null,
                 true, true, true, new JsonObject());
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(
                 new TenantIdentifier(null, null, null),

@@ -85,7 +85,7 @@ public class GetLicenseKeyAPITest {
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Assert.assertNull(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance());
+        Assert.assertNull(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance());
 
         Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length, 0);
 

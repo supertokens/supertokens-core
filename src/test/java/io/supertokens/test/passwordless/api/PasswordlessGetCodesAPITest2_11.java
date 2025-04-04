@@ -46,6 +46,9 @@ public class PasswordlessGetCodesAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -186,9 +189,9 @@ public class PasswordlessGetCodesAPITest2_11 {
             assertEquals(0, response.get("devices").getAsJsonArray().size());
         }
 
-        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
+        storage.createDeviceWithCode(process.getAppForTesting(), email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
+        assertEquals(1, storage.getDevicesByEmail(process.getAppForTesting(), email).length);
 
         // match
 
@@ -245,9 +248,9 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
+            storage.createDeviceWithCode(process.getAppForTesting(), email, null, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-            assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
+            assertEquals(1, storage.getDevicesByEmail(process.getAppForTesting(), email).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
@@ -302,10 +305,10 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
+            storage.createDeviceWithCode(process.getAppForTesting(), null, phoneNumber, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
             assertEquals(1,
-                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
+                    storage.getDevicesByPhoneNumber(process.getAppForTesting(), phoneNumber).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
@@ -364,7 +367,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             deviceID = createCodeResponse.deviceId;
 
             assertEquals(1,
-                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
+                    storage.getDevicesByPhoneNumber(process.getAppForTesting(), phoneNumber).length);
             // TODO: deviceID =
             {
                 HashMap<String, String> map = new HashMap<>();

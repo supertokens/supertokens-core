@@ -46,6 +46,9 @@ public class HandshakeAPITest2_9 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -151,7 +154,7 @@ public class HandshakeAPITest2_9 {
 
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String jsonInput = "{" + "\"deviceDriverInfo\": {" + "\"frontendSDK\": [{" + "\"name\": \"hName\","
@@ -163,7 +166,7 @@ public class HandshakeAPITest2_9 {
 
         assertEquals(response.entrySet().size(), 7);
 
-        List<String> keys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
+        List<String> keys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
@@ -186,7 +189,7 @@ public class HandshakeAPITest2_9 {
         // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
 
-        List<String> changedPubKeys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
+        List<String> changedPubKeys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
@@ -213,7 +216,7 @@ public class HandshakeAPITest2_9 {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 
-        List<KeyInfo> allKeys = SigningKeys.getInstance(process.main).getDynamicKeys();
+        List<KeyInfo> allKeys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys();
         List<String> pubKeys = allKeys.stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 

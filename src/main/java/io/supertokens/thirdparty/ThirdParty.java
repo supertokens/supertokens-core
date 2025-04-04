@@ -17,6 +17,7 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -113,7 +114,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp2_7(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -126,7 +127,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     thirdPartyId, thirdPartyUserId, email, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -140,7 +141,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -389,7 +390,7 @@ public class ThirdParty {
     @TestOnly
     public static AuthRecipeUserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUser(new AppIdentifier(null, null), storage, userId);
+        return getUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     public static AuthRecipeUserInfo getUser(TenantIdentifier tenantIdentifier, Storage storage,
@@ -405,7 +406,7 @@ public class ThirdParty {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUser(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 thirdPartyId, thirdPartyUserId);
     }
 

@@ -24,7 +24,7 @@ public class ActiveUsers {
     @TestOnly
     public static void updateLastActive(Main main, String userId) {
         try {
-            ActiveUsers.updateLastActive(new AppIdentifier(null, null),
+            ActiveUsers.updateLastActive(ResourceDistributor.getAppForTesting().toAppIdentifier(),
                     main, userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -55,6 +55,6 @@ public class ActiveUsers {
     @TestOnly
     public static int countUsersActiveSince(Main main, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return countUsersActiveSince(main, new AppIdentifier(null, null), time);
+        return countUsersActiveSince(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), time);
     }
 }
