@@ -34,6 +34,7 @@ public class TestServiceUtils {
         try {
             OAuthProviderService.startService();
             PostgresqlService.startService();
+            MysqlService.startService();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -42,6 +43,7 @@ public class TestServiceUtils {
     public static void killServices() throws InterruptedException, IOException {
         OAuthProviderService.killService();
         PostgresqlService.killService();
+        MysqlService.killService();
     }
 
     private static class CmdHelper {
@@ -110,6 +112,63 @@ public class TestServiceUtils {
         public static void killService() throws IOException, InterruptedException {
             CmdHelper.runCommand(new String[] {
                     "docker", "stop", PG_SERVICE_NAME
+            });
+        }
+    }
+
+    private static class MysqlService {
+        private static final String MYSQL_SERVICE_NAME = "mysql_" + System.getProperty("org.gradle.test.worker", "base");
+        private static final int MYSQL_DB_PORT = new Random().nextInt(5000) + 20000;
+
+        static {
+            System.setProperty("ST_MYSQL_PLUGIN_SERVER_PORT", "" + MYSQL_DB_PORT);
+        }
+
+        private static int runQuery(String query) throws InterruptedException, IOException {
+            System.out.println("Running query: " + query);
+            return CmdHelper.runCommand(new String[] {
+                    "docker", "exec", MYSQL_SERVICE_NAME, "mysql", "-uroot", "-proot", "-e", query
+            });
+        }
+
+        public static void startService() throws IOException, InterruptedException {
+            if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("mysql")) {
+                int exitCode = CmdHelper.runCommand(new String[] {
+                        "docker", "run", "--rm", "--name", MYSQL_SERVICE_NAME,
+                        "-e", "MYSQL_ROOT_PASSWORD=root",
+                        "-d", "-p", MYSQL_DB_PORT + ":3306",
+                        "mysql:8.0"
+                });
+
+                if (exitCode != 0) {
+                    throw new RuntimeException("Failed to start MySQL service");
+                }
+
+                for (int i = 0; i < 1000; i++) {
+                    exitCode = CmdHelper.runCommand(new String[] {
+                            "docker", "exec", MYSQL_SERVICE_NAME, "mysqladmin", "ping", "-uroot", "-proot", "-h", "localhost"
+                    });
+                    if (exitCode == 0) {
+                        break;
+                    }
+                    Thread.sleep(200);
+                }
+
+                while (runQuery("CREATE DATABASE supertokens;") != 0) {
+                    Thread.sleep(200);
+                }
+
+                for (int i = 0; i <= 10; i++) {
+                    while (runQuery("CREATE DATABASE st" + i + ";") != 0) {
+                        Thread.sleep(200);
+                    }
+                }
+            }
+        }
+
+        public static void killService() throws IOException, InterruptedException {
+            CmdHelper.runCommand(new String[] {
+                    "docker", "stop", MYSQL_SERVICE_NAME
             });
         }
     }
