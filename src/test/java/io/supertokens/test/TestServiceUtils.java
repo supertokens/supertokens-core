@@ -35,6 +35,7 @@ public class TestServiceUtils {
             OAuthProviderService.startService();
             PostgresqlService.startService();
             MysqlService.startService();
+            MongodbService.startService();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -44,6 +45,7 @@ public class TestServiceUtils {
         OAuthProviderService.killService();
         PostgresqlService.killService();
         MysqlService.killService();
+        MongodbService.killService();
     }
 
     private static class CmdHelper {
@@ -169,6 +171,60 @@ public class TestServiceUtils {
         public static void killService() throws IOException, InterruptedException {
             CmdHelper.runCommand(new String[] {
                     "docker", "stop", MYSQL_SERVICE_NAME
+            });
+        }
+    }
+
+    private static class MongodbService {
+        private static final String MONGODB_SERVICE_NAME = "mongodb_" + System.getProperty("org.gradle.test.worker", "base");
+        private static final int MONGODB_PORT = new Random().nextInt(5000) + 30000;
+
+        static {
+            System.setProperty("ST_MONGODB_PLUGIN_SERVER_PORT", "" + MONGODB_PORT);
+        }
+
+        private static int runCommand(String command) throws InterruptedException, IOException {
+            System.out.println("Running command: " + command);
+            return CmdHelper.runCommand(new String[] {
+                    "docker", "exec", MONGODB_SERVICE_NAME, "mongosh", "--eval", command
+            });
+        }
+
+        public static void startService() throws IOException, InterruptedException {
+            if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("mongodb")) {
+                int exitCode = CmdHelper.runCommand(new String[] {
+                        "docker", "run", "--rm", "--name", MONGODB_SERVICE_NAME,
+                        "-d", "-p", MONGODB_PORT + ":27017",
+                        "-e", "MONGO_INITDB_ROOT_USERNAME=root",
+                        "-e", "MONGO_INITDB_ROOT_PASSWORD=root",
+                        "mongo:latest"
+                });
+
+                if (exitCode != 0) {
+                    throw new RuntimeException("Failed to start MongoDB service");
+                }
+
+                // Wait for MongoDB to be ready
+                for (int i = 0; i < 1000; i++) {
+                    exitCode = CmdHelper.runCommand(new String[] {
+                            "docker", "exec", MONGODB_SERVICE_NAME, "mongosh", "--eval", "db.version()"
+                    });
+                    if (exitCode == 0) {
+                        break;
+                    }
+                    Thread.sleep(200);
+                }
+
+                // Create databases
+                while (runCommand("use supertokens") != 0) {
+                    Thread.sleep(200);
+                }
+            }
+        }
+
+        public static void killService() throws IOException, InterruptedException {
+            CmdHelper.runCommand(new String[] {
+                    "docker", "stop", MONGODB_SERVICE_NAME
             });
         }
     }
