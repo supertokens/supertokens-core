@@ -137,7 +137,7 @@ public class TestServiceUtils {
                         "docker", "run", "--rm", "--name", MYSQL_SERVICE_NAME,
                         "-e", "MYSQL_ROOT_PASSWORD=root",
                         "-d", "-p", MYSQL_DB_PORT + ":3306",
-                        "mysql:8.0"
+                        "mysql"
                 });
 
                 if (exitCode != 0) {
