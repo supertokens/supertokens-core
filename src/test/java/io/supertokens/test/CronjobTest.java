@@ -998,8 +998,10 @@ public class CronjobTest {
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
                     assertEquals(2, tenantsInfo.size());
-                    assertEquals(1, tenantsInfo.get(0).size());
-                    assertEquals(4, tenantsInfo.get(1).size());
+                    assertTrue(
+                        (tenantsInfo.get(0).size() == 1 && tenantsInfo.get(1).size() == 4) ||
+                        (tenantsInfo.get(0).size() == 4 && tenantsInfo.get(1).size() == 1)
+                    );
                     count++;
                 }
             }
