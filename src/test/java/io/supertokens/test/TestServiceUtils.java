@@ -75,7 +75,7 @@ public class TestServiceUtils {
         }
 
         public static void startService() throws IOException, InterruptedException {
-            if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("postgresql")) {
+            if (!System.getenv().containsKey("ST_PLUGIN_NAME") || System.getenv("ST_PLUGIN_NAME").equals("postgresql")) {
                 int exitCode = CmdHelper.runCommand(new String[] {
                         "docker", "run", "--rm", "--name", PG_SERVICE_NAME,
                         "-e", "POSTGRES_USER=root",
@@ -134,7 +134,7 @@ public class TestServiceUtils {
         }
 
         public static void startService() throws IOException, InterruptedException {
-            if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("mysql")) {
+            if (!System.getenv().containsKey("ST_PLUGIN_NAME") || System.getenv("ST_PLUGIN_NAME").equals("mysql")) {
                 int exitCode = CmdHelper.runCommand(new String[] {
                         "docker", "run", "--rm", "--name", MYSQL_SERVICE_NAME,
                         "-e", "MYSQL_ROOT_PASSWORD=root",
@@ -191,7 +191,7 @@ public class TestServiceUtils {
         }
 
         public static void startService() throws IOException, InterruptedException {
-            if (System.getProperty("ST_PLUGIN_NAME", "").isBlank() || System.getProperty("ST_PLUGIN_NAME", "").equals("mongodb")) {
+            if (!System.getenv().containsKey("ST_PLUGIN_NAME") || System.getenv("ST_PLUGIN_NAME").equals("mongodb")) {
                 int exitCode = CmdHelper.runCommand(new String[] {
                         "docker", "run", "--rm", "--name", MONGODB_SERVICE_NAME,
                         "-d", "-p", MONGODB_PORT + ":27017",
