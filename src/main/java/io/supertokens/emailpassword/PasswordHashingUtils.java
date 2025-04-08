@@ -23,7 +23,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import org.apache.tomcat.util.codec.binary.Base64;
+import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
@@ -118,9 +118,9 @@ public class PasswordHashingUtils {
 
         // concatenating decoded salt + separator
         byte[] byteArrTemp = response.salt.getBytes(StandardCharsets.US_ASCII);
-        byte[] decodedSaltBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
+        byte[] decodedSaltBytes = Base64.decodeBase64(byteArrTemp);
         byteArrTemp = response.saltSeparator.getBytes(StandardCharsets.US_ASCII);
-        byte[] decodedSaltSepBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
+        byte[] decodedSaltSepBytes = Base64.decodeBase64(byteArrTemp);
 
         byte[] saltConcat = new byte[decodedSaltBytes.length + decodedSaltSepBytes.length];
         System.arraycopy(decodedSaltBytes, 0, saltConcat, 0, decodedSaltBytes.length);
@@ -136,7 +136,7 @@ public class PasswordHashingUtils {
         }
         // encrypting with aes
         byteArrTemp = base64_signer_key.getBytes(StandardCharsets.US_ASCII);
-        byte[] signerBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
+        byte[] signerBytes = Base64.decodeBase64(byteArrTemp);
 
         try {
             String CIPHER = "AES/CTR/NoPadding";
