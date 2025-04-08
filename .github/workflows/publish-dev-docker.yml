@@ -54,7 +54,7 @@ jobs:
           file: .github/helpers/Dockerfile
 
   docker-for-plugins:
-    name: Build and push docker image with plugins
+    name: Docker with plugin
     runs-on: ubuntu-latest
     needs: dependency-branches
     strategy:
@@ -129,4 +129,4 @@ jobs:
           push: true
           context: ./supertokens-root
           tags: supertokens/supertokens-core:dev-${{ matrix.plugin }}-${{ steps.set_tag.outputs.TAG }}
-          file: supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
+          file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
