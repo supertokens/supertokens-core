@@ -25,7 +25,7 @@ jobs:
       matrix:
         plugin:
           - postgresql
-          # - mysql
+          - mysql
           # - mongodb
     steps:
       - name: Set up JDK 15.0.1
