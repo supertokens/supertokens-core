@@ -128,5 +128,5 @@ jobs:
         with:
           push: true
           context: ./supertokens-root
-          tags: supertokens/supertokens-core:dev-${{ matrix.plugin }}-${{ steps.set_tag.outputs.TAG }}
+          tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
