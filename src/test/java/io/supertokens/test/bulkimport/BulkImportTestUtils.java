@@ -45,6 +45,7 @@ import io.supertokens.utils.Utils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -79,13 +80,14 @@ public class BulkImportTestUtils {
 
             List<LoginMethod> loginMethods = new ArrayList<>();
             long currentTimeMillis = System.currentTimeMillis();
-            loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, "$2a",
+            Random random = new Random();
+            loginMethods.add(new LoginMethod(tenants, "emailpassword", random.nextBoolean(), true, currentTimeMillis, email, "$2a",
                     "BCRYPT", null, null, null, null, io.supertokens.utils.Utils.getUUID()));
             loginMethods
-                    .add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis, email, null, null, null,
+                    .add(new LoginMethod(tenants, "thirdparty", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
             loginMethods.add(
-                    new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null, null,
+                    new LoginMethod(tenants, "passwordless", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             null, null, null, io.supertokens.utils.Utils.getUUID()));
             id = loginMethods.get(0).superTokensUserId;
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));

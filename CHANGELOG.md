@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.4]
+
+- Bulk migration now actually uses the `isVerified` field's value in the loginMethod input
+
+
 ## [10.1.3]
 
 - Version bumped for re-release
