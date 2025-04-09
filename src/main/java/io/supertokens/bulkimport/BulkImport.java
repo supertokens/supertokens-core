@@ -73,6 +73,7 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -672,29 +673,43 @@ public class BulkImport {
     public static void verifyMultipleEmailForAllLoginMethods(AppIdentifier appIdentifier, Storage storage,
                                                              List<BulkImportUser> users)
             throws StorageTransactionLogicException {
-        Map<String, String> emailToUserId = new HashMap<>();
-        for (BulkImportUser user : users) {
-            for (LoginMethod lm : user.loginMethods) {
-                emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
-            }
-        }
 
+        Map<String, String> emailToUserId = collectVerifiedEmailAddressesByUserIds(users);
         try {
-            if(!emailToUserId.isEmpty()) {
-                EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
-                        .getEmailVerificationStorage(storage);
-                emailVerificationSQLStorage.startTransaction(con -> {
-                    emailVerificationSQLStorage
-                            .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
-                                    emailToUserId, true);
-
-                    emailVerificationSQLStorage.commitTransaction(con);
-                    return null;
-                });
-            }
+            verifyCollectedEmailAddressesForUsers(appIdentifier, storage, emailToUserId);
         } catch (StorageQueryException e) {
             throw new StorageTransactionLogicException(e);
         }
+    }
+
+    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage, Map<String, String> emailToUserId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        if(!emailToUserId.isEmpty()) {
+            EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
+                    .getEmailVerificationStorage(storage);
+            emailVerificationSQLStorage.startTransaction(con -> {
+                emailVerificationSQLStorage
+                        .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
+                                emailToUserId, true); //only the verified email addresses are expected to be in the map
+
+                emailVerificationSQLStorage.commitTransaction(con);
+                return null;
+            });
+        }
+    }
+
+    @NotNull
+    private static Map<String, String> collectVerifiedEmailAddressesByUserIds(List<BulkImportUser> users) {
+        Map<String, String> emailToUserId = new HashMap<>();
+        for (BulkImportUser user : users) {
+            for (LoginMethod lm : user.loginMethods) {
+                if(lm.isVerified) {
+                    //collect the verified email addresses for the userId
+                    emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
+                }
+            }
+        }
+        return emailToUserId;
     }
 
     public static void createMultipleTotpDevices(Main main, AppIdentifier appIdentifier,
