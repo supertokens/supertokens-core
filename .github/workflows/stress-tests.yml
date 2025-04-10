@@ -1,0 +1,30 @@
+name: Stress Tests
+
+on:
+  push:
+    branches:
+      - '**' 
+
+
+jobs:
+  stress-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          cd stress-tests
+          npm install
+      - name: Run one million users test
+        id: one-million-users
+        run: |
+          cd stress-tests
+          echo "::set-output name=result::$(npm run one-million-users)"
+      - name: Create summary
+        run: |
+          echo "## One Million Users Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.one-million-users.outputs.result }}" >> $GITHUB_STEP_SUMMARY

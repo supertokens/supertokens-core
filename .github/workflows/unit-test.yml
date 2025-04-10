@@ -6,9 +6,6 @@ on:
       - opened
       - reopened
       - synchronize
-  push:
-    branches:
-      - "**" # TODO: change to x.y
 
 jobs:
   dependency-branches:
