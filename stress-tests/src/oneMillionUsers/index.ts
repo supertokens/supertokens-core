@@ -122,7 +122,7 @@ async function main() {
         console.error("An error occurred during execution:", error);
         throw error;
     } finally {
-        // await deleteStInstance(deployment.deployment_id);
+        await deleteStInstance(deployment.deployment_id);
     }
 }
 
