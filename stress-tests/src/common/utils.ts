@@ -11,11 +11,11 @@ export const createStInstanceForTest = async () => {
         docker_image_name: process.env.SUPERTOKENS_DOCKER_IMAGE || "supertokens/supertokens-postgresql"
       })
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    
+
     const data: any = await response.json();
 
     const coreUrl = data.deployment.core_url;
@@ -24,16 +24,16 @@ export const createStInstanceForTest = async () => {
     let attempts = 0;
     const maxAttempts = 30;
     const retryDelay = 2000;
-    
+
     while (!isReady && attempts < maxAttempts) {
       try {
-        const healthCheck = await fetch(`${coreUrl}/health`, {
+        const healthCheck = await fetch(`${coreUrl}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json'
           }
         });
-        
+
         if (healthCheck.ok) {
           isReady = true;
         } else {
@@ -45,7 +45,7 @@ export const createStInstanceForTest = async () => {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
-    
+
     if (!isReady) {
       throw new Error(`Core URL ${coreUrl} did not become ready after ${maxAttempts} attempts`);
     }
@@ -62,7 +62,7 @@ export const deleteStInstance = async (deploymentId: string) => {
     const response = await fetch(`https://provision.supertokens.sattvik.me/deployments/${deploymentId}`, {
       method: 'DELETE'
     });
-  } finally {}
+  } finally { }
 }
 
 export const formatTime = (ms: number): string => {
