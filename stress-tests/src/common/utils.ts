@@ -17,6 +17,39 @@ export const createStInstanceForTest = async () => {
     }
     
     const data: any = await response.json();
+
+    const coreUrl = data.deployment.core_url;
+
+    let isReady = false;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const retryDelay = 2000;
+    
+    while (!isReady && attempts < maxAttempts) {
+      try {
+        const healthCheck = await fetch(`${coreUrl}/health`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (healthCheck.ok) {
+          isReady = true;
+        } else {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      } catch (err) {
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+    
+    if (!isReady) {
+      throw new Error(`Core URL ${coreUrl} did not become ready after ${maxAttempts} attempts`);
+    }
+
     return data.deployment!;
   } catch (error) {
     throw error;
