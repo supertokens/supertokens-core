@@ -23,8 +23,4 @@ jobs:
         id: one-million-users
         run: |
           cd stress-tests
-          echo "::set-output name=result::$(npm run one-million-users)"
-      - name: Create summary
-        run: |
-          echo "## One Million Users Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.one-million-users.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          npm run one-million-users
