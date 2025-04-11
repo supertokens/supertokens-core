@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsersImport/generateUsers.ts",
+    "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
     "one-million-users": "ts-node src/oneMillionUsers/index.ts"
   },
   "keywords": [],
