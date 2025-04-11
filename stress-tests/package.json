@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
-    "supertokens-node": "file:../../../supertokens-node",
+    "supertokens-node": "latest",
     "uuid": "^11.1.0"
   }
 }
