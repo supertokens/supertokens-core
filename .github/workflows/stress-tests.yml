@@ -19,8 +19,13 @@ jobs:
         run: |
           cd stress-tests
           npm install
+      - name: Generate user jsons
+        run: |
+          cd stress-tests
+          npm run generate-users
       - name: Run one million users test
         id: one-million-users
         run: |
           cd stress-tests
-          npm run one-million-users
+          npm run one-million-users | tee stress-tests.log
+

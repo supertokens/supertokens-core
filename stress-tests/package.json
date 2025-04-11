@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsersImport/generateUsers.ts",
     "one-million-users": "ts-node src/oneMillionUsers/index.ts"
   },
   "keywords": [],
@@ -17,6 +18,8 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "supertokens-node": "latest"
+    "@types/uuid": "^10.0.0",
+    "supertokens-node": "file:../../../supertokens-node",
+    "uuid": "^11.1.0"
   }
 }

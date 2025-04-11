@@ -12,6 +12,7 @@ import { doAccountLinking } from "./accountLinking";
 import { createUserIdMappings } from "./createUserIdMappings";
 import { addRoles } from "./addRoles";
 import { createSessions } from "./createSessions";
+import { importMillionUsers } from "./importMillionUsers";
 
 function stInit(connectionURI: string, apiKey: string) {
     SuperTokens.init({
@@ -59,6 +60,8 @@ async function main() {
     try {
         stInit(deployment.core_url, deployment.api_key);
         await setupLicense(deployment.core_url, deployment.api_key);
+        // 0. Import one million users
+        await importMillionUsers(deployment);
 
         // 1. Create one million users
         const users = await createUsers();
