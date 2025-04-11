@@ -40,6 +40,9 @@ public class SessionTest4 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -54,7 +57,7 @@ public class SessionTest4 {
     public void checkForNumberOfDeletedSessions() throws Exception {
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -92,7 +95,7 @@ public class SessionTest4 {
         assertTrue(revokedAll);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
+                .getNumberOfSessions(process.getAppForTesting()), 2);
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
@@ -101,12 +104,12 @@ public class SessionTest4 {
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 1);
 
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 0);
+                .getNumberOfSessions(process.getAppForTesting()), 0);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
@@ -150,7 +153,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "3");
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -164,7 +167,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);
@@ -199,7 +202,7 @@ public class SessionTest4 {
             assert sessionInfo.accessToken != null;
 
             assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                    .getNumberOfSessions(process.getAppForTesting()), 1);
         }
 
         process.kill();
@@ -210,7 +213,7 @@ public class SessionTest4 {
     public void verifyAccessTokenThatIsBelongsToGrandparentRefreshToken() throws Exception {
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -224,7 +227,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
-                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
+                .getNumberOfSessions(process.getAppForTesting()), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);
@@ -294,7 +297,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("refresh_token_validity", "0.08"); // 5 seconds
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         SessionInformationHolder expiredSession = Session.createNewSession(process.getProcess(), "user",
@@ -342,7 +345,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
@@ -363,7 +366,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
@@ -373,7 +376,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
         assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
 
-        SessionInformationHolder sessionInfo2 = Session.refreshSession(process.main, sessionInfo.refreshToken.token,
+        SessionInformationHolder sessionInfo2 = Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token,
                 null, false, AccessToken.getLatestVersion());
 
         assertFalse(sessionInfo.accessToken.token.equals(sessionInfo2.accessToken.token));
@@ -393,7 +396,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
@@ -408,10 +411,10 @@ public class SessionTest4 {
         JsonObject jwtData = new JsonObject();
         jwtData.addProperty("test", "value");
 
-        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData,
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, sessionData, jwtData,
                 AccessToken.getLatestVersion());
 
-        io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.main,
+        io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle);
 
         assertEquals(sessionInfo2.expiry - sessionInfo2.timeCreated, twoYearsInSeconds * 1000);

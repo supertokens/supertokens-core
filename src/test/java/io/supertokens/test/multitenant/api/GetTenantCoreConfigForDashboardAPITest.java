@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,6 +49,9 @@ public class GetTenantCoreConfigForDashboardAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -62,15 +66,17 @@ public class GetTenantCoreConfigForDashboardAPITest {
     public void testRetrievingConfigProperties() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
+        int port = HttpRequestForTesting.corePort;
+
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/tenant/core-config", null,
+                "http://localhost:" + port + "/recipe/dashboard/tenant/core-config", null,
                 1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");
@@ -115,7 +121,7 @@ public class GetTenantCoreConfigForDashboardAPITest {
     public void testMatchConfigPropertiesDescription() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // access_token_signing_key_update_interval is an alias for
@@ -165,6 +171,21 @@ public class GetTenantCoreConfigForDashboardAPITest {
                     String propertyKeyString = lines[lines.length - 1];
                     // Remove the comment "# " from the start
                     String propertyKey = propertyKeyString.substring(2, propertyKeyString.length() - 1);
+                    String propertyDescription = "";
+                    // Remove the comment "# " from the start and merge all the lines to form the
+                    // description
+                    for (int j = 0; j < lines.length - 1; j++) {
+                        propertyDescription = propertyDescription + " " + lines[j].substring(2);
+                    }
+                    propertyDescription = propertyDescription.trim();
+
+                    propertyDescriptions.put(propertyKey, propertyDescription);
+                } else if (lines[lines.length - 1].contains(": ") && (
+                                !lines[lines.length - 1].contains("Default:") &&
+                                !lines[lines.length - 1].contains("Important:")
+                        )) {
+                    String propertyKeyString = lines[lines.length - 1];
+                    String propertyKey = propertyKeyString.split(":")[0].trim();
                     String propertyDescription = "";
                     // Remove the comment "# " from the start and merge all the lines to form the
                     // description

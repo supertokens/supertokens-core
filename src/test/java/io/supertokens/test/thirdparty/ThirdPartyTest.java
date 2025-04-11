@@ -42,6 +42,9 @@ public class ThirdPartyTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -291,7 +294,7 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), io.supertokens.utils.Utils.getUUID(), email,
+                    .signUp(process.getAppForTesting(), io.supertokens.utils.Utils.getUUID(), email,
                             new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             throw new Exception("Should not come here");
         } catch (DuplicateThirdPartyUserException ignored) {
@@ -324,7 +327,7 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), signUpResponse.user.getSupertokensUserId(), email,
+                    .signUp(process.getAppForTesting(), signUpResponse.user.getSupertokensUserId(), email,
                             new LoginMethod.ThirdParty("newThirdParty", "newThirdPartyUserId"),
                             System.currentTimeMillis());
             throw new Exception("Should not come here");

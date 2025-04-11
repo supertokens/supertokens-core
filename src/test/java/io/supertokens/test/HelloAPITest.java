@@ -38,6 +38,9 @@ public class HelloAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -52,12 +55,14 @@ public class HelloAPITest {
     public void testHelloAPIWithBasePath1() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         Utils.setValueInConfig("base_path", "/base");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/base", null, 1000, 1000,
@@ -77,12 +82,14 @@ public class HelloAPITest {
     public void testHelloAPIWithBasePath2() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         Utils.setValueInConfig("base_path", "/hello");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/hello", null, 1000, 1000,
@@ -102,7 +109,7 @@ public class HelloAPITest {
     public void testHelloAPIWithBasePath3() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         Utils.setValueInConfig("base_path", "/hello");
@@ -155,6 +162,8 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
+        HttpRequestForTesting.disableAddingAppId = true;
+
         for (String helloUrl : HELLO_ROUTES) {
             System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -188,7 +197,7 @@ public class HelloAPITest {
     public void testWithBasePathThatHelloAPIDoesNotRequireAPIKeys() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         Utils.setValueInConfig("api_keys", "asdfasdfasdf123412341234");
@@ -244,6 +253,8 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
+        HttpRequestForTesting.disableAddingAppId = true;
+
         for (String helloUrl : HELLO_ROUTES) {
             System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -278,7 +289,7 @@ public class HelloAPITest {
     public void testThatHelloAPIDoesNotRequireAPIKeys() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         Utils.setValueInConfig("api_keys", "asdfasdfasdf123412341234");

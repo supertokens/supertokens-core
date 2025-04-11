@@ -56,6 +56,9 @@ public class SessionTests {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -164,11 +167,10 @@ public class SessionTests {
     @Test
     public void testCreateSessionWithRecipeUserIdReturnsSessionWithPrimaryUserId() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -193,11 +195,10 @@ public class SessionTests {
     @Test
     public void testSessionIsRemovedWhileLinking() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -232,11 +233,10 @@ public class SessionTests {
     @Test
     public void testSessionIsRemovedWhileUnlinking() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -271,11 +271,10 @@ public class SessionTests {
     @Test
     public void testSessionBehaviourWhenUserBelongsTo2TenantsAndThenLinkedToSomeOtherUser1() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -317,11 +316,10 @@ public class SessionTests {
     @Test
     public void testSessionBehaviourWhenUserBelongsTo2TenantsAndThenLinkedToSomeOtherUser2() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -363,11 +361,10 @@ public class SessionTests {
     @Test
     public void testSessionBehaviourWhenUserBelongsTo2TenantsAndThenLinkedToSomeOtherUser3() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -404,11 +401,10 @@ public class SessionTests {
     @Test
     public void testCreateSessionUsesPrimaryUserIdEvenWhenTheUserIsNotInThatTenant() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -444,11 +440,10 @@ public class SessionTests {
     @Test
     public void testGetSessionForUserWithAndWithoutIncludingAllLinkedAccounts() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -469,14 +464,14 @@ public class SessionTests {
         Storage baseTenant = (StorageLayer.getBaseStorage(process.getProcess()));
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
             assertEquals(session1.session.handle, sessions[0]);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
@@ -484,13 +479,13 @@ public class SessionTests {
         }
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
@@ -503,11 +498,10 @@ public class SessionTests {
     @Test
     public void testRevokeSessionsForUserWithAndWithoutIncludingAllLinkedAccounts() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -531,7 +525,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(), true);
 
             try {
@@ -558,7 +552,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(), true);
 
             try {
@@ -585,7 +579,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(), false);
 
             try {
@@ -608,7 +602,7 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+            Session.revokeAllSessionsForUser(process.getProcess(), process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(), false);
 
             Session.getSession(process.getProcess(), session1.session.handle);
@@ -628,11 +622,10 @@ public class SessionTests {
     @Test
     public void testCreateSessionWithUserIdMappedForRecipeUser() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

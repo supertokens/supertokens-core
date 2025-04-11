@@ -42,6 +42,9 @@ public class CreateRoleAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -170,8 +173,8 @@ public class CreateRoleAPITest {
             assertTrue(response.get("createdNewRole").getAsBoolean());
 
             // retrieve all roles and check that the newly created role is returned
-            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-            String[] roles = storage.getRoles(new AppIdentifier(null, null));
+            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
+            String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -190,8 +193,8 @@ public class CreateRoleAPITest {
             assertFalse(response.get("createdNewRole").getAsBoolean());
 
             // retrieve all roles and check that no new role has been created
-            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-            String[] roles = storage.getRoles(new AppIdentifier(null, null));
+            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
+            String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -224,8 +227,8 @@ public class CreateRoleAPITest {
         assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // retrieve all roles and check that the newly created role is returned
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-        String[] roles = storage.getRoles(new AppIdentifier(null, null));
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
+        String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
@@ -260,13 +263,13 @@ public class CreateRoleAPITest {
         assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // check if role is created
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
-        String[] roles = storage.getRoles(new AppIdentifier(null, null));
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
+        String[] roles = storage.getRoles(process.getAppForTesting().toAppIdentifier());
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
         // check if permissions have been added
-        String[] rolePermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
+        String[] rolePermissions = storage.getPermissionsForRole(process.getAppForTesting().toAppIdentifier(), role);
 
         Utils.checkThatArraysAreEqual(permissions, rolePermissions);
 

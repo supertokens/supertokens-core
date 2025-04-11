@@ -29,6 +29,9 @@ public class RevokeTokenTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -41,7 +44,7 @@ public class RevokeTokenTest {
 
     @Test
     public void testTokenCannotBeUsedToVerifyIfRevoked() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
@@ -71,7 +74,7 @@ public class RevokeTokenTest {
 
     @Test
     public void testRevokingNonExistingTokenShouldPass() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }

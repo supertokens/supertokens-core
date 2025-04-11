@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -54,7 +55,7 @@ public class JWTSigningFunctions {
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         try {
-            return createJWTToken(new AppIdentifier(null, null), main, algorithm, payload, jwksDomain,
+            return createJWTToken(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, algorithm, payload, jwksDomain,
                     jwtValidityInSeconds, useDynamicKey);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

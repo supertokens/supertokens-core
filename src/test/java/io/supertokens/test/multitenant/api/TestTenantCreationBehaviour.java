@@ -43,10 +43,8 @@ import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.webserver.api.multitenancy.BaseCreateOrUpdate;
 import jakarta.servlet.ServletException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -59,6 +57,9 @@ import static org.junit.Assert.*;
 
 public class TestTenantCreationBehaviour {
     TestingProcessManager.TestingProcess process;
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -79,7 +80,7 @@ public class TestTenantCreationBehaviour {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.start(args);
+        this.process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();

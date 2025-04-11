@@ -34,6 +34,9 @@ public class TestRevoke5_2 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -49,19 +52,14 @@ public class TestRevoke5_2 {
     public void testRevokeAccessToken() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         JsonObject client = createClient(process.getProcess());
@@ -94,19 +92,14 @@ public class TestRevoke5_2 {
     public void testRevokeRefreshToken() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         JsonObject client = createClient(process.getProcess());
@@ -149,19 +142,14 @@ public class TestRevoke5_2 {
     public void testRevokeClientId() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         JsonObject client = createClient(process.getProcess());
@@ -231,19 +219,14 @@ public class TestRevoke5_2 {
     public void testRevokeSessionHandle() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         JsonObject client = createClient(process.getProcess());

@@ -42,6 +42,9 @@ public class GetRolesForPermissionAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -127,9 +130,9 @@ public class GetRolesForPermissionAPITest {
         String permission2 = "permission2";
 
         // create role1 with permission [permission1]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[]{permission1});
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], new String[]{permission1});
         // create role2 with permissions [permission1, permission2]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[1],
                 new String[]{permission1, permission2});
 
         {

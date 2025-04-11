@@ -41,6 +41,9 @@ public class GetUsersByEmailAPITest2_8 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -53,7 +56,7 @@ public class GetUsersByEmailAPITest2_8 {
 
     @Test
     public void testReturnTwoUsersWithSameEmail() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -103,7 +106,7 @@ public class GetUsersByEmailAPITest2_8 {
 
     @Test
     public void testReturnOnlyUsersWithGivenEmail() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -149,7 +152,7 @@ public class GetUsersByEmailAPITest2_8 {
 
     @Test
     public void testNotReturnUsersIfEmailNotExists() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
@@ -185,7 +188,7 @@ public class GetUsersByEmailAPITest2_8 {
 
     @Test
     public void testShouldThrowOnBadInput() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }

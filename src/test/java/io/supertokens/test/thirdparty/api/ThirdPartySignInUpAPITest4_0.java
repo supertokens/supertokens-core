@@ -45,6 +45,9 @@ public class ThirdPartySignInUpAPITest4_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -123,11 +126,10 @@ public class ThirdPartySignInUpAPITest4_0 {
     public void testNotAllowedUpdateOfEmail() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -135,11 +137,11 @@ public class ThirdPartySignInUpAPITest4_0 {
         }
 
         AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user0.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user",
                 "someemail@gmail.com");
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), signInUpResponse.user.getSupertokensUserId());
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", "someemail1@gmail.com");

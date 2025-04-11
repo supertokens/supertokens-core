@@ -20,6 +20,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 
+import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.pluginInterface.StorageUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,6 +47,9 @@ import io.supertokens.thirdparty.ThirdParty;
 public class GetUsersWithSearchTagsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -192,13 +197,17 @@ public class GetUsersWithSearchTagsTest {
         ArrayList<String> userIds = new ArrayList<>();
         userIds.add(
                 EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
         userIds.add(
                 EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
         userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").getSupertokensUserId());
+        Thread.sleep(20);
 
         // create thirdparty user
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
                 "test2@example.com").user.getSupertokensUserId());
+        Thread.sleep(20);
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -273,10 +282,14 @@ public class GetUsersWithSearchTagsTest {
         // create 1005 emailpassword users
         ArrayList<String> userIds = new ArrayList<>();
 
+        String hashedPassword = PasswordHashing.getInstance(process.getProcess())
+                .createHashWithSalt(process.getAppForTesting().toAppIdentifier(), "testPass123");
+
         for (int i = 0; i < 1005; i++) {
-            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123")
-                    .getSupertokensUserId());
-            Thread.sleep(10);
+            String userId = io.supertokens.utils.Utils.getUUID();
+            StorageUtils.getEmailPasswordStorage(StorageLayer.getBaseStorage(process.getProcess()))
+                    .signUp(process.getAppForTesting(), userId, "test" + i + "@example.com", hashedPassword, System.currentTimeMillis());
+            userIds.add(userId);
         }
 
         // retrieve users

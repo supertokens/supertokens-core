@@ -18,6 +18,7 @@ package io.supertokens.session.refreshToken;
 
 import com.google.gson.Gson;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -46,7 +47,7 @@ public class RefreshToken {
     public static RefreshTokenInfo getInfoFromRefreshToken(@Nonnull Main main, @Nonnull String token)
             throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException {
         try {
-            return getInfoFromRefreshToken(new AppIdentifier(null, null), main, token);
+            return getInfoFromRefreshToken(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, token);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -92,7 +93,7 @@ public class RefreshToken {
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         try {
-            return createNewRefreshToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+            return createNewRefreshToken(ResourceDistributor.getAppForTesting(), main, sessionHandle, userId,
                     parentRefreshTokenHash1,
                     antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {

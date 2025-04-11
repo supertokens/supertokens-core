@@ -1,0 +1,31 @@
+name: Stress Tests
+
+on:
+  push:
+    branches:
+      - '**' 
+
+
+jobs:
+  stress-tests:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          cd stress-tests
+          npm install
+      - name: Generate user jsons
+        run: |
+          cd stress-tests
+          npm run generate-users
+      - name: Run one million users test
+        id: one-million-users
+        run: |
+          cd stress-tests
+          npm run one-million-users | tee stress-tests.log
+

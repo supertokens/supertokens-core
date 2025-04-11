@@ -42,6 +42,9 @@ public class ImportUserWithPasswordHashAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -333,7 +336,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(process.getAppForTesting(), "userId", email, combinedPasswordHash, timeJoined);
 
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", email);
@@ -375,7 +378,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(process.getAppForTesting(), "userId", email, combinedPasswordHash, timeJoined);
 
         // sign in should result in 500 error since the firebase signer key is not set
         JsonObject signInRequestBody = new JsonObject();
@@ -518,7 +521,7 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
 
-        AuthRecipeUserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo initialUserInfo = EmailPassword.signUp(process.getProcess(), email, password);
 
         // update a user's passwordHash
 
@@ -540,7 +543,7 @@ public class ImportUserWithPasswordHashAPITest {
                 response.get("user").getAsJsonObject().get("id").getAsString());
 
         // sign in with the new password to check if the password hash got updated
-        AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
+        AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.getProcess(), email, newPassword);
         assertEquals(updatedUserInfo.loginMethods[0].passwordHash, passwordHash);
 
         process.kill();
@@ -576,7 +579,7 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(email, userInfo.loginMethods[0].email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
@@ -600,7 +603,7 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(email, userInfo.loginMethods[0].email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
@@ -637,7 +640,7 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(email, userInfo.loginMethods[0].email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
@@ -661,7 +664,7 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
             assertEquals(email, userInfo.loginMethods[0].email);
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
