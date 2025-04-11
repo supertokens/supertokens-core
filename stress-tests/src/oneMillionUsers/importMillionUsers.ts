@@ -57,7 +57,7 @@ export const importMillionUsers = async (deployment: any) => {
             }
         });
         const count: any = await response.json();
-        console.log(`    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${((lastCount - count.count) / (Date.now() - lastTime)).toFixed(1)}`);
+        console.log(`    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${((lastCount - count.count) * 1000 / (Date.now() - lastTime)).toFixed(1)}`);
 
         if (count.count === 0) {
             break;
