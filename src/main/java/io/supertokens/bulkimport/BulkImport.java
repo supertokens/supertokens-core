@@ -623,27 +623,7 @@ public class BulkImport {
 
     public static void createMultipleUserRoles(Main main, AppIdentifier appIdentifier, Storage storage,
                                                List<BulkImportUser> users) throws StorageTransactionLogicException {
-        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = new HashMap<>();
-        for (BulkImportUser user : users) {
-
-            if (user.userRoles != null) {
-                for (UserRole userRole : user.userRoles) {
-                    for (String tenantId : userRole.tenantIds) {
-                        TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                tenantId);
-                        if(!rolesToUserByTenant.containsKey(tenantIdentifier)){
-
-                            rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
-                        }
-                        if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(user.externalUserId)){
-                            rolesToUserByTenant.get(tenantIdentifier).put(user.externalUserId, new ArrayList<>());
-                        }
-                        rolesToUserByTenant.get(tenantIdentifier).get(user.externalUserId).add(userRole.role);
-                    }
-                }
-            }
-        }
+        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = gatherRolesForUsersByTenant(appIdentifier, users);
         try {
             if(!rolesToUserByTenant.isEmpty()){
                 UserRoles.addMultipleRolesToMultipleUsers(main, appIdentifier, storage, rolesToUserByTenant);
@@ -667,6 +647,32 @@ public class BulkImport {
             }
         }
 
+    }
+
+    private static Map<TenantIdentifier, Map<String, List<String>>> gatherRolesForUsersByTenant(AppIdentifier appIdentifier, List<BulkImportUser> users) {
+        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = new HashMap<>();
+        for (BulkImportUser user : users) {
+            if (user.userRoles != null) {
+                for (UserRole userRole : user.userRoles) {
+                    for (String tenantId : userRole.tenantIds) {
+                        TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                                tenantId);
+                        if(!rolesToUserByTenant.containsKey(tenantIdentifier)){
+
+                            rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
+                        }
+                        String userIdToUse = user.externalUserId != null ?
+                                user.externalUserId : user.primaryUserId;
+                        if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(userIdToUse)){
+                            rolesToUserByTenant.get(tenantIdentifier).put(userIdToUse, new ArrayList<>());
+                        }
+                        rolesToUserByTenant.get(tenantIdentifier).get(userIdToUse).add(userRole.role);
+                    }
+                }
+            }
+        }
+        return rolesToUserByTenant;
     }
 
     public static void verifyMultipleEmailForAllLoginMethods(AppIdentifier appIdentifier, Storage storage,
