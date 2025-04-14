@@ -1,60 +1,65 @@
 export const LICENSE_FOR_TEST = "E1yITHflaFS4BPm7n0bnfFCjP4sJoTERmP0J=kXQ5YONtALeGnfOOe2rf2QZ0mfOh0aO3pBqfF-S0jb0ABpat6pySluTpJO6jieD6tzUOR1HrGjJO=50Ob3mHi21tQH1";
 
 export const createStInstanceForTest = async () => {
-  try {
-    const response = await fetch('https://provision.supertokens.sattvik.me/deployments', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        docker_image_name: process.env.SUPERTOKENS_DOCKER_IMAGE || "supertokens/supertokens-postgresql"
-      })
-    });
+  // try {
+  //   const response = await fetch('https://provision.supertokens.sattvik.me/deployments', {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json'
+  //     },
+  //     body: JSON.stringify({
+  //       docker_image_name: process.env.SUPERTOKENS_DOCKER_IMAGE || "supertokens/supertokens-postgresql"
+  //     })
+  //   });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
+  //   if (!response.ok) {
+  //     throw new Error(`HTTP error! Status: ${response.status}`);
+  //   }
 
-    const data: any = await response.json();
+  //   const data: any = await response.json();
 
-    const coreUrl = data.deployment.core_url;
+  //   const coreUrl = data.deployment.core_url;
 
-    let isReady = false;
-    let attempts = 0;
-    const maxAttempts = 30;
-    const retryDelay = 2000;
+  //   let isReady = false;
+  //   let attempts = 0;
+  //   const maxAttempts = 30;
+  //   const retryDelay = 2000;
 
-    while (!isReady && attempts < maxAttempts) {
-      try {
-        const healthCheck = await fetch(`${coreUrl}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
+  //   while (!isReady && attempts < maxAttempts) {
+  //     try {
+  //       const healthCheck = await fetch(`${coreUrl}`, {
+  //         method: 'GET',
+  //         headers: {
+  //           'Accept': 'application/json'
+  //         }
+  //       });
 
-        if (healthCheck.ok) {
-          isReady = true;
-        } else {
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-      } catch (err) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-      }
-    }
+  //       if (healthCheck.ok) {
+  //         isReady = true;
+  //       } else {
+  //         attempts++;
+  //         await new Promise(resolve => setTimeout(resolve, retryDelay));
+  //       }
+  //     } catch (err) {
+  //       attempts++;
+  //       await new Promise(resolve => setTimeout(resolve, retryDelay));
+  //     }
+  //   }
 
-    if (!isReady) {
-      throw new Error(`Core URL ${coreUrl} did not become ready after ${maxAttempts} attempts`);
-    }
+  //   if (!isReady) {
+  //     throw new Error(`Core URL ${coreUrl} did not become ready after ${maxAttempts} attempts`);
+  //   }
 
-    return data.deployment!;
-  } catch (error) {
-    throw error;
+  //   return data.deployment!;
+  // } catch (error) {
+  //   throw error;
+  // }
+
+  return {
+    "deployment_id": "1234567890",
+    "core_url": "http://localhost:3567",
+    "api_key": "qwertyuiopasdfghjklzxcvbnm"
   }
-
 }
 
 export const deleteStInstance = async (deploymentId: string) => {
