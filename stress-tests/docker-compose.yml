@@ -37,7 +37,7 @@ services:
       ARGON2_HASHING_POOL_SIZE: 8
       API_KEYS: "qwertyuiopasdfghjklzxcvbnm"
       BULK_MIGRATION_PARALLELISM: "4"
-      BULK_MIGRATION_BATCH_SIZE: "300"
+      BULK_MIGRATION_BATCH_SIZE: "500"
 
     networks:
       - app_network

@@ -51,19 +51,54 @@ export const importMillionUsers = async (deployment: any) => {
     let lastTime = st;
     while (true) {
         await new Promise(resolve => setTimeout(resolve, 5000));
-        const response = await fetch(`${deployment.core_url}/bulk-import/users/count`, {
+        let response;
+        try {
+            response = await fetch(`${deployment.core_url}/bulk-import/users/count`, {
+                headers: {
+                    "Api-Key": deployment.api_key
+                }
+            });
+        } catch (error) {
+            // Ignoring any error from this fetch request
+            console.log("    Error fetching user count, continuing anyway...");
+            response = { json: async () => ({ count: lastCount }) };
+        }
+
+        let failedCountResponse;
+        try {
+            failedCountResponse = await fetch(`${deployment.core_url}/bulk-import/users/count`, {
             headers: {
                 "Api-Key": deployment.api_key
             }
         });
-        const count: any = await response.json();
-        console.log(`    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${((lastCount - count.count) * 1000 / (Date.now() - lastTime)).toFixed(1)}`);
+        } catch (error) {
+            // Ignoring any error from this fetch request
+            console.log("    Error fetching user count, continuing anyway...");
+            failedCountResponse = { json: async () => ({ count: 0 }) };
+        }
 
-        if (count.count === 0) {
+        const count: any = await response.json();
+        const failedCount: any = await failedCountResponse.json();
+        console.log(`    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${((lastCount - count.count) * 1000 / (Date.now() - lastTime)).toFixed(1)}, Failed=${failedCount.count}`);
+
+        if (count.count - failedCount.count === 0) {
             break;
         }
 
         lastCount = count.count;
         lastTime = Date.now();
+    }
+
+    try {
+        const importResultsResponse = await fetch(`${deployment.core_url}/bulk-import/users`, {
+            headers: {
+                "Api-Key": deployment.api_key
+            }
+        });
+
+        const importResults = await importResultsResponse.json();
+        console.log("Import results:\n", JSON.stringify(importResults, null, 2));
+    } catch (error) {
+        console.error("Error fetching import results:", error);
     }
 }
