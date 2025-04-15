@@ -66,7 +66,7 @@ export const importMillionUsers = async (deployment: any) => {
 
         let failedCountResponse;
         try {
-            failedCountResponse = await fetch(`${deployment.core_url}/bulk-import/users/count`, {
+            failedCountResponse = await fetch(`${deployment.core_url}/bulk-import/users/count?status=FAILED`, {
             headers: {
                 "Api-Key": deployment.api_key
             }
