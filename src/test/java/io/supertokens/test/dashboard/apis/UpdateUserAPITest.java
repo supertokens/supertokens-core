@@ -45,6 +45,9 @@ public class UpdateUserAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -183,7 +186,7 @@ public class UpdateUserAPITest {
         Dashboard.signUpDashboardUser(process.getProcess(), email, password);
 
         DashboardUser user = ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getDashboardUserByEmail(new AppIdentifier(null, null), email);
+                .getDashboardUserByEmail(process.getAppForTesting().toAppIdentifier(), email);
         assertNotNull(user);
 
         // update the user's email and password

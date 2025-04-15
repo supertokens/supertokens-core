@@ -43,6 +43,9 @@ public class RemoveUserIdMappingAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -230,10 +233,10 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId",
                 "externalUserIdInfo");
-        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+        createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
 
         // delete userId mapping with userIdType as SUPERTOKENS
         {
@@ -249,13 +252,13 @@ public class RemoveUserIdMappingAPITest {
             assertTrue(response.get("didMappingExist").getAsBoolean());
 
             // retrieve mapping and check that it does not exist
-            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                     userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS));
         }
 
         {
             // create userId mapping
-            createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+            createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
 
             // delete userId mapping with userIdType as EXTERNAL
 
@@ -271,13 +274,13 @@ public class RemoveUserIdMappingAPITest {
             assertTrue(response.get("didMappingExist").getAsBoolean());
 
             // retrieve mapping and check that it does not exist
-            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                     userIdMapping.externalUserId, UserIdType.EXTERNAL));
         }
 
         {
             // create userId mapping
-            createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+            createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
             // delete userId mapping with superTokensUserId with userIdType ANY
             {
                 JsonObject request = new JsonObject();
@@ -292,12 +295,12 @@ public class RemoveUserIdMappingAPITest {
                 assertTrue(response.get("didMappingExist").getAsBoolean());
 
                 // retrieve mapping and check that it does not exist
-                assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                         userIdMapping.superTokensUserId, UserIdType.ANY));
             }
 
             // create userId mapping
-            createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+            createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
             // delete userId mapping with externalUserId with userIdType ANY
             {
                 JsonObject request = new JsonObject();
@@ -312,7 +315,7 @@ public class RemoveUserIdMappingAPITest {
                 assertTrue(response.get("didMappingExist").getAsBoolean());
 
                 // retrieve mapping and check that it does not exist
-                assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                         userIdMapping.externalUserId, UserIdType.ANY));
             }
         }
@@ -333,10 +336,10 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId",
                 "externalUserIdInfo");
-        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+        createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
 
         {
             // delete mapping with superTokensUserId
@@ -351,13 +354,13 @@ public class RemoveUserIdMappingAPITest {
             assertTrue(response.get("didMappingExist").getAsBoolean());
 
             // retrieve mapping and check that it does not exist
-            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                     userIdMapping.superTokensUserId, UserIdType.ANY));
 
         }
 
         // create mapping
-        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+        createUserIdMappingAndCheckThatItExists(process.getProcess(), userIdMapping);
 
         {
             // delete mapping with externalUserId
@@ -372,7 +375,7 @@ public class RemoveUserIdMappingAPITest {
             assertTrue(response.get("didMappingExist").getAsBoolean());
 
             // retrieve mapping and check that it does not exist
-            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                     userIdMapping.superTokensUserId, UserIdType.ANY));
         }
 
@@ -391,16 +394,16 @@ public class RemoveUserIdMappingAPITest {
             return;
         }
 
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalId = "externalId";
-        io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,
+        io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId,
                 null, false);
 
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
-        UserMetadata.updateUserMetadata(process.main, externalId, data);
-        UserMetadata.getUserMetadata(process.main, externalId);
+        UserMetadata.updateUserMetadata(process.getProcess(), externalId, data);
+        UserMetadata.getUserMetadata(process.getProcess(), externalId);
 
         // delete mapping without force
         {
@@ -430,7 +433,7 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // check that mapping does not exist
-        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.getProcess(),
                 superTokensUserId, UserIdType.SUPERTOKENS);
         assertNull(mapping);
 

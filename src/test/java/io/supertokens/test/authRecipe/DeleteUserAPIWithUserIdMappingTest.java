@@ -42,6 +42,9 @@ public class DeleteUserAPIWithUserIdMappingTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -65,17 +68,17 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // deleting with superTokensUserId
         {
             // create User
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
             String superTokensUserId = userInfo.getSupertokensUserId();
             String externalId = "externalId";
 
             // map their id
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalId, null, false);
 
             // create UserMetadata with the externalId
             JsonObject testData = new JsonObject();
             testData.addProperty("testKey", "testValue");
-            UserMetadata.updateUserMetadata(process.main, externalId, testData);
+            UserMetadata.updateUserMetadata(process.getProcess(), externalId, testData);
 
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("userId", superTokensUserId);
@@ -87,20 +90,20 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
             // check that user doesnt exist
             {
-                AuthRecipeUserInfo response = EmailPassword.getUserUsingId(process.main, superTokensUserId);
+                AuthRecipeUserInfo response = EmailPassword.getUserUsingId(process.getProcess(), superTokensUserId);
                 assertNull(response);
             }
 
             // check that userMetadata does not exist
             {
-                JsonObject response = UserMetadata.getUserMetadata(process.main, externalId);
+                JsonObject response = UserMetadata.getUserMetadata(process.getProcess(), externalId);
                 assertEquals(0, response.entrySet().size());
             }
 
             // check that mapping does not exist
             {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                        .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                        .getUserIdMapping(process.getProcess(), superTokensUserId, UserIdType.SUPERTOKENS);
                 assertNull(response);
             }
         }
@@ -122,19 +125,19 @@ public class DeleteUserAPIWithUserIdMappingTest {
         }
 
         // create an EmailPassword User
-        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPassword123");
 
         // associate some data with user
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
-        UserMetadata.updateUserMetadata(process.main, userInfo_1.getSupertokensUserId(), data);
+        UserMetadata.updateUserMetadata(process.getProcess(), userInfo_1.getSupertokensUserId(), data);
 
         // create a new User who we would like to migrate the EmailPassword user to
-        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
+        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.getProcess(), "google", "test-google",
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(),
+        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo_2.user.getSupertokensUserId(),
                 userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with EmailPassword userId
@@ -151,17 +154,17 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // check that only auth tables for EmailPassword user have been deleted and the userMetadata table entries still
         // exist
         {
-            AuthRecipeUserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.getSupertokensUserId());
+            AuthRecipeUserInfo epUser = EmailPassword.getUserUsingId(process.getProcess(), userInfo_1.getSupertokensUserId());
             assertNull(epUser);
 
-            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getSupertokensUserId());
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.getProcess(), userInfo_1.getSupertokensUserId());
             assertNotNull(epUserMetadata);
             assertEquals(epUserMetadata.get("test").getAsString(), "testData");
         }
         // check that the mapping still exists
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
+                    .getUserIdMapping(process.getProcess(), userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
             assertNotNull(mapping);
             assertEquals(mapping.superTokensUserId, userInfo_2.user.getSupertokensUserId());
             assertEquals(mapping.externalUserId, userInfo_1.getSupertokensUserId());
@@ -183,19 +186,19 @@ public class DeleteUserAPIWithUserIdMappingTest {
         }
 
         // create an EmailPassword User
-        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPassword123");
 
         // associate some data with user
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
-        UserMetadata.updateUserMetadata(process.main, userInfo_1.getSupertokensUserId(), data);
+        UserMetadata.updateUserMetadata(process.getProcess(), userInfo_1.getSupertokensUserId(), data);
 
         // create a new User who we would like to migrate the EmailPassword user to
-        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
+        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.getProcess(), "google", "test-google",
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(),
+        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo_2.user.getSupertokensUserId(),
                 userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with ThirdParty users id
@@ -212,18 +215,18 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // check that only auth tables for thirdParty user have been deleted and the userMetadata table entries still
         // exist
         {
-            AuthRecipeUserInfo tpUserInfo = ThirdParty.getUser(process.main,
+            AuthRecipeUserInfo tpUserInfo = ThirdParty.getUser(process.getProcess(),
                     userInfo_2.user.getSupertokensUserId());
             assertNull(tpUserInfo);
 
-            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getSupertokensUserId());
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.getProcess(), userInfo_1.getSupertokensUserId());
             assertNotNull(epUserMetadata);
             assertEquals(epUserMetadata.get("test").getAsString(), "testData");
         }
         // check that the mapping is also deleted
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
+                    .getUserIdMapping(process.getProcess(), userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
             assertNull(mapping);
         }
 

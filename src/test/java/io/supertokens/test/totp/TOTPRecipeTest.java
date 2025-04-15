@@ -64,6 +64,9 @@ public class TOTPRecipeTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -84,7 +87,11 @@ public class TOTPRecipeTest {
         }
     }
 
-    public TestSetupResult defaultInit()
+    public TestSetupResult defaultInit() throws InterruptedException {
+        return defaultInit(false);
+    }
+
+    public TestSetupResult defaultInit(boolean restart)
             throws InterruptedException {
         String[] args = {"../"};
 
@@ -96,7 +103,7 @@ public class TOTPRecipeTest {
         }
         TOTPStorage storage = (TOTPStorage) StorageLayer.getStorage(process.getProcess());
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         return new TestSetupResult(storage, process);
@@ -121,14 +128,14 @@ public class TOTPRecipeTest {
         return totp.generateOneTimePasswordString(key, Instant.now().plusSeconds(step * device.period));
     }
 
-    private static TOTPUsedCode[] getAllUsedCodesUtil(TOTPStorage storage, String userId)
+    private static TOTPUsedCode[] getAllUsedCodesUtil(TestingProcessManager.TestingProcess process, TOTPStorage storage, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
         assert storage instanceof TOTPSQLStorage;
         TOTPSQLStorage sqlStorage = (TOTPSQLStorage) storage;
 
         return (TOTPUsedCode[]) sqlStorage.startTransaction(con -> {
             TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con,
-                    new TenantIdentifier(null, null, null), userId);
+                    process.getAppForTesting(), userId);
             sqlStorage.commitTransaction(con);
             return usedCodes;
         });
@@ -250,7 +257,7 @@ public class TOTPRecipeTest {
         assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", "invalid"));
 
-        TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.storage, "user");
+        TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.process, result.storage, "user");
         TOTPUsedCode latestCode = usedCodes[0];
         assert !latestCode.isValid;
         assert latestCode.expiryTime - latestCode.createdTime ==
@@ -338,7 +345,7 @@ public class TOTPRecipeTest {
             }
 
             try {
-                FeatureFlagTestContent.getInstance(process.main)
+                FeatureFlagTestContent.getInstance(process.getProcess())
                         .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
                 Main main = process.getProcess();
@@ -526,7 +533,7 @@ public class TOTPRecipeTest {
                     Totp.removeDevice(main, "user", "device1");
 
                     // 1 device still remain so all codes should still be there:
-                    TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
+                    TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.process, storage, "user");
                     assert (usedCodes.length == 5); // 2 for device verification and 3 for code verification
 
                     devices = Totp.getDevices(main, "user");
@@ -551,10 +558,10 @@ public class TOTPRecipeTest {
                     assert (Totp.getDevices(main, "user").length == 0);
         
                     // No device left so all codes of the user should be deleted:
-                    TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
+                    TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.process, storage, "user");
                     assert (usedCodes.length == 0);
 
-                    usedCodes = getAllUsedCodesUtil(storage, "other-user");
+                    usedCodes = getAllUsedCodesUtil(result.process, storage, "other-user");
                     System.out.println("Point2 " + usedCodes.length);
                     assert (usedCodes.length == 3); // 1 for device verification and 2 for code verification
 
@@ -668,7 +675,7 @@ public class TOTPRecipeTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

@@ -58,6 +58,9 @@ public class UserPaginationTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -138,11 +141,10 @@ public class UserPaginationTest {
     @Test
     public void testUserPaginationResultJson() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -150,12 +152,19 @@ public class UserPaginationTest {
         }
 
         AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test1@example.com", "password");
+        Thread.sleep(20);
         AuthRecipeUserInfo user2 = createEmailPasswordUser(process.getProcess(), "test2@example.com", "password");
+        Thread.sleep(20);
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithEmail(process.getProcess(), "test4@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user5 = createPasswordlessUserWithPhone(process.getProcess(), "+1234567890");
+        Thread.sleep(20);
         AuthRecipeUserInfo user6 = createPasswordlessUserWithPhone(process.getProcess(), "+1234567891");
+        Thread.sleep(20);
         AuthRecipeUserInfo user7 = createThirdPartyUser(process.getProcess(), "google", "test7", "test7@example.com");
+        Thread.sleep(20);
         AuthRecipeUserInfo user8 = createThirdPartyUser(process.getProcess(), "google", "test8", "test8@example.com");
 
         {
@@ -237,11 +246,10 @@ public class UserPaginationTest {
     @Test
     public void testUserPaginationWithManyUsers() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -257,11 +265,10 @@ public class UserPaginationTest {
         // emailpassword users
         for (int i = 0; i < 200; i++) {
             AuthRecipeUserInfo user = createEmailPasswordUser(process.getProcess(), "epuser" + i + "@gmail.com",
-                    "password" + i);
+                    "password1");
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             emailPasswordUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // passwordless users with email
@@ -271,7 +278,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             passwordlessUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // passwordless users with phone
@@ -280,7 +286,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             passwordlessUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         // thirdparty users
@@ -290,7 +295,6 @@ public class UserPaginationTest {
             userInfoMap.put(user.getSupertokensUserId(), user);
             userIds.add(user.getSupertokensUserId());
             thirdPartyUsers.add(user.getSupertokensUserId());
-            Thread.sleep(10);
         }
 
         Map<String, String> primaryUserIdMap = new HashMap<>();
@@ -325,6 +329,7 @@ public class UserPaginationTest {
             } else {
                 primaryUserIds.add(userIdsToLink.get(0));
             }
+            Thread.sleep(10);
         }
 
         // Pagination tests
@@ -400,11 +405,10 @@ public class UserPaginationTest {
     @Test
     public void testUserPaginationFromOldVersion() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

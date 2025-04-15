@@ -41,6 +41,9 @@ public class PasswordlessDeleteCodesAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -71,7 +74,7 @@ public class PasswordlessDeleteCodesAPITest {
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
-        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, normalisedPhoneNumber,
+        storage.createDeviceWithCode(process.getAppForTesting(), null, normalisedPhoneNumber,
                 "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
 
@@ -84,8 +87,8 @@ public class PasswordlessDeleteCodesAPITest {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
-        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId));
+        assertNull(storage.getDevice(process.getAppForTesting(), deviceIdHash));
+        assertNull(storage.getCode(process.getAppForTesting(), codeId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

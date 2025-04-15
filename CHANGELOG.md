@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.4]
+
+- Migrates tests to Github Actions
+
 ## [10.1.3]
 
 - Version bumped for re-release

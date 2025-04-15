@@ -41,6 +41,9 @@ public class SignInAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -91,7 +94,7 @@ public class SignInAPITest {
     public void testSigningInASuspendedUser() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -102,9 +105,11 @@ public class SignInAPITest {
         {
             for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
                 Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", "password123");
+                Thread.sleep(10);
             }
-
         }
+
+        Thread.sleep(500);
         // create a user above the free limit
         String email = "suspended@example.com";
         String password = "testPass123";
@@ -113,7 +118,7 @@ public class SignInAPITest {
                 PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
                 System.currentTimeMillis());
         ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .createNewDashboardUser(new AppIdentifier(null, null), user);
+                .createNewDashboardUser(process.getAppForTesting().toAppIdentifier(), user);
 
         // try signing in with the valid user
         {

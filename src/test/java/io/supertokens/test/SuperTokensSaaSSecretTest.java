@@ -56,6 +56,9 @@ public class SuperTokensSaaSSecretTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -75,7 +78,7 @@ public class SuperTokensSaaSSecretTest {
                 "abctijenbogweg=-2438243u98-abctijenbocdsfcegweg=-2438243u98ef23c"); // set api_keys
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String apiKey = Config.getConfig(process.getProcess()).getSuperTokensSaaSSecret();
@@ -91,7 +94,7 @@ public class SuperTokensSaaSSecretTest {
     public void testGetApiKeysReturnsNullWhenAPIKeyIsNotSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNull(Config.getConfig(process.getProcess()).getSuperTokensSaaSSecret());
 
@@ -108,7 +111,7 @@ public class SuperTokensSaaSSecretTest {
         // api key length less that minimum length 20
         Utils.setValueInConfig("supertokens_saas_secret", "abc"); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -123,7 +126,7 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", "abc"); // set api_keys
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -138,7 +141,7 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret",
                 "abC&^0t4t3t40t4@#%greognradsfadsfiu3b8cuhbosjiadbfiiubio8"); // set api_keys
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
@@ -162,7 +165,7 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", validKey + "," + invalidKey);
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -183,7 +186,7 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", apiKey); // set api_keys
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -240,7 +243,7 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", apiKey); // set supertokens_saas_secret
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -273,7 +276,7 @@ public class SuperTokensSaaSSecretTest {
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oir";
         Utils.setValueInConfig("api_keys", apiKey);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -337,6 +340,8 @@ public class SuperTokensSaaSSecretTest {
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
             InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException {
+        HttpRequestForTesting.disableAddingAppId = true;
+
         String[] args = {"../"};
 
         String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
@@ -344,23 +349,22 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("refresh_token_validity", "144001");
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         null, null, new JsonObject()));
 
-        TenantConfig[] tenantConfigs = Multitenancy.getAllTenants(process.main);
+        TenantConfig[] tenantConfigs = Multitenancy.getAllTenants(process.getProcess());
 
         assertEquals(tenantConfigs.length, 2);
         assertEquals(tenantConfigs[0].tenantIdentifier, new TenantIdentifier(null, null, null));
@@ -378,15 +382,16 @@ public class SuperTokensSaaSSecretTest {
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
             InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException {
+        HttpRequestForTesting.disableAddingAppId = true;
+
         String[] args = {"../"};
 
         String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         Utils.setValueInConfig("api_keys", "adslfkj398erchpsodihfp3w9q8ehcpioh");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -396,7 +401,7 @@ public class SuperTokensSaaSSecretTest {
         try {
             JsonObject j = new JsonObject();
             j.addProperty("supertokens_saas_secret", saasSecret);
-            Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                     new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
@@ -456,10 +461,9 @@ public class SuperTokensSaaSSecretTest {
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -474,7 +478,7 @@ public class SuperTokensSaaSSecretTest {
             try {
                 JsonObject j = new JsonObject();
                 j.addProperty(PROTECTED_CORE_CONFIG[i], "");
-                Multitenancy.addNewOrUpdateAppOrTenant(process.main,
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(),
                         new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                                 new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                                 new PasswordlessConfig(false),
@@ -533,16 +537,17 @@ public class SuperTokensSaaSSecretTest {
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
             InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException, HttpResponseException {
+        HttpRequestForTesting.disableAddingAppId = true;
+
         String[] args = {"../"};
 
         String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -562,7 +567,7 @@ public class SuperTokensSaaSSecretTest {
             } else if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof Integer) {
                 j.addProperty(PROTECTED_CORE_CONFIG[i], (Integer) PROTECTED_CORE_CONFIG_VALUES[i]);
             }
-            Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                     new TenantConfig(new TenantIdentifier(null, "a" + i, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
@@ -626,16 +631,17 @@ public class SuperTokensSaaSSecretTest {
 
     @Test
     public void testLogContainsCorrectCud() throws Exception {
+        HttpRequestForTesting.disableAddingAppId = true;
+
         String[] args = {"../"};
 
         String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
         String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
         Utils.setValueInConfig("api_keys", apiKey);
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {

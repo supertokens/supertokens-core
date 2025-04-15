@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -175,7 +176,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             UnsupportedJWTSigningAlgorithmException {
         try {
-            return getInfoFromAccessToken(new AppIdentifier(null, null), main, token, doAntiCsrfCheck);
+            return getInfoFromAccessToken(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, token, doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -186,7 +187,7 @@ public class AccessToken {
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token)
             throws JWTException, TryRefreshTokenException {
         return getInfoFromAccessTokenWithoutVerifying(
-                new AppIdentifier(null, null), token);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), token);
     }
 
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier,
@@ -209,7 +210,7 @@ public class AccessToken {
             NoSuchAlgorithmException, InvalidKeySpecException, SignatureException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
-            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId, userId,
+            return createNewAccessToken(ResourceDistributor.getAppForTesting(), main, sessionHandle, userId, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, expiryTime, version, useStaticKey);
@@ -275,7 +276,7 @@ public class AccessToken {
             NoSuchAlgorithmException, InvalidKeySpecException, SignatureException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
-            return createNewAccessTokenV1(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+            return createNewAccessTokenV1(ResourceDistributor.getAppForTesting(), main, sessionHandle, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1, userData, antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {

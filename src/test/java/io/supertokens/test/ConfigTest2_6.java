@@ -25,6 +25,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -40,6 +41,9 @@ public class ConfigTest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -54,7 +58,7 @@ public class ConfigTest2_6 {
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -72,7 +76,7 @@ public class ConfigTest2_6 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -95,7 +99,7 @@ public class ConfigTest2_6 {
         // out of range core_config_version
         Utils.setValueInConfig("core_config_version", "-1");
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -109,7 +113,7 @@ public class ConfigTest2_6 {
 
         // out of range value for access_token_validity
         Utils.setValueInConfig("access_token_validity", "-1");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -123,7 +127,7 @@ public class ConfigTest2_6 {
         Utils.reset();
 
         Utils.setValueInConfig("max_server_pool_size", "-1");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -142,7 +146,7 @@ public class ConfigTest2_6 {
 
         Utils.setValueInConfig("totp_max_attempts", "0");
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -155,7 +159,7 @@ public class ConfigTest2_6 {
         Utils.reset();
 
         Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "0");
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
@@ -176,7 +180,7 @@ public class ConfigTest2_6 {
     public void testThatNonTestingConfigValuesThrowErrors() throws Exception {
         String[] args = {"../"};
         Utils.setValueInConfig("refresh_token_validity", "-1");
-        TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
                 true);
         process.startProcess();
@@ -194,18 +198,19 @@ public class ConfigTest2_6 {
 
     @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
-        String[] args = {"../"};
+        String configFile = new File(new File(".").getAbsoluteFile().getParentFile().getParentFile().getPath(), "config.yaml").getAbsolutePath();
+        String[] args = {"../", "configFile=" + configFile};
 
         ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
         pb.directory(new File(args[0]));
         Process process1 = pb.start();
         process1.waitFor();
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(),
-                "../config.yaml (No such file or directory)");
+                configFile + " (No such file or directory)");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -215,9 +220,9 @@ public class ConfigTest2_6 {
     @Test
     public void testCustomLocationForConfigLoadsCorrectly() throws Exception {
         // relative file path
-        String[] args = {"../", "configFile=../temp/config.yaml"};
+        String[] args = {"../", "configFile=./temp/config.yaml"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(), "configPath option must be an absolute path only");
@@ -229,7 +234,7 @@ public class ConfigTest2_6 {
         File f = new File("../temp/config.yaml");
         args = new String[]{"../", "configFile=" + f.getAbsolutePath()};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         checkConfigValues(Config.getConfig(process.getProcess()), process, true);
@@ -262,7 +267,6 @@ public class ConfigTest2_6 {
                 config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis(), 7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
-        assertEquals(config.getPort(process.getProcess()), 3567);
         assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());

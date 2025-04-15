@@ -17,6 +17,7 @@
 package io.supertokens.passwordless;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
@@ -74,7 +75,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return createCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, email, phoneNumber, deviceId, userInputCode);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -161,7 +162,7 @@ public class Passwordless {
             NoSuchAlgorithmException, Base64EncodingException {
         Storage storage = StorageLayer.getStorage(main);
         return getDeviceWithCodesById(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 deviceId);
     }
 
@@ -170,7 +171,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDeviceWithCodesByIdHash(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 deviceIdHash);
     }
 
@@ -210,7 +211,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDevicesWithCodesByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(
@@ -235,7 +236,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDevicesWithCodesByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -249,7 +250,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -266,7 +267,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -567,7 +568,7 @@ public class Passwordless {
     public static void removeCode(Main main, String codeId)
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
-        removeCode(new TenantIdentifier(null, null, null), storage,
+        removeCode(ResourceDistributor.getAppForTesting(), storage,
                 codeId);
     }
 
@@ -622,7 +623,7 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         removeCodesByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     public static void removeCodesByEmail(TenantIdentifier tenantIdentifier, Storage storage, String email)
@@ -642,7 +643,7 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         removeCodesByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -664,7 +665,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserById(
-                new AppIdentifier(null, null), storage, userId);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     @Deprecated
@@ -689,7 +690,7 @@ public class Passwordless {
                                                           String phoneNumber) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -714,7 +715,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     @Deprecated
@@ -740,7 +741,7 @@ public class Passwordless {
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
             PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
-        updateUser(new AppIdentifier(null, null), storage,
+        updateUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, emailUpdate, phoneNumberUpdate);
     }
 

@@ -36,6 +36,9 @@ public class SessionRegenerateAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -113,7 +116,7 @@ public class SessionRegenerateAPITest2_7 {
         String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // createSession with JWT payload

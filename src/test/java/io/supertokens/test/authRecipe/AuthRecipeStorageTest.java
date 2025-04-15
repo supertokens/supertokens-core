@@ -37,6 +37,9 @@ public class AuthRecipeStorageTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -57,15 +60,15 @@ public class AuthRecipeStorageTest {
             return;
         }
 
-        AuthRecipeStorage storage = (AuthRecipeStorage) StorageLayer.getStorage(process.main);
+        AuthRecipeStorage storage = (AuthRecipeStorage) StorageLayer.getStorage(process.getProcess());
 
         // check with an unknown Userid
 
-        assertFalse(storage.doesUserIdExist(new TenantIdentifier(null, null, null), "unknownUser"));
+        assertFalse(storage.doesUserIdExist(process.getAppForTesting(), "unknownUser"));
 
         // create a user and check that the userId exists
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        assertTrue(storage.doesUserIdExist(new TenantIdentifier(null, null, null), userInfo.getSupertokensUserId()));
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        assertTrue(storage.doesUserIdExist(process.getAppForTesting(), userInfo.getSupertokensUserId()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

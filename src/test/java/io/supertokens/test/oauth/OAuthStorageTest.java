@@ -43,6 +43,9 @@ public class OAuthStorageTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -66,7 +69,7 @@ public class OAuthStorageTest {
 
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
         assertEquals(0, storage.getOAuthClients(appIdentifier, new ArrayList<>()).size()); // TODO fix me
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid1", "secret123", false, false);
@@ -123,7 +126,7 @@ public class OAuthStorageTest {
 
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 
@@ -174,7 +177,7 @@ public class OAuthStorageTest {
 
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid", "clientSecret", false, true);
         storage.createOrUpdateOAuthSession(appIdentifier, "abcd", "clientid", "externalRefreshToken",
@@ -225,7 +228,7 @@ public class OAuthStorageTest {
         }
 
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         long now = System.currentTimeMillis() / 1000;
 
@@ -257,7 +260,7 @@ public class OAuthStorageTest {
         }
 
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 

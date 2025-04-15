@@ -27,8 +27,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -55,6 +53,9 @@ import static org.junit.Assert.*;
 public class EmailVerificationTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -89,7 +90,7 @@ public class EmailVerificationTest {
 
         EmailVerificationTokenInfo[] tokenInfo = ((EmailVerificationSQLStorage) StorageLayer.getStorage(
                 process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null),
+                .getAllEmailVerificationTokenInfoForUser(process.getAppForTesting(),
                         user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assertEquals(tokenInfo.length, 2);
@@ -194,8 +195,8 @@ public class EmailVerificationTest {
     public void useAnExpiredTokenItShouldThrowAnError() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Utils.setValueInConfig("email_verification_token_lifetime", "10");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -263,7 +264,7 @@ public class EmailVerificationTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .addEmailVerificationToken(new TenantIdentifier(null, null, null),
+                .addEmailVerificationToken(process.getAppForTesting(),
                         new EmailVerificationTokenInfo(user.getSupertokensUserId(), "token",
                                 System.currentTimeMillis()
                                         + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
@@ -271,7 +272,7 @@ public class EmailVerificationTest {
 
         try {
             ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .addEmailVerificationToken(new TenantIdentifier(null, null, null),
+                    .addEmailVerificationToken(process.getAppForTesting(),
                             new EmailVerificationTokenInfo(user.getSupertokensUserId(), "token",
                                     System.currentTimeMillis()
                                             +
@@ -369,7 +370,7 @@ public class EmailVerificationTest {
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
                 ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                        .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                        .updateIsEmailVerified_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                                 user.getSupertokensUserId(), user.loginMethods[0].email, false);
             } catch (TenantOrAppNotFoundException e) {
                 throw new RuntimeException(e);
@@ -407,7 +408,7 @@ public class EmailVerificationTest {
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
                 ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                        .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                        .updateIsEmailVerified_Transaction(process.getAppForTesting().toAppIdentifier(), con,
                                 user.getSupertokensUserId(), user.loginMethods[0].email, true);
             } catch (TenantOrAppNotFoundException e) {
                 throw new RuntimeException(e);
@@ -428,7 +429,7 @@ public class EmailVerificationTest {
 
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -447,7 +448,7 @@ public class EmailVerificationTest {
 
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -465,7 +466,7 @@ public class EmailVerificationTest {
 
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
             assertEquals(e.exception.getCause().getMessage(), "'email_verification_token_lifetime' must be >= 0");

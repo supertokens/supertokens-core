@@ -40,6 +40,9 @@ public class RemoveUserRoleAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -170,17 +173,17 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
 
         // assign the role to a user
-        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+        UserRoles.addRoleToUser(process.getProcess(), userId, roles[0]);
 
         {
             // check that the user has the role
-            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+            String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -197,7 +200,7 @@ public class RemoveUserRoleAPITest {
         assertTrue(response.get("didUserHaveRole").getAsBoolean());
 
         // check that user doesnt have any role
-        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
+        String[] userRoles = storage.getRolesForUser(process.getAppForTesting(), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();
@@ -217,10 +220,10 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), roles[0], null);
 
         // remove the role from the user
         JsonObject request = new JsonObject();

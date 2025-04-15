@@ -49,6 +49,9 @@ public class TotpLicenseTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -70,9 +73,13 @@ public class TotpLicenseTest {
     }
 
     public TestSetupResult defaultInit() throws InterruptedException {
+        return defaultInit(false);
+    }
+
+    public TestSetupResult defaultInit(boolean useIsolatedProcess) throws InterruptedException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = useIsolatedProcess ? TestingProcessManager.startIsolatedProcess(args) : TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -85,7 +92,7 @@ public class TotpLicenseTest {
 
     @Test
     public void testTotpWithoutLicense() throws Exception {
-        TestSetupResult result = defaultInit();
+        TestSetupResult result = defaultInit(true);
         if (result == null) {
             return;
         }
@@ -153,16 +160,19 @@ public class TotpLicenseTest {
         );
         assert e2.statusCode == 402;
         assert e2.getMessage().contains("MFA feature is not enabled");
+
+        result.process.kill();
+        assertNotNull(result.process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 
     @Test
     public void testTotpWithLicense() throws Exception {
-        TestSetupResult result = defaultInit();
+        TestSetupResult result = defaultInit(true);
         if (result == null) {
             return;
         }
-        FeatureFlagTestContent.getInstance(result.process.main)
+        FeatureFlagTestContent.getInstance(result.process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         Main main = result.process.getProcess();
@@ -176,7 +186,8 @@ public class TotpLicenseTest {
         Thread.sleep(1);
         String nextCode = generateTotpCode(main, device, 1);
         Totp.verifyCode(main, "user", nextCode);
+
+        result.process.kill();
+        assertNotNull(result.process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
-
 }

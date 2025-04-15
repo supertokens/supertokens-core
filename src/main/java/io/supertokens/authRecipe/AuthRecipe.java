@@ -17,6 +17,7 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.exception.*;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -59,7 +60,7 @@ public class AuthRecipe {
     @TestOnly
     public static boolean unlinkAccounts(Main main, String recipeUserId)
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
-        return unlinkAccounts(main, new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId);
+        return unlinkAccounts(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main), recipeUserId);
     }
 
 
@@ -124,7 +125,7 @@ public class AuthRecipe {
     @TestOnly
     public static AuthRecipeUserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
-        return getUserById(new AppIdentifier(null, null), StorageLayer.getStorage(main), userId);
+        return getUserById(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main), userId);
     }
 
     public static AuthRecipeUserInfo getUserById(AppIdentifier appIdentifier, Storage storage, String userId)
@@ -203,7 +204,7 @@ public class AuthRecipe {
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
-        return canLinkAccounts(new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId,
+        return canLinkAccounts(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main), recipeUserId,
                 primaryUserId);
     }
 
@@ -508,7 +509,7 @@ public class AuthRecipe {
             FeatureNotEnabledException, InputUserIdIsNotAPrimaryUserException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException {
         try {
-            return linkAccounts(main, new AppIdentifier(null, null),
+            return linkAccounts(main, ResourceDistributor.getAppForTesting().toAppIdentifier(),
                     StorageLayer.getStorage(main), recipeUserId, primaryUserId);
         } catch (TenantOrAppNotFoundException e) {
             throw new RuntimeException(e);
@@ -648,7 +649,7 @@ public class AuthRecipe {
                                                                String recipeUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
-        return canCreatePrimaryUser(new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId);
+        return canCreatePrimaryUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main), recipeUserId);
     }
 
     public static CreatePrimaryUserResult canCreatePrimaryUser(AppIdentifier appIdentifier,
@@ -920,7 +921,7 @@ public class AuthRecipe {
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException,
             FeatureNotEnabledException {
         try {
-            return createPrimaryUser(main, new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId);
+            return createPrimaryUser(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(main), recipeUserId);
         } catch (TenantOrAppNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -1181,7 +1182,7 @@ public class AuthRecipe {
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsersCountForTenant(TenantIdentifier.BASE_TENANT, storage, includeRecipeIds);
+            return getUsersCountForTenant(ResourceDistributor.getAppForTesting(), storage, includeRecipeIds);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -1231,7 +1232,7 @@ public class AuthRecipe {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsers(TenantIdentifier.BASE_TENANT, storage,
+            return getUsers(ResourceDistributor.getAppForTesting(), storage,
                     limit, timeJoinedOrder, paginationToken, includeRecipeIds, dashboardSearchTags);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -1389,7 +1390,7 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId, boolean removeAllLinkedAccounts)
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
         UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
                 storage, userId, UserIdType.ANY);
 
@@ -1400,7 +1401,7 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
         UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
                 storage, userId, UserIdType.ANY);
 
