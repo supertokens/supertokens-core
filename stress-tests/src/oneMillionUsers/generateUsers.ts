@@ -107,9 +107,9 @@ function genUser(): User {
         loginMethods: []
     };
 
-    let userId = uuidv4();
+    let userId = `e-${uuidv4()}`;
     while (generatedUserIds.has(userId)) {
-        userId = uuidv4();
+        userId = `e-${uuidv4()}`;
     }
     generatedUserIds.add(userId);
     user.externalUserId = userId;
