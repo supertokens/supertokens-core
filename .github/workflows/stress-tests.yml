@@ -10,6 +10,10 @@ jobs:
   stress-tests:
     runs-on: ubuntu-latest
     steps:
+      - name: set tag
+        id: set_tag
+        run: |
+          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -19,6 +23,11 @@ jobs:
         run: |
           cd stress-tests
           npm install
+      - name: Update Docker image in compose
+        run: |
+          cd stress-tests
+          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}|' docker-compose.yml
+          cat docker-compose.yml
       - name: Bring up the services
         run: |
           cd stress-tests
