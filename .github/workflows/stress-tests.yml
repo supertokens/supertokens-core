@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for tests to succeed
-        uses: lewagon/wait-on-check-action@v1.3.4
+        uses: lewagon/wait-on-check-action@master
         with:
-          ref: ${{ github.ref }}
-          check-name: 'Docker (postgresql)'
+          ref: ${{ github.sha }}
+          check-name: 'Publish Dev Docker Image'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       - name: set tag
