@@ -7,13 +7,15 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
-    "one-million-users": "ts-node src/oneMillionUsers/index.ts"
+    "one-million-users": "ts-node src/oneMillionUsers/index.ts",
+    "format": "prettier --write \"**/*.{ts,js,json}\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
