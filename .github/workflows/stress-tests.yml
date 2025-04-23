@@ -3,13 +3,19 @@ name: Stress Tests
 on:
   push:
     branches:
-      - '**' 
-
+      - "**"
 
 jobs:
   stress-tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for tests to succeed
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Publish Dev Docker Image'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
       - name: set tag
         id: set_tag
         run: |
