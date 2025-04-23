@@ -32,4 +32,9 @@ jobs:
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
-
+      - name: Display Test Statistics
+        run: |
+          echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
