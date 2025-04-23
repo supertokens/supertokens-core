@@ -93,3 +93,16 @@ jobs:
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
+  stress-tests:
+    name: Stress Tests
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: set tag
+        id: set_tag
+        run: |
+          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
+      - name: Run stress tests
+        uses: ./.github/workflows/stress-tests.yml
+        with:
+          tag: ${{ steps.set_tag.outputs.TAG }}

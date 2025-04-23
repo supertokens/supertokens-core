@@ -1,25 +1,18 @@
 name: Stress Tests
 
 on:
-  push:
-    branches:
-      - "**"
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
+
 
 jobs:
   stress-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for tests to succeed
-        uses: lewagon/wait-on-check-action@master
-        with:
-          ref: ${{ github.sha }}
-          check-name: 'Publish Dev Docker Image'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
-      - name: set tag
-        id: set_tag
-        run: |
-          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -32,7 +25,7 @@ jobs:
       - name: Update Docker image in compose
         run: |
           cd stress-tests
-          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}|' docker-compose.yml
+          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ inputs.tag }}|' docker-compose.yml
           cat docker-compose.yml
       - name: Bring up the services
         run: |
