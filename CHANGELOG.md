@@ -9,8 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [10.1.4]
 
+- Fixes bulk migration user roles association when there is no external userId assigned to the user
 - Bulk migration now actually uses the `isVerified` field's value in the loginMethod input
-
 
 ## [10.1.3]
 
