@@ -93,11 +93,14 @@ jobs:
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
+
   stress-tests:
     name: Stress Tests
     runs-on: ubuntu-latest
     needs: docker
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: set tag
         id: set_tag
         run: |
