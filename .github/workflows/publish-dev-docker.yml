@@ -20,6 +20,8 @@ jobs:
     name: Docker
     runs-on: ubuntu-latest
     needs: dependency-branches
+    outputs:
+      tag: ${{ steps.set_tag.outputs.TAG }}
     strategy:
       fail-fast: false
       matrix:
@@ -98,4 +100,4 @@ jobs:
     uses: ./.github/workflows/stress-tests.yml
     needs: docker
     with:
-      tag: ${{ github.ref_name }}
+      tag: ${{ needs.docker.outputs.tag }}
