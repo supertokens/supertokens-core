@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
-const USERS_TO_GENERATE = 100000;
+const USERS_TO_GENERATE = 1000000;
 const USERS_PER_JSON = 10000;
 
 const n = Math.floor(USERS_TO_GENERATE / USERS_PER_JSON);

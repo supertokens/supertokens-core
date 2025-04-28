@@ -4,7 +4,7 @@ import ThirdParty from 'supertokens-node/recipe/thirdparty';
 
 import { workInBatches, measureTime } from '../common/utils';
 
-const TOTAL_USERS = 1000000;
+const TOTAL_USERS = 10000;
 
 const createEmailPasswordUsers = async () => {
   console.log(`  Creating EmailPassword users...`);
