@@ -13,7 +13,7 @@ jar {
 }
 
 dependencies {
-    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
@@ -41,7 +41,7 @@ dependencies {
     testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 
@@ -54,15 +54,15 @@ dependencies {
     testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
 }
 
-task copyJars(type: Copy) {
-    into "$buildDir/dependencies"
+tasks.register('copyJars', Copy) {
     from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("dependencies")
 }
 
 def interfaceName = "io.supertokens.featureflag.EEFeatureFlagInterface"
 def className = "io.supertokens.ee.EEFeatureFlag"
 
-task generateMetaInf {
+tasks.register('generateMetaInf') {
     doFirst {
         mkdir "src/main/resources/META-INF/services"
         file("src/main/resources/META-INF/services/${interfaceName}").text = "${className}"

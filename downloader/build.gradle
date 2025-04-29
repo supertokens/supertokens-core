@@ -18,9 +18,9 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
-task copyJars(type: Copy) {
-    into "$buildDir/dependencies"
+tasks.register('copyJars', Copy) {
     from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("dependencies")
 }
 
 test {
