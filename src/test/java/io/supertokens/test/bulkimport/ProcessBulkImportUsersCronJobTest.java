@@ -135,7 +135,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
