@@ -10,6 +10,7 @@ jobs:
       - name: Release
         run: |
           echo "Releasing core version ..."
+          echo ${{ secrets.NGROK_AUTHTOKEN }}
       - name: Confirm release
         id: confirm-release
         uses: boasihq/interactive-inputs@v2
