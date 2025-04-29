@@ -7,6 +7,9 @@ jobs:
   do-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Release
+        run: |
+          echo "Releasing core version ..."
       - name: Confirm release
         id: confirm-release
         uses: boasihq/interactive-inputs@v2
