@@ -215,7 +215,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         Map<String, Exception> userIndexToError = exception.exceptionByUserId;
         for(String userid : userIndexToError.keySet()){
             Optional<BulkImportUser> userWithId = usersBatch.stream()
-                    .filter(bulkImportUser -> bulkImportUser.id.equals(userid) || bulkImportUser.externalUserId.equals(userid)).findFirst();
+                    .filter(bulkImportUser -> userid.equals(bulkImportUser.id) || userid.equals(bulkImportUser.externalUserId)).findFirst();
             String id = null;
             if(userWithId.isPresent()){
                 id =  userWithId.get().id;
