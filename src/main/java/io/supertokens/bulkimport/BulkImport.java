@@ -73,6 +73,7 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -623,27 +624,7 @@ public class BulkImport {
 
     public static void createMultipleUserRoles(Main main, AppIdentifier appIdentifier, Storage storage,
                                                List<BulkImportUser> users) throws StorageTransactionLogicException {
-        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = new HashMap<>();
-        for (BulkImportUser user : users) {
-
-            if (user.userRoles != null) {
-                for (UserRole userRole : user.userRoles) {
-                    for (String tenantId : userRole.tenantIds) {
-                        TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                tenantId);
-                        if(!rolesToUserByTenant.containsKey(tenantIdentifier)){
-
-                            rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
-                        }
-                        if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(user.externalUserId)){
-                            rolesToUserByTenant.get(tenantIdentifier).put(user.externalUserId, new ArrayList<>());
-                        }
-                        rolesToUserByTenant.get(tenantIdentifier).get(user.externalUserId).add(userRole.role);
-                    }
-                }
-            }
-        }
+        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = gatherRolesForUsersByTenant(appIdentifier, users);
         try {
             if(!rolesToUserByTenant.isEmpty()){
                 UserRoles.addMultipleRolesToMultipleUsers(main, appIdentifier, storage, rolesToUserByTenant);
@@ -669,32 +650,72 @@ public class BulkImport {
 
     }
 
+    private static Map<TenantIdentifier, Map<String, List<String>>> gatherRolesForUsersByTenant(AppIdentifier appIdentifier, List<BulkImportUser> users) {
+        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant = new HashMap<>();
+        for (BulkImportUser user : users) {
+            if (user.userRoles != null) {
+                for (UserRole userRole : user.userRoles) {
+                    for (String tenantId : userRole.tenantIds) {
+                        TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                                tenantId);
+                        if(!rolesToUserByTenant.containsKey(tenantIdentifier)){
+
+                            rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
+                        }
+                        String userIdToUse = user.externalUserId != null ?
+                                user.externalUserId : user.primaryUserId;
+                        if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(userIdToUse)){
+                            rolesToUserByTenant.get(tenantIdentifier).put(userIdToUse, new ArrayList<>());
+                        }
+                        rolesToUserByTenant.get(tenantIdentifier).get(userIdToUse).add(userRole.role);
+                    }
+                }
+            }
+        }
+        return rolesToUserByTenant;
+    }
+
     public static void verifyMultipleEmailForAllLoginMethods(AppIdentifier appIdentifier, Storage storage,
                                                              List<BulkImportUser> users)
             throws StorageTransactionLogicException {
-        Map<String, String> emailToUserId = new HashMap<>();
-        for (BulkImportUser user : users) {
-            for (LoginMethod lm : user.loginMethods) {
-                emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
-            }
-        }
 
+        Map<String, String> emailToUserId = collectVerifiedEmailAddressesByUserIds(users);
         try {
-            if(!emailToUserId.isEmpty()) {
-                EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
-                        .getEmailVerificationStorage(storage);
-                emailVerificationSQLStorage.startTransaction(con -> {
-                    emailVerificationSQLStorage
-                            .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
-                                    emailToUserId, true);
-
-                    emailVerificationSQLStorage.commitTransaction(con);
-                    return null;
-                });
-            }
+            verifyCollectedEmailAddressesForUsers(appIdentifier, storage, emailToUserId);
         } catch (StorageQueryException e) {
             throw new StorageTransactionLogicException(e);
         }
+    }
+
+    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage, Map<String, String> emailToUserId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        if(!emailToUserId.isEmpty()) {
+            EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
+                    .getEmailVerificationStorage(storage);
+            emailVerificationSQLStorage.startTransaction(con -> {
+                emailVerificationSQLStorage
+                        .updateMultipleIsEmailVerified_Transaction(appIdentifier, con,
+                                emailToUserId, true); //only the verified email addresses are expected to be in the map
+
+                emailVerificationSQLStorage.commitTransaction(con);
+                return null;
+            });
+        }
+    }
+
+    @NotNull
+    private static Map<String, String> collectVerifiedEmailAddressesByUserIds(List<BulkImportUser> users) {
+        Map<String, String> emailToUserId = new HashMap<>();
+        for (BulkImportUser user : users) {
+            for (LoginMethod lm : user.loginMethods) {
+                if(lm.isVerified) {
+                    //collect the verified email addresses for the userId
+                    emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
+                }
+            }
+        }
+        return emailToUserId;
     }
 
     public static void createMultipleTotpDevices(Main main, AppIdentifier appIdentifier,

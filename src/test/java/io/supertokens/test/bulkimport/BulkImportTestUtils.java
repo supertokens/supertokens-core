@@ -46,6 +46,7 @@ import io.supertokens.utils.Utils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -80,13 +81,14 @@ public class BulkImportTestUtils {
 
             List<LoginMethod> loginMethods = new ArrayList<>();
             long currentTimeMillis = System.currentTimeMillis();
-            loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, "$2a",
+            Random random = new Random();
+            loginMethods.add(new LoginMethod(tenants, "emailpassword", random.nextBoolean(), true, currentTimeMillis, email, "$2a",
                     "BCRYPT", null, null, null, null, io.supertokens.utils.Utils.getUUID()));
             loginMethods
-                    .add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis, email, null, null, null,
+                    .add(new LoginMethod(tenants, "thirdparty", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
             loginMethods.add(
-                    new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null, null,
+                    new LoginMethod(tenants, "passwordless", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             null, null, null, io.supertokens.utils.Utils.getUUID()));
             id = loginMethods.get(0).superTokensUserId;
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
@@ -156,6 +158,40 @@ public class BulkImportTestUtils {
                     null, "password"+i, null, null, null, io.supertokens.utils.Utils.getUUID()));
             id = loginMethods.get(0).superTokensUserId;
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
+        }
+        return users;
+    }
+
+    public static List<BulkImportUser> generateBulkImportUserWithNoExternalIdWithRoles(int numberOfUsers, List<String> tenants, int startIndex, List<String> roles) {
+        List<BulkImportUser> users = new ArrayList<>();
+        JsonParser parser = new JsonParser();
+
+        for (int i = startIndex; i < numberOfUsers + startIndex; i++) {
+            String email = "user" + i + "@example.com";
+            String id = "somebogus" + Utils.getUUID();
+            JsonObject userMetadata = parser.parse("{\"key1\":\""+id+"\",\"key2\":{\"key3\":\"value3\"}}")
+                    .getAsJsonObject();
+
+            List<UserRole> userRoles = new ArrayList<>();
+            for(String roleName : roles) {
+                userRoles.add(new UserRole(roleName, tenants));
+            }
+
+            List<TotpDevice> totpDevices = new ArrayList<>();
+            totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
+
+            List<LoginMethod> loginMethods = new ArrayList<>();
+            long currentTimeMillis = System.currentTimeMillis();
+            loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, "$2a",
+                    "BCRYPT", null, null, null, null, io.supertokens.utils.Utils.getUUID()));
+            loginMethods
+                    .add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis, email, null, null, null,
+                            "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
+            loginMethods.add(
+                    new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null, null,
+                            null, null, null, io.supertokens.utils.Utils.getUUID()));
+            id = loginMethods.get(0).superTokensUserId;
+            users.add(new BulkImportUser(id, null, userMetadata, userRoles, totpDevices, loginMethods));
         }
         return users;
     }
@@ -245,7 +281,11 @@ public class BulkImportTestUtils {
                 }
             }
         }
-        assertEquals(bulkImportUser.externalUserId, authRecipeUser.getSupertokensOrExternalUserId());
+        if(bulkImportUser.externalUserId != null) {
+            assertEquals(bulkImportUser.externalUserId, authRecipeUser.getSupertokensOrExternalUserId());
+        } else {
+            assertEquals(bulkImportUser.id, authRecipeUser.getSupertokensOrExternalUserId());
+        }
         assertEquals(bulkImportUser.id, authRecipeUser.getSupertokensUserId());
         assertEquals(bulkImportUser.userMetadata,
                 UserMetadata.getUserMetadata(appIdentifier, storage, authRecipeUser.getSupertokensOrExternalUserId()));
