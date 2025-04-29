@@ -101,3 +101,7 @@ jobs:
     needs: docker
     with:
       tag: ${{ needs.docker.outputs.tag }}
+
+  release:
+    uses: ./.github/workflows/release.yml
+    needs: docker

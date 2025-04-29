@@ -7,6 +7,16 @@ jobs:
   do-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Step 1
-        run: |
-          echo "Hello, world!"
+      - name: Confirm release
+        id: confirm-release
+        uses: boasihq/interactive-inputs@v2
+        with:
+          ngrok-authtoken: ${{ secrets.NGROK_AUTHTOKEN }}
+          interactive: |
+            fields:
+              - label: confirm-release
+                properties:
+                  display: "Confirm to proceed with the release!"
+                  type: boolean
+                  default: false
+
