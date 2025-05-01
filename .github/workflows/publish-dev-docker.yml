@@ -95,13 +95,3 @@ jobs:
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
-
-  stress-tests:
-    uses: ./.github/workflows/stress-tests.yml
-    needs: docker
-    with:
-      tag: ${{ needs.docker.outputs.tag }}
-
-  release:
-    uses: ./.github/workflows/release.yml
-    needs: docker

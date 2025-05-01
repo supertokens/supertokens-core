@@ -23,4 +23,5 @@ jobs:
         changeLogPath: 'CHANGELOG.md'
         skipLabels: 'Skip-Changelog'
   unit-tests:
+    name: Run unit tests
     uses: ./.github/workflows/unit-test.yml
