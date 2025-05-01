@@ -31,6 +31,11 @@ jobs:
         plugin: [sqlite, mongodb, mysql, postgresql]
     steps:
     - uses: actions/checkout@v2
+    - name: Print workflow
+      run: |
+        pwd
+        ls -la
+        cat ./.github/workflows/unit-test.yml
     - name: Run Unit Tests
       uses: ./.github/workflows/unit-test.yml
       with:
