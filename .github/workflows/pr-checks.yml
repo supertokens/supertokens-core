@@ -37,6 +37,6 @@ jobs:
         ls -la
         cat ./.github/workflows/unit-test.yml
     - name: Run Unit Tests
-      uses: ./.github/workflows/unit-test.yml
+      uses: ./.github/workflows/unit-test
       with:
         plugin: ${{ matrix.plugin }}

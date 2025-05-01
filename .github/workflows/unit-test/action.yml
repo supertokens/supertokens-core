@@ -1,0 +1,90 @@
+name: Unit Tests
+
+description: "Run unit tests for a specified plugin."
+
+inputs:
+  plugin:
+    description: "Plugin to run tests for."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Dependency Branches
+      id: dependency-branches
+      uses: actions/checkout@v4
+
+    - name: Get Core Dependencies
+      id: result
+      uses: supertokens/get-core-dependencies-action@main
+      with:
+        running-for: core
+
+    - name: Set up JDK 15.0.1
+      uses: actions/setup-java@v2
+      with:
+        java-version: 15.0.1
+        distribution: zulu
+
+    - name: Checkout Repositories
+      uses: actions/checkout@v2
+      with:
+        path: ./supertokens-root
+        ref: master
+
+    - name: Checkout Core
+      uses: actions/checkout@v2
+      with:
+        path: ./supertokens-root/supertokens-core
+
+    - name: Checkout Plugin Interface
+      uses: actions/checkout@v2
+      with:
+        repository: supertokens/supertokens-plugin-interface
+        path: ./supertokens-root/supertokens-plugin-interface
+        ref: ${{ fromJson(steps.dependency-branches.outputs.branches)['plugin-interface'] }}
+
+    - name: Checkout Plugin
+      if: inputs.plugin != 'sqlite'
+      uses: actions/checkout@v2
+      with:
+        repository: supertokens/supertokens-${{ inputs.plugin }}-plugin
+        path: ./supertokens-root/supertokens-${{ inputs.plugin }}-plugin
+        ref: ${{ fromJson(steps.dependency-branches.outputs.branches)[inputs.plugin] }}
+
+    - name: Load Modules
+      shell: bash
+      run: |
+        cd supertokens-root
+        echo "core,master
+        plugin-interface,master
+        ${{ inputs.plugin }}-plugin,master
+        " > modules.txt
+        cat modules.txt
+        ./loadModules
+
+    - name: Setup Test Environment
+      shell: bash
+      run: cd supertokens-root && ./utils/setupTestEnv --local
+
+    - name: Start Plugin Server
+      if: inputs.plugin != 'sqlite'
+      shell: bash
+      run: cd supertokens-root/supertokens-${{ inputs.plugin }}-plugin && ./startDb.sh
+
+    - name: Run Tests
+      shell: bash
+      env:
+        ST_PLUGIN_NAME: ${{ inputs.plugin }}
+      run: |
+        cd supertokens-root
+        ./gradlew test
+
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v5
+      if: always()
+      with:
+        report_paths: '**/build/test-results/test/TEST-*.xml'
+        detailed_summary: true
+        include_passed: false
+        annotate_notice: true
