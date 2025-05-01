@@ -1,11 +1,12 @@
 name: Unit Tests
 
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
+  workflow_call:
+    inputs:
+      plugin:
+        description: 'Plugin to run tests for'
+        required: true
+        type: string
 
 jobs:
   dependency-branches:
@@ -24,14 +25,6 @@ jobs:
   test:
     name: Unit tests
     needs: dependency-branches
-    strategy:
-      fail-fast: false
-      matrix:
-        plugin:
-          - sqlite
-          - postgresql
-          - mysql
-          - mongodb
 
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +35,6 @@ jobs:
           distribution: zulu
       - uses: actions/checkout@v2
         with:
-          repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: master
       - uses: actions/checkout@v2
@@ -54,28 +46,28 @@ jobs:
           path: ./supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
       - uses: actions/checkout@v2
-        if: matrix.plugin != 'sqlite'
+        if: inputs.plugin != 'sqlite'
         with:
-          repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
-          path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}
+          repository: supertokens/supertokens-${{ inputs.plugin }}-plugin
+          path: ./supertokens-root/supertokens-${{ inputs.plugin }}-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[inputs.plugin] }}
       - name: Load Modules
         run: |
           cd supertokens-root
           echo "core,master
           plugin-interface,master
-          ${{ matrix.plugin }}-plugin,master
+          ${{ inputs.plugin }}-plugin,master
           " > modules.txt
           cat modules.txt
           ./loadModules
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
-      - name: Start ${{ matrix.plugin }} server
-        if: matrix.plugin != 'sqlite'
-        run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
+      - name: Start ${{ inputs.plugin }} server
+        if: inputs.plugin != 'sqlite'
+        run: cd supertokens-root/supertokens-${{ inputs.plugin }}-plugin && ./startDb.sh
       - name: Run tests
         env:
-          ST_PLUGIN_NAME: ${{ matrix.plugin }}
+          ST_PLUGIN_NAME: ${{ inputs.plugin }}
         run: |
           cd supertokens-root
           ./gradlew test
