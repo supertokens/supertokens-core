@@ -30,6 +30,8 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -41,6 +43,9 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     final BlockingQueue<Object> argon2BoundedQueue;
     final BlockingQueue<Object> firebaseSCryptBoundedQueue;
     final Main main;
+
+    private final Map<String, String> cachedPasswordHashForTesting = new HashMap<>();
+    public static boolean bypassHashCachingInTesting = false;
 
     private PasswordHashing(Main main) {
         this.argon2BoundedQueue = new LinkedBlockingQueue<>(
@@ -75,7 +80,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     @TestOnly
     public String createHashWithSalt(String password) {
         try {
-            return createHashWithSalt(new AppIdentifier(null, null), password);
+            return createHashWithSalt(ResourceDistributor.getAppForTesting().toAppIdentifier(), password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -83,6 +88,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     public String createHashWithSalt(AppIdentifier appIdentifier, String password)
             throws TenantOrAppNotFoundException {
+
+        if (Main.isTesting && !bypassHashCachingInTesting && cachedPasswordHashForTesting.containsKey(password)) {
+            return cachedPasswordHashForTesting.get(password);
+        }
 
         String passwordHash = "";
 
@@ -107,6 +116,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
                     passwordHash, null);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new IllegalStateException(e);
+        }
+
+        if (Main.isTesting) {
+            cachedPasswordHashForTesting.put(password, passwordHash);
         }
         return passwordHash;
     }

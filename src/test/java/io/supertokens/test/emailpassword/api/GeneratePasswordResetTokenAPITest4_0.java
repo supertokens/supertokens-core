@@ -41,6 +41,9 @@ public class GeneratePasswordResetTokenAPITest4_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -104,7 +107,7 @@ public class GeneratePasswordResetTokenAPITest4_0 {
         }
 
         {
-            AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "a@a.com", "p1234");
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("userId", user.getSupertokensUserId());
             try {
@@ -166,8 +169,8 @@ public class GeneratePasswordResetTokenAPITest4_0 {
             return;
         }
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "a@a.com", "p1234");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", "e1");
@@ -223,7 +226,7 @@ public class GeneratePasswordResetTokenAPITest4_0 {
             return;
         }
 
-        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.main, "google", "ug", "t@example.com");
+        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.getProcess(), "google", "ug", "t@example.com");
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", res.user.getSupertokensUserId());

@@ -17,6 +17,7 @@
 package io.supertokens.userroles;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
@@ -113,7 +114,7 @@ public class UserRoles {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return addRoleToUser(
-                    main, new TenantIdentifier(null, null, null),
+                    main, ResourceDistributor.getAppForTesting(),
                     storage, userId, role);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -165,7 +166,7 @@ public class UserRoles {
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(main);
         return createNewRoleOrModifyItsPermissions(
-                new AppIdentifier(null, null), storage, role,
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, role,
                 permissions);
     }
 
@@ -179,7 +180,7 @@ public class UserRoles {
     public static boolean doesRoleExist(Main main, String role)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return doesRoleExist(new AppIdentifier(null, null), storage, role);
+        return doesRoleExist(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, role);
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
@@ -214,7 +215,7 @@ public class UserRoles {
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
         return removeUserRole(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 userId, role);
     }
 
@@ -228,8 +229,7 @@ public class UserRoles {
     public static String[] getRolesForUser(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getRolesForUser(
-                new TenantIdentifier(null, null, null), storage, userId);
+        return getRolesForUser(ResourceDistributor.getAppForTesting(), storage, userId);
     }
 
     // retrieve all users who have the input role, if role does not exist then throw UNKNOWN_ROLE_EXCEPTION
@@ -250,8 +250,7 @@ public class UserRoles {
     public static String[] getUsersForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUsersForRole(
-                new TenantIdentifier(null, null, null), storage, role);
+        return getUsersForRole(ResourceDistributor.getAppForTesting(), storage, role);
     }
 
     // retrieve all permissions associated with the role
@@ -274,8 +273,7 @@ public class UserRoles {
     public static String[] getPermissionsForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        return getPermissionsForRole(
-                new AppIdentifier(null, null), storage, role);
+        return getPermissionsForRole(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, role);
     }
 
     // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
@@ -314,7 +312,7 @@ public class UserRoles {
                                                  @Nullable String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        deletePermissionsFromRole(new AppIdentifier(null, null), storage,
+        deletePermissionsFromRole(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 role, permissions);
     }
 
@@ -331,7 +329,7 @@ public class UserRoles {
                                                       String permission) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getRolesThatHavePermission(
-                new AppIdentifier(null, null), storage, permission);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, permission);
     }
 
     // delete a role
@@ -357,7 +355,7 @@ public class UserRoles {
     @TestOnly
     public static boolean deleteRole(Main main, String role) throws StorageQueryException,
             TenantOrAppNotFoundException {
-        return deleteRole(main, new AppIdentifier(null, null), role);
+        return deleteRole(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), role);
     }
 
     // retrieve all roles that have been created
@@ -369,7 +367,7 @@ public class UserRoles {
     @TestOnly
     public static String[] getRoles(Main main) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getRoles(new AppIdentifier(null, null), storage);
+        return getRoles(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage);
     }
 
     // delete all roles associated with a user
@@ -383,8 +381,7 @@ public class UserRoles {
     public static int deleteAllRolesForUser(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return deleteAllRolesForUser(
-                new TenantIdentifier(null, null, null), storage, userId);
+        return deleteAllRolesForUser(ResourceDistributor.getAppForTesting(), storage, userId);
     }
 
 }

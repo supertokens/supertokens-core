@@ -74,9 +74,9 @@ public class SetLicenseKeyAPITest {
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Assert.assertNull(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance());
+        Assert.assertNull(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance());
 
-        Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length, 0);
+        Assert.assertEquals(0, FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length);
 
         // set license key when ee folder does not exist
         JsonObject requestBody = new JsonObject();

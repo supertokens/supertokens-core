@@ -41,6 +41,9 @@ public class GetPermissionsForRoleAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -124,7 +127,7 @@ public class GetPermissionsForRoleAPITest {
         // create a role with permissions
         String role = "role";
         String[] permissions = new String[]{"permission1", "permission2", "permission3"};
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, permissions);
 
         HashMap<String, String> QUERY_PARAM = new HashMap<>();
         QUERY_PARAM.put("role", role);

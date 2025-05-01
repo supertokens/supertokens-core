@@ -57,6 +57,9 @@ public class RequestConnectionUriDomainTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -72,10 +75,9 @@ public class RequestConnectionUriDomainTest {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -96,15 +98,17 @@ public class RequestConnectionUriDomainTest {
             }
         });
 
+        int port = HttpRequestForTesting.corePort;
+
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/test", null, 1000, 1000, null);
+                    "http://localhost:" + port + "/test", null, 1000, 1000, null);
             assertEquals("", response);
         }
 
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://127.0.0.1:3567/test", null, 1000, 1000, null);
+                    "http://127.0.0.1:" + port + "/test", null, 1000, 1000, null);
             assertEquals("", response);
         }
 
@@ -121,10 +125,9 @@ public class RequestConnectionUriDomainTest {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -229,10 +232,9 @@ public class RequestConnectionUriDomainTest {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

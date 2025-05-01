@@ -16,7 +16,7 @@ public class TestingProcessManager {
         String[] args = {"../../"};
         TestingProcess process = TestingProcessManager.start(args);
         process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
-        process.main.deleteAllInformationForTesting();
+        process.getProcess().deleteAllInformationForTesting();
         process.kill();
         System.out.println("----------DELETE ALL INFORMATION----------");
     }

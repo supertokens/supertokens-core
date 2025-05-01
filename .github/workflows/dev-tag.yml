@@ -1,0 +1,72 @@
+name: Checks for release
+
+on:
+  push:
+    tags:
+    - 'dev-*'
+
+jobs:
+  dependency-versions:
+    name: Dependency Versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.result.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        id: result
+  unit-tests:
+    name: Run unit tests
+    uses: ./.github/workflows/unit-test.yml
+  stress-tests:
+    uses: ./.github/workflows/stress-tests.yml
+  mark-as-passed:
+    needs: [dependency-versions, unit-tests, stress-tests]
+    name: Mark as passed
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - sqlite
+          - postgresql
+          - mysql
+          - mongodb
+    steps:
+      - name: Mark plugin as passed
+        if: matrix.plugin != 'sqlite'
+        uses: muhfaris/request-action@v1
+        with:
+          url: https://api.supertokens.io/0/plugin
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ needs.dependency-versions.outputs.versions['core'] }}",
+              "planType": "FREE",
+              "name": "${{ matrix.plugin }}",
+              "testPassed": true
+            }
+      - name: Mark core as passed
+        if: matrix.plugin == 'sqlite'
+        uses: muhfaris/request-action@v1
+        with:
+          url: https://api.supertokens.io/0/core
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ needs.dependency-versions.outputs.versions['core'] }}",
+              "planType": "FREE",
+              "testPassed": true
+            }

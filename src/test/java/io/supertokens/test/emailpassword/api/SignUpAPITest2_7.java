@@ -51,6 +51,9 @@ public class SignUpAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -146,7 +149,7 @@ public class SignUpAPITest2_7 {
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
         assert (activeUsers == 1);
         AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
-                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), "random@gmail.com")[0];
+                .listPrimaryUsersByEmail(process.getAppForTesting(), "random@gmail.com")[0];
         assertEquals(user.loginMethods[0].email, signUpUser.get("email").getAsString());
         assertEquals(user.getSupertokensUserId(), signUpUser.get("id").getAsString());
 
@@ -196,7 +199,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
-                .getPrimaryUserById(new AppIdentifier(null, null), signUpUser.get("id").getAsString());
+                .getPrimaryUserById(process.getAppForTesting().toAppIdentifier(), signUpUser.get("id").getAsString());
 
         assertEquals(userInfo.loginMethods[0].email, "random@gmail.com");
 

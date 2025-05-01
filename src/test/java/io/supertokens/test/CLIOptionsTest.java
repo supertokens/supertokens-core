@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +42,9 @@ public class CLIOptionsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -55,7 +59,7 @@ public class CLIOptionsTest {
     @Test
     public void cli0ArgsTest() throws TestingProcessManagerException, InterruptedException {
         String[] args = {};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null
                 && e.exception.getMessage().equals("Please provide installation path location for SuperTokens"));
@@ -66,7 +70,7 @@ public class CLIOptionsTest {
     @Test
     public void cli1ArgsTest() throws TestingProcessManagerException, InterruptedException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         process.kill();
@@ -77,7 +81,7 @@ public class CLIOptionsTest {
         // testing that when badInput is given to second cli argument, default values for host and port are used
         String[] args = {"../", "random"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
@@ -89,7 +93,7 @@ public class CLIOptionsTest {
         // custom host and port
         args = new String[]{"../", "host=127.0.0.1", "port=8081"};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "127.0.0.1");
@@ -102,33 +106,33 @@ public class CLIOptionsTest {
 
     @Test
     public void testMultipleInstancesAtTheSameTime() throws Exception {
-        String[] args = {"../"};
+        String[] args = {"../", "port=3567"};
 
         try {
             // Create 2 custom config files
-            ProcessBuilder pb = new ProcessBuilder("cp", "config.yaml", "temp/new1Config.yaml");
+            ProcessBuilder pb = new ProcessBuilder("cp", "temp/config.yaml", "temp/new1Config.yaml");
             pb.directory(new File(args[0]));
             Process p1 = pb.start();
             p1.waitFor();
 
-            pb = new ProcessBuilder("cp", "config.yaml", "temp/new2Config.yaml");
+            pb = new ProcessBuilder("cp", "temp/config.yaml", "temp/new2Config.yaml");
             pb.directory(new File(args[0]));
             p1 = pb.start();
             p1.waitFor();
 
-            TestingProcess process = TestingProcessManager.start(args);
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8081",
                     "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath()};
 
-            TestingProcess process1 = TestingProcessManager.start(args);
+            TestingProcess process1 = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process1.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             args = new String[]{"../", "port=8082",
                     "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath()};
 
-            TestingProcess process2 = TestingProcessManager.start(args);
+            TestingProcess process2 = TestingProcessManager.startIsolatedProcess(args, true);
             assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
@@ -292,27 +296,28 @@ public class CLIOptionsTest {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        int port = HttpRequestForTesting.corePort;
+
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
-        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
+        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), port);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         //process starts with tempDirLocation param too.
-        args = new String[]{"../", "tempDirLocation=" + new File("../tempDir/").getAbsolutePath()};
+        args = new String[]{"../", "tempDirLocation=" + new File("../tempDir/").getAbsolutePath(), "port="+port};
 
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertEquals(Config.getConfig(process.getProcess()).getHost(process.getProcess()), "localhost");
-        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), 3567);
+        assertEquals(Config.getConfig(process.getProcess()).getPort(process.getProcess()), port);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
     }
 
 }

@@ -53,6 +53,9 @@ public class DeleteBulkImportUsersTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -138,8 +141,8 @@ public class DeleteBulkImportUsersTest {
 
         {
 
-            BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-            AppIdentifier appIdentifier = new AppIdentifier(null, null);
+            BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.getProcess());
+            AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
 
             // Insert users
             List<BulkImportUser> users = generateBulkImportUser(5);

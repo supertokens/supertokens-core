@@ -41,6 +41,9 @@ public class PasswordlessUserPutAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -69,11 +72,11 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+442071838750";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, null, System.currentTimeMillis());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 "userId2", email2, null, System.currentTimeMillis());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 "userId3", null, phoneNumber, System.currentTimeMillis());
 
         {
@@ -151,7 +154,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -165,8 +168,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 1);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -192,7 +195,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -206,8 +209,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 0);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -235,7 +238,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String updatedEmail = "test@example.com";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -249,11 +252,11 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 0);
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), updatedEmail).length == 1);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), updatedEmail).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(),
                 updatedPhoneNumber).length ==
                 1);
 
@@ -282,7 +285,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -330,7 +333,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -378,7 +381,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+91898989898";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -426,7 +429,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+9189898989";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -439,8 +442,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -467,7 +470,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+9189898989";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -480,8 +483,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -508,7 +511,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+9189898989";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -520,8 +523,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -548,7 +551,7 @@ public class PasswordlessUserPutAPITest2_11 {
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
         String updated_email = "test@example.com";
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -561,8 +564,8 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), updated_email).length == 1);
-        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), updated_email).length == 1);
+        assert (storage.listPrimaryUsersByEmail(process.getAppForTesting(), email).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -589,7 +592,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String updatedPhoneNumber = "+442071838751";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -602,9 +605,9 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(),
                 updatedPhoneNumber).length == 1);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

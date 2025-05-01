@@ -56,6 +56,9 @@ public class StorageTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -72,7 +75,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         for (int i = 0; i < 10; i++) {
@@ -195,7 +198,7 @@ public class StorageTest {
     public void transactionIsolationWithAnInitialRowTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         for (int i = 0; i < 100; i++) {
@@ -304,7 +307,7 @@ public class StorageTest {
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -529,7 +532,7 @@ public class StorageTest {
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -581,7 +584,7 @@ public class StorageTest {
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -611,7 +614,7 @@ public class StorageTest {
     @Test
     public void transactionDoNotInsertIfAlreadyExistsForNoSQL() throws InterruptedException, StorageQueryException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -641,7 +644,7 @@ public class StorageTest {
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -678,7 +681,7 @@ public class StorageTest {
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -728,7 +731,7 @@ public class StorageTest {
         request.addProperty("enableAntiCsrf", false);
         request.addProperty("useStaticKey", false);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -782,7 +785,7 @@ public class StorageTest {
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
         String[] args = {"../"};
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         int numberOfThreads = 1000;

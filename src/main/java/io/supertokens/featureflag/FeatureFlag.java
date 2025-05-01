@@ -108,7 +108,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     public static FeatureFlag getInstance(Main main) {
         try {
             return (FeatureFlag) main.getResourceDistributor()
-                    .getResource(new AppIdentifier(null, null), RESOURCE_KEY);
+                    .getResource(ResourceDistributor.getAppForTesting(), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

@@ -50,6 +50,9 @@ public class AddBulkImportUsersTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -160,7 +163,7 @@ public class AddBulkImportUsersTest {
 
     @Test
     public void shouldThrow400IfTotpDevicesAreNotPassedCorrectly() throws Exception {
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[] { "../" });
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         Main main = process.getProcess();
 
@@ -355,7 +358,7 @@ public class AddBulkImportUsersTest {
 
     @Test
     public void shouldThrow400IfAUserHasMultipleLoginMethodsAndAccountLinkingIsDisabled() throws Exception {
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[] { "../" });
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         Main main = process.getProcess();
 
@@ -406,7 +409,7 @@ public class AddBulkImportUsersTest {
 
         // CASE 3: Two or more tenants do not share the same storage
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         JsonObject requestBody3 = new JsonParser().parse(
                 "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"public\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}, {\"tenantIds\":[\"t2\"],\"recipeId\":\"thirdparty\", \"email\":\"johndoe@gmail.com\", \"thirdPartyId\":\"id\", \"thirdPartyUserId\":\"id\"}]}]}")

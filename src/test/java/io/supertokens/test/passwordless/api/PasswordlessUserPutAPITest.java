@@ -40,6 +40,9 @@ public class PasswordlessUserPutAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -67,7 +70,7 @@ public class PasswordlessUserPutAPITest {
         String normalisedUpdatedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(updatedPhoneNumber);
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
@@ -80,10 +83,10 @@ public class PasswordlessUserPutAPITest {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(), phoneNumber).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(),
                 updatedPhoneNumber).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+        assert (storage.listPrimaryUsersByPhoneNumber(process.getAppForTesting(),
                 normalisedUpdatedPhoneNumber).length == 1);
 
         process.kill();

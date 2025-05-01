@@ -72,7 +72,7 @@ public class PluginTest {
             // delete plugin directory
             delete(new File(args[0] + "plugin"));
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
 
@@ -102,7 +102,7 @@ public class PluginTest {
             // create empty plugin directory
             new File(args[0] + "plugin").mkdir();
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
 
@@ -138,7 +138,7 @@ public class PluginTest {
                 delete(new File(args[0] + "plugin/" + pluginName));
             }
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
 
@@ -215,7 +215,7 @@ public class PluginTest {
 //            Process process1 = pb.start();
 //            process1.waitFor();
 //
-//            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+//            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 //            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE));
 //
 //            process.kill();

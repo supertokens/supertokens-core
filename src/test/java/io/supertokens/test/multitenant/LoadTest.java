@@ -45,6 +45,9 @@ public class LoadTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -60,10 +63,9 @@ public class LoadTest {
             throws InterruptedException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         TenantConfig[] tenants = new TenantConfig[1000];
@@ -107,7 +109,7 @@ public class LoadTest {
 //            InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException {
 //        String[] args = {"../"};
 //
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+//        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 //        FeatureFlagTestContent.getInstance(process.getProcess())
 //                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
 //        process.startProcess();

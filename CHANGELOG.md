@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Migrates tests to Github Actions
+
 ## [10.1.4]
 
 - Fixes bulk migration user roles association when there is no external userId assigned to the user

@@ -32,14 +32,12 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.totp.TotpLicenseTest;
 import io.supertokens.utils.SemVer;
 
 import java.util.HashMap;
@@ -49,6 +47,9 @@ import java.util.Set;
 public class TestClientDelete5_2 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -65,19 +66,14 @@ public class TestClientDelete5_2 {
     public void testClientDelete() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         Set<String> clientIds = new HashSet<>();
@@ -107,19 +103,14 @@ public class TestClientDelete5_2 {
     public void testClientDeleteWithInvalidClientId() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.OAUTH });
 
         JsonObject resp = deleteClient(process.getProcess(), "non-existent-client-id");

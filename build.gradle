@@ -118,6 +118,7 @@ test {
         outputs.upToDateWhen { false }
         showStandardStreams = true
     }
+    maxParallelForks = Runtime.runtime.availableProcessors()
 }
 
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat

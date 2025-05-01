@@ -72,7 +72,6 @@ public class MultitenantAPITest {
         this.process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -92,7 +91,7 @@ public class MultitenantAPITest {
 
         { // tenant 1
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", null);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), null);
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
@@ -113,14 +112,14 @@ public class MultitenantAPITest {
 
         { // tenant 2
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t1");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(false),
@@ -134,14 +133,14 @@ public class MultitenantAPITest {
 
         { // tenant 3
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t2");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(false),
@@ -153,9 +152,9 @@ public class MultitenantAPITest {
             );
         }
 
-        t1 = new TenantIdentifier(null, "a1", null);
-        t2 = new TenantIdentifier(null, "a1", "t1");
-        t3 = new TenantIdentifier(null, "a1", "t2");
+        t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId(), null);
+        t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1");
+        t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t2");
     }
 
     private void verifyEmail(TenantIdentifier tenantIdentifier, String userId, String email)
