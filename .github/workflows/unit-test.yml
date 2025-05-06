@@ -38,16 +38,16 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: Set up JDK 15.0.1
+      - name: Set up JDK 21.0.7
         uses: actions/setup-java@v2
         with:
-          java-version: 15.0.1
+          java-version: 21.0.7
           distribution: zulu
       - uses: actions/checkout@v2
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: master
+          ref: feat/java_gradle_upgrade
       - uses: actions/checkout@v2
         with:
           path: ./supertokens-root/supertokens-core
