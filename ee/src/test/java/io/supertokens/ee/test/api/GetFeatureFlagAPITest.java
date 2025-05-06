@@ -38,7 +38,7 @@ public class GetFeatureFlagAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        if (StorageLayer.isInMemDb(process.main)) {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             // cause we keep all features enabled in memdb anyway
             return;
         }
@@ -72,7 +72,7 @@ public class GetFeatureFlagAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        if (StorageLayer.isInMemDb(process.main)) {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             // cause we keep all features enabled in memdb anyway
             return;
         }

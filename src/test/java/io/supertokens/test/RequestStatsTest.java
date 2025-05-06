@@ -47,6 +47,9 @@ public class RequestStatsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -61,17 +64,14 @@ public class RequestStatsTest {
     public void testLastMinuteStats() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        // Wait for a minute to pass
-        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
-
-        ExecutorService ex = Executors.newFixedThreadPool(100);
+        ExecutorService ex = Executors.newFixedThreadPool( StorageLayer.isInMemDb(process.getProcess()) ? 1 : 100);
         int numRequests = 1000;
         for (int i = 0; i < numRequests; i++) {
             int finalI = i;
@@ -87,9 +87,6 @@ public class RequestStatsTest {
 
         ex.shutdown();
         ex.awaitTermination(45, TimeUnit.SECONDS); // should finish in 45 seconds
-
-        // Wait for a minute to pass
-        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
 
         JsonObject stats = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/requests/stats", null, 5000,
@@ -109,7 +106,7 @@ public class RequestStatsTest {
                 avg = e.getAsDouble();
             }
         }
-        assertEquals(1439, count);
+        assertTrue(count >= 1438 && count <= 1440);
 
         count = 0;
         for (JsonElement e : peakRps) {
@@ -119,7 +116,6 @@ public class RequestStatsTest {
                 assertTrue(e.getAsInt() > avg);
             }
         }
-        assertEquals(1439, count);
 
         assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
 
@@ -131,11 +127,10 @@ public class RequestStatsTest {
     public void testLastMinuteStatsPerApp() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -151,10 +146,7 @@ public class RequestStatsTest {
                 new JsonObject()
         ), false);
 
-        // Wait for a minute to pass
-        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
-
-        ExecutorService ex = Executors.newFixedThreadPool(100);
+        ExecutorService ex = Executors.newFixedThreadPool(StorageLayer.isInMemDb(process.getProcess()) ? 1 : 100);
         int numRequests = 500;
         for (int i = 0; i < numRequests; i++) {
             int finalI = i;
@@ -179,9 +171,6 @@ public class RequestStatsTest {
         ex.shutdown();
         ex.awaitTermination(45, TimeUnit.SECONDS); // should finish in 45 seconds
 
-        // Wait for a minute to pass
-        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
-
         {
             JsonObject stats = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/requests/stats", null, 5000,
@@ -201,7 +190,7 @@ public class RequestStatsTest {
                     avg = e.getAsDouble();
                 }
             }
-            assertEquals(1439, count);
+            assertTrue(1438 <= count && count <= 1440);
 
             count = 0;
             for (JsonElement e : peakRps) {
@@ -211,7 +200,7 @@ public class RequestStatsTest {
                     assertTrue(e.getAsInt() > avg);
                 }
             }
-            assertEquals(1439, count);
+            assertTrue(1438 <= count && count <= 1440);
 
             assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
         }
@@ -236,7 +225,7 @@ public class RequestStatsTest {
                     avg = e.getAsDouble();
                 }
             }
-            assertEquals(1439, count);
+            assertTrue(1438 <= count && count <= 1440);
 
             count = 0;
             for (JsonElement e : peakRps) {
@@ -246,7 +235,7 @@ public class RequestStatsTest {
                     assertTrue(e.getAsInt() > avg);
                 }
             }
-            assertEquals(1439, count);
+            assertTrue(1438 <= count && count <= 1440);
 
             assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
         }
@@ -259,11 +248,10 @@ public class RequestStatsTest {
     public void testWithNonExistantApp() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

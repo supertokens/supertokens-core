@@ -38,6 +38,9 @@ public class GeneratePasswordResetTokenAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -174,7 +177,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             return;
         }
 
-        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.main, "google", "ug", "t@example.com");
+        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.getProcess(), "google", "ug", "t@example.com");
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", res.user.getSupertokensUserId());

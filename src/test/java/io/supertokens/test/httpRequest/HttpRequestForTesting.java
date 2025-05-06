@@ -19,17 +19,18 @@ package io.supertokens.test.httpRequest;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.io.*;
 import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class HttpRequestForTesting {
     private static final int STATUS_CODE_ERROR_THRESHOLD = 400;
+    public static boolean disableAddingAppId = false;
+    public static Integer corePort = null;
 
     private static URL getURL(Main main, String requestID, String url) throws MalformedURLException {
         URL obj = new URL(url);
@@ -64,6 +65,16 @@ public class HttpRequestForTesting {
                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
                                        String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+
+        if (!disableAddingAppId && !url.contains("appid-") && !url.contains(":3567/config")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
+        }
+
         StringBuilder paramBuilder = new StringBuilder();
 
         if (params != null) {
@@ -134,9 +145,20 @@ public class HttpRequestForTesting {
                                         String method,
                                         String apiKey, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        // If the url doesn't contain the app id deliberately, add app id used for testing
+        if (!disableAddingAppId && !url.contains("appid-")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
+        }
+
         URL obj = getURL(main, requestID, url);
         InputStream inputStream = null;
         HttpURLConnection con = null;
+
         try {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
@@ -236,6 +258,16 @@ public class HttpRequestForTesting {
                                                              int connectionTimeoutMS, int readTimeoutMS,
                                                              Integer version, String cdiVersion, String rid)
             throws IOException, HttpResponseException {
+        // If the url doesn't contain the app id deliberately, add app id used for testing
+        if (!disableAddingAppId && !url.contains("appid-")) {
+            String appId = ResourceDistributor.getAppForTesting().getAppId();
+            url = url.replace(":3567", ":3567/appid-" + appId);
+        }
+
+        if (corePort != null) {
+            url = url.replace(":3567", ":" + corePort);
+        }
+
         StringBuilder paramBuilder = new StringBuilder();
 
         if (params != null) {

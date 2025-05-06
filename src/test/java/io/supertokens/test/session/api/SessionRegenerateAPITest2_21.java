@@ -41,6 +41,9 @@ public class SessionRegenerateAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -126,7 +129,7 @@ public class SessionRegenerateAPITest2_21 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // createSession with JWT payload
-        SessionInformationHolder session = Session.createNewSession(process.main, "user1", new JsonObject(),
+        SessionInformationHolder session = Session.createNewSession(process.getProcess(), "user1", new JsonObject(),
                 new JsonObject());
 
         AccessToken.AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(),

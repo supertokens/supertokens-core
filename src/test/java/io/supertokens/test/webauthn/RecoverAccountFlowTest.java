@@ -53,11 +53,10 @@ public class RecoverAccountFlowTest {
     @Test
     public void recoverAccountTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -93,11 +92,10 @@ public class RecoverAccountFlowTest {
     @Test
     public void recoverAccountFailsWithNonExistingUserTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -116,11 +114,10 @@ public class RecoverAccountFlowTest {
     @Test
     public void recoverAccountWithLinkedPrimaryUserTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -130,7 +127,7 @@ public class RecoverAccountFlowTest {
         List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
         assertEquals(1, users.size());
 
-        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process, 1, true);
         assertEquals(1, emailPasswordUsers.size());
 
         Utils.linkAccounts(process.getProcess(), emailPasswordUsers.stream().map(AuthRecipeUserInfo::getSupertokensUserId).collect(
@@ -163,18 +160,17 @@ public class RecoverAccountFlowTest {
     @Test
     public void recoverAccountTokenWithoutWANUserButWithExistingEmailPrimaryUserTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process.getProcess(), 1, true);
+        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process, 1, true);
         assertEquals(1, emailPasswordUsers.size());
 
         JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(), "user0@example.com", emailPasswordUsers.get(0).getSupertokensUserId());

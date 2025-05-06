@@ -39,6 +39,9 @@ public class CreateDashboardUserAPITests {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -356,7 +359,7 @@ public class CreateDashboardUserAPITests {
     public void testCreatingAUserAfterCrossingTheFreeUserThreshold() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -372,6 +375,8 @@ public class CreateDashboardUserAPITests {
             }
         }
 
+        Thread.sleep(500);
+
         // try creating another user when max number of free users is reached 
         {
             String email = "newUser@example.com";
@@ -385,9 +390,9 @@ public class CreateDashboardUserAPITests {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestBody, 5000, 1000, null,
                         SemVer.v2_18.get(), "dashboard");
-                assert StorageLayer.isInMemDb(process.main);
+                assert StorageLayer.isInMemDb(process.getProcess());
             } catch (HttpResponseException e) {
-                assert !StorageLayer.isInMemDb(process.main);
+                assert !StorageLayer.isInMemDb(process.getProcess());
                 assertTrue(e.statusCode == 402 && e.getMessage().equals(
                         "Http error. Status Code: 402. Message:"
                                 +

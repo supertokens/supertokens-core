@@ -59,6 +59,9 @@ public class PathRouterTest extends Mockito {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -72,7 +75,7 @@ public class PathRouterTest extends Mockito {
     @Test
     public void test500ErrorMessage() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -140,6 +143,9 @@ public class PathRouterTest extends Mockito {
                 assertEquals("Http error. Status Code: 500. Message: java.lang.RuntimeException: Runtime Exception", e.getMessage());
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -148,7 +154,7 @@ public class PathRouterTest extends Mockito {
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -324,7 +330,7 @@ public class PathRouterTest extends Mockito {
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -500,7 +506,7 @@ public class PathRouterTest extends Mockito {
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
         Utils.setValueInConfig("base_path", "base_path");
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -570,6 +576,8 @@ public class PathRouterTest extends Mockito {
                 }
             });
         }
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -686,7 +694,7 @@ public class PathRouterTest extends Mockito {
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
         Utils.setValueInConfig("base_path", "/base/path");
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -757,6 +765,8 @@ public class PathRouterTest extends Mockito {
                 }
             });
         }
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -873,7 +883,7 @@ public class PathRouterTest extends Mockito {
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
         Utils.setValueInConfig("base_path", "/t1");
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -944,6 +954,8 @@ public class PathRouterTest extends Mockito {
                 }
             });
         }
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -1057,7 +1069,7 @@ public class PathRouterTest extends Mockito {
     @Test
     public void withRecipeRouterTest() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -1086,7 +1098,7 @@ public class PathRouterTest extends Mockito {
                 false);
 
         Webserver.getInstance(process.getProcess())
-                .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+                .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), "") {
 
                     private static final long serialVersionUID = 1L;
 
@@ -1169,6 +1181,8 @@ public class PathRouterTest extends Mockito {
             }
         });
 
+        HttpRequestForTesting.disableAddingAppId = true;
+
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/test", new HashMap<>(), 1000, 1000, null,
@@ -1212,11 +1226,11 @@ public class PathRouterTest extends Mockito {
     @Test
     public void errorFromAddAPICauseOfSameRoute() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         Webserver.getInstance(process.getProcess())
-                .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+                .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), "") {
 
                     private static final long serialVersionUID = 1L;
 
@@ -1284,12 +1298,12 @@ public class PathRouterTest extends Mockito {
     @Test
     public void errorFromRecipeRouterCauseOfSameRouteAndRid() throws Exception {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         try {
             Webserver.getInstance(process.getProcess())
-                    .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "r1") {
+                    .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), "r1") {
 
                         private static final long serialVersionUID = 1L;
 
@@ -1349,7 +1363,7 @@ public class PathRouterTest extends Mockito {
 
         try {
             Webserver.getInstance(process.getProcess())
-                    .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+                    .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), "") {
 
                         private static final long serialVersionUID = 1L;
 
@@ -1421,10 +1435,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -1550,10 +1563,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -1674,10 +1686,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -1761,7 +1772,7 @@ public class PathRouterTest extends Mockito {
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -2066,7 +2077,7 @@ public class PathRouterTest extends Mockito {
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
         Utils.setValueInConfig("base_path", "base_path");
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -2183,6 +2194,8 @@ public class PathRouterTest extends Mockito {
                 }
             });
         }
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -2355,7 +2368,7 @@ public class PathRouterTest extends Mockito {
             CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
         Utils.setValueInConfig("base_path", "appid-path");
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -2647,10 +2660,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -2795,10 +2807,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -2875,6 +2886,8 @@ public class PathRouterTest extends Mockito {
                 }
             }
         });
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -2966,10 +2979,9 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

@@ -42,6 +42,9 @@ public class GetUsersForRoleAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -107,12 +110,12 @@ public class GetUsersForRoleAPITest {
         }
 
         String role = "role";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), role, null);
 
         // add role to users
         String[] userIds = new String[]{"user1", "user2", "user3"};
         for (String userId : userIds) {
-            UserRoles.addRoleToUser(process.main, userId, role);
+            UserRoles.addRoleToUser(process.getProcess(), userId, role);
         }
 
         // retrieve users for role

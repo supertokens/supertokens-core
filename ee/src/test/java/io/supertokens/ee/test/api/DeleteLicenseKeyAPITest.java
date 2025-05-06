@@ -45,7 +45,7 @@ public class DeleteLicenseKeyAPITest {
 
         // check that no LicenseKey exits
         try {
-            FeatureFlag.getInstance(process.main).getLicenseKey();
+            FeatureFlag.getInstance(process.getProcess()).getLicenseKey();
             fail();
         } catch (NoLicenseKeyFoundException ignored) {
         }
@@ -58,7 +58,7 @@ public class DeleteLicenseKeyAPITest {
 
         // check that no LicenseKey exits
         try {
-            FeatureFlag.getInstance(process.main).getLicenseKey();
+            FeatureFlag.getInstance(process.getProcess()).getLicenseKey();
             fail();
         } catch (NoLicenseKeyFoundException ignored) {
         }
@@ -90,7 +90,7 @@ public class DeleteLicenseKeyAPITest {
 
         // check that no LicenseKey exits
         try {
-            FeatureFlag.getInstance(process.main).getLicenseKey();
+            FeatureFlag.getInstance(process.getProcess()).getLicenseKey();
             fail();
         } catch (NoLicenseKeyFoundException ignored) {
         }

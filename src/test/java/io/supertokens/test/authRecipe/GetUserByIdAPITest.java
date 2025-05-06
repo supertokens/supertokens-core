@@ -46,6 +46,9 @@ public class GetUserByIdAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -59,11 +62,10 @@ public class GetUserByIdAPITest {
     @Test
     public void getUserSuccess() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -78,9 +80,9 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -131,11 +133,10 @@ public class GetUserByIdAPITest {
     @Test
     public void getUserSuccessWithUserIdMapping() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -144,17 +145,17 @@ public class GetUserByIdAPITest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "e1", null, false);
 
         Thread.sleep(50);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -205,11 +206,10 @@ public class GetUserByIdAPITest {
     @Test
     public void getUserSuccess2() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -227,9 +227,9 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = signInUpRespone.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -275,11 +275,10 @@ public class GetUserByIdAPITest {
     @Test
     public void getUnknownUser() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

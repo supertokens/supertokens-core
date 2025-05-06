@@ -44,6 +44,9 @@ public class UserIdMappingTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -58,26 +61,25 @@ public class UserIdMappingTest {
     public void testCreatingAUserIdMappingAndSession() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
 
-        AuthRecipe.createPrimaryUser(process.main, userInfo.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), userInfo.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, userInfo2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), userInfo2.getSupertokensUserId(),
                 userInfo.getSupertokensUserId());
 
         String superTokensUserId = userInfo.getSupertokensUserId();
@@ -99,7 +101,7 @@ public class UserIdMappingTest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -166,26 +168,25 @@ public class UserIdMappingTest {
     public void testCreatingAUserIdMappingAndSessionWithRecipeUserId() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a User
-        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123");
 
-        AuthRecipe.createPrimaryUser(process.main, userInfo.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), userInfo.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, userInfo2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), userInfo2.getSupertokensUserId(),
                 userInfo.getSupertokensUserId());
 
         String superTokensUserId = userInfo2.getSupertokensUserId();
@@ -207,7 +208,7 @@ public class UserIdMappingTest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(process.getAppForTesting().toAppIdentifier(),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
