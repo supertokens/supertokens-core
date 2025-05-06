@@ -45,7 +45,7 @@ We're happy to help!:raised_hands:
 ### Local Setup Prerequisites
 
 - OS: Linux or macOS. Or if using Windows, you need to use [wsl2](https://docs.microsoft.com/en-us/windows/wsl/about).
-- JDK: openjdk 15.0.1. Installation instructions for Mac and Linux can be found
+- JDK: openjdk 21.0.7. Installation instructions for Mac and Linux can be found
   in [our wiki](https://github.com/supertokens/supertokens-core/wiki/Installing-OpenJDK-for-Mac-and-Linux)
 - IDE: [IntelliJ](https://www.jetbrains.com/idea/download/)(recommended) or equivalent IDE
 
