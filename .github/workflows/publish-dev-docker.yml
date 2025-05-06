@@ -37,7 +37,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: master
+          ref: feat/java_gradle_upgrade
       - uses: actions/checkout@v2
         with:
           path: ./supertokens-root/supertokens-core
