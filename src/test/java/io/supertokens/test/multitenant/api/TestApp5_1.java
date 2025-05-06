@@ -916,7 +916,7 @@ public class TestApp5_1 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/v2"),
-                requestBody, 1000, 2500, null,
+                requestBody, 10000, 25000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());

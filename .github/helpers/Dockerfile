@@ -4,20 +4,22 @@ RUN apt-get update && apt-get upgrade -y
 RUN apt-get install build-essential -y
 RUN apt-get install -y git-core wget unzip jq curl
 
-# Install OpenJDK 15.0.1
-RUN wget https://download.java.net/java/GA/jdk15.0.1/51f4f36ad4ef43e39d0dfdbaf6549e32/9/GPL/openjdk-15.0.1_linux-x64_bin.tar.gz
-RUN mkdir -p /usr/java
-RUN mv openjdk-15.0.1_linux-x64_bin.tar.gz /usr/java
-RUN cd /usr/java && tar -xzvf openjdk-15.0.1_linux-x64_bin.tar.gz
+# Install OpenJDK 21.0.7
+RUN wget https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.7%2B6/OpenJDK21U-jdk_x64_linux_hotspot_21.0.7_6.tar.gz
 
-RUN echo 'JAVA_HOME=/usr/java/jdk-15.0.1' >> /etc/profile
+RUN mv OpenJDK21U-jdk_x64_linux_hotspot_21.0.7_6.tar.gz /usr/java
+RUN mkdir -p /usr/java/
+RUN cd /usr/java && tar -xzvf OpenJDK21U-jdk_x64_linux_hotspot_21.0.7_6.tar.gz
+RUN mv /usr/java/jdk-21.0.7+6 /usr/java/jdk-21.0.7
+
+RUN echo 'JAVA_HOME=/usr/java/jdk-21.0.7' >> /etc/profile
 RUN echo 'PATH=$PATH:$HOME/bin:$JAVA_HOME/bin' >> /etc/profile
 RUN echo 'export JAVA_HOME' >> /etc/profile
 RUN echo 'export JRE_HOME' >> /etc/profile
 RUN echo 'export PATH' >> /etc/profile
 
-RUN update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-15.0.1/bin/java" 1
-RUN update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-15.0.1/bin/javac" 1
+RUN update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-21.0.7/bin/java" 1
+RUN update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-21.0.7/bin/javac" 1
 
 RUN wget -O docker-entrypoint.sh https://raw.githubusercontent.com/supertokens/supertokens-docker-postgresql/master/docker-entrypoint.sh
 
@@ -51,7 +53,7 @@ RUN set -x \
 	&& gpgconf --kill all \
 	&& rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc \
 	&& chmod +x /usr/local/bin/gosu \
-    && wget -O jre.zip "https://raw.githubusercontent.com/supertokens/jre/master/jre-15.0.1-linux.zip" \
+    && wget -O jre.zip "https://raw.githubusercontent.com/supertokens/jre/master/jre-21.0.7-linux.zip" \
     && mkdir -p /usr/lib/supertokens/jre \
     && unzip jre.zip \
     && mv jre-*/* /usr/lib/supertokens/jre \

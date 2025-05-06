@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-version 'unspecified'
+version = 'unspecified'
 
 repositories {
     mavenCentral()
@@ -13,7 +13,7 @@ jar {
 }
 
 dependencies {
-    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
@@ -35,13 +35,13 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    testImplementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.18'
+    testImplementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.5'
 
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 
@@ -54,15 +54,15 @@ dependencies {
     testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
 }
 
-task copyJars(type: Copy) {
-    into "$buildDir/dependencies"
+tasks.register('copyJars', Copy) {
     from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("dependencies")
 }
 
 def interfaceName = "io.supertokens.featureflag.EEFeatureFlagInterface"
 def className = "io.supertokens.ee.EEFeatureFlag"
 
-task generateMetaInf {
+tasks.register('generateMetaInf') {
     doFirst {
         mkdir "src/main/resources/META-INF/services"
         file("src/main/resources/META-INF/services/${interfaceName}").text = "${className}"
@@ -89,10 +89,10 @@ tasks.withType(Test) {
                 TestLogEvent.PASSED,
                 TestLogEvent.SKIPPED,
                 TestLogEvent.STANDARD_OUT
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+        exceptionFormat = TestExceptionFormat.FULL
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
 
         // set options for log level DEBUG and INFO
         debug {
@@ -102,7 +102,7 @@ tasks.withType(Test) {
                     TestLogEvent.SKIPPED,
                     TestLogEvent.STANDARD_ERROR,
                     TestLogEvent.STANDARD_OUT
-            exceptionFormat TestExceptionFormat.FULL
+            exceptionFormat = TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat

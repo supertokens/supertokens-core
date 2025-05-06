@@ -163,7 +163,7 @@ public class RefreshTokenTest {
         try {
             RefreshToken.getInfoFromRefreshToken(process.getProcess(), tokenInfo.token);
         } catch (UnauthorisedException e) {
-            assertEquals("javax.crypto.AEADBadTagException: Tag mismatch!", e.getMessage());
+            assertEquals("javax.crypto.AEADBadTagException: Tag mismatch", e.getMessage());
             return;
         }
         fail();

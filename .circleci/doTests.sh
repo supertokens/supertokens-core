@@ -138,8 +138,8 @@ do
           cd supertokens-root
           rm gradle.properties
 
-          update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-15.0.1/bin/java" 2
-          update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-15.0.1/bin/javac" 2
+          update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-21.0.7/bin/java" 2
+          update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-21.0.7/bin/javac" 2
 
           coreX=$(cut -d'.' -f1 <<<"$coreVersion")
           coreY=$(cut -d'.' -f2 <<<"$coreVersion")
