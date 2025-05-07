@@ -1,0 +1,68 @@
+name: Add dev tags for release
+
+on:
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: 'Core version'
+        required: true
+        type: string
+      plugin-interface-version:
+        description: 'Plugin interface version'
+        required: true
+        type: string
+      new-release-for-plugin-interface:
+        description: 'New release for plugin interface'
+        required: true
+        type: boolean
+      postgres-plugin-version:
+        description: 'Postgres plugin version'
+        required: true
+      new-release-for-postgres-plugin:
+        description: 'New release for postgres plugin'
+        required: true
+        type: boolean
+
+jobs:
+  dependency-branches:
+    name: Dependency Branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.result.outputs.branches }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        id: result
+        with:
+          run-for: add-dev-tag
+          core-version: ${{ github.event.inputs.core-version }}
+          plugin-interface-version: ${{ github.event.inputs.plugin-interface-version }}
+          postgres-plugin-version: ${{ github.event.inputs.postgres-plugin-version }}
+  add-dev-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 21.0.7
+        uses: actions/setup-java@v2
+        with:
+          java-version: 21.0.7
+          distribution: zulu
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-root
+          path: ./supertokens-root
+          ref: feat/java_gradle_upgrade
+      - uses: actions/checkout@v2
+        with:
+          path: ./supertokens-root/supertokens-core
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: ./supertokens-root/supertokens-plugin-interface
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          path: ./supertokens-root/supertokens-postgresql-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
