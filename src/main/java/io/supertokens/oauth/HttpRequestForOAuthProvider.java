@@ -22,8 +22,8 @@ public class HttpRequestForOAuthProvider {
     // case of errors, etc.
     // Left the original HttpRequest as is to avoid any issues with existing code.
 
-    private static final int CONNECTION_TIMEOUT = 5000;
-    private static final int READ_TIMEOUT = 5000;
+    private static final int CONNECTION_TIMEOUT = 15000;
+    private static final int READ_TIMEOUT = 15000;
 
     public static Response doGet(String url, Map<String, String> headers, Map<String, String> queryParams) throws IOException {
         if (queryParams == null) {

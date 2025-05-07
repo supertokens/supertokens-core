@@ -17,6 +17,7 @@
 package io.supertokens.test.oauth.api;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
@@ -41,9 +42,7 @@ import org.junit.rules.TestRule;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -110,6 +109,7 @@ public class TestIssueTokens {
 
     private JsonObject issueTokens(Main main, JsonObject client, String sub, String rsub, String sessionHandle)
             throws Exception {
+        List<String> allCookies = new ArrayList<>();
         JsonObject authRequestBody = new JsonObject();
         JsonObject params = new JsonObject();
         params.addProperty("client_id", client.get("clientId").getAsString());
@@ -121,8 +121,10 @@ public class TestIssueTokens {
         authRequestBody.add("params", params);
 
         JsonObject authResponse = OAuthAPIHelper.auth(main, authRequestBody);
-        String cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
-        cookies = cookies.split(";")[0];
+        allCookies.clear();
+        for (JsonElement cookieElem : authResponse.get("cookies").getAsJsonArray()) {
+            allCookies.add(cookieElem.getAsString().split(";")[0]);
+        }
 
         String redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -154,14 +156,16 @@ public class TestIssueTokens {
             params.addProperty(entry.getKey(), entry.getValue());
         }
         authRequestBody.add("params", params);
-        authRequestBody.addProperty("cookies", cookies);
+        authRequestBody.addProperty("cookies", String.join("; ", allCookies));
 
         authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
         redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
-        cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
-        cookies = cookies.split(";")[0];
+        allCookies.clear();
+        for (JsonElement cookieElem : authResponse.get("cookies").getAsJsonArray()) {
+            allCookies.add(cookieElem.getAsString().split(";")[0]);
+        }
 
         url = new URL(redirectTo);
         queryParams = splitQuery(url);
@@ -203,7 +207,7 @@ public class TestIssueTokens {
             params.addProperty(entry.getKey(), entry.getValue());
         }
         authRequestBody.add("params", params);
-        authRequestBody.addProperty("cookies", cookies);
+        authRequestBody.addProperty("cookies", String.join("; ", allCookies));
 
         authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
