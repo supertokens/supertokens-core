@@ -30,8 +30,9 @@ jobs:
         plugin:
           - sqlite
           - postgresql
-          - mysql
-          - mongodb
+          # no longer supported
+          # - mysql
+          # - mongodb
     steps:
       - name: Mark plugin as passed
         if: matrix.plugin != 'sqlite'

@@ -27,7 +27,8 @@ jobs:
       matrix:
         plugin:
           - postgresql
-          - mysql
+          # no longer supported
+          # - mysql
           # - mongodb
     steps:
       - name: Set up JDK 21.0.7

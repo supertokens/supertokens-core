@@ -24,8 +24,9 @@ jobs:
         plugin:
           - sqlite
           - postgresql
-          - mysql
-          - mongodb
+          # no longer supported
+          # - mysql
+          # - mongodb
 
     runs-on: ubuntu-latest
     steps:
