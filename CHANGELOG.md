@@ -6,10 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Migrates tests to Github Actions
-- TODO java stuff!
+
+## [11.0.0]
 
 - Migrates tests to Github Actions
+- Updates JRE to 21. 
 
 ## [10.1.4]
 
