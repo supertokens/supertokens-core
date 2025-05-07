@@ -15,7 +15,7 @@ jobs:
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
-          running-for: core
+          run-for: PR
   docker:
     name: Docker
     runs-on: ubuntu-latest
