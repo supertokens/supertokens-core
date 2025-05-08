@@ -64,7 +64,7 @@ jobs:
           # - mongodb
     steps:
       - name: Mark plugin as passed
-        if: matrix.plugin != 'sqlite' && needs.dependency-versions.outputs.versions[matrix.plugin] != ''
+        if: matrix.plugin != 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] != ''
         uses: muhfaris/request-action@main
         with:
           url: https://api.supertokens.io/0/plugin
@@ -77,13 +77,13 @@ jobs:
           body: |
             {
               "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
-              "version": "${{ needs.dependency-versions.outputs.versions[matrix.plugin] }}",
+              "version": "${{ fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] }}",
               "planType": "FREE",
               "name": "${{ matrix.plugin }}",
               "testPassed": true
             }
       - name: Mark core as passed
-        if: matrix.plugin == 'sqlite' && needs.dependency-versions.outputs.versions['core'] != ''
+        if: matrix.plugin == 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)['core'] != ''
         uses: muhfaris/request-action@main
         with:
           url: https://api.supertokens.io/0/core
@@ -96,7 +96,7 @@ jobs:
           body: |
             {
               "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
-              "version": "${{ needs.dependency-versions.outputs.versions['core'] }}",
+              "version": "${{ fromJson(needs.dependency-versions.outputs.versions)['core'] }}",
               "planType": "FREE",
               "testPassed": true
             }
