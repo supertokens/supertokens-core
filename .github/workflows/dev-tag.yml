@@ -29,11 +29,11 @@ jobs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
       - name: Wait for Docker build
-        uses: fountainhead/action-wait-for-check@v1.2.0
+        uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Publish Dev Docker Image
+          check-name: Publish Dev Docker Image
           ref: ${{ github.sha }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: set tag
         id: set_tag
