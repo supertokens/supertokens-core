@@ -14,12 +14,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: supertokens/get-core-dependencies-action@main
+        with:
+          run-for: PR
         id: result
   unit-tests:
     name: Run unit tests
     uses: ./.github/workflows/unit-test.yml
+  wait-for-docker:
+    name: Wait for Docker
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_tag.outputs.TAG }}
+    steps:
+      - name: Wait for Docker build
+        uses: fountainhead/action-wait-for-check@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Build and publish Docker image
+          ref: ${{ github.sha }}
+      - name: set tag
+        id: set_tag
+        run: |
+          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
   stress-tests:
+    needs: [wait-for-docker]
     uses: ./.github/workflows/stress-tests.yml
+    with:
+      tag: ${{ needs.wait-for-docker.outputs.tag }}
   mark-as-passed:
     needs: [dependency-versions, unit-tests, stress-tests]
     name: Mark as passed
@@ -35,8 +56,8 @@ jobs:
           # - mongodb
     steps:
       - name: Mark plugin as passed
-        if: matrix.plugin != 'sqlite'
-        uses: muhfaris/request-action@v1
+        if: matrix.plugin != 'sqlite' && needs.dependency-versions.outputs.versions[matrix.plugin] != ''
+        uses: muhfaris/request-action@main
         with:
           url: https://api.supertokens.io/0/plugin
           method: PATCH
@@ -48,14 +69,14 @@ jobs:
           body: |
             {
               "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
-              "version": "${{ needs.dependency-versions.outputs.versions['core'] }}",
+              "version": "${{ needs.dependency-versions.outputs.versions[matrix.plugin] }}",
               "planType": "FREE",
               "name": "${{ matrix.plugin }}",
               "testPassed": true
             }
       - name: Mark core as passed
-        if: matrix.plugin == 'sqlite'
-        uses: muhfaris/request-action@v1
+        if: matrix.plugin == 'sqlite' && needs.dependency-versions.outputs.versions['core'] != ''
+        uses: muhfaris/request-action@main
         with:
           url: https://api.supertokens.io/0/core
           method: PATCH

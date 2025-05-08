@@ -8,7 +8,6 @@ on:
         required: true
         type: string
 
-
 jobs:
   stress-tests:
     runs-on: ubuntu-latest
