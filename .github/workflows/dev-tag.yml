@@ -28,12 +28,17 @@ jobs:
     outputs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
-      - name: Wait for Docker build
-        uses: lewagon/wait-on-check-action@v1.3.4
+      - uses: actions/setup-python@v4
         with:
-          running-workflow-name: Publish Dev Docker Image
-          ref: ${{ github.sha }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          python-version: '3.11'
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Wait for Docker build
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          python .github/helper/wait-for-docker.py
 
       - name: set tag
         id: set_tag
