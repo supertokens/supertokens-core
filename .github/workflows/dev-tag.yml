@@ -31,7 +31,7 @@ jobs:
       - name: Wait for Docker build
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          check-name: Publish Dev Docker Image
+          running-workflow-name: Publish Dev Docker Image
           ref: ${{ github.sha }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
