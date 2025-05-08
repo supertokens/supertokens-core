@@ -29,11 +29,11 @@ jobs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
       - name: Wait for Docker build
-        uses: fountainhead/action-wait-for-check@v1.1.0
+        uses: fountainhead/action-wait-for-check@v1.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Publish Dev Docker Image
-          ref: ${{ github.event.ref || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: set tag
         id: set_tag
