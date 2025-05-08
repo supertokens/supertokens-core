@@ -2,8 +2,6 @@ name: Checks for release
 
 on:
   push:
-    branches:
-      - '[0-9]+.[0-9]+'
     tags:
     - 'dev-*'
 
@@ -33,7 +31,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Publish Dev Docker Image
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.ref || github.sha }}
+
       - name: set tag
         id: set_tag
         run: |

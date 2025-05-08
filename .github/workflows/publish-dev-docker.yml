@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - "**"
+    tags:
+      - 'dev-*'
+
 jobs:
   dependency-branches:
     name: Dependency Branches
