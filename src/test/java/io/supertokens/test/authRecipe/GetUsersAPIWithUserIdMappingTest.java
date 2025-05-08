@@ -45,6 +45,9 @@ public class GetUsersAPIWithUserIdMappingTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -65,20 +68,21 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
             // create User
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com",
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com",
                     "testPass123");
             String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
+            Thread.sleep(20);
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -106,20 +110,21 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.getProcess());
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 20; i++) {
             // create User
-            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com",
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com",
                     "testPass123");
             String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(process.getAppForTesting().toAppIdentifier(), superTokensUserId, externalUserId,
                     null);
+            Thread.sleep(10);
         }
 
         HashMap<String, String> queryParams = new HashMap<>();

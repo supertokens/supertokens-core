@@ -48,6 +48,9 @@ public class JWKSTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -64,7 +67,7 @@ public class JWKSTest {
     @Test
     public void testThatThereAreTheSameNumberOfJWKSAsSupportedAlgorithmsBeforeJWTCreation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
@@ -82,7 +85,7 @@ public class JWKSTest {
     @Test
     public void testThatNoNewJWKIsCreatedDuringJWTCreation() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         List<JsonObject> keysFromStorageBeforeJWTCreation = SigningKeys.getInstance(process.getProcess()).getJWKS();

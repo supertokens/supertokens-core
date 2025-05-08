@@ -71,7 +71,7 @@ public class MultitenantEmailPasswordTest {
 
         { // tenant 1
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", null);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
@@ -92,14 +92,14 @@ public class MultitenantEmailPasswordTest {
 
         { // tenant 2
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t1");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -113,14 +113,14 @@ public class MultitenantEmailPasswordTest {
 
         { // tenant 3
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t2");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -153,11 +153,11 @@ public class MultitenantEmailPasswordTest {
 
         createTenants(process);
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
         Storage t1storage = (StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
         Storage t2storage = (StorageLayer.getStorage(t2, process.getProcess()));
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifier t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
         Storage t3storage = (StorageLayer.getStorage(t3, process.getProcess()));
 
         {
@@ -196,7 +196,6 @@ public class MultitenantEmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -205,11 +204,11 @@ public class MultitenantEmailPasswordTest {
 
         createTenants(process);
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
         Storage t1storage = (StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
         Storage t2storage = (StorageLayer.getStorage(t2, process.getProcess()));
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifier t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
         Storage t3storage = (StorageLayer.getStorage(t3, process.getProcess()));
 
 
@@ -259,11 +258,11 @@ public class MultitenantEmailPasswordTest {
 
         createTenants(process);
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
         Storage t1storage = (StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
         Storage t2storage = (StorageLayer.getStorage(t2, process.getProcess()));
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifier t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
         Storage t3storage = (StorageLayer.getStorage(t3, process.getProcess()));
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1storage, process.getProcess(), "user1@example.com",
@@ -273,13 +272,13 @@ public class MultitenantEmailPasswordTest {
         AuthRecipeUserInfo user3 = EmailPassword.signUp(t3, t3storage, process.getProcess(), "user3@example.com",
                 "password3");
 
-        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, "a1"));
+        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"));
 
         {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
-                    new AppIdentifier(null, "a1"),
+                    new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                     StorageLayer.findStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), storages,
+                            new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                             user1.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user1.getSupertokensUserId());
             assertEquals(user1, userInfo);
@@ -287,9 +286,9 @@ public class MultitenantEmailPasswordTest {
 
         {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
-                    new AppIdentifier(null, "a1"),
+                    new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                     StorageLayer.findStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), storages,
+                            new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                             user2.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user2.getSupertokensUserId());
             assertEquals(user2, userInfo);
@@ -297,9 +296,9 @@ public class MultitenantEmailPasswordTest {
 
         {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
-                    new AppIdentifier(null, "a1"),
+                    new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                     StorageLayer.findStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), storages,
+                            new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                             user3.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user3.getSupertokensUserId());
             assertEquals(user3, userInfo);
@@ -328,11 +327,11 @@ public class MultitenantEmailPasswordTest {
 
         createTenants(process);
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
         Storage t1storage = (StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
         Storage t2storage = (StorageLayer.getStorage(t2, process.getProcess()));
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifier t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
         Storage t3storage = (StorageLayer.getStorage(t3, process.getProcess()));
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1storage, process.getProcess(), "user@example.com",
@@ -370,10 +369,9 @@ public class MultitenantEmailPasswordTest {
             EmailChangeNotAllowedException {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -382,11 +380,11 @@ public class MultitenantEmailPasswordTest {
 
         createTenants(process);
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
         Storage t1storage = (StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
         Storage t2storage = (StorageLayer.getStorage(t2, process.getProcess()));
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifier t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
         Storage t3storage = (StorageLayer.getStorage(t3, process.getProcess()));
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1storage, process.getProcess(), "user@example.com",
@@ -396,26 +394,26 @@ public class MultitenantEmailPasswordTest {
         AuthRecipeUserInfo user3 = EmailPassword.signUp(t3, t3storage, process.getProcess(), "user@example.com",
                 "password3");
 
-        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, "a1"));
+        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"));
 
         EmailPassword.updateUsersEmailOrPassword(
-                new AppIdentifier(null, "a1"),
+                new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                 StorageLayer.findStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), storages,
+                        new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                         user1.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user1.getSupertokensUserId(), null, "newpassword1");
         EmailPassword.updateUsersEmailOrPassword(
-                new AppIdentifier(null, "a1"),
+                new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                 StorageLayer.findStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), storages,
+                        new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                         user2.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user2.getSupertokensUserId(), null, "newpassword2");
         EmailPassword.updateUsersEmailOrPassword(
-                new AppIdentifier(null, "a1"),
+                new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"),
                 StorageLayer.findStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), storages,
+                        new AppIdentifier(null, process.getAppForTesting().getAppId() + "a1"), storages,
                         user3.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user3.getSupertokensUserId(), null, "newpassword3");

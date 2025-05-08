@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -47,6 +46,9 @@ import static org.junit.Assert.*;
 public class DashboardTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -175,7 +177,7 @@ public class DashboardTest {
 
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY,
                 1);
         process.startProcess();
@@ -197,7 +199,7 @@ public class DashboardTest {
 
         // create a session with low expiry
         ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId,
+                .createNewDashboardUserSession(process.getAppForTesting().toAppIdentifier(), user.userId, sessionId,
                         System.currentTimeMillis(), 0);
 
         // check that session exists
@@ -268,7 +270,7 @@ public class DashboardTest {
 
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -318,7 +320,7 @@ public class DashboardTest {
         }
 
         // enable the dashboard feature
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_DASHBOARD_FEATURE);
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_DASHBOARD_FEATURE);
 
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

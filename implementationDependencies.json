@@ -52,14 +52,14 @@
       "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18.jar",
-      "name": "Tomcat annotations API 10.1.18",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.5/tomcat-annotations-api-11.0.5.jar",
+      "name": "Tomcat annotations API 11.0.5",
+      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.5/tomcat-annotations-api-11.0.5-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
+      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.5/tomcat-embed-core-11.0.5.jar",
       "name": "Tomcat embed core API 10.1.1",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18-sources.jar"
+      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.5/tomcat-embed-core-11.0.5-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",

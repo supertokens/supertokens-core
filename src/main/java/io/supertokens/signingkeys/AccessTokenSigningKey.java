@@ -85,7 +85,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     @TestOnly
     public static AccessTokenSigningKey getInstance(Main main) {
         try {
-            return getInstance(new AppIdentifier(null, null), main);
+            return getInstance(ResourceDistributor.getAppForTesting().toAppIdentifier(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

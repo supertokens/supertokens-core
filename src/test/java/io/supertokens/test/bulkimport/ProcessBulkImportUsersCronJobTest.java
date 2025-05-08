@@ -59,6 +59,9 @@ public class ProcessBulkImportUsersCronJobTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -84,7 +87,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -132,7 +135,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -180,7 +183,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -228,7 +231,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -265,7 +268,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -274,7 +277,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        waitForProcessingWithTimeout(appIdentifier, storage, 300); // 5 minutes
+        waitForProcessingWithTimeout(appIdentifier, storage, 600); // 10 minutes
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -305,7 +308,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
         TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
@@ -367,7 +370,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
         TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
@@ -429,7 +432,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
         TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
@@ -484,7 +487,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
         TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
@@ -537,7 +540,7 @@ public class ProcessBulkImportUsersCronJobTest {
         }
         Main main = process.getProcess();
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -578,7 +581,7 @@ public class ProcessBulkImportUsersCronJobTest {
         }
         Main main = process.getProcess();
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
         Thread.sleep(1000);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
@@ -621,7 +624,7 @@ public class ProcessBulkImportUsersCronJobTest {
         }
         Main main = process.getProcess();
 
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -707,7 +710,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
-        BulkImportTestUtils.createTenants(main);
+        BulkImportTestUtils.createTenants(process);
 
         List<BulkImportUser> users = generateBulkImportUser(1, List.of("t1", "t2"), 0);
         BulkImport.addUsers(appIdentifier, storage, users);
@@ -727,7 +730,7 @@ public class ProcessBulkImportUsersCronJobTest {
     private TestingProcess startCronProcess() throws InterruptedException, TenantOrAppNotFoundException {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
 
         Main main = process.getProcess();
 

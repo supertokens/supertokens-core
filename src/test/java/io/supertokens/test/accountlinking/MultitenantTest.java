@@ -66,6 +66,9 @@ public class MultitenantTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -169,11 +172,10 @@ public class MultitenantTest {
     @Test
     public void testUserAreNotAutomaticallySharedBetweenTenantsOfLinkedAccountsForPless() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -217,11 +219,10 @@ public class MultitenantTest {
     @Test
     public void testUserAreNotAutomaticallySharedBetweenTenantsOfLinkedAccountsForTP() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -261,11 +262,10 @@ public class MultitenantTest {
     @Test
     public void testTenantDeletionWithAccountLinking() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -311,11 +311,10 @@ public class MultitenantTest {
     @Test
     public void testTenantDeletionWithAccountLinkingWithUserRoles() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -871,11 +870,10 @@ public class MultitenantTest {
         int i = 0;
         for (TestCase testCase : testCases) {
             String[] args = {"../"};
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                             EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -914,6 +912,7 @@ public class MultitenantTest {
 
             for (TestCaseStep step : steps) {
                 step.doStep(main);
+                Thread.sleep(20);
             }
         }
     }

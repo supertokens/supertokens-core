@@ -47,7 +47,7 @@ public class ConfigMapperTest {
         boolean bool_property;
 
         @JsonProperty
-        Long nullable_long_property = new Long(-1);
+        Long nullable_long_property = -1L;
     }
 
     @Test
@@ -60,7 +60,7 @@ public class ConfigMapperTest {
             assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.0001);
             assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.0001);
             assertEquals("default_string", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
-            assertEquals(new Long(-1), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
+            assertEquals(Long.valueOf(-1L), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
         }
 
         // valid for int
@@ -202,7 +202,7 @@ public class ConfigMapperTest {
         {
             JsonObject config = new JsonObject();
             config.addProperty("nullable_long_property", 100);
-            assertEquals(new Long(100), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
+            assertEquals(Long.valueOf(100), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
         }
     }
 
@@ -232,13 +232,13 @@ public class ConfigMapperTest {
                 "abcd", // int
                 "", // int
                 true, // int
-                new Double(4.5), // int
-                new Long(1234567892342l), // int
+                Double.valueOf(4.5), // int
+                Long.valueOf(1234567892342l), // int
 
                 "abcd", // long
                 "", // long
                 true, // long
-                new Double(4.5), // long
+                Double.valueOf(4.5), // long
 
                 "abcd", // float
                 "", // float

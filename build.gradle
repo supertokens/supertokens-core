@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "10.1.4"
+version = "11.0.0"
 
 repositories {
     mavenCentral()
@@ -30,7 +30,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     // if this changes, remember to also change in the ee folder's build.gradle
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.18.2'
@@ -45,7 +45,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.18'
+    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.5'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
@@ -107,43 +107,47 @@ jar {
 }
 
 
-task copyJars(type: Copy) {
-    into "$buildDir/dependencies"
+tasks.register('copyJars', Copy) {
     from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("dependencies")
 }
 
 test {
-    jvmArgs '-Djava.security.egd=file:/dev/urandom'
+    jvmArgs = ['-Djava.security.egd=file:/dev/urandom',
+               "--add-opens=java.base/java.lang=ALL-UNNAMED",
+               "--add-opens=java.base/java.util=ALL-UNNAMED",
+               "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"]
     testLogging {
         outputs.upToDateWhen { false }
         showStandardStreams = true
     }
+    maxParallelForks = Runtime.runtime.availableProcessors()
 }
 
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     testLogging {
         // set options for log level LIFECYCLE
-        events TestLogEvent.FAILED,
+        events = [TestLogEvent.FAILED,
                 TestLogEvent.PASSED,
                 TestLogEvent.SKIPPED,
-                TestLogEvent.STANDARD_OUT
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+                TestLogEvent.STANDARD_OUT]
+        exceptionFormat = TestExceptionFormat.FULL
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
 
         // set options for log level DEBUG and INFO
         debug {
-            events TestLogEvent.STARTED,
+            events = [TestLogEvent.STARTED,
                     TestLogEvent.FAILED,
                     TestLogEvent.PASSED,
                     TestLogEvent.SKIPPED,
                     TestLogEvent.STANDARD_ERROR,
-                    TestLogEvent.STANDARD_OUT
-            exceptionFormat TestExceptionFormat.FULL
+                    TestLogEvent.STANDARD_OUT]
+            exceptionFormat = TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat

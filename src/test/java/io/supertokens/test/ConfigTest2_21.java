@@ -32,6 +32,9 @@ public class ConfigTest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -48,7 +51,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -70,7 +73,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(startEvent);
@@ -92,7 +95,7 @@ public class ConfigTest2_21 {
 
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(startEvent);

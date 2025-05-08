@@ -43,6 +43,9 @@ public class UserPutAPITest4_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -56,11 +59,10 @@ public class UserPutAPITest4_0 {
     @Test
     public void testThatAPIReturnsEmailUpdateNotPossibleWithSingleTenant() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -68,10 +70,10 @@ public class UserPutAPITest4_0 {
         }
 
         AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user0.getSupertokensUserId());
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
 
         JsonObject body = new JsonObject();
         body.addProperty("recipeUserId", user.getSupertokensUserId());

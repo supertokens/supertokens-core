@@ -50,6 +50,9 @@ public class CreatePrimaryUserTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -128,7 +131,7 @@ public class CreatePrimaryUserTest {
     @Test
     public void testThatCreationOfPrimaryUserRequiresAccountLinkingFeatureToBeEnabled() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -137,8 +140,8 @@ public class CreatePrimaryUserTest {
         }
 
         try {
-            AuthRecipe.createPrimaryUser(process.main,
-                    new AppIdentifier(null, null), StorageLayer.getStorage(process.main), "");
+            AuthRecipe.createPrimaryUser(process.getProcess(),
+                    process.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(process.getProcess()), "");
             assert (false);
         } catch (FeatureNotEnabledException e) {
             assert (e.getMessage()
@@ -153,11 +156,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makeEmailPasswordPrimaryUserSuccess() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -167,7 +169,7 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
@@ -179,7 +181,7 @@ public class CreatePrimaryUserTest {
         assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
         assert (result.user.loginMethods[0].phoneNumber == null);
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.getProcess(), result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -190,11 +192,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makeThirdPartyPrimaryUserSuccess() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -205,7 +206,7 @@ public class CreatePrimaryUserTest {
                 "user-google",
                 "test@example.com");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 signInUp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
@@ -218,7 +219,7 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].passwordHash == null);
         assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.getProcess(), result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -229,11 +230,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makePasswordlessEmailPrimaryUserSuccess() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -245,7 +245,7 @@ public class CreatePrimaryUserTest {
         Passwordless.ConsumeCodeResponse pResp = Passwordless.consumeCode(process.getProcess(), code.deviceId,
                 code.deviceIdHash, code.userInputCode, null);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 pResp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
@@ -257,7 +257,7 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].phoneNumber == null);
         assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.getProcess(), result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -268,11 +268,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makePasswordlessPhonePrimaryUserSuccess() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -284,7 +283,7 @@ public class CreatePrimaryUserTest {
         Passwordless.ConsumeCodeResponse pResp = Passwordless.consumeCode(process.getProcess(), code.deviceId,
                 code.deviceIdHash, code.userInputCode, null);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 pResp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
@@ -296,7 +295,7 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].phoneNumber.equals("1234"));
         assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.getProcess(), result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -307,11 +306,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void alreadyPrimaryUsertest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -321,11 +319,11 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
+        result = AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser.getSupertokensUserId());
         assert (result.wasAlreadyAPrimaryUser);
         assert (result.user.getSupertokensUserId().equals(emailPasswordUser.getSupertokensUserId()));
         assert (result.user.isPrimaryUser);
@@ -337,7 +335,7 @@ public class CreatePrimaryUserTest {
         assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
         assert (result.user.loginMethods[0].phoneNumber == null);
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.getProcess(), result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -348,11 +346,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -362,15 +359,15 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), signInUpResponse.user.getSupertokensUserId());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
             assert (e.primaryUserId.equals(emailPasswordUser.getSupertokensUserId()));
@@ -384,11 +381,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makePrimarySucceedsEvenIfAnotherAccountWithSameEmailButIsNotAPrimaryUser() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -398,10 +394,10 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
-        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.getProcess(),
                 signInUpResponse.user.getSupertokensUserId());
         assert (!r.wasAlreadyAPrimaryUser);
 
@@ -413,41 +409,40 @@ public class CreatePrimaryUserTest {
     public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUserInAnotherTenant()
             throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
-                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
+                new TenantConfig(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
-        Storage storage = (StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+        Storage storage = (StorageLayer.getStorage(process.getProcess()));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
-        Multitenancy.addUserIdToTenant(process.main, new TenantIdentifier(null, null, "t1"),
+        Multitenancy.addUserIdToTenant(process.getProcess(), new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage,
                 signInUpResponse.user.getSupertokensUserId());
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), signInUpResponse.user.getSupertokensUserId());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
             assert (e.primaryUserId.equals(emailPasswordUser.getSupertokensUserId()));
@@ -462,36 +457,35 @@ public class CreatePrimaryUserTest {
     public void makePrimarySucceedsEvenIfAnotherAccountWithSameEmailButInADifferentTenant()
             throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
-                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, process.getAppForTesting().getAppId(), null),
+                new TenantConfig(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
-        Storage storage = (StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+        Storage storage = (StorageLayer.getStorage(process.getProcess()));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"),
                 storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.getProcess(),
                 emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
                 "test@example.com");
 
-        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main,
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.getProcess(),
                 signInUpResponse.user.getSupertokensUserId());
         assert !r.wasAlreadyAPrimaryUser;
 
@@ -502,11 +496,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makePrimaryUserFailsCauseOfUnknownUserId() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -514,7 +507,7 @@ public class CreatePrimaryUserTest {
         }
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, "random");
+            AuthRecipe.createPrimaryUser(process.getProcess(), "random");
             assert (false);
         } catch (UnknownUserIdException ignored) {
         }
@@ -526,11 +519,10 @@ public class CreatePrimaryUserTest {
     @Test
     public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccount() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -542,12 +534,12 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(),
+        AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), emailPasswordUser2.getSupertokensUserId(),
                 emailPasswordUser1.getSupertokensUserId());
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, emailPasswordUser2.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser2.getSupertokensUserId());
             assert (false);
         } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
             assert (e.primaryUserId.equals(emailPasswordUser1.getSupertokensUserId()));

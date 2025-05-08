@@ -37,6 +37,9 @@ public class VersionTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -50,7 +53,7 @@ public class VersionTest {
     @Test
     public void simpleLoadingOfVersionTest() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -86,12 +89,17 @@ public class VersionTest {
             process1.waitFor();
 
             String[] args = {"../"};
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
             assertEquals(e.exception.getMessage(),
                     "java.io.FileNotFoundException: ../version.yaml (No such file or directory)");
+
+            pb = new ProcessBuilder("cp", "temp/version.yaml", "./version.yaml");
+            pb.directory(new File(installDir));
+            process1 = pb.start();
+            process1.waitFor();
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

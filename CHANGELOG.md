@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.0]
+
+- Migrates tests to Github Actions
+- Updates JRE to 21. 
+
 ## [10.1.4]
 
 - Fixes bulk migration user roles association when there is no external userId assigned to the user

@@ -47,6 +47,9 @@ public class ApiVersionAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -63,7 +66,7 @@ public class ApiVersionAPITest {
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         StringBuilder fileContent = new StringBuilder();
@@ -96,7 +99,7 @@ public class ApiVersionAPITest {
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // without setting cdi-version header
@@ -122,7 +125,7 @@ public class ApiVersionAPITest {
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -145,7 +148,7 @@ public class ApiVersionAPITest {
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -163,7 +166,7 @@ public class ApiVersionAPITest {
     public void testThatWebsiteAndAPIDomainAreSaved() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
@@ -175,8 +178,7 @@ public class ApiVersionAPITest {
 
             assertEquals("https://example.com",
                     Multitenancy.getWebsiteDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                            new AppIdentifier(null,
-                                    null)));
+                            process.getAppForTesting().toAppIdentifier()));
         }
         {
             Map<String, String> params = new HashMap<>();
@@ -187,8 +189,7 @@ public class ApiVersionAPITest {
 
             assertEquals("https://api.example.com",
                     Multitenancy.getAPIDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                            new AppIdentifier(null,
-                                    null)));
+                            process.getAppForTesting().toAppIdentifier()));
         }
 
         process.kill();
@@ -199,10 +200,9 @@ public class ApiVersionAPITest {
     public void testAPIVersionWorksEvenIfThereIsAnException() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

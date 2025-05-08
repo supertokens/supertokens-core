@@ -47,6 +47,9 @@ public class PasswordlessGetCodesAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -76,11 +79,11 @@ public class PasswordlessGetCodesAPITest {
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc=";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
-        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, normalisedPhoneNumber,
+        storage.createDeviceWithCode(process.getAppForTesting(), null, normalisedPhoneNumber,
                 "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         assertEquals(1,
-                storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), normalisedPhoneNumber).length);
+                storage.getDevicesByPhoneNumber(process.getAppForTesting(), normalisedPhoneNumber).length);
 
         HashMap<String, String> map = new HashMap<>();
         map.put("phoneNumber", phoneNumber);

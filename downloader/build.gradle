@@ -18,9 +18,9 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
-task copyJars(type: Copy) {
-    into "$buildDir/dependencies"
+tasks.register('copyJars', Copy) {
     from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("dependencies")
 }
 
 test {
@@ -56,10 +56,10 @@ tasks.withType(Test) {
                 TestLogEvent.PASSED,
                 TestLogEvent.SKIPPED,
                 TestLogEvent.STANDARD_OUT
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+        exceptionFormat = TestExceptionFormat.FULL
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
 
         // set options for log level DEBUG and INFO
         debug {
@@ -69,7 +69,7 @@ tasks.withType(Test) {
                     TestLogEvent.SKIPPED,
                     TestLogEvent.STANDARD_ERROR,
                     TestLogEvent.STANDARD_OUT
-            exceptionFormat TestExceptionFormat.FULL
+            exceptionFormat = TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat

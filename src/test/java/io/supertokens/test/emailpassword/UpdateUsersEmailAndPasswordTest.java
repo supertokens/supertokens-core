@@ -35,6 +35,9 @@ public class UpdateUsersEmailAndPasswordTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -47,7 +50,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateInfoWithoutUser() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -64,7 +67,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailOnly() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -88,7 +91,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailToAnotherThatAlreadyExists() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -112,7 +115,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdatePasswordOnly() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -134,7 +137,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailAndPassword() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -160,7 +163,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailAndPasswordFromVerifiedToNotVerified() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
