@@ -30,7 +30,7 @@ jobs:
         uses: fountainhead/action-wait-for-check@v1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Build and publish Docker image
+          checkName: Publish Dev Docker Image
           ref: ${{ github.sha }}
       - name: set tag
         id: set_tag
