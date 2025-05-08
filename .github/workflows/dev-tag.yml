@@ -38,7 +38,7 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: |
-          python supertokens-core/.github/helper/wait-for-docker.py
+          python .github/helpers/wait-for-docker.py
 
       - name: set tag
         id: set_tag
