@@ -1,0 +1,155 @@
+name: Do Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: 'Core version'
+        required: true
+        type: string
+      plugin-interface-version:
+        description: 'Plugin interface version'
+        required: true
+        type: string
+      new-release-for-plugin-interface:
+        description: 'New release for plugin interface'
+        required: true
+        type: boolean
+      postgresql-plugin-version:
+        description: 'Postgres plugin version'
+        required: true
+      new-release-for-postgresql-plugin:
+        description: 'New release for postgres plugin'
+        required: true
+        type: boolean
+      is-latest-release:
+        description: 'Is this the latest release?'
+        required: true
+        type: boolean
+
+jobs:
+  dependency-branches:
+    name: Dependency Branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.result.outputs.branches }}
+      versions: ${{ steps.result.outputs.versions }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        id: result
+        with:
+          run-for: add-dev-tag
+          core-version: ${{ github.event.inputs.core-version }}
+          plugin-interface-version: ${{ github.event.inputs.plugin-interface-version }}
+          postgresql-plugin-version: ${{ github.event.inputs.postgresql-plugin-version }}
+  release-docker:
+    name: Release Docker
+    runs-on: ubuntu-latest
+    needs: dependency-branches
+    strategy:
+      matrix:
+        platform: [amd64, arm64]
+    steps:
+      - name: Set up JDK 21.0.7
+        uses: actions/setup-java@v2
+        with:
+          java-version: 21.0.7
+          distribution: zulu
+      - name: Pull Docker Image
+        run: |
+          tag=${{ github.event.inputs.core-version }}
+          major=$(echo $tag | cut -d. -f1,2)
+          docker pull --platform linux/${{ matrix.platform }} supertokens/supertokens-dev-postgresql:$major
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Tag and Push Docker Image
+        run: |
+          tag=${{ github.event.inputs.core-version }}
+          major=$(echo $tag | cut -d. -f1)
+          minor=$(echo $tag | cut -d. -f1,2)
+
+          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$major
+          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$minor
+          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$tag
+
+          docker push supertokens/supertokens-postgresql:$major
+          docker push supertokens/supertokens-postgresql:$minor
+          docker push supertokens/supertokens-postgresql:$tag
+
+          if [ "${{ github.event.inputs.is-latest-release }}" == "true" ]; then
+            docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:latest
+            docker push supertokens/supertokens-postgresql:latest
+          fi
+  add-release-tag:
+    runs-on: ubuntu-latest
+    needs: [dependency-branches, release-docker]
+    steps:
+      - name: Set up JDK 21.0.7
+        uses: actions/setup-java@v2
+        with:
+          java-version: 21.0.7
+          distribution: zulu
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-root
+          path: ./supertokens-root
+          ref: feat/java_gradle_upgrade
+      - name: Checkout supertokens-core
+        run: |
+          cd supertokens-root
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-core.git
+          cd supertokens-core
+          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+      - name: Checkout supertokens-plugin-interface
+        run: |
+          cd supertokens-root
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-plugin-interface.git
+          cd supertokens-plugin-interface
+          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+      - name: Checkout supertokens-postgresql-plugin
+        run: |
+          cd supertokens-root
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-postgresql-plugin.git
+          cd supertokens-postgresql-plugin
+          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+      - name: Add release password
+        run: |
+          cd supertokens-root
+          echo "${{ secrets.SUPERTOKENS_API_KEY }}" > releasePassword
+      - name: Load Modules
+        run: |
+          cd supertokens-root
+          echo "core,master
+          plugin-interface,master
+          postgresql-plugin,master
+          " > modules.txt
+          cat modules.txt
+          ./loadModules
+      - name: Setup test env
+        run: cd supertokens-root && ./utils/setupTestEnv --local
+      - name: Git config
+        run: |
+          git config --global user.name "Supertokens Bot"
+          git config --global user.email "<>"
+      - name: Add dev tag to plugin interface
+        if: ${{ github.event.inputs.new-release-for-plugin-interface == 'true' }}
+        run: |
+          echo "Adding dev tag to plugin interface"
+          cd supertokens-root/supertokens-plugin-interface
+          ./addReleaseTag
+      - name: Add dev tag to postgres plugin
+        if: ${{ github.event.inputs.new-release-for-postgresql-plugin == 'true' }}
+        run: |
+          echo "Adding dev tag to postgres plugin"
+          cd supertokens-root/supertokens-postgresql-plugin
+          ./addReleaseTag
+      - name: Add dev tag to core
+        run: |
+          echo "Adding dev tag to core"
+          cd supertokens-root/supertokens-core
+          ./addReleaseTag

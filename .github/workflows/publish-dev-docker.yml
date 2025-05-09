@@ -43,7 +43,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: feat/java_gradle_upgrade
+          ref: master
       - uses: actions/checkout@v2
         with:
           path: ./supertokens-root/supertokens-core
@@ -99,3 +99,4 @@ jobs:
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
