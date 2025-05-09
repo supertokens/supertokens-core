@@ -48,20 +48,14 @@ jobs:
     name: Release Docker
     runs-on: ubuntu-latest
     needs: dependency-branches
-    strategy:
-      matrix:
-        platform: [amd64, arm64]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Set up JDK 21.0.7
         uses: actions/setup-java@v2
         with:
           java-version: 21.0.7
           distribution: zulu
-      - name: Pull Docker Image
-        run: |
-          tag=${{ github.event.inputs.core-version }}
-          major=$(echo $tag | cut -d. -f1,2)
-          docker pull --platform linux/${{ matrix.platform }} supertokens/supertokens-dev-postgresql:$major
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -73,17 +67,12 @@ jobs:
           major=$(echo $tag | cut -d. -f1)
           minor=$(echo $tag | cut -d. -f1,2)
 
-          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$major
-          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$minor
-          docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:$tag
-
-          docker push supertokens/supertokens-postgresql:$major
-          docker push supertokens/supertokens-postgresql:$minor
-          docker push supertokens/supertokens-postgresql:$tag
+          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$major
+          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$minor
+          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$tag
 
           if [ "${{ github.event.inputs.is-latest-release }}" == "true" ]; then
-            docker tag supertokens/supertokens-dev-postgresql:$tag supertokens/supertokens-postgresql:latest
-            docker push supertokens/supertokens-postgresql:latest
+            bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:latest
           fi
   add-release-tag:
     runs-on: ubuntu-latest
@@ -98,7 +87,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: feat/java_gradle_upgrade
+          ref: master
       - name: Checkout supertokens-core
         run: |
           cd supertokens-root
@@ -121,6 +110,7 @@ jobs:
         run: |
           cd supertokens-root
           echo "${{ secrets.SUPERTOKENS_API_KEY }}" > releasePassword
+          echo "${{ secrets.SUPERTOKENS_API_KEY }}" > apiPassword
       - name: Load Modules
         run: |
           cd supertokens-root
