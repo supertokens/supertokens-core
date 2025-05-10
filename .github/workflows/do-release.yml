@@ -126,20 +126,20 @@ jobs:
         run: |
           git config --global user.name "Supertokens Bot"
           git config --global user.email "<>"
-      - name: Add dev tag to plugin interface
+      - name: Add release tag to plugin interface
         if: ${{ github.event.inputs.new-release-for-plugin-interface == 'true' }}
         run: |
-          echo "Adding dev tag to plugin interface"
+          echo "Adding release tag to plugin interface"
           cd supertokens-root/supertokens-plugin-interface
           ./addReleaseTag
-      - name: Add dev tag to postgres plugin
+      - name: Add release tag to postgres plugin
         if: ${{ github.event.inputs.new-release-for-postgresql-plugin == 'true' }}
         run: |
-          echo "Adding dev tag to postgres plugin"
+          echo "Adding release tag to postgres plugin"
           cd supertokens-root/supertokens-postgresql-plugin
           ./addReleaseTag
-      - name: Add dev tag to core
+      - name: Add release tag to core
         run: |
-          echo "Adding dev tag to core"
+          echo "Adding release tag to core"
           cd supertokens-root/supertokens-core
           ./addReleaseTag
