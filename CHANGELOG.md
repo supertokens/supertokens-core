@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.1]
+
+- Upgrades the embedded tomcat from 11.0.5 to 11.0.6 because of security vulnerabilities
+
 ## [11.0.0]
 
 - Migrates tests to Github Actions
