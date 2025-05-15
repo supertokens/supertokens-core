@@ -56,7 +56,9 @@ jobs:
           with:
             path: ./supertokens-plugin
             repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
-            ref: ${{ fromJson(needs.dependency-versions.outputs.branches)[matrix.plugin] }}  
+            ref: ${{ fromJson(needs.dependency-versions.outputs.branches)[matrix.plugin] }}
+            fetch-depth: 0
+            fetch-tags: true
         - name: Run script
           env:
             SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
