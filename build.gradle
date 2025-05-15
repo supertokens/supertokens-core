@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "11.0.0"
+version = "11.0.1"
 
 repositories {
     mavenCentral()
@@ -45,7 +45,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.5'
+    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.6'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
