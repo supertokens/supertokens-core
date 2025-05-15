@@ -111,6 +111,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "${{workflow.name}} - tag: ${{ steps.set_tag.outputs.TAG }} result: *${{ job.status }}*\n${{ 
+                  text: "${{ github.workflow.name }} - tag: ${{ steps.set_tag.outputs.TAG }} result: *${{ job.status 
+            }}*\n${{ 
             github.event.pull_request.html_url || 
             github.event.head_commit.url }}"
