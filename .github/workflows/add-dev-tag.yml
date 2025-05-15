@@ -52,7 +52,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: feat/java_gradle_upgrade
+          ref: master
       - name: Checkout supertokens-core
         run: |
           cd supertokens-root
