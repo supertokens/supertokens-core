@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.0.1]
 
-- Upgrades the embedded tomcat from 11.0.5 to 11.0.6 because of security vulnerabilities
+- Upgrades the embedded tomcat 11.0.6 and logback classic to 1.5.13 because of security vulnerabilities
 
 ## [11.0.0]
 
