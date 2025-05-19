@@ -19,11 +19,24 @@ package io.supertokens.output;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -37,11 +50,14 @@ import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.slf4j.LoggerFactory;
 
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+
 public class Logging extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_ID = "io.supertokens.output.Logging";
     private final Logger infoLogger;
     private final Logger errorLogger;
+    private final OpenTelemetryAppender otelAppender;
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
@@ -54,6 +70,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     private Logging(Main main) {
+        OpenTelemetry openTelemetry = initializeOpenTelemetry();
+        this.otelAppender = createOpenTelemetryAppender(main, "otelAppender", openTelemetry);
+
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
                 ? createLoggerForConsole(main, "io.supertokens.Info", LOG_LEVEL.INFO)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getInfoLogPath(main),
@@ -74,6 +93,31 @@ public class Logging extends ResourceDistributor.SingletonResource {
             Thread.sleep(100);
         } catch (InterruptedException ignored) {
         }
+    }
+
+    private static OpenTelemetry initializeOpenTelemetry() {
+        OpenTelemetrySdk sdk =
+                OpenTelemetrySdk.builder()
+                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
+                        .setLoggerProvider(
+                                SdkLoggerProvider.builder()
+                                        .setResource(
+                                                Resource.getDefault().toBuilder()
+                                                        .put(SERVICE_NAME, "supertokens-logger")
+                                                        .build())
+                                        .addLogRecordProcessor(
+                                                BatchLogRecordProcessor.builder(
+                                                                OtlpGrpcLogRecordExporter.builder()
+                                                                        .setEndpoint("http://otel-collector:4317")
+                                                                        .build())
+                                                        .build())
+                                        .build())
+                        .build();
+
+        // Add hook to close SDK, which flushes logs
+        Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
+
+        return sdk;
     }
 
     private static Logging getInstance(Main main) {
@@ -160,7 +204,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
             msg = getFormattedMessage(tenantIdentifier, msg);
 
             if (getInstance(main) != null) {
-                getInstance(main).infoLogger.info(msg);
+                String finalMsg = msg;
+                maybeRunWithSpan(() -> {
+                    getInstance(main).infoLogger.info(finalMsg);
+                    getInstance(main).otelAppender.doAppend(new LoggingEvent());
+                }, true);
             }
         } catch (NullPointerException ignored) {
         }
@@ -280,6 +328,15 @@ public class Logging extends ResourceDistributor.SingletonResource {
         return logger;
     }
 
+    private OpenTelemetryAppender createOpenTelemetryAppender(Main main, String name, OpenTelemetry otel) {
+        OpenTelemetryAppender appender = new OpenTelemetryAppender();
+        appender.setName(name);
+        appender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+        appender.setOpenTelemetry(otel);
+        appender.start();
+        return appender;
+    }
+
     private Logger createLoggerForConsole(Main main, String name, LOG_LEVEL logLevel) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(),
@@ -297,5 +354,18 @@ public class Logging extends ResourceDistributor.SingletonResource {
         logger.setAdditive(false); /* set to true if root should log too */
 
         return logger;
+    }
+
+    private static void maybeRunWithSpan(Runnable runnable, boolean withSpan) {
+        if (!withSpan) {
+            runnable.run();
+            return;
+        }
+        Span span = GlobalOpenTelemetry.getTracer("core-tracer").spanBuilder("iDontKnow").startSpan();
+        try (Scope unused = span.makeCurrent()) {
+            runnable.run();
+        } finally {
+            span.end();
+        }
     }
 }

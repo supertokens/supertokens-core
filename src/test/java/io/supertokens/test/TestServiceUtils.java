@@ -34,8 +34,6 @@ public class TestServiceUtils {
         try {
             OAuthProviderService.startService();
             PostgresqlService.startService();
-            MysqlService.startService();
-            MongodbService.startService();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -44,8 +42,6 @@ public class TestServiceUtils {
     public static void killServices() throws InterruptedException, IOException {
         OAuthProviderService.killService();
         PostgresqlService.killService();
-        MysqlService.killService();
-        MongodbService.killService();
     }
 
     private static class CmdHelper {
@@ -118,6 +114,7 @@ public class TestServiceUtils {
         }
     }
 
+    //no longer supported
     private static class MysqlService {
         private static final String MYSQL_SERVICE_NAME = "mysql_" + System.getProperty("org.gradle.test.worker", "base");
         private static final int MYSQL_DB_PORT = new Random().nextInt(5000) + 20000;
@@ -175,6 +172,7 @@ public class TestServiceUtils {
         }
     }
 
+    //no longer supported
     private static class MongodbService {
         private static final String MONGODB_SERVICE_NAME = "mongodb_" + System.getProperty("org.gradle.test.worker", "base");
         private static final int MONGODB_PORT = new Random().nextInt(5000) + 30000;

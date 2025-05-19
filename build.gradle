@@ -80,6 +80,23 @@ dependencies {
     // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-core
     implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.6.RELEASE'
 
+    implementation(platform(group: 'io.opentelemetry', name: 'opentelemetry-bom', version: '1.50.0'))
+    implementation(platform(group: 'io.opentelemetry.instrumentation', name: 'opentelemetry-instrumentation-bom',
+            version: '2.15.0'))
+    //implementation("io.opentelemetry:opentelemetry-api")
+//    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure")
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+
+    // OpenTelemetry core
+    implementation("io.opentelemetry:opentelemetry-sdk")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation("io.opentelemetry.semconv:opentelemetry-semconv")
+
+    // OpenTelemetry log4j / logback appenders
+//    implementation("io.opentelemetry.instrumentation:opentelemetry-log4j-appender-2.17")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.15.0-alpha")
+
     compileOnly project(":supertokens-plugin-interface")
 
     // this is so that we can find plugin-interface jar while testing

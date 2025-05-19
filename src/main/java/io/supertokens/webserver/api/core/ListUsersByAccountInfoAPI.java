@@ -64,7 +64,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException(
                     "'doUnionOfAccountInfo' should be either 'true' or 'false'"));
         }
-        boolean doUnionOfAccountInfo = doUnionOfAccountInfoStr.equals("true");
+        boolean doUnionOfAccountInfo = Boolean.parseBoolean(doUnionOfAccountInfoStr);
 
         if (email != null) {
             email = Utils.normaliseEmail(email);
