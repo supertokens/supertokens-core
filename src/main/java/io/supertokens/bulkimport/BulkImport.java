@@ -683,12 +683,31 @@ public class BulkImport {
         Map<String, String> emailToUserId = collectVerifiedEmailAddressesByUserIds(users);
         try {
             verifyCollectedEmailAddressesForUsers(appIdentifier, storage, emailToUserId);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            if (e.getCause() instanceof BulkImportBatchInsertException) {
+                Map<String, Exception> errorsByPosition =
+                        ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
+                for (String userid : errorsByPosition.keySet()) {
+                    Exception exception = errorsByPosition.get(userid);
+                    if (exception instanceof DuplicateEmailException) {
+                        String message =
+                                "E043: Email " + errorsByPosition.get(userid) + " is already verified for the user";
+                        errorsByPosition.put(userid, new Exception(message));
+                    } else if (exception instanceof NullPointerException) {
+                        String message = "E044: null email address was found for the userId " + userid +
+                                " while verifying the email";
+                        errorsByPosition.put(userid, new Exception(message));
+                    }
+                }
+                throw new StorageTransactionLogicException(
+                        new BulkImportBatchInsertException("translated", errorsByPosition));
+            }
             throw new StorageTransactionLogicException(e);
         }
     }
 
-    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage, Map<String, String> emailToUserId)
+    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage,
+                                                              Map<String, String> emailToUserId)
             throws StorageQueryException, StorageTransactionLogicException {
         if(!emailToUserId.isEmpty()) {
             EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
@@ -706,10 +725,10 @@ public class BulkImport {
 
     @NotNull
     private static Map<String, String> collectVerifiedEmailAddressesByUserIds(List<BulkImportUser> users) {
-        Map<String, String> emailToUserId = new HashMap<>();
+        Map<String, String> emailToUserId = new LinkedHashMap<>();
         for (BulkImportUser user : users) {
             for (LoginMethod lm : user.loginMethods) {
-                if(lm.isVerified) {
+                if (lm.isVerified && !(lm.recipeId.equals("passwordless") || lm.email == null)) {
                     //collect the verified email addresses for the userId
                     emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
                 }
