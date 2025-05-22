@@ -34,8 +34,6 @@ public class TestServiceUtils {
         try {
             OAuthProviderService.startService();
             PostgresqlService.startService();
-            MysqlService.startService();
-            MongodbService.startService();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -44,8 +42,6 @@ public class TestServiceUtils {
     public static void killServices() throws InterruptedException, IOException {
         OAuthProviderService.killService();
         PostgresqlService.killService();
-        MysqlService.killService();
-        MongodbService.killService();
     }
 
     private static class CmdHelper {
