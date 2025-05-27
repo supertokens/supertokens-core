@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.2]
+
+- Fixes BatchUpdateException checks and error handling to prevent bulk import users stuck in `PROCESSING` state
+- Adds more DEBUG logging to the bulk import users process
+
 ## [11.0.1]
 
 - Upgrades the embedded tomcat 11.0.6 and logback classic to 1.5.13 because of security vulnerabilities
