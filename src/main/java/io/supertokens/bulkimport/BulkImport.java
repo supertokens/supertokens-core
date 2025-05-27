@@ -265,13 +265,13 @@ public class BulkImport {
                 importedUsers.addAll(
                         processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty"),
                                 appIdentifier));
-                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
             }
             if (sortedLoginMethods.containsKey("passwordless")) {
                 Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
                 importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
                         sortedLoginMethods.get("passwordless")));
-                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
             }
             Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
             List.of("emailpassword", "thirdparty", "passwordless").forEach(actualKeys::remove);
