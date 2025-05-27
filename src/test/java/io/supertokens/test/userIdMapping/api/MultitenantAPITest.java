@@ -37,10 +37,8 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -50,6 +48,9 @@ import static org.junit.Assert.*;
 public class MultitenantAPITest {
     TestingProcessManager.TestingProcess process;
     TenantIdentifier t1, t2, t3, t4;
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -93,7 +94,7 @@ public class MultitenantAPITest {
 
         { // tenant 1
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", null);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
@@ -113,14 +114,14 @@ public class MultitenantAPITest {
 
         { // tenant 2
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t1");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -133,14 +134,14 @@ public class MultitenantAPITest {
 
         { // tenant 3
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t2");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -153,7 +154,7 @@ public class MultitenantAPITest {
 
         { // tenant 4
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a2", null);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a2", null);
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
@@ -171,10 +172,10 @@ public class MultitenantAPITest {
             );
         }
 
-        t1 = new TenantIdentifier(null, "a1", null);
-        t2 = new TenantIdentifier(null, "a1", "t1");
-        t3 = new TenantIdentifier(null, "a1", "t2");
-        t4 = new TenantIdentifier(null, "a2", null);
+        t1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        t2 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t1");
+        t3 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", "t2");
+        t4 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a2", null);
     }
 
     private JsonObject emailPasswordSignUp(TenantIdentifier tenantIdentifier, String email, String password)

@@ -344,6 +344,23 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("If specified, the supertokens core will use the specified number of threads to complete the " +
+            "migration of users. (Default: number of available processor cores).")
+    private int bulk_migration_parallelism =  Runtime.getRuntime().availableProcessors();
+
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("If specified, the supertokens core will load the specified number of users for migrating in " +
+            "one single batch. (Default: 8000)")
+    private int bulk_migration_batch_size =  8000;
+
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
+    private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
+
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -579,6 +596,18 @@ public class CoreConfig {
         return webserver_https_enabled;
     }
 
+    public int getBulkMigrationParallelism() {
+        return bulk_migration_parallelism;
+    }
+
+    public long getWebauthnRecoverAccountTokenLifetime() {
+        return webauthn_recover_account_token_lifetime;
+    }
+
+    public int getBulkMigrationBatchSize() {
+        return bulk_migration_batch_size;
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -772,6 +801,18 @@ public class CoreConfig {
             }
         }
 
+        if (bulk_migration_parallelism < 1) {
+            throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
+        }
+
+        if (bulk_migration_batch_size < 1) {
+            throw new InvalidConfigException("Provided bulk_migration_batch_size must be >= 1");
+        }
+
+        if (webauthn_recover_account_token_lifetime <= 0) {
+            throw new InvalidConfigException("Provided webauthn_recover_account_token_lifetime must be > 0");
+        }
+
         for (String fieldId : CoreConfig.getValidFields()) {
             try {
                 Field field = CoreConfig.class.getDeclaredField(fieldId);
@@ -929,6 +970,24 @@ public class CoreConfig {
             List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
             if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
                 throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+            }
+        }
+
+        if (Main.isTesting) {
+            if (oauth_provider_public_service_url == null) {
+                oauth_provider_public_service_url = "http://localhost:" + System.getProperty("ST_OAUTH_PROVIDER_SERVICE_PORT");
+            }
+            if (oauth_provider_admin_service_url == null) {
+                oauth_provider_admin_service_url = "http://localhost:" + System.getProperty("ST_OAUTH_PROVIDER_ADMIN_PORT");
+            }
+            if (oauth_provider_url_configured_in_oauth_provider == null) {
+                oauth_provider_url_configured_in_oauth_provider = "http://localhost:4444";
+            }
+            if (oauth_client_secret_encryption_key == null) {
+                oauth_client_secret_encryption_key = "clientsecretencryptionkey";
+            }
+            if (oauth_provider_consent_login_base_url == null) {
+                oauth_provider_consent_login_base_url = "http://localhost:3001/auth";
             }
         }
 

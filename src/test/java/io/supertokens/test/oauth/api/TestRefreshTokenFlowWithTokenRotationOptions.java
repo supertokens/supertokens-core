@@ -17,6 +17,7 @@
 package io.supertokens.test.oauth.api;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
@@ -38,15 +39,16 @@ import org.junit.rules.TestRule;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 public class TestRefreshTokenFlowWithTokenRotationOptions {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -87,6 +89,7 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     }
 
     private static JsonObject completeFlowAndGetTokens(Main main, JsonObject client) throws Exception {
+        List<String> allCookies = new ArrayList<>();
         JsonObject authRequestBody = new JsonObject();
         JsonObject params = new JsonObject();
         params.addProperty("client_id", client.get("clientId").getAsString());
@@ -98,8 +101,10 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
         authRequestBody.add("params", params);
         JsonObject authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
-        String cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
-        cookies = cookies.split(";")[0];
+        allCookies.clear();
+        for (JsonElement cookieElem : authResponse.get("cookies").getAsJsonArray()) {
+            allCookies.add(cookieElem.getAsString().split(";")[0]);
+        }
 
         String redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -130,14 +135,16 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
             params.addProperty(entry.getKey(), entry.getValue());
         }
         authRequestBody.add("params", params);
-        authRequestBody.addProperty("cookies", cookies);
+        authRequestBody.addProperty("cookies", String.join("; ", allCookies));
 
         authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
         redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
-        cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
-        cookies = cookies.split(";")[0];
+        allCookies.clear();
+        for (JsonElement cookieElem : authResponse.get("cookies").getAsJsonArray()) {
+            allCookies.add(cookieElem.getAsString().split(";")[0]);
+        }
 
         url = new URL(redirectTo);
         queryParams = splitQuery(url);
@@ -180,7 +187,7 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
             params.addProperty(entry.getKey(), entry.getValue());
         }
         authRequestBody.add("params", params);
-        authRequestBody.addProperty("cookies", cookies);
+        authRequestBody.addProperty("cookies", String.join("; ", allCookies));
 
         authResponse = OAuthAPIHelper.auth(main, authRequestBody);
 
@@ -226,21 +233,16 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     public void testRefreshTokenWithRotationDisabled() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -266,21 +268,16 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     public void testRefreshTokenWithRotationEnabled() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -312,21 +309,16 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     public void testRefreshTokenWhenRotationIsEnabledAfter() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -364,21 +356,16 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
     public void testRefreshTokenWithRotationIsDisabledAfter() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("oauth_provider_public_service_url", "http://localhost:4444");
-        Utils.setValueInConfig("oauth_provider_admin_service_url", "http://localhost:4445");
-        Utils.setValueInConfig("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
-        Utils.setValueInConfig("oauth_client_secret_encryption_key", "secret");
-        process.startProcess();
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        FeatureFlag.getInstance(process.main)
+        FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main)
+        FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

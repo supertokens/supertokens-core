@@ -7,29 +7,34 @@
       "src": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1.jar",
-      "name": "Jackson Dataformat 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2.jar",
+      "name": "Jackson Dataformat 2.18.2",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
-      "name": "SnakeYAML 2.2",
-      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2.jar",
+      "name": "Jackson Dataformat CBOR 2.18.2",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1.jar",
-      "name": "Jackson core 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
+      "name": "SnakeYAML 2.3",
+      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar",
-      "name": "Jackson databind 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2.jar",
+      "name": "Jackson core 2.18.2",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1.jar",
-      "name": "Jackson annotation 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2.jar",
+      "name": "Jackson databind 2.18.2",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2.jar",
+      "name": "Jackson annotation 2.18.2",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14.jar",
@@ -42,19 +47,19 @@
       "src": "https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7.jar",
-      "name": "SLF4j API 2.0.7",
-      "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar",
+      "name": "SLF4j API 2.0.16",
+      "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18.jar",
-      "name": "Tomcat annotations API 10.1.18",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.5/tomcat-annotations-api-11.0.5.jar",
+      "name": "Tomcat annotations API 11.0.5",
+      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.5/tomcat-annotations-api-11.0.5-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
+      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.5/tomcat-embed-core-11.0.5.jar",
       "name": "Tomcat embed core API 10.1.1",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18-sources.jar"
+      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.5/tomcat-embed-core-11.0.5-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
@@ -115,6 +120,16 @@
       "jar": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25.jar",
       "name": "Libphonenumber 8.13.25",
       "src": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE.jar",
+      "name": "webauthn4j-core 0.28.6.RELEASE",
+      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-util/0.28.6.RELEASE/webauthn4j-util-0.28.6.RELEASE.jar",
+      "name": "webauthn4j-util 0.28.6.RELEASE",
+      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-util/0.28.6.RELEASE/webauthn4j-util-0.28.6.RELEASE-sources.jar"
     }
   ]
 }

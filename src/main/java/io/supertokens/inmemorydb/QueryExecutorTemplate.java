@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface QueryExecutorTemplate {
 
@@ -41,6 +42,26 @@ public interface QueryExecutorTemplate {
             try (ResultSet result = pst.executeQuery()) {
                 return mapper.extract(result);
             }
+        }
+    }
+
+    static void executeBatch(Connection connection, String QUERY, List<PreparedStatementValueSetter> setters)
+            throws SQLException, StorageQueryException {
+        if(setters == null || setters.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement pst = connection.prepareStatement(QUERY)) {
+            int counter = 0;
+            for(PreparedStatementValueSetter setter: setters) {
+                setter.setValues(pst);
+                pst.addBatch();
+                counter++;
+
+                if(counter % 100 == 0) {
+                    pst.executeBatch();
+                }
+            }
+            pst.executeBatch(); //for the possible remaining ones
         }
     }
 

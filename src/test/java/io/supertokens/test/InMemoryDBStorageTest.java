@@ -48,6 +48,9 @@ public class InMemoryDBStorageTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -65,7 +68,7 @@ public class InMemoryDBStorageTest {
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -186,7 +189,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -214,7 +217,7 @@ public class InMemoryDBStorageTest {
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -242,7 +245,7 @@ public class InMemoryDBStorageTest {
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -275,7 +278,7 @@ public class InMemoryDBStorageTest {
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -309,7 +312,7 @@ public class InMemoryDBStorageTest {
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
         String[] args = {"../"};
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

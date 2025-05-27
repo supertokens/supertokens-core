@@ -18,6 +18,7 @@ package io.supertokens.test.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -34,6 +35,9 @@ public class UpdateUsersEmailAndPasswordTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -46,7 +50,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateInfoWithoutUser() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -63,7 +67,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailOnly() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -87,7 +91,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailToAnotherThatAlreadyExists() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -111,7 +115,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdatePasswordOnly() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -133,7 +137,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
     @Test
     public void testUpdateEmailAndPassword() throws Exception {
-        TestingProcessManager.withProcess(process -> {
+        TestingProcessManager.withSharedProcess(process -> {
             Main main = process.getProcess();
 
             if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
@@ -153,6 +157,39 @@ public class UpdateUsersEmailAndPasswordTest {
 
             Assert.assertEquals(userInfo.getSupertokensUserId(), changedCredentialsUserInfo.getSupertokensUserId());
             Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.loginMethods[0].email);
+            Assert.assertFalse(changedCredentialsUserInfo.loginMethods[0].verified);
+        });
+    }
+
+    @Test
+    public void testUpdateEmailAndPasswordFromVerifiedToNotVerified() throws Exception {
+        TestingProcessManager.withSharedProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            // given
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+
+            String emailVerificationToken = EmailVerification.generateEmailVerificationToken(main, userInfo.getSupertokensUserId(),
+                    userInfo.loginMethods[0].email);
+            EmailVerification.verifyEmail(main, emailVerificationToken);
+            AuthRecipeUserInfo originalUser = EmailPassword.signIn(main, "john.doe@example.com", "password");
+            Assert.assertTrue(originalUser.loginMethods[0].verified);
+
+            // when
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com",
+                    "newPassword");
+
+            // then
+            AuthRecipeUserInfo changedCredentialsUserInfo = EmailPassword.signIn(main, "dave.doe@example.com",
+                    "newPassword");
+
+            Assert.assertEquals(userInfo.getSupertokensUserId(), changedCredentialsUserInfo.getSupertokensUserId());
+            Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.loginMethods[0].email);
+            Assert.assertFalse(changedCredentialsUserInfo.loginMethods[0].verified);
         });
     }
 }

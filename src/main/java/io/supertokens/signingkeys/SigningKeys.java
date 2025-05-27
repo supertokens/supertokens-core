@@ -23,6 +23,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -62,7 +63,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static SigningKeys getInstance(Main main) {
         try {
-            return getInstance(new AppIdentifier(null, null), main);
+            return getInstance(ResourceDistributor.getAppForTesting().toAppIdentifier(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -83,18 +84,22 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                         main.getResourceDistributor().setResource(app, RESOURCE_KEY,
                                 resource);
                     } else {
-                        main.getResourceDistributor()
-                                .setResource(app, RESOURCE_KEY,
-                                        new SigningKeys(app, main));
+                        try {
+                            main.getResourceDistributor()
+                                    .setResource(app, RESOURCE_KEY,
+                                            new SigningKeys(app, main));
+                        } catch (Exception e) {
+                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                            // continue loading other resources
+                        }
                     }
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
-
 
     private SigningKeys(AppIdentifier appIdentifier, Main main) {
         this.main = main;

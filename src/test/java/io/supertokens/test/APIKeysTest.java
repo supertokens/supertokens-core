@@ -16,7 +16,6 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -50,6 +49,9 @@ public class APIKeysTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -67,7 +69,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", "abctijenbogweg=-2438243u98"); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String[] apiKeys = Config.getConfig(process.getProcess()).getAPIKeys();
@@ -84,7 +86,7 @@ public class APIKeysTest {
     public void testGetApiKeysReturnsNullWhenAPIKeyIsNotSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNull(Config.getConfig(process.getProcess()).getAPIKeys());
 
@@ -101,7 +103,7 @@ public class APIKeysTest {
         // api key length less that minimum length 20
         Utils.setValueInConfig("api_keys", "abc"); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -114,7 +116,7 @@ public class APIKeysTest {
 
         // setting api key with non-supported symbols
         Utils.setValueInConfig("api_keys", "abC&^0t4t3t40t4@#%greognr"); // set api_keys
-        process = TestingProcessManager.start(args);
+        process = TestingProcessManager.startIsolatedProcess(args);
 
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
@@ -135,7 +137,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", validKey + "," + invalidKey); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
         assertEquals(event.exception.getCause().getMessage(),
@@ -155,7 +157,7 @@ public class APIKeysTest {
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -206,8 +208,10 @@ public class APIKeysTest {
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        HttpRequestForTesting.disableAddingAppId = true;
 
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
@@ -241,7 +245,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", apiKey1 + "," + apiKey2 + "," + apiKey3); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -313,7 +317,7 @@ public class APIKeysTest {
         Utils.setValueInConfig("api_keys", " " + apiKey1 + ", " + apiKey2 + ", " + apiKey3 + "," + apiKey4); // set
         // api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -389,7 +393,7 @@ public class APIKeysTest {
 
         Utils.setValueInConfig("api_keys", apiKey1); // set api_keys
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
@@ -497,6 +501,9 @@ public class APIKeysTest {
                                          int connectionTimeoutMS, int readTimeoutMS, String method,
                                          Map<String, String> headers) throws IOException,
             io.supertokens.test.httpRequest.HttpResponseException {
+        if (HttpRequestForTesting.corePort != null) {
+            url = url.replace(":3567", ":" + HttpRequestForTesting.corePort);
+        }
         URL obj = getURL(main, "", url);
         InputStream inputStream = null;
         HttpURLConnection con = null;

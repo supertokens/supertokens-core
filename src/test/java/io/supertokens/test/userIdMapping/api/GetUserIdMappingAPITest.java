@@ -42,6 +42,9 @@ public class GetUserIdMappingAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -196,12 +199,12 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, externalUserIdInfo, false);
 
         // retrieve the userId mapping using the superTokensUserId with SUPERTOKENS as the userIdType
         {
@@ -290,12 +293,12 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, externalUserIdInfo, false);
 
         {
             // retrieving with superTokensUserId
@@ -345,11 +348,11 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), superTokensUserId, externalUserId, null, false);
 
         HashMap<String, String> QUERY_PARAM = new HashMap<>();
         QUERY_PARAM.put("userId", superTokensUserId);

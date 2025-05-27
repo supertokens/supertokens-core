@@ -7,6 +7,371 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.2]
+
+- Fixes `AuthRecipe#getUserByAccountInfo` to consider the tenantId instead of the appId when fetching the webauthn user
+
+## [11.0.1]
+
+- Upgrades the embedded tomcat 11.0.6 and logback classic to 1.5.13 because of security vulnerabilities
+
+## [11.0.0]
+
+- Migrates tests to Github Actions
+- Updates JRE to 21. 
+
+## [10.1.4]
+
+- Fixes bulk migration user roles association when there is no external userId assigned to the user
+- Bulk migration now actually uses the `isVerified` field's value in the loginMethod input
+- Fixes nullpointer exception in bulk migration error handling in case of null external user id
+
+## [10.1.3]
+
+- Version bumped for re-release
+
+## [10.1.2]
+
+- Adds user_id index to the user roles table
+- Adds more debug logging to bulk migration
+- Adds more tests to bulk migration
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS user_roles_app_id_user_id_index ON user_roles (app_id, user_id);
+```
+
+If using MySQL, run the following SQL script:
+```sql
+CREATE INDEX user_roles_app_id_user_id_index ON user_roles (app_id, user_id);
+```
+
+
+## [10.1.1]
+
+- Adds debug logging for the bulk migration process
+- Bulk migration users upload now returns the ids of the users.
+- Bulk Migration now requires Account Linking to be enabled only if the input data justifies it
+- Speed up Bulk Migration's account linking and primary user making
+
+## [10.1.0]
+
+- Adds Webauthn (Passkeys) support to core
+- Adds APIs:
+  - GET `/recipe/webauthn/user/credential/`
+  - GET `/recipe/webauthn/user/credential/list`
+  - GET `/recipe/webauthn/options`
+  - GET `/recipe/webauthn/user/recover`
+  - POST `/recipe/webauthn/options/register`
+  - POST `/recipe/webauthn/options/signin`
+  - POST `/recipe/webauthn/user/credential/register`
+  - POST `/recipe/webauthn/signup`
+  - POST `/recipe/webauthn/signin`
+  - POST `/recipe/webauthn/user/recover/token`
+  - POST `/recipe/webauthn/user/recover/token/consume`
+  - PUT `/recipe/webauthn/user/email`
+  - DELETE `/recipe/webauthn/user/credential/remove`
+  - DELETE `/recipe/webauthn/options/remove`
+- Adds additional indexing for `emailverification_verified_emails`
+- Introduces `bulk_migration_batch_size` core config
+- Introduces `BULK_MIGRATION_CRON_ENABLED` environment variable to control the bulk migration cron job
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+
+CREATE INDEX IF NOT EXISTS emailverification_verified_emails_app_id_email_index ON emailverification_verified_emails
+(app_id, email);
+
+CREATE TABLE IF NOT EXISTS webauthn_account_recovery_tokens (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    token VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    CONSTRAINT webauthn_account_recovery_token_pkey PRIMARY KEY (app_id, tenant_id, user_id, token),
+    CONSTRAINT webauthn_account_recovery_token_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES 
+    all_auth_recipe_users(app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id VARCHAR(256) NOT NULL,
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    rp_id VARCHAR(256) NOT NULL,
+    user_id CHAR(36),
+    counter BIGINT NOT NULL,
+    public_key BYTEA NOT NULL,
+    transports TEXT NOT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    CONSTRAINT webauthn_credentials_pkey PRIMARY KEY (app_id, rp_id, id),
+    CONSTRAINT webauthn_credentials_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES webauthn_users
+    (app_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_generated_options (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public'NOT NULL,
+    id CHAR(36) NOT NULL,
+    challenge VARCHAR(256) NOT NULL,
+    email VARCHAR(256),
+    rp_id VARCHAR(256) NOT NULL,
+    rp_name VARCHAR(256) NOT NULL,
+    origin VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    created_at BIGINT NOT NULL,
+    user_presence_required BOOLEAN DEFAULT false NOT NULL,
+    user_verification VARCHAR(12) DEFAULT 'preferred' NOT NULL,
+    CONSTRAINT webauthn_generated_options_pkey PRIMARY KEY (app_id, tenant_id, id),
+    CONSTRAINT webauthn_generated_options_tenant_id_fkey FOREIGN KEY (app_id, tenant_id) REFERENCES tenants
+    (app_id, tenant_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_user_to_tenant (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    CONSTRAINT webauthn_user_to_tenant_email_key UNIQUE (app_id, tenant_id, email),
+    CONSTRAINT webauthn_user_to_tenant_pkey PRIMARY KEY (app_id, tenant_id, user_id),
+    CONSTRAINT webauthn_user_to_tenant_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES 
+    all_auth_recipe_users(app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_users (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    rp_id VARCHAR(256) NOT NULL,
+    time_joined BIGINT NOT NULL,
+    CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id),
+    CONSTRAINT webauthn_users_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id(app_id, 
+    user_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS webauthn_user_to_tenant_email_index ON webauthn_user_to_tenant (app_id, email);
+CREATE INDEX IF NOT EXISTS webauthn_user_challenges_expires_at_index ON webauthn_generated_options (app_id, tenant_id, expires_at);
+CREATE INDEX IF NOT EXISTS webauthn_credentials_user_id_index ON webauthn_credentials (user_id);
+CREATE INDEX IF NOT EXISTS webauthn_account_recovery_token_token_index ON webauthn_account_recovery_tokens (app_id, tenant_id, token);
+CREATE INDEX IF NOT EXISTS webauthn_account_recovery_token_expires_at_index ON webauthn_account_recovery_tokens (expires_at DESC);
+CREATE INDEX IF NOT EXISTS webauthn_account_recovery_token_email_index ON webauthn_account_recovery_tokens (app_id, tenant_id, email);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE INDEX emailverification_verified_emails_app_id_email_index ON emailverification_verified_emails
+(app_id, email);
+
+CREATE TABLE IF NOT EXISTS webauthn_account_recovery_tokens (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    token VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    CONSTRAINT webauthn_account_recovery_token_pkey PRIMARY KEY (app_id, tenant_id, user_id, token),
+    CONSTRAINT webauthn_account_recovery_token_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES 
+    all_auth_recipe_users(app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id VARCHAR(256) NOT NULL,
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    rp_id VARCHAR(256) NOT NULL,
+    user_id CHAR(36),
+    counter BIGINT NOT NULL,
+    public_key BLOB NOT NULL,
+    transports TEXT NOT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    CONSTRAINT webauthn_credentials_pkey PRIMARY KEY (app_id, rp_id, id),
+    CONSTRAINT webauthn_credentials_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES webauthn_users
+    (app_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_generated_options (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public'NOT NULL,
+    id CHAR(36) NOT NULL,
+    challenge VARCHAR(256) NOT NULL,
+    email VARCHAR(256),
+    rp_id VARCHAR(256) NOT NULL,
+    rp_name VARCHAR(256) NOT NULL,
+    origin VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    created_at BIGINT NOT NULL,
+    user_presence_required BOOLEAN DEFAULT false NOT NULL,
+    user_verification VARCHAR(12) DEFAULT 'preferred' NOT NULL,
+    CONSTRAINT webauthn_generated_options_pkey PRIMARY KEY (app_id, tenant_id, id),
+    CONSTRAINT webauthn_generated_options_tenant_id_fkey FOREIGN KEY (app_id, tenant_id) REFERENCES tenants
+    (app_id, tenant_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_user_to_tenant (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    tenant_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    CONSTRAINT webauthn_user_to_tenant_email_key UNIQUE (app_id, tenant_id, email),
+    CONSTRAINT webauthn_user_to_tenant_pkey PRIMARY KEY (app_id, tenant_id, user_id),
+    CONSTRAINT webauthn_user_to_tenant_user_id_fkey FOREIGN KEY (app_id, tenant_id, user_id) REFERENCES 
+    all_auth_recipe_users(app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_users (
+    app_id VARCHAR(64) DEFAULT 'public' NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    email VARCHAR(256) NOT NULL,
+    rp_id VARCHAR(256) NOT NULL,
+    time_joined BIGINT NOT NULL,
+    CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id),
+    CONSTRAINT webauthn_users_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id (app_id, 
+    user_id) ON DELETE CASCADE
+);
+
+CREATE INDEX webauthn_user_to_tenant_email_index ON webauthn_user_to_tenant (app_id, email);
+CREATE INDEX webauthn_user_challenges_expires_at_index ON webauthn_generated_options (app_id, tenant_id, expires_at);
+CREATE INDEX webauthn_credentials_user_id_index ON webauthn_credentials (user_id);
+CREATE INDEX webauthn_account_recovery_token_token_index ON webauthn_account_recovery_tokens (app_id, tenant_id, token);
+CREATE INDEX webauthn_account_recovery_token_expires_at_index ON webauthn_account_recovery_tokens (expires_at DESC);
+CREATE INDEX webauthn_account_recovery_token_email_index ON webauthn_account_recovery_tokens (app_id, tenant_id, email);
+```
+
+## [10.0.3]
+
+- Fixes `StorageTransactionLogicException` in bulk import when not using userRoles and totpDevices in import json.
+- MFA only required in Bulk Import if it's used in input data
+- Fixes issue with reloading all resources when exception occurs while loading a resource, other valid resources were offloaded from the memory. Now we log the exception and continue loading other resources.
+- Adds `USE_STRUCTURED_LOGGING` environment variable to control the logging format.
+
+## [10.0.2]
+
+- Fixes `NullPointerException` in user search API.
+
+## [10.0.1]
+
+- Fixes slow queries for account linking
+- Masks db password in 500 response
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS emailpassword_users_email_index ON emailpassword_users (app_id, email);
+CREATE INDEX IF NOT EXISTS emailpassword_user_to_tenant_email_index ON emailpassword_user_to_tenant (app_id, tenant_id, email);
+
+CREATE INDEX IF NOT EXISTS passwordless_users_email_index ON passwordless_users (app_id, email);
+CREATE INDEX IF NOT EXISTS passwordless_users_phone_number_index ON passwordless_users (app_id, phone_number);
+CREATE INDEX IF NOT EXISTS passwordless_user_to_tenant_email_index ON passwordless_user_to_tenant (app_id, tenant_id, email);
+CREATE INDEX IF NOT EXISTS passwordless_user_to_tenant_phone_number_index ON passwordless_user_to_tenant (app_id, tenant_id, phone_number);
+
+CREATE INDEX IF NOT EXISTS thirdparty_user_to_tenant_third_party_user_id_index ON thirdparty_user_to_tenant (app_id, tenant_id, third_party_id, third_party_user_id);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE INDEX emailpassword_users_email_index ON emailpassword_users (app_id, email);
+CREATE INDEX emailpassword_user_to_tenant_email_index ON emailpassword_user_to_tenant (app_id, tenant_id, email);
+
+CREATE INDEX passwordless_users_email_index ON passwordless_users (app_id, email);
+CREATE INDEX passwordless_users_phone_number_index ON passwordless_users (app_id, phone_number);
+CREATE INDEX passwordless_user_to_tenant_email_index ON passwordless_user_to_tenant (app_id, tenant_id, email);
+CREATE INDEX passwordless_user_to_tenant_phone_number_index ON passwordless_user_to_tenant (app_id, tenant_id, phone_number);
+
+CREATE INDEX thirdparty_user_to_tenant_third_party_user_id_index ON thirdparty_user_to_tenant (app_id, tenant_id, third_party_id, third_party_user_id);
+```
+
+## [10.0.0]
+
+### Added
+
+- Optimize getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId query
+- Adds property `bulk_migration_parallelism` for fine-tuning the worker threads number
+- Adds APIs to bulk import users
+  - GET `/bulk-import/users`
+  - POST `/bulk-import/users`
+  - GET `/bulk-import/users/count`
+  - POST `/bulk-import/users/remove`
+  - POST `/bulk-import/users/import`
+- Adds `ProcessBulkImportUsers` cron job to process bulk import users
+- Adds multithreaded worker support for the `ProcessBulkImportUsers` cron job for faster bulk imports
+- Adds support for lazy importing users
+
+### Breaking changes
+
+- Includes CUD in the owner field for OAuth clients
+
+### Fixes
+
+- Fixes issue with user id mapping while refreshing session
+- Adds indexing for `session_info` table on `user_id, app_id` columns
+
+### Migrations
+
+For PostgreSQL, run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS bulk_import_users (
+    id CHAR(36),
+    app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    primary_user_id VARCHAR(36),
+    raw_data TEXT NOT NULL,
+    status VARCHAR(128) DEFAULT 'NEW',
+    error_msg TEXT,
+    created_at BIGINT NOT NULL, 
+    updated_at BIGINT NOT NULL, 
+    CONSTRAINT bulk_import_users_pkey PRIMARY KEY(app_id, id),
+    CONSTRAINT bulk_import_users__app_id_fkey FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS bulk_import_users_status_updated_at_index ON bulk_import_users (app_id, status, updated_at);
+
+CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index1 ON bulk_import_users (app_id, status, created_at DESC, id DESC);
+ 
+CREATE INDEX IF NOT EXISTS bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS session_info_user_id_app_id_index ON session_info (user_id, app_id);
+```
+
+For MySQL run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS bulk_import_users (
+    id CHAR(36),
+    app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    primary_user_id VARCHAR(36),
+    raw_data TEXT NOT NULL,
+    status VARCHAR(128) DEFAULT 'NEW',
+    error_msg TEXT,
+    created_at BIGINT UNSIGNED NOT NULL, 
+    updated_at BIGINT UNSIGNED NOT NULL, 
+    PRIMARY KEY (app_id, id),
+    FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE INDEX bulk_import_users_status_updated_at_index ON bulk_import_users (app_id, status, updated_at);
+
+CREATE INDEX bulk_import_users_pagination_index1 ON bulk_import_users (app_id, status, created_at DESC, id DESC);
+ 
+CREATE INDEX bulk_import_users_pagination_index2 ON bulk_import_users (app_id, created_at DESC, id DESC);
+
+CREATE INDEX session_info_user_id_app_id_index ON session_info (user_id, app_id);
+```
+
+## [9.3.1]
+
+- Includes exception class name in 500 error message
+
+
 ## [9.3.0]
 
 ### Changes

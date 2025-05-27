@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -65,40 +66,34 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             throws UnsupportedJWTSigningAlgorithmException {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
-                try {
-                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (AppIdentifier app : apps) {
+                    ResourceDistributor.SingletonResource resource = existingResources.get(
+                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
+                                resource);
+                    } else {
+                        try {
+                            JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
                             main.getResourceDistributor()
-                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                    main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-                    for (AppIdentifier app : apps) {
-                        ResourceDistributor.SingletonResource resource = existingResources.get(
-                                new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                        if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                            main.getResourceDistributor().setResource(app, RESOURCE_KEY,
-                                    resource);
-                        } else {
-                            try {
-                                JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
-                                main.getResourceDistributor()
-                                        .setResource(app, RESOURCE_KEY, jwtSigningKey);
+                                    .setResource(app, RESOURCE_KEY, jwtSigningKey);
 
-                                jwtSigningKey.generateKeysForSupportedAlgos(main);
+                            jwtSigningKey.generateKeysForSupportedAlgos(main);
 
-                            } catch (TenantOrAppNotFoundException e) {
-                                throw new IllegalStateException(e);
-                            }
+                        } catch (Exception e) {
+                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                            // continue loading other resources
                         }
                     }
-                } catch (UnsupportedJWTSigningAlgorithmException e) {
-                    throw new ResourceDistributor.FuncException(e);
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            if (e.getCause() instanceof UnsupportedJWTSigningAlgorithmException) {
-                throw (UnsupportedJWTSigningAlgorithmException) e.getCause();
-            }
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 

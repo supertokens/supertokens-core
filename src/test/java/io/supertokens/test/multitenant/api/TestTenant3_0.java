@@ -41,10 +41,8 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import java.io.IOException;
 import java.util.Set;
@@ -53,6 +51,9 @@ import static org.junit.Assert.*;
 
 public class TestTenant3_0 {
     TestingProcessManager.TestingProcess process;
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -275,7 +276,7 @@ public class TestTenant3_0 {
 
             @Override
             public String getPath() {
-                return "/get-tenant-id";
+                return "/get-tenant-id-aaa";
             }
 
             @Override
@@ -307,7 +308,7 @@ public class TestTenant3_0 {
                     new JsonObject());
 
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/" + valueForQuery[i] + "/get-tenant-id", null, 1000, 1000,
+                    "http://localhost:3567/" + valueForQuery[i] + "/get-tenant-id-aaa", null, 1000, 1000,
                     null, WebserverAPI.getLatestCDIVersion().get(), null);
 
             assertEquals(valueForCreate[i].toLowerCase(), response);

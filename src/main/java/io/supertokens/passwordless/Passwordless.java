@@ -17,11 +17,11 @@
 package io.supertokens.passwordless;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -42,6 +42,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
+import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -74,7 +75,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return createCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, email, phoneNumber, deviceId, userInputCode);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -161,7 +162,7 @@ public class Passwordless {
             NoSuchAlgorithmException, Base64EncodingException {
         Storage storage = StorageLayer.getStorage(main);
         return getDeviceWithCodesById(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 deviceId);
     }
 
@@ -170,7 +171,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDeviceWithCodesByIdHash(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 deviceIdHash);
     }
 
@@ -210,7 +211,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDevicesWithCodesByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(
@@ -235,7 +236,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getDevicesWithCodesByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -249,7 +250,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -266,7 +267,7 @@ public class Passwordless {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -457,53 +458,37 @@ public class Passwordless {
         }
 
         if (user == null) {
-            while (true) {
+            long timeJoined = System.currentTimeMillis();
+            user = createPasswordlessUser(tenantIdentifier, storage, consumedDevice.email,
+                    consumedDevice.phoneNumber, timeJoined);
+
+            // Set email as verified, if using email
+            if (setEmailVerified && consumedDevice.email != null) {
                 try {
-                    String userId = Utils.getUUID();
-                    long timeJoined = System.currentTimeMillis();
-                    user = passwordlessStorage.createUser(tenantIdentifier, userId, consumedDevice.email,
-                            consumedDevice.phoneNumber, timeJoined);
-
-                    // Set email as verified, if using email
-                    if (setEmailVerified && consumedDevice.email != null) {
+                    AuthRecipeUserInfo finalUser = user;
+                    EmailVerificationSQLStorage evStorage =
+                            StorageUtils.getEmailVerificationStorage(storage);
+                    evStorage.startTransaction(con -> {
                         try {
-                            AuthRecipeUserInfo finalUser = user;
-                            EmailVerificationSQLStorage evStorage =
-                                    StorageUtils.getEmailVerificationStorage(storage);
-                            evStorage.startTransaction(con -> {
-                                try {
-                                    evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                            evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                             finalUser.getSupertokensUserId(), consumedDevice.email, true);
-                                    evStorage.commitTransaction(con);
+                            evStorage.commitTransaction(con);
 
-                                    return null;
-                                } catch (TenantOrAppNotFoundException e) {
-                                    throw new StorageTransactionLogicException(e);
-                                }
-                            });
-                            user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
-                        } catch (StorageTransactionLogicException e) {
-                            if (e.actualException instanceof TenantOrAppNotFoundException) {
-                                throw (TenantOrAppNotFoundException) e.actualException;
-                            }
-                            throw new StorageQueryException(e);
+                            return null;
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
                         }
+                    });
+                    user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                } catch (StorageTransactionLogicException e) {
+                    if (e.actualException instanceof TenantOrAppNotFoundException) {
+                        throw (TenantOrAppNotFoundException) e.actualException;
                     }
-
-                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber,
-                            consumedDevice);
-                } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
-                    // Getting these would mean that between getting the user and trying creating it:
-                    // 1. the user managed to do a full create+consume flow
-                    // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
-                    // These should be almost impossibly rare, so it's safe to just ask the user to restart.
-                    // Also, both would make the current login fail if done before the transaction
-                    // by cleaning up the device/code this consume would've used.
-                    throw new RestartFlowException();
-                } catch (DuplicateUserIdException e) {
-                    // We can retry..
+                    throw new StorageQueryException(e);
                 }
             }
+
+            return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
         } else {
             if (setEmailVerified && consumedDevice.email != null) {
                 // Set email verification
@@ -543,11 +528,47 @@ public class Passwordless {
         return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
     }
 
+    public static AuthRecipeUserInfo createPasswordlessUser(TenantIdentifier tenantIdentifier, Storage storage,
+            String email, String phoneNumber, long timeJoined)
+            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException {
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        while (true) {
+            try {
+                String userId = Utils.getUUID();
+                return passwordlessStorage.createUser(tenantIdentifier, userId, email, phoneNumber, timeJoined);
+            } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
+                // Getting these would mean that between getting the user and trying creating it:
+                // 1. the user managed to do a full create+consume flow
+                // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                // Also, both would make the current login fail if done before the transaction
+                // by cleaning up the device/code this consume would've used.
+                throw new RestartFlowException();
+            } catch (DuplicateUserIdException e) {
+                // We can retry..
+            }
+        }
+    }
+
+    public static void createPasswordlessUsers(Storage storage,
+                                               List<PasswordlessImportUser> importUsers)
+            throws TenantOrAppNotFoundException, StorageQueryException,
+            StorageTransactionLogicException {
+            PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+            passwordlessStorage.startTransaction(con -> {
+                passwordlessStorage.importPasswordlessUsers_Transaction(con, importUsers);
+                passwordlessStorage.commitTransaction(con);
+                return null;
+            });
+    }
+
     @TestOnly
     public static void removeCode(Main main, String codeId)
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
-        removeCode(new TenantIdentifier(null, null, null), storage,
+        removeCode(ResourceDistributor.getAppForTesting(), storage,
                 codeId);
     }
 
@@ -602,7 +623,7 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         removeCodesByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     public static void removeCodesByEmail(TenantIdentifier tenantIdentifier, Storage storage, String email)
@@ -622,7 +643,7 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         removeCodesByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -644,7 +665,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserById(
-                new AppIdentifier(null, null), storage, userId);
+                ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     @Deprecated
@@ -669,7 +690,7 @@ public class Passwordless {
                                                           String phoneNumber) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByPhoneNumber(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 phoneNumber);
     }
 
@@ -694,7 +715,7 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByEmail(
-                new TenantIdentifier(null, null, null), storage, email);
+                ResourceDistributor.getAppForTesting(), storage, email);
     }
 
     @Deprecated
@@ -720,7 +741,7 @@ public class Passwordless {
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
             PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
-        updateUser(new AppIdentifier(null, null), storage,
+        updateUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, emailUpdate, phoneNumberUpdate);
     }
 

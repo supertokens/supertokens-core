@@ -95,8 +95,13 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private static String getConfigFilePath(Main main) {
+        String configFile = "config.yaml";
+        if (Main.isTesting) {
+            String workerId = System.getProperty("org.gradle.test.worker", "");
+            configFile = "config" + workerId + ".yaml";
+        }
         return CLIOptions.get(main).getConfigFilePath() == null
-                ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
+                ? CLIOptions.get(main).getInstallationPath() + configFile
                 : CLIOptions.get(main).getConfigFilePath();
     }
 
@@ -118,12 +123,12 @@ public class Config extends ResourceDistributor.SingletonResource {
         // At this point, we know that all configs are valid.
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
-                try {
-                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                            main.getResourceDistributor()
-                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                    main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-                    for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                    try {
                         ResourceDistributor.SingletonResource resource = existingResources.get(
                                 new ResourceDistributor.KeyClass(
                                         key.getTenantIdentifier(),
@@ -137,19 +142,16 @@ public class Config extends ResourceDistributor.SingletonResource {
                             main.getResourceDistributor()
                                     .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                                             new Config(main, normalisedConfigs.get(key)));
-
                         }
+                    } catch (Exception e) {
+                        Logging.error(main, key.getTenantIdentifier(), e.getMessage(), false);
+                        // continue loading other resources
                     }
-                } catch (InvalidConfigException | IOException e) {
-                    throw new ResourceDistributor.FuncException(e);
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            if (e.getCause() instanceof InvalidConfigException) {
-                throw (InvalidConfigException) e.getCause();
-            }
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 
@@ -308,7 +310,7 @@ public class Config extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static CoreConfig getConfig(Main main) {
         try {
-            return getConfig(new TenantIdentifier(null, null, null), main);
+            return getConfig(ResourceDistributor.getAppForTesting(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

@@ -16,39 +16,18 @@
 
 package io.supertokens.test.oauth.api;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
-import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
 public class OAuthAPIHelper {
     public static void resetOAuthProvider() {
-        try {
-            HttpRequestForOAuthProvider.Response clientsResponse = HttpRequestForOAuthProvider
-                    .doGet("http://localhost:4445/admin/clients", new HashMap<>(), new HashMap<>());
 
-            for (JsonElement client : clientsResponse.jsonResponse.getAsJsonArray()) {
-                HttpRequestForOAuthProvider.doJsonDelete(
-                        "http://localhost:4445/admin/clients/"
-                                + client.getAsJsonObject().get("client_id").getAsString(),
-                        new HashMap<>(), new HashMap<>(), new JsonObject());
-            }
-
-            // We query these in an effort to help with possible warm up issues
-            HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/openid-configuration", new HashMap<>(), new HashMap<>());
-            HttpRequestForOAuthProvider.doGet("http://localhost:4444/.well-known/jwks.json", new HashMap<>(), new HashMap<>());
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static JsonObject createClient(Main main, JsonObject createClientBody) throws Exception {

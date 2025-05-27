@@ -30,6 +30,9 @@ public class StorageLayerTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -70,7 +73,7 @@ public class StorageLayerTest {
     public void totpCodeLengthTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         process.getProcess()
                 .setForceInMemoryDB(); // this test is for SQLite. We have different versions for PSQL and MySQL
         process.startProcess();

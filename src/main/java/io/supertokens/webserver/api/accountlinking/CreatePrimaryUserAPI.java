@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -85,7 +86,7 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             } else {
                 result.user.setExternalUserId(null);
             }
-            response.add("user", result.user.toJson());
+            response.add("user", result.user.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
                  BadPermissionException e) {

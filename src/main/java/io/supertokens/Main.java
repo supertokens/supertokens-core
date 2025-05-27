@@ -20,7 +20,9 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
+import io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
@@ -34,11 +36,13 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
@@ -61,6 +65,8 @@ public class Main {
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean isTesting = false;
+    // this flag is used in ProcessBulkImportUsersCronJobTest to skip the user validation
+    public static boolean isTesting_skipBulkImportUserValidationInCronJob = false;
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean makeConsolePrintSilent = false;
@@ -86,6 +92,9 @@ public class Main {
 
     private boolean waitToEnableFeatureFlag = false;
     private final Object waitToEnableFeatureFlagLock = new Object();
+
+    //setting to true by default
+    private final Boolean bulkMigrationCronEnabled = System.getenv("BULK_MIGRATION_CRON_ENABLED") == null || Boolean.parseBoolean(System.getenv("BULK_MIGRATION_CRON_ENABLED"));
 
 
     private boolean forceInMemoryDB = false;
@@ -257,7 +266,14 @@ public class Main {
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
+        // initializes ProcessBulkImportUsers cronjob to process bulk import users
+        if(bulkMigrationCronEnabled) {
+            Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
+        }
+
         Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
+
+        Cronjobs.addCronjob(this, CleanUpWebauthNExpiredDataCron.init(this, uniqueUserPoolIdsTenants));
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();
@@ -348,12 +364,16 @@ public class Main {
     }
 
     private void createDotStartedFileForThisProcess() throws IOException {
+        String startedDir = ".started";
+        if (isTesting) {
+            startedDir = ".started" + System.getProperty("org.gradle.test.worker", "");
+        }
         CoreConfig config = Config.getBaseConfig(this);
         String fileLocation = CLIOptions.get(this).getTempDirLocation() == null ? CLIOptions.get(this).getInstallationPath() : CLIOptions.get(this).getTempDirLocation();
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
-                ? fileLocation + ".started\\" + config.getHost(this) + "-"
+                ? fileLocation + startedDir + "\\" + config.getHost(this) + "-"
                 + config.getPort(this)
-                : fileLocation + ".started/" + config.getHost(this) + "-"
+                : fileLocation + startedDir + "/" + config.getHost(this) + "-"
                 + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {
@@ -396,9 +416,10 @@ public class Main {
 
     @TestOnly
     public void killForTestingAndWaitForShutdown() throws InterruptedException {
-        assertIsTesting();
-        wakeUpMainThreadToShutdown();
-        mainThread.join();
+        // Do not kill for now
+         assertIsTesting();
+         wakeUpMainThreadToShutdown();
+         mainThread.join();
     }
 
     // must not throw any error

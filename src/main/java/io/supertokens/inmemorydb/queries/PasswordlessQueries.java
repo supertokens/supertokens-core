@@ -60,6 +60,16 @@ public class PasswordlessQueries {
                 + ");";
     }
 
+    static String getQueryToCreatePasswordlessUsersEmailIndex(Start start) {
+        return "CREATE INDEX passwordless_users_email_index ON "
+                + Config.getConfig(start).getPasswordlessUsersTable() + "(app_id, email);";
+    }
+
+    static String getQueryToCreatePasswordlessUsersPhoneNumberIndex(Start start) {
+        return "CREATE INDEX passwordless_users_phone_number_index ON "
+                + Config.getConfig(start).getPasswordlessUsersTable() + "(app_id, phone_number);";
+    }
+
     static String getQueryToCreatePasswordlessUserToTenantTable(Start start) {
         String passwordlessUserToTenantTable = Config.getConfig(start).getPasswordlessUserToTenantTable();
         // @formatter:off
@@ -77,6 +87,16 @@ public class PasswordlessQueries {
                 "(app_id, tenant_id, user_id) ON DELETE CASCADE"
                 + ");";
         // @formatter:on
+    }
+
+    static String getQueryToCreatePasswordlessUserToTenantEmailIndex(Start start) {
+        return "CREATE INDEX passwordless_user_to_tenant_email_index ON "
+                + Config.getConfig(start).getPasswordlessUserToTenantTable() + "(app_id, tenant_id, email);";
+    }
+
+    static String getQueryToCreatePasswordlessUserToTenantPhoneNumberIndex(Start start) {
+        return "CREATE INDEX passwordless_user_to_tenant_phone_number_index ON "
+                + Config.getConfig(start).getPasswordlessUserToTenantTable() + "(app_id, tenant_id, phone_number);";
     }
 
     public static String getQueryToCreateDevicesTable(Start start) {

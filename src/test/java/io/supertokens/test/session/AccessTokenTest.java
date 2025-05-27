@@ -63,6 +63,9 @@ public class AccessTokenTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -394,7 +397,7 @@ public class AccessTokenTest {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         String keyBefore = SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().toString();
@@ -436,7 +439,7 @@ public class AccessTokenTest {
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
 
@@ -482,7 +485,7 @@ public class AccessTokenTest {
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
         String[] args = {"../"};
-        TestingProcess process = TestingProcessManager.start(args);
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
@@ -543,7 +546,7 @@ public class AccessTokenTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain,
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, accessTokenPayload, jwksDomain,
                 validity, false);
 
         String header = jwt.split("\\.")[0];

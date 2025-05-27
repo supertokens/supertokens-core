@@ -85,7 +85,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     @TestOnly
     public static AccessTokenSigningKey getInstance(Main main) {
         try {
-            return getInstance(new AppIdentifier(null, null), main);
+            return getInstance(ResourceDistributor.getAppForTesting().toAppIdentifier(), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -116,15 +116,16 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                             app,
                                             RESOURCE_KEY,
                                             new AccessTokenSigningKey(app, main));
-                        } catch (TenantOrAppNotFoundException e) {
-                            throw new IllegalStateException(e);
+                        } catch (Exception e) {
+                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                            // continue loading other resources
                         }
                     }
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 

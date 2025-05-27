@@ -17,6 +17,7 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -34,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -112,7 +114,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp2_7(
-                    new TenantIdentifier(null, null, null), storage,
+                    ResourceDistributor.getAppForTesting(), storage,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -125,7 +127,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     thirdPartyId, thirdPartyUserId, email, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -139,7 +141,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifier(null, null, null), storage, main,
+                    ResourceDistributor.getAppForTesting(), storage, main,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -209,22 +211,12 @@ public class ThirdParty {
         while (true) {
             // loop for sign in + sign up
 
-            while (true) {
-                // loop for sign up
-                String userId = Utils.getUUID();
-                long timeJoined = System.currentTimeMillis();
+            long timeJoined = System.currentTimeMillis();
 
-                try {
-                    AuthRecipeUserInfo createdUser = tpStorage.signUp(tenantIdentifier, userId, email,
-                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
-
-                    return new SignInUpResponse(true, createdUser);
-                } catch (DuplicateUserIdException e) {
-                    // we try again..
-                } catch (DuplicateThirdPartyUserException e) {
-                    // we try to sign in
-                    break;
-                }
+            try {
+                return createThirdPartyUser( tenantIdentifier, storage, thirdPartyId, thirdPartyUserId, email, timeJoined);
+            } catch (DuplicateThirdPartyUserException e) {
+                // The user already exists, we will try to update the email if needed below
             }
 
             // we try to get user and update their email
@@ -346,6 +338,37 @@ public class ThirdParty {
         }
     }
 
+    public static SignInUpResponse createThirdPartyUser(TenantIdentifier tenantIdentifier, Storage storage,
+            String thirdPartyId, String thirdPartyUserId, String email, long timeJoined)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateThirdPartyUserException {
+        ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
+
+        while (true) {
+            // loop for sign up
+            String userId = Utils.getUUID();
+
+            try {
+                AuthRecipeUserInfo createdUser = tpStorage.signUp(tenantIdentifier, userId, email,
+                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                return new SignInUpResponse(true, createdUser);
+            } catch (DuplicateUserIdException e) {
+                // we try again..
+            }
+        }
+    }
+
+    public static void createMultipleThirdPartyUsers(Storage storage,
+                                                     List<ThirdPartyImportUser> usersToImport)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
+
+            ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
+            tpStorage.startTransaction(con -> {
+                tpStorage.importThirdPartyUsers_Transaction(con, usersToImport);
+                tpStorage.commitTransaction(con);
+                return null;
+            });
+    }
+
     @Deprecated
     public static AuthRecipeUserInfo getUser(AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException {
@@ -367,7 +390,7 @@ public class ThirdParty {
     @TestOnly
     public static AuthRecipeUserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUser(new AppIdentifier(null, null), storage, userId);
+        return getUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId);
     }
 
     public static AuthRecipeUserInfo getUser(TenantIdentifier tenantIdentifier, Storage storage,
@@ -383,7 +406,7 @@ public class ThirdParty {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUser(
-                new TenantIdentifier(null, null, null), storage,
+                ResourceDistributor.getAppForTesting(), storage,
                 thirdPartyId, thirdPartyUserId);
     }
 

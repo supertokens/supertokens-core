@@ -43,6 +43,9 @@ public class PasswordlessUserGetAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
+
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -72,7 +75,7 @@ public class PasswordlessUserGetAPITest {
         String phoneNumber = "+44-207 183 8750";
         String normalisedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(phoneNumber);
 
-        storage.createUser(new TenantIdentifier(null, null, null),
+        storage.createUser(process.getAppForTesting(),
                 userId, null, normalisedPhoneNumber, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();

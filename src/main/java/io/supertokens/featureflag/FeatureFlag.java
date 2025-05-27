@@ -22,6 +22,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -107,7 +108,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     public static FeatureFlag getInstance(Main main) {
         try {
             return (FeatureFlag) main.getResourceDistributor()
-                    .getResource(new AppIdentifier(null, null), RESOURCE_KEY);
+                    .getResource(ResourceDistributor.getAppForTesting(), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -132,27 +133,32 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
-                    ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(
-                                    app,
-                                    RESOURCE_KEY));
-                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        main.getResourceDistributor()
-                                .setResource(app,
-                                        RESOURCE_KEY,
-                                        resource);
-                    } else {
-                        main.getResourceDistributor()
-                                .setResource(
+                    try {
+                        ResourceDistributor.SingletonResource resource = existingResources.get(
+                                new ResourceDistributor.KeyClass(
                                         app,
-                                        RESOURCE_KEY,
-                                        new FeatureFlag(main, app));
+                                        RESOURCE_KEY));
+                        if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                            main.getResourceDistributor()
+                                    .setResource(app,
+                                            RESOURCE_KEY,
+                                            resource);
+                        } else {
+                            main.getResourceDistributor()
+                                    .setResource(
+                                            app,
+                                            RESOURCE_KEY,
+                                            new FeatureFlag(main, app));
+                        }
+                    } catch (Exception e) {
+                        Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                        // continue loading other resources
                     }
                 }
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("should never happen", e);
         }
     }
 

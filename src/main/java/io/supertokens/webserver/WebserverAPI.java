@@ -29,7 +29,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -46,6 +47,8 @@ import org.apache.catalina.filters.RemoteAddrFilter;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public abstract class WebserverAPI extends HttpServlet {
@@ -77,10 +80,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v5_0);
         supportedVersions.add(SemVer.v5_1);
         supportedVersions.add(SemVer.v5_2);
+        supportedVersions.add(SemVer.v5_3);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v5_2;
+        return SemVer.v5_3;
     }
 
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
@@ -532,10 +536,14 @@ public abstract class WebserverAPI extends HttpServlet {
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
-                    sendTextResponse(500, rootCause.getMessage(), resp);
+                    String msg = rootCause.toString();
+                    msg = maskDBPassword(msg);
+                    sendTextResponse(500, msg, resp);
                 }
             } else {
-                sendTextResponse(500, e.getMessage(), resp);
+                String msg = e.toString();
+                msg = maskDBPassword(msg);
+                sendTextResponse(500, msg, resp);
             }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
@@ -548,6 +556,21 @@ public abstract class WebserverAPI extends HttpServlet {
                 // Ignore the error as we would have already sent the response for tenantNotFound
             }
         }
+    }
+
+    public static String maskDBPassword(String log) {
+        String regex = "(\\|db_pass\\|)(.*?)(\\|db_pass\\|)";
+
+        Matcher matcher = Pattern.compile(regex).matcher(log);
+        StringBuffer maskedLog = new StringBuffer();
+
+        while (matcher.find()) {
+            String maskedPassword = "*".repeat(8);
+            matcher.appendReplacement(maskedLog, "|" + maskedPassword + "|");
+        }
+
+        matcher.appendTail(maskedLog);
+        return maskedLog.toString();
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {

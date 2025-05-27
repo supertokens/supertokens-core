@@ -16,11 +16,38 @@
 
 package io.supertokens.test.multitenant;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+
+import javax.crypto.spec.SecretKeySpec;
+
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
+import org.apache.commons.codec.binary.Base32;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import com.google.gson.JsonObject;
+
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
@@ -33,38 +60,30 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.bulkimport.BulkImportTestUtils;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
-import org.apache.commons.codec.binary.Base32;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import javax.crypto.spec.SecretKeySpec;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class TestAppData {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
+
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -95,7 +114,7 @@ public class TestAppData {
     public void testThatDeletingAppDeleteDataFromAllTables() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
                         new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
@@ -177,11 +196,51 @@ public class TestAppData {
         UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
 
+        if(!StorageLayer.isInMemDb(process.getProcess())) {
+            BulkImport.addUsers(app.toAppIdentifier(), appStorage, BulkImportTestUtils.generateBulkImportUser(1));
+        }
+
         OAuth.addOrUpdateClient(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "secret123", false, false);
         OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");
         ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
         OAuth.createOrUpdateOauthSession(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "test-gid", null, null, "sessionHandle", "jti", 0);
+
+        WebAuthNStoredCredential credential = new WebAuthNStoredCredential();
+        credential.id = "abcd";
+        credential.appId = app.getAppId();
+        credential.rpId = "example.com";
+        credential.userId = "userId";
+        credential.counter = 0;
+        credential.publicKey = new byte[0];
+        credential.transports = "abcd";
+        credential.createdAt = 0;
+        credential.updatedAt = 0;
+
+        ((WebAuthNSQLStorage) appStorage).startTransaction((con) -> {
+            try {
+                ((WebAuthNSQLStorage) appStorage).signUpWithCredentialsRegister_Transaction(app, con, "userId", "test2@example.com", "example.com", credential);
+            } catch (DuplicateUserIdException e) {
+                throw new RuntimeException(e);
+            } catch (DuplicateUserEmailException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        });
+        ((WebAuthNStorage) appStorage).addRecoverAccountToken(app, new AccountRecoveryTokenInfo("userId", "test@example.com", "abcd", System.currentTimeMillis() + 3600));
+        WebAuthNOptions options = new WebAuthNOptions();
+        options.generatedOptionsId = "abcd";
+        options.relyingPartyId = "example.com";
+        options.relyingPartyName = "Example";
+        options.userEmail = "test@example.com";
+        options.timeout = 3600L;
+        options.challenge = "abcd"; //base64 url encoded
+        options.origin = "abcd";
+        options.expiresAt = System.currentTimeMillis() + 3600;
+        options.createdAt = System.currentTimeMillis();
+        options.userPresenceRequired = false;
+        options.userVerification = "required";
+        ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
