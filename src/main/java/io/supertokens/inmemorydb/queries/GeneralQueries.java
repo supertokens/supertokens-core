@@ -1275,7 +1275,8 @@ public class GeneralQueries {
 
         userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail_Transaction(start, sqlCon, appIdentifier, email));
 
-        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdUsingEmail_Transaction(start, sqlCon, appIdentifier, email);
+        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdForAppUsingEmail_Transaction(start, sqlCon,
+                appIdentifier, email);
         if(webauthnUserId != null) {
             userIds.add(webauthnUserId);
         }
@@ -1312,7 +1313,7 @@ public class GeneralQueries {
 
         userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email));
 
-        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier.toAppIdentifier(), email);
+        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdForTenantUsingEmail(start, tenantIdentifier, email);
         if(webauthnUserId != null) {
             userIds.add(webauthnUserId);
         }

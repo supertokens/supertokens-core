@@ -8,6 +8,7 @@
 
 plugins {
     id 'application'
+    id 'java-library'
 }
 compileJava { options.encoding = "UTF-8" }
 compileTestJava { options.encoding = "UTF-8" }
@@ -45,7 +46,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.13'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.6'
+    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.6'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
