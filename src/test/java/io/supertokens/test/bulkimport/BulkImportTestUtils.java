@@ -88,7 +88,7 @@ public class BulkImportTestUtils {
                     .add(new LoginMethod(tenants, "thirdparty", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
             loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
-                    false, random.nextBoolean(), email, random.nextBoolean() ? null : "+36305127731"));
+                    false, random.nextBoolean(), email, random.nextBoolean() ? null : "+36305127731" + i));
 
             id = loginMethods.get(0).superTokensUserId;
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
