@@ -1016,7 +1016,8 @@ public class Start
 
     @Override
     public void updateMultipleIsEmailVerified_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                          Map<String, String> emailToUserId, boolean isEmailVerified)
+                                                          Map<String, String> emailToUserId,
+                                                          boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
