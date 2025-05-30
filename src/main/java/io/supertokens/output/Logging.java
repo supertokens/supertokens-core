@@ -19,7 +19,6 @@ package io.supertokens.output;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
 import com.google.gson.JsonArray;
@@ -27,6 +26,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
@@ -49,6 +50,9 @@ import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
 
@@ -57,7 +61,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.output.Logging";
     private final Logger infoLogger;
     private final Logger errorLogger;
-    private final OpenTelemetryAppender otelAppender;
+    private final Logger otelLogger;
+    private final io.opentelemetry.api.logs.Logger otelAppender;
+    private static final org.slf4j.Logger slf4jLogger = LoggerFactory.getLogger("slf4j-logger");
+
+    private final OpenTelemetry openTelemetry;
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
@@ -70,7 +78,20 @@ public class Logging extends ResourceDistributor.SingletonResource {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     private Logging(Main main) {
-        OpenTelemetry openTelemetry = initializeOpenTelemetry();
+        openTelemetry = initializeOpenTelemetry();
+        // Install OpenTelemetry in log4j appender
+        io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender.install(
+                openTelemetry);
+        // Install OpenTelemetry in logback appender
+        io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender.install(
+                openTelemetry);
+
+        // Route JUL logs to slf4j
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
+        // Log using log4j API
+        maybeRunWithSpan(() -> slf4jLogger.info("A log4j log message without a span"), false);
         this.otelAppender = createOpenTelemetryAppender(main, "otelAppender", openTelemetry);
 
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
@@ -81,6 +102,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 ? createLoggerForConsole(main, "io.supertokens.Error", LOG_LEVEL.ERROR)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getErrorLogPath(main),
                 "io.supertokens.Error");
+        this.otelLogger = createLoggerForOtel(main, "io.supertokens.Otel", LOG_LEVEL.INFO);
         Storage storage = StorageLayer.getBaseStorage(main);
         if (storage != null) {
             storage.initFileLogging(Config.getBaseConfig(main).getInfoLogPath(main),
@@ -107,9 +129,13 @@ public class Logging extends ResourceDistributor.SingletonResource {
                                                         .build())
                                         .addLogRecordProcessor(
                                                 BatchLogRecordProcessor.builder(
+//                                                                OtlpHttpLogRecordExporter.builder()
+//                                                                        .setEndpoint("http://172.21.0.4:4318")
+//                                                                        .build())
                                                                 OtlpGrpcLogRecordExporter.builder()
-                                                                        .setEndpoint("http://otel-collector:4317")
+                                                                        .setEndpoint("http://localhost:4317")
                                                                         .build())
+
                                                         .build())
                                         .build())
                         .build();
@@ -207,8 +233,24 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 String finalMsg = msg;
                 maybeRunWithSpan(() -> {
                     getInstance(main).infoLogger.info(finalMsg);
-                    getInstance(main).otelAppender.doAppend(new LoggingEvent());
+                    getInstance(main).otelAppender.logRecordBuilder()
+                            .setSeverity(Severity.INFO)
+                            .setBody(finalMsg)
+                            .emit();
+                    getInstance(main).otelLogger.info(finalMsg + "with span");
                 }, true);
+                getInstance(main).openTelemetry.getTracer("core-tracer")
+                        .spanBuilder("info")
+                        .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
+                        .setAttribute("tenant.appId", tenantIdentifier.getAppId())
+                        .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
+                        .startSpan().addEvent("log",
+                                Attributes.builder().put("message", finalMsg).build(),
+                                System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                        .end();
+
+                getInstance(main).otelLogger.info(finalMsg);
+
             }
         } catch (NullPointerException ignored) {
         }
@@ -328,13 +370,16 @@ public class Logging extends ResourceDistributor.SingletonResource {
         return logger;
     }
 
-    private OpenTelemetryAppender createOpenTelemetryAppender(Main main, String name, OpenTelemetry otel) {
-        OpenTelemetryAppender appender = new OpenTelemetryAppender();
-        appender.setName(name);
-        appender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
-        appender.setOpenTelemetry(otel);
-        appender.start();
-        return appender;
+    private io.opentelemetry.api.logs.Logger createOpenTelemetryAppender(Main main, String name, OpenTelemetry otel) {
+//        OpenTelemetryAppender appender = new OpenTelemetryAppender();
+//        appender.setName(name);
+//        appender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+//        appender.setOpenTelemetry(otel);
+//        appender.start();
+//        return appender;
+        io.opentelemetry.api.logs.Logger customAppenderLogger =
+                otel.getLogsBridge().get("name");
+        return customAppenderLogger;
     }
 
     private Logger createLoggerForConsole(Main main, String name, LOG_LEVEL logLevel) {
@@ -351,6 +396,27 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
         Logger logger = (Logger) LoggerFactory.getLogger(name);
         logger.addAppender(logConsoleAppender);
+        logger.setAdditive(false); /* set to true if root should log too */
+
+        return logger;
+    }
+
+    private Logger createLoggerForOtel(Main main, String name, LOG_LEVEL logLevel) {
+        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(),
+                Version.getVersion(main).getCoreVersion());
+        ple.setContext(lc);
+        ple.start();
+        OpenTelemetryAppender logOtelAppender = new OpenTelemetryAppender();
+        logOtelAppender.setName(name);
+        logOtelAppender.setCaptureArguments(true);
+        logOtelAppender.setCaptureExperimentalAttributes(true);
+        logOtelAppender.setContext(lc);
+        logOtelAppender.setCaptureLoggerContext(true);
+        logOtelAppender.start();
+
+        Logger logger = (Logger) LoggerFactory.getLogger(name);
+        logger.addAppender(logOtelAppender);
         logger.setAdditive(false); /* set to true if root should log too */
 
         return logger;

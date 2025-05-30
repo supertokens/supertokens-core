@@ -2,14 +2,13 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: otel-collector:4317
+      http:
+        endpoint: otel-collector:4318
 
 exporters:
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-    namespace: promexample
-    const_labels:
-      label1: value1
   debug:
+    # verbosity of the logging export: detailed, normal, basic
     verbosity: detailed
 
   zipkin:
@@ -29,22 +28,18 @@ exporters:
 
 processors:
   batch:
+    send_batch_size: 1000
+    timeout: 10s
 
-extensions:
-  health_check:
-  pprof:
-    endpoint: :1888
-  zpages:
-    endpoint: :55679
 
 service:
-  extensions: [pprof, zpages, health_check]
   pipelines:
+    logs:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ debug, otlp/jaeger ]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, zipkin, otlp/jaeger]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, prometheus]
+      exporters: [ debug, zipkin, otlp/jaeger ]
+

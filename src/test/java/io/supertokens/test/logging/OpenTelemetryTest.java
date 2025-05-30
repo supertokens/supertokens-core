@@ -37,9 +37,6 @@ public class OpenTelemetryTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
-    @Rule
-    public TestRule retryFlaky = Utils.retryFlakyTest();
-
     @AfterClass
     public static void afterTesting() {
         Utils.afterTesting();
@@ -70,8 +67,6 @@ public class OpenTelemetryTest {
         Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
         Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
         Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-
-
 
 
     }

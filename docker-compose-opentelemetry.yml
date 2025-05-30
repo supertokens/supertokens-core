@@ -1,7 +1,7 @@
 services:
   # Jaeger
   jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest@sha256:82505210a99b18f587c94f40120c2e13ef3a6ac3095eebdb9e9cba9bf5839efd
+    image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
       - "14268"
@@ -17,8 +17,8 @@ services:
 
   # Collector
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.126.0
-    command: ["--config=/etc/otel-collector-config-demo.yaml", "${OTELCOL_ARGS}"]
+    image: otel/opentelemetry-collector-contrib:0.127.0
+    command: [ "--config=/etc/otel-collector-config-demo.yaml" ]
     volumes:
       - ./otel-collector-config-demo.yaml:/etc/otel-collector-config-demo.yaml
     ports:
@@ -27,31 +27,13 @@ services:
       - "8889:8889"   # Prometheus exporter metrics
       - "13133:13133" # health_check extension
       - "55679:55679" # zpages extension
-      - "4317:4317"   # otlp receiver
+      - "4317:4317"   # otlp grpc receiver
+      - "4318:4318"   # otlp http receiver
     depends_on:
       - jaeger-all-in-one
       - zipkin-all-in-one
 
-  clickhouse:
-    image: 'clickhouse/clickhouse-server:23.4'
-    user: '101:101'
-    container_name: clickhouse
-    hostname: clickhouse
-#    volumes:
-#      - ${PWD}/fs/volumes/clickhouse/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-#      - ${PWD}/fs/volumes/clickhouse/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-    ports:
-      - '127.0.0.1:8123:8123'
-      - '127.0.0.1:9000:9000'
-    depends_on:
-      - clickhouse-keeper
-
-  clickhouse-keeper:
-    image: 'clickhouse/clickhouse-keeper:23.4-alpine'
-    user: '101:101'
-    container_name: clickhouse-keeper
-    hostname: clickhouse-keeper
-#    volumes:
-#      - ${PWD}/fs/volumes/clickhouse-keeper/etc/clickhouse-keeper/keeper_config.xml:/etc/clickhouse-keeper/keeper_config.xml
-    ports:
-      - '127.0.0.1:9181:9181'
+networks:
+  default:
+    external:
+      name: supertokens-core_default
