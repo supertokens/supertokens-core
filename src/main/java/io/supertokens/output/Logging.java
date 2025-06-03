@@ -79,9 +79,6 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logging(Main main) {
         openTelemetry = initializeOpenTelemetry();
-        // Install OpenTelemetry in log4j appender
-        io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender.install(
-                openTelemetry);
         // Install OpenTelemetry in logback appender
         io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender.install(
                 openTelemetry);
@@ -92,6 +89,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
         // Log using log4j API
         maybeRunWithSpan(() -> slf4jLogger.info("A log4j log message without a span"), false);
+        maybeRunWithSpan(() -> slf4jLogger.info("A log4j log message with a span"), true);
         this.otelAppender = createOpenTelemetryAppender(main, "otelAppender", openTelemetry);
 
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
@@ -253,6 +251,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
             }
         } catch (NullPointerException ignored) {
+            ignored.printStackTrace();
         }
     }
 

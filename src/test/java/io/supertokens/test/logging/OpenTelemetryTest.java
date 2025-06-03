@@ -60,13 +60,13 @@ public class OpenTelemetryTest {
             return;
         }
 
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
-        Logging.info(process.getProcess(), new TenantIdentifier(null, null, null), "openTelemetryTest", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest1", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest2", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest3", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest4", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest5", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest6", true);
+        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest7", true);
 
 
     }

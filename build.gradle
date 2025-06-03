@@ -28,6 +28,8 @@ repositories {
 
 dependencies {
 
+    implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.16.0-alpha")
+    
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     // if this changes, remember to also change in the ee folder's build.gradle
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
@@ -77,11 +79,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-core
     implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.6.RELEASE'
 
-
-    implementation(platform(group: 'io.opentelemetry', name: 'opentelemetry-bom', version: '1.50.0'))
-    implementation(platform(group: 'io.opentelemetry.instrumentation', name: 'opentelemetry-instrumentation-bom', version: '2.15.0'))
-
-
     // Slf4J / logback
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("ch.qos.logback:logback-core:1.5.18")
@@ -90,19 +87,14 @@ dependencies {
     // JUL to SLF4J bridge
     implementation("org.slf4j:jul-to-slf4j:2.0.17")
 
-    // Log4j
-    implementation(platform("org.apache.logging.log4j:log4j-bom:2.24.3"))
-    implementation("org.apache.logging.log4j:log4j-api")
-    implementation("org.apache.logging.log4j:log4j-core")
-
     // OpenTelemetry core
     implementation("io.opentelemetry:opentelemetry-sdk")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.opentelemetry.semconv:opentelemetry-semconv")
 
     // OpenTelemetry log4j / logback appenders
-    implementation("io.opentelemetry.instrumentation:opentelemetry-log4j-appender-2.17:2.15.0-alpha")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.15.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-log4j-appender-2.17")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
 
     compileOnly project(":supertokens-plugin-interface")
 
