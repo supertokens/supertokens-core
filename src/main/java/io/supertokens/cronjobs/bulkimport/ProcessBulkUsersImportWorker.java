@@ -77,6 +77,8 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             DbInitException {
         BulkImportUser user = null;
         try {
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Processing bulk import users: " + users.size());
             final Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
             int userIndexPointer = 0;
             List<BulkImportUser> validUsers = new ArrayList<>();
@@ -106,8 +108,8 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             }
             // Since all the tenants of a user must share the storage, we will just use the
             // storage of the first tenantId of the first loginMethod
-
             Map<SQLStorage, List<BulkImportUser>> partitionedUsers = partitionUsersByStorage(appIdentifier, validUsers);
+
             for(SQLStorage bulkImportProxyStorage : partitionedUsers.keySet()) {
                 boolean shouldRetryImmediatley = true;
                 while (shouldRetryImmediatley) {
@@ -126,11 +128,13 @@ public class ProcessBulkUsersImportWorker implements Runnable {
 
                             while (true){
                                 try {
-                                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, toDelete);
+                                    List<String> deletedIds = baseTenantStorage.deleteBulkImportUsers(appIdentifier,
+                                            toDelete);
                                     break;
                                 } catch (Exception e) {
                                     // ignore and retry delete. The import transaction is already committed, the delete should happen no matter what
-                                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Exception while deleting bulk import users: " + e.getMessage());
+                                    Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                                            "Exception while deleting bulk import users: " + e.getMessage());
                                 }
                             }
                         } catch (StorageTransactionLogicException | StorageQueryException e) {
@@ -148,9 +152,15 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                 }
             }
         } catch (StorageTransactionLogicException | InvalidConfigException e) {
+            Logging.error(main, app.getAsPublicTenantIdentifier(),
+                    "Error while processing bulk import users: " + e.getMessage(), true, e);
             throw new RuntimeException(e);
         } catch (BulkImportBatchInsertException insertException) {
             handleProcessUserExceptions(app, users, insertException, baseTenantStorage);
+        } catch (Exception e) {
+            Logging.error(main, app.getAsPublicTenantIdentifier(),
+                    "Error while processing bulk import users: " + e.getMessage(), true, e);
+            throw e;
         } finally {
             closeAllProxyStorages(); //closing it here to reuse the existing connection with all the users
         }
@@ -173,30 +183,40 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         String[] errorMessage = { e.getMessage() };
         Map<String, String> bulkImportUserIdToErrorMessage = new HashMap<>();
 
-        if (e instanceof StorageTransactionLogicException) {
-            StorageTransactionLogicException exception = (StorageTransactionLogicException) e;
-            // If the exception is due to a StorageQueryException, we want to retry the entry after sometime instead
-            // of marking it as FAILED. We will return early in that case.
-            if (exception.actualException instanceof StorageQueryException) {
-                Logging.error(main, null, "We got an StorageQueryException while processing a bulk import user entry. It will be retried again. Error Message: " + e.getMessage(), true);
-                return;
-            }
-            if(exception.actualException instanceof BulkImportBatchInsertException){
-                handleBulkImportException(usersBatch, (BulkImportBatchInsertException) exception.actualException, bulkImportUserIdToErrorMessage);
-            } else {
-                //fail the whole batch
-                errorMessage[0] = exception.actualException.getMessage();
-                for(BulkImportUser user : usersBatch){
-                    bulkImportUserIdToErrorMessage.put(user.id, errorMessage[0]);
+        switch (e) {
+            case StorageTransactionLogicException exception -> {
+                // If the exception is due to a StorageQueryException, we want to retry the entry after sometime instead
+                // of marking it as FAILED. We will return early in that case.
+                if (exception.actualException instanceof StorageQueryException) {
+                    Logging.error(main, null,
+                            "We got an StorageQueryException while processing a bulk import user entry. It will be " +
+                                    "retried again. Error Message: " +
+                                    e.getMessage(), true);
+                    return;
+                }
+                if (exception.actualException instanceof BulkImportBatchInsertException) {
+                    handleBulkImportException(usersBatch, (BulkImportBatchInsertException) exception.actualException,
+                            bulkImportUserIdToErrorMessage);
+                } else {
+                    //fail the whole batch
+                    errorMessage[0] = exception.actualException.getMessage();
+                    for (BulkImportUser user : usersBatch) {
+                        bulkImportUserIdToErrorMessage.put(user.id, errorMessage[0]);
+                    }
                 }
             }
-
-        } else if (e instanceof InvalidBulkImportDataException) {
-            errorMessage[0] = ((InvalidBulkImportDataException) e).errors.toString();
-        } else if (e instanceof InvalidConfigException) {
-            errorMessage[0] = e.getMessage();
-        } else if (e instanceof BulkImportBatchInsertException) {
-            handleBulkImportException(usersBatch, (BulkImportBatchInsertException) e, bulkImportUserIdToErrorMessage);
+            case InvalidBulkImportDataException invalidBulkImportDataException ->
+                    errorMessage[0] = invalidBulkImportDataException.errors.toString();
+            case InvalidConfigException invalidConfigException -> errorMessage[0] = e.getMessage();
+            case BulkImportBatchInsertException bulkImportBatchInsertException ->
+                    handleBulkImportException(usersBatch, bulkImportBatchInsertException,
+                            bulkImportUserIdToErrorMessage);
+            default -> {
+                Logging.error(main, null,
+                        "We got an error while processing a bulk import user entry. It will be " +
+                                "retried again. Error Message: " +
+                                e.getMessage(), true);
+            }
         }
 
         try {
@@ -294,7 +314,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         Map<SQLStorage, List<BulkImportUser>> result = new HashMap<>();
         for(BulkImportUser user: users) {
             TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
+                    appIdentifier.getAppId(), user.loginMethods.getFirst().tenantIds.getFirst());
 
             SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
             if(!result.containsKey(bulkImportProxyStorage)){

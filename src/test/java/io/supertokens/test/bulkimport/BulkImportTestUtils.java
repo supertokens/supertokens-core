@@ -87,13 +87,86 @@ public class BulkImportTestUtils {
             loginMethods
                     .add(new LoginMethod(tenants, "thirdparty", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
                             "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
-            loginMethods.add(
-                    new LoginMethod(tenants, "passwordless", random.nextBoolean(), false, currentTimeMillis, email, null, null, null,
-                            null, null, null, io.supertokens.utils.Utils.getUUID()));
+            loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                    false, random.nextBoolean(), email, random.nextBoolean() ? null : "+36305127731" + i));
+
             id = loginMethods.get(0).superTokensUserId;
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
         }
         return users;
+    }
+
+    public static List<BulkImportUser> generateBulkImportUserWithRolesPasswordlessVariant(int numberOfUsers,
+                                                                                          List<String> tenants,
+                                                                                          int startIndex,
+                                                                                          List<String> roles) {
+        List<BulkImportUser> users = new ArrayList<>();
+        JsonParser parser = new JsonParser();
+
+        for (int i = startIndex; i < numberOfUsers + startIndex; i++) {
+            String email = "user" + i + "@example.com";
+            String externalId = io.supertokens.utils.Utils.getUUID() + "-" + i;
+            String id = "somebogus" + Utils.getUUID();
+            JsonObject userMetadata = parser.parse("{\"key1\":\"" + id + "\",\"key2\":{\"key3\":\"value3\"}}")
+                    .getAsJsonObject();
+
+            List<UserRole> userRoles = new ArrayList<>();
+            for (String roleName : roles) {
+                userRoles.add(new UserRole(roleName, tenants));
+            }
+
+            List<TotpDevice> totpDevices = new ArrayList<>();
+            totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
+
+            List<LoginMethod> loginMethods = new ArrayList<>();
+            long currentTimeMillis = System.currentTimeMillis();
+            Random random = new Random();
+            loginMethods.add(
+                    new LoginMethod(tenants, "emailpassword", random.nextBoolean(), true, currentTimeMillis, email,
+                            "$2a",
+                            "BCRYPT", null, null, null, null, io.supertokens.utils.Utils.getUUID()));
+            loginMethods
+                    .add(new LoginMethod(tenants, "thirdparty", random.nextBoolean(), false, currentTimeMillis, email,
+                            null, null, null,
+                            "thirdPartyId" + i, "thirdPartyUserId" + i, null, io.supertokens.utils.Utils.getUUID()));
+            switch (i % 5) {
+                case 0:
+                    loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                            false, false, email, "+36305127731" + i));
+                    break;
+                case 1:
+                    loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                            false, false, null, "+36305127731" + i));
+                    break;
+                case 2:
+                    loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                            false, false, email, null));
+                    break;
+                case 3:
+                    loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                            false, true, null, "+36305127731" + i));
+                    break;
+                case 4:
+                    loginMethods.add(generateBulkImportPasswordlessLoginMethod(tenants,
+                            false, true, email, null));
+                    break;
+            }
+
+            id = loginMethods.get(0).superTokensUserId;
+            users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
+        }
+        return users;
+    }
+
+    public static LoginMethod generateBulkImportPasswordlessLoginMethod(List<String> tenants,
+                                                                        boolean passwordlessPrimary,
+                                                                        boolean passwordlessVerified,
+                                                                        String passwordlessEmail,
+                                                                        String passwordlessPhone) {
+        long currentTimeMillis = System.currentTimeMillis();
+        return new LoginMethod(tenants, "passwordless", passwordlessVerified, passwordlessPrimary, currentTimeMillis,
+                passwordlessEmail, null, null, null,
+                null, null, passwordlessPhone, io.supertokens.utils.Utils.getUUID());
     }
 
     public static List<BulkImportUser> generateBulkImportUserPlainTextPasswordAndRoles(int numberOfUsers, List<String> tenants, int startIndex, List<String> roles) {

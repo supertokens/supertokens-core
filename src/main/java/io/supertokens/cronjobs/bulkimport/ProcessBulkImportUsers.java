@@ -109,6 +109,9 @@ public class ProcessBulkImportUsers extends CronTask {
             }
 
             List<List<BulkImportUser>> loadedUsersChunks = makeChunksOf(users, numberOfBatchChunks);
+            for (List<BulkImportUser> chunk : loadedUsersChunks) {
+                Logging.debug(main, app.getAsPublicTenantIdentifier(), "Chunk size: " + chunk.size());
+            }
 
             try {
                 List<Future<?>> tasks = new ArrayList<>();
@@ -124,14 +127,26 @@ public class ProcessBulkImportUsers extends CronTask {
                         Thread.sleep(1000);
                     }
                     Logging.debug(main, app.getAsPublicTenantIdentifier(), "Task " + task + " finished");
-                    Void result = (Void) task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
+                    try {
+                        Void result = (Void) task.get(); //to know if there were any errors while executing and for
+                        // waiting in this thread for all the other threads to finish up
+                        Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                                "Task " + task + " finished with result: " + result);
+                    } catch (ExecutionException executionException) {
+                        Logging.error(main, app.getAsPublicTenantIdentifier(),
+                                "Error while processing bulk import users", true,
+                                executionException);
+                        throw new RuntimeException(executionException);
+                    }
                     usersProcessed += loadedUsersChunks.get(tasks.indexOf(task)).size();
                     failedUsers = bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
                     Logging.debug(main, app.getAsPublicTenantIdentifier(), "Chunk " + tasks.indexOf(task) + " finished processing, all chunks processed: "
                             + usersProcessed + " users (" + failedUsers + " failed)");
                 }
-
-            } catch (ExecutionException | InterruptedException e) {
+                Logging.debug(main, app.getAsPublicTenantIdentifier(), "Processing round finished");
+            } catch (InterruptedException e) {
+                Logging.error(main, app.getAsPublicTenantIdentifier(), "Error while processing bulk import users", true,
+                        e);
                 throw new RuntimeException(e);
             }
         }

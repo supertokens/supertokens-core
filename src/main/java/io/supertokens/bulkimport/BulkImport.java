@@ -32,6 +32,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
+import io.supertokens.output.Logging;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -209,13 +210,28 @@ public class BulkImport {
             Storage bulkImportProxyStorage, List<BulkImportUser> users, Storage[] allStoragesForApp)
             throws StorageTransactionLogicException {
         try {
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods..");
             processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating Primary users and linking accounts..");
             createPrimaryUsersAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating Primary users and linking accounts DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings..");
             createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Verifying email addresses..");
             verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Verifying email addresses DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating TOTP devices..");
             createMultipleTotpDevices(main, appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating TOTP devices DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user metadata..");
             createMultipleUserMetadata(appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user metadata DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user roles..");
             createMultipleUserRoles(main, appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user roles DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Effective processUsersImportSteps DONE");
         } catch ( StorageQueryException | FeatureNotEnabledException |
                   TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(e);
@@ -225,6 +241,7 @@ public class BulkImport {
     public static void processUsersLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
                                               List<BulkImportUser> users) throws StorageTransactionLogicException {
         //sort login methods together
+        Logging.debug(main, TenantIdentifier.BASE_TENANT, "Sorting login methods by recipeId..");
         Map<String, List<LoginMethod>> sortedLoginMethods = new HashMap<>();
         for (BulkImportUser user: users) {
             for(LoginMethod loginMethod : user.loginMethods){
@@ -236,19 +253,25 @@ public class BulkImport {
         }
 
             List<ImportUserBase> importedUsers = new ArrayList<>();
-            if (sortedLoginMethods.containsKey("emailpassword")) {
-                importedUsers.addAll(
-                        processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword"),
+        if (sortedLoginMethods.containsKey("emailpassword")) {
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
+            importedUsers.addAll(
+                    processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword"),
                                 appIdentifier));
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
             }
             if (sortedLoginMethods.containsKey("thirdparty")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
                 importedUsers.addAll(
                         processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty"),
                                 appIdentifier));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
             }
             if (sortedLoginMethods.containsKey("passwordless")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
                 importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
                         sortedLoginMethods.get("passwordless")));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
             }
             Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
             List.of("emailpassword", "thirdparty", "passwordless").forEach(actualKeys::remove);
@@ -288,9 +311,9 @@ public class BulkImport {
             }
 
             Passwordless.createPasswordlessUsers(storage, usersToImport);
-
             return usersToImport;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "exception: " + e.getMessage());
             if (e.getCause() instanceof BulkImportBatchInsertException) {
                 Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
                 for (String userid : errorsByPosition.keySet()) {
@@ -683,12 +706,31 @@ public class BulkImport {
         Map<String, String> emailToUserId = collectVerifiedEmailAddressesByUserIds(users);
         try {
             verifyCollectedEmailAddressesForUsers(appIdentifier, storage, emailToUserId);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            if (e.getCause() instanceof BulkImportBatchInsertException) {
+                Map<String, Exception> errorsByPosition =
+                        ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
+                for (String userid : errorsByPosition.keySet()) {
+                    Exception exception = errorsByPosition.get(userid);
+                    if (exception instanceof DuplicateEmailException) {
+                        String message =
+                                "E043: Email " + errorsByPosition.get(userid) + " is already verified for the user";
+                        errorsByPosition.put(userid, new Exception(message));
+                    } else if (exception instanceof NullPointerException) {
+                        String message = "E044: null email address was found for the userId " + userid +
+                                " while verifying the email";
+                        errorsByPosition.put(userid, new Exception(message));
+                    }
+                }
+                throw new StorageTransactionLogicException(
+                        new BulkImportBatchInsertException("translated", errorsByPosition));
+            }
             throw new StorageTransactionLogicException(e);
         }
     }
 
-    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage, Map<String, String> emailToUserId)
+    private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage,
+                                                              Map<String, String> emailToUserId)
             throws StorageQueryException, StorageTransactionLogicException {
         if(!emailToUserId.isEmpty()) {
             EmailVerificationSQLStorage emailVerificationSQLStorage = StorageUtils
@@ -706,10 +748,11 @@ public class BulkImport {
 
     @NotNull
     private static Map<String, String> collectVerifiedEmailAddressesByUserIds(List<BulkImportUser> users) {
-        Map<String, String> emailToUserId = new HashMap<>();
+        Map<String, String> emailToUserId = new LinkedHashMap<>();
         for (BulkImportUser user : users) {
             for (LoginMethod lm : user.loginMethods) {
-                if(lm.isVerified) {
+                //we skip passwordless` 'null' email addresses
+                if (lm.isVerified && !(lm.recipeId.equals("passwordless") && lm.email == null)) {
                     //collect the verified email addresses for the userId
                     emailToUserId.put(lm.getSuperTokenOrExternalUserId(), lm.email);
                 }
