@@ -255,6 +255,45 @@ public class ProcessBulkImportUsersCronJobTest {
     }
 
     @Test
+    public void shouldProcessBulkImportUsersWithPasswordlessVerifiedAnNullEmail() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "5");
+        TestingProcess process = startCronProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(process);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        int usersCount = 15;
+        List<BulkImportUser> users = generateBulkImportUserWithRolesPasswordlessVariant(usersCount,
+                List.of("public", "t1"), 0, List.of("role1", "role2"));
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        waitForProcessingWithTimeout(appIdentifier, storage, 60);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 1000, "ASC", null, null, null);
+        assertEquals(usersCount, container.users.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void shouldProcessBulkImportUsersInLargeNumbersInTheSameTenant() throws Exception {
         TestingProcess process = startCronProcess();
         if(process == null) {
