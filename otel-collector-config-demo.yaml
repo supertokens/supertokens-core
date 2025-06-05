@@ -18,6 +18,13 @@ exporters:
     tls:
       insecure: true
 
+  otlphttp:
+    compression: gzip
+    endpoint: https://api.axiom.co
+    headers:
+      authorization: Bearer xaat-f8acc4ee-2d2c-4b14-9cb5-73ecee1f1f3e
+      x-axiom-dataset: otel-st-integration-dev
+
 # Alternatively, use jaeger_thrift_http with the settings below. In this case
 # update the list of exporters on the traces pipeline.
 #
@@ -35,9 +42,9 @@ service:
     logs:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ debug, otlp/jaeger ]
+      exporters: [ debug, otlp/jaeger, otlphttp ]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [ debug, zipkin, otlp/jaeger ]
+      exporters: [ debug, zipkin, otlp/jaeger, otlphttp ]
 

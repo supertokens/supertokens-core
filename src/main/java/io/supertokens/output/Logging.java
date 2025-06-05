@@ -51,6 +51,7 @@ import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.slf4j.event.Level;
 
 import java.util.concurrent.TimeUnit;
 
@@ -88,8 +89,6 @@ public class Logging extends ResourceDistributor.SingletonResource {
         SLF4JBridgeHandler.install();
 
         // Log using log4j API
-        maybeRunWithSpan(() -> slf4jLogger.info("A log4j log message without a span"), false);
-        maybeRunWithSpan(() -> slf4jLogger.info("A log4j log message with a span"), true);
         this.otelAppender = createOpenTelemetryAppender(main, "otelAppender", openTelemetry);
 
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
@@ -100,7 +99,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 ? createLoggerForConsole(main, "io.supertokens.Error", LOG_LEVEL.ERROR)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getErrorLogPath(main),
                 "io.supertokens.Error");
-        this.otelLogger = createLoggerForOtel(main, "io.supertokens.Otel", LOG_LEVEL.INFO);
+        this.otelLogger = createLoggerForOtel(main, "io.supertokens.Otel", LOG_LEVEL.INFO, openTelemetry);
         Storage storage = StorageLayer.getBaseStorage(main);
         if (storage != null) {
             storage.initFileLogging(Config.getBaseConfig(main).getInfoLogPath(main),
@@ -118,7 +117,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
     private static OpenTelemetry initializeOpenTelemetry() {
         OpenTelemetrySdk sdk =
                 OpenTelemetrySdk.builder()
-                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
+                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn())
+                                .build())
                         .setLoggerProvider(
                                 SdkLoggerProvider.builder()
                                         .setResource(
@@ -136,7 +136,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
                                                         .build())
                                         .build())
-                        .build();
+                        .buildAndRegisterGlobal();
 
         // Add hook to close SDK, which flushes logs
         Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
@@ -233,9 +233,12 @@ public class Logging extends ResourceDistributor.SingletonResource {
                     getInstance(main).infoLogger.info(finalMsg);
                     getInstance(main).otelAppender.logRecordBuilder()
                             .setSeverity(Severity.INFO)
-                            .setBody(finalMsg)
+                            .setBody(finalMsg + " otelAppender with span")
+                            .setSeverityText("INFO")
                             .emit();
-                    getInstance(main).otelLogger.info(finalMsg + "with span");
+                    getInstance(main).otelLogger.info("otelLogger with span: " + finalMsg);
+                    getInstance(main).otelLogger.makeLoggingEventBuilder(Level.INFO)
+                            .log(finalMsg + " otelLogger with span with loggingEventBuilder");
                 }, true);
                 getInstance(main).openTelemetry.getTracer("core-tracer")
                         .spanBuilder("info")
@@ -247,11 +250,10 @@ public class Logging extends ResourceDistributor.SingletonResource {
                                 System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                         .end();
 
-                getInstance(main).otelLogger.info(finalMsg);
+                getInstance(main).otelLogger.info("otelLogger without span: " + finalMsg);
 
             }
         } catch (NullPointerException ignored) {
-            ignored.printStackTrace();
         }
     }
 
@@ -377,7 +379,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
 //        appender.start();
 //        return appender;
         io.opentelemetry.api.logs.Logger customAppenderLogger =
-                otel.getLogsBridge().get("name");
+                otel.getLogsBridge()
+                        .get("core-tracer"); //was: name
         return customAppenderLogger;
     }
 
@@ -400,7 +403,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         return logger;
     }
 
-    private Logger createLoggerForOtel(Main main, String name, LOG_LEVEL logLevel) {
+    private Logger createLoggerForOtel(Main main, String name, LOG_LEVEL logLevel, OpenTelemetry otel) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(),
                 Version.getVersion(main).getCoreVersion());
@@ -412,6 +415,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         logOtelAppender.setCaptureExperimentalAttributes(true);
         logOtelAppender.setContext(lc);
         logOtelAppender.setCaptureLoggerContext(true);
+        logOtelAppender.setOpenTelemetry(otel);
         logOtelAppender.start();
 
         Logger logger = (Logger) LoggerFactory.getLogger(name);
