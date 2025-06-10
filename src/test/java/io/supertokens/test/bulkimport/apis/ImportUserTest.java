@@ -344,8 +344,8 @@ public class ImportUserTest {
                 "http://localhost:3567/bulk-import/import",
                 request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
-        assertEquals("OK", response.get("status").getAsString());
-        assertNotNull(response.get("user"));
+        assertEquals("OK", response2.get("status").getAsString());
+        assertNotNull(response2.get("user"));
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
