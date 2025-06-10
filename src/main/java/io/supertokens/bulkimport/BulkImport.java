@@ -687,7 +687,7 @@ public class BulkImport {
                             rolesToUserByTenant.put(tenantIdentifier, new HashMap<>());
                         }
                         String userIdToUse = user.externalUserId != null ?
-                                user.externalUserId : user.primaryUserId;
+                                user.externalUserId : user.id;
                         if(!rolesToUserByTenant.get(tenantIdentifier).containsKey(userIdToUse)){
                             rolesToUserByTenant.get(tenantIdentifier).put(userIdToUse, new ArrayList<>());
                         }

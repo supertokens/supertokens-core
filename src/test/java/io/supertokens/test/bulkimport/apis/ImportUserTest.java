@@ -265,12 +265,82 @@ public class ImportUserTest {
         }
 
         FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY});
+                new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
 
-        String userJsonStr = "{\"id\":\"random-id-lol\",\"loginMethods\":[{\"tenantIds\":[\"public\"],\"isVerified\":true,\"isPrimary\":false,\"timeJoinedInMSSinceEpoch\":1741077729471,\"recipeId\":\"emailpassword\",\"email\":\"test@sometestmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"BCRYPT\"}]}";
+        BulkImportTestUtils.createTenants(process);
+
+        String userJsonStr = """
+                    {
+                    "externalUserId":"some-text-you-like",
+                    "userRoles":[
+                        {
+                            "role":"user",
+                                "tenantIds":[
+                                    "public",
+                                    "t1"
+                                ]
+                        }
+                     ],
+                        "loginMethods":[
+                            {
+                            "tenantIds":[
+                                "public",
+                                "t1"
+                            ],
+                                "isVerified":true,
+                                "isPrimary":false,
+                                "timeJoinedInMSSinceEpoch":1506523117518,
+                                "recipeId":"emailpassword",
+                                "email":"something0@testing.com",
+                                // passwordHash is randomly generated
+                                "passwordHash":"$argon2id$v=19$m=23298,t=5,p=12$+AlWgiuzC2vqlKrde9G0SG$PmpDeTU2e6ORbHwUMi7MOavS0M3sUJlc9rX/o+nnSxt",
+                                "hashingAlgorithm":"argon2"
+                            }
+                        ]
+                }""";
+
+        String user2JsonStr = """
+                    {
+                    "userRoles":[
+                        {
+                            "role":"user",
+                                "tenantIds":[
+                                    "public",
+                                    "t1"
+                                ]
+                        }
+                     ],
+                        "loginMethods":[
+                            {
+                            "tenantIds":[
+                                "public",
+                                "t1"
+                            ],
+                                "isVerified":true,
+                                "isPrimary":false,
+                                "timeJoinedInMSSinceEpoch":1506523117518,
+                                "recipeId":"emailpassword",
+                                "email":"something1@testing.com",
+                                // passwordHash is randomly generated
+                                "passwordHash":"$argon2id$v=19$m=23298,t=5,p=12$+AlWgiuzC2vqlKrde9G0SG$PmpDeTU2e6ORbHwUMi7MOavS0M3sUJlc9rX/o+nnSxt",
+                                "hashingAlgorithm":"argon2"
+                            }
+                        ]
+                }""";
+        // Create user roles
+        UserRoles.createNewRoleOrModifyItsPermissions(main, "user", null);
+
         JsonObject request = new Gson().fromJson(userJsonStr, JsonObject.class);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/bulk-import/import",
+                request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertNotNull(response.get("user"));
+
+        request = new Gson().fromJson(user2JsonStr, JsonObject.class);
+        JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/bulk-import/import",
                 request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
