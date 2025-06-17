@@ -1,0 +1,134 @@
+name: Container Security Scan
+
+on:
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Run automatically once a day at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  container-scan:
+    name: Scan SuperTokens PostgreSQL Container
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Run Azure Container Scan
+        id: container-scan
+        uses: Azure/container-scan@v0
+        continue-on-error: true
+        with:
+          image-name: supertokens/supertokens-postgresql:latest
+          severity-threshold: LOW
+          run-quality-checks: false
+        env:
+          DOCKER_CONTENT_TRUST: 1
+
+      - name: Upload scan results
+        id: upload-scan-results
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-scan-results
+          path: |
+            ${{ steps.container-scan.outputs.scan-report-path }}
+          retention-days: 30
+
+      - name: Generate Security Summary
+        id: security-summary
+        run: |
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+
+          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`\n" >> $GITHUB_OUTPUT
+          echo "**Scan Date:** \`$(date -u)\`\n" >> $GITHUB_OUTPUT
+          echo "\n" >> $GITHUB_OUTPUT
+
+          # Get the scan report path from the container scan output
+          SCAN_REPORT_PATH="${{ steps.container-scan.outputs.scan-report-path }}"
+          
+          if [ -f "$SCAN_REPORT_PATH" ]; then
+            # Count vulnerabilities by severity using the correct JSON structure
+            critical=$(jq '[.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            high=$(jq '[.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            medium=$(jq '[.vulnerabilities[]? | select(.severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            low=$(jq '[.vulnerabilities[]? | select(.severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            
+            total_vulns=$(jq '[.vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            
+            echo "**Total Vulnerabilities:** $total_vulns\n" >> $GITHUB_OUTPUT
+            echo "\n" >> $GITHUB_OUTPUT
+            
+            echo "- 🔴 **Critical**: $critical\n" >> $GITHUB_OUTPUT
+            echo "- 🟠 **High**: $high\n" >> $GITHUB_OUTPUT
+            echo "- 🟡 **Medium**: $medium\n" >> $GITHUB_OUTPUT
+            echo "- 🟢 **Low**: $low\n" >> $GITHUB_OUTPUT
+            echo "\n" >> $GITHUB_OUTPUT
+          else
+            echo "❌ **Scan results not found or scan failed**" >> $GITHUB_OUTPUT
+          fi
+
+          echo "\n" >> $GITHUB_OUTPUT
+
+          echo "[📃 Download the full report](${{ steps.upload-scan-results.outputs.artifact-url }})\n" >> $GITHUB_OUTPUT
+
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Add to Action Summary
+        run: |
+          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date:** \`$(date -u)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get the scan report path from the container scan output
+          SCAN_REPORT_PATH="${{ steps.container-scan.outputs.scan-report-path }}"
+          
+          if [ -f "$SCAN_REPORT_PATH" ]; then
+            # Count vulnerabilities by severity using the correct JSON structure
+            critical=$(jq '[.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            high=$(jq '[.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            medium=$(jq '[.vulnerabilities[]? | select(.severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            low=$(jq '[.vulnerabilities[]? | select(.severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            
+            total_vulns=$(jq '[.vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            
+            echo "**Total Vulnerabilities:** $total_vulns" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "- 🔴 **Critical**: $critical" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟠 **High**: $high" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟡 **Medium**: $medium" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟢 **Low**: $low" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "**Vulnerabilities:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| ID | Package | Severity | | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|----|---------|----------|-|-------------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract and format vulnerabilities into a table with colored severity indicators, excluding LOW severity
+          jq -r '.vulnerabilities[]? | select(.severity != "LOW") | "| \(.vulnerabilityId // "N/A") | \(.packageName // "N/A") | \(.severity // "UNKNOWN") | \(if .severity == "CRITICAL" then "🔴" elif .severity == "HIGH" then "🟠" elif .severity == "MEDIUM" then "🟡" else "🟢" end) | \((.description // "No description available") | gsub("\n"; " ")) |"' "$SCAN_REPORT_PATH" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Scan results not found or scan failed**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[📃 Download the full report](${{ steps.upload-scan-results.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post notification on Slack channel
+        id: deployment_message
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: ""
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "${{ steps.container-scan.outcome == 'success' && '✅' || '❌' }} Vulnerability Report: ${{ steps.container-scan.outcome == 'success' && 'All okay' || 'Needs attention' }}"
+              - type: "markdown"
+                text: "${{ steps.security-summary.outputs.summary }}"
