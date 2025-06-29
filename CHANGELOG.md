@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.5]
+
+- Upgrades the embedded tomcat to 11.0.8 because of security vulnerabilities
+
 ## [11.0.4]
 
 - Fixes user to roles association in bulk import users when the user is not a primary user
