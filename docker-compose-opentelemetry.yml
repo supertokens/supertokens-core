@@ -1,20 +1,4 @@
 services:
-  # Jaeger
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686"
-      - "14268"
-      - "14250:14250"
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-
-  # Zipkin
-  zipkin-all-in-one:
-    image: openzipkin/zipkin:latest@sha256:bb570eb45c2994eaf32da783cc098b3d51d1095b73ec92919863d73d0a9eaafb
-    ports:
-      - "9411:9411"
-
   # Collector
   collector:
     image: otel/opentelemetry-collector-contrib:0.127.0
@@ -23,9 +7,17 @@ services:
       - ./otel-collector-config-demo.yaml:/etc/otel-collector-config-demo.yaml
     ports:
       - "4317:4317"   # otlp grpc receiver
-    depends_on:
-      - jaeger-all-in-one
-      - zipkin-all-in-one
+
+#  vector:
+#    image: timberio/vector:0.47.0-debian
+#    command: [ "--config=/etc/vector.yaml" ]
+#    environment:
+#      - HOSTNAME=vector
+#      - SOMEVAR=some-o-war
+#    volumes:
+#      - ./vector.yaml:/etc/vector.yaml
+#    ports:
+#      - "4417:4317"   # otlp grpc receiver
 
 networks:
   default:

@@ -27,17 +27,22 @@ import com.google.gson.JsonPrimitive;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -51,7 +56,6 @@ import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
-import org.slf4j.event.Level;
 
 import java.util.concurrent.TimeUnit;
 
@@ -114,35 +118,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static OpenTelemetry initializeOpenTelemetry() {
-        OpenTelemetrySdk sdk =
-                OpenTelemetrySdk.builder()
-                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn())
-                                .build())
-                        .setLoggerProvider(
-                                SdkLoggerProvider.builder()
-                                        .setResource(
-                                                Resource.getDefault().toBuilder()
-                                                        .put(SERVICE_NAME, "supertokens-logger")
-                                                        .build())
-                                        .addLogRecordProcessor(
-                                                BatchLogRecordProcessor.builder(
-//                                                                OtlpHttpLogRecordExporter.builder()
-//                                                                        .setEndpoint("http://172.21.0.4:4318")
-//                                                                        .build())
-                                                                OtlpGrpcLogRecordExporter.builder()
-                                                                        .setEndpoint("http://localhost:4317")
-                                                                        .build())
 
-                                                        .build())
-                                        .build())
-                        .buildAndRegisterGlobal();
-
-        // Add hook to close SDK, which flushes logs
-        Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
-
-        return sdk;
-    }
 
     private static Logging getInstance(Main main) {
         try {
@@ -231,26 +207,31 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 String finalMsg = msg;
                 maybeRunWithSpan(() -> {
                     getInstance(main).infoLogger.info(finalMsg);
-                    getInstance(main).otelAppender.logRecordBuilder()
-                            .setSeverity(Severity.INFO)
-                            .setBody(finalMsg + " otelAppender with span")
-                            .setSeverityText("INFO")
-                            .emit();
-                    getInstance(main).otelLogger.info("otelLogger with span: " + finalMsg);
-                    getInstance(main).otelLogger.makeLoggingEventBuilder(Level.INFO)
-                            .log(finalMsg + " otelLogger with span with loggingEventBuilder");
+//                    getInstance(main).otelAppender.logRecordBuilder()
+//                            .setSeverity(Severity.INFO)
+//                            .setBody(finalMsg + " otelAppender with span")
+//                            .setSeverityText("INFO")
+//                            .emit();
+//                    getInstance(main).otelLogger.info("otelLogger with span: " + finalMsg);
+//                    getInstance(main).otelLogger.makeLoggingEventBuilder(Level.INFO)
+//                            .log(finalMsg + " otelLogger with span with loggingEventBuilder");
                 }, true);
+
                 getInstance(main).openTelemetry.getTracer("core-tracer")
                         .spanBuilder("info")
                         .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
                         .setAttribute("tenant.appId", tenantIdentifier.getAppId())
                         .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
-                        .startSpan().addEvent("log",
-                                Attributes.builder().put("message", finalMsg).build(),
+                        .setAttribute("tracer.name", "core-tracer")
+                        .setAttribute("tracer", "core-tracer")
+                        .setAttribute("hostname", java.net.InetAddress.getLoopbackAddress().getHostName())
+                        .startSpan()
+                        .addEvent("log",
+                                Attributes.builder()
+                                        .put("message", finalMsg)
+                                        .build(),
                                 System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                         .end();
-
-                getInstance(main).otelLogger.info("otelLogger without span: " + finalMsg);
 
             }
         } catch (NullPointerException ignored) {
@@ -430,11 +411,80 @@ public class Logging extends ResourceDistributor.SingletonResource {
             runnable.run();
             return;
         }
-        Span span = GlobalOpenTelemetry.getTracer("core-tracer").spanBuilder("iDontKnow").startSpan();
+        Span span = GlobalOpenTelemetry.getTracer("core-tracer").spanBuilder("loggingSpan").startSpan();
+        span.addLink(span.getSpanContext());
         try (Scope unused = span.makeCurrent()) {
             runnable.run();
         } finally {
             span.end();
         }
+    }
+
+    private static OpenTelemetry initializeOpenTelemetry() {
+        SdkTracerProvider sdkTracerProvider =
+                SdkTracerProvider.builder()
+                        .setResource(
+                                Resource.getDefault().toBuilder()
+                                        .put(SERVICE_NAME, "supertokens-core")
+                                        .build())
+                        .addSpanProcessor(SimpleSpanProcessor.create(OtlpGrpcSpanExporter.builder()
+                                .setEndpoint("http://localhost:4317") // otel collector
+                                .build()))
+                        .addSpanProcessor(SimpleSpanProcessor.create(OtlpGrpcSpanExporter.builder()
+                                .setEndpoint("http://localhost:4417") // vector collector
+                                .build()))
+                        .build();
+
+        SdkMeterProvider sdkMeterProvider =
+                SdkMeterProvider.builder()
+                        .setResource(
+                                Resource.getDefault().toBuilder()
+                                        .put(SERVICE_NAME, "supertokens-core")
+                                        .build())
+                        .registerMetricReader(
+                                PeriodicMetricReader.create(OtlpGrpcMetricExporter.builder()
+                                        .setEndpoint("http://localhost:4317")
+                                        .build()))
+                        .registerMetricReader(
+                                PeriodicMetricReader.create(OtlpGrpcMetricExporter.builder()
+                                        .setEndpoint("http://localhost:4417")
+                                        .build()))
+                        .build();
+
+
+        OpenTelemetrySdk sdk =
+                OpenTelemetrySdk.builder()
+                        .setTracerProvider(sdkTracerProvider)
+                        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                        .setLoggerProvider(
+                                SdkLoggerProvider.builder()
+                                        .setResource(
+                                                Resource.getDefault().toBuilder()
+                                                        .put(SERVICE_NAME, "supertokens-core")
+                                                        .build())
+                                        .addLogRecordProcessor(
+                                                BatchLogRecordProcessor.builder(
+                                                                OtlpGrpcLogRecordExporter.builder()
+                                                                        .setEndpoint(
+                                                                                "http://localhost:4317") // otel
+                                                                        // collector
+                                                                        .build())
+
+                                                        .build())
+                                        .addLogRecordProcessor(
+                                                BatchLogRecordProcessor.builder(
+                                                                OtlpGrpcLogRecordExporter.builder()
+                                                                        .setEndpoint("http://localhost:4417") //vector
+                                                                        .build())
+
+                                                        .build())
+                                        .build())
+                        .setMeterProvider(sdkMeterProvider)
+                        .buildAndRegisterGlobal();
+
+        // Add hook to close SDK, which flushes logs
+        Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
+
+        return sdk;
     }
 }

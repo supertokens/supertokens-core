@@ -9,27 +9,12 @@ exporters:
     # verbosity of the logging export: detailed, normal, basic
     verbosity: detailed
 
-  zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
-    format: proto
-
-  otlp/jaeger:
-    endpoint: jaeger-all-in-one:4317
-    tls:
-      insecure: true
-
   otlphttp:
     compression: gzip
     endpoint: https://api.axiom.co
     headers:
       authorization: Bearer xaat-f8acc4ee-2d2c-4b14-9cb5-73ecee1f1f3e
       x-axiom-dataset: otel-st-integration-dev
-
-# Alternatively, use jaeger_thrift_http with the settings below. In this case
-# update the list of exporters on the traces pipeline.
-#
-#  jaeger_thrift_http:
-#    url: http://jaeger-all-in-one:14268/api/traces
 
 processors:
   batch:
@@ -42,9 +27,13 @@ service:
     logs:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ debug, otlp/jaeger, otlphttp ]
+      exporters: [ debug, otlphttp ]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [ debug, zipkin, otlp/jaeger, otlphttp ]
+      exporters: [ debug, otlphttp ]
+    metrics:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ debug, otlphttp ]
 

@@ -23,7 +23,10 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.io.*;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -139,11 +142,19 @@ public class HttpRequestForTesting {
         }
     }
 
+    public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
+                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
+                                        String method,
+                                        String apiKey, String rid) throws HttpResponseException, IOException {
+        return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS,
+                version, cdiVersion, method, apiKey, rid, null);
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
                                         int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
                                         String method,
-                                        String apiKey, String rid)
+                                        String apiKey, String rid, Map<String, String> params)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
         if (!disableAddingAppId && !url.contains("appid-")) {
@@ -176,6 +187,13 @@ public class HttpRequestForTesting {
             }
             if (rid != null) {
                 con.setRequestProperty("rId", rid);
+            }
+
+            if (params != null && !params.isEmpty()) {
+                for (String key : params.keySet()) {
+                    con.setRequestProperty(key, params.get(key));
+
+                }
             }
 
             if (requestBody != null) {
@@ -234,6 +252,14 @@ public class HttpRequestForTesting {
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 cdiVersion, "POST", apiKey, rid);
+    }
+
+    public static <T> T sendJsonPOSTRequest(Main main, String requestID, String url, JsonElement requestBody,
+                                            int connectionTimeoutMS, int readTimeoutMS, Integer version,
+                                            String cdiVersion, String apiKey, String rid, Map<String, String> headers)
+            throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
+                cdiVersion, "POST", apiKey, rid, headers);
     }
 
     public static <T> T sendJsonPUTRequest(Main main, String requestID, String url, JsonElement requestBody,

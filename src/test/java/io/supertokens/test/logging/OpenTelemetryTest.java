@@ -16,6 +16,7 @@
 
 package io.supertokens.test.logging;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -25,11 +26,16 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -61,12 +67,21 @@ public class OpenTelemetryTest {
         }
 
         Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest1", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest2", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest3", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest4", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest5", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest6", true);
-        Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "openTelemetryTest7", true);
+
+        JsonObject responseBody = new JsonObject();
+        responseBody.addProperty("email", "random@gmail.com");
+        responseBody.addProperty("password", "validPass123");
+
+        Thread.sleep(1); // add a small delay to ensure a unique timestamp
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/json");
+        headers.put("traceparent", "01-ae549383f5bb829894e6ed16200ff837-1cee0c9b843e63e0-01");
+        headers.put("tracestate", "01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+
+        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", responseBody, 1000, 1000, null, SemVer.v5_0.get(), null,
+                "emailpassword", headers);
 
 
     }

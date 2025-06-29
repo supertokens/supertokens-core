@@ -17,6 +17,8 @@
 package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.JsonObject;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
@@ -61,6 +63,22 @@ public class SignUpAPI extends WebserverAPI {
         assert password != null;
         assert email != null;
 
+        Span span = GlobalOpenTelemetry.get().getTracer("core-tracer")
+                .spanBuilder("SignUpAPI.doPost")
+                .setAttribute("email", email)
+                .setAttribute("password", password)
+                .startSpan();
+
+        span.makeCurrent();
+
+        String traceparent = req.getHeader("traceparent");
+        if (traceparent != null) {
+            try {
+                Logging.info(main, getTenantIdentifier(req), "Received traceparent header: " + traceparent, false);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
         // logic according to https://github.com/supertokens/supertokens-core/issues/101
 
         String normalisedEmail = Utils.normaliseEmail(email);
@@ -104,6 +122,7 @@ public class SignUpAPI extends WebserverAPI {
                 result.addProperty("recipeUserId", user.getSupertokensOrExternalUserId());
             }
 
+            span.end();
             super.sendJsonResponse(200, result, resp);
         } catch (DuplicateEmailException e) {
             Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
