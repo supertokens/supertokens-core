@@ -1,23 +1,23 @@
 services:
   # Collector
-  collector:
-    image: otel/opentelemetry-collector-contrib:0.127.0
-    command: [ "--config=/etc/otel-collector-config-demo.yaml" ]
+  #  collector:
+  #    image: otel/opentelemetry-collector-contrib:0.127.0
+  #    command: [ "--config=/etc/otel-collector-config-demo.yaml" ]
+  #    volumes:
+  #      - ./otel-collector-config-demo.yaml:/etc/otel-collector-config-demo.yaml
+  #    ports:
+  #      - "4317:4317"   # otlp grpc receiver
+
+  vector:
+    image: timberio/vector:0.47.0-debian
+    command: [ "--verbose", "--config=/etc/vector.yaml" ]
+    environment:
+      - HOSTNAME=vector
+      - SOMEVAR=some-o-war
     volumes:
-      - ./otel-collector-config-demo.yaml:/etc/otel-collector-config-demo.yaml
+      - ./vector.yaml:/etc/vector.yaml
     ports:
       - "4317:4317"   # otlp grpc receiver
-
-#  vector:
-#    image: timberio/vector:0.47.0-debian
-#    command: [ "--config=/etc/vector.yaml" ]
-#    environment:
-#      - HOSTNAME=vector
-#      - SOMEVAR=some-o-war
-#    volumes:
-#      - ./vector.yaml:/etc/vector.yaml
-#    ports:
-#      - "4417:4317"   # otlp grpc receiver
 
 networks:
   default:
