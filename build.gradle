@@ -20,6 +20,12 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
 version = "11.0.4"
 
 repositories {
@@ -42,8 +48,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.2'
 
-    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.13'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
     api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.6'
@@ -82,13 +86,11 @@ dependencies {
     implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.6.RELEASE'
 
     implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.17.0-alpha")
-    // Slf4J / logback
-    implementation("org.slf4j:slf4j-api:2.0.17")
+
+
     implementation("ch.qos.logback:logback-core:1.5.18")
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
-    // JUL to SLF4J bridge
-    implementation("org.slf4j:jul-to-slf4j:2.0.17")
 
     // OpenTelemetry core
     implementation("io.opentelemetry:opentelemetry-sdk")
@@ -97,10 +99,6 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api")
 
     implementation("io.opentelemetry.semconv:opentelemetry-semconv")
-
-    // OpenTelemetry log4j / logback appenders
-    implementation("io.opentelemetry.instrumentation:opentelemetry-log4j-appender-2.17")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
 
 
     compileOnly project(":supertokens-plugin-interface")

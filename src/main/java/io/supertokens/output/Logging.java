@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
@@ -111,7 +112,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             msg = msg.trim();
             if (getInstance(main) != null) {
-                getInstance(main).infoLogger.debug(getFormattedMessage(tenantIdentifier, msg));
+                String formattedMsg = getFormattedMessage(tenantIdentifier, msg);
+                getInstance(main).infoLogger.debug(formattedMsg);
+                TelemetryProvider.getInstance(main).createLogEvent(tenantIdentifier, formattedMsg, "debug");
             }
         } catch (NullPointerException e) {
             // sometimes logger.debug throws a null pointer exception...
@@ -162,6 +165,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.info(msg);
             }
+
+            TelemetryProvider telemetryProvider = TelemetryProvider.getInstance(main);
+            telemetryProvider.createLogEvent(tenantIdentifier, msg, "info");
         } catch (NullPointerException ignored) {
         }
     }
@@ -175,6 +181,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
             msg = getFormattedMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
                 getInstance(main).errorLogger.warn(msg);
+                TelemetryProvider.getInstance(main).createLogEvent(tenantIdentifier, msg, "warn");
             }
         } catch (NullPointerException ignored) {
         }
@@ -194,7 +201,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             err = err.trim();
             if (getInstance(main) != null) {
-                getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, err));
+                String formattedMessage = getFormattedMessage(tenantIdentifier, err);
+                getInstance(main).errorLogger.error(formattedMessage);
+                TelemetryProvider.getInstance(main).createLogEvent(tenantIdentifier, formattedMessage, "error");
             }
             if (toConsoleAsWell || getInstance(main) == null) {
                 systemErr(prependTenantIdentifierToMessage(tenantIdentifier, err));
@@ -228,6 +237,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 message = message.trim();
                 if (getInstance(main) != null) {
                     getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, message, e));
+                    TelemetryProvider.getInstance(main).createLogEvent(tenantIdentifier, message, "error");
                 }
                 if (toConsoleAsWell || getInstance(main) == null) {
                     systemErr(prependTenantIdentifierToMessage(tenantIdentifier, message));

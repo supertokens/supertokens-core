@@ -17,18 +17,24 @@
 package io.supertokens.telemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.output.Logging;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
 
@@ -36,37 +42,78 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_ID = "io.supertokens.telemetry.TelemetryProvider";
 
-    public static Logging getInstance(Main main) {
+    private final OpenTelemetry openTelemetry;
+
+    public static TelemetryProvider getInstance(Main main) {
+        TelemetryProvider instance = null;
         try {
-            return (Logging) main.getResourceDistributor()
-                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
-        } catch (TenantOrAppNotFoundException e) {
-            return null;
+            instance = (TelemetryProvider) main.getResourceDistributor()
+                    .getResource(TenantIdentifier.BASE_TENANT, RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException ignored) {
         }
+        if (instance == null) {
+            instance = new TelemetryProvider(main);
+            main.getResourceDistributor().setResource(TenantIdentifier.BASE_TENANT, RESOURCE_ID,
+                    instance);
+        }
+        return instance;
     }
 
-    private static OpenTelemetry initializeOpenTelemetry() {
+    public void createLogEvent(TenantIdentifier tenantIdentifier, String logMessage,
+                               String logLevel) {
+        openTelemetry.getTracer("core-tracer")
+                .spanBuilder(logLevel)
+                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
+                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
+                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
+                .startSpan()
+                .addEvent("log",
+                        Attributes.builder()
+                                .put("message", logMessage)
+                                .build(),
+                        System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                .end();
+    }
+
+    private OpenTelemetry initializeOpenTelemetry(Main main) {
+        Resource resource = Resource.getDefault().toBuilder()
+                .put(SERVICE_NAME, "supertokens-core")
+                .build();
+
+        String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
+
+        SdkTracerProvider sdkTracerProvider =
+                SdkTracerProvider.builder()
+                        .setResource(resource)
+                        .addSpanProcessor(SimpleSpanProcessor.create(OtlpGrpcSpanExporter.builder()
+                                .setEndpoint(collectorUri) // otel collector
+                                .build()))
+                        .build();
+
         OpenTelemetrySdk sdk =
                 OpenTelemetrySdk.builder()
-                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
+                        .setTracerProvider(sdkTracerProvider)
+                        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                         .setLoggerProvider(
                                 SdkLoggerProvider.builder()
-                                        .setResource(
-                                                Resource.getDefault().toBuilder()
-                                                        .put(SERVICE_NAME, "supertokens-logger")
-                                                        .build())
+                                        .setResource(resource)
                                         .addLogRecordProcessor(
                                                 BatchLogRecordProcessor.builder(
                                                                 OtlpGrpcLogRecordExporter.builder()
-                                                                        .setEndpoint("http://otel-collector:4317")
+                                                                        .setEndpoint(collectorUri) // otel
+                                                                        // collector
                                                                         .build())
+
                                                         .build())
                                         .build())
-                        .build();
+                        .buildAndRegisterGlobal();
 
         // Add hook to close SDK, which flushes logs
         Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
-
         return sdk;
+    }
+
+    private TelemetryProvider(Main main) {
+        openTelemetry = initializeOpenTelemetry(main);
     }
 }
