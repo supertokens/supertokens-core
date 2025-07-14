@@ -100,8 +100,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
                                         .addLogRecordProcessor(
                                                 BatchLogRecordProcessor.builder(
                                                                 OtlpGrpcLogRecordExporter.builder()
-                                                                        .setEndpoint(collectorUri) // otel
-                                                                        // collector
+                                                                        .setEndpoint(collectorUri)
                                                                         .build())
 
                                                         .build())

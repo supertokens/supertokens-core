@@ -237,7 +237,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 message = message.trim();
                 if (getInstance(main) != null) {
                     getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, message, e));
-                    TelemetryProvider.getInstance(main).createLogEvent(tenantIdentifier, message, "error");
+                    TelemetryProvider.getInstance(main)
+                            .createLogEvent(tenantIdentifier, getFormattedMessage(tenantIdentifier, message, e),
+                                    "error");
                 }
                 if (toConsoleAsWell || getInstance(main) == null) {
                     systemErr(prependTenantIdentifierToMessage(tenantIdentifier, message));
