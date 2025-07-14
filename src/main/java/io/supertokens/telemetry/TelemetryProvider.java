@@ -61,18 +61,18 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
 
     public void createLogEvent(TenantIdentifier tenantIdentifier, String logMessage,
                                String logLevel) {
-        try (var span = openTelemetry.getTracer("core-tracer")
+        openTelemetry.getTracer("core-tracer")
                 .spanBuilder(logLevel)
                 .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
                 .setAttribute("tenant.appId", tenantIdentifier.getAppId())
                 .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
-                .startSpan()) {
-            span.addEvent("log",
-                    Attributes.builder()
-                            .put("message", logMessage)
-                            .build(),
-                    System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        }
+                .startSpan()
+                .addEvent("log",
+                        Attributes.builder()
+                                .put("message", logMessage)
+                                .build(),
+                        System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                .end();
     }
 
     private OpenTelemetry initializeOpenTelemetry(Main main) {
