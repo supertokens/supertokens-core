@@ -185,4 +185,4 @@ disable_telemetry: true
 
 # (OPTIONAL | Default: http://localhost:4317) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
-# otel_collector_connection_uri
+# otel_collector_connection_uri:

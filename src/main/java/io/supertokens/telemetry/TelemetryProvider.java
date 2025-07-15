@@ -16,6 +16,7 @@
 
 package io.supertokens.telemetry;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -33,6 +34,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.concurrent.TimeUnit;
 
@@ -44,24 +46,24 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
 
     private final OpenTelemetry openTelemetry;
 
-    public static TelemetryProvider getInstance(Main main) {
+    private static synchronized TelemetryProvider getInstance(Main main) {
         TelemetryProvider instance = null;
         try {
             instance = (TelemetryProvider) main.getResourceDistributor()
                     .getResource(TenantIdentifier.BASE_TENANT, RESOURCE_ID);
         } catch (TenantOrAppNotFoundException ignored) {
         }
-        if (instance == null) {
-            instance = new TelemetryProvider(main);
-            main.getResourceDistributor().setResource(TenantIdentifier.BASE_TENANT, RESOURCE_ID,
-                    instance);
-        }
         return instance;
     }
 
-    public void createLogEvent(TenantIdentifier tenantIdentifier, String logMessage,
+    public static void initialize(Main main) {
+        main.getResourceDistributor()
+                .setResource(TenantIdentifier.BASE_TENANT, RESOURCE_ID, new TelemetryProvider(main));
+    }
+
+    public static void createLogEvent(Main main, TenantIdentifier tenantIdentifier, String logMessage,
                                String logLevel) {
-        openTelemetry.getTracer("core-tracer")
+        getInstance(main).openTelemetry.getTracer("core-tracer")
                 .spanBuilder(logLevel)
                 .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
                 .setAttribute("tenant.appId", tenantIdentifier.getAppId())
@@ -75,7 +77,11 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
                 .end();
     }
 
-    private OpenTelemetry initializeOpenTelemetry(Main main) {
+    private static OpenTelemetry initializeOpenTelemetry(Main main) {
+        if (getInstance(main) != null && getInstance(main).openTelemetry != null) {
+            return getInstance(main).openTelemetry; // already initialized
+        }
+        
         Resource resource = Resource.getDefault().toBuilder()
                 .put(SERVICE_NAME, "supertokens-core")
                 .build();
@@ -105,11 +111,23 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
 
                                                         .build())
                                         .build())
-                        .buildAndRegisterGlobal();
+                        .build();
 
         // Add hook to close SDK, which flushes logs
         Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
         return sdk;
+    }
+
+    @TestOnly
+    public static void resetForTest() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    public static void closeTelemetry(Main main) {
+        OpenTelemetry telemetry = getInstance(main).openTelemetry;
+        if (telemetry instanceof OpenTelemetrySdk) {
+            ((OpenTelemetrySdk) telemetry).close();
+        }
     }
 
     private TelemetryProvider(Main main) {

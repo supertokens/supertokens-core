@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
@@ -82,6 +83,8 @@ public abstract class Utils extends Mockito {
             } catch (Exception ignored) {
             }
 
+            TelemetryProvider.resetForTest();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -129,6 +132,7 @@ public abstract class Utils extends Mockito {
 
             byteArrayOutputStream = new ByteArrayOutputStream();
             System.setErr(new PrintStream(byteArrayOutputStream));
+            TelemetryProvider.resetForTest();
         } catch (Exception e) {
             e.printStackTrace();
         }
