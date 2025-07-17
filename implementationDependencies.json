@@ -67,11 +67,6 @@
 		"src":"https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.15/slf4j-api-2.0.15.jar",
-		"name":"slf4j-api 2.0.15",
-		"src":"https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.15/slf4j-api-2.0.15-sources.jar"
-	},
-	{
 		"jar":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
 		"name":"jbcrypt 0.4",
 		"src":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
