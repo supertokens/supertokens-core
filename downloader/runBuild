@@ -14,10 +14,6 @@ exitIfNeeded
 
 exitIfNeeded
 
-(cd ../../ && ./gradlew :$prefix-core:generateDependenciesJson --rerun-tasks < /dev/null)
-
-exitIfNeeded
-
 
 (cd ../../ && ./gradlew :$prefix-core:downloader:copyJars < /dev/null)
 
