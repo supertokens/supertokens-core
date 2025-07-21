@@ -19,7 +19,9 @@ package io.supertokens.telemetry;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
@@ -65,6 +67,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
                                String logLevel) {
         getInstance(main).openTelemetry.getTracer("core-tracer")
                 .spanBuilder(logLevel)
+                .setParent(Context.current())
                 .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
                 .setAttribute("tenant.appId", tenantIdentifier.getAppId())
                 .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
@@ -76,6 +79,34 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
                         System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                 .end();
     }
+
+    public static Span startSpan(Main main, TenantIdentifier tenantIdentifier, String spanName) {
+        Span span = getInstance(main).openTelemetry.getTracer("core-tracer")
+                .spanBuilder(spanName)
+                .setParent(Context.current())
+                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
+                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
+                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
+                .startSpan();
+
+        span.makeCurrent(); // Set the span as the current context
+        return span;
+    }
+
+    public static Span endSpan(Span span) {
+        if (span != null) {
+            span.end();
+        }
+        return span;
+    }
+
+    public static Span addEventToSpan(Span span, String eventName, Attributes attributes) {
+        if (span != null) {
+            span.addEvent(eventName, attributes, System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        }
+        return span;
+    }
+
 
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
         if (getInstance(main) != null && getInstance(main).openTelemetry != null) {
