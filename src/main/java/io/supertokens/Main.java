@@ -167,6 +167,8 @@ public class Main {
 
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
+        TelemetryProvider.initialize(this);
+
         // loading storage layer
         try {
             StorageLayer.initPrimary(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
@@ -174,8 +176,6 @@ public class Main {
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
-
-        TelemetryProvider.initialize(this);
 
         // init file logging
         Logging.initFileLogging(this);
