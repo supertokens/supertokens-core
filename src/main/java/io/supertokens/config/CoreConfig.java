@@ -361,6 +361,15 @@ public class CoreConfig {
         disableOAuthValidationForTest = val;
     }
 
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The URL of the OpenTelemetry collector to which the core will send telemetry data. " +
+                    "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: " +
+                    "http://localhost:4317)")
+    private String otel_collector_connection_uri = "http://localhost:4317";
+
+
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
         JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
@@ -587,6 +596,10 @@ public class CoreConfig {
 
     public int getBulkMigrationParallelism() {
         return bulk_migration_parallelism;
+    }
+
+    public String getOtelCollectorConnectionURI() {
+        return otel_collector_connection_uri;
     }
 
     private String getConfigFileLocation(Main main) {
