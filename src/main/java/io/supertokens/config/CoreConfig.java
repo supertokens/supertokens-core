@@ -208,6 +208,21 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
+    
+    @ConfigYamlOnly
+    @JsonProperty
+    private String otel_collector_connection_uri = "http://localhost:4317";
+
+    @IgnoreForAnnotationCheck
+    private static boolean disableOAuthValidationForTest = false;
+
+    @TestOnly
+    public static void setDisableOAuthValidationForTest(boolean val) {
+        if (!Main.isTesting) {
+            throw new IllegalStateException("This method can only be called during testing");
+        }
+        disableOAuthValidationForTest = val;
+    }
 
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
@@ -396,6 +411,10 @@ public class CoreConfig {
 
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
+    }
+
+    public String getOtelCollectorConnectionURI() {
+        return otel_collector_connection_uri;
     }
 
     private String getConfigFileLocation(Main main) {
