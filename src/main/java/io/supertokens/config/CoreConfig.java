@@ -361,6 +361,14 @@ public class CoreConfig {
     @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
     private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The URL of the OpenTelemetry collector to which the core will send telemetry data. " +
+                    "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: " +
+                    "http://localhost:4317)")
+    private String otel_collector_connection_uri = "http://localhost:4317";
+
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -606,6 +614,10 @@ public class CoreConfig {
 
     public int getBulkMigrationBatchSize() {
         return bulk_migration_batch_size;
+    }
+
+    public String getOtelCollectorConnectionURI() {
+        return otel_collector_connection_uri;
     }
 
     private String getConfigFileLocation(Main main) {
