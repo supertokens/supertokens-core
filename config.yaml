@@ -182,3 +182,7 @@ core_config_version: 0
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a webauthn
 # account recovery token is valid for.
 # webauthn_recover_account_token_lifetime:
+
+# (OPTIONAL | Default: http://localhost:4317) string value. The URL of the OpenTelemetry collector to which the core
+# will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
+# otel_collector_connection_uri:
