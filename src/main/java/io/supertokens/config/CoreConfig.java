@@ -344,6 +344,14 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The URL of the OpenTelemetry collector to which the core will send telemetry data. " +
+                    "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: " +
+                    "http://localhost:4317)")
+    private String otel_collector_connection_uri = "http://localhost:4317";
+    
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -577,6 +585,10 @@ public class CoreConfig {
 
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
+    }
+
+    public String getOtelCollectorConnectionURI() {
+        return otel_collector_connection_uri;
     }
 
     private String getConfigFileLocation(Main main) {
