@@ -19,11 +19,12 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "10.0.3"
+version = "10.0.4"
 
 repositories {
     mavenCentral()
 }
+
 
 dependencies {
 
@@ -36,9 +37,6 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
-
-    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
     implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.18'
@@ -72,6 +70,20 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
     implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
+
+
+    implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.17.0-alpha")
+
+    implementation("ch.qos.logback:logback-core:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.18")
+
+    // OpenTelemetry core
+    implementation("io.opentelemetry:opentelemetry-sdk")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation("io.opentelemetry:opentelemetry-exporter-logging")
+    implementation("io.opentelemetry:opentelemetry-api")
+
+    implementation("io.opentelemetry.semconv:opentelemetry-semconv")
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
