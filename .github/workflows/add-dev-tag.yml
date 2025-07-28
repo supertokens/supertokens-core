@@ -26,6 +26,7 @@ on:
 jobs:
   dependency-branches:
     name: Dependency Branches
+    environment: publish
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.result.outputs.branches }}
@@ -40,6 +41,7 @@ jobs:
           plugin-interface-version: ${{ github.event.inputs.plugin-interface-version }}
           postgresql-plugin-version: ${{ github.event.inputs.postgresql-plugin-version }}
   add-dev-tag:
+    environment: publish
     runs-on: ubuntu-latest
     needs: dependency-branches
     steps:
