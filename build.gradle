@@ -26,7 +26,6 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
