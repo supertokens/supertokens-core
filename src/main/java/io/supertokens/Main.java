@@ -121,6 +121,8 @@ public class Main {
                     CLIOptions.load(this, args);
                     init();
                 } catch (Exception e) {
+                    Logging.error(this, TenantIdentifier.BASE_TENANT, "What caused the crash: " + e.getMessage(), true,
+                            e);
                     ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.INIT_FAILURE, e);
                     throw e;
                 }
