@@ -44,6 +44,7 @@ import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.jetbrains.annotations.TestOnly;
@@ -158,6 +159,8 @@ public class Main {
         }
 
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
+
+        TelemetryProvider.initialize(this);
 
         // loading storage layer
         try {
@@ -420,6 +423,7 @@ public class Main {
             StorageLayer.close(this);
             removeDotStartedFileForThisProcess();
             Logging.stopLogging(this);
+            TelemetryProvider.closeTelemetry(this);
             // uncomment this when you want to confirm that processes are actually shut.
             // printRunningThreadNames();
 
