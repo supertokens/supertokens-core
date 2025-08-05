@@ -1,4 +1,4 @@
-name: Container Security Scan
+name: Container Security Scan with Manual Image selection
 
 on:
   # Allow manual triggering
