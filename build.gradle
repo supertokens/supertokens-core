@@ -49,13 +49,13 @@ dependencies {
 
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.8'
+    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.9'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
 
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
-    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.45.1.0'
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.50.3.0'
 
     // https://mvnrepository.com/artifact/org.mindrot/jbcrypt
     implementation group: 'org.mindrot', name: 'jbcrypt', version: '0.4'
