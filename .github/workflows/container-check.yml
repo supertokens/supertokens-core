@@ -3,7 +3,12 @@ name: Container Security Scan
 on:
   # Allow manual triggering
   workflow_dispatch:
-  
+    inputs:
+      image-name:
+        description: 'Image name to scan. ex: supertokens/supertokens-postgresql:latest'
+        required: true
+        type: string
+
   # Run automatically once a day at 2 AM UTC
   schedule:
     - cron: '0 2 * * *'
@@ -19,7 +24,7 @@ jobs:
         uses: Azure/container-scan@v0
         continue-on-error: true
         with:
-          image-name: supertokens/supertokens-postgresql:latest
+          image-name: ${{ github.event.inputs.image-name }}
           severity-threshold: LOW
           run-quality-checks: false
         env:
