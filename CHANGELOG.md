@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.6]
+
+- Updates the embedded tomcat and the sqlite-driver because of security vulnerabilities
+
 ## [11.0.5]
 
 - Adds all logs to telemetry which were logged with `io/supertokens/output/Logging.java`
