@@ -20,33 +20,33 @@ jobs:
         with:
           run-for: PR
 
-    runner-indexes:
-      runs-on: ubuntu-latest
-      name: Generate runner indexes
-      needs: dependency-branches
-      outputs:
-        json: ${{ steps.generate-index-list.outputs.json }}
-      steps:
-        - id: generate-index-list
-          run: |
-            MAX_INDEX=$((${{ env.total-runners }}-1))
-            INDEX_LIST=$(seq 0 ${MAX_INDEX})
-            INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
-            echo "::set-output name=json::${INDEX_JSON}"
+  runner-indexes:
+    runs-on: ubuntu-latest
+    name: Generate runner indexes
+    needs: dependency-branches
+    outputs:
+      json: ${{ steps.generate-index-list.outputs.json }}
+    steps:
+      - id: generate-index-list
+        run: |
+          MAX_INDEX=$((${{ env.total-runners }}-1))
+          INDEX_LIST=$(seq 0 ${MAX_INDEX})
+          INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
+          echo "::set-output name=json::${INDEX_JSON}"
 
-    run-parallel-tests:
-      runs-on: ubuntu-latest
-      name: "Runner #${{ matrix.runner-index }}: Run test suite in parallel"
-      needs:
-        - runner-indexes
-      strategy:
-        fail-fast: false
-        matrix:
-          runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
-          plugin:
-            - sqlite
-            - postgresql
-      steps:
+  run-parallel-tests:
+    runs-on: ubuntu-latest
+    name: "Runner #${{ matrix.runner-index }}: Run test suite in parallel"
+    needs:
+      - runner-indexes
+    strategy:
+      fail-fast: false
+      matrix:
+        runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
+        plugin:
+          - sqlite
+          - postgresql
+    steps:
         - steps:
             - name: Set up JDK 15.0.1
               uses: actions/setup-java@v2
