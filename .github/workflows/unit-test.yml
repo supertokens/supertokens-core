@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  total-runners: 8
+  total-runners: 12
 
 jobs:
   dependency-branches:
@@ -34,9 +34,9 @@ jobs:
           INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
           echo "::set-output name=json::${INDEX_JSON}"
 
-  run-parallel-tests:
+  unit-tests:
     runs-on: ubuntu-latest
-    name: "Runner #${{ matrix.runner-index }}: Run test suite in parallel"
+    name: "Unit tests: ${{ matrix.plugin }} plugin, runner #${{ matrix.runner-index }}"
     needs:
       - dependency-branches
       - runner-indexes
