@@ -107,7 +107,7 @@ jobs:
             test_name="${test%.java}"
             test_name="${test_name#src/test/java/}"
             test_name="${test_name//\//.}"
-            echo "--tests $test_name \\" >> test.sh
+            echo "  --tests $test_name \\" >> test.sh
           done
           echo "" >> test.sh
           cat test.sh
