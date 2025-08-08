@@ -90,7 +90,7 @@ jobs:
         id: split-tests
         name: Split tests
         with:
-          glob: 'src/test/java/**/*.java'
+          glob: 'supertokens-root/*/src/test/java/**/*.java'
           split-total: ${{ env.total-runners }}
           split-index: ${{ matrix.runner-index }}
       - run: 'echo "This runner will execute the following tests: ${{ steps.split-tests.outputs.test-suite }}"'
