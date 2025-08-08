@@ -104,7 +104,7 @@ jobs:
           IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
           for test in "${TESTS[@]}"; do
             test_name="${test%.java}"
-            test_name="${test_name#src/test/java/}"
+            test_name="${test_name#supertokens-root/supertokens-core/src/test/java/}"
             test_name="${test_name//\//.}"
             echo "  --tests $test_name \\" >> test.sh
           done
