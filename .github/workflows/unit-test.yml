@@ -86,7 +86,6 @@ jobs:
       - name: Start ${{ matrix.plugin }} server
         if: matrix.plugin != 'sqlite'
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
-      - uses: actions/checkout@v2
       - uses: chaosaffe/split-tests@v1-alpha.1
         id: split-tests
         name: Split tests
