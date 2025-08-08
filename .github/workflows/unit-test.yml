@@ -100,7 +100,18 @@ jobs:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
-          ./gradlew test ${{ steps.split-tests.outputs.test-suite }}
+          echo "./gradlew test \\" > test.sh
+          chmod +x test.sh
+          IFS=',' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
+          for test in "${TESTS[@]}"; do
+            test_name="${test%.java}"
+            test_name="${test_name#src/test/java/}"
+            test_name="${test_name//\//.}"
+            echo "--tests $test_name \\" >> test.sh
+          done
+          echo "" >> test.sh
+          cat test.sh
+          ./test.sh
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
         if: always()
