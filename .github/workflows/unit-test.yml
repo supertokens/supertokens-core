@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  total-runners: 6
+  total-runners: 8
 
 jobs:
   dependency-branches:
@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "Runner #${{ matrix.runner-index }}: Run test suite in parallel"
     needs:
+      - dependency-branches
       - runner-indexes
     strategy:
       fail-fast: false
