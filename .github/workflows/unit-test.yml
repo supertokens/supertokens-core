@@ -101,7 +101,7 @@ jobs:
           cd supertokens-root
           echo "./gradlew test \\" > test.sh
           chmod +x test.sh
-          IFS=',' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
+          IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
           for test in "${TESTS[@]}"; do
             test_name="${test%.java}"
             test_name="${test_name#src/test/java/}"
@@ -109,7 +109,9 @@ jobs:
             echo "  --tests $test_name \\" >> test.sh
           done
           echo "" >> test.sh
+          echo "this is the test command:"
           cat test.sh
+          echo "--------------------------------"
           ./test.sh
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5
