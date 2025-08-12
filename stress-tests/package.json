@@ -1,0 +1,27 @@
+{
+  "name": "stress-tests",
+  "version": "1.0.0",
+  "description": "Stress tests for SuperTokens",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
+    "one-million-users": "ts-node src/oneMillionUsers/index.ts",
+    "format": "prettier --write \"**/*.{ts,js,json}\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "supertokens-node": "21.1.2",
+    "uuid": "^11.1.0"
+  }
+}
