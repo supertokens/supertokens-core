@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.4]
+
+- Adds internal opentelemetry support for logging
+- Backports GHA release capability
+
 ## [10.0.3]
 
 - Fixes `StorageTransactionLogicException` in bulk import when not using userRoles and totpDevices in import json.
