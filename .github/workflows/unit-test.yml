@@ -88,7 +88,7 @@ jobs:
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
       - name: Start oauth provider
         run: |
-          docker run -p 4444:4444 -p 4445:4445 rishabhpoddar/oauth-server-cicd
+          docker run -d -p 4444:4444 -p 4445:4445 rishabhpoddar/oauth-server-cicd
       - uses: chaosaffe/split-tests@v1-alpha.1
         id: split-tests
         name: Split tests
