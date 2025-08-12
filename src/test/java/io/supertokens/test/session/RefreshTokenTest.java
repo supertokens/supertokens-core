@@ -106,10 +106,11 @@ public class RefreshTokenTest {
             throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             StorageQueryException, StorageTransactionLogicException, UnauthorisedException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        long createdTime = System.currentTimeMillis();
         TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
                 "parentRefreshTokenHash1", "antiCsrfToken");
 
@@ -131,9 +132,8 @@ public class RefreshTokenTest {
         assertEquals("antiCsrfToken", infoFromToken.antiCsrfToken);
         assertNull(infoFromToken.parentRefreshTokenHash2);
         assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
-        // -5000 for some grace period for creation and checking above
-        assertTrue(tokenInfo.expiry > System.currentTimeMillis()
-                + Config.getConfig(process.getProcess()).getRefreshTokenValidity() - 5000);
+        assertTrue(tokenInfo.expiry >= createdTime
+                + Config.getConfig(process.getProcess()).getRefreshTokenValidity());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
