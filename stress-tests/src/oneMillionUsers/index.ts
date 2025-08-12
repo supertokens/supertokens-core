@@ -13,6 +13,7 @@ import UserRoles from 'supertokens-node/recipe/userroles';
 import Session from 'supertokens-node/recipe/session';
 
 import { createUsers } from './createUsers';
+import { doAccountLinking } from './accountLinking';
 import { createUserIdMappings } from './createUserIdMappings';
 import { addRoles } from './addRoles';
 import { createSessions } from './createSessions';
@@ -87,7 +88,7 @@ async function main() {
     }
 
     // 2. Link accounts
-    // await doAccountLinking(usersToLink);
+    await doAccountLinking(usersToLink);
 
     // 3. Create user id mappings
     const allUsersForMapping = [
