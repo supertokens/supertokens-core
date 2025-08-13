@@ -1,135 +1,135 @@
 {
-  "_comment": "Contains list of implementation dependencies URL for this project",
-  "list": [
-    {
-      "jar": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1.jar",
-      "name": "Gson 2.3.1",
-      "src": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2.jar",
-      "name": "Jackson Dataformat 2.18.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2.jar",
-      "name": "Jackson Dataformat CBOR 2.18.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
-      "name": "SnakeYAML 2.3",
-      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2.jar",
-      "name": "Jackson core 2.18.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2.jar",
-      "name": "Jackson databind 2.18.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2.jar",
-      "name": "Jackson annotation 2.18.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14.jar",
-      "name": "Logback classic 1.4.14",
-      "src": "https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14.jar",
-      "name": "Logback core 1.4.14",
-      "src": "https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar",
-      "name": "SLF4j API 2.0.16",
-      "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18.jar",
-      "name": "Tomcat annotations API 10.1.18",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
-      "name": "Tomcat embed core API 10.1.1",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
-      "name": "JSR305 3.0.2",
-      "src": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar",
-      "name": "JSR305 3.0.2",
-      "src": "https://repo1.maven.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar",
-      "name": "SQLite JDBC Driver 3.45.1.0",
-      "src": "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
-      "name": "JBCrypt 0.4",
-      "src": "https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0.jar",
-      "name": "Auth0 Java JWT",
-      "src": "https://repo1.maven.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
-      "name": "Argon2-jvm 2.11",
-      "src": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11.jar",
-      "name": "Argon2-jvm no libs 2.11",
-      "src": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar",
-      "name": "JNA 5.8.0",
-      "src": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0.jar",
-      "name": "Scrypt 1.4.0",
-      "src": "https://repo1.maven.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0.jar",
-      "name": "Java OTP 0.4.0",
-      "src": "https://repo1.maven.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15.jar",
-      "name": "Commons Codec 1.15",
-      "src": "https://repo1.maven.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25.jar",
-      "name": "Libphonenumber 8.13.25",
-      "src": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE.jar",
-      "name": "webauthn4j-core 0.28.6.RELEASE",
-      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-util/0.28.6.RELEASE/webauthn4j-util-0.28.6.RELEASE.jar",
-      "name": "webauthn4j-util 0.28.6.RELEASE",
-      "src": "https://repo1.maven.org/maven2/com/webauthn4j/webauthn4j-util/0.28.6.RELEASE/webauthn4j-util-0.28.6.RELEASE-sources.jar"
-    }
-  ]
+"_comment": "Contains list of implementation dependencies URL for this project. This is a generated file, don't modify the contents by hand.",
+"list": [
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1.jar",
+		"name":"gson 2.3.1",
+		"src":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2.jar",
+		"name":"jackson-dataformat-yaml 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
+		"name":"snakeyaml 2.3",
+		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2.jar",
+		"name":"jackson-dataformat-cbor 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.18.2/jackson-dataformat-cbor-2.18.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2.jar",
+		"name":"jackson-databind 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
+		"name":"tomcat-embed-core 10.1.18",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18.jar",
+		"name":"tomcat-annotations-api 10.1.18",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+		"name":"jsr305 3.0.2",
+		"src":"https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar",
+		"name":"sqlite-jdbc 3.45.1.0",
+		"src":"https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+		"name":"slf4j-api 2.0.17",
+		"src":"https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
+		"name":"jbcrypt 0.4",
+		"src":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar",
+		"name":"annotations 13.0",
+		"src":"https://repo.maven.apache.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
+		"name":"argon2-jvm 2.11",
+		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0.jar",
+		"name":"java-jwt 4.4.0",
+		"src":"https://repo.maven.apache.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0.jar",
+		"name":"scrypt 1.4.0",
+		"src":"https://repo.maven.apache.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0.jar",
+		"name":"java-otp 0.4.0",
+		"src":"https://repo.maven.apache.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15.jar",
+		"name":"commons-codec 1.15",
+		"src":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25.jar",
+		"name":"libphonenumber 8.13.25",
+		"src":"https://repo.maven.apache.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE.jar",
+		"name":"webauthn4j-core 0.28.6.RELEASE",
+		"src":"https://repo.maven.apache.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18.jar",
+		"name":"logback-core 1.5.18",
+		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18.jar",
+		"name":"logback-classic 1.5.18",
+		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0.jar",
+		"name":"opentelemetry-api 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.51.0/opentelemetry-exporter-logging-1.51.0.jar",
+		"name":"opentelemetry-exporter-logging 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.51.0/opentelemetry-exporter-logging-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.51.0/opentelemetry-sdk-1.51.0.jar",
+		"name":"opentelemetry-sdk 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.51.0/opentelemetry-sdk-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.51.0/opentelemetry-exporter-otlp-1.51.0.jar",
+		"name":"opentelemetry-exporter-otlp 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.51.0/opentelemetry-exporter-otlp-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/semconv/opentelemetry-semconv/1.34.0/opentelemetry-semconv-1.34.0.jar",
+		"name":"opentelemetry-semconv 1.34.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/semconv/opentelemetry-semconv/1.34.0/opentelemetry-semconv-1.34.0-sources.jar"
+	}
+]
 }
