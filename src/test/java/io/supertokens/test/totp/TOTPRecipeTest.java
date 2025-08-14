@@ -362,8 +362,8 @@ public class TOTPRecipeTest {
         LimitReachedException limitReachedException = assertThrows(LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
         assertEquals(3, limitReachedException.currentAttempts);
-        // Wait for 1 second (Should cool down rate limiting):
-        Thread.sleep(1000);
+        // Wait for 3 second (Should cool down rate limiting):
+        Thread.sleep(3000);
 
         // test that after cool down, we can retry invalid codes N times again
         invalidTotpException = assertThrows(InvalidTotpException.class,
