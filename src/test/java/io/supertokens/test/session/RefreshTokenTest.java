@@ -125,8 +125,6 @@ public class RefreshTokenTest {
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        long currentTime = System.currentTimeMillis();
-
         RefreshTokenInfo infoFromToken = RefreshToken.getInfoFromRefreshToken(process.getProcess(), tokenInfo.token);
         assertEquals("parentRefreshTokenHash1", infoFromToken.parentRefreshTokenHash1);
         assertEquals("userId", infoFromToken.userId);
@@ -134,7 +132,7 @@ public class RefreshTokenTest {
         assertEquals("antiCsrfToken", infoFromToken.antiCsrfToken);
         assertNull(infoFromToken.parentRefreshTokenHash2);
         assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
-        assertTrue(tokenInfo.expiry >= currentTime
+        assertTrue(tokenInfo.expiry >= createdTime
                 + Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis());
 
         process.kill();
