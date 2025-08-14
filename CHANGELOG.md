@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [9.3.2]
+
+- Adds internal opentelemetry support for logging
+
 ## [9.3.1]
 
 - Includes exception class name in 500 error message
