@@ -48,7 +48,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.time.Duration;
@@ -287,7 +286,7 @@ public class TOTPRecipeTest {
 
         // Sleep until we finish the current second so that TOTP verification won't change in the time limit
         Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
-        Thread.sleep(1000); // sleep another second so that the rate limit state is kind of reset
+        Thread.sleep(3000); // sleep another second so that the rate limit state is kind of reset
 
         // First N attempts should fail with invalid code:
         // This is to trigger rate limiting
@@ -363,8 +362,8 @@ public class TOTPRecipeTest {
         LimitReachedException limitReachedException = assertThrows(LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
         assertEquals(3, limitReachedException.currentAttempts);
-        // Wait for 1 second (Should cool down rate limiting):
-        Thread.sleep(1000);
+        // Wait for 3 second (Should cool down rate limiting):
+        Thread.sleep(3000);
 
         // test that after cool down, we can retry invalid codes N times again
         invalidTotpException = assertThrows(InvalidTotpException.class,
