@@ -133,7 +133,7 @@ public class RefreshTokenTest {
         assertNull(infoFromToken.parentRefreshTokenHash2);
         assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
 
-        assertTrue(tokenInfo.expiry > System.currentTimeMillis()
+        assertTrue(tokenInfo.expiry >= createdTime
                 + Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis());
 
         process.kill();
