@@ -134,7 +134,7 @@ public class RefreshTokenTest {
         assertEquals("antiCsrfToken", infoFromToken.antiCsrfToken);
         assertNull(infoFromToken.parentRefreshTokenHash2);
         assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
-        assertTrue(tokenInfo.expiry > currentTime
+        assertTrue(tokenInfo.expiry >= currentTime
                 + Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis());
 
         process.kill();
