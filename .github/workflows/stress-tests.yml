@@ -1,0 +1,47 @@
+name: Stress Tests
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
+
+jobs:
+  stress-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          cd stress-tests
+          npm install
+      - name: Update Docker image in compose
+        run: |
+          cd stress-tests
+          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ inputs.tag }}|' docker-compose.yml
+          cat docker-compose.yml
+      - name: Bring up the services
+        run: |
+          cd stress-tests
+          docker compose up -d
+      - name: Generate user jsons
+        run: |
+          cd stress-tests
+          npm run generate-users
+      - name: Run one million users test
+        id: one-million-users
+        run: |
+          cd stress-tests
+          npm run one-million-users | tee stress-tests.log
+      - name: Display Test Statistics
+        run: |
+          echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY

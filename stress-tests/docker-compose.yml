@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  # Note: If you are assigning a custom name to your db service on the line below, make sure it does not contain underscores
+  db:
+    image: 'postgres:latest'
+    environment:
+      POSTGRES_USER: supertokens 
+      POSTGRES_PASSWORD: supertokens 
+      POSTGRES_DB: supertokens
+    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track=all -c max_connections=1000 -c shared_buffers=1GB -c synchronous_commit=off -c wal_buffers=16MB -c checkpoint_timeout=30min -c max_wal_size=4GB
+    ports:
+      - 5432:5432
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'supertokens', '-d', 'supertokens']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  supertokens:
+    image: supertokens/supertokens-postgresql
+    # platform: linux/amd64
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 3567:3567
+    environment:
+      POSTGRESQL_CONNECTION_URI: "postgresql://supertokens:supertokens@db:5432/supertokens"
+      PASSWORD_HASHING_ALG: "ARGON2"
+      ARGON2_ITERATIONS: 1
+      ARGON2_MEMORY_KB: 8
+      ARGON2_PARALLELISM: 1
+      ARGON2_HASHING_POOL_SIZE: 8
+      API_KEYS: "qwertyuiopasdfghjklzxcvbnm"
+      BULK_MIGRATION_PARALLELISM: "4"
+      BULK_MIGRATION_BATCH_SIZE: "500"
+
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: >
+        bash -c 'exec 3<>/dev/tcp/127.0.0.1/3567 && echo -e "GET /hello HTTP/1.1\r\nhost: 127.0.0.1:3567\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "Hello"'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pghero:
+    image: ankane/pghero
+    environment:
+      DATABASE_URL: "postgres://supertokens:supertokens@db:5432/supertokens"
+    ports:
+      - 8080:8080
+    networks:
+      - app_network
+    depends_on:
+      - db
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge
