@@ -1,0 +1,27 @@
+name: PR Checks
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review, labeled, unlabeled ]
+
+jobs:
+  pr-title:
+    name: Lint PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          validateSingleCommit: true
+  changelog:
+    name: Enforce Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dangoslen/changelog-enforcer@v2
+        with:
+          changeLogPath: 'CHANGELOG.md'
+          skipLabels: 'Skip-Changelog'
+  unit-tests:
+    name: Run unit tests
+    uses: ./.github/workflows/unit-test.yml
