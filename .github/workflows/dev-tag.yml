@@ -1,0 +1,153 @@
+name: Checks for release
+
+on:
+  push:
+    branches:
+      - '[0-9]+.[0-9]+'
+    tags:
+    - 'dev-*'
+
+jobs:
+  dependency-versions:
+    name: Dependency Versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.result.outputs.versions }}
+      branches: ${{ steps.result.outputs.branches }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        with:
+          run-for: PR
+        id: result
+  new-core-version:
+    environment: publish
+    name: New core version
+    runs-on: ubuntu-latest
+    needs: [dependency-versions]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Run script
+        env:
+          SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+        run: |
+          python .github/helpers/register-new-core-version.py
+  new-plugin-versions:
+      environment: publish
+      name: New plugin versions
+      runs-on: ubuntu-latest
+      needs: [dependency-versions]
+      strategy:
+        fail-fast: false
+        matrix:
+          plugin:
+            - postgresql
+            # no longer supported
+            # - mysql
+            # - mongodb
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            path: ./supertokens-plugin
+            repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
+            ref: ${{ fromJson(needs.dependency-versions.outputs.branches)[matrix.plugin] }}
+            fetch-depth: 0
+            fetch-tags: true
+        - name: Run script
+          env:
+            SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+            PLUGIN_NAME: ${{ matrix.plugin }}
+          run: |
+            cd supertokens-plugin
+            python ../.github/helpers/register-new-plugin-version.py
+  unit-tests:
+    name: Run unit tests
+    needs: [new-core-version, new-plugin-versions]
+    uses: ./.github/workflows/unit-test.yml
+  wait-for-docker:
+    name: Wait for Docker
+    runs-on: ubuntu-latest
+    needs: [new-core-version, new-plugin-versions]
+    outputs:
+      tag: ${{ steps.set_tag.outputs.TAG }}
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Wait for Docker build
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          python .github/helpers/wait-for-docker.py
+      - name: set tag
+        id: set_tag
+        run: |
+          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
+  stress-tests:
+    needs: [wait-for-docker]
+    uses: ./.github/workflows/stress-tests.yml
+    with:
+      tag: ${{ needs.wait-for-docker.outputs.tag }}
+  mark-as-passed:
+    environment: publish
+    needs: [dependency-versions, unit-tests, stress-tests]
+    name: Mark as passed
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - sqlite
+          - postgresql
+          # no longer supported
+          # - mysql
+          # - mongodb
+    steps:
+      - name: Mark plugin as passed
+        if: matrix.plugin != 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] != ''
+        uses: muhfaris/request-action@main
+        with:
+          url: https://api.supertokens.io/0/plugin
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] }}",
+              "planType": "FREE",
+              "name": "${{ matrix.plugin }}",
+              "testPassed": true
+            }
+      - name: Mark core as passed
+        if: matrix.plugin == 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)['core'] != ''
+        uses: muhfaris/request-action@main
+        with:
+          url: https://api.supertokens.io/0/core
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ fromJson(needs.dependency-versions.outputs.versions)['core'] }}",
+              "planType": "FREE",
+              "testPassed": true
+            }

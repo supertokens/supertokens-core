@@ -42,6 +42,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.jetbrains.annotations.TestOnly;
@@ -161,6 +162,8 @@ public class Main {
         Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
 
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
+
+        TelemetryProvider.initialize(this);
 
         // loading storage layer
         try {
@@ -433,6 +436,7 @@ public class Main {
             StorageLayer.close(this);
             removeDotStartedFileForThisProcess();
             Logging.stopLogging(this);
+            TelemetryProvider.closeTelemetry(this);
             // uncomment this when you want to confirm that processes are actually shut.
             // printRunningThreadNames();
 
