@@ -1,0 +1,126 @@
+name: Unit Tests
+
+on:
+  workflow_call:
+
+env:
+  total-runners: 12
+
+jobs:
+  dependency-branches:
+    name: Dependency Branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.result.outputs.branches }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supertokens/get-core-dependencies-action@main
+        id: result
+        with:
+          run-for: PR
+
+  runner-indexes:
+    runs-on: ubuntu-latest
+    name: Generate runner indexes
+    needs: dependency-branches
+    outputs:
+      json: ${{ steps.generate-index-list.outputs.json }}
+    steps:
+      - id: generate-index-list
+        run: |
+          MAX_INDEX=$((${{ env.total-runners }}-1))
+          INDEX_LIST=$(seq 0 ${MAX_INDEX})
+          INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
+          echo "::set-output name=json::${INDEX_JSON}"
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: "Unit tests: ${{ matrix.plugin }} plugin, runner #${{ matrix.runner-index }}"
+    needs:
+      - dependency-branches
+      - runner-indexes
+    strategy:
+      fail-fast: false
+      matrix:
+        runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
+        plugin:
+          - sqlite
+          - postgresql
+    steps:
+      - name: Set up JDK 15.0.1
+        uses: actions/setup-java@v2
+        with:
+          java-version: 15.0.1
+          distribution: zulu
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-root
+          path: ./supertokens-root
+          ref: for_jdk_15_releases
+      - uses: actions/checkout@v2
+        with:
+          path: ./supertokens-root/supertokens-core
+      - uses: actions/checkout@v2
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: ./supertokens-root/supertokens-plugin-interface
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+      - uses: actions/checkout@v2
+        if: matrix.plugin != 'sqlite'
+        with:
+          repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
+          path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}
+      - name: Load Modules
+        run: |
+          cd supertokens-root
+          echo "core,master
+          plugin-interface,master
+          ${{ matrix.plugin }}-plugin,master
+          " > modules.txt
+          cat modules.txt
+          ./loadModules
+      - name: Setup test env
+        run: cd supertokens-root && ./utils/setupTestEnv --local
+      - name: Start ${{ matrix.plugin }} server
+        if: matrix.plugin != 'sqlite'
+        run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
+      - name: Start oauth provider
+        run: |
+          docker run -d -p 4444:4444 -p 4445:4445 rishabhpoddar/oauth-server-cicd
+      - uses: chaosaffe/split-tests@v1-alpha.1
+        id: split-tests
+        name: Split tests
+        with:
+          glob: 'supertokens-root/*/src/test/java/**/*.java'
+          split-total: ${{ env.total-runners }}
+          split-index: ${{ matrix.runner-index }}
+      - run: 'echo "This runner will execute the following tests: ${{ steps.split-tests.outputs.test-suite }}"'
+      - name: Run tests
+        env:
+          ST_PLUGIN_NAME: ${{ matrix.plugin }}
+        run: |
+          cd supertokens-root
+          echo "./gradlew test \\" > test.sh
+          chmod +x test.sh
+          IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
+          for test in "${TESTS[@]}"; do
+            test_name="${test%.java}"
+            test_name="${test_name#supertokens-root/supertokens-core/src/test/java/}"
+            test_name="${test_name//\//.}"
+            echo "  --tests $test_name \\" >> test.sh
+          done
+          echo "" >> test.sh
+          echo "this is the test command:"
+          cat test.sh
+          echo "--------------------------------"
+          ./test.sh
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+          detailed_summary: true
+          include_passed: false
+          annotate_notice: true

@@ -23,6 +23,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
@@ -71,6 +72,8 @@ public abstract class Utils extends Mockito {
                 FileUtils.deleteDirectory(dotStartedFolder);
             } catch (Exception ignored) {
             }
+
+            TelemetryProvider.resetForTest();
 
         } catch (Exception e) {
             e.printStackTrace();
