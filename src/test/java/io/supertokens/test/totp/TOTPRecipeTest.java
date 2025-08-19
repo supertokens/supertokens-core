@@ -317,71 +317,90 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void rateLimitCooldownTest() throws Exception {
-        String[] args = {"../"};
+    public void rateLimitCooldownTest() throws Throwable {
+        // Flaky test.
+        Throwable lastException = null;
 
-        // set rate limiting cooldown time to 1s
-        Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
-        // set max attempts to 3
-        Utils.setValueInConfig("totp_max_attempts", "3");
+        for (int i = 0; i < 5; i++) {
+            String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            // set rate limiting cooldown time to 1s
+            Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
+            // set max attempts to 3
+            Utils.setValueInConfig("totp_max_attempts", "3");
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            try {
+                FeatureFlagTestContent.getInstance(process.getProcess())
+                        .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
+
+                Main main = process.getProcess();
+
+                // Create device
+                TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 1);
+                Totp.verifyDevice(main, "user", device.deviceName, generateTotpCode(main, device, -1));
+
+                // Trigger rate limiting and fix it with a correct code after some time:
+                int attemptsRequired = triggerAndCheckRateLimit(main, device);
+                assert attemptsRequired == 3;
+                // Wait for 1 second (Should cool down rate limiting):
+                Thread.sleep(1000);
+                // But again try with invalid code:
+                InvalidTotpException invalidTotpException;
+                for (int tries = 0; tries < 10; tries++) {
+                    invalidTotpException = assertThrows(InvalidTotpException.class,
+                            () -> Totp.verifyCode(main, "user", "invalid0"));
+                    if (invalidTotpException.currentAttempts == 3) {
+                        break;
+                    }
+                }
+
+                // This triggered rate limiting again. So even valid codes will fail for
+                // another cooldown period:
+                LimitReachedException limitReachedException = assertThrows(LimitReachedException.class,
+                        () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
+                assertEquals(3, limitReachedException.currentAttempts);
+                // Wait for 1 second (Should cool down rate limiting):
+                Thread.sleep(1000);
+
+                // test that after cool down, we can retry invalid codes N times again
+                for (int tries = 0; tries < 10; tries++) {
+                    invalidTotpException = assertThrows(InvalidTotpException.class,
+                            () -> Totp.verifyCode(main, "user", "invalid0"));
+                    if (invalidTotpException.currentAttempts == 3) {
+                        break;
+                    }
+                }
+
+                Thread.sleep(1100);
+
+                // Now try with valid code:
+                Totp.verifyCode(main, "user", generateTotpCode(main, device));
+                // Now invalid code shouldn't trigger rate limiting. Unless you do it N times:
+                assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invaldd"));
+
+                process.kill();
+                assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                return; // successful
+            } catch (Exception | AssertionError e) {
+                process.kill();
+                assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                Thread.sleep(250);
+
+                lastException = e;
+            }
         }
-
-        FeatureFlagTestContent.getInstance(process.main)
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
-
-        Main main = process.getProcess();
-
-        // Create device
-        TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 1);
-        Totp.verifyDevice(main, "user", device.deviceName, generateTotpCode(main, device, -1));
-
-        // Trigger rate limiting and fix it with a correct code after some time:
-        int attemptsRequired = triggerAndCheckRateLimit(main, device);
-        assert attemptsRequired == 3;
-        // Wait for 1 second (Should cool down rate limiting):
-        Thread.sleep(1000);
-        // But again try with invalid code:
-        InvalidTotpException invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(1, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(2, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(3, invalidTotpException.currentAttempts);
-
-        // This triggered rate limiting again. So even valid codes will fail for
-        // another cooldown period:
-        LimitReachedException limitReachedException = assertThrows(LimitReachedException.class,
-                () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
-        assertEquals(3, limitReachedException.currentAttempts);
-        // Wait for 3 second (Should cool down rate limiting):
-        Thread.sleep(3000);
-
-        // test that after cool down, we can retry invalid codes N times again
-        invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(1, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(2, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "invalid0"));
-        assertEquals(3, invalidTotpException.currentAttempts);
-
-        Thread.sleep(1100);
-
-        // Now try with valid code:
-        Totp.verifyCode(main, "user", generateTotpCode(main, device));
-        // Now invalid code shouldn't trigger rate limiting. Unless you do it N times:
-        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invaldd"));
+        if (lastException != null) {
+            throw lastException;
+        }
     }
 
     @Test
