@@ -65,6 +65,7 @@ import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.opentelemetry.OtelProvider;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
@@ -202,7 +203,7 @@ public class Start
     }
 
     @Override
-    public void initFileLogging(String infoLogPath, String errorLogPath) {
+    public void initFileLogging(String infoLogPath, String errorLogPath, OtelProvider otelProvider) {
         // no op
     }
 

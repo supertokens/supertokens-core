@@ -37,6 +37,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
 import org.jetbrains.annotations.TestOnly;
@@ -321,7 +322,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                 new ArrayList<>(storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage)));
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
-                                Config.getBaseConfig(main).getErrorLogPath(main));
+                                Config.getBaseConfig(main).getErrorLogPath(main),
+                                TelemetryProvider.getInstance(main));
                     } catch (DbInitException e) {
 
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
