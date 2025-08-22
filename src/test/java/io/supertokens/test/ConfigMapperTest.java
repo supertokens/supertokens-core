@@ -292,4 +292,37 @@ public class ConfigMapperTest {
             }
         }
     }
+
+    @Test
+    public void testNumericStringParsing() throws Exception {
+        // Test parsing of numeric strings from environment variables
+        
+        // integer from string
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("int_property", "12345");
+            assertEquals(12345, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
+        }
+        
+        // long from string
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("long_property", "9876543210");
+            assertEquals(9876543210L, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+        }
+        
+        // double from string
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("double_property", "123.456");
+            assertEquals(123.456, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.001);
+        }
+        
+        // float from string
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("float_property", "98.76");
+            assertEquals(98.76f, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
+        }
+    }
 }

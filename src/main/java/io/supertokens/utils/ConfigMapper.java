@@ -98,17 +98,29 @@ public class ConfigMapper {
             if (targetType == String.class) {
                 return value.getAsString();
             } else if (targetType == Integer.class || targetType == int.class) {
-                if (value.getAsDouble() == (double) value.getAsInt()) {
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    return Integer.parseInt(value.getAsString());
+                } else if (value.getAsDouble() == (double) value.getAsInt()) {
                     return value.getAsInt();
                 }
             } else if (targetType == Long.class || targetType == long.class) {
-                if (value.getAsDouble() == (double) value.getAsLong()) {
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    return Long.parseLong(value.getAsString());
+                } else if (value.getAsDouble() == (double) value.getAsLong()) {
                     return value.getAsLong();
                 }
             } else if (targetType == Double.class || targetType == double.class) {
-                return value.getAsDouble();
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    return Double.parseDouble(value.getAsString());
+                } else {
+                    return value.getAsDouble();
+                }
             } else if (targetType == Float.class || targetType == float.class) {
-                return value.getAsFloat();
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    return Float.parseFloat(value.getAsString());
+                } else {
+                    return value.getAsFloat();
+                }
             } else if (targetType == Boolean.class || targetType == boolean.class) {
                 // Handle boolean conversion from strings like "true", "false"
                 return handleBooleanConversion(value, fieldName);
