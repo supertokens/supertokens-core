@@ -669,11 +669,13 @@ public class CoreConfig {
     }
 
     public CoreConfig() {
+        Map<String, String> env = System.getenv();
+
         try {
             for (Field field : CoreConfig.class.getDeclaredFields()) {
                 if (field.isAnnotationPresent(EnvName.class)) {
                     String envName = field.getAnnotation(EnvName.class).value();
-                    String stringValue = System.getenv(envName);
+                    String stringValue = env.get(envName);
     
                     if (stringValue == null || stringValue.isEmpty()) {
                         continue;
@@ -690,6 +692,7 @@ public class CoreConfig {
                             .replace("\\\\", "\\");
                     }
     
+                    field.setAccessible(true);
                     if (field.getType().equals(String.class)) {
                         field.set(this, stringValue);
                     } else if (field.getType().equals(int.class)) {
@@ -706,8 +709,7 @@ public class CoreConfig {
                 }
             }
         } catch (IllegalAccessException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
