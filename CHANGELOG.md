@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [11.0.6]
+## [11.1.0
 
 - Adds hikari logs to opentelemetry
 
