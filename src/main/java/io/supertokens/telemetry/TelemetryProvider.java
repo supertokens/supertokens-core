@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
@@ -38,6 +39,7 @@ import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.opentelemetry.OtelProvider;
+import io.supertokens.pluginInterface.opentelemetry.RunnableWithOtel;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.Map;
@@ -88,6 +90,37 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
                 .end();
     }
 
+    @Override
+    public <T> T wrapInSpanWithReturn(TenantIdentifier tenantIdentifier, String spanName,
+                                      Map<String, String> additionalAttributes, RunnableWithOtel<T> runnableWithOtel) {
+        if (openTelemetry == null) {
+            throw new IllegalStateException("OpenTelemetry is not initialized. Call initialize() first.");
+        }
+
+        SpanBuilder spanBuilder = createSpanBuilder(tenantIdentifier, spanName, additionalAttributes);
+
+        Span span = spanBuilder.startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            return (T) runnableWithOtel.runWithReturnValue();
+        } finally {
+            span.end();
+        }
+    }
+
+    @Override
+    public void createSpanWithAttributes(TenantIdentifier tenantIdentifier, String spanName,
+                                         Map<String, String> additionalAttributes) {
+        Span span = createSpanBuilder(tenantIdentifier, spanName, additionalAttributes)
+                .setParent(Context.current())
+                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
+                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
+                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
+                .startSpan();
+
+        span.end();
+    }
+
+
     private SpanBuilder createSpanBuilder(TenantIdentifier tenantIdentifier, String spanName,
                                           Map<String, String> additionalAttributes) {
         SpanBuilder spanBuilder = openTelemetry.getTracer("core-tracer")
@@ -99,10 +132,17 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
     private SpanBuilder addAttributesToSpanBuilder(SpanBuilder spanBuilder, TenantIdentifier tenantIdentifier,
                                                    Map<String, String> additionalAttributes) {
-        spanBuilder
-                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
-                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
-                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId());
+        if (tenantIdentifier == null) {
+            spanBuilder
+                    .setAttribute("tenant.connectionUriDomain", "unknown")
+                    .setAttribute("tenant.appId", "unknown")
+                    .setAttribute("tenant.tenantId", "unknown");
+        } else {
+            spanBuilder
+                    .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
+                    .setAttribute("tenant.appId", tenantIdentifier.getAppId())
+                    .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId());
+        }
 
         if (additionalAttributes != null && !additionalAttributes.isEmpty()) {
             // Add additional attributes to the span
@@ -113,34 +153,6 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
         return spanBuilder;
     }
-
-    public static Span startSpan(Main main, TenantIdentifier tenantIdentifier, String spanName) {
-        Span span = getInstance(main).openTelemetry.getTracer("core-tracer")
-                .spanBuilder(spanName)
-                .setParent(Context.current())
-                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
-                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
-                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
-                .startSpan();
-
-        span.makeCurrent(); // Set the span as the current context
-        return span;
-    }
-
-    public static Span endSpan(Span span) {
-        if (span != null) {
-            span.end();
-        }
-        return span;
-    }
-
-    public static Span addEventToSpan(Span span, String eventName, Attributes attributes) {
-        if (span != null) {
-            span.addEvent(eventName, attributes, System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        }
-        return span;
-    }
-
 
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
         if (getInstance(main) != null && getInstance(main).openTelemetry != null) {

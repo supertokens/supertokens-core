@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class DashboardSignInAPI extends WebserverAPI {
 
@@ -46,9 +47,13 @@ public class DashboardSignInAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+
         // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
+
+        otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req), "DashboardSignInAPI signIn",
+                Map.of("email", email));
 
         // normalize email
         email = Utils.normalizeAndValidateStringParam(email, "email");
@@ -63,6 +68,9 @@ public class DashboardSignInAPI extends WebserverAPI {
             String sessionId = Dashboard.signInDashboardUser(
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req), main, email, password);
+            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req), "DashboardSignInAPI signIn",
+                    Map.of("sessionId", sessionId));
+
             if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
@@ -72,6 +80,9 @@ public class DashboardSignInAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("sessionId", sessionId);
+            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                    "DashboardSignInAPI signIn response",
+                    Map.of("status", response.get("status").getAsString(), "sessionId", sessionId));
             super.sendJsonResponse(200, response, resp);
         } catch (UserSuspendedException e) {
             JsonObject response = new JsonObject();
@@ -80,6 +91,10 @@ public class DashboardSignInAPI extends WebserverAPI {
             response.addProperty("message",
                     "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
                             "core license key");
+            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                    "DashboardSignInAPI signIn response",
+                    Map.of("status", response.get("status").getAsString(), "sessionId",
+                            response.get("message").getAsString()));
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

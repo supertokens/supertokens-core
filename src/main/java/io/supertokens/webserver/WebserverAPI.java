@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.WebRequestTelemetryHandler;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import jakarta.servlet.FilterChain;
@@ -57,6 +58,8 @@ public abstract class WebserverAPI extends HttpServlet {
     protected final Main main;
     public static final Set<SemVer> supportedVersions = new HashSet<>();
     private String rid;
+
+    protected WebRequestTelemetryHandler otelTelemetryWebHandler;
 
     static {
         supportedVersions.add(SemVer.v2_7);
@@ -107,6 +110,7 @@ public abstract class WebserverAPI extends HttpServlet {
         super();
         this.main = main;
         this.rid = rid;
+        otelTelemetryWebHandler = new WebRequestTelemetryHandler(main);
     }
 
     public String getRID() {
@@ -344,7 +348,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    private TenantIdentifier getTenantIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
+    protected TenantIdentifier getTenantIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 

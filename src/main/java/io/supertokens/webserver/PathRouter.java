@@ -17,6 +17,8 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -111,6 +113,29 @@ public class PathRouter extends WebserverAPI {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesPath(req).service(req, resp);
+        TenantIdentifier tenantIdentifier = null;
+        try {
+            tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
+        } catch (ServletException e) {
+            //servlet exception can be thrown by getTenantIdentifierWithoutVerifying(req)
+            // we are going to ignore it
+        }
+
+        try {
+            otelTelemetryWebHandler.wrapRequestInSpan(req, tenantIdentifier, () -> {
+                try {
+                    getAPIThatMatchesPath(req).service(req, resp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return null;
+            });
+        } catch (RuntimeException runtimeException) {
+            if (runtimeException.getCause() instanceof IOException) {
+                throw (IOException) runtimeException.getCause(); //unwrap the IOException so that it can be handled
+                // properly by the caller
+            }
+            throw runtimeException;
+        }
     }
 }
