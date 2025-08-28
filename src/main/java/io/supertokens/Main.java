@@ -157,9 +157,12 @@ public class Main {
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
 
+        StorageLayer.loadStorageUCL(CLIOptions.get(this).getInstallationPath() + "plugin/");
+
         // loading configs for core from config.yaml file.
         try {
             Config.loadBaseConfig(this);
+            Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
@@ -167,14 +170,11 @@ public class Main {
         // loading version file
         Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
 
-        Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
-
         TelemetryProvider.initialize(this);
 
         // loading storage layer
         try {
-            StorageLayer.initPrimary(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
-                    Config.getBaseConfigAsJsonObject(this));
+            StorageLayer.initPrimary(this, Config.getBaseConfigAsJsonObject(this));
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }

@@ -52,6 +52,8 @@ public class Config extends ResourceDistributor.SingletonResource {
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         Object configObj = mapper.readValue(new File(configFilePath), Object.class);
         JsonObject jsonConfig = new GsonBuilder().serializeNulls().create().toJsonTree(configObj).getAsJsonObject();
+        CoreConfig.updateConfigJsonFromEnv(jsonConfig);
+        StorageLayer.updateConfigJsonFromEnv(main, jsonConfig);
         CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
         config.normalizeAndValidate(main, true);
         this.core = config;
@@ -91,7 +93,10 @@ public class Config extends ResourceDistributor.SingletonResource {
         // omit them from the output json.
         ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
         Object obj = yamlReader.readValue(new File(getConfigFilePath(main)), Object.class);
-        return new GsonBuilder().serializeNulls().create().toJsonTree(obj).getAsJsonObject();
+        JsonObject configJson = new GsonBuilder().serializeNulls().create().toJsonTree(obj).getAsJsonObject();
+        CoreConfig.updateConfigJsonFromEnv(configJson);
+        StorageLayer.updateConfigJsonFromEnv(main, configJson);
+        return configJson;
     }
 
     private static String getConfigFilePath(Main main) {
