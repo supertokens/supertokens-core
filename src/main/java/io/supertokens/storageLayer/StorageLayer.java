@@ -67,6 +67,33 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
     }
 
+    public static void updateConfigJsonFromEnv(Main main, JsonObject configJson) {
+        Storage result;
+        if (StorageLayer.ucl == null) {
+            result = new Start(main);
+        } else {
+            Storage storageLayer = null;
+            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+            for (Storage plugin : sl) {
+                if (storageLayer == null) {
+                    storageLayer = plugin;
+                } else {
+                    throw new QuitProgramException(
+                            "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                    + "/plugin" + " "
+                                    + "folder of the installation. Alternatively, please redownload and install "
+                                    + "SuperTokens" + ".");
+                }
+            }
+            if (storageLayer != null) {
+                result = storageLayer;
+            } else {
+                result = new Start(main);
+            }
+        }
+        result.updateConfigJsonFromEnv(configJson);
+    }
+
     private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
@@ -86,7 +113,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
-                    && (storageLayer.canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
+                    && (storageLayer. canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
                 if (isBulkImportProxy) {
                     result = storageLayer.createBulkImportProxyStorageInstance();
                 } else {
@@ -116,9 +143,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         this.storage = storage;
     }
 
-    private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson, TenantIdentifier tenantIdentifier)
-            throws MalformedURLException, InvalidConfigException {
-        Logging.info(main, tenantIdentifier, "Loading storage layer.", true);
+    public static void loadStorageUCL(String pluginFolderPath) throws MalformedURLException {
         File loc = new File(pluginFolderPath);
 
         File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
@@ -136,6 +161,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 StorageLayer.ucl = new URLClassLoader(urls);
             }
         }
+
+    }
+
+    private StorageLayer(Main main, JsonObject configJson, TenantIdentifier tenantIdentifier)
+            throws InvalidConfigException {
+        Logging.info(main, tenantIdentifier, "Loading storage layer.", true);
 
         this.storage = getNewStorageInstance(main, configJson, tenantIdentifier, false);
 
@@ -204,10 +235,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (StorageLayer) main.getResourceDistributor().getResource(tenantIdentifier, RESOURCE_KEY);
     }
 
-    public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
+    public static void initPrimary(Main main, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
+                new StorageLayer(main, configJson, TenantIdentifier.BASE_TENANT));
     }
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)

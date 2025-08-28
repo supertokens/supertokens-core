@@ -75,11 +75,13 @@ public class CoreConfig {
     @ConfigDescription("The version of the core config.")
     private int core_config_version = -1;
 
+    @EnvName("ACCESS_TOKEN_VALIDITY")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("Time in seconds for how long an access token is valid for. [Default: 3600 (1 hour)]")
     private long access_token_validity = 3600; // in seconds
 
+    @EnvName("ACCESS_TOKEN_BLACKLISTING")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
@@ -88,17 +90,20 @@ public class CoreConfig {
                     "call that requires authentication. (Default: false)")
     private boolean access_token_blacklisting = false;
 
+    @EnvName("REFRESH_TOKEN_VALIDITY")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("Time in mins for how long a refresh token is valid for. [Default: 60 * 2400 (100 days)]")
     private double refresh_token_validity = 60 * 2400; // in mins
 
+    @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
             "Time in milliseconds for how long a password reset token / link is valid for. [Default: 3600000 (1 hour)]")
     private long password_reset_token_lifetime = 3600000; // in MS
 
+    @EnvName("EMAIL_VERIFICATION_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
@@ -106,23 +111,27 @@ public class CoreConfig {
                     " 1000 (1 day)]")
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
+    @EnvName("PASSWORDLESS_MAX_CODE_INPUT_ATTEMPTS")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
             "The maximum number of code input attempts per login before the user needs to restart. (Default: 5)")
     private int passwordless_max_code_input_attempts = 5;
 
+    @EnvName("PASSWORDLESS_CODE_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
             "Time in milliseconds for how long a passwordless code is valid for. [Default: 900000 (15 mins)]")
     private long passwordless_code_lifetime = 900000; // in MS
 
+    @EnvName("TOTP_MAX_ATTEMPTS")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription("The maximum number of invalid TOTP attempts that will trigger rate limiting. (Default: 5)")
     private int totp_max_attempts = 5;
 
+    @EnvName("TOTP_RATE_LIMIT_COOLDOWN_SEC")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
@@ -133,6 +142,7 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private final String logDefault = "asdkfahbdfk3kjHS";
 
+    @EnvName("INFO_LOG_PATH")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -141,6 +151,7 @@ public class CoreConfig {
                     "directory/logs/info.log)")
     private String info_log_path = logDefault;
 
+    @EnvName("ERROR_LOG_PATH")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -149,6 +160,7 @@ public class CoreConfig {
                     "directory/logs/error.log)")
     private String error_log_path = logDefault;
 
+    @EnvName("ACCESS_TOKEN_SIGNING_KEY_DYNAMIC")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
@@ -156,17 +168,20 @@ public class CoreConfig {
                     " be signed using a static signing key. (Default: true)")
     private boolean access_token_signing_key_dynamic = true;
 
+    @EnvName("ACCESS_TOKEN_DYNAMIC_SIGNING_KEY_UPDATE_INTERVAL")
     @NotConflictingInApp
     @JsonProperty("access_token_dynamic_signing_key_update_interval")
     @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
     @ConfigDescription("Time in hours for how frequently the dynamic signing key will change. [Default: 168 (1 week)]")
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
+    @EnvName("SUPERTOKENS_PORT")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("The port at which SuperTokens service runs. (Default: 3567)")
     private int port = 3567;
 
+    @EnvName("SUPERTOKENS_HOST")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -174,11 +189,13 @@ public class CoreConfig {
                     " address associated with your machine. (Default: localhost)")
     private String host = "localhost";
 
+    @EnvName("MAX_SERVER_POOL_SIZE")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Sets the max thread pool size for incoming http server requests. (Default: 10)")
     private int max_server_pool_size = 10;
 
+    @EnvName("API_KEYS")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -188,6 +205,7 @@ public class CoreConfig {
                     "length of 20 chars. (Default: null)")
     private String api_keys = null;
 
+    @EnvName("DISABLE_TELEMETRY")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
@@ -195,27 +213,32 @@ public class CoreConfig {
                     "(Default: false)")
     private boolean disable_telemetry = false;
 
+    @EnvName("PASSWORD_HASHING_ALG")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("The password hashing algorithm to use. Values are \"ARGON2\" | \"BCRYPT\". (Default: BCRYPT)")
     @EnumProperty({"ARGON2", "BCRYPT"})
     private String password_hashing_alg = "BCRYPT";
 
+    @EnvName("ARGON2_ITERATIONS")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Number of iterations for argon2 password hashing. (Default: 1)")
     private int argon2_iterations = 1;
 
+    @EnvName("ARGON2_MEMORY_KB")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Amount of memory in kb for argon2 password hashing. [Default: 87795 (85 mb)]")
     private int argon2_memory_kb = 87795; // 85 mb
 
+    @EnvName("ARGON2_PARALLELISM")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Amount of parallelism for argon2 password hashing. (Default: 2)")
     private int argon2_parallelism = 2;
 
+    @EnvName("ARGON2_HASHING_POOL_SIZE")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -223,6 +246,7 @@ public class CoreConfig {
                     "(Default: 1)")
     private int argon2_hashing_pool_size = 1;
 
+    @EnvName("FIREBASE_PASSWORD_HASHING_POOL_SIZE")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -230,6 +254,7 @@ public class CoreConfig {
                     "(Default: 1)")
     private int firebase_password_hashing_pool_size = 1;
 
+    @EnvName("BCRYPT_LOG_ROUNDS")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Number of rounds to set for bcrypt password hashing. (Default: 11)")
@@ -245,13 +270,16 @@ public class CoreConfig {
     // # webserver_https_enabled:
     @ConfigYamlOnly
     @JsonProperty
+    @IgnoreForAnnotationCheck
     private boolean webserver_https_enabled = false;
 
+    @EnvName("BASE_PATH")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription("Used to prepend a base path to all APIs when querying the core.")
     private String base_path = "";
 
+    @EnvName("LOG_LEVEL")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -260,11 +288,13 @@ public class CoreConfig {
     @EnumProperty({"DEBUG", "INFO", "WARN", "ERROR", "NONE"})
     private String log_level = "INFO";
 
+    @EnvName("FIREBASE_PASSWORD_HASHING_SIGNER_KEY")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("The signer key used for firebase scrypt password hashing. (Default: null)")
     private String firebase_password_hashing_signer_key = null;
 
+    @EnvName("IP_ALLOW_REGEX")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
@@ -272,6 +302,7 @@ public class CoreConfig {
                     "127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the core")
     private String ip_allow_regex = null;
 
+    @EnvName("IP_DENY_REGEX")
     @IgnoreForAnnotationCheck
     @JsonProperty
     @ConfigDescription(
@@ -279,6 +310,7 @@ public class CoreConfig {
                     " address.")
     private String ip_deny_regex = null;
 
+    @EnvName("OAUTH_PROVIDER_PUBLIC_SERVICE_URL")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -286,6 +318,7 @@ public class CoreConfig {
             "If specified, the core uses this URL to connect to the OAuth provider public service.")
     private String oauth_provider_public_service_url = null;
 
+    @EnvName("OAUTH_PROVIDER_ADMIN_SERVICE_URL")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -293,6 +326,7 @@ public class CoreConfig {
             "If specified, the core uses this URL to connect to the OAuth provider admin service.")
     private String oauth_provider_admin_service_url = null;
 
+    @EnvName("OAUTH_PROVIDER_CONSENT_LOGIN_BASE_URL")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -300,6 +334,7 @@ public class CoreConfig {
             "If specified, the core uses this URL to replace the default consent and login URLs to {apiDomain}.")
     private String oauth_provider_consent_login_base_url = null;
 
+    @EnvName("OAUTH_PROVIDER_URL_CONFIGURED_IN_OAUTH_PROVIDER")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -307,12 +342,14 @@ public class CoreConfig {
             "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address.")
     private String oauth_provider_url_configured_in_oauth_provider = null;
 
+    @EnvName("OAUTH_CLIENT_SECRET_ENCRYPTION_KEY")
     @ConfigYamlOnly
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription("The encryption key used for saving OAuth client secret on the database.")
     private String oauth_client_secret_encryption_key = null;
 
+    @EnvName("SUPERTOKENS_SAAS_SECRET")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -322,6 +359,7 @@ public class CoreConfig {
                     "regular api_keys config.")
     private String supertokens_saas_secret = null;
 
+    @EnvName("SUPERTOKENS_MAX_CDI_VERSION")
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
@@ -331,6 +369,7 @@ public class CoreConfig {
                     "null)")
     private String supertokens_max_cdi_version = null;
 
+    @EnvName("SUPERTOKENS_SAAS_LOAD_ONLY_CUD")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -344,23 +383,27 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @EnvName("BULK_MIGRATION_PARALLELISM")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("If specified, the supertokens core will use the specified number of threads to complete the " +
             "migration of users. (Default: number of available processor cores).")
     private int bulk_migration_parallelism =  Runtime.getRuntime().availableProcessors();
 
+    @EnvName("BULK_MIGRATION_BATCH_SIZE")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("If specified, the supertokens core will load the specified number of users for migrating in " +
             "one single batch. (Default: 8000)")
     private int bulk_migration_batch_size =  8000;
 
+    @EnvName("WEBAUTHN_RECOVER_ACCOUNT_TOKEN_LIFETIME")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
     private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
+    @EnvName("OTEL_COLLECTOR_CONNECTION_URI")
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
@@ -624,6 +667,46 @@ public class CoreConfig {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
+    }
+
+    public static void updateConfigJsonFromEnv(JsonObject configJson) {
+        Map<String, String> env = System.getenv();
+
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(EnvName.class)) {
+                String envName = field.getAnnotation(EnvName.class).value();
+                String stringValue = env.get(envName);
+
+                if (stringValue == null || stringValue.isEmpty()) {
+                    continue;
+                }
+
+                if (stringValue.startsWith("\"") && stringValue.endsWith("\"")) {
+                    stringValue = stringValue.substring(1, stringValue.length() - 1);
+                    stringValue = stringValue
+                        .replace("\\n", "\n")
+                        .replace("\\t", "\t")
+                        .replace("\\r", "\r")
+                        .replace("\\\"", "\"")
+                        .replace("\\'", "'")
+                        .replace("\\\\", "\\");
+                }
+
+                if (field.getType().equals(String.class)) {
+                    configJson.addProperty(field.getName(), stringValue);
+                } else if (field.getType().equals(int.class)) {
+                    configJson.addProperty(field.getName(), Integer.parseInt(stringValue));
+                } else if (field.getType().equals(long.class)) {
+                    configJson.addProperty(field.getName(), Long.parseLong(stringValue));
+                } else if (field.getType().equals(boolean.class)) {
+                    configJson.addProperty(field.getName(), Boolean.parseBoolean(stringValue));
+                } else if (field.getType().equals(float.class)) {
+                    configJson.addProperty(field.getName(), Float.parseFloat(stringValue));
+                } else if (field.getType().equals(double.class)) {
+                    configJson.addProperty(field.getName(), Double.parseDouble(stringValue));
+                }
+            }
+        }
     }
 
     void normalizeAndValidate(Main main, boolean includeConfigFilePath) throws InvalidConfigException {

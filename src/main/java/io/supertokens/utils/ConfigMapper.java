@@ -23,11 +23,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Map;
 
 public class ConfigMapper {
+
     public static <T> T mapConfig(JsonObject config, Class<T> clazz) throws InvalidConfigException {
         try {
             T result = clazz.newInstance();
