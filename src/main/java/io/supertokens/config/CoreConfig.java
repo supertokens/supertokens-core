@@ -270,6 +270,7 @@ public class CoreConfig {
     // # webserver_https_enabled:
     @ConfigYamlOnly
     @JsonProperty
+    @IgnoreForAnnotationCheck
     private boolean webserver_https_enabled = false;
 
     @EnvName("BASE_PATH")
