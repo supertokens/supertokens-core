@@ -620,6 +620,11 @@ public class Start
     }
 
     @Override
+    public void updateConfigJsonFromEnv(JsonObject configJson) {
+        // do nothing
+    }
+
+    @Override
     public boolean isUserIdBeingUsedInNonAuthRecipe(AppIdentifier appIdentifier, String className, String userId)
             throws StorageQueryException {
         // check if the input userId is being used in nonAuthRecipes.

@@ -66,6 +66,34 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
     }
 
+    public static void updateConfigJsonFromEnv(Main main, JsonObject configJson) {
+        Storage result;
+        if (StorageLayer.ucl == null) {
+            result = new Start(main);
+        } else {
+            Storage storageLayer = null;
+            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+            for (Storage plugin : sl) {
+                if (storageLayer == null) {
+                    storageLayer = plugin;
+                } else {
+                    throw new QuitProgramException(
+                            "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                    + "/plugin" + " "
+                                    + "folder of the installation. Alternatively, please redownload and install "
+                                    + "SuperTokens" + ".");
+                }
+            }
+            if (storageLayer != null && !main.isForceInMemoryDB()
+                    && (CLIOptions.get(main).isForceNoInMemoryDB())) {
+                result = storageLayer;
+            } else {
+                result = new Start(main);
+            }
+        }
+        result.updateConfigJsonFromEnv(configJson);
+    }
+
     private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
@@ -85,7 +113,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
-                    && (storageLayer.canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
+                    && (storageLayer. canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
                 if (isBulkImportProxy) {
                     result = storageLayer.createBulkImportProxyStorageInstance();
                 } else {
