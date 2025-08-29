@@ -157,7 +157,7 @@ public class Telemetry extends CronTask {
             json.add("maus", new JsonArray());
         }
 
-        String url = "https://api.supertokens.io/0/st/telemetry";
+        String url = "https://api.supertokens.com/0/st/telemetry";
 
         // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
         // wants

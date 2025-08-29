@@ -54,6 +54,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
     private static URLClassLoader ucl = null;
+    private static Storage storageInstanceForEnv = null;
 
     public Storage getUnderlyingStorage() {
         return storage;
@@ -68,30 +69,34 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void updateConfigJsonFromEnv(Main main, JsonObject configJson) {
-        Storage result;
-        if (StorageLayer.ucl == null) {
-            result = new Start(main);
-        } else {
-            Storage storageLayer = null;
-            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
-            for (Storage plugin : sl) {
-                if (storageLayer == null) {
-                    storageLayer = plugin;
+        if (storageInstanceForEnv == null) {
+            Storage result;
+            if (StorageLayer.ucl == null) {
+                result = new Start(main);
+            } else {
+                Storage storageLayer = null;
+                ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+                for (Storage plugin : sl) {
+                    if (storageLayer == null) {
+                        storageLayer = plugin;
+                    } else {
+                        throw new QuitProgramException(
+                                "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                        + "/plugin" + " "
+                                        + "folder of the installation. Alternatively, please redownload and install "
+                                        + "SuperTokens" + ".");
+                    }
+                }
+                if (storageLayer != null) {
+                    result = storageLayer;
                 } else {
-                    throw new QuitProgramException(
-                            "Multiple database plugins found. Please make sure that just one plugin is in the "
-                                    + "/plugin" + " "
-                                    + "folder of the installation. Alternatively, please redownload and install "
-                                    + "SuperTokens" + ".");
+                    result = new Start(main);
                 }
             }
-            if (storageLayer != null) {
-                result = storageLayer;
-            } else {
-                result = new Start(main);
-            }
+            storageInstanceForEnv = result;
         }
-        result.updateConfigJsonFromEnv(configJson);
+
+        storageInstanceForEnv.updateConfigJsonFromEnv(configJson);
     }
 
     private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {

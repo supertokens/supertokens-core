@@ -11,6 +11,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Adds hikari logs to opentelemetry
 - Fetches core and plugin config from env
+- Open Telemetry configuration is now optional
+- Migrates API calls from supertokens.io to supertokens.com
 
 ## [11.0.5]
 

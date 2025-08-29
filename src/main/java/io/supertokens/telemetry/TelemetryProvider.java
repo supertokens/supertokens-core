@@ -74,7 +74,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
     public void createLogEvent(TenantIdentifier tenantIdentifier, String logMessage,
                                String logLevel, Map<String, String> additionalAttributes) {
         if (openTelemetry == null) {
-            throw new IllegalStateException("OpenTelemetry is not initialized. Call initialize() first.");
+            return; // no telemetry provider available
         }
         SpanBuilder spanBuilder = createSpanBuilder(tenantIdentifier, logLevel, additionalAttributes);
 
@@ -143,6 +143,12 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
 
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
+        String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
+
+        if (collectorUri == null || collectorUri.isEmpty()) {
+            return null;
+        }
+
         if (getInstance(main) != null && getInstance(main).openTelemetry != null) {
             return getInstance(main).openTelemetry; // already initialized
         }
@@ -150,8 +156,6 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
         Resource resource = Resource.getDefault().toBuilder()
                 .put(SERVICE_NAME, "supertokens-core")
                 .build();
-
-        String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
 
         SdkTracerProvider sdkTracerProvider =
                 SdkTracerProvider.builder()
