@@ -21,6 +21,7 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.RateLimiter;
@@ -79,9 +80,10 @@ public class HelloAPI extends WebserverAPI {
 
     private void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
-
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
+            TenantIdentifier nonVerifiedTenant = getTenantIdentifierWithoutVerifying(req);
+
             Storage[] storages =
                     otelTelemetryWebHandler.wrapInSpan(getTenantIdentifierWithoutVerifying(req),
                             "HelloAPI getStoragesForApp",
@@ -95,7 +97,7 @@ public class HelloAPI extends WebserverAPI {
                             });
 
             RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
-            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req), "HelloAPI handleRequest",
+            otelTelemetryWebHandler.createSpan(nonVerifiedTenant, "HelloAPI handleRequest",
                     Map.of("rateLimited", String.valueOf(rateLimiter.checkRequest())));
             if (!rateLimiter.checkRequest()) {
                 if (Main.isTesting) {
@@ -109,16 +111,28 @@ public class HelloAPI extends WebserverAPI {
             for (Storage storage : storages) {
                 // even if the public tenant does not exist, the following function will return a null
                 // idea here is to test that the storage is working
-                KeyValueInfo storageResponse = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
-                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req), "HelloAPI storageTest",
-                        Map.of("storageResponse", storageResponse == null ? "null" : storageResponse.value,
-                                "createdTime",
-                                storageResponse == null ? "null" : String.valueOf(storageResponse.createdAtTime)));
+                KeyValueInfo storageResponse = otelTelemetryWebHandler.wrapInSpan(nonVerifiedTenant,
+                        "HelloAPI storageGetKeyValue",
+                        Map.of(), () -> {
+                            try {
+                                return storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
+                            } catch (StorageQueryException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             }
             super.sendTextResponse(200, "Hello", resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             // we send 500 status code
             throw new ServletException(e);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            } else if (e.getCause() instanceof StorageQueryException ||
+                    e.getCause() instanceof TenantOrAppNotFoundException) {
+                throw new ServletException(e.getCause());
+            }
+            throw e;
         }
     }
 }

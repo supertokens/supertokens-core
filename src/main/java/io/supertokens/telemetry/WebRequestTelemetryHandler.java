@@ -16,7 +16,6 @@
 
 package io.supertokens.telemetry;
 
-import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.opentelemetry.OtelProvider;
 import io.supertokens.pluginInterface.opentelemetry.RunnableWithOtel;
@@ -26,15 +25,20 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WebRequestTelemetryHandler {
+public enum WebRequestTelemetryHandler {
 
-    private final OtelProvider telemetryProvider;
+    INSTANCE;
 
-    public WebRequestTelemetryHandler(Main main) {
-        this.telemetryProvider = TelemetryProvider.getInstance(main);
+    private OtelProvider telemetryProvider;
+
+    public synchronized void initializeOtelProvider(OtelProvider otelProvider) {
+        if (this.telemetryProvider == null) {
+            this.telemetryProvider = otelProvider;
+        }
     }
 
-    public <T> void wrapRequestInSpan(HttpServletRequest servletRequest, TenantIdentifier tenantIdentifier, RunnableWithOtel<T> requestHandler) {
+    public <T> void wrapRequestInSpan(HttpServletRequest servletRequest, TenantIdentifier tenantIdentifier,
+                                      RunnableWithOtel<T> requestHandler) {
         Map<String, String> requestAttributes = getRequestAttributes(servletRequest);
         telemetryProvider.wrapInSpanWithReturn(tenantIdentifier, "httpRequest", requestAttributes, requestHandler);
     }
@@ -43,7 +47,8 @@ public class WebRequestTelemetryHandler {
         telemetryProvider.createSpanWithAttributes(tenantIdentifier, name, attributes);
     }
 
-    public <T> T wrapInSpan(TenantIdentifier tenantIdentifier, String name, Map<String, String> attributes, RunnableWithOtel<T> runnable) {
+    public <T> T wrapInSpan(TenantIdentifier tenantIdentifier, String name, Map<String, String> attributes,
+                            RunnableWithOtel<T> runnable) {
         return (T) telemetryProvider.wrapInSpanWithReturn(tenantIdentifier, name, attributes, runnable);
     }
 

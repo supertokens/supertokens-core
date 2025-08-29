@@ -110,7 +110,7 @@ public abstract class WebserverAPI extends HttpServlet {
         super();
         this.main = main;
         this.rid = rid;
-        otelTelemetryWebHandler = new WebRequestTelemetryHandler(main);
+        otelTelemetryWebHandler = WebRequestTelemetryHandler.INSTANCE;
     }
 
     public String getRID() {

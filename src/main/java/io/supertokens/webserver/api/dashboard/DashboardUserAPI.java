@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundExcepti
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
@@ -41,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.util.Map;
 
 public class DashboardUserAPI extends WebserverAPI {
 
@@ -61,6 +63,8 @@ public class DashboardUserAPI extends WebserverAPI {
         // API is app specific
         try {
 
+            TenantIdentifier unverifiedTenantIdentifier = getTenantIdentifierWithoutVerifying(req);
+
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String email = InputParser.parseStringOrThrowError(input, "email", false);
 
@@ -68,10 +72,15 @@ public class DashboardUserAPI extends WebserverAPI {
             email = Utils.normalizeAndValidateStringParam(email, "email");
             email = io.supertokens.utils.Utils.normaliseEmail(email);
 
+            otelTelemetryWebHandler.createSpan(unverifiedTenantIdentifier, "DashboardUserAPI",
+                    Map.of("email", email));
+
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_EMAIL_ERROR");
+                otelTelemetryWebHandler.createSpan(unverifiedTenantIdentifier, "DashboardUserAPI isValidEmail",
+                        Map.of("response", response.get("status").getAsString()));
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -82,7 +91,10 @@ public class DashboardUserAPI extends WebserverAPI {
             password = Utils.normalizeAndValidateStringParam(password, "password");
 
             // check if input password is a strong password
-            String passwordErrorMessage = Dashboard.validatePassword(password);
+            String finalPassword = password;
+            String passwordErrorMessage =
+                    otelTelemetryWebHandler.wrapInSpan(unverifiedTenantIdentifier, "DashboardUserAPI validatePassword",
+                            Map.of("email", email), () -> Dashboard.validatePassword(finalPassword));
             if (passwordErrorMessage != null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
@@ -91,24 +103,50 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-            DashboardUser user = Dashboard.signUpDashboardUser(
-                    getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req),
-                    main, email, password);
+            String finalEmail = email;
+            DashboardUser user = otelTelemetryWebHandler.wrapInSpan(unverifiedTenantIdentifier,
+                    "DashboardUserAPI signUp",
+                    Map.of("email", email), () ->
+                    {
+                        try {
+                            return Dashboard.signUpDashboardUser(
+                                    getAppIdentifier(req),
+                                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                                    main, finalEmail, finalPassword);
+                        } catch (StorageQueryException | DuplicateEmailException | FeatureNotEnabledException |
+                                 TenantOrAppNotFoundException | ServletException | BadPermissionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+            );
             JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.add("user", userAsJsonObject);
+            otelTelemetryWebHandler.createSpan(unverifiedTenantIdentifier, "DashboardUserAPI signUp response",
+                    Map.of("status", response.get("status").getAsString(), "userId", user.userId));
             super.sendJsonResponse(200, response, resp);
 
-        } catch (DuplicateEmailException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
-            super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException |
-                 BadPermissionException e) {
-            throw new ServletException(e);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof DuplicateEmailException) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+                super.sendJsonResponse(200, response, resp);
+            } else if (e.getCause() instanceof StorageQueryException ||
+                    e.getCause() instanceof FeatureNotEnabledException ||
+                    e.getCause() instanceof TenantOrAppNotFoundException ||
+                    e.getCause() instanceof BadPermissionException) {
+                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                        "DashboardUserAPI doPost error",
+                        Map.of("error", e.getCause().getMessage() == null ? "null" : e.getCause().getMessage()));
+                throw new ServletException(e.getCause());
+            } else {
+                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                        "DashboardUserAPI doPost error",
+                        Map.of("error", e.getMessage() == null ? "null" : e.getMessage()));
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -127,6 +165,9 @@ public class DashboardUserAPI extends WebserverAPI {
             if (!Dashboard.isValidEmail(newEmail)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_EMAIL_ERROR");
+                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                        "DashboardUserAPI isValidEmail",
+                        Map.of("email", newEmail, "response", response.get("status").getAsString()));
                 super.sendJsonResponse(200, response, resp);
                 return;
             }

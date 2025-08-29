@@ -44,6 +44,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
+import io.supertokens.telemetry.WebRequestTelemetryHandler;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.jetbrains.annotations.TestOnly;
@@ -170,6 +171,8 @@ public class Main {
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
         TelemetryProvider.initialize(this);
+        WebRequestTelemetryHandler.INSTANCE.initializeOtelProvider(
+                TelemetryProvider.getInstance(this)); //life would be much easier with DI..
 
         // loading storage layer
         try {

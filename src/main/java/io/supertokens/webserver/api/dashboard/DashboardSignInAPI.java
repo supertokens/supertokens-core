@@ -65,15 +65,28 @@ public class DashboardSignInAPI extends WebserverAPI {
         password = Utils.normalizeAndValidateStringParam(password, "password");
 
         try {
-            String sessionId = Dashboard.signInDashboardUser(
-                    getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req), main, email, password);
-            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req), "DashboardSignInAPI signIn",
-                    Map.of("sessionId", sessionId));
+            String finalEmail = email;
+            String finalPassword = password;
+            String sessionId = otelTelemetryWebHandler.wrapInSpan(getTenantIdentifierWithoutVerifying(req),
+                    "DashboardSignInAPI signIn",
+                    Map.of("email", email), () -> {
+                        try {
+                            return Dashboard.signInDashboardUser(
+                                    getAppIdentifier(req),
+                                    enforcePublicTenantAndGetPublicTenantStorage(req), main, finalEmail, finalPassword);
+                        } catch (StorageQueryException | UserSuspendedException | TenantOrAppNotFoundException |
+                                 ServletException | BadPermissionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+            );
 
             if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
+                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                        "DashboardSignInAPI signIn result",
+                        Map.of("status", response.get("status").getAsString()));
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -84,21 +97,27 @@ public class DashboardSignInAPI extends WebserverAPI {
                     "DashboardSignInAPI signIn response",
                     Map.of("status", response.get("status").getAsString(), "sessionId", sessionId));
             super.sendJsonResponse(200, response, resp);
-        } catch (UserSuspendedException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "USER_SUSPENDED_ERROR");
-            // TODO: update message
-            response.addProperty("message",
-                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
-                            "core license key");
-            otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
-                    "DashboardSignInAPI signIn response",
-                    Map.of("status", response.get("status").getAsString(), "sessionId",
-                            response.get("message").getAsString()));
-            super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
-            throw new ServletException(e);
+        } catch (RuntimeException runtimeException) {
+            if (runtimeException.getCause() instanceof StorageQueryException
+                    || runtimeException.getCause() instanceof TenantOrAppNotFoundException
+                    || runtimeException.getCause() instanceof BadPermissionException) {
+                throw new ServletException(runtimeException.getCause());
+            } else if (runtimeException.getCause() instanceof UserSuspendedException) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "USER_SUSPENDED_ERROR");
+                // TODO: update message
+                response.addProperty("message",
+                        "User is currently suspended, please sign in with another account, or reactivate the " +
+                                "SuperTokens " +
+                                "core license key");
+                otelTelemetryWebHandler.createSpan(getTenantIdentifierWithoutVerifying(req),
+                        "DashboardSignInAPI signIn result",
+                        Map.of("status", response.get("status").getAsString(), "message",
+                                response.get("message").getAsString()));
+                super.sendJsonResponse(200, response, resp);
+            } else {
+                throw runtimeException;
+            }
         }
-
     }
 }

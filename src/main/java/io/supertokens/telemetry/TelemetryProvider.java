@@ -101,7 +101,10 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
-            return (T) runnableWithOtel.runWithReturnValue();
+            T returnValue = runnableWithOtel.runWithReturnValue();
+            span.setAttribute("return.value.type", returnValue == null ? "null" : returnValue.getClass().getName());
+            span.setAttribute("return.value.value", returnValue == null ? "null" : returnValue.toString());
+            return returnValue;
         } finally {
             span.end();
         }

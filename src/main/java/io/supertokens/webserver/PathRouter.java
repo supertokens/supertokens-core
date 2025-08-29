@@ -130,12 +130,12 @@ public class PathRouter extends WebserverAPI {
                 }
                 return null;
             });
-        } catch (RuntimeException runtimeException) {
-            if (runtimeException.getCause() instanceof IOException) {
-                throw (IOException) runtimeException.getCause(); //unwrap the IOException so that it can be handled
+        } catch (RuntimeException exception) {
+            if (exception.getCause() instanceof IOException) {
+                throw (IOException) exception.getCause(); //unwrap the IOException so that it can be handled
                 // properly by the caller
             }
-            throw runtimeException;
+            throw new RuntimeException(exception);
         }
     }
 }

@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.telemetry.TelemetryProvider;
+import io.supertokens.telemetry.WebRequestTelemetryHandler;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
 import org.jetbrains.annotations.TestOnly;
@@ -429,20 +430,32 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throws TenantOrAppNotFoundException {
         Map<String, Storage> userPoolToStorage = new HashMap<>();
 
-        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
-                main.getResourceDistributor()
-                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
-        for (ResourceDistributor.KeyClass key : resources.keySet()) {
-            Storage storage = ((StorageLayer) resources.get(key)).storage;
-            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
-                userPoolToStorage.put(storage.getUserPoolId(), storage);
+        try {
+            return WebRequestTelemetryHandler.INSTANCE.wrapInSpan(appIdentifier.getAsPublicTenantIdentifier(),
+                    "StorageLayer getStoragesForApp",
+                    Map.of(), () -> {
+                        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                                main.getResourceDistributor()
+                                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                            Storage storage = ((StorageLayer) resources.get(key)).storage;
+                            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                                userPoolToStorage.put(storage.getUserPoolId(), storage);
+                            }
+                        }
+                        Storage[] storages = userPoolToStorage.values().toArray(new Storage[0]);
+                        if (storages.length == 0) {
+                            throw new RuntimeException(new TenantOrAppNotFoundException(appIdentifier));
+                        }
+                        return storages;
+                    });
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.getCause();
+            } else {
+                throw new RuntimeException(e);
             }
         }
-        Storage[] storages = userPoolToStorage.values().toArray(new Storage[0]);
-        if (storages.length == 0) {
-            throw new TenantOrAppNotFoundException(appIdentifier);
-        }
-        return storages;
     }
 
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(

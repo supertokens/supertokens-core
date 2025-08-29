@@ -26,6 +26,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
@@ -34,16 +35,15 @@ import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.telemetry.WebRequestTelemetryHandler;
 import io.supertokens.utils.Utils;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Dashboard {
@@ -84,7 +84,24 @@ public class Dashboard {
             }
         }
 
-        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(appIdentifier, password);
+        String hashedPassword = null;
+        try {
+            hashedPassword = WebRequestTelemetryHandler.INSTANCE.wrapInSpan(TenantIdentifier.BASE_TENANT,
+                    "Hashing dashboard password",
+                    Map.of("email", email), () ->
+                    {
+                        try {
+                            return PasswordHashing.getInstance(main).createHashWithSalt(appIdentifier, password);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.getCause();
+            }
+            throw e;
+        }
         while (true) {
 
             String userId = Utils.getUUID();
@@ -92,10 +109,32 @@ public class Dashboard {
 
             try {
                 DashboardUser user = new DashboardUser(userId, email, hashedPassword, timeJoined);
-                StorageUtils.getDashboardStorage(storage).createNewDashboardUser(appIdentifier, user);
+                DashboardStorage dashboardStorage = StorageUtils.getDashboardStorage(storage);
+                WebRequestTelemetryHandler.INSTANCE.wrapInSpan(TenantIdentifier.BASE_TENANT,
+                        "Creating user in dashboard storage",
+                        Map.of("email", email), () -> {
+                            try {
+                                dashboardStorage.createNewDashboardUser(appIdentifier, user);
+                            } catch (StorageQueryException | DuplicateUserIdException | DuplicateEmailException |
+                                     TenantOrAppNotFoundException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return null;
+                        });
+
                 return user;
-            } catch (DuplicateUserIdException ignored) {
-                // we retry with a new userId (while loop)
+            } catch (RuntimeException runtimeException) {
+                if (runtimeException.getCause() instanceof DuplicateUserIdException) {
+                    // we retry with a new userId (while loop)
+                } else if (runtimeException.getCause() instanceof StorageQueryException) {
+                    throw (StorageQueryException) runtimeException.getCause();
+                } else if (runtimeException.getCause() instanceof DuplicateEmailException) {
+                    throw (DuplicateEmailException) runtimeException.getCause();
+                } else if (runtimeException.getCause() instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) runtimeException.getCause();
+                } else {
+                    throw runtimeException;
+                }
             }
         }
     }
