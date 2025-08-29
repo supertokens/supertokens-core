@@ -523,7 +523,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             ProcessState.getInstance(main)
                     .addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null, json);
             JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
-                    "https://api.supertokens.io/0/st/license/check",
+                    "https://api.supertokens.com/0/st/license/check",
                     json, 10000, 10000, 0);
             if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
                 Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "API returned OK");
