@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.6]
+
+- This is a placeholder for the backport release.
+
 ## [11.0.5]
 
 - Adds all logs to telemetry which were logged with `io/supertokens/output/Logging.java`
