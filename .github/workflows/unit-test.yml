@@ -70,6 +70,9 @@ jobs:
       - name: Start ${{ matrix.plugin }} server
         if: matrix.plugin != 'sqlite'
         run: cd supertokens-root/supertokens-${{ matrix.plugin }}-plugin && ./startDb.sh
+      - name: Start otel collector
+        run: |
+          docker run --name otel --rm -p 4317:4317 -d otel/opentelemetry-collector-contrib:0.127.0
       - name: Run tests
         env:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
