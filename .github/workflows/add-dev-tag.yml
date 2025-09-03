@@ -54,7 +54,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: master
+          ref: for_jdk_21_backport_releases
       - name: Checkout supertokens-core
         run: |
           cd supertokens-root

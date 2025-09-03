@@ -43,7 +43,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
-          ref: master
+          ref: for_jdk_21_backport_releases
       - uses: actions/checkout@v2
         with:
           path: ./supertokens-root/supertokens-core
