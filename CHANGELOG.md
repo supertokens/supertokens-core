@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.0.21]
+
+- Placeholder backport for releasing the opentelemetry connection uri env variable
+
 ## [6.0.20]
 
 - Adds internal opentelemetry support for logging
