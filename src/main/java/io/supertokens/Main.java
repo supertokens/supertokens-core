@@ -42,6 +42,7 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.saml.SAMLBootstrap;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.version.Version;
@@ -158,6 +159,8 @@ public class Main {
         handleKillSignalForWhenItHappens();
 
         StorageLayer.loadStorageUCL(CLIOptions.get(this).getInstallationPath() + "plugin/");
+
+        SAMLBootstrap.initialize();
 
         // loading configs for core from config.yaml file.
         try {

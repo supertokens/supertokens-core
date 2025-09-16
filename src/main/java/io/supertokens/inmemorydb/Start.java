@@ -71,6 +71,8 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -117,7 +119,8 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage,
+        SAMLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -3895,5 +3898,27 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
+            throws StorageQueryException {
+        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId);
+        return samlClient;
+    }
+
+    @Override
+    public void removeSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
+
+    }
+
+    @Override
+    public SAMLClient getSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public List<SAMLClient> getSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
+        return List.of();
     }
 }

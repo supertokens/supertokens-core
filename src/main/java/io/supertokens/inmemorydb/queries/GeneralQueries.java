@@ -516,6 +516,15 @@ public class GeneralQueries {
             //index
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsUserIdIndex(start), NO_OP_SETTER);
         }
+
+        // SAML tables
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLClientsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLClientsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLClientsAppIdTenantIdIndex(start), NO_OP_SETTER);
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,

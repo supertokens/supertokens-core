@@ -47,6 +47,7 @@ import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConf
 import io.supertokens.webserver.api.oauth.*;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.saml.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.totp.*;
@@ -311,6 +312,14 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RevokeOAuthTokensAPI(main));
         addAPI(new RevokeOAuthSessionAPI(main));
         addAPI(new OAuthLogoutAPI(main));
+
+        // saml
+        addAPI(new CreateOrUpdateSamlClientAPI(main));
+        addAPI(new ListSamlClientsAPI(main));
+        addAPI(new RemoveSamlClientAPI(main));
+        addAPI(new CreateSamlLoginRedirectAPI(main));
+        addAPI(new HandleSamlCallbackAPI(main));
+        addAPI(new ExchangeSamlCodeAPI(main));
 
         //webauthn
         addAPI(new OptionsRegisterAPI(main));

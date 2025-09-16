@@ -194,4 +194,6 @@ public class SQLiteConfig {
     public String getWebAuthNCredentialsTable() { return "webauthn_credentials"; }
 
     public String getWebAuthNAccountRecoveryTokenTable() { return "webauthn_account_recovery_tokens"; }
+
+    public String getSAMLClientsTable() { return "saml_clients"; }
 }
