@@ -3914,7 +3914,7 @@ public class Start
 
     @Override
     public SAMLClient getSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
-        return null;
+        return SAMLQueries.getSAMLClient(this, tenantIdentifier, clientId);
     }
 
     @Override

@@ -16,13 +16,17 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.saml.SAMLClient;
 
 import java.sql.SQLException;
 
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class SAMLQueries {
@@ -87,6 +91,35 @@ public class SAMLQueries {
                 } else {
                     pst.setNull(11, java.sql.Types.VARCHAR);
                 }
+            });
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    public static SAMLClient getSAMLClient(Start start, TenantIdentifier tenantIdentifier, String clientId)
+            throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClientsTable();
+        String QUERY = "SELECT client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id FROM " + table
+                + " WHERE app_id = ? AND tenant_id = ? AND client_id = ?";
+
+        try {
+            return execute(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, clientId);
+            }, result -> {
+                if (result.next()) {
+                    String fetchedClientId = result.getString("client_id");
+                    String ssoLoginURL = result.getString("sso_login_url");
+                    String redirectUrisJson = result.getString("redirect_uris");
+                    String defaultRedirectURI = result.getString("default_redirect_uri");
+                    String spEntityId = result.getString("sp_entity_id");
+
+                    JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
+                    return new SAMLClient(fetchedClientId, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId);
+                }
+                return null;
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);

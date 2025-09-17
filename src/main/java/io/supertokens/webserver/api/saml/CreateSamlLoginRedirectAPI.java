@@ -18,8 +18,10 @@ package io.supertokens.webserver.api.saml;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -48,6 +50,7 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
         try {
             String ssoRedirectURI = SAML.createRedirectURL(
                     getTenantIdentifier(req),
+                    getTenantStorage(req),
                     clientId,
                     redirectURI,
                     acsURL);
@@ -56,7 +59,11 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
             res.addProperty("status", "OK");
             res.addProperty("ssoRedirectURI", ssoRedirectURI);
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (InvalidClientException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "INVALID_CLIENT_ERROR");
+            super.sendJsonResponse(200, res, resp);
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }
     }

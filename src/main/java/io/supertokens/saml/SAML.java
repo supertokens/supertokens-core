@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
+import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
 import org.opensaml.core.xml.XMLObject;
@@ -92,13 +93,24 @@ public class SAML {
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
-    public static String createRedirectURL(TenantIdentifier tenantIdentifier, String clientId, String redirectURI, String acsURL) {
-        String idpSsoUrl = "https://login.microsoftonline.com/97f9a564-fcee-4b88-ae34-a1fbc4656593/saml2";
+    public static String createRedirectURL(TenantIdentifier tenantIdentifier, Storage storage,
+                                           String clientId, String redirectURI, String acsURL)
+            throws StorageQueryException, InvalidClientException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+        SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
+
+        if (client == null) {
+            throw new InvalidClientException();
+        }
+
+        String idpSsoUrl = client.ssoLoginURL;
         AuthnRequest request = buildAuthenticationRequest(
                 idpSsoUrl,
-                "http://localhost:8080/saml/metadata", acsURL + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
+                client.spEntityId, acsURL + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
+        // TODO save relay state with redirect URI
         return idpSsoUrl + "?SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
     }
 
