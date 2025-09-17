@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
@@ -94,7 +95,7 @@ public class SAML {
     }
 
     public static String createRedirectURL(TenantIdentifier tenantIdentifier, Storage storage,
-                                           String clientId, String redirectURI, String acsURL)
+                                           String clientId, String redirectURI, String state, String acsURL)
             throws StorageQueryException, InvalidClientException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -110,7 +111,10 @@ public class SAML {
                 client.spEntityId, acsURL + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
-        // TODO save relay state with redirect URI
+
+        // TODO handle duplicate relayState
+        samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI));
+
         return idpSsoUrl + "?SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
     }
 
@@ -193,5 +197,47 @@ public class SAML {
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize XML", e);
         }
+    }
+
+    public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String clientId, String samlResponse, String relayState) throws StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+        if (relayState != null) {
+            // sp initiated
+            var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
+
+            if (relayStateInfo == null) {
+                throw new IllegalStateException("INVALID_RELAY_STATE");
+            }
+
+            String code = UUID.randomUUID().toString();
+            String state = relayStateInfo.state;
+
+            try {
+                java.net.URI uri = new java.net.URI(relayStateInfo.redirectURI);
+                String query = uri.getQuery();
+                StringBuilder newQuery = new StringBuilder();
+                if (query != null && !query.isEmpty()) {
+                    newQuery.append(query).append("&");
+                }
+                newQuery.append("code=").append(java.net.URLEncoder.encode(code, java.nio.charset.StandardCharsets.UTF_8));
+                if (state != null) {
+                    newQuery.append("&state=").append(java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8));
+                }
+                java.net.URI newUri = new java.net.URI(
+                        uri.getScheme(),
+                        uri.getAuthority(),
+                        uri.getPath(),
+                        newQuery.toString(),
+                        uri.getFragment()
+                );
+                return newUri.toString();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to append code and state to redirect URI", e);
+            }
+        }
+
+        // idp initiated
+        return "https://sattvik.me";
     }
 }

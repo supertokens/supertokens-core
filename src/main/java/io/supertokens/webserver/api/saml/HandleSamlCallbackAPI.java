@@ -18,6 +18,9 @@ package io.supertokens.webserver.api.saml;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.saml.SAML;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -40,13 +43,24 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.parseStringOrThrowError(input, "samlResponse", false);
-        InputParser.parseStringOrThrowError(input, "relayState", true);
+        String clientId = InputParser.parseStringOrThrowError(input, "clientId", true);
+        String samlResponse = InputParser.parseStringOrThrowError(input, "samlResponse", false);
+        String relayState = InputParser.parseStringOrThrowError(input, "relayState", true);
 
-        JsonObject res = new JsonObject();
-        res.addProperty("status", "NOT_IMPLEMENTED");
-        super.sendJsonResponse(501, res, resp);
+        try {
+            JsonObject res = new JsonObject();
+            String redirectURI = SAML.handleCallback(
+                    getTenantIdentifier(req),
+                    getTenantStorage(req),
+                    clientId, samlResponse, relayState
+            );
+
+            res.addProperty("status", "OK");
+            res.addProperty("redirectURI", redirectURI);
+            super.sendJsonResponse(200, res, resp);
+
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+            throw new ServletException(e);
+        }
     }
 }
-
-

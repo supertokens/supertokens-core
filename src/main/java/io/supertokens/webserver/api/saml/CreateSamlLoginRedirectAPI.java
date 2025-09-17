@@ -45,6 +45,7 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
         String redirectURI = InputParser.parseStringOrThrowError(input, "redirectURI", false);
+        String state = InputParser.parseStringOrThrowError(input, "state", true);
         String acsURL = InputParser.parseStringOrThrowError(input, "acsURL", false);
 
         try {
@@ -53,6 +54,7 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
                     getTenantStorage(req),
                     clientId,
                     redirectURI,
+                    state,
                     acsURL);
 
             JsonObject res = new JsonObject();
