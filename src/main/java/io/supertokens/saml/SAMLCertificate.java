@@ -75,14 +75,14 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
         this.appIdentifier = appIdentifier;
         try {
             this.getCertificate();
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching refresh token key",
+        } catch (StorageQueryException e) {
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
                     false, e);
         }
     }
 
-    private synchronized X509Certificate getCertificate()
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
+    public synchronized X509Certificate getCertificate()
+            throws StorageQueryException, TenantOrAppNotFoundException {
         if (this.spCertificate == null) {
             maybeGenerateNewCertificateAndUpdateInDb();
         }

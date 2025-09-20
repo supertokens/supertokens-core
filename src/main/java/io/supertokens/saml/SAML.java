@@ -17,11 +17,14 @@
 package io.supertokens.saml;
 
 import com.google.gson.JsonArray;
+import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
@@ -34,26 +37,22 @@ import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
-import org.opensaml.saml.saml2.core.Assertion;
-import org.opensaml.saml.saml2.core.Attribute;
-import org.opensaml.saml.saml2.core.AttributeStatement;
 import org.opensaml.saml.saml2.core.AuthnContext;
 import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.core.Issuer;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
-import org.opensaml.saml.saml2.core.Response;
-import org.opensaml.saml.saml2.core.Subject;
-import org.opensaml.saml.saml2.metadata.AssertionConsumerService;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
-import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
-import org.opensaml.saml.saml2.metadata.SingleLogoutService;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
-import org.opensaml.saml.saml2.metadata.impl.EntityDescriptorBuilder;
-import org.opensaml.saml.saml2.metadata.impl.SPSSODescriptorBuilder;
-import org.opensaml.saml.saml2.metadata.impl.SingleLogoutServiceBuilder;
+import org.opensaml.xmlsec.signature.KeyInfo;
+import org.opensaml.xmlsec.signature.Signature;
+import org.opensaml.xmlsec.signature.X509Data;
+import org.opensaml.xmlsec.signature.impl.KeyInfoBuilder;
+import org.opensaml.xmlsec.signature.impl.SignatureBuilder;
+import org.opensaml.xmlsec.signature.impl.X509DataBuilder;
+import org.opensaml.xmlsec.signature.support.SignatureConstants;
 import org.w3c.dom.Element;
 
 import java.io.ByteArrayOutputStream;
@@ -61,8 +60,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -94,9 +94,10 @@ public class SAML {
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
-    public static String createRedirectURL(TenantIdentifier tenantIdentifier, Storage storage,
+    public static String createRedirectURL(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                            String clientId, String redirectURI, String state, String acsURL)
-            throws StorageQueryException, InvalidClientException {
+            throws StorageQueryException, InvalidClientException, TenantOrAppNotFoundException,
+            CertificateEncodingException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
@@ -106,7 +107,9 @@ public class SAML {
         }
 
         String idpSsoUrl = client.ssoLoginURL;
-        AuthnRequest request = buildAuthenticationRequest(
+        AuthnRequest request = buildAuthnRequest(
+                main,
+                tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
                 client.spEntityId, acsURL + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
         String samlRequest = deflateAndBase64RedirectMessage(request);
@@ -135,7 +138,8 @@ public class SAML {
         }
     }
 
-    private static AuthnRequest buildAuthenticationRequest(String idpSsoUrl, String spEntityId, String acsUrl) {
+    private static AuthnRequest buildAuthnRequest(Main main, AppIdentifier appIdentifier, String idpSsoUrl, String spEntityId, String acsUrl)
+            throws TenantOrAppNotFoundException, StorageQueryException, CertificateEncodingException {
         XMLObjectBuilderFactory builders = XMLObjectProviderRegistrySupport.getBuilderFactory();
 
         AuthnRequest authnRequest = (AuthnRequest) builders
@@ -167,6 +171,26 @@ public class SAML {
         authnRequest.setRequestedAuthnContext(rac);
 
         authnRequest.setAssertionConsumerServiceURL(acsUrl);
+
+        if (true) { // TODO Add option to enable/disable request signing in the client
+            Signature signature = new SignatureBuilder().buildObject();
+            signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA256);
+            signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
+
+            // Create KeyInfo
+            KeyInfo keyInfo = new KeyInfoBuilder().buildObject();
+            X509Data x509Data = new X509DataBuilder().buildObject();
+            org.opensaml.xmlsec.signature.X509Certificate x509CertElement = new org.opensaml.xmlsec.signature.impl.X509CertificateBuilder().buildObject();
+
+            X509Certificate spCertificate = SAMLCertificate.getInstance(appIdentifier, main).getCertificate();
+            String certString = java.util.Base64.getEncoder().encodeToString(spCertificate.getEncoded());
+            x509CertElement.setValue(certString);
+            x509Data.getX509Certificates().add(x509CertElement);
+            keyInfo.getX509Datas().add(x509Data);
+            signature.setKeyInfo(keyInfo);
+
+            authnRequest.setSignature(signature);
+        }
 
         return authnRequest;
     }
@@ -210,6 +234,11 @@ public class SAML {
                 throw new IllegalStateException("INVALID_RELAY_STATE");
             }
 
+            if (clientId == null) {
+                throw new IllegalStateException("CLIENT_ID_IS_REQUIRED");
+            }
+
+            SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
             String code = UUID.randomUUID().toString();
             String state = relayStateInfo.state;
 

@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.security.cert.CertificateEncodingException;
 
 public class CreateSamlLoginRedirectAPI extends WebserverAPI {
     public CreateSamlLoginRedirectAPI(Main main) {
@@ -50,6 +51,7 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
 
         try {
             String ssoRedirectURI = SAML.createRedirectURL(
+                    main,
                     getTenantIdentifier(req),
                     getTenantStorage(req),
                     clientId,
@@ -65,7 +67,7 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
             JsonObject res = new JsonObject();
             res.addProperty("status", "INVALID_CLIENT_ERROR");
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateEncodingException e) {
             throw new ServletException(e);
         }
     }
