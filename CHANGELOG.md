@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.1.1]
+
+- Adds opentelemetry-javaagent to the core distribution
+
 ## [11.1.0]
 
 - Adds hikari logs to opentelemetry
