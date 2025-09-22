@@ -46,8 +46,7 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.2'
-
-
+    
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
     api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.8'
 

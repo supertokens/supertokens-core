@@ -55,7 +55,7 @@ public class StartHandler extends CommandHandler {
             commands.add("-classpath");
             commands.add("\"" + installationDir + "core\\*\";\"" + installationDir + "plugin-interface\\*\"");
             if (javaagentEnabled) {
-                commands.add("-javaagent:\"" + installationDir + "\\opentelemetry-javaagent.jar\"");
+                commands.add("-javaagent:\"" + installationDir + "\\agent\\opentelemetry-javaagent.jar\"");
             }
             if (jmxEnabled) {
                 commands.add("-Dcom.sun.management.jmxremote");
@@ -104,7 +104,7 @@ public class StartHandler extends CommandHandler {
             commands.add(
                     installationDir + "core/*:" + installationDir + "plugin-interface/*:" + installationDir + "ee/*");
             if (javaagentEnabled) {
-                commands.add("-javaagent:\"" + installationDir + "/opentelemetry-javaagent.jar\"");
+                commands.add("-javaagent:\"" + installationDir + "/agent/opentelemetry-javaagent.jar\"");
             }
             if (jmxEnabled) {
                 commands.add("-Dcom.sun.management.jmxremote");
