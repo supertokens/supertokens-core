@@ -17,15 +17,18 @@
 package io.supertokens.inmemorydb.queries;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 
 import java.sql.SQLException;
+import java.sql.Types;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -43,6 +46,7 @@ public class SAMLQueries {
                 + "redirect_uris TEXT NOT NULL," // store JsonArray.toString()
                 + "default_redirect_uri VARCHAR(1024) NOT NULL,"
                 + "sp_entity_id VARCHAR(1024),"
+                + "idp_signing_certificate TEXT,"
                 + "PRIMARY KEY (app_id, tenant_id, client_id),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
@@ -75,6 +79,28 @@ public class SAMLQueries {
     public static String getQueryToCreateSAMLRelayStateAppIdTenantIdIndex(Start start) {
         String table = Config.getConfig(start).getSAMLRelayStateTable();
         return "CREATE INDEX IF NOT EXISTS saml_relay_state_app_tenant_index ON " + table + "(app_id, tenant_id);";
+    }
+
+    public static String getQueryToCreateSAMLClaimsTable(Start start) {
+        String table = Config.getConfig(start).getSAMLClaimsTable();
+        String tenantsTable = Config.getConfig(start).getTenantsTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + table + " ("
+                + "app_id VARCHAR(64) NOT NULL DEFAULT 'public',"
+                + "tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',"
+                + "client_id VARCHAR(255) NOT NULL,"
+                + "code VARCHAR(255) NOT NULL,"
+                + "claims TEXT NOT NULL,"
+                + "created_at_time BIGINT NOT NULL DEFAULT (strftime('%s','now') * 1000),"
+                + "PRIMARY KEY (code),"
+                + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
+                + ");";
+        // @formatter:on
+    }
+
+    public static String getQueryToCreateSAMLClaimsAppIdTenantIdIndex(Start start) {
+        String table = Config.getConfig(start).getSAMLClaimsTable();
+        return "CREATE INDEX IF NOT EXISTS saml_claims_app_tenant_index ON " + table + "(app_id, tenant_id);";
     }
 
     public static void saveRelayStateInfo(Start start, TenantIdentifier tenantIdentifier,
@@ -127,6 +153,57 @@ public class SAMLQueries {
         }
     }
 
+    public static void saveSAMLClaims(Start start, TenantIdentifier tenantIdentifier, String clientId, String code, String claimsJson)
+            throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClaimsTable();
+        String QUERY = "INSERT INTO " + table +
+                " (app_id, tenant_id, client_id, code, claims) VALUES (?, ?, ?, ?, ?)";
+
+        try {
+            update(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, clientId);
+                pst.setString(4, code);
+                pst.setString(5, claimsJson);
+            });
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    public static SAMLClaimsInfo getSAMLClaimsAndRemoveCode(Start start, TenantIdentifier tenantIdentifier, String code)
+            throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClaimsTable();
+        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ?";
+        try {
+            SAMLClaimsInfo claimsInfo = execute(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, code);
+            }, result -> {
+                if (result.next()) {
+                    String clientId = result.getString("client_id");
+                    JsonObject claims = com.google.gson.JsonParser.parseString(result.getString("claims")).getAsJsonObject();
+                    return new SAMLClaimsInfo(clientId, claims);
+                }
+                return null;
+            });
+
+            if (claimsInfo != null) {
+                String DELETE = "DELETE FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ?";
+                update(start, DELETE, pst -> {
+                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(2, tenantIdentifier.getTenantId());
+                    pst.setString(3, code);
+                });
+            }
+            return claimsInfo;
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     public static void createOrUpdateSAMLClient(
             Start start,
             TenantIdentifier tenantIdentifier,
@@ -134,14 +211,15 @@ public class SAMLQueries {
             String ssoLoginURL,
             String redirectURIsJson,
             String defaultRedirectURI,
-            String spEntityId)
+            String spEntityId,
+            String idpSigningCertificate)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
         String QUERY = "INSERT INTO " + table +
-                " (app_id, tenant_id, client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                " (app_id, tenant_id, client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_signing_certificate) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (app_id, tenant_id, client_id) DO UPDATE SET " +
-                "sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, sp_entity_id = ?";
+                "sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, sp_entity_id = ?, idp_signing_certificate = ?";
 
         try {
             update(start, QUERY, pst -> {
@@ -156,15 +234,26 @@ public class SAMLQueries {
                 } else {
                     pst.setNull(7, java.sql.Types.VARCHAR);
                 }
-
-                pst.setString(8, ssoLoginURL);
-                pst.setString(9, redirectURIsJson);
-                pst.setString(10, defaultRedirectURI);
-                if (spEntityId != null) {
-                    pst.setString(11, spEntityId);
+                if (idpSigningCertificate != null) {
+                    pst.setString(8, idpSigningCertificate);
                 } else {
-                    pst.setNull(11, java.sql.Types.VARCHAR);
+                    pst.setNull(8, Types.VARCHAR);
                 }
+
+                pst.setString(9, ssoLoginURL);
+                pst.setString(10, redirectURIsJson);
+                pst.setString(11, defaultRedirectURI);
+                if (spEntityId != null) {
+                    pst.setString(12, spEntityId);
+                } else {
+                    pst.setNull(12, java.sql.Types.VARCHAR);
+                }
+                if (idpSigningCertificate != null) {
+                    pst.setString(13, idpSigningCertificate);
+                } else {
+                    pst.setNull(13, Types.VARCHAR);
+                }
+
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -174,7 +263,7 @@ public class SAMLQueries {
     public static SAMLClient getSAMLClient(Start start, TenantIdentifier tenantIdentifier, String clientId)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
-        String QUERY = "SELECT client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id FROM " + table
+        String QUERY = "SELECT client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_signing_certificate FROM " + table
                 + " WHERE app_id = ? AND tenant_id = ? AND client_id = ?";
 
         try {
@@ -189,9 +278,10 @@ public class SAMLQueries {
                     String redirectUrisJson = result.getString("redirect_uris");
                     String defaultRedirectURI = result.getString("default_redirect_uri");
                     String spEntityId = result.getString("sp_entity_id");
+                    String idpSigningCertificate = result.getString("idp_signing_certificate");
 
                     JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
-                    return new SAMLClient(fetchedClientId, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId);
+                    return new SAMLClient(fetchedClientId, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId, idpSigningCertificate);
                 }
                 return null;
             });

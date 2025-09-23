@@ -71,6 +71,7 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
+import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
@@ -3904,7 +3905,7 @@ public class Start
     @Override
     public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
             throws StorageQueryException {
-        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId);
+        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId, samlClient.idpSigningCertificate);
         return samlClient;
     }
 
@@ -3931,5 +3932,23 @@ public class Start
     @Override
     public SAMLRelayStateInfo getRelayStateInfo(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
         return SAMLQueries.getRelayStateInfo(this, tenantIdentifier, relayState);
+    }
+
+    @Override
+    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims) {
+        try {
+            io.supertokens.inmemorydb.queries.SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString());
+        } catch (StorageQueryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public SAMLClaimsInfo getSAMLClaimsAndRemoveCode(TenantIdentifier tenantIdentifier, String code) {
+        try {
+            return io.supertokens.inmemorydb.queries.SAMLQueries.getSAMLClaimsAndRemoveCode(this, tenantIdentifier, code);
+        } catch (StorageQueryException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

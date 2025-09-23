@@ -198,4 +198,6 @@ public class SQLiteConfig {
     public String getSAMLClientsTable() { return "saml_clients"; }
 
     public String getSAMLRelayStateTable() { return "saml_relay_state"; }
+
+    public String getSAMLClaimsTable() { return "saml_claims"; }
 }

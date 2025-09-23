@@ -26,8 +26,12 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.xmlsec.signature.support.SignatureException;
 
 import java.io.IOException;
+import java.security.cert.CertificateException;
 
 public class HandleSamlCallbackAPI extends WebserverAPI {
 
@@ -43,7 +47,6 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String clientId = InputParser.parseStringOrThrowError(input, "clientId", true);
         String samlResponse = InputParser.parseStringOrThrowError(input, "samlResponse", false);
         String relayState = InputParser.parseStringOrThrowError(input, "relayState", true);
 
@@ -52,14 +55,15 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
             String redirectURI = SAML.handleCallback(
                     getTenantIdentifier(req),
                     getTenantStorage(req),
-                    clientId, samlResponse, relayState
+                    samlResponse, relayState
             );
 
             res.addProperty("status", "OK");
             res.addProperty("redirectURI", redirectURI);
             super.sendJsonResponse(200, res, resp);
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
+                 CertificateException | SignatureException e) {
             throw new ServletException(e);
         }
     }

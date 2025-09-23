@@ -72,5 +72,3 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
         }
     }
 }
-
-

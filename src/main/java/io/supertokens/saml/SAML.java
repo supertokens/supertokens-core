@@ -17,35 +17,42 @@
 package io.supertokens.saml;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.jwt.JWTSigningFunctions;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
+import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
-import org.opensaml.saml.saml2.core.AuthnContext;
-import org.opensaml.saml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml.saml2.core.AuthnRequest;
-import org.opensaml.saml.saml2.core.Issuer;
-import org.opensaml.saml.saml2.core.NameIDPolicy;
-import org.opensaml.saml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml.saml2.core.*;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
+import org.opensaml.security.credential.Credential;
+import org.opensaml.security.credential.CredentialSupport;
 import org.opensaml.xmlsec.signature.KeyInfo;
 import org.opensaml.xmlsec.signature.Signature;
 import org.opensaml.xmlsec.signature.X509Data;
@@ -53,17 +60,23 @@ import org.opensaml.xmlsec.signature.impl.KeyInfoBuilder;
 import org.opensaml.xmlsec.signature.impl.SignatureBuilder;
 import org.opensaml.xmlsec.signature.impl.X509DataBuilder;
 import org.opensaml.xmlsec.signature.support.SignatureConstants;
+import org.opensaml.xmlsec.signature.support.SignatureException;
+import org.opensaml.xmlsec.signature.support.SignatureValidator;
 import org.w3c.dom.Element;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
-import java.util.UUID;
+import java.util.*;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -90,8 +103,42 @@ public class SAML {
             throw new MalformedSAMLMetadataXMLException();
         }
 
-        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId);
+        String idpSigningCertificate = extractIdpSigningCertificate(metadata);
+
+        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpSigningCertificate);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
+    }
+
+    private static String extractIdpSigningCertificate(EntityDescriptor idpMetadata) {
+        for (var roleDescriptor : idpMetadata.getRoleDescriptors()) {
+            if (roleDescriptor instanceof IDPSSODescriptor) {
+                IDPSSODescriptor idpDescriptor = (IDPSSODescriptor) roleDescriptor;
+                for (org.opensaml.saml.saml2.metadata.KeyDescriptor keyDescriptor : idpDescriptor.getKeyDescriptors()) {
+                    if (keyDescriptor.getUse() == null ||
+                            "SIGNING".equals(keyDescriptor.getUse().toString())) {
+                        org.opensaml.xmlsec.signature.KeyInfo keyInfo = keyDescriptor.getKeyInfo();
+                        if (keyInfo != null) {
+                            for (org.opensaml.xmlsec.signature.X509Data x509Data : keyInfo.getX509Datas()) {
+                                for (org.opensaml.xmlsec.signature.X509Certificate x509Cert : x509Data.getX509Certificates()) {
+                                    try {
+                                        String certString = x509Cert.getValue();
+                                        if (certString != null && !certString.trim().isEmpty()) {
+                                            certString = certString.replaceAll("\\s", "");
+                                            return certString;
+                                        }
+                                    } catch (Exception e) {
+                                        // Continue to next certificate if this one fails
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+
     }
 
     public static String createRedirectURL(Main main, TenantIdentifier tenantIdentifier, Storage storage,
@@ -111,7 +158,7 @@ public class SAML {
                 main,
                 tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
-                client.spEntityId, acsURL + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
+                client.spEntityId, acsURL);
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
@@ -223,7 +270,74 @@ public class SAML {
         }
     }
 
-    public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String clientId, String samlResponse, String relayState) throws StorageQueryException {
+    private static Response parseSamlResponse(String samlResponseBase64)
+            throws IOException, XMLParserException, UnmarshallingException {
+        byte[] decoded = java.util.Base64.getDecoder().decode(samlResponseBase64);
+        String xml = new String(decoded, StandardCharsets.UTF_8);
+
+        try (InputStream inputStream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))) {
+            return (Response) XMLObjectSupport.unmarshallFromInputStream(
+                    XMLObjectProviderRegistrySupport.getParserPool(), inputStream);
+        }
+    }
+
+    private static void verifySamlResponseSignature(Response samlResponse, X509Certificate idpCertificate)
+            throws SignatureException {
+        Signature responseSignature = samlResponse.getSignature();
+        if (responseSignature != null) {
+            Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
+            SignatureValidator.validate(responseSignature, credential);
+            return;
+        }
+
+        boolean foundSignedAssertion = false;
+        for (Assertion assertion : samlResponse.getAssertions()) {
+            Signature assertionSignature = assertion.getSignature();
+            if (assertionSignature != null) {
+                Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
+                SignatureValidator.validate(assertionSignature, credential);
+                foundSignedAssertion = true;
+            }
+        }
+
+        if (!foundSignedAssertion) {
+            throw new RuntimeException("Neither SAML Response nor any Assertion is signed");
+        }
+    }
+
+    private static void validateSamlResponseTimestamps(Response samlResponse) {
+        Instant now = Instant.now();
+
+        // Validate response issue instant (should be recent)
+        if (samlResponse.getIssueInstant() != null) {
+            Instant responseTime = samlResponse.getIssueInstant();
+            // Allow 5 minutes clock skew
+            if (responseTime.isAfter(now.plusSeconds(300)) || responseTime.isBefore(now.minusSeconds(300))) {
+                throw new RuntimeException("SAML Response timestamp is outside acceptable range"); // TODO
+            }
+        }
+
+        // Validate assertion timestamps
+        for (Assertion assertion : samlResponse.getAssertions()) {
+            // Check NotBefore
+            if (assertion.getConditions() != null && assertion.getConditions().getNotBefore() != null) {
+                if (now.isBefore(assertion.getConditions().getNotBefore())) {
+                    throw new RuntimeException("SAML Assertion is not yet valid (NotBefore)"); // TODO
+                }
+            }
+
+            // Check NotOnOrAfter
+            if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
+                if (now.isAfter(assertion.getConditions().getNotOnOrAfter())) {
+                    throw new RuntimeException("SAML Assertion has expired (NotOnOrAfter)"); // TODO
+                }
+            }
+        }
+    }
+
+    public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
+            throws StorageQueryException, XMLParserException, IOException, UnmarshallingException, SignatureException,
+            CertificateException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         if (relayState != null) {
@@ -231,16 +345,25 @@ public class SAML {
             var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
 
             if (relayStateInfo == null) {
-                throw new IllegalStateException("INVALID_RELAY_STATE");
+                throw new IllegalStateException("INVALID_RELAY_STATE"); // TODO
             }
 
             if (clientId == null) {
-                throw new IllegalStateException("CLIENT_ID_IS_REQUIRED");
+                throw new IllegalStateException("CLIENT_ID_IS_REQUIRED"); // TODO
             }
 
             SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
             String code = UUID.randomUUID().toString();
             String state = relayStateInfo.state;
+
+            // SAML parsing and verification
+            Response response = parseSamlResponse(samlResponse);
+            X509Certificate idpSigningCertificate = getCertificateFromString(client.idpSigningCertificate);
+            verifySamlResponseSignature(response, idpSigningCertificate);
+            validateSamlResponseTimestamps(response);
+
+            var claims = extractAllClaims(response);
+            samlStorage.saveSAMLClaims(tenantIdentifier, clientId, code, claims);
 
             try {
                 java.net.URI uri = new java.net.URI(relayStateInfo.redirectURI);
@@ -268,5 +391,120 @@ public class SAML {
 
         // idp initiated
         return "https://sattvik.me";
+    }
+
+    private static JsonObject extractAllClaims(Response samlResponse) {
+        JsonObject claims = new JsonObject();
+
+        for (Assertion assertion : samlResponse.getAssertions()) {
+            // Extract NameID as a claim
+            Subject subject = assertion.getSubject();
+            if (subject != null && subject.getNameID() != null) {
+                String nameId = subject.getNameID().getValue();
+                String nameIdFormat = subject.getNameID().getFormat();
+                JsonArray nameIdArr = new JsonArray();
+                nameIdArr.add(nameId);
+                claims.add("NameID", nameIdArr);
+                if (nameIdFormat != null) {
+                    JsonArray nameIdFormatArr = new JsonArray();
+                    nameIdFormatArr.add(nameIdFormat);
+                    claims.add("NameIDFormat", nameIdFormatArr);
+                }
+            }
+
+            // Extract all attributes from AttributeStatements
+            for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
+                for (Attribute attribute : attributeStatement.getAttributes()) {
+                    String attributeName = attribute.getName();
+                    JsonArray attributeValues = new JsonArray();
+
+                    for (XMLObject attributeValue : attribute.getAttributeValues()) {
+                        if (attributeValue instanceof org.opensaml.saml.saml2.core.AttributeValue) {
+                            org.opensaml.saml.saml2.core.AttributeValue attrValue =
+                                    (org.opensaml.saml.saml2.core.AttributeValue) attributeValue;
+
+                            if (attrValue.getDOM() != null) {
+                                String value = attrValue.getDOM().getTextContent();
+                                if (value != null && !value.trim().isEmpty()) {
+                                    attributeValues.add(value.trim());
+                                }
+                            } else if (attrValue.getTextContent() != null) {
+                                String value = attrValue.getTextContent();
+                                if (!value.trim().isEmpty()) {
+                                    attributeValues.add(value.trim());
+                                }
+                            }
+                        }
+                    }
+
+                    if (!attributeValues.isEmpty()) {
+                        claims.add(attributeName, attributeValues);
+                    }
+                }
+            }
+        }
+
+        return claims;
+    }
+
+    private static X509Certificate getCertificateFromString(String certString) throws CertificateException {
+        byte[] certBytes = java.util.Base64.getDecoder().decode(certString);
+        java.security.cert.CertificateFactory certFactory =
+                java.security.cert.CertificateFactory.getInstance("X.509");
+        return (X509Certificate) certFactory.generateCertificate(
+                new ByteArrayInputStream(certBytes));
+    }
+
+    public static String getTokenForCode(Main main, TenantIdentifier tenantIdentifier, Storage storage, String code)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException,
+            StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, code);
+        if (claimsInfo == null) {
+            throw new IllegalStateException("INVALID_CODE");
+        }
+
+        JWTSigningKeyInfo keyToUse = SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
+                .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+
+        String sub = null;
+        String email = null;
+
+        JsonObject claims = claimsInfo.claims;
+
+        if (claims.has("http://schemas.microsoft.com/identity/claims/objectidentifier")) {
+            sub = claims.getAsJsonArray("http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    .get(0).getAsString();
+        } else if (claims.has("NameID")) {
+            sub = claims.getAsJsonArray("NameID").get(0).getAsString();
+        } else if (claims.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")) {
+            sub = claims.getAsJsonArray("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
+                    .get(0).getAsString();
+        }
+
+        if (claims.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")) {
+            email = claims.getAsJsonArray("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
+                    .get(0).getAsString();
+        } else if (claims.has("NameID")) {
+            String nameIdValue = claims.getAsJsonArray("NameID").get(0).getAsString();
+            if (nameIdValue.contains("@")) {
+                email = nameIdValue;
+            }
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("stt", 3); // TODO update the constant
+        payload.add("claims", claims);
+        payload.addProperty("sub", sub);
+        payload.addProperty("email", email);
+        payload.addProperty("aud", claimsInfo.clientId);
+
+        long iat = System.currentTimeMillis();
+        long exp = iat + 1000 * 3600;
+
+        return JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
+                payload, null, exp, iat, keyToUse);
     }
 }
