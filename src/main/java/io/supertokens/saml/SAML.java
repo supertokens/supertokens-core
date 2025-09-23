@@ -105,7 +105,8 @@ public class SAML {
 
         String idpSigningCertificate = extractIdpSigningCertificate(metadata);
 
-        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpSigningCertificate);
+        String idpEntityId = metadata.getEntityID();
+        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 

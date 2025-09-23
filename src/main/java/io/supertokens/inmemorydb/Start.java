@@ -3905,7 +3905,7 @@ public class Start
     @Override
     public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
             throws StorageQueryException {
-        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId, samlClient.idpSigningCertificate);
+        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId, samlClient.idpEntityId, samlClient.idpSigningCertificate);
         return samlClient;
     }
 
