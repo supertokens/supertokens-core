@@ -344,13 +344,10 @@ public class SAML {
         if (relayState != null) {
             // sp initiated
             var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
+            String clientId = relayStateInfo.clientId;
 
             if (relayStateInfo == null) {
                 throw new IllegalStateException("INVALID_RELAY_STATE"); // TODO
-            }
-
-            if (clientId == null) {
-                throw new IllegalStateException("CLIENT_ID_IS_REQUIRED"); // TODO
             }
 
             SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);

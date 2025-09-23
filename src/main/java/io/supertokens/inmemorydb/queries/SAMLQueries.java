@@ -247,25 +247,24 @@ public class SAMLQueries {
                     pst.setNull(9, Types.VARCHAR);
                 }
 
-                pst.setString(9, ssoLoginURL);
-                pst.setString(10, redirectURIsJson);
-                pst.setString(11, defaultRedirectURI);
+                pst.setString(10, ssoLoginURL);
+                pst.setString(11, redirectURIsJson);
+                pst.setString(12, defaultRedirectURI);
                 if (spEntityId != null) {
-                    pst.setString(12, spEntityId);
-                } else {
-                    pst.setNull(12, java.sql.Types.VARCHAR);
-                }
-                if (idpEntityId != null) {
-                    pst.setString(13, idpEntityId);
+                    pst.setString(13, spEntityId);
                 } else {
                     pst.setNull(13, java.sql.Types.VARCHAR);
                 }
-                if (idpSigningCertificate != null) {
-                    pst.setString(14, idpSigningCertificate);
+                if (idpEntityId != null) {
+                    pst.setString(14, idpEntityId);
                 } else {
-                    pst.setNull(14, Types.VARCHAR);
+                    pst.setNull(14, java.sql.Types.VARCHAR);
                 }
-
+                if (idpSigningCertificate != null) {
+                    pst.setString(15, idpSigningCertificate);
+                } else {
+                    pst.setNull(15, Types.VARCHAR);
+                }
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
