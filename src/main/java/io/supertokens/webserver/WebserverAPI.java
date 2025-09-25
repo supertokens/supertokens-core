@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -51,6 +52,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+@WithinOtelSpan
 public abstract class WebserverAPI extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -358,6 +360,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
     }
 
+    @WithinOtelSpan
     protected AppIdentifier getAppIdentifier(HttpServletRequest req)
             throws ServletException, TenantOrAppNotFoundException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);

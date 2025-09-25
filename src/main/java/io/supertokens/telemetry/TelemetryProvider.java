@@ -48,6 +48,7 @@ import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
 public class TelemetryProvider extends ResourceDistributor.SingletonResource implements OtelProvider {
 
     private final OpenTelemetry openTelemetry;
+    private final Main main;
 
     public static synchronized TelemetryProvider getInstance(Main main) {
         TelemetryProvider instance = null;
@@ -201,5 +202,6 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
     private TelemetryProvider(Main main) {
         openTelemetry = initializeOpenTelemetry(main);
+        this.main = main;
     }
 }

@@ -20,6 +20,7 @@ import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
@@ -31,6 +32,7 @@ import java.util.Map;
 // the purpose of this class is to tie singleton classes to s specific main instance. So that
 // when the main instance dies, those singleton classes die too.
 
+@WithinOtelSpan
 public class ResourceDistributor {
     private final Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
     private final Main main;
