@@ -16,12 +16,15 @@
 
 package io.supertokens.webserver.api.saml;
 
+import java.io.IOException;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.Storage;
+import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.saml.SAML;
@@ -32,18 +35,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-
 public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
     public CreateOrUpdateSamlClientAPI(Main main) {
-        // Using literal "saml" as RID to avoid dependency on enum availability
         super(main, "saml");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/saml/clients/create";
+        return "/recipe/saml/clients";
     }
 
     @Override
@@ -54,7 +54,13 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         String spEntityId = InputParser.parseStringOrThrowError(input, "spEntityId", true);
         String defaultRedirectURI = InputParser.parseStringOrThrowError(input, "defaultRedirectURI", false);
         JsonArray redirectURIs = InputParser.parseArrayOrThrowError(input, "redirectURIs", false);
-        String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", false);
+
+        String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", true);
+        String metadataURL = InputParser.parseStringOrThrowError(input, "metadataURL", true);
+
+        if (metadataXML == null && metadataURL == null) {
+            throw new ServletException(new BadRequestException("Either metadataXML or metadataURL is required in the input"));
+        }
 
         if (metadataXML != null) {
             try {
@@ -66,19 +72,20 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
                 this.sendJsonResponse(200, res, resp);
                 return;
             }
+        } else {
+            try {
+                metadataXML = HttpRequest.sendGETRequest(this.main, null, metadataURL, null, 2000, 2000, 0);
+            } catch (HttpResponseException | IOException e) {
+                throw new ServletException(new BadRequestException("Could not fetch metadata from the URL"));
+            }
         }
 
-
         try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = getTenantStorage(req);
-
             SAMLClient client = SAML.createOrUpdateSAMLClient(
-                    tenantIdentifier, storage,
+                getTenantIdentifier(req), getTenantStorage(req),
                     clientId, spEntityId, defaultRedirectURI, redirectURIs, metadataXML);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
-
             this.sendJsonResponse(200, res, resp);
         } catch (MalformedSAMLMetadataXMLException e) {
             JsonObject res = new JsonObject();
@@ -87,6 +94,5 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }
-
     }
 }
