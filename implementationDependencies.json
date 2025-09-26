@@ -102,6 +102,146 @@
 		"src":"https://repo.maven.apache.org/maven2/com/webauthn4j/webauthn4j-core/0.28.6.RELEASE/webauthn4j-core-0.28.6.RELEASE-sources.jar"
 	},
 	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-core/4.3.1/opensaml-core-4.3.1.jar",
+		"name":"opensaml-core 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-core/4.3.1/opensaml-core-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/net/shibboleth/utilities/java-support/8.4.1/java-support-8.4.1.jar",
+		"name":"java-support 8.4.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/net/shibboleth/utilities/java-support/8.4.1/java-support-8.4.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar",
+		"name":"guava 31.1-jre",
+		"src":"https://repo.maven.apache.org/maven2/com/google/guava/guava/31.1-jre/guava-31.1-jre-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar",
+		"name":"failureaccess 1.0.1",
+		"src":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+		"name":"listenablefuture 9999.0-empty-to-avoid-conflict-with-guava",
+		"src":"https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3.jar",
+		"name":"j2objc-annotations 1.3",
+		"src":"https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/dropwizard/metrics/metrics-core/4.2.25/metrics-core-4.2.25.jar",
+		"name":"metrics-core 4.2.25",
+		"src":"https://repo.maven.apache.org/maven2/io/dropwizard/metrics/metrics-core/4.2.25/metrics-core-4.2.25-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-impl/4.3.1/opensaml-saml-impl-4.3.1.jar",
+		"name":"opensaml-saml-impl 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-impl/4.3.1/opensaml-saml-impl-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-xmlsec-impl/4.3.1/opensaml-xmlsec-impl-4.3.1.jar",
+		"name":"opensaml-xmlsec-impl 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-xmlsec-impl/4.3.1/opensaml-xmlsec-impl-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-security-impl/4.3.1/opensaml-security-impl-4.3.1.jar",
+		"name":"opensaml-security-impl 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-security-impl/4.3.1/opensaml-security-impl-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-security-api/4.3.1/opensaml-security-api-4.3.1.jar",
+		"name":"opensaml-security-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-security-api/4.3.1/opensaml-security-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-messaging-api/4.3.1/opensaml-messaging-api-4.3.1.jar",
+		"name":"opensaml-messaging-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-messaging-api/4.3.1/opensaml-messaging-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar",
+		"name":"httpclient 4.5.14",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar",
+		"name":"httpcore 4.4.16",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/cryptacular/cryptacular/1.2.5/cryptacular-1.2.5.jar",
+		"name":"cryptacular 1.2.5",
+		"src":"https://repo.maven.apache.org/maven2/org/cryptacular/cryptacular/1.2.5/cryptacular-1.2.5-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.72/bcprov-jdk18on-1.72.jar",
+		"name":"bcprov-jdk18on 1.72",
+		"src":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.72/bcprov-jdk18on-1.72-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.72/bcpkix-jdk18on-1.72.jar",
+		"name":"bcpkix-jdk18on 1.72",
+		"src":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.72/bcpkix-jdk18on-1.72-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.72/bcutil-jdk18on-1.72.jar",
+		"name":"bcutil-jdk18on 1.72",
+		"src":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/1.72/bcutil-jdk18on-1.72-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-xmlsec-api/4.3.1/opensaml-xmlsec-api-4.3.1.jar",
+		"name":"opensaml-xmlsec-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-xmlsec-api/4.3.1/opensaml-xmlsec-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/santuario/xmlsec/2.3.4/xmlsec-2.3.4.jar",
+		"name":"xmlsec 2.3.4",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/santuario/xmlsec/2.3.4/xmlsec-2.3.4-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-api/4.3.1/opensaml-saml-api-4.3.1.jar",
+		"name":"opensaml-saml-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-api/4.3.1/opensaml-saml-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-profile-api/4.3.1/opensaml-profile-api-4.3.1.jar",
+		"name":"opensaml-profile-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-profile-api/4.3.1/opensaml-profile-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-soap-api/4.3.1/opensaml-soap-api-4.3.1.jar",
+		"name":"opensaml-soap-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-soap-api/4.3.1/opensaml-soap-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-soap-impl/4.3.1/opensaml-soap-impl-4.3.1.jar",
+		"name":"opensaml-soap-impl 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-soap-impl/4.3.1/opensaml-soap-impl-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-storage-api/4.3.1/opensaml-storage-api-4.3.1.jar",
+		"name":"opensaml-storage-api 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-storage-api/4.3.1/opensaml-storage-api-4.3.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/velocity/velocity-engine-core/2.3/velocity-engine-core-2.3.jar",
+		"name":"velocity-engine-core 2.3",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/velocity/velocity-engine-core/2.3/velocity-engine-core-2.3-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11.jar",
+		"name":"commons-lang3 3.11",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11-sources.jar"
+	},
+	{
+		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-profile-impl/4.3.1/opensaml-profile-impl-4.3.1.jar",
+		"name":"opensaml-profile-impl 4.3.1",
+		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-profile-impl/4.3.1/opensaml-profile-impl-4.3.1-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18.jar",
 		"name":"logback-core 1.5.18",
 		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18-sources.jar"

@@ -16,6 +16,16 @@
 
 package io.supertokens.emailpassword;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.jetbrains.annotations.TestOnly;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -51,14 +61,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
-import org.jetbrains.annotations.TestOnly;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
-import java.util.List;
 
 public class EmailPassword {
 
@@ -216,7 +218,7 @@ public class EmailPassword {
 
     public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
             @Nonnull String email,
-            @Nonnull String passwordHash, @Nullable long timeJoined)
+            @Nonnull String passwordHash, long timeJoined)
             throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException,
             StorageTransactionLogicException {
         EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);

@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.saml.SAML;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -78,6 +79,10 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             } catch (HttpResponseException | IOException e) {
                 throw new ServletException(new BadRequestException("Could not fetch metadata from the URL"));
             }
+        }
+
+        if (clientId == null) {
+            clientId = "st_saml_" + Utils.getUUID();
         }
 
         try {
