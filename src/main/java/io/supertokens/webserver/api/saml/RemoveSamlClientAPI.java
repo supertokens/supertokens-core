@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.saml;
 
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -25,6 +26,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.saml.SAML;
 
 public class RemoveSamlClientAPI extends WebserverAPI {
 
@@ -40,11 +45,19 @@ public class RemoveSamlClientAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.parseStringOrThrowError(input, "clientId", false);
+        String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
-        JsonObject res = new JsonObject();
-        res.addProperty("status", "NOT_IMPLEMENTED");
-        super.sendJsonResponse(501, res, resp);
+        try {
+            boolean didExist = SAML.removeSAMLClient(getTenantIdentifier(req), getTenantStorage(req), clientId);
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "OK");
+            res.addProperty("didExist", didExist);
+            super.sendJsonResponse(200, res, resp);
+    
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
     }
 }
 

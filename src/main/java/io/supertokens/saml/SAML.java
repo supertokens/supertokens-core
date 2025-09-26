@@ -128,6 +128,11 @@ public class SAML {
         return samlStorage.getSAMLClients(tenantIdentifier);
     }
 
+    public static boolean removeSAMLClient(TenantIdentifier tenantIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        return samlStorage.removeSAMLClient(tenantIdentifier, clientId);
+    }
+
     private static String extractIdpSigningCertificate(EntityDescriptor idpMetadata) {
         for (var roleDescriptor : idpMetadata.getRoleDescriptors()) {
             if (roleDescriptor instanceof IDPSSODescriptor) {

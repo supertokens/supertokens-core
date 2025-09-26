@@ -340,4 +340,20 @@ public class SAMLQueries {
             throw new StorageQueryException(e);
         }
     }
+
+    public static boolean removeSAMLClient(Start start, TenantIdentifier tenantIdentifier, String clientId)
+            throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClientsTable();
+        String QUERY = "DELETE FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND client_id = ?";
+        try {
+            return update(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, clientId);
+            }) > 0;
+
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }

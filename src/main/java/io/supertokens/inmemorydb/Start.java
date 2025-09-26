@@ -3910,8 +3910,8 @@ public class Start
     }
 
     @Override
-    public void removeSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
-
+    public boolean removeSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
+        return SAMLQueries.removeSAMLClient(this, tenantIdentifier, clientId);
     }
 
     @Override
