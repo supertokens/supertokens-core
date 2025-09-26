@@ -16,30 +16,24 @@
 
 package io.supertokens.saml;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import io.supertokens.Main;
-import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
-import io.supertokens.pluginInterface.saml.SAMLClient;
-import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
-import io.supertokens.pluginInterface.saml.SAMLStorage;
-import io.supertokens.saml.exceptions.InvalidClientException;
-import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
-import io.supertokens.signingkeys.JWTSigningKey;
-import io.supertokens.signingkeys.SigningKeys;
-import net.shibboleth.utilities.java.support.xml.SerializeSupport;
-import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
@@ -47,7 +41,17 @@ import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
-import org.opensaml.saml.saml2.core.*;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.Attribute;
+import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.opensaml.saml.saml2.core.AuthnContext;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.NameIDPolicy;
+import org.opensaml.saml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.Subject;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
@@ -64,26 +68,35 @@ import org.opensaml.xmlsec.signature.support.SignatureException;
 import org.opensaml.xmlsec.signature.support.SignatureValidator;
 import org.w3c.dom.Element;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.time.Instant;
-import java.util.*;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import io.supertokens.Main;
+import io.supertokens.jwt.JWTSigningFunctions;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
+import io.supertokens.saml.exceptions.InvalidClientException;
+import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
+import net.shibboleth.utilities.java.support.xml.SerializeSupport;
+import net.shibboleth.utilities.java.support.xml.XMLParserException;
 
 public class SAML {
     public static SAMLClient createOrUpdateSAMLClient(
             TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML)
+            String clientId, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin)
             throws MalformedSAMLMetadataXMLException, StorageQueryException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -106,8 +119,13 @@ public class SAML {
         String idpSigningCertificate = extractIdpSigningCertificate(metadata);
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate);
+        SAMLClient client = new SAMLClient(clientId, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
+    }
+
+    public static List<SAMLClient> getClients(TenantIdentifier tenantIdentifier, Storage storage) throws StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        return samlStorage.getSAMLClients(tenantIdentifier);
     }
 
     private static String extractIdpSigningCertificate(EntityDescriptor idpMetadata) {

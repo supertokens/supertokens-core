@@ -59,6 +59,12 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", true);
         String metadataURL = InputParser.parseStringOrThrowError(input, "metadataURL", true);
 
+        Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
+
+        if (allowIDPInitiatedLogin == null) {
+            allowIDPInitiatedLogin = false;
+        }
+
         if (metadataXML == null && metadataURL == null) {
             throw new ServletException(new BadRequestException("Either metadataXML or metadataURL is required in the input"));
         }
@@ -88,7 +94,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                 getTenantIdentifier(req), getTenantStorage(req),
-                    clientId, spEntityId, defaultRedirectURI, redirectURIs, metadataXML);
+                    clientId, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);

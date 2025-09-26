@@ -16,14 +16,21 @@
 
 package io.supertokens.webserver.api.saml;
 
+import java.io.IOException;
+import java.util.List;
+
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.saml.SAML;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
 
 public class ListSamlClientsAPI extends WebserverAPI {
 
@@ -38,10 +45,21 @@ public class ListSamlClientsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject res = new JsonObject();
-        res.addProperty("status", "NOT_IMPLEMENTED");
-        super.sendJsonResponse(501, res, resp);
+
+        try {
+            List<SAMLClient> clients = SAML.getClients(getTenantIdentifier(req), getTenantStorage(req));
+
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "OK");
+            JsonArray clientsArray = new JsonArray();
+            for (SAMLClient client : clients) {
+                clientsArray.add(client.toJson());
+            }
+            res.add("clients", clientsArray);
+
+            super.sendJsonResponse(200, res, resp);
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+            throw new ServletException(e);
+        }
     }
 }
-
-

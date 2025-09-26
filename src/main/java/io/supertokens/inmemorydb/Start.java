@@ -3905,7 +3905,7 @@ public class Start
     @Override
     public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
             throws StorageQueryException {
-        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId, samlClient.idpEntityId, samlClient.idpSigningCertificate);
+        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.spEntityId, samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin);
         return samlClient;
     }
 
@@ -3921,7 +3921,7 @@ public class Start
 
     @Override
     public List<SAMLClient> getSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
-        return List.of();
+        return SAMLQueries.getSAMLClients(this, tenantIdentifier);
     }
 
     @Override
