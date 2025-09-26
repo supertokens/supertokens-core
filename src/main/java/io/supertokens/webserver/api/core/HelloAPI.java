@@ -23,7 +23,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.telemetry.TelemetryAppender;
 import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -31,7 +30,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Map;
 
 // the point of this API is only to test that the server is up and running.
 
@@ -89,13 +87,13 @@ public class HelloAPI extends WebserverAPI {
                     appIdentifier); // throws tenantOrAppNotFoundException
 
             RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
-            TelemetryAppender.getInstance()
-                    .appendEventToCurrentSpan("HelloAPI called", null, System.currentTimeMillis());
-            TelemetryAppender.getInstance()
-                    .appendEventToCurrentSpan("HelloAPI called", Map.of("eventKey", "eventValue"),
-                            System.currentTimeMillis());
-            TelemetryAppender.getInstance().appendAttributesToCurrentSpan(
-                    Map.of("rateLimited", String.valueOf(rateLimiter.checkRequest())));
+//            TelemetryAppender.getInstance()
+//                    .appendEventToCurrentSpan("HelloAPI called", null, System.currentTimeMillis());
+//            TelemetryAppender.getInstance()
+//                    .appendEventToCurrentSpan("HelloAPI called", Map.of("eventKey", "eventValue"),
+//                            System.currentTimeMillis());
+//            TelemetryAppender.getInstance().appendAttributesToCurrentSpan(
+//                    Map.of("rateLimited", String.valueOf(rateLimiter.checkRequest())));
             if (!rateLimiter.checkRequest()) {
                 if (Main.isTesting) {
                     super.sendTextResponse(200, "RateLimitedHello", resp);
@@ -110,7 +108,7 @@ public class HelloAPI extends WebserverAPI {
                 // idea here is to test that the storage is working
                 storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
             }
-            
+
             super.sendTextResponse(200, "Hello", resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             // we send 500 status code

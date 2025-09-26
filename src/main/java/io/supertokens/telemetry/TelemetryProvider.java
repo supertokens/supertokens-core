@@ -116,6 +116,10 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
         String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
 
+        if (GlobalOpenTelemetry.get() != null) {
+            return GlobalOpenTelemetry.get(); // already initialized
+        }
+
         if (collectorUri == null || collectorUri.isEmpty()) {
             return null;
         }
@@ -124,10 +128,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
             return getInstance(main).openTelemetry; // already initialized
         }
 
-        if (GlobalOpenTelemetry.get() != null) {
-            return GlobalOpenTelemetry.get(); // already initialized
-        }
-        
+
         Resource resource = Resource.getDefault().toBuilder()
                 .put(SERVICE_NAME, "supertokens-core")
                 .build();
