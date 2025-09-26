@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.JWTSigningKey;
@@ -116,6 +117,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
+    @WithinOtelSpan
     public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(
             boolean reloadAllResources) {
         try {

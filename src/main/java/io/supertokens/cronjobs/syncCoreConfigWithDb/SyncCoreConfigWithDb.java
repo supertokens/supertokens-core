@@ -19,12 +19,9 @@ package io.supertokens.cronjobs.syncCoreConfigWithDb;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-
-import java.util.List;
+import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 
 public class SyncCoreConfigWithDb extends CronTask {
 
@@ -62,6 +59,7 @@ public class SyncCoreConfigWithDb extends CronTask {
         return 60;
     }
 
+    @WithinOtelSpan
     @Override
     protected void doTaskForTargetTenant(TenantIdentifier targetTenant) throws Exception {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);

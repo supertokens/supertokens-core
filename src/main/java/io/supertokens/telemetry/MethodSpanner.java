@@ -18,6 +18,7 @@ package io.supertokens.telemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Scope;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -37,24 +38,36 @@ public class MethodSpanner {
 
     @Around("execution(@io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan * *(..))")
     public Object withinOtelSpan(ProceedingJoinPoint joinPoint) throws Throwable {
-        Span span = GlobalOpenTelemetry.get().getTracer("core-tracer").spanBuilder(joinPoint.getSignature().getName()).startSpan();
+        Span span = GlobalOpenTelemetry.get().getTracer("core-tracer")
+                .spanBuilder(joinPoint.getSignature().getDeclaringTypeName() + "." + joinPoint.getSignature().getName())
+                .startSpan();
         try (Scope spanScope = span.makeCurrent()) {
             Map<String, String> methodArguments = new HashMap<>();
             for (Object argument : joinPoint.getArgs()) {
-                methodArguments.put(argument.getClass().getCanonicalName(), String.valueOf(argument));
+                if (argument != null) {
+                    methodArguments.put(argument.getClass().getCanonicalName(), String.valueOf(argument));
+                } else {
+                    methodArguments.put("null", "null");
+                }
+
             }
             span.setAttribute("method.arguments", methodArguments.keySet().stream().map(key -> key + ": " + methodArguments.get(key))
                     .collect(Collectors.joining(", ", "{", "}")));
-
-            Object result = joinPoint.proceed(); //run the actual method
-
-            if (result != null) {
-                span.setAttribute("method.returnType", result.getClass().getCanonicalName());
-                span.setAttribute("method.returnValue", String.valueOf(result));
-            } else {
-                span.setAttribute("method.returnType", "void");
+            try {
+                Object result = joinPoint.proceed(); //run the actual method
+                if (result != null) {
+                    span.setAttribute("method.returns",
+                            result.getClass().getCanonicalName() + " -> " + result);
+                } else {
+                    span.setAttribute("method.returns", "void/null");
+                }
+                span.setStatus(StatusCode.OK);
+                return result;
+            } catch (Throwable e) {
+                span.recordException(e);
+                span.setStatus(StatusCode.ERROR);
+                throw e;
             }
-            return result;
         } finally {
             span.end();
         }

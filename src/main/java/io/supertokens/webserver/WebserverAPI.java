@@ -52,7 +52,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-@WithinOtelSpan
 public abstract class WebserverAPI extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
