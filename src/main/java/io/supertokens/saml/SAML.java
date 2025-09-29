@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -69,11 +70,13 @@ import org.opensaml.xmlsec.signature.support.SignatureValidator;
 import org.w3c.dom.Element;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.oauth.OAuthToken;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -87,7 +90,10 @@ import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.saml.exceptions.InvalidClientException;
+import io.supertokens.saml.exceptions.InvalidCodeException;
+import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
@@ -177,6 +183,18 @@ public class SAML {
             throw new InvalidClientException();
         }
 
+        boolean redirectURIOk = false;
+        for (JsonElement rUri : client.redirectURIs) {
+            if (rUri.getAsString().equals(redirectURI)) {
+                redirectURIOk = true;
+                break;
+            }
+        }
+
+        if (!redirectURIOk) {
+            throw new InvalidClientException();
+        }
+
         String idpSsoUrl = client.ssoLoginURL;
         AuthnRequest request = buildAuthnRequest(
                 main,
@@ -186,7 +204,6 @@ public class SAML {
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
-        // TODO handle duplicate relayState
         samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI));
 
         return idpSsoUrl + "?SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
@@ -329,7 +346,7 @@ public class SAML {
         }
     }
 
-    private static void validateSamlResponseTimestamps(Response samlResponse) {
+    private static void validateSamlResponseTimestamps(Response samlResponse) throws SAMLResponseVerificationFailedException {
         Instant now = Instant.now();
 
         // Validate response issue instant (should be recent)
@@ -337,7 +354,7 @@ public class SAML {
             Instant responseTime = samlResponse.getIssueInstant();
             // Allow 5 minutes clock skew
             if (responseTime.isAfter(now.plusSeconds(300)) || responseTime.isBefore(now.minusSeconds(300))) {
-                throw new RuntimeException("SAML Response timestamp is outside acceptable range"); // TODO
+                throw new SAMLResponseVerificationFailedException();
             }
         }
 
@@ -346,22 +363,22 @@ public class SAML {
             // Check NotBefore
             if (assertion.getConditions() != null && assertion.getConditions().getNotBefore() != null) {
                 if (now.isBefore(assertion.getConditions().getNotBefore())) {
-                    throw new RuntimeException("SAML Assertion is not yet valid (NotBefore)"); // TODO
+                    throw new SAMLResponseVerificationFailedException();
                 }
             }
 
             // Check NotOnOrAfter
             if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
                 if (now.isAfter(assertion.getConditions().getNotOnOrAfter())) {
-                    throw new RuntimeException("SAML Assertion has expired (NotOnOrAfter)"); // TODO
+                    throw new SAMLResponseVerificationFailedException();
                 }
             }
         }
     }
 
     public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
-            throws StorageQueryException, XMLParserException, IOException, UnmarshallingException, SignatureException,
-            CertificateException {
+            throws StorageQueryException, XMLParserException, IOException, UnmarshallingException,
+            CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         if (relayState != null) {
@@ -370,7 +387,7 @@ public class SAML {
             String clientId = relayStateInfo.clientId;
 
             if (relayStateInfo == null) {
-                throw new IllegalStateException("INVALID_RELAY_STATE"); // TODO
+                throw new InvalidRelayStateException();
             }
 
             SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
@@ -380,7 +397,11 @@ public class SAML {
             // SAML parsing and verification
             Response response = parseSamlResponse(samlResponse);
             X509Certificate idpSigningCertificate = getCertificateFromString(client.idpSigningCertificate);
-            verifySamlResponseSignature(response, idpSigningCertificate);
+            try {
+                verifySamlResponseSignature(response, idpSigningCertificate);
+            } catch (SignatureException e) {
+                throw new SAMLResponseVerificationFailedException();
+            }
             validateSamlResponseTimestamps(response);
 
             var claims = extractAllClaims(response);
@@ -405,8 +426,8 @@ public class SAML {
                         uri.getFragment()
                 );
                 return newUri.toString();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to append code and state to redirect URI", e);
+            } catch (URISyntaxException e) {
+                throw new IllegalStateException("should never happen", e);
             }
         }
 
@@ -478,13 +499,13 @@ public class SAML {
 
     public static String getTokenForCode(Main main, TenantIdentifier tenantIdentifier, Storage storage, String code)
             throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException,
-            StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException {
+            StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidCodeException {
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, code);
         if (claimsInfo == null) {
-            throw new IllegalStateException("INVALID_CODE");
+            throw new InvalidCodeException();
         }
 
         JWTSigningKeyInfo keyToUse = SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
@@ -516,14 +537,14 @@ public class SAML {
         }
 
         JsonObject payload = new JsonObject();
-        payload.addProperty("stt", 3); // TODO update the constant
+        payload.addProperty("stt", OAuthToken.TokenType.SAML_ID_TOKEN.getValue());
         payload.add("claims", claims);
         payload.addProperty("sub", sub);
         payload.addProperty("email", email);
         payload.addProperty("aud", claimsInfo.clientId);
 
         long iat = System.currentTimeMillis();
-        long exp = iat + 1000 * 3600;
+        long exp = iat + 1000 * 3600; // 1 hour
 
         return JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
                 payload, null, exp, iat, keyToUse);

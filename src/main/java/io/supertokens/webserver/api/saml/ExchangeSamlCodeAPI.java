@@ -16,22 +16,24 @@
 
 package io.supertokens.webserver.api.saml;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 public class ExchangeSamlCodeAPI extends WebserverAPI {
 
@@ -60,6 +62,11 @@ public class ExchangeSamlCodeAPI extends WebserverAPI {
             res.addProperty("status", "OK");
             res.addProperty("id_token", token);
 
+            super.sendJsonResponse(200, res, resp);
+        } catch (InvalidCodeException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "INVALID_CODE_ERROR");
+            
             super.sendJsonResponse(200, res, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnsupportedJWTSigningAlgorithmException |
                  NoSuchAlgorithmException | StorageTransactionLogicException | InvalidKeySpecException e) {

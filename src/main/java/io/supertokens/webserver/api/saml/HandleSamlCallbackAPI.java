@@ -16,22 +16,25 @@
 
 package io.supertokens.webserver.api.saml;
 
+import java.io.IOException;
+import java.security.cert.CertificateException;
+
+import org.opensaml.core.xml.io.UnmarshallingException;
+
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.InvalidRelayStateException;
+import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
-import org.opensaml.core.xml.io.UnmarshallingException;
-import org.opensaml.xmlsec.signature.support.SignatureException;
-
-import java.io.IOException;
-import java.security.cert.CertificateException;
 
 public class HandleSamlCallbackAPI extends WebserverAPI {
 
@@ -51,19 +54,28 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
         String relayState = InputParser.parseStringOrThrowError(input, "relayState", true);
 
         try {
-            JsonObject res = new JsonObject();
             String redirectURI = SAML.handleCallback(
                     getTenantIdentifier(req),
                     getTenantStorage(req),
                     samlResponse, relayState
             );
 
+            JsonObject res = new JsonObject();
             res.addProperty("status", "OK");
             res.addProperty("redirectURI", redirectURI);
             super.sendJsonResponse(200, res, resp);
+        
+        } catch (InvalidRelayStateException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "INVALID_RELAY_STATE_ERROR");
+            super.sendJsonResponse(200, res, resp);
+        } catch (SAMLResponseVerificationFailedException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "SAML_RESPONSE_VERIFICATION_FAILED_ERROR");
+            super.sendJsonResponse(200, res, resp);
 
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
-                 CertificateException | SignatureException e) {
+                 CertificateException e) {
             throw new ServletException(e);
         }
     }

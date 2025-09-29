@@ -30,7 +30,8 @@ import java.util.*;
 public class OAuthToken {
     public enum TokenType {
         ACCESS_TOKEN(1),
-        ID_TOKEN(2);
+        ID_TOKEN(2),
+        SAML_ID_TOKEN(3);
 
         private final int value;
 
