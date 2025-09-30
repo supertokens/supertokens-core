@@ -89,6 +89,7 @@ import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowed;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
@@ -378,61 +379,77 @@ public class SAML {
 
     public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
             throws StorageQueryException, XMLParserException, IOException, UnmarshallingException,
-            CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException {
+            CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException,
+            InvalidClientException, IDPInitiatedLoginDisallowed {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
-        if (relayState != null) {
+        SAMLClient client = null;
+        Response response = parseSamlResponse(samlResponse);
+        String state = null;
+        String redirectURI = null;
+
+        if (relayState != null && !relayState.isEmpty()) {
             // sp initiated
             var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
-            String clientId = relayStateInfo.clientId;
-
             if (relayStateInfo == null) {
                 throw new InvalidRelayStateException();
             }
 
-            SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
-            String code = UUID.randomUUID().toString();
-            String state = relayStateInfo.state;
+            String clientId = relayStateInfo.clientId;
+            client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
+            state = relayStateInfo.state;
+            redirectURI = relayStateInfo.redirectURI;
+        } else {
+            // idp initiated
+            String idpEntityId = response.getIssuer().getValue();
+            client = samlStorage.getSAMLClientByIDPEntityId(tenantIdentifier, idpEntityId);
+            redirectURI = client.defaultRedirectURI;
 
-            // SAML parsing and verification
-            Response response = parseSamlResponse(samlResponse);
-            X509Certificate idpSigningCertificate = getCertificateFromString(client.idpSigningCertificate);
-            try {
-                verifySamlResponseSignature(response, idpSigningCertificate);
-            } catch (SignatureException e) {
-                throw new SAMLResponseVerificationFailedException();
-            }
-            validateSamlResponseTimestamps(response);
-
-            var claims = extractAllClaims(response);
-            samlStorage.saveSAMLClaims(tenantIdentifier, clientId, code, claims);
-
-            try {
-                java.net.URI uri = new java.net.URI(relayStateInfo.redirectURI);
-                String query = uri.getQuery();
-                StringBuilder newQuery = new StringBuilder();
-                if (query != null && !query.isEmpty()) {
-                    newQuery.append(query).append("&");
-                }
-                newQuery.append("code=").append(java.net.URLEncoder.encode(code, java.nio.charset.StandardCharsets.UTF_8));
-                if (state != null) {
-                    newQuery.append("&state=").append(java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8));
-                }
-                java.net.URI newUri = new java.net.URI(
-                        uri.getScheme(),
-                        uri.getAuthority(),
-                        uri.getPath(),
-                        newQuery.toString(),
-                        uri.getFragment()
-                );
-                return newUri.toString();
-            } catch (URISyntaxException e) {
-                throw new IllegalStateException("should never happen", e);
+            if (client.allowIDPInitiatedLogin == false) {
+                throw new IDPInitiatedLoginDisallowed();
             }
         }
 
-        // idp initiated
-        return "https://sattvik.me";
+        if (client == null) {
+            throw new InvalidClientException();
+        }
+
+        // SAML verification
+        X509Certificate idpSigningCertificate = getCertificateFromString(client.idpSigningCertificate);
+        try {
+            verifySamlResponseSignature(response, idpSigningCertificate);
+        } catch (SignatureException e) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        validateSamlResponseTimestamps(response);
+
+        var claims = extractAllClaims(response);
+
+        String code = UUID.randomUUID().toString();
+        samlStorage.saveSAMLClaims(tenantIdentifier, client.clientId, code, claims);
+        
+        try {
+            java.net.URI uri = new java.net.URI(redirectURI);
+            String query = uri.getQuery();
+            StringBuilder newQuery = new StringBuilder();
+            if (query != null && !query.isEmpty()) {
+                newQuery.append(query).append("&");
+            }
+            newQuery.append("code=").append(java.net.URLEncoder.encode(code, java.nio.charset.StandardCharsets.UTF_8));
+            if (state != null) {
+                newQuery.append("&state=").append(java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8));
+            }
+            java.net.URI newUri = new java.net.URI(
+                    uri.getScheme(),
+                    uri.getAuthority(),
+                    uri.getPath(),
+                    newQuery.toString(),
+                    uri.getFragment()
+            );
+            return newUri.toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("should never happen", e);
+        }
     }
 
     private static JsonObject extractAllClaims(Response samlResponse) {

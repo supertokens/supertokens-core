@@ -27,6 +27,8 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowed;
+import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
 import io.supertokens.webserver.InputParser;
@@ -69,9 +71,18 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
             JsonObject res = new JsonObject();
             res.addProperty("status", "INVALID_RELAY_STATE_ERROR");
             super.sendJsonResponse(200, res, resp);
+        } catch (InvalidClientException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "INVALID_CLIENT_ERROR");
+            super.sendJsonResponse(200, res, resp);
         } catch (SAMLResponseVerificationFailedException e) {
             JsonObject res = new JsonObject();
             res.addProperty("status", "SAML_RESPONSE_VERIFICATION_FAILED_ERROR");
+            super.sendJsonResponse(200, res, resp);
+
+        } catch (IDPInitiatedLoginDisallowed e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "IDP_LOGIN_DISALLOWED_ERROR");
             super.sendJsonResponse(200, res, resp);
 
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |

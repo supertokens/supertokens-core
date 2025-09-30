@@ -3920,6 +3920,11 @@ public class Start
     }
 
     @Override
+    public SAMLClient getSAMLClientByIDPEntityId(TenantIdentifier tenantIdentifier, String idpEntityId) throws StorageQueryException {
+        return SAMLQueries.getSAMLClientByIDPEntityId(this, tenantIdentifier, idpEntityId);
+    }
+
+    @Override
     public List<SAMLClient> getSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
         return SAMLQueries.getSAMLClients(this, tenantIdentifier);
     }

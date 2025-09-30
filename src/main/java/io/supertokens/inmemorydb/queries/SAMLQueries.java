@@ -309,6 +309,37 @@ public class SAMLQueries {
         }
     }
 
+    public static SAMLClient getSAMLClientByIDPEntityId(Start start, TenantIdentifier tenantIdentifier, String idpEntityId) throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClientsTable();
+        String QUERY = "SELECT client_id, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login FROM " + table
+                + " WHERE app_id = ? AND tenant_id = ? AND idp_entity_id = ?";
+
+        try {
+            return execute(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, idpEntityId);
+            }, result -> {
+                if (result.next()) {
+                    String fetchedClientId = result.getString("client_id");
+                    String ssoLoginURL = result.getString("sso_login_url");
+                    String redirectUrisJson = result.getString("redirect_uris");
+                    String defaultRedirectURI = result.getString("default_redirect_uri");
+                    String spEntityId = result.getString("sp_entity_id");
+                    String fetchedIdpEntityId = result.getString("idp_entity_id");
+                    String idpSigningCertificate = result.getString("idp_signing_certificate");
+                    boolean allowIDPInitiatedLogin = result.getBoolean("allow_idp_initiated_login");
+
+                    JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
+                    return new SAMLClient(fetchedClientId, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId, fetchedIdpEntityId, idpSigningCertificate, allowIDPInitiatedLogin);
+                }
+                return null;
+            });
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     public static List<SAMLClient> getSAMLClients(Start start, TenantIdentifier tenantIdentifier)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
