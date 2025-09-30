@@ -148,6 +148,7 @@ public class StartHandler extends CommandHandler {
         if (!foreground) {
             try {
                 ProcessBuilder pb = new ProcessBuilder(commands);
+                Logging.info("Command to be run: " + String.join(" ", pb.command()));
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
