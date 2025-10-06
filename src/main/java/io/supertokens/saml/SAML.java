@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -35,6 +37,7 @@ import java.util.UUID;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
@@ -95,6 +98,10 @@ import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.session.jwt.JWT;
+import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
@@ -533,11 +540,11 @@ public class SAML {
 
         JsonObject claims = claimsInfo.claims;
 
-        if (claims.has("http://schemas.microsoft.com/identity/claims/objectidentifier")) {
+        if (claims.has("NameID")) {
+            sub = claims.getAsJsonArray("NameID").get(0).getAsString();
+        } else if (claims.has("http://schemas.microsoft.com/identity/claims/objectidentifier")) {
             sub = claims.getAsJsonArray("http://schemas.microsoft.com/identity/claims/objectidentifier")
                     .get(0).getAsString();
-        } else if (claims.has("NameID")) {
-            sub = claims.getAsJsonArray("NameID").get(0).getAsString();
         } else if (claims.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")) {
             sub = claims.getAsJsonArray("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
                     .get(0).getAsString();
@@ -565,5 +572,50 @@ public class SAML {
 
         return JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
                 payload, null, exp, iat, keyToUse);
+    }
+
+    public static JsonObject getUserInfo(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken)
+            throws TenantOrAppNotFoundException, StorageQueryException, UnsupportedJWTSigningAlgorithmException,
+            StorageTransactionLogicException, InvalidKeyException {
+        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(appIdentifier, main).getAllKeys();
+        Exception error = null;
+        JWT.JWTInfo jwtInfo = null;
+        JWT.JWTPreParseInfo preParseJWTInfo = null;
+        try {
+            preParseJWTInfo = JWT.preParseJWTInfo(accessToken);
+        } catch (JWTException e) {
+            // This basically should never happen, but it means, that the token structure is
+            // wrong, can't verify
+            throw new IllegalStateException("INVALID_TOKEN"); // TODO
+        }
+
+        for (JWTSigningKeyInfo keyInfo : keyInfoList) {
+            try {
+                jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo,
+                        ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
+                error = null;
+                break;
+            } catch (NoSuchAlgorithmException e) {
+                // This basically should never happen, but it means, that can't verify any
+                // tokens, no need to retry
+                throw new IllegalStateException("INVALID_TOKEN"); // TODO
+            } catch (KeyException | JWTException e) {
+                error = e;
+            }
+        }
+
+        if (jwtInfo == null) {
+            throw new IllegalStateException("INVALID_TOKEN"); // TODO
+        }
+
+        if (jwtInfo.payload.get("exp").getAsLong() * 1000 < System.currentTimeMillis()) {
+            throw new IllegalStateException("INVALID_TOKEN"); // TODO
+        }
+
+        JsonObject userInfo = new JsonObject();
+        userInfo.add("id", jwtInfo.payload.get("sub"));
+        userInfo.add("email", jwtInfo.payload.get("email"));
+
+        return userInfo;
     }
 }
