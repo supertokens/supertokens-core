@@ -52,6 +52,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", true);
+        String clientSecret = InputParser.parseStringOrThrowError(input, "clientSecret", true);
         String spEntityId = InputParser.parseStringOrThrowError(input, "spEntityId", true);
         String defaultRedirectURI = InputParser.parseStringOrThrowError(input, "defaultRedirectURI", false);
         JsonArray redirectURIs = InputParser.parseArrayOrThrowError(input, "redirectURIs", false);
@@ -94,7 +95,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                 getTenantIdentifier(req), getTenantStorage(req),
-                    clientId, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin);
+                    clientId, clientSecret, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, metadataURL, allowIDPInitiatedLogin);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);

@@ -67,7 +67,8 @@ public class CoreConfig {
             "oauth_provider_public_service_url",
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
-            "oauth_provider_url_configured_in_oauth_provider"
+            "oauth_provider_url_configured_in_oauth_provider",
+            "saml_legacy_acs_url"
     };
 
     @IgnoreForAnnotationCheck
@@ -377,6 +378,13 @@ public class CoreConfig {
                     "the database and block all other CUDs from being used from this instance.")
     private String supertokens_saas_load_only_cud = null;
 
+    @EnvName("SAML_LEGACY_ACS_URL")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("If specified, uses this URL as ACS URL for handling legacy SAML clients")
+    @HideFromDashboard
+    private String saml_legacy_acs_url = null;
+
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -661,6 +669,10 @@ public class CoreConfig {
 
     public String getOtelCollectorConnectionURI() {
         return otel_collector_connection_uri;
+    }
+
+    public String getSAMLLegacyACSURL() {
+        return saml_legacy_acs_url;
     }
 
     private String getConfigFileLocation(Main main) {

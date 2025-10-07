@@ -6,6 +6,7 @@ import java.security.cert.CertificateEncodingException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
@@ -32,13 +33,19 @@ public class LegacyAuthorizeAPI extends WebserverAPI  {
         String clientId = InputParser.getQueryParamOrThrowError(req, "client_id", false);
         String redirectURI = InputParser.getQueryParamOrThrowError(req, "redirect_uri", false);
         String state = InputParser.getQueryParamOrThrowError(req, "state", true);
-        String acsURL = "http://localhost:5225/api/oauth/saml"; // TODO get from settings
 
+        
         try {
+            String acsURL = SAML.getLegacyACSURL(
+                main, getAppIdentifier(req)
+            );
+            if (acsURL == null) {
+                throw new IllegalStateException("Legacy ACS URL not configured");
+            }
             String ssoRedirectURI = SAML.createRedirectURL(
                     main,
                     getTenantIdentifier(req),
-                    getTenantStorage(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
                     clientId,
                     redirectURI,
                     state,
@@ -50,7 +57,7 @@ public class LegacyAuthorizeAPI extends WebserverAPI  {
             JsonObject res = new JsonObject();
             res.addProperty("status", "INVALID_CLIENT_ERROR");
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateEncodingException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateEncodingException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
