@@ -6,6 +6,7 @@ import java.security.cert.CertificateException;
 import org.opensaml.core.xml.io.UnmarshallingException;
 
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
@@ -48,7 +49,7 @@ public class LegacyCallbackAPI extends WebserverAPI {
         try {
             String redirectURI = SAML.handleCallback(
                     getTenantIdentifier(req),
-                    getTenantStorage(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
                     samlResponse,
                     relayState
             );
@@ -63,7 +64,7 @@ public class LegacyCallbackAPI extends WebserverAPI {
         } catch (IDPInitiatedLoginDisallowed e) {
             sendTextResponse(400, "IDP_LOGIN_DISALLOWED_ERROR", resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
-                 CertificateException e) {
+                 CertificateException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

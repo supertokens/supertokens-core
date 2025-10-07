@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -45,7 +46,7 @@ public class LegacyTokenAPI extends WebserverAPI {
             String token = SAML.getTokenForCode(
                     main,
                     getTenantIdentifier(req),
-                    getTenantStorage(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
                     code
             );
 
@@ -58,7 +59,8 @@ public class LegacyTokenAPI extends WebserverAPI {
             res.addProperty("status", "INVALID_CODE_ERROR");
             super.sendJsonResponse(200, res, resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnsupportedJWTSigningAlgorithmException |
-                 NoSuchAlgorithmException | StorageTransactionLogicException | InvalidKeySpecException e) {
+                 NoSuchAlgorithmException | StorageTransactionLogicException | InvalidKeySpecException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }
