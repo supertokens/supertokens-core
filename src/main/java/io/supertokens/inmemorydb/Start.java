@@ -3940,20 +3940,17 @@ public class Start
     }
 
     @Override
-    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims) {
-        try {
-            io.supertokens.inmemorydb.queries.SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString());
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
-        }
+    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims) throws StorageQueryException {
+        SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString());
     }
 
     @Override
-    public SAMLClaimsInfo getSAMLClaimsAndRemoveCode(TenantIdentifier tenantIdentifier, String code) {
-        try {
-            return io.supertokens.inmemorydb.queries.SAMLQueries.getSAMLClaimsAndRemoveCode(this, tenantIdentifier, code);
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
-        }
+    public SAMLClaimsInfo getSAMLClaimsAndRemoveCode(TenantIdentifier tenantIdentifier, String code) throws StorageQueryException {
+        return SAMLQueries.getSAMLClaimsAndRemoveCode(this, tenantIdentifier, code);
+    }
+
+    @Override
+    public void removeExpiredSAMLCodesAndRelayStates() throws StorageQueryException {
+        SAMLQueries.removeExpiredSAMLCodesAndRelayStates(this);
     }
 }

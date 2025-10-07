@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
+import io.supertokens.cronjobs.cleanupSAMLCodes.CleanupSAMLCodes;
 import io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
@@ -280,6 +281,8 @@ public class Main {
         Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
 
         Cronjobs.addCronjob(this, CleanUpWebauthNExpiredDataCron.init(this, uniqueUserPoolIdsTenants));
+
+        Cronjobs.addCronjob(this, CleanupSAMLCodes.init(this, uniqueUserPoolIdsTenants));
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();

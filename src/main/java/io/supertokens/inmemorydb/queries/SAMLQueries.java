@@ -75,7 +75,8 @@ public class SAMLQueries {
                 + "client_id VARCHAR(255) NOT NULL,"
                 + "state TEXT," // nullable
                 + "redirect_uri VARCHAR(1024) NOT NULL,"
-                + "created_at_time BIGINT NOT NULL DEFAULT (strftime('%s','now') * 1000),"
+                + "created_at BIGINT NOT NULL,"
+                + "expires_at BIGINT NOT NULL,"
                 + "PRIMARY KEY (relay_state)," // relayState must be unique
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
@@ -97,7 +98,8 @@ public class SAMLQueries {
                 + "client_id VARCHAR(255) NOT NULL,"
                 + "code VARCHAR(255) NOT NULL,"
                 + "claims TEXT NOT NULL,"
-                + "created_at_time BIGINT NOT NULL DEFAULT (strftime('%s','now') * 1000),"
+                + "created_at BIGINT NOT NULL,"
+                + "expires_at BIGINT NOT NULL,"
                 + "PRIMARY KEY (code),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
@@ -114,7 +116,7 @@ public class SAMLQueries {
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLRelayStateTable();
         String QUERY = "INSERT INTO " + table +
-                " (app_id, tenant_id, relay_state, client_id, state, redirect_uri) VALUES (?, ?, ?, ?, ?, ?)";
+                " (app_id, tenant_id, relay_state, client_id, state, redirect_uri, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
             update(start, QUERY, pst -> {
@@ -128,6 +130,8 @@ public class SAMLQueries {
                     pst.setNull(5, java.sql.Types.VARCHAR);
                 }
                 pst.setString(6, redirectURI);
+                pst.setLong(7, System.currentTimeMillis());
+                pst.setLong(8, System.currentTimeMillis() + 300000);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -138,13 +142,14 @@ public class SAMLQueries {
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLRelayStateTable();
         String QUERY = "SELECT client_id, state, redirect_uri FROM " + table
-                + " WHERE app_id = ? AND tenant_id = ? AND relay_state = ?";
+                + " WHERE app_id = ? AND tenant_id = ? AND relay_state = ? AND expires_at <= ?";
 
         try {
             return execute(start, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, relayState);
+                pst.setLong(4, System.currentTimeMillis());
             }, result -> {
                 if (result.next()) {
                     String clientId = result.getString("client_id");
@@ -163,7 +168,7 @@ public class SAMLQueries {
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClaimsTable();
         String QUERY = "INSERT INTO " + table +
-                " (app_id, tenant_id, client_id, code, claims) VALUES (?, ?, ?, ?, ?)";
+                " (app_id, tenant_id, client_id, code, claims, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try {
             update(start, QUERY, pst -> {
@@ -172,6 +177,8 @@ public class SAMLQueries {
                 pst.setString(3, clientId);
                 pst.setString(4, code);
                 pst.setString(5, claimsJson);
+                pst.setLong(6, System.currentTimeMillis());
+                pst.setLong(7, System.currentTimeMillis() + 300000);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -181,12 +188,13 @@ public class SAMLQueries {
     public static SAMLClaimsInfo getSAMLClaimsAndRemoveCode(Start start, TenantIdentifier tenantIdentifier, String code)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClaimsTable();
-        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ?";
+        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ? AND expires_at <= ?";
         try {
             SAMLClaimsInfo claimsInfo = execute(start, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, code);
+                pst.setLong(4, System.currentTimeMillis());
             }, result -> {
                 if (result.next()) {
                     String clientId = result.getString("client_id");
@@ -413,6 +421,25 @@ public class SAMLQueries {
                 pst.setString(3, clientId);
             }) > 0;
 
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    public static void removeExpiredSAMLCodesAndRelayStates(Start start) throws StorageQueryException {
+        try {
+            {
+                String QUERY = "DELETE FROM " + Config.getConfig(start).getSAMLClaimsTable() + " WHERE expires_at <= ?";
+                update(start, QUERY, pst -> {
+                    pst.setLong(1, System.currentTimeMillis());
+                });
+            }
+            {
+                String QUERY = "DELETE FROM " + Config.getConfig(start).getSAMLRelayStateTable() + " WHERE expires_at <= ?";
+                update(start, QUERY, pst -> {
+                    pst.setLong(1, System.currentTimeMillis());
+                });
+            }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
