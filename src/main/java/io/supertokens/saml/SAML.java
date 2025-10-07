@@ -142,6 +142,11 @@ public class SAML {
         return samlStorage.getSAMLClients(tenantIdentifier);
     }
 
+    public static SAMLClient getClient(TenantIdentifier tenantIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        return samlStorage.getSAMLClient(tenantIdentifier, clientId);
+    }
+
     public static boolean removeSAMLClient(TenantIdentifier tenantIdentifier, Storage storage, String clientId) throws StorageQueryException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
         return samlStorage.removeSAMLClient(tenantIdentifier, clientId);

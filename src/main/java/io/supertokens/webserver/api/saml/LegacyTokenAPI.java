@@ -12,6 +12,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.saml.SAML;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.webserver.WebserverAPI;
@@ -37,12 +38,34 @@ public class LegacyTokenAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String code = req.getParameter("code");
-        if (code == null || code.isBlank()) {
-            throw new ServletException(new BadRequestException("Missing form field: code"));
+        String clientId = req.getParameter("client_id");
+        String clientSecret = req.getParameter("client_secret");
+
+        if (clientId == null || clientId.isBlank()) {
+            throw new ServletException(new BadRequestException("Missing form field: client_id"));
+        }
+        if (clientSecret == null || clientSecret.isBlank()) {
+            throw new ServletException(new BadRequestException("Missing form field: client_secret"));
         }
 
         try {
+            SAMLClient client = SAML.getClient(
+                getTenantIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId
+            );
+            if (client == null) {
+                throw new ServletException(new BadRequestException("Invalid client_id"));
+            }
+            if (!client.clientSecret.equals(clientSecret)) {
+                throw new ServletException(new BadRequestException("Invalid client_secret"));
+            }
+
+            String code = req.getParameter("code");
+            if (code == null || code.isBlank()) {
+                throw new ServletException(new BadRequestException("Missing form field: code"));
+            }
+
             String token = SAML.getTokenForCode(
                     main,
                     getTenantIdentifier(req),
