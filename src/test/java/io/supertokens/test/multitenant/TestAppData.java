@@ -27,6 +27,10 @@ import java.util.Arrays;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import com.google.gson.JsonArray;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
@@ -241,6 +245,10 @@ public class TestAppData {
         options.userPresenceRequired = false;
         options.userVerification = "required";
         ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
+
+        ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://localhost:5225/metadata", "http://saml.example.com", "http://idp.example.com", "abcdefgh", false));
+        ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml"));
+        ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject());
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());

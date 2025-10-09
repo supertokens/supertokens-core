@@ -47,7 +47,7 @@ public class CleanupSAMLCodes extends CronTask {
         if (!Main.isTesting) {
             return getIntervalTimeSeconds();
         } else {
-            return 3600;
+            return 0;
         }
     }
 }

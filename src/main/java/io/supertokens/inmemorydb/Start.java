@@ -770,6 +770,8 @@ public class Start
             //ignore
         } else if (className.equals(OAuthStorage.class.getName())) {
             /* Since OAuth tables store client-related data, we don't add user-specific data here */
+        } else if (className.equals(SAMLStorage.class.getName())) {
+            // no user specific data here
         } else if (className.equals(ActiveUsersStorage.class.getName())) {
             try {
                 ActiveUsersQueries.updateUserLastActive(this, tenantIdentifier.toAppIdentifier(), userId);
