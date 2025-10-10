@@ -6,7 +6,7 @@ on:
 jobs:
   dependency-branches:
     name: Dependency Branches
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}
 
