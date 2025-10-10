@@ -16,6 +16,7 @@ jobs:
         id: result
         with:
           run-for: PR
+          core-branch: ${{ github.head_ref }}
 
   test:
     name: Unit tests
