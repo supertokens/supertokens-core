@@ -19,7 +19,7 @@ jobs:
         id: result
         with:
           run-for: PR
-          core-branch: ${{ github.ref }}
+          core-branch: ${{ github.ref_name }}
 
   docker:
     name: Docker
