@@ -16,8 +16,15 @@
 
 package io.supertokens.saml;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.opensaml.core.config.InitializationException;
 import org.opensaml.core.config.InitializationService;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 
 public class SAMLBootstrap {
     private static volatile boolean initialized = false;
@@ -33,10 +40,48 @@ public class SAMLBootstrap {
                 return;
             }
             try {
-                InitializationService.initialize();
+                Map<String, Level> previousLevels = silenceOpenSAMLLoggers();
+                try {
+                    InitializationService.initialize();
+                } finally {
+                    restoreLoggerLevels(previousLevels);
+                }
                 initialized = true;
             } catch (InitializationException e) {
                 throw new RuntimeException("Failed to initialize OpenSAML", e);
+            }
+        }
+    }
+
+    private static Map<String, Level> silenceOpenSAMLLoggers() {
+        String[] loggerNames = new String[] {
+                "org.opensaml",
+                "org.opensaml.core",
+                "org.opensaml.saml",
+                "org.opensaml.xmlsec",
+                "net.shibboleth.utilities",
+                "net.shibboleth.utilities.java.support.primitive",
+                "org.apache.xml.security"
+        };
+
+        Map<String, Level> previousLevels = new HashMap<>();
+        for (String name : loggerNames) {
+            org.slf4j.Logger slf4jLogger = LoggerFactory.getLogger(name);
+            if (slf4jLogger instanceof Logger) {
+                Logger logbackLogger = (Logger) slf4jLogger;
+                previousLevels.put(name, logbackLogger.getLevel());
+                logbackLogger.setLevel(Level.OFF);
+            }
+        }
+        return previousLevels;
+    }
+
+    private static void restoreLoggerLevels(Map<String, Level> previousLevels) {
+        for (Map.Entry<String, Level> entry : previousLevels.entrySet()) {
+            org.slf4j.Logger slf4jLogger = LoggerFactory.getLogger(entry.getKey());
+            if (slf4jLogger instanceof Logger) {
+                Logger logbackLogger = (Logger) slf4jLogger;
+                logbackLogger.setLevel(entry.getValue());
             }
         }
     }

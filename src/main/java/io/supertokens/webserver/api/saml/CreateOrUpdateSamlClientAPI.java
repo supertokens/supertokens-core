@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.saml;
 
 import java.io.IOException;
+import java.security.cert.CertificateException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -62,6 +63,10 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
 
+        if (redirectURIs.size() == 0) {
+            throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
+        }
+
         if (allowIDPInitiatedLogin == null) {
             allowIDPInitiatedLogin = false;
         }
@@ -75,10 +80,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
                 byte[] decodedBytes = java.util.Base64.getDecoder().decode(metadataXML);
                 metadataXML = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
             } catch (IllegalArgumentException e) {
-                JsonObject res = new JsonObject();
-                res.addProperty("status", "INVALID_METADATA_XML_ERROR");
-                this.sendJsonResponse(200, res, resp);
-                return;
+                throw new ServletException(new BadRequestException("metadataXML or XML fetched from the URL does not have a valid SAML metadata"));
             }
         } else {
             try {
@@ -99,10 +101,8 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
-        } catch (MalformedSAMLMetadataXMLException e) {
-            JsonObject res = new JsonObject();
-            res.addProperty("status", "INVALID_METADATA_XML_ERROR");
-            this.sendJsonResponse(200, res, resp);
+        } catch (MalformedSAMLMetadataXMLException | CertificateException e) {
+            throw new ServletException(new BadRequestException("metadataXML or XML fetched from the URL does not have a valid SAML metadata"));
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }

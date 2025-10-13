@@ -111,7 +111,7 @@ public class SAML {
     public static SAMLClient createOrUpdateSAMLClient(
             TenantIdentifier tenantIdentifier, Storage storage,
             String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, String metadataURL, boolean allowIDPInitiatedLogin)
-            throws MalformedSAMLMetadataXMLException, StorageQueryException {
+            throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         var metadata = loadIdpMetadata(metadataXML);
@@ -131,6 +131,7 @@ public class SAML {
         }
 
         String idpSigningCertificate = extractIdpSigningCertificate(metadata);
+        getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
         SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin);
