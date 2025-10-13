@@ -39,6 +39,7 @@ public class SemVer implements Comparable<SemVer> {
     public static final SemVer v5_1 = new SemVer("5.1");
     public static final SemVer v5_2 = new SemVer("5.2");
     public static final SemVer v5_3 = new SemVer("5.3");
+    public static final SemVer v5_4 = new SemVer("5.4");
 
     final private String version;
 

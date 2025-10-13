@@ -53,7 +53,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", true);
         String clientSecret = InputParser.parseStringOrThrowError(input, "clientSecret", true);
-        String spEntityId = InputParser.parseStringOrThrowError(input, "spEntityId", true);
+        String spEntityId = InputParser.parseStringOrThrowError(input, "spEntityId", false);
         String defaultRedirectURI = InputParser.parseStringOrThrowError(input, "defaultRedirectURI", false);
         JsonArray redirectURIs = InputParser.parseArrayOrThrowError(input, "redirectURIs", false);
 
