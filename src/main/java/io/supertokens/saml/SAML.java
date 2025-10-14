@@ -47,9 +47,12 @@ import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.Attribute;
 import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.opensaml.saml.saml2.core.Audience;
+import org.opensaml.saml.saml2.core.AudienceRestriction;
 import org.opensaml.saml.saml2.core.AuthnContext;
 import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Conditions;
 import org.opensaml.saml.saml2.core.Issuer;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
@@ -435,6 +438,7 @@ public class SAML {
             throw new SAMLResponseVerificationFailedException();
         }
         validateSamlResponseTimestamps(response);
+        validateSamlResponseAudience(response, client.spEntityId);
 
         var claims = extractAllClaims(response);
 
@@ -462,6 +466,44 @@ public class SAML {
             return newUri.toString();
         } catch (URISyntaxException e) {
             throw new IllegalStateException("should never happen", e);
+        }
+    }
+
+    private static void validateSamlResponseAudience(Response samlResponse, String expectedAudience)
+            throws SAMLResponseVerificationFailedException {
+        boolean audienceMatched = false;
+
+        for (Assertion assertion : samlResponse.getAssertions()) {
+            Conditions conditions = assertion.getConditions();
+            if (conditions == null) {
+                continue;
+            }
+            java.util.List<AudienceRestriction> restrictions = conditions.getAudienceRestrictions();
+            if (restrictions == null || restrictions.isEmpty()) {
+                continue;
+            }
+            for (AudienceRestriction ar : restrictions) {
+                java.util.List<Audience> audiences = ar.getAudiences();
+                if (audiences == null || audiences.isEmpty()) {
+                    continue;
+                }
+                for (Audience aud : audiences) {
+                    if (expectedAudience.equals(aud.getURI())) {
+                        audienceMatched = true;
+                        break;
+                    }
+                }
+                if (audienceMatched) {
+                    break;
+                }
+            }
+            if (audienceMatched) {
+                break;
+            }
+        }
+
+        if (!audienceMatched) {
+            throw new SAMLResponseVerificationFailedException();
         }
     }
 

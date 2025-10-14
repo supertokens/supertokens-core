@@ -149,4 +149,61 @@ public class HandleSAMLCallbackTest5_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testWrongAudienceInSAMLResponse() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String spEntityId = "http://example.com/saml";
+        String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
+        String acsURL = "http://localhost:3000/acs";
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                spEntityId,
+                defaultRedirectURI,
+                acsURL,
+                idpEntityId,
+                idpSsoUrl
+        );
+
+        // Audience that does not match the client's SP Entity ID
+        String wrongAudience = "http://wrong.example.com/sp";
+
+        // Create a login request to generate a RelayState, then use it during callback
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process,
+                clientInfo.clientId,
+                clientInfo.defaultRedirectURI,
+                clientInfo.acsURL,
+                "test-state"
+        );
+
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                clientInfo.idpEntityId,
+                wrongAudience,
+                clientInfo.acsURL,
+                "user@example.com",
+                null,
+                relayState,
+                clientInfo.keyMaterial,
+                300
+        );
+
+        JsonObject body = new JsonObject();
+        body.addProperty("samlResponse", samlResponseBase64);
+        body.addProperty("relayState", relayState);
+
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/callback", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals("SAML_RESPONSE_VERIFICATION_FAILED_ERROR", resp.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
