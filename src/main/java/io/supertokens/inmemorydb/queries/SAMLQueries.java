@@ -141,8 +141,8 @@ public class SAMLQueries {
     public static SAMLRelayStateInfo getRelayStateInfo(Start start, TenantIdentifier tenantIdentifier, String relayState)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLRelayStateTable();
-        String QUERY = "SELECT client_id, state, redirect_uri FROM " + table
-                + " WHERE app_id = ? AND tenant_id = ? AND relay_state = ? AND expires_at <= ?";
+        String QUERY = "SELECT client_id, state, redirect_uri, expires_at FROM " + table
+                + " WHERE app_id = ? AND tenant_id = ? AND relay_state = ? AND expires_at >= ?";
 
         try {
             return execute(start, QUERY, pst -> {
@@ -188,7 +188,7 @@ public class SAMLQueries {
     public static SAMLClaimsInfo getSAMLClaimsAndRemoveCode(Start start, TenantIdentifier tenantIdentifier, String code)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClaimsTable();
-        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ? AND expires_at <= ?";
+        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ? AND expires_at >= ?";
         try {
             SAMLClaimsInfo claimsInfo = execute(start, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
