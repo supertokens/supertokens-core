@@ -85,8 +85,10 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
             res.addProperty("status", "IDP_LOGIN_DISALLOWED_ERROR");
             super.sendJsonResponse(200, res, resp);
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
-                 CertificateException e) {
+        } catch (UnmarshallingException | XMLParserException e) {
+            throw new ServletException(new BadRequestException("Invalid or malformed SAML response input"));
+
+        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateException e) {
             throw new ServletException(e);
         }
     }
