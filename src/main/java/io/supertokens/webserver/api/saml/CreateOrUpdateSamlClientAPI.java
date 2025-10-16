@@ -23,8 +23,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
-import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
@@ -58,15 +56,14 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         String defaultRedirectURI = InputParser.parseStringOrThrowError(input, "defaultRedirectURI", false);
         JsonArray redirectURIs = InputParser.parseArrayOrThrowError(input, "redirectURIs", false);
 
-        String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", true);
-        String metadataURL = InputParser.parseStringOrThrowError(input, "metadataURL", true);
-
-        Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
-        Boolean enableRequestSigning = InputParser.parseBooleanOrThrowError(input, "enableRequestSigning", true);
-
         if (redirectURIs.size() == 0) {
             throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
         }
+
+        String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", false);
+
+        Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
+        Boolean enableRequestSigning = InputParser.parseBooleanOrThrowError(input, "enableRequestSigning", true);
 
         if (allowIDPInitiatedLogin == null) {
             allowIDPInitiatedLogin = false;
@@ -76,23 +73,11 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             enableRequestSigning = true;
         }
 
-        if (metadataXML == null && metadataURL == null) {
-            throw new ServletException(new BadRequestException("Either metadataXML or metadataURL is required in the input"));
-        }
-
-        if (metadataXML != null) {
-            try {
-                byte[] decodedBytes = java.util.Base64.getDecoder().decode(metadataXML);
-                metadataXML = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-            } catch (IllegalArgumentException e) {
-                throw new ServletException(new BadRequestException("metadataXML or XML fetched from the URL does not have a valid SAML metadata"));
-            }
-        } else {
-            try {
-                metadataXML = HttpRequest.sendGETRequest(this.main, null, metadataURL, null, 2000, 2000, 0);
-            } catch (HttpResponseException | IOException e) {
-                throw new ServletException(new BadRequestException("Could not fetch metadata from the URL"));
-            }
+        try {
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(metadataXML);
+            metadataXML = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new ServletException(new BadRequestException("metadataXML does not have a valid SAML metadata"));
         }
 
         if (clientId == null) {
@@ -102,12 +87,12 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                 getTenantIdentifier(req), getTenantStorage(req),
-                    clientId, clientSecret, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, metadataURL, allowIDPInitiatedLogin, enableRequestSigning);
+                    clientId, clientSecret, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
         } catch (MalformedSAMLMetadataXMLException | CertificateException e) {
-            throw new ServletException(new BadRequestException("metadataXML or XML fetched from the URL does not have a valid SAML metadata"));
+            throw new ServletException(new BadRequestException("metadataXML does not have a valid SAML metadata"));
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }

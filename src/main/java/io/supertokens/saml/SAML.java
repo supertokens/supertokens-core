@@ -113,7 +113,7 @@ import net.shibboleth.utilities.java.support.xml.XMLParserException;
 public class SAML {
     public static SAMLClient createOrUpdateSAMLClient(
             TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, String metadataURL, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
+            String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -137,7 +137,7 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 

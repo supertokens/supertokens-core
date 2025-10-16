@@ -37,6 +37,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.saml.MockSAML;
 import io.supertokens.utils.SemVer;
 
 public class CreateOrUpdateSAMLClientTest5_4 {
@@ -63,7 +64,14 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        createClientInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+
+		// Generate IdP metadata using MockSAML
+		MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+		String idpEntityId = "https://saml.example.com/entityid";
+		String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+		String generatedMetadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+		String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(generatedMetadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		createClientInput.addProperty("metadataXML", metadataXMLBase64);
 
         String clientSecret = "my-secret-abc-123";
         createClientInput.addProperty("clientSecret", clientSecret);
@@ -99,14 +107,21 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        createClientInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, km.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
 
         JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                 SemVer.v5_4.get(), "saml");
 
         // Ensure custom clientId is respected and standard fields present
-        verifyClientStructureWithoutClientSecret(resp, false, true);
+        verifyClientStructureWithoutClientSecret(resp, false);
         assertEquals("OK", resp.get("status").getAsString());
         assertEquals(customClientId, resp.get("clientId").getAsString());
 
@@ -175,7 +190,7 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: redirectURIs is required in the input", e.getMessage());
-        }
+       }
 
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-azure");
         try {
@@ -186,82 +201,33 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Either metadataXML or metadataURL is required in the input", e.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: Field name 'metadataXML' is invalid in JSON input", e.getMessage());
         }
-
-        createClientInput.addProperty("metadataURL", "http://qwerasdftyui.com/metadata");
-        try {
-            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                    SemVer.v5_4.get(), "saml");
-            fail();
-
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Could not fetch metadata from the URL", e.getMessage());
-        }
-
-        createClientInput.addProperty("metadataURL", "http://example.com/abcd");
-        try {
-            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                    SemVer.v5_4.get(), "saml");
-            fail();
-
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Could not fetch metadata from the URL", e.getMessage());
-        }
-
-        createClientInput.addProperty("metadataURL", "https://example.com/");
-        try {
-            JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                    SemVer.v5_4.get(), "saml");
-            fail();
-
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: metadataXML or XML fetched from the URL does not have a valid SAML metadata", e.getMessage());
-        }
-        createClientInput.addProperty("metadataURL", "https://www.w3schools.com/xml/note.xml");
-        try {
-            JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                    SemVer.v5_4.get(), "saml");
-            fail();
-
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: metadataXML or XML fetched from the URL does not have a valid SAML metadata", e.getMessage());
-        }
-
-        createClientInput.remove("metadataURL");
 
         createClientInput.addProperty("metadataXML", "");
         try {
-            JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                     SemVer.v5_4.get(), "saml");
             fail();
 
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: metadataXML or XML fetched from the URL does not have a valid SAML metadata", e.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: metadataXML does not have a valid SAML metadata", e.getMessage());
         }
 
         String helloXml = "<hello>world</hello>";
         String helloXmlBase64 = java.util.Base64.getEncoder().encodeToString(helloXml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         createClientInput.addProperty("metadataXML", helloXmlBase64);
         try {
-            JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                     SemVer.v5_4.get(), "saml");
             fail();
 
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: metadataXML or XML fetched from the URL does not have a valid SAML metadata", e.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: metadataXML does not have a valid SAML metadata", e.getMessage());
         }
 
         // has an invalid certificate
@@ -298,14 +264,14 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         metadataXML = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         createClientInput.addProperty("metadataXML", metadataXML);
         try {
-            JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                     SemVer.v5_4.get(), "saml");
             fail();
 
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: metadataXML or XML fetched from the URL does not have a valid SAML metadata", e.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: metadataXML does not have a valid SAML metadata", e.getMessage());
         }
 
         process.kill();
@@ -325,44 +291,18 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
 
-        String metadataXML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
-                "<md:EntityDescriptor xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\" entityID=\"https://saml.example.com/entityid\" validUntil=\"2035-10-13T09:51:02.835Z\">\n" +
-                "  <md:IDPSSODescriptor WantAuthnRequestsSigned=\"true\" protocolSupportEnumeration=\"urn:oasis:names:tc:SAML:2.0:protocol\">\n" +
-                "    <md:KeyDescriptor use=\"signing\">\n" +
-                "      <ds:KeyInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">\n" +
-                "        <ds:X509Data>\n" +
-                "          <ds:X509Certificate>MIIC4jCCAcoCCQC33wnybT5QZDANBgkqhkiG9w0BAQsFADAyMQswCQYDVQQGEwJV\n" +
-                "SzEPMA0GA1UECgwGQm94eUhRMRIwEAYDVQQDDAlNb2NrIFNBTUwwIBcNMjIwMjI4\n" +
-                "MjE0NjM4WhgPMzAyMTA3MDEyMTQ2MzhaMDIxCzAJBgNVBAYTAlVLMQ8wDQYDVQQK\n" +
-                "DAZCb3h5SFExEjAQBgNVBAMMCU1vY2sgU0FNTDCCASIwDQYJKoZIhvcNAQEBBQAD\n" +
-                "ggEPADCCAQoCggEBALGfYettMsct1T6tVUwTudNJH5Pnb9GGnkXi9Zw/e6x45DD0\n" +
-                "RuRONbFlJ2T4RjAE/uG+AjXxXQ8o2SZfb9+GgmCHuTJFNgHoZ1nFVXCmb/Hg8Hpd\n" +
-                "4vOAGXndixaReOiq3EH5XvpMjMkJ3+8+9VYMzMZOjkgQtAqO36eAFFfNKX7dTj3V\n" +
-                "pwLkvz6/KFCq8OAwY+AUi4eZm5J57D31GzjHwfjH9WTeX0MyndmnNB1qV75qQR3b\n" +
-                "2/W5sGHRv+9AarggJkF+ptUkXoLtVA51wcfYm6hILptpde5FQC8RWY1YrswBWAEZ\n" +
-                "NfyrR4JeSweElNHg4NVOs4TwGjOPwWGqzTfgTlECAwEAATANBgkqhkiG9w0BAQsF\n" +
-                "AAOCAQEAAYRlYflSXAWoZpFfwNiCQVE5d9zZ0DPzNdWhAybXcTyMf0z5mDf6FWBW\n" +
-                "5Gyoi9u3EMEDnzLcJNkwJAAc39Apa4I2/tml+Jy29dk8bTyX6m93ngmCgdLh5Za4\n" +
-                "khuU3AM3L63g7VexCuO7kwkjh/+LqdcIXsVGO6XDfu2QOs1Xpe9zIzLpwm/RNYeX\n" +
-                "UjbSj5ce/jekpAw7qyVVL4xOyh8AtUW1ek3wIw1MJvEgEPt0d16oshWJpoS1OT8L\n" +
-                "r/22SvYEo3EmSGdTVGgk3x3s+A0qWAqTcyjr7Q4s/GKYRFfomGwz0TZ4Iw1ZN99M\n" +
-                "m0eo2USlSRTVl7QHRTuiuSThHpLKQQ==</ds:X509Certificate>\n" +
-                "        </ds:X509Data>\n" +
-                "      </ds:KeyInfo>\n" +
-                "    </md:KeyDescriptor>\n" +
-                "    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>\n" +
-                "    <md:SingleSignOnService Binding=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect\" Location=\"https://mocksaml.com/api/saml/sso\"/>\n" +
-                "    <md:SingleSignOnService Binding=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST\" Location=\"https://mocksaml.com/api/saml/sso\"/>\n" +
-                "  </md:IDPSSODescriptor>\n" +
-                "</md:EntityDescriptor>";
-
-        metadataXML = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        createClientInput.addProperty("metadataXML", metadataXML);
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, km.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
 
         JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                 SemVer.v5_4.get(), "saml");
-        verifyClientStructureWithoutClientSecret(resp, true, false);
+        verifyClientStructureWithoutClientSecret(resp, true);
 
         assertEquals("OK", resp.get("status").getAsString());
         // Check the actual returned values for each field
@@ -376,54 +316,13 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         assertEquals("http://example.com/saml", resp.get("spEntityId").getAsString());
 
-        assertEquals("https://saml.example.com/entityid", resp.get("idpEntityId").getAsString());
+        assertEquals(idpEntityId, resp.get("idpEntityId").getAsString());
 
-        // Just check the certificate string matches the start, as it is large
-        String expectedCertStart = "MIIC4jCCAcoCCQC33wnybT5QZDANBgkqhkiG9w0BAQsFADAyMQswCQYDVQQGEwJVSzEPMA0GA1UECgwGQm94eUhRMRIwEAYDVQQDDAlNb2NrIFNBTUwwIBcNMjIwMjI4MjE0NjM4WhgPMzAyMTA3MDEyMTQ2MzhaMDIxCzAJBgNVBAYTAlVLMQ8wDQYDVQQKDAZCb3h5SFExEjAQBgNVBAMMCU1vY2sgU0FNTDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALGfYettMsct1T6tVUwTudNJH5Pnb9GGnkXi9Zw/e6x45DD0RuRONbFlJ2T4RjAE/uG+AjXxXQ8o2SZfb9+GgmCHuTJFNgHoZ1nFVXCmb/Hg8Hpd4vOAGXndixaReOiq3EH5XvpMjMkJ3+8+9VYMzMZOjkgQtAqO36eAFFfNKX7dTj3VpwLkvz6/KFCq8OAwY+AUi4eZm5J57D31GzjHwfjH9WTeX0MyndmnNB1qV75qQR3b2/W5sGHRv+9AarggJkF+ptUkXoLtVA51wcfYm6hILptpde5FQC8RWY1YrswBWAEZNfyrR4JeSweElNHg4NVOs4TwGjOPwWGqzTfgTlECAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAAYRlYflSXAWoZpFfwNiCQVE5d9zZ0DPzNdWhAybXcTyMf0z5mDf6FWBW5Gyoi9u3EMEDnzLcJNkwJAAc39Apa4I2/tml+Jy29dk8bTyX6m93ngmCgdLh5Za4khuU3AM3L63g7VexCuO7kwkjh/+LqdcIXsVGO6XDfu2QOs1Xpe9zIzLpwm/RNYeXUjbSj5ce/jekpAw7qyVVL4xOyh8AtUW1ek3wIw1MJvEgEPt0d16oshWJpoS1OT8Lr/22SvYEo3EmSGdTVGgk3x3s+A0qWAqTcyjr7Q4s/GKYRFfomGwz0TZ4Iw1ZN99Mm0eo2USlSRTVl7QHRTuiuSThHpLKQQ==";
-        assertTrue(resp.get("idpSigningCertificate").getAsString().startsWith(expectedCertStart));
-
-        assertFalse(resp.get("allowIDPInitiatedLogin").getAsBoolean());
-
-        assertEquals("OK", resp.get("status").getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testCreationUsingURL() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        JsonObject createClientInput = new JsonObject();
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
-        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
-        createClientInput.add("redirectURIs", new JsonArray());
-        createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-
-        createClientInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
-
-        JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                SemVer.v5_4.get(), "saml");
-        verifyClientStructureWithoutClientSecret(resp, true, true);
-
-        assertEquals("OK", resp.get("status").getAsString());
-        assertTrue(resp.get("clientId").getAsString().startsWith("st_saml_"));
-
-        assertEquals("http://localhost:3000/auth/callback/saml-mock", resp.get("defaultRedirectURI").getAsString());
-
-        assertTrue(resp.get("redirectURIs").isJsonArray());
-        assertEquals(1, resp.get("redirectURIs").getAsJsonArray().size());
-        assertEquals("http://localhost:3000/auth/callback/saml-mock", resp.get("redirectURIs").getAsJsonArray().get(0).getAsString());
-
-        assertEquals("http://example.com/saml", resp.get("spEntityId").getAsString());
-
-        assertEquals("https://saml.example.com/entityid", resp.get("idpEntityId").getAsString());
+        String expectedCertBase64 = java.util.Base64.getEncoder().encodeToString(km.certificate.getEncoded());
+        assertEquals(expectedCertBase64, resp.get("idpSigningCertificate").getAsString());
 
         assertFalse(resp.get("allowIDPInitiatedLogin").getAsBoolean());
+
         assertEquals("OK", resp.get("status").getAsString());
 
         process.kill();
@@ -443,12 +342,19 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        createClientInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial km2 = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId2 = "https://saml.example.com/entityid";
+        String idpSsoUrl2 = "https://mocksaml.com/api/saml/sso";
+        String metadataXML2 = MockSAML.generateIdpMetadataXML(idpEntityId2, idpSsoUrl2, km2.certificate);
+        String metadataXMLBase64_2 = java.util.Base64.getEncoder().encodeToString(metadataXML2.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64_2);
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
                 SemVer.v5_4.get(), "saml");
-        verifyClientStructureWithoutClientSecret(createResp, true, true);
+        verifyClientStructureWithoutClientSecret(createResp, true);
 
         String clientId = createResp.get("clientId").getAsString();
 
@@ -463,12 +369,12 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         updateInput.add("redirectURIs", updatedRedirectURIs);
         updateInput.addProperty("allowIDPInitiatedLogin", true);
         // metadata is required by the API even on update
-        updateInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+        updateInput.addProperty("metadataXML", metadataXMLBase64_2);
 
         JsonObject updateResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", updateInput, 1000, 1000, null,
                 SemVer.v5_4.get(), "saml");
-        verifyClientStructureWithoutClientSecret(updateResp, false, true);
+        verifyClientStructureWithoutClientSecret(updateResp, false);
 
         assertEquals("OK", updateResp.get("status").getAsString());
         assertEquals(clientId, updateResp.get("clientId").getAsString());
@@ -484,8 +390,8 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private static void verifyClientStructureWithoutClientSecret(JsonObject client, boolean generatedClientId, boolean hasMetadataURL) throws Exception {
-        assertEquals(hasMetadataURL ? 9 : 8, client.size());
+    private static void verifyClientStructureWithoutClientSecret(JsonObject client, boolean generatedClientId) throws Exception {
+        assertEquals(9, client.size());
 
         String[] FIELDS = new String[]{
                 "clientId",
@@ -495,15 +401,12 @@ public class CreateOrUpdateSAMLClientTest5_4 {
                 "idpEntityId",
                 "idpSigningCertificate",
                 "allowIDPInitiatedLogin",
+                "enableRequestSigning",
                 "status"
         };
 
         for (String field : FIELDS) {
             assertTrue(client.has(field));
-        }
-
-        if (hasMetadataURL) {
-            assertTrue(client.has("metadataURL"));
         }
 
         if (generatedClientId) {
@@ -518,6 +421,7 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertTrue(client.get("spEntityId").isJsonPrimitive());
         assertTrue(client.get("idpEntityId").isJsonPrimitive());
         assertTrue(client.get("idpSigningCertificate").isJsonPrimitive());
+        assertTrue(client.get("enableRequestSigning").isJsonPrimitive());
 
         assertEquals("OK", client.get("status").getAsString());
     }

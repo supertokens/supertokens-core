@@ -18,6 +18,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.saml.MockSAML;
 import io.supertokens.utils.SemVer;
 
 public class RemoveSAMLClientTest5_4 {
@@ -92,7 +93,14 @@ public class RemoveSAMLClientTest5_4 {
         create.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         create.add("redirectURIs", new JsonArray());
         create.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        create.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+        
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        create.addProperty("metadataXML", metadataXMLBase64);
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", create, 1000, 1000, null,
@@ -136,7 +144,14 @@ public class RemoveSAMLClientTest5_4 {
         create.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         create.add("redirectURIs", new JsonArray());
         create.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        create.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+        
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        create.addProperty("metadataXML", metadataXMLBase64);
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", create, 1000, 1000, null,

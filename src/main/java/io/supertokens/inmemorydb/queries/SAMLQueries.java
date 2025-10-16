@@ -48,7 +48,6 @@ public class SAMLQueries {
                 + "sso_login_url TEXT NOT NULL,"
                 + "redirect_uris TEXT NOT NULL," // store JsonArray.toString()
                 + "default_redirect_uri VARCHAR(1024) NOT NULL,"
-                + "metadata_url VARCHAR(1024),"
                 + "sp_entity_id VARCHAR(1024),"
                 + "idp_entity_id VARCHAR(1024),"
                 + "idp_signing_certificate TEXT,"
@@ -227,7 +226,6 @@ public class SAMLQueries {
             String ssoLoginURL,
             String redirectURIsJson,
             String defaultRedirectURI,
-            String metadataURL,
             String spEntityId,
             String idpEntityId,
             String idpSigningCertificate,
@@ -236,10 +234,10 @@ public class SAMLQueries {
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
         String QUERY = "INSERT INTO " + table +
-                " (app_id, tenant_id, client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, metadata_url, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                " (app_id, tenant_id, client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (app_id, tenant_id, client_id) DO UPDATE SET " +
-                "client_secret = ?, sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, metadata_url = ?, sp_entity_id = ?, idp_entity_id = ?, idp_signing_certificate = ?, allow_idp_initiated_login = ?, enable_request_signing = ?";
+                "client_secret = ?, sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, sp_entity_id = ?, idp_entity_id = ?, idp_signing_certificate = ?, allow_idp_initiated_login = ?, enable_request_signing = ?";
 
         try {
             update(start, QUERY, pst -> {
@@ -254,59 +252,49 @@ public class SAMLQueries {
                 pst.setString(5, ssoLoginURL);
                 pst.setString(6, redirectURIsJson);
                 pst.setString(7, defaultRedirectURI);
-                if (metadataURL != null) {
-                    pst.setString(8, metadataURL);
-                } else {
-                    pst.setNull(8, Types.VARCHAR);
-                }
                 if (spEntityId != null) {
-                    pst.setString(9, spEntityId);
+                    pst.setString(8, spEntityId);
+                } else {
+                    pst.setNull(8, java.sql.Types.VARCHAR);
+                }
+                if (idpEntityId != null) {
+                    pst.setString(9, idpEntityId);
                 } else {
                     pst.setNull(9, java.sql.Types.VARCHAR);
                 }
-                if (idpEntityId != null) {
-                    pst.setString(10, idpEntityId);
-                } else {
-                    pst.setNull(10, java.sql.Types.VARCHAR);
-                }
                 if (idpSigningCertificate != null) {
-                    pst.setString(11, idpSigningCertificate);
+                    pst.setString(10, idpSigningCertificate);
                 } else {
-                    pst.setNull(11, Types.VARCHAR);
+                    pst.setNull(10, Types.VARCHAR);
                 }
-                pst.setBoolean(12, allowIDPInitiatedLogin);
-                pst.setBoolean(13, enableRequestSigning);
+                pst.setBoolean(11, allowIDPInitiatedLogin);
+                pst.setBoolean(12, enableRequestSigning);
 
                 if (clientSecret != null) {
-                    pst.setString(14, clientSecret);
+                    pst.setString(13, clientSecret);
                 } else {
-                    pst.setNull(14, Types.VARCHAR);
+                    pst.setNull(13, Types.VARCHAR);
                 }
-                pst.setString(15, ssoLoginURL);
-                pst.setString(16, redirectURIsJson);
-                pst.setString(17, defaultRedirectURI);
-                if (metadataURL != null) {
-                    pst.setString(18, metadataURL);
-                } else {
-                    pst.setNull(18, Types.VARCHAR);
-                }
+                pst.setString(14, ssoLoginURL);
+                pst.setString(15, redirectURIsJson);
+                pst.setString(16, defaultRedirectURI);
                 if (spEntityId != null) {
-                    pst.setString(19, spEntityId);
+                    pst.setString(17, spEntityId);
                 } else {
-                    pst.setNull(19, java.sql.Types.VARCHAR);
+                    pst.setNull(17, java.sql.Types.VARCHAR);
                 }
                 if (idpEntityId != null) {
-                    pst.setString(20, idpEntityId);
+                    pst.setString(18, idpEntityId);
                 } else {
-                    pst.setNull(20, java.sql.Types.VARCHAR);
+                    pst.setNull(18, java.sql.Types.VARCHAR);
                 }
                 if (idpSigningCertificate != null) {
-                    pst.setString(21, idpSigningCertificate);
+                    pst.setString(19, idpSigningCertificate);
                 } else {
-                    pst.setNull(21, Types.VARCHAR);
+                    pst.setNull(19, Types.VARCHAR);
                 }
-                pst.setBoolean(22, allowIDPInitiatedLogin);
-                pst.setBoolean(23, enableRequestSigning);
+                pst.setBoolean(20, allowIDPInitiatedLogin);
+                pst.setBoolean(21, enableRequestSigning);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -316,7 +304,7 @@ public class SAMLQueries {
     public static SAMLClient getSAMLClient(Start start, TenantIdentifier tenantIdentifier, String clientId)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
-        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, metadata_url, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
+        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
                 + " WHERE app_id = ? AND tenant_id = ? AND client_id = ?";
 
         try {
@@ -331,7 +319,6 @@ public class SAMLQueries {
                     String ssoLoginURL = result.getString("sso_login_url");
                     String redirectUrisJson = result.getString("redirect_uris");
                     String defaultRedirectURI = result.getString("default_redirect_uri");
-                    String metadataURL = result.getString("metadata_url");
                     String spEntityId = result.getString("sp_entity_id");
                     String idpEntityId = result.getString("idp_entity_id");
                     String idpSigningCertificate = result.getString("idp_signing_certificate");
@@ -339,7 +326,7 @@ public class SAMLQueries {
                     boolean enableRequestSigning = result.getBoolean("enable_request_signing");
 
                     JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
-                    return new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+                    return new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
                 }
                 return null;
             });
@@ -350,7 +337,7 @@ public class SAMLQueries {
 
     public static SAMLClient getSAMLClientByIDPEntityId(Start start, TenantIdentifier tenantIdentifier, String idpEntityId) throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
-        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, metadata_url, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
+        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
                 + " WHERE app_id = ? AND tenant_id = ? AND idp_entity_id = ?";
 
         try {
@@ -365,7 +352,6 @@ public class SAMLQueries {
                     String ssoLoginURL = result.getString("sso_login_url");
                     String redirectUrisJson = result.getString("redirect_uris");
                     String defaultRedirectURI = result.getString("default_redirect_uri");
-                    String metadataURL = result.getString("metadata_url");
                     String spEntityId = result.getString("sp_entity_id");
                     String fetchedIdpEntityId = result.getString("idp_entity_id");
                     String idpSigningCertificate = result.getString("idp_signing_certificate");
@@ -373,7 +359,7 @@ public class SAMLQueries {
                     boolean enableRequestSigning = result.getBoolean("enable_request_signing");
 
                     JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
-                    return new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, fetchedIdpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+                    return new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId, fetchedIdpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
                 }
                 return null;
             });
@@ -385,7 +371,7 @@ public class SAMLQueries {
     public static List<SAMLClient> getSAMLClients(Start start, TenantIdentifier tenantIdentifier)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClientsTable();
-        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, metadata_url, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
+        String QUERY = "SELECT client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, sp_entity_id, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing FROM " + table
                 + " WHERE app_id = ? AND tenant_id = ?";
 
         try {
@@ -400,7 +386,6 @@ public class SAMLQueries {
                     String ssoLoginURL = result.getString("sso_login_url");
                     String redirectUrisJson = result.getString("redirect_uris");
                     String defaultRedirectURI = result.getString("default_redirect_uri");
-                    String metadataURL = result.getString("metadata_url");
                     String spEntityId = result.getString("sp_entity_id");
                     String idpEntityId = result.getString("idp_entity_id");
                     String idpSigningCertificate = result.getString("idp_signing_certificate");
@@ -408,7 +393,7 @@ public class SAMLQueries {
                     boolean enableRequestSigning = result.getBoolean("enable_request_signing");
 
                     JsonArray redirectURIs = JsonParser.parseString(redirectUrisJson).getAsJsonArray();
-                    clients.add(new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning));
+                    clients.add(new SAMLClient(fetchedClientId, clientSecret, ssoLoginURL, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning));
                 }
                 return clients;
             });

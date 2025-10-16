@@ -126,7 +126,14 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
-        createClientInput.addProperty("metadataURL", "https://mocksaml.com/api/saml/metadata");
+        
+        // Generate IdP metadata using MockSAML
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");
