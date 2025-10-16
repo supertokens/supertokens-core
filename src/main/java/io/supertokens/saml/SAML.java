@@ -113,7 +113,7 @@ import net.shibboleth.utilities.java.support.xml.XMLParserException;
 public class SAML {
     public static SAMLClient createOrUpdateSAMLClient(
             TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, String metadataURL, boolean allowIDPInitiatedLogin)
+            String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, String metadataURL, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -137,7 +137,7 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin);
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, metadataURL, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
@@ -217,7 +217,8 @@ public class SAML {
                 main,
                 tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
-                client.spEntityId, acsURL);
+                client.spEntityId, acsURL,
+                client.enableRequestSigning);
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
@@ -243,7 +244,7 @@ public class SAML {
         }
     }
 
-    private static AuthnRequest buildAuthnRequest(Main main, AppIdentifier appIdentifier, String idpSsoUrl, String spEntityId, String acsUrl)
+    private static AuthnRequest buildAuthnRequest(Main main, AppIdentifier appIdentifier, String idpSsoUrl, String spEntityId, String acsUrl, boolean enableRequestSigning)
             throws TenantOrAppNotFoundException, StorageQueryException, CertificateEncodingException {
         XMLObjectBuilderFactory builders = XMLObjectProviderRegistrySupport.getBuilderFactory();
 
@@ -277,7 +278,7 @@ public class SAML {
 
         authnRequest.setAssertionConsumerServiceURL(acsUrl);
 
-        if (true) { // TODO Add option to enable/disable request signing in the client
+        if (enableRequestSigning) {
             Signature signature = new SignatureBuilder().buildObject();
             signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA256);
             signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);

@@ -62,6 +62,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         String metadataURL = InputParser.parseStringOrThrowError(input, "metadataURL", true);
 
         Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
+        Boolean enableRequestSigning = InputParser.parseBooleanOrThrowError(input, "enableRequestSigning", true);
 
         if (redirectURIs.size() == 0) {
             throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
@@ -69,6 +70,10 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         if (allowIDPInitiatedLogin == null) {
             allowIDPInitiatedLogin = false;
+        }
+
+        if (enableRequestSigning == null) {
+            enableRequestSigning = true;
         }
 
         if (metadataXML == null && metadataURL == null) {
@@ -97,7 +102,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                 getTenantIdentifier(req), getTenantStorage(req),
-                    clientId, clientSecret, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, metadataURL, allowIDPInitiatedLogin);
+                    clientId, clientSecret, spEntityId, defaultRedirectURI, redirectURIs, metadataXML, metadataURL, allowIDPInitiatedLogin, enableRequestSigning);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);

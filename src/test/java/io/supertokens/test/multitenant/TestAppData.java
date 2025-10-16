@@ -16,9 +16,6 @@
 
 package io.supertokens.test.multitenant;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.time.Duration;
@@ -27,25 +24,17 @@ import java.util.Arrays;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import com.google.gson.JsonArray;
-import io.supertokens.pluginInterface.saml.SAMLClient;
-import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
-import io.supertokens.pluginInterface.saml.SAMLStorage;
-import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
-import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
-import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException;
-import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
@@ -70,7 +59,17 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
+import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -246,7 +245,7 @@ public class TestAppData {
         options.userVerification = "required";
         ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
 
-        ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://localhost:5225/metadata", "http://saml.example.com", "http://idp.example.com", "abcdefgh", false));
+        ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://localhost:5225/metadata", "http://saml.example.com", "http://idp.example.com", "abcdefgh", false, true));
         ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml"));
         ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject());
 

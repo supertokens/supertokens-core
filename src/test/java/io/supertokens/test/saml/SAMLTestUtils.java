@@ -84,5 +84,3 @@ public class SAMLTestUtils {
         return java.net.URLDecoder.decode(relayState, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
-
-
