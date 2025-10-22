@@ -11,6 +11,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Adds opentelemetry-javaagent to the core distribution
 
+## [11.1.1]
+
+- Updates tomcat-embed to 11.0.12 because of security vulnerabilities
+
 ## [11.1.0]
 
 - Adds hikari logs to opentelemetry
