@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supertokens/get-core-dependencies-action@main
         with:
-          run-for: PR
+          run-for: add-dev-tag
         id: result
   new-core-version:
     environment: publish
