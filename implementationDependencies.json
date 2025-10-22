@@ -2,14 +2,14 @@
 "_comment": "Contains list of implementation dependencies URL for this project. This is a generated file, don't modify the contents by hand.",
 "list": [
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.8/tomcat-embed-core-11.0.8.jar",
-		"name":"tomcat-embed-core 11.0.8",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.8/tomcat-embed-core-11.0.8-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.12/tomcat-embed-core-11.0.12.jar",
+		"name":"tomcat-embed-core 11.0.12",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.12/tomcat-embed-core-11.0.12-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.8/tomcat-annotations-api-11.0.8.jar",
-		"name":"tomcat-annotations-api 11.0.8",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.8/tomcat-annotations-api-11.0.8-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.12/tomcat-annotations-api-11.0.12.jar",
+		"name":"tomcat-annotations-api 11.0.12",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.12/tomcat-annotations-api-11.0.12-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.13.1/gson-2.13.1.jar",
