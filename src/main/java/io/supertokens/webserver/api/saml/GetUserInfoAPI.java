@@ -17,13 +17,10 @@
 package io.supertokens.webserver.api.saml;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
-import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -35,44 +32,42 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class ExchangeSamlCodeAPI extends WebserverAPI {
+public class GetUserInfoAPI extends WebserverAPI {
 
-    public ExchangeSamlCodeAPI(Main main) {
+    public GetUserInfoAPI(Main main) {
         super(main, "saml");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/saml/token";
+        return "/recipe/saml/user";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String code = InputParser.parseStringOrThrowError(input, "code", false);
+        String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
+        String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
         try {
-            String token = SAML.getTokenForCode(
+            JsonObject userInfo = SAML.getUserInfo(
                     main,
                     getTenantIdentifier(req),
                     getTenantStorage(req),
-                    code
+                    accessToken,
+                    clientId,
+                    false
             );
-            JsonObject res = new JsonObject();
-            res.addProperty("status", "OK");
-            res.addProperty("id_token", token);
+            userInfo.addProperty("status", "OK");
 
-            super.sendJsonResponse(200, res, resp);
+            super.sendJsonResponse(200, userInfo, resp);
         } catch (InvalidCodeException e) {
             JsonObject res = new JsonObject();
-            res.addProperty("status", "INVALID_CODE_ERROR");
+            res.addProperty("status", "INVALID_TOKEN_ERROR");
             
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException | UnsupportedJWTSigningAlgorithmException |
-                 NoSuchAlgorithmException | StorageTransactionLogicException | InvalidKeySpecException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
     }
 }
-
-

@@ -43,6 +43,7 @@ public class SAMLTestUtils {
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
 
         JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("clientSecret", "secret");
         createClientInput.addProperty("spEntityId", spEntityId);
         createClientInput.addProperty("defaultRedirectURI", defaultRedirectURI);
         JsonArray redirectURIs = new JsonArray();

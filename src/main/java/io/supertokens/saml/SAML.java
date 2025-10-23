@@ -23,15 +23,10 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.KeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.Deflater;
@@ -81,15 +76,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
-import io.supertokens.oauth.OAuthToken;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
-import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -103,10 +93,6 @@ import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
-import io.supertokens.session.jwt.JWT;
-import io.supertokens.session.jwt.JWT.JWTException;
-import io.supertokens.signingkeys.JWTSigningKey;
-import io.supertokens.signingkeys.SigningKeys;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
 
@@ -570,19 +556,22 @@ public class SAML {
                 new ByteArrayInputStream(certBytes));
     }
 
-    public static String getTokenForCode(Main main, TenantIdentifier tenantIdentifier, Storage storage, String code)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException,
-            StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidCodeException {
+    public static JsonObject getUserInfo(Main main, TenantIdentifier tenantIdentifier, Storage storage, String accessToken, String clientId, boolean isLegacy)
+            throws TenantOrAppNotFoundException, StorageQueryException,
+            StorageTransactionLogicException, InvalidCodeException {
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
-        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, code);
+        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, accessToken);
         if (claimsInfo == null) {
             throw new InvalidCodeException();
         }
 
-        JWTSigningKeyInfo keyToUse = SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
-                .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+        if (clientId != null) {
+            if (!clientId.equals(claimsInfo.clientId)) {
+                throw new InvalidCodeException();
+            }
+        }
 
         String sub = null;
         String email = null;
@@ -609,63 +598,14 @@ public class SAML {
             }
         }
 
+
         JsonObject payload = new JsonObject();
-        payload.addProperty("stt", OAuthToken.TokenType.SAML_ID_TOKEN.getValue());
         payload.add("claims", claims);
-        payload.addProperty("sub", sub);
+        payload.addProperty(isLegacy ? "id" : "sub", sub);
         payload.addProperty("email", email);
         payload.addProperty("aud", claimsInfo.clientId);
 
-        long iat = System.currentTimeMillis();
-        long exp = iat + 1000 * 3600; // 1 hour
-
-        return JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
-                payload, null, exp, iat, keyToUse);
-    }
-
-    public static JsonObject getUserInfo(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken)
-            throws TenantOrAppNotFoundException, StorageQueryException, UnsupportedJWTSigningAlgorithmException,
-            StorageTransactionLogicException, InvalidKeyException {
-        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(appIdentifier, main).getAllKeys();
-        Exception error = null;
-        JWT.JWTInfo jwtInfo = null;
-        JWT.JWTPreParseInfo preParseJWTInfo = null;
-        try {
-            preParseJWTInfo = JWT.preParseJWTInfo(accessToken);
-        } catch (JWTException e) {
-            // This basically should never happen, but it means, that the token structure is
-            // wrong, can't verify
-            throw new IllegalStateException("INVALID_TOKEN"); // TODO
-        }
-
-        for (JWTSigningKeyInfo keyInfo : keyInfoList) {
-            try {
-                jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo,
-                        ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
-                error = null;
-                break;
-            } catch (NoSuchAlgorithmException e) {
-                // This basically should never happen, but it means, that can't verify any
-                // tokens, no need to retry
-                throw new IllegalStateException("INVALID_TOKEN"); // TODO
-            } catch (KeyException | JWTException e) {
-                error = e;
-            }
-        }
-
-        if (jwtInfo == null) {
-            throw new IllegalStateException("INVALID_TOKEN"); // TODO
-        }
-
-        if (jwtInfo.payload.get("exp").getAsLong() * 1000 < System.currentTimeMillis()) {
-            throw new IllegalStateException("INVALID_TOKEN"); // TODO
-        }
-
-        JsonObject userInfo = new JsonObject();
-        userInfo.add("id", jwtInfo.payload.get("sub"));
-        userInfo.add("email", jwtInfo.payload.get("email"));
-
-        return userInfo;
+        return payload;
     }
 
     public static String getLegacyACSURL(Main main, AppIdentifier appIdentifier) throws TenantOrAppNotFoundException {

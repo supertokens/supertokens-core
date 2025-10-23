@@ -128,7 +128,7 @@ import io.supertokens.webserver.api.passwordless.DeleteCodesAPI;
 import io.supertokens.webserver.api.passwordless.GetCodesAPI;
 import io.supertokens.webserver.api.saml.CreateOrUpdateSamlClientAPI;
 import io.supertokens.webserver.api.saml.CreateSamlLoginRedirectAPI;
-import io.supertokens.webserver.api.saml.ExchangeSamlCodeAPI;
+import io.supertokens.webserver.api.saml.GetUserInfoAPI;
 import io.supertokens.webserver.api.saml.HandleSamlCallbackAPI;
 import io.supertokens.webserver.api.saml.LegacyAuthorizeAPI;
 import io.supertokens.webserver.api.saml.LegacyCallbackAPI;
@@ -430,7 +430,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RemoveSamlClientAPI(main));
         addAPI(new CreateSamlLoginRedirectAPI(main));
         addAPI(new HandleSamlCallbackAPI(main));
-        addAPI(new ExchangeSamlCodeAPI(main));
+        addAPI(new GetUserInfoAPI(main));
         addAPI(new LegacyAuthorizeAPI(main));
         addAPI(new LegacyCallbackAPI(main));
         addAPI(new LegacyTokenAPI(main));
