@@ -27,7 +27,7 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
-import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowed;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
@@ -80,7 +80,7 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
             res.addProperty("status", "SAML_RESPONSE_VERIFICATION_FAILED_ERROR");
             super.sendJsonResponse(200, res, resp);
 
-        } catch (IDPInitiatedLoginDisallowed e) {
+        } catch (IDPInitiatedLoginDisallowedException e) {
             JsonObject res = new JsonObject();
             res.addProperty("status", "IDP_LOGIN_DISALLOWED_ERROR");
             super.sendJsonResponse(200, res, resp);

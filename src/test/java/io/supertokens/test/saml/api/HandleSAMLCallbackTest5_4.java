@@ -3,6 +3,7 @@ package io.supertokens.test.saml.api;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
@@ -321,6 +322,108 @@ public class HandleSAMLCallbackTest5_4 {
                 "http://localhost:3567/recipe/saml/callback", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
 
         assertEquals("INVALID_CLIENT_ERROR", resp.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIDPFlowWithIDPDisallowedOnClient() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String spEntityId = "http://example.com/saml";
+        String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
+        String acsURL = "http://localhost:3000/acs";
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+
+        // Create a client with allowIDPInitiatedLogin = false (default)
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                spEntityId,
+                defaultRedirectURI,
+                acsURL,
+                idpEntityId,
+                idpSsoUrl,
+                false  // allowIDPInitiatedLogin = false
+        );
+
+        // Generate an IDP-initiated SAML response (no RelayState, no InResponseTo)
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                clientInfo.idpEntityId,
+                clientInfo.spEntityId,
+                clientInfo.acsURL,
+                "user@example.com",
+                null,
+                null, // no inResponseTo for IDP-initiated
+                clientInfo.keyMaterial,
+                300
+        );
+
+        JsonObject body = new JsonObject();
+        body.addProperty("samlResponse", samlResponseBase64);
+        // Intentionally omit relayState to simulate IDP-initiated login
+
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/callback", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals("IDP_LOGIN_DISALLOWED_ERROR", resp.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIDPFlow() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String spEntityId = "http://example.com/saml";
+        String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
+        String acsURL = "http://localhost:3000/acs";
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+
+        // Create a client with allowIDPInitiatedLogin = true
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                spEntityId,
+                defaultRedirectURI,
+                acsURL,
+                idpEntityId,
+                idpSsoUrl,
+                true  // allowIDPInitiatedLogin = true
+        );
+
+        // Generate an IDP-initiated SAML response (no RelayState, no InResponseTo)
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                clientInfo.idpEntityId,
+                clientInfo.spEntityId,
+                clientInfo.acsURL,
+                "user@example.com",
+                null,
+                null, // no inResponseTo for IDP-initiated
+                clientInfo.keyMaterial,
+                300
+        );
+
+        JsonObject body = new JsonObject();
+        body.addProperty("samlResponse", samlResponseBase64);
+        // Intentionally omit relayState to simulate IDP-initiated login
+
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/callback", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals("OK", resp.get("status").getAsString());
+        String redirectURI = resp.get("redirectURI").getAsString();
+        // Check that the redirectURI contains the code query parameter
+        assertNotNull(redirectURI);
+        assertTrue("Redirect URI should contain code parameter", redirectURI.contains("code="));
+        // Check it starts with the default redirect URI
+        assertTrue("Redirect URI should start with default redirect URI", redirectURI.startsWith(defaultRedirectURI));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

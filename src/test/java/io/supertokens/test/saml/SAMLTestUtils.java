@@ -38,6 +38,16 @@ public class SAMLTestUtils {
                                                                       String acsURL,
                                                                       String idpEntityId,
                                                                       String idpSsoUrl) throws Exception {
+        return createClientWithGeneratedMetadata(process, spEntityId, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl, false);
+    }
+
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String spEntityId,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin) throws Exception {
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
         String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
@@ -50,6 +60,7 @@ public class SAMLTestUtils {
         redirectURIs.add(defaultRedirectURI);
         createClientInput.add("redirectURIs", redirectURIs);
         createClientInput.addProperty("metadataXML", metadataXMLBase64);
+        createClientInput.addProperty("allowIDPInitiatedLogin", allowIDPInitiatedLogin);
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");

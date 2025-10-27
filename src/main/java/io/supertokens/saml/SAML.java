@@ -87,7 +87,7 @@ import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
-import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowed;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
@@ -383,7 +383,7 @@ public class SAML {
     public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
             throws StorageQueryException, XMLParserException, IOException, UnmarshallingException,
             CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException,
-            InvalidClientException, IDPInitiatedLoginDisallowed {
+            InvalidClientException, IDPInitiatedLoginDisallowedException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         SAMLClient client = null;
@@ -408,8 +408,8 @@ public class SAML {
             client = samlStorage.getSAMLClientByIDPEntityId(tenantIdentifier, idpEntityId);
             redirectURI = client.defaultRedirectURI;
 
-            if (client.allowIDPInitiatedLogin == false) {
-                throw new IDPInitiatedLoginDisallowed();
+            if (!client.allowIDPInitiatedLogin) {
+                throw new IDPInitiatedLoginDisallowedException();
             }
         }
 

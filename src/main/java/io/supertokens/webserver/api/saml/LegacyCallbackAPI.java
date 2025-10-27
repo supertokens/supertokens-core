@@ -10,7 +10,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
-import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowed;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
@@ -61,7 +61,7 @@ public class LegacyCallbackAPI extends WebserverAPI {
             sendTextResponse(400, "INVALID_CLIENT_ERROR", resp);
         } catch (SAMLResponseVerificationFailedException e) {
             sendTextResponse(400, "SAML_RESPONSE_VERIFICATION_FAILED_ERROR", resp);
-        } catch (IDPInitiatedLoginDisallowed e) {
+        } catch (IDPInitiatedLoginDisallowedException e) {
             sendTextResponse(400, "IDP_LOGIN_DISALLOWED_ERROR", resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
                  CertificateException | BadPermissionException e) {
