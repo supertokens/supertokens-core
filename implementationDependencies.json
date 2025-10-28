@@ -2,14 +2,14 @@
 "_comment": "Contains list of implementation dependencies URL for this project. This is a generated file, don't modify the contents by hand.",
 "list": [
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.8/tomcat-embed-core-11.0.8.jar",
-		"name":"tomcat-embed-core 11.0.8",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.8/tomcat-embed-core-11.0.8-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.12/tomcat-embed-core-11.0.12.jar",
+		"name":"tomcat-embed-core 11.0.12",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/11.0.12/tomcat-embed-core-11.0.12-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.8/tomcat-annotations-api-11.0.8.jar",
-		"name":"tomcat-annotations-api 11.0.8",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.8/tomcat-annotations-api-11.0.8-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.12/tomcat-annotations-api-11.0.12.jar",
+		"name":"tomcat-annotations-api 11.0.12",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/tomcat/tomcat-annotations-api/11.0.12/tomcat-annotations-api-11.0.12-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.13.1/gson-2.13.1.jar",
@@ -250,6 +250,11 @@
 		"jar":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18.jar",
 		"name":"logback-classic 1.5.18",
 		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24.jar",
+		"name":"aspectjrt 1.9.24",
+		"src":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0.jar",

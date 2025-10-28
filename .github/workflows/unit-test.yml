@@ -6,7 +6,7 @@ on:
 jobs:
   dependency-branches:
     name: Dependency Branches
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}
 
@@ -16,6 +16,7 @@ jobs:
         id: result
         with:
           run-for: PR
+          core-branch: ${{ github.head_ref }}
 
   test:
     name: Unit tests
@@ -30,7 +31,7 @@ jobs:
           # - mysql
           # - mongodb
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
         uses: actions/setup-java@v2

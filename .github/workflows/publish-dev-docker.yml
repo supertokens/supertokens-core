@@ -19,6 +19,8 @@ jobs:
         id: result
         with:
           run-for: PR
+          core-branch: ${{ github.ref_name }}
+
   docker:
     name: Docker
     runs-on: ubuntu-latest

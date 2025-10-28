@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.useridmapping.UserIdType;
@@ -49,6 +50,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
+@WithinOtelSpan
 public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
@@ -386,6 +388,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @WithinOtelSpan
     public static Storage getStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return getInstance(tenantIdentifier, main).storage;

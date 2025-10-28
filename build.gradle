@@ -9,6 +9,7 @@
 plugins {
     id 'application'
     id 'java-library'
+    id "io.freefair.aspectj" version "8.13" //same as gradle version!
 }
 compileJava { options.encoding = "UTF-8" }
 compileTestJava { options.encoding = "UTF-8" }
@@ -26,7 +27,7 @@ java {
     }
 }
 
-version = "12.0.0"
+version = "11.3.0"
 
 repositories {
     mavenCentral()
@@ -49,9 +50,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.2'
 
-
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.8'
+    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.12'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
@@ -106,6 +106,7 @@ dependencies {
 
     implementation("io.opentelemetry.semconv:opentelemetry-semconv")
 
+    implementation('org.aspectj:aspectjrt:1.9.24')
 
     compileOnly project(":supertokens-plugin-interface")
 
