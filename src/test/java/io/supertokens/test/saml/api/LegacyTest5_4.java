@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -54,6 +56,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Missing client_id
         {
             Map<String, String> params = new HashMap<>();
@@ -96,6 +102,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Test with non-existent client_id
         Map<String, String> params = new HashMap<>();
         params.put("client_id", "non-existent-client");
@@ -116,6 +126,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";
@@ -167,6 +181,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Missing SAMLResponse
         {
             try {
@@ -202,6 +220,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
@@ -250,6 +272,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
@@ -312,6 +338,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";
@@ -383,6 +413,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject formData = new JsonObject();
         formData.addProperty("client_id", "non-existent-client");
         formData.addProperty("client_secret", "test-secret");
@@ -406,6 +440,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";
@@ -445,6 +483,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";
@@ -525,6 +567,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Missing Authorization header
         {
             try {
@@ -559,6 +605,10 @@ public class LegacyTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         try {
             Map<String, String> headers = new HashMap<>();
             headers.put("Authorization", "Bearer invalid-token");
@@ -579,6 +629,10 @@ public class LegacyTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";

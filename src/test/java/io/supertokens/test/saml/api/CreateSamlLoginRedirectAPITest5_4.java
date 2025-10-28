@@ -1,5 +1,7 @@
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,6 +45,10 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // missing clientId
         {
@@ -102,6 +108,10 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject body = new JsonObject();
         body.addProperty("clientId", "non-existent-client");
         body.addProperty("redirectURI", "http://localhost:3000/auth/callback/saml-mock");
@@ -120,6 +130,10 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         JsonObject createClientInput = new JsonObject();
         createClientInput.addProperty("spEntityId", "http://example.com/saml");
@@ -158,6 +172,10 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Prepare IdP metadata using MockSAML self-signed certificate
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();

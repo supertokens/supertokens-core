@@ -1,5 +1,8 @@
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,6 +48,10 @@ public class RemoveSAMLClientTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject body = new JsonObject();
         body.addProperty("clientId", "st_saml_does_not_exist");
 
@@ -64,6 +71,10 @@ public class RemoveSAMLClientTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         JsonObject body = new JsonObject();
         try {
@@ -86,6 +97,10 @@ public class RemoveSAMLClientTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // create a client first
         JsonObject create = new JsonObject();
@@ -138,6 +153,10 @@ public class RemoveSAMLClientTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // create
         JsonObject create = new JsonObject();
         create.addProperty("spEntityId", "http://example.com/saml");
@@ -178,5 +197,3 @@ public class RemoveSAMLClientTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
-
-

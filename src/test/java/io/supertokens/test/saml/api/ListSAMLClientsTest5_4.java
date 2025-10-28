@@ -1,5 +1,7 @@
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,6 +47,10 @@ public class ListSAMLClientsTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject listResp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients/list", null, 1000, 1000, null,
                 SemVer.v5_4.get(), "saml");
@@ -63,6 +69,10 @@ public class ListSAMLClientsTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Generate IdP metadata using MockSAML
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
@@ -120,6 +130,10 @@ public class ListSAMLClientsTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Generate IdP metadata using MockSAML
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();

@@ -23,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
@@ -85,14 +86,13 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
-                getTenantIdentifier(req), getTenantStorage(req),
-                    clientId, clientSecret, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
+                main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
         } catch (MalformedSAMLMetadataXMLException | CertificateException e) {
             throw new ServletException(new BadRequestException("metadataXML does not have a valid SAML metadata"));
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

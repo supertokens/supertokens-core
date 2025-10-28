@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.saml;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import org.opensaml.core.xml.io.UnmarshallingException;
 
 import com.google.gson.JsonObject;
@@ -89,7 +90,8 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
         } catch (UnmarshallingException | XMLParserException e) {
             throw new ServletException(new BadRequestException("Invalid or malformed SAML response input"));
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateException |
+                 FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

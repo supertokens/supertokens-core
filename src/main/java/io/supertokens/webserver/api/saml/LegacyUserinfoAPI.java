@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -56,7 +57,7 @@ public class LegacyUserinfoAPI extends WebserverAPI {
             super.sendTextResponse(400, "INVALID_TOKEN_ERROR", resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException |
-                 StorageTransactionLogicException e) {
+                 StorageTransactionLogicException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

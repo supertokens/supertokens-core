@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.saml;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.saml.SAML;
@@ -67,7 +68,8 @@ public class CreateSamlLoginRedirectAPI extends WebserverAPI {
             JsonObject res = new JsonObject();
             res.addProperty("status", "INVALID_CLIENT_ERROR");
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateEncodingException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | CertificateEncodingException |
+                 FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

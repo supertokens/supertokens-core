@@ -1,5 +1,7 @@
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -42,6 +44,10 @@ public class GetUserinfoTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Missing accessToken
         {
             JsonObject body = new JsonObject();
@@ -82,6 +88,10 @@ public class GetUserinfoTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         // Test with invalid/fake access token
         {
             JsonObject body = new JsonObject();
@@ -103,6 +113,10 @@ public class GetUserinfoTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create first client
         String spEntityId1 = "http://example.com/saml";
@@ -188,6 +202,10 @@ public class GetUserinfoTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create SAML client
         String spEntityId = "http://example.com/saml";

@@ -32,6 +32,9 @@ import java.util.UUID;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
@@ -97,10 +100,26 @@ import net.shibboleth.utilities.java.support.xml.SerializeSupport;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
 
 public class SAML {
+    public static void checkForSAMLFeature(AppIdentifier appIdentifier, Main main)
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
+        for (EE_FEATURES f : features) {
+            if (f == EE_FEATURES.SAML) {
+                return;
+            }
+        }
+        throw new FeatureNotEnabledException(
+                "SAML feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                        "feature.");
+    }
+
     public static SAMLClient createOrUpdateSAMLClient(
-            TenantIdentifier tenantIdentifier, Storage storage,
+            Main main, TenantIdentifier tenantIdentifier, Storage storage,
             String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
-            throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException {
+            throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
+            FeatureNotEnabledException, TenantOrAppNotFoundException {
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         var metadata = loadIdpMetadata(metadataXML);
@@ -177,7 +196,8 @@ public class SAML {
     public static String createRedirectURL(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                            String clientId, String redirectURI, String state, String acsURL)
             throws StorageQueryException, InvalidClientException, TenantOrAppNotFoundException,
-            CertificateEncodingException {
+            CertificateEncodingException, FeatureNotEnabledException {
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
         CoreConfig config = Config.getConfig(tenantIdentifier, main);
 
@@ -384,7 +404,10 @@ public class SAML {
     public static String handleCallback(Main main, TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
             throws StorageQueryException, XMLParserException, IOException, UnmarshallingException,
             CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException,
-            InvalidClientException, IDPInitiatedLoginDisallowedException, TenantOrAppNotFoundException {
+            InvalidClientException, IDPInitiatedLoginDisallowedException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
         CoreConfig config = Config.getConfig(tenantIdentifier, main);
 
@@ -560,7 +583,9 @@ public class SAML {
 
     public static JsonObject getUserInfo(Main main, TenantIdentifier tenantIdentifier, Storage storage, String accessToken, String clientId, boolean isLegacy)
             throws TenantOrAppNotFoundException, StorageQueryException,
-            StorageTransactionLogicException, InvalidCodeException {
+            StorageTransactionLogicException, InvalidCodeException, FeatureNotEnabledException {
+
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 

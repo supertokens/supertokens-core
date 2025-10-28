@@ -1,5 +1,7 @@
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,6 +45,10 @@ public class HandleSAMLCallbackTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Missing SAMLResponse
         {
@@ -112,6 +118,10 @@ public class HandleSAMLCallbackTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
         String acsURL = "http://localhost:3000/acs";
@@ -155,6 +165,10 @@ public class HandleSAMLCallbackTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
@@ -212,6 +226,10 @@ public class HandleSAMLCallbackTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
         String acsURL = "http://localhost:3000/acs";
@@ -267,6 +285,10 @@ public class HandleSAMLCallbackTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
@@ -329,6 +351,10 @@ public class HandleSAMLCallbackTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
         String acsURL = "http://localhost:3000/acs";
@@ -375,6 +401,10 @@ public class HandleSAMLCallbackTest5_4 {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         String spEntityId = "http://example.com/saml";
         String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";

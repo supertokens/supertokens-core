@@ -16,6 +16,8 @@
 
 package io.supertokens.test.saml.api;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -59,6 +61,10 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject createClientInput = new JsonObject();
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
@@ -97,6 +103,10 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         JsonObject createClientInput = new JsonObject();
         String customClientId = "st_saml_custom_12345";
@@ -137,6 +147,10 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -271,6 +285,10 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
         JsonObject createClientInput = new JsonObject();
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
@@ -318,6 +336,10 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
 
         // Create a client first
         JsonObject createClientInput = new JsonObject();

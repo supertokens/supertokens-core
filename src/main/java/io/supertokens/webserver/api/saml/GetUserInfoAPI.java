@@ -21,6 +21,7 @@ import java.io.IOException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -66,7 +67,8 @@ public class GetUserInfoAPI extends WebserverAPI {
             res.addProperty("status", "INVALID_TOKEN_ERROR");
             
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException | StorageTransactionLogicException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | StorageTransactionLogicException |
+                 FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

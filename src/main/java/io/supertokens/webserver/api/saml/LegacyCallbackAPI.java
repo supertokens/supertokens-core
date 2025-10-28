@@ -3,6 +3,7 @@ package io.supertokens.webserver.api.saml;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import org.opensaml.core.xml.io.UnmarshallingException;
 
 import io.supertokens.Main;
@@ -65,7 +66,7 @@ public class LegacyCallbackAPI extends WebserverAPI {
         } catch (IDPInitiatedLoginDisallowedException e) {
             sendTextResponse(400, "IDP_LOGIN_DISALLOWED_ERROR", resp);
         } catch (TenantOrAppNotFoundException | StorageQueryException | UnmarshallingException | XMLParserException |
-                 CertificateException | BadPermissionException e) {
+                 CertificateException | BadPermissionException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }
