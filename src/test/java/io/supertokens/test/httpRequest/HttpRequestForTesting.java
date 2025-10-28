@@ -38,7 +38,6 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 public class HttpRequestForTesting {
     private static final int STATUS_CODE_ERROR_THRESHOLD = 400;
-    public static boolean followRedirects = false;
     public static boolean disableAddingAppId = false;
     public static Integer corePort = null;
 
@@ -70,10 +69,17 @@ public class HttpRequestForTesting {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T sendGETRequest(Main main, String requestID, String url, Map<String, String> params,
                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
                                        String rid)
+            throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        return sendGETRequest(main, requestID, url, params, connectionTimeoutMS, readTimeoutMS, version, cdiVersion, rid, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T sendGETRequest(Main main, String requestID, String url, Map<String, String> params,
+                                       int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
+                                       String rid, boolean followRedirects)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
 
         if (!disableAddingAppId && !url.contains("appid-") && !url.contains(":3567/config")) {
@@ -158,10 +164,17 @@ public class HttpRequestForTesting {
         }
     }
 
+    public static <T> T sendGETRequestWithHeaders(Main main, String requestID, String url, Map<String, String> params,
+                                                  Map<String, String> headers, int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
+                                                  String rid)
+            throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        return sendGETRequestWithHeaders(main, requestID, url, params, headers, connectionTimeoutMS, readTimeoutMS, version, cdiVersion, rid, true);
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequestWithHeaders(Main main, String requestID, String url, Map<String, String> params,
                                        Map<String, String> headers, int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
-                                       String rid)
+                                       String rid, boolean followRedirects)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
 
         if (!disableAddingAppId && !url.contains("appid-") && !url.contains(":3567/config")) {
@@ -251,11 +264,19 @@ public class HttpRequestForTesting {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
                                         int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
                                         String method,
                                         String apiKey, String rid)
+            throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, cdiVersion, method, apiKey, rid, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
+                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
+                                        String method,
+                                        String apiKey, String rid, boolean followRedirects)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
         if (!disableAddingAppId && !url.contains("appid-")) {
@@ -373,11 +394,20 @@ public class HttpRequestForTesting {
                 cdiVersion, "DELETE", null, rid);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T sendJsonDELETERequestWithQueryParams(Main main, String requestID, String url,
                                                              Map<String, String> params,
                                                              int connectionTimeoutMS, int readTimeoutMS,
                                                              Integer version, String cdiVersion, String rid)
+            throws IOException, HttpResponseException {
+        return sendJsonDELETERequestWithQueryParams(main, requestID, url, params, connectionTimeoutMS, readTimeoutMS, version, cdiVersion, rid, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T sendJsonDELETERequestWithQueryParams(Main main, String requestID, String url,
+                                                             Map<String, String> params,
+                                                             int connectionTimeoutMS, int readTimeoutMS,
+                                                             Integer version, String cdiVersion, String rid,
+                                                             boolean followRedirects)
             throws IOException, HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
         if (!disableAddingAppId && !url.contains("appid-")) {
@@ -463,10 +493,17 @@ public class HttpRequestForTesting {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T sendFormDataPOSTRequest(Main main, String requestID, String url, JsonObject formData,
                                                 int connectionTimeoutMS, int readTimeoutMS, Integer version,
                                                 String cdiVersion, String rid)
+            throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
+        return sendFormDataPOSTRequest(main, requestID, url, formData, connectionTimeoutMS, readTimeoutMS, version, cdiVersion, rid, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T sendFormDataPOSTRequest(Main main, String requestID, String url, JsonObject formData,
+                                                int connectionTimeoutMS, int readTimeoutMS, Integer version,
+                                                String cdiVersion, String rid, boolean followRedirects)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         // If the url doesn't contain the app id deliberately, add app id used for testing
         if (!disableAddingAppId && !url.contains("appid-")) {
