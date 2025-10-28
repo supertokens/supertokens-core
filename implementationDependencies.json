@@ -112,6 +112,11 @@
 		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24.jar",
+		"name":"aspectjrt 1.9.24",
+		"src":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0.jar",
 		"name":"opentelemetry-api 1.51.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0-sources.jar"

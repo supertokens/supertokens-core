@@ -19,7 +19,6 @@ package io.supertokens.telemetry;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -114,36 +113,12 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
         return spanBuilder;
     }
 
-    public static Span startSpan(Main main, TenantIdentifier tenantIdentifier, String spanName) {
-        Span span = getInstance(main).openTelemetry.getTracer("core-tracer")
-                .spanBuilder(spanName)
-                .setParent(Context.current())
-                .setAttribute("tenant.connectionUriDomain", tenantIdentifier.getConnectionUriDomain())
-                .setAttribute("tenant.appId", tenantIdentifier.getAppId())
-                .setAttribute("tenant.tenantId", tenantIdentifier.getTenantId())
-                .startSpan();
-
-        span.makeCurrent(); // Set the span as the current context
-        return span;
-    }
-
-    public static Span endSpan(Span span) {
-        if (span != null) {
-            span.end();
-        }
-        return span;
-    }
-
-    public static Span addEventToSpan(Span span, String eventName, Attributes attributes) {
-        if (span != null) {
-            span.addEvent(eventName, attributes, System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        }
-        return span;
-    }
-
-
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
         String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
+
+        if (GlobalOpenTelemetry.get() != null) {
+            return GlobalOpenTelemetry.get(); // already initialized
+        }
 
         if (collectorUri == null || collectorUri.isEmpty()) {
             return null;
@@ -152,7 +127,8 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
         if (getInstance(main) != null && getInstance(main).openTelemetry != null) {
             return getInstance(main).openTelemetry; // already initialized
         }
-        
+
+
         Resource resource = Resource.getDefault().toBuilder()
                 .put(SERVICE_NAME, "supertokens-core")
                 .build();

@@ -12,19 +12,19 @@
 		"src":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.38.0/error_prone_annotations-2.38.0-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1.jar",
-		"name":"jackson-dataformat-yaml 2.16.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2.jar",
+		"name":"jackson-dataformat-yaml 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
-		"name":"snakeyaml 2.2",
-		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
+		"name":"snakeyaml 2.3",
+		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar",
-		"name":"jackson-databind 2.16.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2.jar",
+		"name":"jackson-databind 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
