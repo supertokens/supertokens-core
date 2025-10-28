@@ -14,17 +14,15 @@ public class SAMLTestUtils {
     public static class CreatedClientInfo {
         public final String clientId;
         public final MockSAML.KeyMaterial keyMaterial;
-        public final String spEntityId;
         public final String defaultRedirectURI;
         public final String acsURL;
         public final String idpEntityId;
         public final String idpSsoUrl;
 
-        public CreatedClientInfo(String clientId, MockSAML.KeyMaterial keyMaterial, String spEntityId,
+        public CreatedClientInfo(String clientId, MockSAML.KeyMaterial keyMaterial,
                                  String defaultRedirectURI, String acsURL, String idpEntityId, String idpSsoUrl) {
             this.clientId = clientId;
             this.keyMaterial = keyMaterial;
-            this.spEntityId = spEntityId;
             this.defaultRedirectURI = defaultRedirectURI;
             this.acsURL = acsURL;
             this.idpEntityId = idpEntityId;
@@ -33,16 +31,14 @@ public class SAMLTestUtils {
     }
 
     public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
-                                                                      String spEntityId,
                                                                       String defaultRedirectURI,
                                                                       String acsURL,
                                                                       String idpEntityId,
                                                                       String idpSsoUrl) throws Exception {
-        return createClientWithGeneratedMetadata(process, spEntityId, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl, false);
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl, false);
     }
 
     public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
-                                                                      String spEntityId,
                                                                       String defaultRedirectURI,
                                                                       String acsURL,
                                                                       String idpEntityId,
@@ -54,7 +50,6 @@ public class SAMLTestUtils {
 
         JsonObject createClientInput = new JsonObject();
         createClientInput.addProperty("clientSecret", "secret");
-        createClientInput.addProperty("spEntityId", spEntityId);
         createClientInput.addProperty("defaultRedirectURI", defaultRedirectURI);
         JsonArray redirectURIs = new JsonArray();
         redirectURIs.add(defaultRedirectURI);
@@ -66,7 +61,7 @@ public class SAMLTestUtils {
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");
 
         String clientId = createResp.get("clientId").getAsString();
-        return new CreatedClientInfo(clientId, keyMaterial, spEntityId, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl);
+        return new CreatedClientInfo(clientId, keyMaterial, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl);
     }
 
     public static String createLoginRequestAndGetRelayState(TestingProcessManager.TestingProcess process,

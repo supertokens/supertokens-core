@@ -126,7 +126,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -212,7 +211,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -221,7 +219,7 @@ public class LegacyTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -261,7 +259,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -279,7 +276,7 @@ public class LegacyTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -295,7 +292,7 @@ public class LegacyTest5_4 {
         // This should redirect to the callback URL with authorization code
         try {
             HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/legacy/callback", formData, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                    "http://localhost:3567/recipe/saml/legacy/callback", formData, 1000, 1000, null, SemVer.v5_4.get(), "saml", false);
             fail("Expected redirect response");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(302, e.statusCode);
@@ -325,7 +322,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -420,7 +416,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -460,7 +455,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -478,7 +472,7 @@ public class LegacyTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -495,7 +489,7 @@ public class LegacyTest5_4 {
         String redirectURI = null;
         try {
             HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml", false);
             fail("Expected redirect response");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(302, e.statusCode);
@@ -595,7 +589,6 @@ public class LegacyTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -613,7 +606,7 @@ public class LegacyTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -630,7 +623,7 @@ public class LegacyTest5_4 {
         String redirectURI = null;
         try {
             HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml", false);
             fail("Expected redirect response");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(302, e.statusCode);

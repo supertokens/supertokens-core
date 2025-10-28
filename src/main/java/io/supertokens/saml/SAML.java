@@ -99,7 +99,7 @@ import net.shibboleth.utilities.java.support.xml.XMLParserException;
 public class SAML {
     public static SAMLClient createOrUpdateSAMLClient(
             TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String spEntityId, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
+            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -123,7 +123,7 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, spEntityId, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
@@ -179,6 +179,7 @@ public class SAML {
             throws StorageQueryException, InvalidClientException, TenantOrAppNotFoundException,
             CertificateEncodingException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        CoreConfig config = Config.getConfig(tenantIdentifier, main);
 
         SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, clientId);
 
@@ -203,7 +204,7 @@ public class SAML {
                 main,
                 tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
-                client.spEntityId, acsURL,
+                config.getSAMLSPEntityID(), acsURL,
                 client.enableRequestSigning);
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
@@ -380,11 +381,12 @@ public class SAML {
         }
     }
 
-    public static String handleCallback(TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
+    public static String handleCallback(Main main, TenantIdentifier tenantIdentifier, Storage storage, String samlResponse, String relayState)
             throws StorageQueryException, XMLParserException, IOException, UnmarshallingException,
             CertificateException, InvalidRelayStateException, SAMLResponseVerificationFailedException,
-            InvalidClientException, IDPInitiatedLoginDisallowedException {
+            InvalidClientException, IDPInitiatedLoginDisallowedException, TenantOrAppNotFoundException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        CoreConfig config = Config.getConfig(tenantIdentifier, main);
 
         SAMLClient client = null;
         Response response = parseSamlResponse(samlResponse);
@@ -425,7 +427,7 @@ public class SAML {
             throw new SAMLResponseVerificationFailedException();
         }
         validateSamlResponseTimestamps(response);
-        validateSamlResponseAudience(response, client.spEntityId);
+        validateSamlResponseAudience(response, config.getSAMLSPEntityID());
 
         var claims = extractAllClaims(response);
 

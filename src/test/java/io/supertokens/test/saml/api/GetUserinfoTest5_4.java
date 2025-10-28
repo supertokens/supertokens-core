@@ -113,7 +113,6 @@ public class GetUserinfoTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo1 = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId1,
                 defaultRedirectURI1,
                 acsURL1,
                 idpEntityId1,
@@ -129,7 +128,6 @@ public class GetUserinfoTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo2 = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId2,
                 defaultRedirectURI2,
                 acsURL2,
                 idpEntityId2,
@@ -148,7 +146,7 @@ public class GetUserinfoTest5_4 {
         // Generate a valid SAML Response for client1
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo1.idpEntityId,
-                clientInfo1.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo1.acsURL,
                 "user@example.com",
                 null,
@@ -200,7 +198,6 @@ public class GetUserinfoTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -219,7 +216,7 @@ public class GetUserinfoTest5_4 {
         // Generate a valid SAML Response
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,

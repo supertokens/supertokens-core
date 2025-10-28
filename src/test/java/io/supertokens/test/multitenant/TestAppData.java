@@ -245,7 +245,7 @@ public class TestAppData {
         options.userVerification = "required";
         ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
 
-        ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://saml.example.com", "http://idp.example.com", "abcdefgh", false, true));
+        ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://idp.example.com", "abcdefgh", false, true));
         ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml"));
         ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject());
 

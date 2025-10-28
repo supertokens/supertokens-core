@@ -120,7 +120,6 @@ public class HandleSAMLCallbackTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -129,7 +128,7 @@ public class HandleSAMLCallbackTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -165,7 +164,6 @@ public class HandleSAMLCallbackTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -222,7 +220,6 @@ public class HandleSAMLCallbackTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -243,7 +240,7 @@ public class HandleSAMLCallbackTest5_4 {
 
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -279,7 +276,6 @@ public class HandleSAMLCallbackTest5_4 {
 
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -298,7 +294,7 @@ public class HandleSAMLCallbackTest5_4 {
         // Create a valid SAML Response for this client and the relayState
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -342,7 +338,6 @@ public class HandleSAMLCallbackTest5_4 {
         // Create a client with allowIDPInitiatedLogin = false (default)
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -353,7 +348,7 @@ public class HandleSAMLCallbackTest5_4 {
         // Generate an IDP-initiated SAML response (no RelayState, no InResponseTo)
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
@@ -390,7 +385,6 @@ public class HandleSAMLCallbackTest5_4 {
         // Create a client with allowIDPInitiatedLogin = true
         SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
                 process,
-                spEntityId,
                 defaultRedirectURI,
                 acsURL,
                 idpEntityId,
@@ -401,7 +395,7 @@ public class HandleSAMLCallbackTest5_4 {
         // Generate an IDP-initiated SAML response (no RelayState, no InResponseTo)
         String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
-                clientInfo.spEntityId,
+                "https://saml.supertokens.com",
                 clientInfo.acsURL,
                 "user@example.com",
                 null,

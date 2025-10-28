@@ -106,7 +106,6 @@ public class ListSAMLClientsTest5_4 {
         assertEquals("http://localhost:3000/auth/callback/saml-mock",
                 listed.get("redirectURIs").getAsJsonArray().get(0).getAsString());
 
-        assertEquals("http://example.com/saml", listed.get("spEntityId").getAsString());
         assertEquals(idpEntityId, listed.get("idpEntityId").getAsString());
         assertTrue(listed.has("idpSigningCertificate"));
         assertFalse(listed.get("idpSigningCertificate").getAsString().isEmpty());

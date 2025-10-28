@@ -48,6 +48,7 @@ public class LegacyCallbackAPI extends WebserverAPI {
 
         try {
             String redirectURI = SAML.handleCallback(
+                    main,
                     getTenantIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
                     samlResponse,

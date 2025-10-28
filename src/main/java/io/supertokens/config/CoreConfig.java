@@ -385,6 +385,11 @@ public class CoreConfig {
     @HideFromDashboard
     private String saml_legacy_acs_url = null;
 
+    @EnvName("SAML_SP_ENTITY_ID")
+    @JsonProperty
+    @ConfigDescription("Service provider's entity ID")
+    private String saml_sp_entity_id = null;
+
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -675,6 +680,10 @@ public class CoreConfig {
         return saml_legacy_acs_url;
     }
 
+    public String getSAMLSPEntityID() {
+        return saml_sp_entity_id;
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -943,6 +952,10 @@ public class CoreConfig {
         }
 
         // Normalize
+        if (saml_sp_entity_id == null) {
+            saml_sp_entity_id = "https://saml.supertokens.com";
+        }
+
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
             if (ip_allow_regex.equals("")) {

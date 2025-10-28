@@ -57,6 +57,7 @@ public class HandleSamlCallbackAPI extends WebserverAPI {
 
         try {
             String redirectURI = SAML.handleCallback(
+                    main,
                     getTenantIdentifier(req),
                     getTenantStorage(req),
                     samlResponse, relayState

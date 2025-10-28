@@ -60,7 +60,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject createClientInput = new JsonObject();
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
@@ -86,7 +85,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertEquals(clientSecret, resp.get("clientSecret").getAsString());
         assertTrue(resp.get("clientId").getAsString().startsWith("st_saml_"));
         assertEquals("http://localhost:3000/auth/callback/saml-mock", resp.get("defaultRedirectURI").getAsString());
-        assertEquals("http://example.com/saml", resp.get("spEntityId").getAsString());
         assertTrue(resp.get("redirectURIs").isJsonArray());
 
         process.kill();
@@ -103,7 +101,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         JsonObject createClientInput = new JsonObject();
         String customClientId = "st_saml_custom_12345";
         createClientInput.addProperty("clientId", customClientId);
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
@@ -146,17 +143,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         }
 
         JsonObject createClientInput = new JsonObject();
-        try {
-            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
-                    SemVer.v5_4.get(), "saml");
-            fail();
-
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Field name 'spEntityId' is invalid in JSON input", e.getMessage());
-        }
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
@@ -286,7 +272,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject createClientInput = new JsonObject();
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
@@ -314,8 +299,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertEquals(1, resp.get("redirectURIs").getAsJsonArray().size());
         assertEquals("http://localhost:3000/auth/callback/saml-mock", resp.get("redirectURIs").getAsJsonArray().get(0).getAsString());
 
-        assertEquals("http://example.com/saml", resp.get("spEntityId").getAsString());
-
         assertEquals(idpEntityId, resp.get("idpEntityId").getAsString());
 
         String expectedCertBase64 = java.util.Base64.getEncoder().encodeToString(km.certificate.getEncoded());
@@ -338,7 +321,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         // Create a client first
         JsonObject createClientInput = new JsonObject();
-        createClientInput.addProperty("spEntityId", "http://example.com/saml");
         createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
         createClientInput.add("redirectURIs", new JsonArray());
         createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
@@ -361,7 +343,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         // Update fields
         JsonObject updateInput = new JsonObject();
         updateInput.addProperty("clientId", clientId);
-        updateInput.addProperty("spEntityId", "http://example.com/saml-updated");
         updateInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock-2");
         JsonArray updatedRedirectURIs = new JsonArray();
         updatedRedirectURIs.add("http://localhost:3000/auth/callback/saml-mock-2");
@@ -383,7 +364,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertEquals(2, updateResp.get("redirectURIs").getAsJsonArray().size());
         assertEquals("http://localhost:3000/auth/callback/saml-mock-2", updateResp.get("redirectURIs").getAsJsonArray().get(0).getAsString());
         assertEquals("http://localhost:3000/auth/callback/saml-mock-3", updateResp.get("redirectURIs").getAsJsonArray().get(1).getAsString());
-        assertEquals("http://example.com/saml-updated", updateResp.get("spEntityId").getAsString());
         assertTrue(updateResp.get("allowIDPInitiatedLogin").getAsBoolean());
 
         process.kill();
@@ -391,13 +371,12 @@ public class CreateOrUpdateSAMLClientTest5_4 {
     }
 
     private static void verifyClientStructureWithoutClientSecret(JsonObject client, boolean generatedClientId) throws Exception {
-        assertEquals(9, client.size());
+        assertEquals(8, client.size());
 
         String[] FIELDS = new String[]{
                 "clientId",
                 "defaultRedirectURI",
                 "redirectURIs",
-                "spEntityId",
                 "idpEntityId",
                 "idpSigningCertificate",
                 "allowIDPInitiatedLogin",
@@ -417,8 +396,6 @@ public class CreateOrUpdateSAMLClientTest5_4 {
 
         assertTrue(client.get("redirectURIs").isJsonArray());
         assertTrue(client.get("redirectURIs").getAsJsonArray().size() > 0);
-
-        assertTrue(client.get("spEntityId").isJsonPrimitive());
         assertTrue(client.get("idpEntityId").isJsonPrimitive());
         assertTrue(client.get("idpSigningCertificate").isJsonPrimitive());
         assertTrue(client.get("enableRequestSigning").isJsonPrimitive());
