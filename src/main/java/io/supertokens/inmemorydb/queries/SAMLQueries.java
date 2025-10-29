@@ -52,6 +52,8 @@ public class SAMLQueries {
                 + "idp_signing_certificate TEXT,"
                 + "allow_idp_initiated_login BOOLEAN NOT NULL DEFAULT FALSE,"
                 + "enable_request_signing BOOLEAN NOT NULL DEFAULT TRUE,"
+                + "created_at BIGINT NOT NULL,"
+                + "updated_at BIGINT NOT NULL,"
                 + "UNIQUE (app_id, tenant_id, idp_entity_id),"
                 + "PRIMARY KEY (app_id, tenant_id, client_id),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
@@ -218,7 +220,7 @@ public class SAMLQueries {
         }
     }
 
-    public static void createOrUpdateSAMLClient(
+    public static SAMLClient createOrUpdateSAMLClient(
             Start start,
             TenantIdentifier tenantIdentifier,
             String clientId,
@@ -230,64 +232,65 @@ public class SAMLQueries {
             String idpSigningCertificate,
             boolean allowIDPInitiatedLogin,
             boolean enableRequestSigning)
-            throws StorageQueryException {
+            throws StorageQueryException, SQLException {
         String table = Config.getConfig(start).getSAMLClientsTable();
         String QUERY = "INSERT INTO " + table +
-                " (app_id, tenant_id, client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                " (app_id, tenant_id, client_id, client_secret, sso_login_url, redirect_uris, default_redirect_uri, idp_entity_id, idp_signing_certificate, allow_idp_initiated_login, enable_request_signing, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (app_id, tenant_id, client_id) DO UPDATE SET " +
-                "client_secret = ?, sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, idp_entity_id = ?, idp_signing_certificate = ?, allow_idp_initiated_login = ?, enable_request_signing = ?";
+                "client_secret = ?, sso_login_url = ?, redirect_uris = ?, default_redirect_uri = ?, idp_entity_id = ?, idp_signing_certificate = ?, allow_idp_initiated_login = ?, enable_request_signing = ?, updated_at = ?";
+        long now = System.currentTimeMillis();
+        update(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, clientId);
+            if (clientSecret != null) {
+                pst.setString(4, clientSecret);
+            } else {
+                pst.setNull(4, Types.VARCHAR);
+            }
+            pst.setString(5, ssoLoginURL);
+            pst.setString(6, redirectURIsJson);
+            pst.setString(7, defaultRedirectURI);
+            if (idpEntityId != null) {
+                pst.setString(8, idpEntityId);
+            } else {
+                pst.setNull(8, java.sql.Types.VARCHAR);
+            }
+            if (idpSigningCertificate != null) {
+                pst.setString(9, idpSigningCertificate);
+            } else {
+                pst.setNull(9, Types.VARCHAR);
+            }
+            pst.setBoolean(10, allowIDPInitiatedLogin);
+            pst.setBoolean(11, enableRequestSigning);
+            pst.setLong(12, now);
+            pst.setLong(13, now);
 
-        try {
-            update(start, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, clientId);
-                if (clientSecret != null) {
-                    pst.setString(4, clientSecret);
-                } else {
-                    pst.setNull(4, Types.VARCHAR);
-                }
-                pst.setString(5, ssoLoginURL);
-                pst.setString(6, redirectURIsJson);
-                pst.setString(7, defaultRedirectURI);
-                if (idpEntityId != null) {
-                    pst.setString(8, idpEntityId);
-                } else {
-                    pst.setNull(8, java.sql.Types.VARCHAR);
-                }
-                if (idpSigningCertificate != null) {
-                    pst.setString(9, idpSigningCertificate);
-                } else {
-                    pst.setNull(9, Types.VARCHAR);
-                }
-                pst.setBoolean(10, allowIDPInitiatedLogin);
-                pst.setBoolean(11, enableRequestSigning);
+            if (clientSecret != null) {
+                pst.setString(14, clientSecret);
+            } else {
+                pst.setNull(14, Types.VARCHAR);
+            }
+            pst.setString(15, ssoLoginURL);
+            pst.setString(16, redirectURIsJson);
+            pst.setString(17, defaultRedirectURI);
+            if (idpEntityId != null) {
+                pst.setString(18, idpEntityId);
+            } else {
+                pst.setNull(18, java.sql.Types.VARCHAR);
+            }
+            if (idpSigningCertificate != null) {
+                pst.setString(19, idpSigningCertificate);
+            } else {
+                pst.setNull(19, Types.VARCHAR);
+            }
+            pst.setBoolean(20, allowIDPInitiatedLogin);
+            pst.setBoolean(21, enableRequestSigning);
+            pst.setLong(22, now);
+        });
 
-                if (clientSecret != null) {
-                    pst.setString(12, clientSecret);
-                } else {
-                    pst.setNull(12, Types.VARCHAR);
-                }
-                pst.setString(13, ssoLoginURL);
-                pst.setString(14, redirectURIsJson);
-                pst.setString(15, defaultRedirectURI);
-                if (idpEntityId != null) {
-                    pst.setString(16, idpEntityId);
-                } else {
-                    pst.setNull(16, java.sql.Types.VARCHAR);
-                }
-                if (idpSigningCertificate != null) {
-                    pst.setString(17, idpSigningCertificate);
-                } else {
-                    pst.setNull(17, Types.VARCHAR);
-                }
-                pst.setBoolean(18, allowIDPInitiatedLogin);
-                pst.setBoolean(19, enableRequestSigning);
-            });
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
+        return getSAMLClient(start, tenantIdentifier, clientId);
     }
 
     public static SAMLClient getSAMLClient(Start start, TenantIdentifier tenantIdentifier, String clientId)
