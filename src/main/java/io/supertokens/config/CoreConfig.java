@@ -387,6 +387,7 @@ public class CoreConfig {
 
     @EnvName("SAML_SP_ENTITY_ID")
     @JsonProperty
+    @IgnoreForAnnotationCheck
     @ConfigDescription("Service provider's entity ID")
     private String saml_sp_entity_id = null;
 

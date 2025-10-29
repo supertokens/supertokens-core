@@ -27,6 +27,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.SAML;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import io.supertokens.utils.Utils;
@@ -86,9 +87,14 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
-                main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI, redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
+                    main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI,
+                    redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
+            this.sendJsonResponse(200, res, resp);
+        } catch (DuplicateEntityIdException e) {
+            JsonObject res = new JsonObject();
+            res.addProperty("status", "DUPLICATE_IDP_ENTITY_ERROR");
             this.sendJsonResponse(200, res, resp);
         } catch (MalformedSAMLMetadataXMLException | CertificateException e) {
             throw new ServletException(new BadRequestException("metadataXML does not have a valid SAML metadata"));

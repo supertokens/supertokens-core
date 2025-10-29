@@ -52,6 +52,7 @@ public class SAMLQueries {
                 + "idp_signing_certificate TEXT,"
                 + "allow_idp_initiated_login BOOLEAN NOT NULL DEFAULT FALSE,"
                 + "enable_request_signing BOOLEAN NOT NULL DEFAULT TRUE,"
+                + "UNIQUE (app_id, tenant_id, idp_entity_id),"
                 + "PRIMARY KEY (app_id, tenant_id, client_id),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + tenantsTable + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";

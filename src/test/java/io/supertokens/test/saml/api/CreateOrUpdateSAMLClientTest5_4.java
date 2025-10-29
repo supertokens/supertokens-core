@@ -16,8 +16,6 @@
 
 package io.supertokens.test.saml.api;
 
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -33,6 +31,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -423,5 +423,59 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertTrue(client.get("enableRequestSigning").isJsonPrimitive());
 
         assertEquals("OK", client.get("status").getAsString());
+    }
+
+    @Test
+    public void testDuplicateEntityId() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Create first client
+        JsonObject input1 = new JsonObject();
+        input1.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        input1.add("redirectURIs", new JsonArray());
+        input1.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+
+        MockSAML.KeyMaterial km1 = MockSAML.generateSelfSignedKeyMaterial();
+        String duplicateEntityId = "https://saml.example.com/entityid-dup";
+        String ssoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadata1 = MockSAML.generateIdpMetadataXML(duplicateEntityId, ssoUrl, km1.certificate);
+        String metadata1B64 = java.util.Base64.getEncoder().encodeToString(metadata1.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        input1.addProperty("metadataXML", metadata1B64);
+
+        JsonObject createResp1 = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", input1, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp1.get("status").getAsString());
+
+        // Attempt to create second client with the same IdP entity ID
+        JsonObject input2 = new JsonObject();
+        input2.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        input2.add("redirectURIs", new JsonArray());
+        input2.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+
+        MockSAML.KeyMaterial km2 = MockSAML.generateSelfSignedKeyMaterial();
+        String metadata2 = MockSAML.generateIdpMetadataXML(duplicateEntityId, ssoUrl, km2.certificate);
+        String metadata2B64 = java.util.Base64.getEncoder().encodeToString(metadata2.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        input2.addProperty("metadataXML", metadata2B64);
+
+        JsonObject createResp2 = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", input2, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+
+        assertEquals("DUPLICATE_IDP_ENTITY_ERROR", createResp2.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

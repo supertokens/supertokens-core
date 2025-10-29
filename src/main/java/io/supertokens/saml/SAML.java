@@ -35,6 +35,7 @@ import java.util.zip.DeflaterOutputStream;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
@@ -117,7 +118,7 @@ public class SAML {
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
             String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
-            FeatureNotEnabledException, TenantOrAppNotFoundException {
+            FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);

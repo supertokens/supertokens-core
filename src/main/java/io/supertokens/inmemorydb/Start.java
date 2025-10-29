@@ -3906,9 +3906,21 @@ public class Start
 
     @Override
     public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
-            throws StorageQueryException {
-        SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.clientSecret, samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI, samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin, samlClient.enableRequestSigning);
-        return samlClient;
+            throws StorageQueryException, io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException {
+        try {
+            SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.clientSecret,
+                    samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI,
+                    samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin,
+                    samlClient.enableRequestSigning);
+            return samlClient;
+        } catch (StorageQueryException e) {
+            String errorMessage = e.getMessage();
+            String table = io.supertokens.inmemorydb.config.Config.getConfig(this).getSAMLClientsTable();
+            if (isUniqueConstraintError(errorMessage, table, new String[]{"app_id", "tenant_id", "idp_entity_id"})) {
+                throw new io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException();
+            }
+            throw e;
+        }
     }
 
     @Override
