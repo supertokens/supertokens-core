@@ -161,8 +161,6 @@ public class Main {
 
         StorageLayer.loadStorageUCL(CLIOptions.get(this).getInstallationPath() + "plugin/");
 
-        SAMLBootstrap.initialize();
-
         // loading configs for core from config.yaml file.
         try {
             Config.loadBaseConfig(this);
@@ -185,6 +183,9 @@ public class Main {
 
         // init file logging
         Logging.initFileLogging(this);
+
+        // Required for SAML related stuff
+        SAMLBootstrap.initialize();
 
         // initialise cron job handler
         Cronjobs.init(this);

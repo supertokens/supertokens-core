@@ -494,6 +494,10 @@ public class CoreConfig {
         return ip_deny_regex;
     }
 
+    public String getLogLevel() {
+        return log_level;
+    }
+
     public Set<LOG_LEVEL> getLogLevels(Main main) {
         if (allowedLogLevels != null) {
             return allowedLogLevels;

@@ -16,6 +16,7 @@
 
 package io.supertokens.output;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -55,6 +56,12 @@ public class Logging extends ResourceDistributor.SingletonResource {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     private Logging(Main main) {
+        // Set global logging level
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        Level newLevel = Level.toLevel(Config.getBaseConfig(main).getLogLevel(), Level.INFO); // Default to INFO if invalid
+        rootLogger.setLevel(newLevel);
+
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
                 ? createLoggerForConsole(main, "io.supertokens.Info", LOG_LEVEL.INFO)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getInfoLogPath(main),
