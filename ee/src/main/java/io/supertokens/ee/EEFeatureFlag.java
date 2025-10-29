@@ -386,6 +386,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return mauArr;
     }
 
+    private JsonObject getSAMLStats() {
+        return new JsonObject(); // TODO
+    }
+
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject usageStats = new JsonObject();
@@ -432,6 +436,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             if (feature == EE_FEATURES.OAUTH) {
                 usageStats.add(EE_FEATURES.OAUTH.toString(), getOAuthStats());
+            }
+
+            if (feature == EE_FEATURES.SAML) {
+                usageStats.add(EE_FEATURES.SAML.toString(), getSAMLStats());
             }
         }
 

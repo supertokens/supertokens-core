@@ -32,10 +32,6 @@ import java.util.UUID;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
@@ -80,6 +76,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -91,6 +90,7 @@ import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
+import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
@@ -639,5 +639,53 @@ public class SAML {
     public static String getLegacyACSURL(Main main, AppIdentifier appIdentifier) throws TenantOrAppNotFoundException {
         CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
         return config.getSAMLLegacyACSURL();
+    }
+
+    public static String getMetadataXML(Main main, TenantIdentifier tenantIdentifier)
+            throws TenantOrAppNotFoundException, StorageQueryException, FeatureNotEnabledException {
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
+        SAMLCertificate certificate = SAMLCertificate.getInstance(tenantIdentifier.toAppIdentifier(), main);
+        CoreConfig config = Config.getConfig(tenantIdentifier, main);
+        String spEntityId = config.getSAMLSPEntityID();
+        try {
+            X509Certificate cert = certificate.getCertificate();
+            String certString = java.util.Base64.getEncoder().encodeToString(cert.getEncoded());
+
+            String validUntil = java.time.format.DateTimeFormatter.ISO_INSTANT.format(cert.getNotAfter().toInstant());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
+            sb.append("<md:EntityDescriptor xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\" entityID=\"")
+                    .append(escapeXml(spEntityId)).append("\" validUntil=\"")
+                    .append(escapeXml(validUntil)).append("\">");
+            sb.append("<md:SPSSODescriptor protocolSupportEnumeration=\"urn:oasis:names:tc:SAML:2.0:protocol\">");
+            sb.append("<md:KeyDescriptor use=\"signing\">");
+            sb.append("<ds:KeyInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">");
+            sb.append("<ds:X509Data>");
+            sb.append("<ds:X509Certificate>").append(certString).append("</ds:X509Certificate>");
+            sb.append("</ds:X509Data>");
+            sb.append("</ds:KeyInfo>");
+            sb.append("</md:KeyDescriptor>");
+            sb.append("<md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>");
+            sb.append("</md:SPSSODescriptor>");
+            sb.append("</md:EntityDescriptor>");
+
+            return sb.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate SP metadata", e);
+        }
+    }
+
+    private static String escapeXml(String input) {
+        if (input == null) {
+            return "";
+        }
+        String result = input;
+        result = result.replace("&", "&amp;");
+        result = result.replace("\"", "&quot;");
+        result = result.replace("<", "&lt;");
+        result = result.replace(">", "&gt;");
+        return result;
     }
 }

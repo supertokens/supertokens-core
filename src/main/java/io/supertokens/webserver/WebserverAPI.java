@@ -123,6 +123,12 @@ public abstract class WebserverAPI extends HttpServlet {
         resp.getWriter().println(message);
     }
 
+    protected void sendXMLResponse(int statusCode, String message, HttpServletResponse resp) throws IOException {
+        resp.setStatus(statusCode);
+        resp.setHeader("Content-Type", "text/xml; charset=UTF-8");
+        resp.getWriter().println(message);
+    }
+
     protected void sendJsonResponse(int statusCode, JsonElement json, HttpServletResponse resp) throws IOException {
         resp.setStatus(statusCode);
         resp.setHeader("Content-Type", "application/json; charset=UTF-8");
