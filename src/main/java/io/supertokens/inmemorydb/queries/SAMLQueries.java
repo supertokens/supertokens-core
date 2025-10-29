@@ -425,4 +425,24 @@ public class SAMLQueries {
             throw new StorageQueryException(e);
         }
     }
+
+    public static int countSAMLClients(Start start, TenantIdentifier tenantIdentifier) throws StorageQueryException {
+        String table = Config.getConfig(start).getSAMLClientsTable();
+        String QUERY = "SELECT COUNT(*) as c FROM " + table
+                + " WHERE app_id = ? AND tenant_id = ?";
+
+        try {
+            return execute(start, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+            }, result -> {
+                if (result.next()) {
+                    return result.getInt("c");
+                }
+                return 0;
+            });
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }

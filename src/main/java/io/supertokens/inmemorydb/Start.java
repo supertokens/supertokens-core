@@ -3966,4 +3966,9 @@ public class Start
     public void removeExpiredSAMLCodesAndRelayStates() throws StorageQueryException {
         SAMLQueries.removeExpiredSAMLCodesAndRelayStates(this);
     }
+
+    @Override
+    public int countSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
+        return SAMLQueries.countSAMLClients(this, tenantIdentifier);
+    }
 }
