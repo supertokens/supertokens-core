@@ -136,6 +136,7 @@ import io.supertokens.webserver.api.saml.LegacyTokenAPI;
 import io.supertokens.webserver.api.saml.LegacyUserinfoAPI;
 import io.supertokens.webserver.api.saml.ListSamlClientsAPI;
 import io.supertokens.webserver.api.saml.RemoveSamlClientAPI;
+import io.supertokens.webserver.api.saml.SPMetadataAPI;
 import io.supertokens.webserver.api.session.HandshakeAPI;
 import io.supertokens.webserver.api.session.JWTDataAPI;
 import io.supertokens.webserver.api.session.RefreshSessionAPI;
@@ -435,6 +436,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new LegacyCallbackAPI(main));
         addAPI(new LegacyTokenAPI(main));
         addAPI(new LegacyUserinfoAPI(main));
+        addAPI(new SPMetadataAPI(main));
 
         //webauthn
         addAPI(new OptionsRegisterAPI(main));
