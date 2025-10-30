@@ -626,7 +626,6 @@ public class SAML {
             }
         }
 
-
         JsonObject payload = new JsonObject();
         payload.add("claims", claims);
         payload.addProperty(isLegacy ? "id" : "sub", sub);

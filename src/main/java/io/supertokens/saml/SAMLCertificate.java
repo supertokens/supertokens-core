@@ -16,29 +16,6 @@
 
 package io.supertokens.saml;
 
-import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
-import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
-import io.supertokens.storageLayer.StorageLayer;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.KeyUsage;
-import org.bouncycastle.cert.CertIOException;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +34,30 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+
+import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
 
 public class SAMLCertificate extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.saml.SAMLCertificate";
@@ -83,7 +84,7 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
 
     public synchronized X509Certificate getCertificate()
             throws StorageQueryException, TenantOrAppNotFoundException {
-        if (this.spCertificate == null) {
+        if (this.spCertificate == null || this.spCertificate.getNotAfter().before(new Date())) {
             maybeGenerateNewCertificateAndUpdateInDb();
         }
 
@@ -128,6 +129,21 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
                      throw new RuntimeException("Failed to deserialize key pair or certificate", e);
                  }
 
+                 // If the certificate has expired, generate and persist a new one
+                 if (this.spCertificate.getNotAfter().before(new Date())) {
+                     try {
+                         generateNewCertificate();
+                         String newKeyPairStr = serializeKeyPair(spKeyPair);
+                         String newCertStr = serializeCertificate(spCertificate);
+                         KeyValueInfo newKeyPairInfo = new KeyValueInfo(newKeyPairStr);
+                         KeyValueInfo newCertInfo = new KeyValueInfo(newCertStr);
+                         storage.setKeyValue_Transaction(this.appIdentifier.getAsPublicTenantIdentifier(), con, SAML_KEY_PAIR_NAME, newKeyPairInfo);
+                         storage.setKeyValue_Transaction(this.appIdentifier.getAsPublicTenantIdentifier(), con, SAML_CERTIFICATE_NAME, newCertInfo);
+                     } catch (Exception e) {
+                         throw new RuntimeException("Failed to regenerate expired certificate", e);
+                     }
+                 }
+
                  return null;
              });
          } catch (StorageTransactionLogicException | StorageQueryException e) {
@@ -147,7 +163,7 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
             throws CertIOException, OperatorCreationException, CertificateException {
         // Create a production-ready self-signed X.509 certificate using BouncyCastle
         Date notBefore = new Date();
-        Date notAfter = new Date(notBefore.getTime() + 365L * 24 * 60 * 60 * 1000); // 1 year validity
+        Date notAfter = new Date(notBefore.getTime() + 10 * 365L * 24 * 60 * 60 * 1000); // 10 year validity
 
         // Create the certificate subject and issuer (same for self-signed)
         X500Name subject = new X500Name("CN=SAML-SP, O=SuperTokens, C=US");
