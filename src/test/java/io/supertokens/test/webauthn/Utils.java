@@ -102,11 +102,15 @@ public class Utils {
     }
 
     public static JsonObject registerOptions(Main main, String email) throws HttpResponseException, IOException {
+        return registerOptions(main, email, "http://example.com");
+    }
+
+    public static JsonObject registerOptions(Main main, String email, String origin) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email",email);
         requestBody.addProperty("relyingPartyName","supertokens.com");
         requestBody.addProperty("relyingPartyId","example.com");
-        requestBody.addProperty("origin","http://example.com");
+        requestBody.addProperty("origin", origin);
         requestBody.addProperty("timeout",10000);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
@@ -117,10 +121,14 @@ public class Utils {
     }
 
     public static JsonObject signInOptions(Main main) throws HttpResponseException, IOException {
+        return signInOptions(main, "http://example.com");
+    }
+
+    public static JsonObject signInOptions(Main main, String origin) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("relyingPartyName","supertokens.com");
         requestBody.addProperty("relyingPartyId","example.com");
-        requestBody.addProperty("origin","http://example.com");
+        requestBody.addProperty("origin", origin);
         requestBody.addProperty("timeout",10000);
         requestBody.addProperty("userVerification","preferred");
         requestBody.addProperty("userPresence",false);
