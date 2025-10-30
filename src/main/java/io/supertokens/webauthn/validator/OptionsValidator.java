@@ -40,6 +40,29 @@ public class OptionsValidator {
     }
 
     private static void validateOrigin(String origin, String rpId) throws InvalidWebauthNOptionsException {
+        // Support Android origins (android:apk-key-hash:<base64Url-string-without-padding-of-fingerprint>)
+        if (origin.startsWith("android:apk-key-hash:")) {
+            String hash = origin.substring("android:apk-key-hash:".length());
+
+            // Validate that the hash is not empty
+            if (hash.isEmpty()) {
+                throw new InvalidWebauthNOptionsException("Android origin must contain a valid base64 hash");
+            }
+
+            // Accept URL-safe base64 (A-Za-z0-9-_ only)
+            if (!hash.matches("^[A-Za-z0-9\\-_]+$")) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must be valid URL-safe base64");
+            }
+
+            // Validate length: SHA256 is 32 bytes, base64-urlsafe encoding is 43 chars
+            if (hash.length() != 43) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must be 43 characters (base64 of signing certificate's SHA 256 fingerprint)");
+            }
+
+            return;
+        }
+
+        // Validate standard HTTP(S) origins
         try {
             URL originUrl = new URL(origin);
             if (!originUrl.getHost().endsWith(rpId)) {
