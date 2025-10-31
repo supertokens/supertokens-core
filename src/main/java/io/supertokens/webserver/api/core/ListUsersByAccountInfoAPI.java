@@ -16,12 +16,13 @@
 
 package io.supertokens.webserver.api.core;
 
-import com.google.gson.Gson;
+import java.io.IOException;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -35,8 +36,6 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
 
 public class ListUsersByAccountInfoAPI extends WebserverAPI {
 
@@ -92,10 +91,6 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             }
 
             result.add("users", usersJson);
-
-            Logging.info(main, tenantIdentifier, "ListUsersByAccountInfoAPI - credentialId is " + webauthnCredentialId, true);
-            Logging.info(main, tenantIdentifier, new Gson().toJson(result), true);
-
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {

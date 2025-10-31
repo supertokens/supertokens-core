@@ -439,7 +439,8 @@ public class SuperTokensSaaSSecretTest {
             "oauth_provider_public_service_url",
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
-            "oauth_provider_url_configured_in_oauth_provider"
+            "oauth_provider_url_configured_in_oauth_provider",
+            "saml_legacy_acs_url"
     };
     private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{
             "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1",
@@ -447,7 +448,8 @@ public class SuperTokensSaaSSecretTest {
             "http://localhost:4444",
             "http://localhost:4445",
             "http://localhost:3001/auth/oauth",
-            "http://localhost:4444"
+            "http://localhost:4444",
+            "http://localhost:5225/api/oauth/saml"
     };
 
     @Test

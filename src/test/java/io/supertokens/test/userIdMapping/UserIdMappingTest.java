@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -809,7 +810,8 @@ public class UserIdMappingTest {
                 JWTRecipeStorage.class.getName(),
                 ActiveUsersStorage.class.getName(),
                 OAuthStorage.class.getName(),
-                BulkImportStorage.class.getName()
+                BulkImportStorage.class.getName(),
+                SAMLStorage.class.getName()
         );
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -894,7 +896,8 @@ public class UserIdMappingTest {
                 JWTRecipeStorage.class.getName(),
                 ActiveUsersStorage.class.getName(),
                 OAuthStorage.class.getName(),
-                BulkImportStorage.class.getName()
+                BulkImportStorage.class.getName(),
+                SAMLStorage.class.getName()
         );
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);

@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -85,7 +86,8 @@ public class AppTenantUserTest {
             JWTRecipeStorage.class.getName(),
             ActiveUsersStorage.class.getName(),
             OAuthStorage.class.getName(),
-            BulkImportStorage.class.getName()
+            BulkImportStorage.class.getName(),
+            SAMLStorage.class.getName()
         );
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -193,7 +195,8 @@ public class AppTenantUserTest {
                 JWTRecipeStorage.class.getName(),
                 ActiveUsersStorage.class.getName(),
                 OAuthStorage.class.getName(),
-                BulkImportStorage.class.getName()
+                BulkImportStorage.class.getName(),
+                SAMLStorage.class.getName()
         );
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
