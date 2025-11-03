@@ -70,7 +70,11 @@ public class ResourceDistributor {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        SingletonResource baseResource = resources.get(new KeyClass(TenantIdentifier.BASE_TENANT, MultitenancyHelper.RESOURCE_KEY));
+        if (baseResource == null) {
+            throw new TenantOrAppNotFoundException(TenantIdentifier.BASE_TENANT);
+        }
+        ((MultitenancyHelper) baseResource).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
         // we try again..
         resource = resources.get(new KeyClass(tenantIdentifier, key));
