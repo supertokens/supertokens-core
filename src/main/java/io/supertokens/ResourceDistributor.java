@@ -69,37 +69,39 @@ public class ResourceDistributor {
             // refreshing tenants will help with (in fact it will cause an infinite loop)
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-
-        SingletonResource baseResource = resources.get(new KeyClass(TenantIdentifier.BASE_TENANT, MultitenancyHelper.RESOURCE_KEY));
-        if (baseResource == null) {
-            throw new TenantOrAppNotFoundException(TenantIdentifier.BASE_TENANT);
-        }
-        ((MultitenancyHelper) baseResource).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
-
-        // we try again..
-        resource = resources.get(new KeyClass(tenantIdentifier, key));
-        if (resource != null) {
-            return resource;
-        }
-
-        // then we see if the user has configured anything to do with connectionUriDomain, and if they have,
-        // then we must return null cause the user has not specifically added tenantId to it
-        for (KeyClass currKey : resources.keySet()) {
-            if (currKey.getTenantIdentifier().getConnectionUriDomain()
-                    .equals(tenantIdentifier.getConnectionUriDomain())) {
-                throw new TenantOrAppNotFoundException(tenantIdentifier);
-            }
-        }
-
-        // if it comes here, it means that the user has not configured anything to do with
-        // connectionUriDomain, and therefore we fallback on the case where connectionUriDomain is the base one.
-        // This is useful when the base connectionuri can be localhost or 127.0.0.1 or anything else that's
-        // not specifically configured by the dev.
-        resource = resources.get(new KeyClass(
-                new TenantIdentifier(null, tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()), key));
-        if (resource != null) {
-            return resource;
-        }
+        
+        // In one way or the other, the code below might cause deadlock
+//
+//        SingletonResource baseResource = resources.get(new KeyClass(TenantIdentifier.BASE_TENANT, MultitenancyHelper.RESOURCE_KEY));
+//        if (baseResource == null) {
+//            throw new TenantOrAppNotFoundException(TenantIdentifier.BASE_TENANT);
+//        }
+//        ((MultitenancyHelper) baseResource).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+//
+//        // we try again..
+//        resource = resources.get(new KeyClass(tenantIdentifier, key));
+//        if (resource != null) {
+//            return resource;
+//        }
+//
+//        // then we see if the user has configured anything to do with connectionUriDomain, and if they have,
+//        // then we must return null cause the user has not specifically added tenantId to it
+//        for (KeyClass currKey : resources.keySet()) {
+//            if (currKey.getTenantIdentifier().getConnectionUriDomain()
+//                    .equals(tenantIdentifier.getConnectionUriDomain())) {
+//                throw new TenantOrAppNotFoundException(tenantIdentifier);
+//            }
+//        }
+//
+//        // if it comes here, it means that the user has not configured anything to do with
+//        // connectionUriDomain, and therefore we fallback on the case where connectionUriDomain is the base one.
+//        // This is useful when the base connectionuri can be localhost or 127.0.0.1 or anything else that's
+//        // not specifically configured by the dev.
+//        resource = resources.get(new KeyClass(
+//                new TenantIdentifier(null, tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()), key));
+//        if (resource != null) {
+//            return resource;
+//        }
 
         throw new TenantOrAppNotFoundException(tenantIdentifier);
     }
