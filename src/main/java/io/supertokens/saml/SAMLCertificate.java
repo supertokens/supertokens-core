@@ -74,12 +74,12 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
             TenantOrAppNotFoundException {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        try {
-            this.getCertificate();
-        } catch (StorageQueryException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
-                    false, e);
-        }
+//        try {
+//            this.getCertificate();
+//        } catch (StorageQueryException e) {
+//            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
+//                    false, e);
+//        }
     }
 
     public synchronized X509Certificate getCertificate()
