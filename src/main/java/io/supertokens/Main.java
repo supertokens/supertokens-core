@@ -182,6 +182,9 @@ public class Main {
         // init file logging
         Logging.initFileLogging(this);
 
+        DeadlockLogger.setMAIN(this);
+        DeadlockLogger.getINSTANCE().start();
+
         // initialise cron job handler
         Cronjobs.init(this);
 
