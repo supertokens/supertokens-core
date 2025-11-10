@@ -90,6 +90,11 @@ public class SAMLQueries {
         return "CREATE INDEX IF NOT EXISTS saml_relay_state_app_tenant_index ON " + table + "(app_id, tenant_id);";
     }
 
+    public static String getQueryToCreateSAMLRelayStateExpiresAtIndex(Start start) {
+        String table = Config.getConfig(start).getSAMLRelayStateTable();
+        return "CREATE INDEX IF NOT EXISTS saml_relay_state_expires_at_index ON " + table + "(expires_at);";
+    }
+
     public static String getQueryToCreateSAMLClaimsTable(Start start) {
         String table = Config.getConfig(start).getSAMLClaimsTable();
         String tenantsTable = Config.getConfig(start).getTenantsTable();
@@ -111,6 +116,11 @@ public class SAMLQueries {
     public static String getQueryToCreateSAMLClaimsAppIdTenantIdIndex(Start start) {
         String table = Config.getConfig(start).getSAMLClaimsTable();
         return "CREATE INDEX IF NOT EXISTS saml_claims_app_tenant_index ON " + table + "(app_id, tenant_id);";
+    }
+
+    public static String getQueryToCreateSAMLClaimsExpiresAtIndex(Start start) {
+        String table = Config.getConfig(start).getSAMLClaimsTable();
+        return "CREATE INDEX IF NOT EXISTS saml_claims_expires_at_index ON " + table + "(expires_at);";
     }
 
     public static void saveRelayStateInfo(Start start, TenantIdentifier tenantIdentifier,

@@ -532,6 +532,7 @@ public class GeneralQueries {
 
             // indexes
             update(start, SAMLQueries.getQueryToCreateSAMLRelayStateAppIdTenantIdIndex(start), NO_OP_SETTER);
+            update(start, SAMLQueries.getQueryToCreateSAMLRelayStateExpiresAtIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getSAMLClaimsTable())) {
@@ -540,6 +541,7 @@ public class GeneralQueries {
 
             // indexes
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsAppIdTenantIdIndex(start), NO_OP_SETTER);
+            update(start, SAMLQueries.getQueryToCreateSAMLClaimsExpiresAtIndex(start), NO_OP_SETTER);
         }
     }
 

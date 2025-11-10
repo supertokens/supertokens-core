@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS saml_relay_state (
 );
 
 CREATE INDEX IF NOT EXISTS saml_relay_state_app_id_tenant_id_index ON saml_relay_state (app_id, tenant_id);
+CREATE INDEX IF NOT EXISTS saml_relay_state_expires_at_index ON saml_relay_state (expires_at);
 
 CREATE TABLE IF NOT EXISTS saml_claims (
     app_id VARCHAR(64) NOT NULL DEFAULT 'public',
@@ -64,6 +65,7 @@ CREATE TABLE IF NOT EXISTS saml_claims (
 );
 
 CREATE INDEX IF NOT EXISTS saml_claims_app_id_tenant_id_index ON saml_claims (app_id, tenant_id);
+CREATE INDEX IF NOT EXISTS saml_claims_expires_at_index ON saml_claims (expires_at);
 ```
 
 ## [11.2.0]
