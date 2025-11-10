@@ -1,4 +1,4 @@
-package io.supertokens.cronjobs.cleanupSAMLCodes;
+package io.supertokens.cronjobs.deleteExpiredSAMLData;
 
 import java.util.List;
 
@@ -10,18 +10,18 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 
-public class CleanupSAMLCodes extends CronTask {
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupSAMLCodes" +
-            ".CleanupSAMLCodes";
+public class DeleteExpiredSAMLData extends CronTask {
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSAMLData" +
+            ".DeleteExpiredSAMLData";
     
-    private CleanupSAMLCodes(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("CleanupOAuthSessionsAndChallenges", main, tenantsInfo, false);
+    private DeleteExpiredSAMLData(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("DeleteExpiredSAMLData", main, tenantsInfo, false);
     }
 
-    public static CleanupSAMLCodes init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        return (CleanupSAMLCodes) main.getResourceDistributor()
+    public static DeleteExpiredSAMLData init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredSAMLData) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                        new CleanupSAMLCodes(main, tenantsInfo));
+                        new DeleteExpiredSAMLData(main, tenantsInfo));
     }
 
     @Override
