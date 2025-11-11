@@ -90,184 +90,203 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
 
-        Map<String, String> headers = new HashMap<>();
-        if (authorizationHeader != null) {
-            headers.put("Authorization", authorizationHeader);
-        }
-
-        Map<String, String> formFields = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
-            formFields.put(entry.getKey(), entry.getValue().getAsString());
-        }
-
-        String clientId;
-
-        if (authorizationHeader != null) {
-            String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
-            clientId = parsedHeader[0];
-        } else {
-            clientId = formFields.get("client_id");
-        }
-
+        String refreshTokenForLock = null;
         try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuthClient oauthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+            // We do not want to allow parallel refresh for a given token
 
-            String inputRefreshToken = null;
-
-            // check if the refresh token is valid
             if (grantType.equals("refresh_token")) {
-                String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
-                inputRefreshToken = refreshToken;
+                refreshTokenForLock = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
+                NamedLockManager.lock(refreshTokenForLock);
+            }
 
-                String internalRefreshToken = OAuth.getInternalRefreshToken(main, appIdentifier, storage, refreshToken);
+            Map<String, String> headers = new HashMap<>();
+            if (authorizationHeader != null) {
+                headers.put("Authorization", authorizationHeader);
+            }
 
-                Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
-                formFieldsForTokenIntrospect.put("token", internalRefreshToken);
+            Map<String, String> formFields = new HashMap<>();
+            for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+                formFields.put(entry.getKey(), entry.getValue().getAsString());
+            }
+
+            String clientId;
+
+            if (authorizationHeader != null) {
+                String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                clientId = parsedHeader[0];
+            } else {
+                clientId = formFields.get("client_id");
+            }
+
+            try {
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                OAuthClient oauthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+
+                String inputRefreshToken = null;
+
+                // check if the refresh token is valid
+                if (grantType.equals("refresh_token")) {
+                    String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
+                    inputRefreshToken = refreshToken;
+
+                    String internalRefreshToken = OAuth.getInternalRefreshToken(main, appIdentifier, storage, refreshToken);
+
+                    Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
+                    formFieldsForTokenIntrospect.put("token", internalRefreshToken);
+
+                    HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
+                            main, req, resp,
+                            appIdentifier,
+                            storage,
+                            null, // clientIdToCheck
+                            "/admin/oauth2/introspect", // pathProxy
+                            true, // proxyToAdmin
+                            false, // camelToSnakeCaseConversion
+                            formFieldsForTokenIntrospect,
+                            new HashMap<>() // headers
+                    );
+
+                    if (response == null) {
+                        return; // proxy helper would have sent the error response
+                    }
+
+                    JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
+
+                    try {
+                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken, oauthClient.clientId);
+                    } catch (StorageQueryException | TenantOrAppNotFoundException |
+                             FeatureNotEnabledException | InvalidConfigException e) {
+                        throw new ServletException(e);
+                    }
+
+                    if (!refreshTokenPayload.get("active").getAsBoolean()) {
+                        // this is what ory would return for an invalid token
+                        OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException(
+                                "token_inactive", "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.", 401
+                        ));
+                        return;
+                    }
+
+                    formFields.put("refresh_token", internalRefreshToken);
+                }
 
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
-                    main, req, resp,
-                    appIdentifier,
-                    storage,
-                    null, // clientIdToCheck
-                    "/admin/oauth2/introspect", // pathProxy
-                    true, // proxyToAdmin
-                    false, // camelToSnakeCaseConversion
-                    formFieldsForTokenIntrospect,
-                    new HashMap<>() // headers
+                        main, req, resp,
+                        getAppIdentifier(req),
+                        enforcePublicTenantAndGetPublicTenantStorage(req),
+                        clientId, // clientIdToCheck
+                        "/oauth2/token", // proxyPath
+                        false, // proxyToAdmin
+                        false, // camelToSnakeCaseConversion
+                        formFields,
+                        headers // headers
                 );
 
-                if (response == null) {
-                    return; // proxy helper would have sent the error response
-                }
+                if (response != null) {
+                    try {
+                        response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
 
-                JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
-
-                try {
-                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken, oauthClient.clientId);
-                } catch (StorageQueryException | TenantOrAppNotFoundException |
-                            FeatureNotEnabledException | InvalidConfigException e) {
-                    throw new ServletException(e);
-                }
-
-                if (!refreshTokenPayload.get("active").getAsBoolean()) {
-                    // this is what ory would return for an invalid token
-                    OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException(
-                        "token_inactive", "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.", 401
-                    ));
-                    return;
-                }
-
-                formFields.put("refresh_token", internalRefreshToken);
-            }
-
-            HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
-                main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
-                clientId, // clientIdToCheck
-                "/oauth2/token", // proxyPath
-                false, // proxyToAdmin
-                false, // camelToSnakeCaseConversion
-                formFields,
-                headers // headers
-            );
-
-            if (response != null) {
-                try {
-                    response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
-
-                    if (grantType.equals("client_credentials")) {
-                        try {
-                            OAuth.addM2MToken(main, appIdentifier, storage, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
-                        } catch (TryRefreshTokenException e) {
-                            throw new IllegalStateException("should never happen");
-                        }
-                    }
-
-                    String gid = null;
-                    String jti = null;
-                    String sessionHandle = null;
-                    Long accessTokenExp = null;
-
-                    if(response.jsonResponse.getAsJsonObject().has("access_token")){
-                        try {
-                            JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
-                            gid = accessTokenPayload.get("gid").getAsString();
-                            jti = accessTokenPayload.get("jti").getAsString();
-                            accessTokenExp = accessTokenPayload.get("exp").getAsLong();
-                            if (accessTokenPayload.has("sessionHandle")) {
-                                sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
-                                updateLastActive(appIdentifier, sessionHandle);
-                            }
-                        } catch (TryRefreshTokenException e) {
-                            //ignore, shouldn't happen
-                        }
-                    }
-
-                    if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
-                        String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
-                        long refreshTokenExp = 0;
-                        {
-                            // Introspect the new refresh token to get the expiry
-                            Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
-                            formFieldsForTokenIntrospect.put("token", newRefreshToken);
-
-                            HttpRequestForOAuthProvider.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
-                                main, req, resp,
-                                getAppIdentifier(req),
-                                enforcePublicTenantAndGetPublicTenantStorage(req),
-                                null, // clientIdToCheck
-                                "/admin/oauth2/introspect", // pathProxy
-                                true, // proxyToAdmin
-                                false, // camelToSnakeCaseConversion
-                                formFieldsForTokenIntrospect,
-                                new HashMap<>() // headers
-                            );
-
-                            if (introspectResponse != null) {
-                                JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
-                                refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
-                            } else {
-                                throw new IllegalStateException("Should never come here");
+                        if (grantType.equals("client_credentials")) {
+                            try {
+                                OAuth.addM2MToken(main, appIdentifier, storage, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                            } catch (TryRefreshTokenException e) {
+                                throw new IllegalStateException("should never happen");
                             }
                         }
 
-                        if (inputRefreshToken == null) {
-                            // Issuing a new refresh token, always creating a mapping.
-                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
-                        } else {
-                            // Refreshing a token
-                            if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, jti, refreshTokenExp);
-                                response.jsonResponse.getAsJsonObject().remove("refresh_token");
-                            } else {
+                        String gid = null;
+                        String jti = null;
+                        String sessionHandle = null;
+                        Long accessTokenExp = null;
+
+                        if(response.jsonResponse.getAsJsonObject().has("access_token")){
+                            try {
+                                JsonObject accessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                                gid = accessTokenPayload.get("gid").getAsString();
+                                jti = accessTokenPayload.get("jti").getAsString();
+                                accessTokenExp = accessTokenPayload.get("exp").getAsLong();
+                                if (accessTokenPayload.has("sessionHandle")) {
+                                    sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
+                                    updateLastActive(appIdentifier, sessionHandle);
+                                }
+                            } catch (TryRefreshTokenException e) {
+                                //ignore, shouldn't happen
+                            }
+                        }
+
+                        if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
+                            String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
+                            long refreshTokenExp = 0;
+                            {
+                                // Introspect the new refresh token to get the expiry
+                                Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
+                                formFieldsForTokenIntrospect.put("token", newRefreshToken);
+
+                                HttpRequestForOAuthProvider.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
+                                        main, req, resp,
+                                        getAppIdentifier(req),
+                                        enforcePublicTenantAndGetPublicTenantStorage(req),
+                                        null, // clientIdToCheck
+                                        "/admin/oauth2/introspect", // pathProxy
+                                        true, // proxyToAdmin
+                                        false, // camelToSnakeCaseConversion
+                                        formFieldsForTokenIntrospect,
+                                        new HashMap<>() // headers
+                                );
+
+                                if (introspectResponse != null) {
+                                    JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
+                                    if (!refreshTokenPayload.has("exp")) {
+                                        System.out.println(refreshTokenPayload.toString());
+                                    }
+                                    refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
+                                } else {
+                                    throw new IllegalStateException("Should never come here");
+                                }
+                            }
+
+                            if (inputRefreshToken == null) {
+                                // Issuing a new refresh token, always creating a mapping.
                                 OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
+                            } else {
+                                // Refreshing a token
+                                if (!oauthClient.enableRefreshTokenRotation) {
+                                    OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, jti, refreshTokenExp);
+                                    response.jsonResponse.getAsJsonObject().remove("refresh_token");
+                                } else {
+                                    OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
+                                }
                             }
+                        } else {
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, accessTokenExp);
                         }
-                    } else {
-                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, accessTokenExp);
+
+                    } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
+                             | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
+                             | JWTCreationException | JWTException | StorageTransactionLogicException
+                             | UnsupportedJWTSigningAlgorithmException | OAuthClientNotFoundException e) {
+                        throw new ServletException(e);
                     }
 
-                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
-                         | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
-                         | JWTCreationException | JWTException | StorageTransactionLogicException
-                         | UnsupportedJWTSigningAlgorithmException | OAuthClientNotFoundException e) {
-                    throw new ServletException(e);
+                    response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
+                    super.sendJsonResponse(200, response.jsonResponse, resp);
                 }
-
-                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
-                super.sendJsonResponse(200, response.jsonResponse, resp);
+            } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException |
+                     InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |
+                     InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException |
+                     InvalidConfigException e) {
+                throw new ServletException(e);
+            } catch (OAuthClientNotFoundException e) {
+                OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
             }
-        } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException |
-                 InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |
-                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException |
-                 InvalidConfigException e) {
-            throw new ServletException(e);
-        } catch (OAuthClientNotFoundException e) {
-            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+        } finally {
+            if (refreshTokenForLock != null) {
+                NamedLockManager.unlock(refreshTokenForLock);
+            }
         }
+
+
     }
 
     private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
