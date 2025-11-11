@@ -257,9 +257,6 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                             if (introspectResponse != null) {
                                 JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
-                                if (!refreshTokenPayload.has("exp")) {
-                                    System.out.println(refreshTokenPayload.toString());
-                                }
                                 refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
                             } else {
                                 throw new IllegalStateException("Should never come here");
