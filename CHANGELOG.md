@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.2.1]
 
+- Fixes deadlock issue with `ResourceDistributor`
 - Fixes race issues with Refreshing OAuth token
 
 ## [11.2.0]
