@@ -62,6 +62,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class OAuthTokenAPI extends WebserverAPI {
 
@@ -90,6 +92,32 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
 
+        if (grantType.equals("refresh_token")) {
+            String refreshTokenForLock = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
+            NamedLockObject entry = lockMap.computeIfAbsent(refreshTokenForLock, k -> new NamedLockObject());
+            try {
+                entry.refCount.incrementAndGet();
+                synchronized (entry.obj) {
+                    handle(req, resp, authorizationHeader, bodyFromSDK, grantType, iss, accessTokenUpdate,
+                            idTokenUpdate,
+                            useDynamicKey);
+                }
+            } finally {
+                entry.refCount.decrementAndGet();
+                if (entry.refCount.get() == 0) {
+                    lockMap.remove(refreshTokenForLock, entry);
+                }
+            }
+
+        } else {
+            handle(req, resp, authorizationHeader, bodyFromSDK, grantType, iss, accessTokenUpdate, idTokenUpdate,
+                    useDynamicKey);
+        }
+    }
+
+    private void handle(HttpServletRequest req, HttpServletResponse resp, String authorizationHeader,
+                        JsonObject bodyFromSDK, String grantType, String iss, JsonObject accessTokenUpdate,
+                        JsonObject idTokenUpdate, boolean useDynamicKey) throws ServletException, IOException {
         Map<String, String> headers = new HashMap<>();
         if (authorizationHeader != null) {
             headers.put("Authorization", authorizationHeader);
@@ -127,19 +155,19 @@ public class OAuthTokenAPI extends WebserverAPI {
                 formFieldsForTokenIntrospect.put("token", internalRefreshToken);
 
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
-                    main, req, resp,
-                    appIdentifier,
-                    storage,
-                    null, // clientIdToCheck
-                    "/admin/oauth2/introspect", // pathProxy
-                    true, // proxyToAdmin
-                    false, // camelToSnakeCaseConversion
-                    formFieldsForTokenIntrospect,
-                    new HashMap<>() // headers
+                        main, req, resp,
+                        appIdentifier,
+                        storage,
+                        null, // clientIdToCheck
+                        "/admin/oauth2/introspect", // pathProxy
+                        true, // proxyToAdmin
+                        false, // camelToSnakeCaseConversion
+                        formFieldsForTokenIntrospect,
+                        new HashMap<>() // headers
                 );
 
                 if (response == null) {
-                    return; // proxy helper would have sent the error response
+                    return;
                 }
 
                 JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
@@ -147,14 +175,14 @@ public class OAuthTokenAPI extends WebserverAPI {
                 try {
                     OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken, oauthClient.clientId);
                 } catch (StorageQueryException | TenantOrAppNotFoundException |
-                            FeatureNotEnabledException | InvalidConfigException e) {
+                         FeatureNotEnabledException | InvalidConfigException e) {
                     throw new ServletException(e);
                 }
 
                 if (!refreshTokenPayload.get("active").getAsBoolean()) {
                     // this is what ory would return for an invalid token
                     OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException(
-                        "token_inactive", "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.", 401
+                            "token_inactive", "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.", 401
                     ));
                     return;
                 }
@@ -163,20 +191,21 @@ public class OAuthTokenAPI extends WebserverAPI {
             }
 
             HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
-                main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
-                clientId, // clientIdToCheck
-                "/oauth2/token", // proxyPath
-                false, // proxyToAdmin
-                false, // camelToSnakeCaseConversion
-                formFields,
-                headers // headers
+                    main, req, resp,
+                    getAppIdentifier(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                    clientId, // clientIdToCheck
+                    "/oauth2/token", // proxyPath
+                    false, // proxyToAdmin
+                    false, // camelToSnakeCaseConversion
+                    formFields,
+                    headers // headers
             );
 
             if (response != null) {
                 try {
-                    response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+                    response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(),
+                            iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
 
                     if (grantType.equals("client_credentials")) {
                         try {
@@ -215,15 +244,15 @@ public class OAuthTokenAPI extends WebserverAPI {
                             formFieldsForTokenIntrospect.put("token", newRefreshToken);
 
                             HttpRequestForOAuthProvider.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
-                                main, req, resp,
-                                getAppIdentifier(req),
-                                enforcePublicTenantAndGetPublicTenantStorage(req),
-                                null, // clientIdToCheck
-                                "/admin/oauth2/introspect", // pathProxy
-                                true, // proxyToAdmin
-                                false, // camelToSnakeCaseConversion
-                                formFieldsForTokenIntrospect,
-                                new HashMap<>() // headers
+                                    main, req, resp,
+                                    getAppIdentifier(req),
+                                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                                    null, // clientIdToCheck
+                                    "/admin/oauth2/introspect", // pathProxy
+                                    true, // proxyToAdmin
+                                    false, // camelToSnakeCaseConversion
+                                    formFieldsForTokenIntrospect,
+                                    new HashMap<>() // headers
                             );
 
                             if (introspectResponse != null) {
@@ -288,4 +317,11 @@ public class OAuthTokenAPI extends WebserverAPI {
             // ignore
         }
     }
+
+
+    private static class NamedLockObject {
+        final Object obj = new Object();
+        final AtomicInteger refCount = new AtomicInteger(0);
+    }
+    private static final ConcurrentHashMap<String, NamedLockObject> lockMap = new ConcurrentHashMap<>();
 }
