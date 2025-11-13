@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.3.0]
 
 - Adds SAML features
+- Fixes potential deadlock issue with `TelemetryProvider`
+- Adds DeadlockLogger as an utility for discovering deadlock issues
 
 ### Migration
 
@@ -67,6 +69,11 @@ CREATE TABLE IF NOT EXISTS saml_claims (
 CREATE INDEX IF NOT EXISTS saml_claims_app_id_tenant_id_index ON saml_claims (app_id, tenant_id);
 CREATE INDEX IF NOT EXISTS saml_claims_expires_at_index ON saml_claims (expires_at);
 ```
+
+## [11.2.1]
+
+- Fixes deadlock issue with `ResourceDistributor`
+- Fixes race issues with Refreshing OAuth token
 
 ## [11.2.0]
 

@@ -187,6 +187,9 @@ core_config_version: 0
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
 
+# (OPTIONAL | Default: false) boolean value. Enables or disables the deadlock logger.
+# deadlock_logger_enable:
+
 # (OPTIONAL | Default: null) string value. If specified, uses this URL as ACS URL for handling legacy SAML clients
 # saml_legacy_acs_url:
 

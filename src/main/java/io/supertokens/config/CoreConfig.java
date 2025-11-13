@@ -426,6 +426,13 @@ public class CoreConfig {
                     "null)")
     private String otel_collector_connection_uri = null;
 
+    @EnvName("DEADLOCK_LOGGER_ENABLE")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Enables or disables the deadlock logger. (Default: false)")
+    private boolean deadlock_logger_enable = false;
+
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
 
@@ -681,6 +688,10 @@ public class CoreConfig {
         return otel_collector_connection_uri;
     }
 
+    public boolean isDeadlockLoggerEnabled() {
+        return deadlock_logger_enable;
+    }
+  
     public String getSAMLLegacyACSURL() {
         return saml_legacy_acs_url;
     }

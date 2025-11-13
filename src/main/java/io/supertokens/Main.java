@@ -24,6 +24,7 @@ import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredSAMLData.DeleteExpiredSAMLData;
 import io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron;
+import io.supertokens.cronjobs.deadlocklogger.DeadlockLogger;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
@@ -283,6 +284,11 @@ public class Main {
 
         Cronjobs.addCronjob(this, CleanUpWebauthNExpiredDataCron.init(this, uniqueUserPoolIdsTenants));
 
+        // starts the DeadlockLogger if
+        if (Config.getBaseConfig(this).isDeadlockLoggerEnabled()) {
+            DeadlockLogger.getInstance().start();
+        }
+      
         Cronjobs.addCronjob(this, DeleteExpiredSAMLData.init(this, uniqueUserPoolIdsTenants));
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
