@@ -280,7 +280,7 @@ public class Main {
         Cronjobs.addCronjob(this, CleanUpWebauthNExpiredDataCron.init(this, uniqueUserPoolIdsTenants));
 
         // starts the DeadlockLogger if
-        if (!Config.getBaseConfig(this).isDeadlockLoggerEnabled()) {
+        if (Config.getBaseConfig(this).isDeadlockLoggerEnabled()) {
             DeadlockLogger.getInstance().start();
         }
 
