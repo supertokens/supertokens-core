@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -386,6 +387,34 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return mauArr;
     }
 
+    private JsonObject getSAMLStats() throws TenantOrAppNotFoundException, StorageQueryException {
+        JsonObject stats = new JsonObject();
+
+        stats.addProperty("connectionUriDomain", this.appIdentifier.getConnectionUriDomain());
+        stats.addProperty("appId", this.appIdentifier.getAppId());
+
+        JsonArray tenantStats = new JsonArray();
+
+        TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(this.appIdentifier, main);
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            JsonObject tenantStat = new JsonObject();
+            tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());
+
+            {
+                Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
+                SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+                JsonObject stat = new JsonObject();
+                stat.addProperty("numberOfSAMLClients", samlStorage.countSAMLClients(tenantConfig.tenantIdentifier));
+                stat.add(tenantConfig.tenantIdentifier.getTenantId(), stat);
+            }
+        }
+
+        stats.add("tenants", tenantStats);
+
+        return stats;
+    }
+
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject usageStats = new JsonObject();
@@ -432,6 +461,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             if (feature == EE_FEATURES.OAUTH) {
                 usageStats.add(EE_FEATURES.OAUTH.toString(), getOAuthStats());
+            }
+
+            if (feature == EE_FEATURES.SAML) {
+                usageStats.add(EE_FEATURES.SAML.toString(), getSAMLStats());
             }
         }
 

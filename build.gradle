@@ -27,10 +27,12 @@ java {
     }
 }
 
-version = "11.2.2"
+version = "11.3.0"
 
 repositories {
     mavenCentral()
+
+    maven { url 'https://build.shibboleth.net/nexus/content/repositories/releases/' }
 }
 
 dependencies {
@@ -86,10 +88,15 @@ dependencies {
 
     implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.17.0-alpha")
 
+    // Open SAML
+    implementation group: 'org.opensaml', name: 'opensaml-core', version: '4.3.1'
+    implementation group: 'org.opensaml', name: 'opensaml-saml-impl', version: '4.3.1'
+    implementation group: 'org.opensaml', name: 'opensaml-security-impl', version: '4.3.1'
+    implementation group: 'org.opensaml', name: 'opensaml-profile-impl', version: '4.3.1'
+    implementation group: 'org.opensaml', name: 'opensaml-xmlsec-impl', version: '4.3.1'
 
     implementation("ch.qos.logback:logback-core:1.5.18")
     implementation("ch.qos.logback:logback-classic:1.5.18")
-
 
     // OpenTelemetry core
     implementation("io.opentelemetry:opentelemetry-sdk")

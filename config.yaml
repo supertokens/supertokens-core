@@ -189,3 +189,9 @@ core_config_version: 0
 
 # (OPTIONAL | Default: false) boolean value. Enables or disables the deadlock logger.
 # deadlock_logger_enable:
+
+# (OPTIONAL | Default: null) string value. If specified, uses this URL as ACS URL for handling legacy SAML clients
+# saml_legacy_acs_url:
+
+# (OPTIONAL | Default: https://saml.supertokens.com) string value. Service provider's entity ID.
+# saml_sp_entity_id:

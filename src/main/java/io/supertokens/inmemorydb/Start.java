@@ -71,6 +71,10 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
+import io.supertokens.pluginInterface.saml.SAMLClaimsInfo;
+import io.supertokens.pluginInterface.saml.SAMLClient;
+import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
+import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -117,7 +121,8 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage,
+        SAMLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -765,6 +770,8 @@ public class Start
             //ignore
         } else if (className.equals(OAuthStorage.class.getName())) {
             /* Since OAuth tables store client-related data, we don't add user-specific data here */
+        } else if (className.equals(SAMLStorage.class.getName())) {
+            // no user specific data here
         } else if (className.equals(ActiveUsersStorage.class.getName())) {
             try {
                 ActiveUsersQueries.updateUserLastActive(this, tenantIdentifier.toAppIdentifier(), userId);
@@ -3895,5 +3902,73 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public SAMLClient createOrUpdateSAMLClient(TenantIdentifier tenantIdentifier, SAMLClient samlClient)
+            throws StorageQueryException, io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException {
+        try {
+            return SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.clientSecret,
+                    samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI,
+                    samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin,
+                    samlClient.enableRequestSigning);
+        } catch (SQLException e) {
+            String errorMessage = e.getMessage();
+            String table = io.supertokens.inmemorydb.config.Config.getConfig(this).getSAMLClientsTable();
+            if (isUniqueConstraintError(errorMessage, table, new String[]{"app_id", "tenant_id", "idp_entity_id"})) {
+                throw new io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException();
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean removeSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
+        return SAMLQueries.removeSAMLClient(this, tenantIdentifier, clientId);
+    }
+
+    @Override
+    public SAMLClient getSAMLClient(TenantIdentifier tenantIdentifier, String clientId) throws StorageQueryException {
+        return SAMLQueries.getSAMLClient(this, tenantIdentifier, clientId);
+    }
+
+    @Override
+    public SAMLClient getSAMLClientByIDPEntityId(TenantIdentifier tenantIdentifier, String idpEntityId) throws StorageQueryException {
+        return SAMLQueries.getSAMLClientByIDPEntityId(this, tenantIdentifier, idpEntityId);
+    }
+
+    @Override
+    public List<SAMLClient> getSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
+        return SAMLQueries.getSAMLClients(this, tenantIdentifier);
+    }
+
+    @Override
+    public void saveRelayStateInfo(TenantIdentifier tenantIdentifier, SAMLRelayStateInfo relayStateInfo)  throws StorageQueryException {
+        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI);
+    }
+
+    @Override
+    public SAMLRelayStateInfo getRelayStateInfo(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
+        return SAMLQueries.getRelayStateInfo(this, tenantIdentifier, relayState);
+    }
+
+    @Override
+    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims) throws StorageQueryException {
+        SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString());
+    }
+
+    @Override
+    public SAMLClaimsInfo getSAMLClaimsAndRemoveCode(TenantIdentifier tenantIdentifier, String code) throws StorageQueryException {
+        return SAMLQueries.getSAMLClaimsAndRemoveCode(this, tenantIdentifier, code);
+    }
+
+    @Override
+    public void removeExpiredSAMLCodesAndRelayStates() throws StorageQueryException {
+        SAMLQueries.removeExpiredSAMLCodesAndRelayStates(this);
+    }
+
+    @Override
+    public int countSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
+        return SAMLQueries.countSAMLClients(this, tenantIdentifier);
     }
 }

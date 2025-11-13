@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
+import io.supertokens.cronjobs.deleteExpiredSAMLData.DeleteExpiredSAMLData;
 import io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron;
 import io.supertokens.cronjobs.deadlocklogger.DeadlockLogger;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
@@ -43,6 +44,7 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.saml.SAMLBootstrap;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.version.Version;
@@ -183,6 +185,9 @@ public class Main {
         // init file logging
         Logging.initFileLogging(this);
 
+        // Required for SAML related stuff
+        SAMLBootstrap.initialize();
+
         // initialise cron job handler
         Cronjobs.init(this);
 
@@ -283,6 +288,8 @@ public class Main {
         if (Config.getBaseConfig(this).isDeadlockLoggerEnabled()) {
             DeadlockLogger.getInstance().start();
         }
+      
+        Cronjobs.addCronjob(this, DeleteExpiredSAMLData.init(this, uniqueUserPoolIdsTenants));
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();
