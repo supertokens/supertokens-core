@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens;
+package io.supertokens.cronjobs.deadlocklogger;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -24,14 +24,16 @@ import java.util.Arrays;
 public class DeadlockLogger {
 
     private static final DeadlockLogger INSTANCE = new DeadlockLogger();
-    private static Main MAIN;
 
-    public static DeadlockLogger getINSTANCE() {
+    private DeadlockLogger() {
+    }
+
+    public static DeadlockLogger getInstance() {
         return INSTANCE;
     }
 
     public void start(){
-        Thread deadlockLoggerThread = new Thread(deadlockDetector, "DeadlockLogger");
+        Thread deadlockLoggerThread = new Thread(deadlockDetector, "DeadlockLoggerThread");
         deadlockLoggerThread.setDaemon(true);
         deadlockLoggerThread.start();
     }
@@ -48,19 +50,26 @@ public class DeadlockLogger {
                 if (threadIds != null) {
                     ThreadInfo[] infos = bean.getThreadInfo(threadIds);
                     boolean deadlockFound = false;
+                    System.out.println("DEADLOCK found!");
                     for (ThreadInfo info : infos) {
-                        System.out.println("DEADLOCK found!");
-                        StackTraceElement[] stack = info.getStackTrace();
                         System.out.println("ThreadName: " + info.getThreadName());
+                        System.out.println("Thread ID: " + info.getThreadId());
                         System.out.println("LockName: " + info.getLockName());
                         System.out.println("LockOwnerName: " + info.getLockOwnerName());
                         System.out.println("LockedMonitors: " + Arrays.toString(info.getLockedMonitors()));
                         System.out.println("LockInfo: " + info.getLockInfo());
-                        System.out.println("Stack: " + Arrays.toString(stack));
+                        System.out.println("Stack: " + Arrays.toString(info.getStackTrace()));
                         System.out.println();
                         deadlockFound = true;
                     }
+                    System.out.println("*******************************");
                     if(deadlockFound) {
+                        System.out.println(" ==== ALL THREAD INFO ===");
+                        ThreadInfo[] allThreads = bean.dumpAllThreads(true, true, 100);
+                        for (ThreadInfo threadInfo : allThreads) {
+                            System.out.println("THREAD: " + threadInfo.getThreadName());
+                            System.out.println("StackTrace: " + Arrays.toString(threadInfo.getStackTrace()));
+                        }
                         break;
                     }
                 }
@@ -72,9 +81,4 @@ public class DeadlockLogger {
             }
         }
     };
-
-
-    public static void setMAIN(Main MAIN) {
-        DeadlockLogger.MAIN = MAIN;
-    }
 }

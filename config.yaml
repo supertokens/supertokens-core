@@ -186,3 +186,6 @@ core_config_version: 0
 # (OPTIONAL | Default: null) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
+
+# (OPTIONAL | Default: false) boolean value. Enables or disables the deadlock logger.
+# deadlock_logger_enable:
