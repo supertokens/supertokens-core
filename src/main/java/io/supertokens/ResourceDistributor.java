@@ -51,12 +51,12 @@ public class ResourceDistributor {
         return appUsedForTesting;
     }
 
-    public synchronized SingletonResource getResource(AppIdentifier appIdentifier, @Nonnull String key)
+    public SingletonResource getResource(AppIdentifier appIdentifier, @Nonnull String key)
             throws TenantOrAppNotFoundException {
         return getResource(appIdentifier.getAsPublicTenantIdentifier(), key);
     }
 
-    public synchronized SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
+    public SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
             throws TenantOrAppNotFoundException {
         // first we do exact match
         SingletonResource resource = resources.get(new KeyClass(tenantIdentifier, key));
@@ -68,14 +68,6 @@ public class ResourceDistributor {
             // this means we are looking at base tenant and it's not something that
             // refreshing tenants will help with (in fact it will cause an infinite loop)
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
-
-        // we try again..
-        resource = resources.get(new KeyClass(tenantIdentifier, key));
-        if (resource != null) {
-            return resource;
         }
 
         // then we see if the user has configured anything to do with connectionUriDomain, and if they have,
@@ -101,11 +93,11 @@ public class ResourceDistributor {
     }
 
     @TestOnly
-    public synchronized SingletonResource getResource(@Nonnull String key) {
+    public SingletonResource getResource(@Nonnull String key) {
         return resources.get(new KeyClass(appUsedForTesting, key));
     }
 
-    public synchronized SingletonResource setResource(TenantIdentifier tenantIdentifier,
+    public SingletonResource setResource(TenantIdentifier tenantIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
         SingletonResource alreadyExists = resources.get(new KeyClass(tenantIdentifier, key));
@@ -116,7 +108,7 @@ public class ResourceDistributor {
         return resource;
     }
 
-    public synchronized SingletonResource removeResource(TenantIdentifier tenantIdentifier,
+    public SingletonResource removeResource(TenantIdentifier tenantIdentifier,
                                                          @Nonnull String key) {
         SingletonResource singletonResource = resources.get(new KeyClass(tenantIdentifier, key));
         if (singletonResource == null) {
@@ -126,18 +118,18 @@ public class ResourceDistributor {
         return singletonResource;
     }
 
-    public synchronized SingletonResource setResource(AppIdentifier appIdentifier,
+    public SingletonResource setResource(AppIdentifier appIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
         return setResource(appIdentifier.getAsPublicTenantIdentifier(), key, resource);
     }
 
-    public synchronized SingletonResource removeResource(AppIdentifier appIdentifier,
+    public SingletonResource removeResource(AppIdentifier appIdentifier,
                                                          @Nonnull String key) {
         return removeResource(appIdentifier.getAsPublicTenantIdentifier(), key);
     }
 
-    public synchronized void clearAllResourcesWithResourceKey(String inputKey) {
+    public void clearAllResourcesWithResourceKey(String inputKey) {
         List<KeyClass> toRemove = new ArrayList<>();
         resources.forEach((key, value) -> {
             if (key.key.equals(inputKey)) {
@@ -149,7 +141,7 @@ public class ResourceDistributor {
         }
     }
 
-    public synchronized Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
+    public Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
         Map<KeyClass, SingletonResource> result = new HashMap<>();
         resources.forEach((key, value) -> {
             if (key.key.equals(inputKey)) {
@@ -160,7 +152,7 @@ public class ResourceDistributor {
     }
 
     @TestOnly
-    public synchronized SingletonResource setResource(@Nonnull String key,
+    public SingletonResource setResource(@Nonnull String key,
                                                       SingletonResource resource) {
         return setResource(appUsedForTesting, key, resource);
     }

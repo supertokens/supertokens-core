@@ -40,6 +40,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -394,6 +398,75 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
 
         newTokens = refreshToken(process.getProcess(), client, newRefreshToken);
         assertFalse(newTokens.has("refresh_token"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testParallelRefreshTokenWithoutRotation() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.getProcess())
+                .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Create client with token rotation disabled
+        JsonObject client = createClient(process.getProcess(), false);
+        JsonObject tokens = completeFlowAndGetTokens(process.getProcess(), client);
+
+        String refreshToken = tokens.get("refresh_token").getAsString();
+
+        // Setup parallel execution: 16 threads, each making 1000 refresh calls
+        int numberOfThreads = 16;
+        int refreshCallsPerThread = 25;
+        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
+
+        // Execute refresh token calls in parallel
+        for (int i = 0; i < numberOfThreads; i++) {
+            executor.execute(() -> {
+                for (int j = 0; j < refreshCallsPerThread; j++) {
+                    try {
+                        JsonObject refreshResponse = refreshToken(process.getProcess(), client, refreshToken);
+                        if ("OK".equals(refreshResponse.get("status").getAsString())) {
+                            successCount.incrementAndGet();
+                        } else {
+                            failureCount.incrementAndGet();
+                            exceptions.add(new RuntimeException("Refresh failed: " + refreshResponse.toString()));
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                        failureCount.incrementAndGet();
+                        exceptions.add(e);
+                    }
+                }
+            });
+        }
+
+        executor.shutdown();
+        boolean terminated = executor.awaitTermination(5, TimeUnit.MINUTES);
+        assertTrue("Executor did not terminate within timeout", terminated);
+
+        // Verify all refresh calls succeeded
+        int totalExpectedCalls = numberOfThreads * refreshCallsPerThread;
+        assertEquals("All refresh token calls should succeed", totalExpectedCalls, successCount.get());
+        assertEquals("No refresh token calls should fail", 0, failureCount.get());
+        assertTrue("No exceptions should occur", exceptions.isEmpty());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
