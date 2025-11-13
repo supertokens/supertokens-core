@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.2.2]
+
+- Fixes potential deadlock issue with `TelemetryProvider`
+- Adds DeadlockLogger as an utility for discovering deadlock issues
+
 ## [11.2.1]
 
 - Fixes deadlock issue with `ResourceDistributor`
