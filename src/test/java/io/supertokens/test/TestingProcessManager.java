@@ -271,15 +271,22 @@ public class TestingProcessManager {
         }
 
         public void endProcess() throws InterruptedException {
-            try {
-                main.deleteAllInformationForTesting();
-            } catch (Exception e) {
-                if (!e.getMessage().contains("Please call initPool before getConnection")) {
-                    // we ignore this type of message because it's due to tests in which the init failed
-                    // and here we try and delete assuming that init had succeeded.
+            for (int i = 0; i < 10; i++) {
+                try {
+                    main.deleteAllInformationForTesting();
+                } catch (Exception e) {
+                    if (e.getMessage().contains("Please call initPool before getConnection")) {
+                        break;
+                        // we ignore this type of message because it's due to tests in which the init failed
+                        // and here we try and delete assuming that init had succeeded.
+                    } else if (e.getMessage().contains("deadlock")) {
+                        Thread.sleep(500);
+                        continue; // try again
+                    }
                     throw new RuntimeException(e);
                 }
             }
+
             main.killForTestingAndWaitForShutdown();
             instance = null;
         }
