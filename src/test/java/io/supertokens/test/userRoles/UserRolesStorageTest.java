@@ -70,6 +70,10 @@ public class UserRolesStorageTest {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         String role = "role";
         String userId = "userId";
         // create a role

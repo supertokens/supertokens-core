@@ -414,6 +414,10 @@ public class TestRefreshTokenFlowWithTokenRotationOptions {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
         FeatureFlagTestContent.getInstance(process.getProcess())

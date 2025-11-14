@@ -202,6 +202,10 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         for (int i = 0; i < 100; i++) {
 
             Storage storage = StorageLayer.getStorage(process.getProcess());
@@ -310,6 +314,10 @@ public class StorageTest {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {

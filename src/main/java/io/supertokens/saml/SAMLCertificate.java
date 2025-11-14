@@ -74,22 +74,15 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
             TenantOrAppNotFoundException {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        maybeGenerateCertificateInBackground();
-    }
-
-    private void maybeGenerateCertificateInBackground() {
-        // Run certificate creation in background as it can be slow
-        Thread backgroundThread = new Thread(() -> {
-            try {
+        try {
+            if (!Main.isTesting) {
+                // Creation of new certificate is slow, not really necessary to create one for each test
                 this.getCertificate();
-            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
-                Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
-                        false, e);
             }
-        });
-        backgroundThread.setDaemon(true);
-        backgroundThread.setName("SAML-Certificate-Init-" + appIdentifier.getAppId());
-        backgroundThread.start();
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
+                    false, e);
+        }
     }
 
     public synchronized X509Certificate getCertificate()

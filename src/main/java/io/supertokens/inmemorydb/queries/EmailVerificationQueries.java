@@ -192,10 +192,6 @@ public class EmailVerificationQueries {
                                                                                                    String email)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + userId + "~" + email +
-                        Config.getConfig(start).getEmailVerificationTokensTable());
-
         String QUERY = "SELECT user_id, token, token_expiry, email FROM "
                 + getConfig(start).getEmailVerificationTokensTable() +
                 " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
