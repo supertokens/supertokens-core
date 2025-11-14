@@ -48,7 +48,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
 
     private final OpenTelemetry openTelemetry;
 
-    public static synchronized TelemetryProvider getInstance(Main main) {
+    public static TelemetryProvider getInstance(Main main) {
         TelemetryProvider instance = null;
         try {
             instance = (TelemetryProvider) main.getResourceDistributor()

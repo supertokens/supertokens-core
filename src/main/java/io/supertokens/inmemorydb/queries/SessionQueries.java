@@ -18,7 +18,6 @@ package io.supertokens.inmemorydb.queries;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -108,9 +107,6 @@ public class SessionQueries {
                                                          String sessionHandle)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle +
-                        Config.getConfig(start).getSessionInfoTable());
         // we do this as two separate queries and not one query with left join cause psql does not
         // support left join with for update if the right table returns null.
         String QUERY =
@@ -414,8 +410,6 @@ public class SessionQueries {
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con,
                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-        ((ConnectionWithLocks) con).lock(
-                appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
 
         String QUERY = "SELECT * FROM " + getConfig(start).getAccessTokenSigningKeysTable()
                 + " WHERE app_id = ?";

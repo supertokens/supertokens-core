@@ -188,9 +188,6 @@ public class EmailPasswordQueries {
                                                                                            String userId)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(
-                appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getPasswordResetTokensTable());
-
 
         String QUERY =
                 "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()

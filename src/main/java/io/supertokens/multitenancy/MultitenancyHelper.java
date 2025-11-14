@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.saml.SAMLCertificate;
 import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
@@ -235,6 +236,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
         AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
         RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        SAMLCertificate.loadForAllTenants(main, apps, tenantsThatChanged);
         JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
         SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged);
     }

@@ -516,6 +516,33 @@ public class GeneralQueries {
             //index
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsUserIdIndex(start), NO_OP_SETTER);
         }
+
+        // SAML tables
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLClientsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLClientsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLClientsAppIdTenantIdIndex(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLRelayStateTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLRelayStateTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLRelayStateAppIdTenantIdIndex(start), NO_OP_SETTER);
+            update(start, SAMLQueries.getQueryToCreateSAMLRelayStateExpiresAtIndex(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLClaimsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLClaimsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLClaimsAppIdTenantIdIndex(start), NO_OP_SETTER);
+            update(start, SAMLQueries.getQueryToCreateSAMLClaimsExpiresAtIndex(start), NO_OP_SETTER);
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
@@ -563,10 +590,6 @@ public class GeneralQueries {
     public static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                        String key)
             throws SQLException, StorageQueryException {
-
-        ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + key +
-                        Config.getConfig(start).getKeyValueTable());
 
         String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND name = ?";
@@ -1638,9 +1661,6 @@ public class GeneralQueries {
     public static String getRecipeIdForUser_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
-
-        ((ConnectionWithLocks) sqlCon).lock(
-                tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
 
         String QUERY = "SELECT recipe_id FROM " + getConfig(start).getAppIdToUserIdTable()
                 + " WHERE app_id = ? AND user_id = ?";
