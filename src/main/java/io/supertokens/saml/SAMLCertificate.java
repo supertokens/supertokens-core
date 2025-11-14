@@ -25,6 +25,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -172,8 +173,9 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
         X500Name subject = new X500Name("CN=SAML-SP, O=SuperTokens, C=US");
         X500Name issuer = subject; // Self-signed
 
-        // Generate a random serial number
-        java.math.BigInteger serialNumber = java.math.BigInteger.valueOf(System.currentTimeMillis());
+        // Generate a random serial number (128 bits for good uniqueness)
+        SecureRandom random = new SecureRandom();
+        java.math.BigInteger serialNumber = new java.math.BigInteger(128, random);
 
         // Create the certificate builder
         JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
