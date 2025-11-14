@@ -183,8 +183,9 @@ public class StorageTest {
                 t1.join();
                 t2.join();
 
-                assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
-                assertEquals(numberOfIterations.get(), 1);
+                assertEquals("Value1", endValueOfCon1.get());
+                assertEquals("Value2", endValueOfCon2.get());
+                assertEquals(0, numberOfIterations.get());
 
             }
 
