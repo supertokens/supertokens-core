@@ -177,17 +177,48 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     private List<List<BulkImportUser>> makeChunksOf(List<BulkImportUser> users, int numberOfChunks) {
-        List<List<BulkImportUser>> chunks = new ArrayList<>();
-        if (users != null && !users.isEmpty() && numberOfChunks > 0) {
-            AtomicInteger index = new AtomicInteger(0);
-            int chunkSize = users.size() / numberOfChunks + 1;
-            Stream<List<BulkImportUser>> listStream = users.stream()
-                    .collect(Collectors.groupingBy(x -> index.getAndIncrement() / chunkSize))
-                    .entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue);
-
-            listStream.forEach(chunks::add);
+//        List<List<BulkImportUser>> chunks = new ArrayList<>();
+//        if (users != null && !users.isEmpty() && numberOfChunks > 0) {
+//            AtomicInteger index = new AtomicInteger(0);
+//            int chunkSize = users.size() / numberOfChunks + 1;
+//            Stream<List<BulkImportUser>> listStream = users.stream()
+//                    .collect(Collectors.groupingBy(x -> index.getAndIncrement() / chunkSize))
+//                    .entrySet().stream()
+//                    .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue);
+//
+//            listStream.forEach(chunks::add);
+//        }
+//        return chunks;
+        // 1. Handle edge cases immediately
+        if (users == null || users.isEmpty() || numberOfChunks <= 0) {
+            return new ArrayList<>();
         }
+
+        List<List<BulkImportUser>> chunks = new ArrayList<>();
+        int totalSize = users.size();
+
+        // 2. Calculate the robust chunk size (uses Math.ceil implicitly via integer division)
+        // The size of each chunk (except possibly the last one)
+        int chunkSize = (totalSize + numberOfChunks - 1) / numberOfChunks;
+
+        // If numberOfChunks is huge and totalSize is 1, chunkSize would be 1.
+        // Ensure chunkSize is at least 1 if the list is not empty.
+        if (chunkSize == 0) {
+            chunkSize = 1;
+        }
+
+        // 3. Loop through the list, defining start and end indices for each chunk
+        for (int i = 0; i < totalSize; i += chunkSize) {
+            int start = i;
+            // The end index is either (start + chunkSize) or the total list size, whichever is smaller.
+            int end = Math.min(start + chunkSize, totalSize);
+
+            // Use the List.subList method to get a view of the original list.
+            // The ArrayList constructor materializes the view into a new list (the chunk).
+            List<BulkImportUser> chunk = new ArrayList<>(users.subList(start, end));
+            chunks.add(chunk);
+        }
+
         return chunks;
     }
 
