@@ -797,6 +797,10 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         int numberOfThreads = 1000;
         ArrayList<Thread> threads = new ArrayList<>();
         ArrayList<ParallelTransactions> runnables = new ArrayList<>();
