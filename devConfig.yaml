@@ -195,3 +195,9 @@ saml_legacy_acs_url: "http://localhost:5225/api/oauth/saml"
 
 # (OPTIONAL | Default: https://saml.supertokens.com) string value. Service provider's entity ID.
 # saml_sp_entity_id:
+
+# OPTIONAL | Default: 300000) long value. Duration for which SAML claims will be valid before it is consumed
+# saml_claims_validity:
+
+# OPTIONAL | Default: 300000) long value. Duration for which SAML relay state will be valid before it is consumed
+# saml_relay_state_validity:

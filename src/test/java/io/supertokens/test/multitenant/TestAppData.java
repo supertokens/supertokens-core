@@ -246,8 +246,8 @@ public class TestAppData {
         ((WebAuthNStorage) appStorage).saveGeneratedOptions(app, options);
 
         ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://idp.example.com", "abcdefgh", false, true));
-        ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml"));
-        ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject());
+        ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml"), 300000);
+        ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject(), 30000);
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());

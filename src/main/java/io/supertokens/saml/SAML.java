@@ -230,7 +230,7 @@ public class SAML {
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
-        samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI));
+        samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI), config.getSAMLRelayStateValidity());
 
         return idpSsoUrl + "?SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
     }
@@ -456,7 +456,7 @@ public class SAML {
         var claims = extractAllClaims(response);
 
         String code = UUID.randomUUID().toString();
-        samlStorage.saveSAMLClaims(tenantIdentifier, client.clientId, code, claims);
+        samlStorage.saveSAMLClaims(tenantIdentifier, client.clientId, code, claims, config.getSAMLClaimsValidity());
         
         try {
             java.net.URI uri = new java.net.URI(redirectURI);

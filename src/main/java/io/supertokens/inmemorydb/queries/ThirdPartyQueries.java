@@ -219,11 +219,6 @@ public class ThirdPartyQueries {
                                                               AppIdentifier appIdentifier,
                                                               String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
-        // normally the query below will use a for update, but sqlite doesn't support it.
-//        ((ConnectionWithLocks) con).lock(
-//                appIdentifier.getAppId() + "~" + thirdPartyId + thirdPartyUserId +
-//                        Config.getConfig(start).getThirdPartyUsersTable());
-
         // in psql / mysql dbs, this will lock the rows that are in both the tables that meet the ON criteria only.
         String QUERY = "SELECT user_id " +
                 " FROM " + getConfig(start).getThirdPartyUsersTable() +

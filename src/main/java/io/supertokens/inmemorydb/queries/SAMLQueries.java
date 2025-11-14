@@ -75,7 +75,7 @@ public class SAMLQueries {
                 + "tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',"
                 + "relay_state VARCHAR(255) NOT NULL,"
                 + "client_id VARCHAR(255) NOT NULL,"
-                + "state TEXT," // nullable
+                + "state TEXT,"
                 + "redirect_uri VARCHAR(1024) NOT NULL,"
                 + "created_at BIGINT NOT NULL,"
                 + "expires_at BIGINT NOT NULL,"
@@ -124,7 +124,7 @@ public class SAMLQueries {
     }
 
     public static void saveRelayStateInfo(Start start, TenantIdentifier tenantIdentifier,
-                                          String relayState, String clientId, String state, String redirectURI)
+                                          String relayState, String clientId, String state, String redirectURI, long relayStateValidity)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLRelayStateTable();
         String QUERY = "INSERT INTO " + table +
@@ -143,7 +143,7 @@ public class SAMLQueries {
                 }
                 pst.setString(6, redirectURI);
                 pst.setLong(7, System.currentTimeMillis());
-                pst.setLong(8, System.currentTimeMillis() + 300000);
+                pst.setLong(8, System.currentTimeMillis() + relayStateValidity);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -176,7 +176,7 @@ public class SAMLQueries {
         }
     }
 
-    public static void saveSAMLClaims(Start start, TenantIdentifier tenantIdentifier, String clientId, String code, String claimsJson)
+    public static void saveSAMLClaims(Start start, TenantIdentifier tenantIdentifier, String clientId, String code, String claimsJson, long claimsValidity)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClaimsTable();
         String QUERY = "INSERT INTO " + table +
@@ -190,7 +190,7 @@ public class SAMLQueries {
                 pst.setString(4, code);
                 pst.setString(5, claimsJson);
                 pst.setLong(6, System.currentTimeMillis());
-                pst.setLong(7, System.currentTimeMillis() + 300000);
+                pst.setLong(7, System.currentTimeMillis() + claimsValidity);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);

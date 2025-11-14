@@ -18,7 +18,6 @@ package io.supertokens.inmemorydb.queries;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -411,8 +410,6 @@ public class SessionQueries {
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con,
                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-//        ((ConnectionWithLocks) con).lock(
-//                appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
 
         String QUERY = "SELECT * FROM " + getConfig(start).getAccessTokenSigningKeysTable()
                 + " WHERE app_id = ?";

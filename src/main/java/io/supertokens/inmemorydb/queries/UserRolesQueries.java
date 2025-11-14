@@ -245,9 +245,6 @@ public class UserRolesQueries {
     public static boolean doesRoleExist_transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                     String role)
             throws SQLException, StorageQueryException {
-//        ((ConnectionWithLocks) con).lock(
-//                appIdentifier.getAppId() + "~" + role + Config.getConfig(start).getRolesTable());
-
         String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable()
                 + " WHERE app_id = ? AND role = ?";
         return execute(con, QUERY, pst -> {

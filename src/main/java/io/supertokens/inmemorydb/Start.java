@@ -3943,8 +3943,8 @@ public class Start
     }
 
     @Override
-    public void saveRelayStateInfo(TenantIdentifier tenantIdentifier, SAMLRelayStateInfo relayStateInfo)  throws StorageQueryException {
-        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI);
+    public void saveRelayStateInfo(TenantIdentifier tenantIdentifier, SAMLRelayStateInfo relayStateInfo, long relayStateValidity)  throws StorageQueryException {
+        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI, relayStateValidity);
     }
 
     @Override
@@ -3953,8 +3953,8 @@ public class Start
     }
 
     @Override
-    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims) throws StorageQueryException {
-        SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString());
+    public void saveSAMLClaims(TenantIdentifier tenantIdentifier, String clientId, String code, JsonObject claims, long claimsValidity) throws StorageQueryException {
+        SAMLQueries.saveSAMLClaims(this, tenantIdentifier, clientId, code, claims.toString(), claimsValidity);
     }
 
     @Override

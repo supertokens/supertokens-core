@@ -1662,9 +1662,6 @@ public class GeneralQueries {
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
 
-//        ((ConnectionWithLocks) sqlCon).lock(
-//                tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
-
         String QUERY = "SELECT recipe_id FROM " + getConfig(start).getAppIdToUserIdTable()
                 + " WHERE app_id = ? AND user_id = ?";
         return execute(sqlCon, QUERY, pst -> {

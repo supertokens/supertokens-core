@@ -391,6 +391,18 @@ public class CoreConfig {
     @ConfigDescription("Service provider's entity ID")
     private String saml_sp_entity_id = null;
 
+    @EnvName("SAML_CLAIMS_VALIDITY")
+    @JsonProperty
+    @IgnoreForAnnotationCheck
+    @ConfigDescription("Duration for which SAML claims will be valid before it is consumed")
+    private long saml_claims_validity = 300000;
+
+    @EnvName("SAML_RELAY_STATE_VALIDITY")
+    @JsonProperty
+    @IgnoreForAnnotationCheck
+    @ConfigDescription("Duration for which SAML relay state will be valid before it is consumed")
+    private long saml_relay_state_validity = 300000;
+
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -698,6 +710,14 @@ public class CoreConfig {
 
     public String getSAMLSPEntityID() {
         return saml_sp_entity_id;
+    }
+
+    public long getSAMLClaimsValidity() {
+        return saml_claims_validity;
+    }
+
+    public long getSAMLRelayStateValidity() {
+        return saml_relay_state_validity;
     }
 
     private String getConfigFileLocation(Main main) {
