@@ -6,6 +6,8 @@ version = 'unspecified'
 
 repositories {
     mavenCentral()
+
+    maven { url 'https://build.shibboleth.net/nexus/content/repositories/releases/' }
 }
 
 jar {
@@ -52,6 +54,7 @@ dependencies {
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
 
     testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
+
 }
 
 tasks.register('copyJars', Copy) {
