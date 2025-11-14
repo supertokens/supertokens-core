@@ -69,7 +69,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         this.appIdentifier = appIdentifier;
         try {
             this.transferLegacyKeyToNewTable();
-//            this.getOrCreateAndGetSigningKeys();
+            this.getOrCreateAndGetSigningKeys();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
                     "Error while fetching access token signing key", false, e);

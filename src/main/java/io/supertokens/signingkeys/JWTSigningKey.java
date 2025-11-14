@@ -82,7 +82,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                             main.getResourceDistributor()
                                     .setResource(app, RESOURCE_KEY, jwtSigningKey);
 
-//                            jwtSigningKey.generateKeysForSupportedAlgos(main);
+                            jwtSigningKey.generateKeysForSupportedAlgos(main);
 
                         } catch (Exception e) {
                             Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);

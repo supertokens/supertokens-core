@@ -233,7 +233,7 @@ public class Start
     @Override
     public <T> T startTransaction(TransactionLogic<T> logic)
             throws StorageTransactionLogicException, StorageQueryException {
-        return startTransaction(logic, TransactionIsolationLevel.SERIALIZABLE);
+        return startTransaction(logic, TransactionIsolationLevel.READ_COMMITTED);
     }
 
     @Override
