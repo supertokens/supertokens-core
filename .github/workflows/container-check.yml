@@ -3,6 +3,12 @@ name: Container Security Scan
 on:
   # Allow manual triggering
   workflow_dispatch:
+    inputs:
+      image_name:
+        type: string
+        description: 'Docker image name to scan'
+        required: false
+        default: 'supertokens/supertokens-postgresql:latest'
   
   # Run automatically once a day at 2 AM UTC
   schedule:
@@ -19,7 +25,7 @@ jobs:
         uses: Azure/container-scan@v0
         continue-on-error: true
         with:
-          image-name: supertokens/supertokens-postgresql:latest
+          image-name: ${{ github.event.inputs.image_name }}
           severity-threshold: LOW
           run-quality-checks: false
         env:
@@ -39,7 +45,7 @@ jobs:
         run: |
           echo "summary<<EOF" >> $GITHUB_OUTPUT
 
-          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`\n" >> $GITHUB_OUTPUT
+          echo "**Image:** \`${{ github.event.inputs.image_name }}\`\n" >> $GITHUB_OUTPUT
           echo "**Scan Date:** \`$(date -u)\`\n" >> $GITHUB_OUTPUT
           echo "\n" >> $GITHUB_OUTPUT
 
@@ -75,7 +81,7 @@ jobs:
 
       - name: Add to Action Summary
         run: |
-          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ github.event.inputs.image_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Scan Date:** \`$(date -u)\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
