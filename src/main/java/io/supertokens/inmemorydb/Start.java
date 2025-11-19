@@ -277,7 +277,6 @@ public class Start
             throw e;
         } finally {
             if (con != null) {
-                con.setAutoCommit(true);
                 con.close();
             }
         }
