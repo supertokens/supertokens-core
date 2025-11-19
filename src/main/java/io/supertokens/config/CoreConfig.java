@@ -67,7 +67,8 @@ public class CoreConfig {
             "oauth_provider_public_service_url",
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
-            "oauth_provider_url_configured_in_oauth_provider"
+            "oauth_provider_url_configured_in_oauth_provider",
+            "saml_legacy_acs_url"
     };
 
     @IgnoreForAnnotationCheck
@@ -377,6 +378,31 @@ public class CoreConfig {
                     "the database and block all other CUDs from being used from this instance.")
     private String supertokens_saas_load_only_cud = null;
 
+    @EnvName("SAML_LEGACY_ACS_URL")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription("If specified, uses this URL as ACS URL for handling legacy SAML clients")
+    @HideFromDashboard
+    private String saml_legacy_acs_url = null;
+
+    @EnvName("SAML_SP_ENTITY_ID")
+    @JsonProperty
+    @IgnoreForAnnotationCheck
+    @ConfigDescription("Service provider's entity ID")
+    private String saml_sp_entity_id = null;
+
+    @EnvName("SAML_CLAIMS_VALIDITY")
+    @JsonProperty
+    @IgnoreForAnnotationCheck
+    @ConfigDescription("Duration for which SAML claims will be valid before it is consumed")
+    private long saml_claims_validity = 300000;
+
+    @EnvName("SAML_RELAY_STATE_VALIDITY")
+    @JsonProperty
+    @IgnoreForAnnotationCheck
+    @ConfigDescription("Duration for which SAML relay state will be valid before it is consumed")
+    private long saml_relay_state_validity = 300000;
+
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -411,6 +437,13 @@ public class CoreConfig {
                     "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: " +
                     "null)")
     private String otel_collector_connection_uri = null;
+
+    @EnvName("DEADLOCK_LOGGER_ENABLE")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Enables or disables the deadlock logger. (Default: false)")
+    private boolean deadlock_logger_enable = false;
 
     @IgnoreForAnnotationCheck
     private static boolean disableOAuthValidationForTest = false;
@@ -478,6 +511,10 @@ public class CoreConfig {
 
     public String getIpDenyRegex() {
         return ip_deny_regex;
+    }
+
+    public String getLogLevel() {
+        return log_level;
     }
 
     public Set<LOG_LEVEL> getLogLevels(Main main) {
@@ -661,6 +698,26 @@ public class CoreConfig {
 
     public String getOtelCollectorConnectionURI() {
         return otel_collector_connection_uri;
+    }
+
+    public boolean isDeadlockLoggerEnabled() {
+        return deadlock_logger_enable;
+    }
+  
+    public String getSAMLLegacyACSURL() {
+        return saml_legacy_acs_url;
+    }
+
+    public String getSAMLSPEntityID() {
+        return saml_sp_entity_id;
+    }
+
+    public long getSAMLClaimsValidity() {
+        return saml_claims_validity;
+    }
+
+    public long getSAMLRelayStateValidity() {
+        return saml_relay_state_validity;
     }
 
     private String getConfigFileLocation(Main main) {
@@ -931,6 +988,10 @@ public class CoreConfig {
         }
 
         // Normalize
+        if (saml_sp_entity_id == null) {
+            saml_sp_entity_id = "https://saml.supertokens.com";
+        }
+
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
             if (ip_allow_regex.equals("")) {

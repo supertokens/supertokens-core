@@ -186,3 +186,18 @@ disable_telemetry: true
 # (OPTIONAL | Default: null) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
+
+# (OPTIONAL | Default: false) boolean value. Enables or disables the deadlock logger.
+# deadlock_logger_enable:
+
+# (OPTIONAL | Default: null) string value. If specified, uses this URL as ACS URL for handling legacy SAML clients
+saml_legacy_acs_url: "http://localhost:5225/api/oauth/saml"
+
+# (OPTIONAL | Default: https://saml.supertokens.com) string value. Service provider's entity ID.
+# saml_sp_entity_id:
+
+# OPTIONAL | Default: 300000) long value. Duration for which SAML claims will be valid before it is consumed
+# saml_claims_validity:
+
+# OPTIONAL | Default: 300000) long value. Duration for which SAML relay state will be valid before it is consumed
+# saml_relay_state_validity:

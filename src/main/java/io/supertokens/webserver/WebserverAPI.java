@@ -82,10 +82,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v5_1);
         supportedVersions.add(SemVer.v5_2);
         supportedVersions.add(SemVer.v5_3);
+        supportedVersions.add(SemVer.v5_4);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v5_3;
+        return SemVer.v5_4;
     }
 
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
@@ -119,6 +120,12 @@ public abstract class WebserverAPI extends HttpServlet {
     protected void sendTextResponse(int statusCode, String message, HttpServletResponse resp) throws IOException {
         resp.setStatus(statusCode);
         resp.setHeader("Content-Type", "text/html; charset=UTF-8");
+        resp.getWriter().println(message);
+    }
+
+    protected void sendXMLResponse(int statusCode, String message, HttpServletResponse resp) throws IOException {
+        resp.setStatus(statusCode);
+        resp.setHeader("Content-Type", "text/xml; charset=UTF-8");
         resp.getWriter().println(message);
     }
 
