@@ -315,17 +315,12 @@ public class UserMetadataTest {
         assertTrue(success1.get());
         assertTrue(success2.get());
 
-        // No retires happen with READ_COMMITTED
-        assertEquals(2, tryCount1.get() + tryCount2.get());
-        // Deadlock won't occur with READ_COMMITTED
+        // One of them had to be retried (not deterministic which)
+        assertEquals(3, tryCount1.get() + tryCount2.get());
         // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
 
         // The end result is as expected
-        JsonObject finalMetadata = sqlStorage.getUserMetadata(appIdentifier, userId);
-
-        // Only one thread would succeed
-        assertEquals(1, finalMetadata.size());
-        assertTrue(finalMetadata.has("a") || finalMetadata.has("b"));
+        assertEquals(expected, sqlStorage.getUserMetadata(appIdentifier, userId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

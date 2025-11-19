@@ -747,10 +747,6 @@ public class PasswordlessStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
         PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";

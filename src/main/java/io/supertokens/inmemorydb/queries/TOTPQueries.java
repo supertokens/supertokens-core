@@ -114,6 +114,10 @@ public class TOTPQueries {
                                                          String userId, String deviceName)
             throws SQLException, StorageQueryException {
 
+        ((ConnectionWithLocks) sqlCon).lock(
+                appIdentifier.getAppId() + "~" + userId + "~" + deviceName +
+                        Config.getConfig(start).getTotpUserDevicesTable());
+
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE app_id = ? AND user_id = ? AND device_name = ?;";
 
@@ -214,6 +218,9 @@ public class TOTPQueries {
                                                       String userId)
             throws StorageQueryException, SQLException {
 
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getTotpUserDevicesTable());
+
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE app_id = ? AND user_id = ?;";
 
@@ -257,6 +264,11 @@ public class TOTPQueries {
     public static TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(Start start, Connection con,
                                                                       TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
+        // Take a lock based on the user id:
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + userId +
+                        Config.getConfig(start).getTotpUsedCodesTable());
+
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? ORDER BY created_time_ms DESC;";

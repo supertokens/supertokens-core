@@ -184,6 +184,10 @@ public class PasswordlessQueries {
                                                            TenantIdentifier tenantIdentifier, String deviceIdHash)
             throws StorageQueryException, SQLException {
 
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + deviceIdHash +
+                        Config.getConfig(start).getPasswordlessDevicesTable());
+
         String QUERY = "SELECT device_id_hash, email, phone_number, link_code_salt, failed_attempts FROM "
                 + getConfig(start).getPasswordlessDevicesTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND device_id_hash = ?";
@@ -789,6 +793,10 @@ public class PasswordlessQueries {
 
     public static List<String> lockEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                      String email) throws StorageQueryException, SQLException {
+        // normally the query below will use a for update, but sqlite doesn't support it.
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + "~" + email +
+                        Config.getConfig(start).getPasswordlessUsersTable());
         String QUERY = "SELECT user_id FROM " + getConfig(start).getPasswordlessUsersTable() +
                 " WHERE app_id = ? AND email = ?";
         return execute(con, QUERY, pst -> {
@@ -807,6 +815,11 @@ public class PasswordlessQueries {
                                                      AppIdentifier appIdentifier,
                                                      String phoneNumber)
             throws SQLException, StorageQueryException {
+        // normally the query below will use a for update, but sqlite doesn't support it.
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + "~" + phoneNumber +
+                        Config.getConfig(start).getPasswordlessUsersTable());
+
         String QUERY = "SELECT user_id FROM " + getConfig(start).getPasswordlessUsersTable() +
                 " WHERE app_id = ? AND phone_number = ?";
         return execute(con, QUERY, pst -> {

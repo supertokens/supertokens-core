@@ -183,9 +183,8 @@ public class StorageTest {
                 t1.join();
                 t2.join();
 
-                assertEquals("Value1", endValueOfCon1.get());
-                assertEquals("Value2", endValueOfCon2.get());
-                assertEquals(0, numberOfIterations.get());
+                assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
+                assertEquals(numberOfIterations.get(), 1);
 
             }
 
@@ -201,10 +200,6 @@ public class StorageTest {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
 
         for (int i = 0; i < 100; i++) {
 
@@ -314,10 +309,6 @@ public class StorageTest {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -796,10 +787,6 @@ public class StorageTest {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
 
         int numberOfThreads = 1000;
         ArrayList<Thread> threads = new ArrayList<>();

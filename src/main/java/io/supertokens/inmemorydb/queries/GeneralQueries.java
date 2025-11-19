@@ -591,6 +591,10 @@ public class GeneralQueries {
                                                        String key)
             throws SQLException, StorageQueryException {
 
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + key +
+                        Config.getConfig(start).getKeyValueTable());
+
         String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND name = ?";
 
@@ -1661,6 +1665,9 @@ public class GeneralQueries {
     public static String getRecipeIdForUser_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
+
+        ((ConnectionWithLocks) sqlCon).lock(
+                tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
 
         String QUERY = "SELECT recipe_id FROM " + getConfig(start).getAppIdToUserIdTable()
                 + " WHERE app_id = ? AND user_id = ?";

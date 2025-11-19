@@ -65,6 +65,128 @@ public class InMemoryDBStorageTest {
     public Retry retry = new Retry(3);
 
     @Test
+    public void transactionIsolationTesting()
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        sqlStorage.startTransaction(con -> {
+            try {
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
+            sqlStorage.commitTransaction(con);
+            return null;
+        });
+
+        AtomicReference<String> t1State = new AtomicReference<>("init");
+        AtomicReference<String> t2State = new AtomicReference<>("init");
+        final Object syncObject = new Object();
+
+        AtomicBoolean t1Failed = new AtomicBoolean(true);
+        AtomicBoolean t2Failed = new AtomicBoolean(true);
+
+        Runnable r1 = () -> {
+            try {
+                sqlStorage.startTransaction(con -> {
+
+                    sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key");
+
+                    synchronized (syncObject) {
+                        t1State.set("read");
+                        syncObject.notifyAll();
+                    }
+
+                    try {
+                        sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                new KeyValueInfo("Value2"));
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
+
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException e) {
+                    }
+
+                    synchronized (syncObject) {
+                        assertEquals("before_read", t2State.get());
+                    }
+
+                    sqlStorage.commitTransaction(con);
+
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException e) {
+                    }
+
+                    synchronized (syncObject) {
+                        assertEquals("after_read", t2State.get());
+                    }
+
+                    t1Failed.set(false);
+                    return null;
+                });
+            } catch (Exception ignored) {
+            }
+        };
+
+        Runnable r2 = () -> {
+            try {
+                sqlStorage.startTransaction(con -> {
+
+                    synchronized (syncObject) {
+                        while (!t1State.get().equals("read")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    }
+
+                    synchronized (syncObject) {
+                        t2State.set("before_read");
+                    }
+
+                    KeyValueInfo val = sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con,
+                            "Key");
+
+                    synchronized (syncObject) {
+                        t2State.set("after_read");
+                    }
+
+                    assertEquals(val.value, "Value2");
+
+                    t2Failed.set(false);
+                    return null;
+                });
+            } catch (Exception ignored) {
+            }
+        };
+
+        Thread t1 = new Thread(r1);
+        Thread t2 = new Thread(r2);
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        assertTrue(!t1Failed.get() && !t2Failed.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
@@ -181,6 +303,33 @@ public class InMemoryDBStorageTest {
         }
         KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
         assertNull(value);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void multipleParallelTransactionTest() throws InterruptedException, IOException {
+        String[] args = {"../"};
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int numberOfThreads = 1000;
+        ExecutorService es = Executors.newFixedThreadPool(1000);
+        ArrayList<StorageTest.ParallelTransactions> runnables = new ArrayList<>();
+        for (int i = 0; i < numberOfThreads; i++) {
+            StorageTest.ParallelTransactions p = new StorageTest.ParallelTransactions(process);
+            runnables.add(p);
+            es.execute(p);
+        }
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+        for (int i = 0; i < numberOfThreads; i++) {
+            assertTrue(runnables.get(i).success);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

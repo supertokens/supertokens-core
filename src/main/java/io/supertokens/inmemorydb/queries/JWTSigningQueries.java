@@ -64,6 +64,8 @@ public class JWTSigningQueries {
                                                                         AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
 
+        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + Config.getConfig(start).getJWTSigningKeysTable());
+
         String QUERY = "SELECT * FROM " + getConfig(start).getJWTSigningKeysTable()
                 + " WHERE app_id = ? ORDER BY created_at DESC";
 
