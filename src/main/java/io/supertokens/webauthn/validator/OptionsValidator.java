@@ -22,6 +22,7 @@ import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Base64;
 import java.util.List;
 
 public class OptionsValidator {
@@ -49,14 +50,21 @@ public class OptionsValidator {
                 throw new InvalidWebauthNOptionsException("Android origin must contain a valid base64 hash");
             }
 
-            // Accept URL-safe base64 (A-Za-z0-9-_ only)
-            if (!hash.matches("^[A-Za-z0-9\\-_]+$")) {
-                throw new InvalidWebauthNOptionsException("Android origin hash must be valid URL-safe base64");
+            // Validate base64 characters first before checking length
+            try {
+                Base64.getUrlDecoder().decode(hash);
+            } catch (IllegalArgumentException error) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must be valid URL-safe base64 (no padding)");
             }
 
-            // Validate length: SHA256 is 32 bytes, base64-urlsafe encoding is 43 chars
+            // SHA-256 fingerprint in base64url (no padding) is always 43 characters and decodes to 32 bytes
             if (hash.length() != 43) {
-                throw new InvalidWebauthNOptionsException("Android origin hash must be 43 characters (base64 of signing certificate's SHA 256 fingerprint)");
+                throw new InvalidWebauthNOptionsException("Android origin hash must be 43 characters (base64url SHA-256)");
+            }
+
+            // Verify it decodes to exactly 32 bytes (SHA-256)
+            if (Base64.getUrlDecoder().decode(hash).length != 32) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must decode to 32 bytes (SHA-256)");
             }
 
             return;
