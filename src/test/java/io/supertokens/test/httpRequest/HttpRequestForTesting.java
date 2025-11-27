@@ -296,7 +296,7 @@ public class HttpRequestForTesting {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS + 1000);
+            con.setReadTimeout(readTimeoutMS * 3);
             con.setInstanceFollowRedirects(followRedirects);
             con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             if (version != null) {
