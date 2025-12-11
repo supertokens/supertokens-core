@@ -25,6 +25,7 @@ import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
@@ -1326,6 +1327,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void checkIfLoginMethodCanBecomePrimary_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                               LoginMethod loginMethod) throws
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, StorageQueryException {
+        // TODO
     }
 
     @Override

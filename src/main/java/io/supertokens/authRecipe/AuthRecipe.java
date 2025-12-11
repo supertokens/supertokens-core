@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
@@ -707,61 +708,8 @@ public class AuthRecipe {
         // this means that the user has only one login method since it's not a primary user
         // nor is it linked to a primary user
         assert (targetUser.loginMethods.length == 1);
-        LoginMethod loginMethod = targetUser.loginMethods[0];
 
-        for (String tenantId : targetUser.tenantIds) {
-            if (loginMethod.email != null) {
-                AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage
-                        .listPrimaryUsersByEmail_Transaction(appIdentifier, con,
-                                loginMethod.email);
-                for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                    if (!user.tenantIds.contains(tenantId)) {
-                        continue;
-                    }
-                    if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                user.getSupertokensUserId(),
-                                "This user's email is already associated with another user ID");
-                    }
-                }
-            }
-
-            if (loginMethod.phoneNumber != null) {
-                AuthRecipeUserInfo[] usersWithSamePhoneNumber = authRecipeStorage
-                        .listPrimaryUsersByPhoneNumber_Transaction(appIdentifier, con,
-                                loginMethod.phoneNumber);
-                for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                    if (!user.tenantIds.contains(tenantId)) {
-                        continue;
-                    }
-                    if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                user.getSupertokensUserId(),
-                                "This user's phone number is already associated with another user" +
-                                        " ID");
-                    }
-                }
-            }
-
-            if (loginMethod.thirdParty != null) {
-                AuthRecipeUserInfo[] usersWithSameThirdParty = authRecipeStorage
-                        .listPrimaryUsersByThirdPartyInfo_Transaction(appIdentifier, con,
-                                loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
-                for (AuthRecipeUserInfo userWithSameThirdParty : usersWithSameThirdParty) {
-                    if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
-                        continue;
-                    }
-                    if (userWithSameThirdParty.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                userWithSameThirdParty.getSupertokensUserId(),
-                                "This user's third party login is already associated with another" +
-                                        " user ID");
-                    }
-                }
-            }
-        }
-
-
+        authRecipeStorage.checkIfLoginMethodCanBecomePrimary_Transaction(appIdentifier, con, targetUser.loginMethods[0]);
 
         return new CreatePrimaryUserResult(targetUser, false);
     }
@@ -945,7 +893,7 @@ public class AuthRecipe {
             return authRecipeStorage.startTransaction(con -> {
 
                 try {
-                        CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifier, authRecipeStorage,
+                    CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifier, authRecipeStorage,
                             recipeUserId);
                     if (result.wasAlreadyAPrimaryUser) {
                         return result;
