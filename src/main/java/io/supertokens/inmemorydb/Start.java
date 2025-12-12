@@ -1337,6 +1337,16 @@ public class Start
     }
 
     @Override
+    public void checkIfLoginMethodsCanBeLinked_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
+                                                           Set<String> tenantIds, Set<String> emails,
+                                                           Set<String> phoneNumbers,
+                                                           Set<LoginMethod.ThirdParty> thirdParties,
+                                                           String primaryUserId)
+            throws AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, StorageQueryException {
+        // TODO
+    }
+
+    @Override
     public void updateLastActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             ActiveUsersQueries.updateUserLastActive(this, appIdentifier, userId);

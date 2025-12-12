@@ -287,12 +287,34 @@ public class AuthRecipe {
         tenantIds.addAll(recipeUser.tenantIds);
         tenantIds.addAll(primaryUser.tenantIds);
 
-        checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, recipeUser.loginMethods[0], primaryUser);
+        Set<String> emails = new HashSet<>();
+        Set<String> phoneNumbers = new HashSet<>();
+        Set<LoginMethod.ThirdParty> thirdParties = new HashSet<>();
 
-        for (LoginMethod currLoginMethod : primaryUser.loginMethods) {
-            checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, currLoginMethod, primaryUser);
+        for (var lm : primaryUser.loginMethods) {
+            if (lm.email != null) {
+                emails.add(lm.email);
+            }
+            if (lm.phoneNumber != null) {
+                phoneNumbers.add(lm.phoneNumber);
+            }
+            if (lm.thirdParty != null) {
+                thirdParties.add(lm.thirdParty);
+            }
+        }
+        for (var lm : recipeUser.loginMethods) {
+            if (lm.email != null) {
+                emails.add(lm.email);
+            }
+            if (lm.phoneNumber != null) {
+                phoneNumbers.add(lm.phoneNumber);
+            }
+            if (lm.thirdParty != null) {
+                thirdParties.add(lm.thirdParty);
+            }
         }
 
+        authRecipeStorage.checkIfLoginMethodsCanBeLinked_Transaction(con, appIdentifier, tenantIds, emails, phoneNumbers, thirdParties, _primaryUserId);
         return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
