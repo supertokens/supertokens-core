@@ -314,7 +314,7 @@ public class AuthRecipe {
             }
         }
 
-        authRecipeStorage.checkIfLoginMethodsCanBeLinked_Transaction(con, appIdentifier, tenantIds, emails, phoneNumbers, thirdParties, _primaryUserId);
+        authRecipeStorage.checkIfLoginMethodsCanBeLinked_Transaction(con, appIdentifier, tenantIds, emails, phoneNumbers, thirdParties, primaryUser.getSupertokensUserId());
         return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
@@ -1417,6 +1417,8 @@ public class AuthRecipe {
                 .deleteThirdPartyUser_Transaction(con, appIdentifier, userId, deleteFromUserIdToAppIdTableToo);
         StorageUtils.getPasswordlessStorage(storage)
                 .deletePasswordlessUser_Transaction(con, appIdentifier, userId, deleteFromUserIdToAppIdTableToo);
+        StorageUtils.getAuthRecipeStorage(storage)
+                .deleteAccountInfoReservations_Transaction(con, appIdentifier, userId);
     }
 
     public static boolean deleteNonAuthRecipeUser(TenantIdentifier tenantIdentifier, Storage storage, String userId)

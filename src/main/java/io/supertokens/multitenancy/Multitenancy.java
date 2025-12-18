@@ -37,9 +37,9 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
 import io.supertokens.multitenancy.exception.CannotDeleteNullConnectionUriDomainException;
@@ -425,21 +425,23 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(
                         tenantIdentifier.toAppIdentifier(), con, userId);
 
-                if (userToAssociate != null && userToAssociate.isPrimaryUser) {
-                    // TODO Handle primary key error to throw something like AnotherPrimaryUserWithEmailAlreadyExistsException
-                    authRecipeStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, userToAssociate.getSupertokensUserId());
-                }
-
-                // userToAssociate may be null if the user is not associated to any tenants, we can still try and
-                // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
-                // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                 try {
+                    if (userToAssociate != null && userToAssociate.isPrimaryUser) {
+                        authRecipeStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, userToAssociate.getSupertokensUserId());
+                    }
+
+                    // userToAssociate may be null if the user is not associated to any tenants, we can still try and
+                    // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
+                    // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
                             con, userId);
                     authRecipeStorage.commitTransaction(con);
                     return result;
                 } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
-                         DuplicateThirdPartyUserException | DuplicateEmailException e) {
+                         DuplicateThirdPartyUserException | DuplicateEmailException |
+                         AnotherPrimaryUserWithPhoneNumberAlreadyExistsException |
+                         AnotherPrimaryUserWithEmailAlreadyExistsException |
+                         AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 }
             });

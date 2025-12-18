@@ -1353,6 +1353,12 @@ public class Start
     }
 
     @Override
+    public void deleteAccountInfoReservations_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
+                                                          String userId) throws StorageQueryException {
+        // TODO
+    }
+
+    @Override
     public void updateLastActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             ActiveUsersQueries.updateUserLastActive(this, appIdentifier, userId);

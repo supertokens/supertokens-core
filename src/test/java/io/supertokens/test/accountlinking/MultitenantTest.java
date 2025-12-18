@@ -36,6 +36,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -683,7 +685,7 @@ public class MultitenantTest {
                         new MakePrimaryUser(t3, 2),
                         new AssociateUserToTenant(t1, 2).expect(new DuplicateThirdPartyUserException()),
                         new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
+                                new io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
                 }),
                 new TestCase(new TestCaseStep[]{
                         new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
