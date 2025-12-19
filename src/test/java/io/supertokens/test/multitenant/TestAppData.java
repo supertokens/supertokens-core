@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import io.supertokens.authRecipe.AuthRecipe;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -154,6 +155,7 @@ public class TestAppData {
                 "password");
         EmailPassword.generatePasswordResetTokenBeforeCdi4_0(app, appStorage, process.getProcess(),
                 epUser.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), app.toAppIdentifier(), appStorage, epUser.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(app, appStorage, process.getProcess(), "google",
                 "googleid", "test@example.com");
