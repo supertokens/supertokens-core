@@ -32,28 +32,28 @@ public class OAuthAPIHelper {
 
     public static JsonObject createClient(Main main, JsonObject createClientBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/clients", createClientBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/clients", createClientBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject updateClient(Main main, JsonObject updateClientBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/clients", updateClientBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/clients", updateClientBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject auth(Main main, JsonObject authBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/auth", authBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/auth", authBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject token(Main main, JsonObject tokenBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/token", tokenBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/token", tokenBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
@@ -74,7 +74,7 @@ public class OAuthAPIHelper {
         }
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                url, acceptLoginChallengeBody, 5000, 5000, null,
+                url, acceptLoginChallengeBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
@@ -95,28 +95,28 @@ public class OAuthAPIHelper {
         }
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                url, acceptConsentChallengeBody, 5000, 5000, null,
+                url, acceptConsentChallengeBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject revoke(Main main, JsonObject revokeRequestBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/token/revoke", revokeRequestBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/token/revoke", revokeRequestBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject introspect(Main main, JsonObject introspectRequestBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/introspect", introspectRequestBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/introspect", introspectRequestBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
 
     public static JsonObject revokeClientId(Main main, JsonObject revokeClientIdRequestBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/tokens/revoke", revokeClientIdRequestBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/tokens/revoke", revokeClientIdRequestBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }
@@ -124,7 +124,7 @@ public class OAuthAPIHelper {
     public static JsonObject revokeSessionHandle(Main main, JsonObject revokeSessionHandleRequestBody)
             throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/oauth/session/revoke", revokeSessionHandleRequestBody, 5000, 5000, null,
+                "http://localhost:3567/recipe/oauth/session/revoke", revokeSessionHandleRequestBody, 1000, 15000, null,
                 SemVer.v5_2.get(), "");
         return response;
     }

@@ -24,6 +24,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import org.jetbrains.annotations.TestOnly;
 
 import io.supertokens.Main;
@@ -31,7 +32,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -667,30 +668,10 @@ public class EmailPassword {
                     }
 
                     if (email != null) {
-                        if (user.isPrimaryUser) {
-                            for (String tenantId : user.tenantIds) {
-                                AuthRecipeUserInfo[] existingUsersWithNewEmail =
-                                        authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                                appIdentifier, transaction,
-                                                email);
-
-                                for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                    if (!userWithSameEmail.tenantIds.contains(tenantId)) {
-                                        continue;
-                                    }
-                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId()
-                                            .equals(user.getSupertokensUserId())) {
-                                        throw new StorageTransactionLogicException(
-                                                new EmailChangeNotAllowedException());
-                                    }
-                                }
-                            }
-                        }
-
                         try {
-                            epStorage.updateUsersEmail_Transaction(appIdentifier, transaction,
-                                    userId, email);
-                        } catch (DuplicateEmailException e) {
+                            epStorage.updateUsersEmail_Transaction(appIdentifier, transaction, userId, email);
+                        } catch (DuplicateEmailException | EmailChangeNotAllowedException |
+                                 PhoneNumberChangeNotAllowedException e) {
                             throw new StorageTransactionLogicException(e);
                         }
                     }

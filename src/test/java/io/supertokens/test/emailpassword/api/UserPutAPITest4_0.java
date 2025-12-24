@@ -83,9 +83,8 @@ public class UserPutAPITest4_0 {
                 "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v4_0.get(),
                 RECIPE_ID.EMAIL_PASSWORD.toString());
 
-        assertEquals("EMAIL_CHANGE_NOT_ALLOWED_ERROR", response.get("status").getAsString());
-        assertEquals("New email is associated with another primary user ID", response.get("reason").getAsString());
-        assertEquals(2, response.entrySet().size());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
+        assertEquals(1, response.entrySet().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

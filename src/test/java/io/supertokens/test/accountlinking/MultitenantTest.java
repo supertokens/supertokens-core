@@ -16,60 +16,68 @@
 
 package io.supertokens.test.accountlinking;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.*;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
-import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.userroles.UserRoles;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class MultitenantTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
-    @Rule
-    public TestRule retryFlaky = Utils.retryFlakyTest();
+//    @Rule
+//    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -81,7 +89,7 @@ public class MultitenantTest {
         Utils.reset();
     }
 
-    TenantIdentifier t1, t2, t3, t4;
+    TenantIdentifier t1, t2, t3;
 
     private void createTenants(Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
@@ -377,7 +385,6 @@ public class MultitenantTest {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
         t3 = new TenantIdentifier(null, "a1", "t2");
-        t4 = new TenantIdentifier(null, "a1", "t3");
 
         TestCase[] testCases = new TestCase[]{
                 /* 0 */ new TestCase(new TestCaseStep[]{
@@ -513,7 +520,7 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
                         new UpdatePlessUserEmail(t1, 0, "test3@example.com").expect(
-                                new EmailChangeNotAllowedException()),
+                                new DuplicateEmailException()),
                 }),
 
                 /* 14 */ new TestCase(new TestCaseStep[]{
@@ -524,7 +531,7 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
                         new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
+                                new DuplicateEmailException()),
                 }),
 
                 /* 15 */ new TestCase(new TestCaseStep[]{
@@ -555,7 +562,7 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
                         new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(
-                                new EmailChangeNotAllowedException()),
+                                new DuplicateEmailException()),
                 }),
 
                 /* 18 */ new TestCase(new TestCaseStep[]{
@@ -566,7 +573,7 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
                         new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
+                                new DuplicateEmailException()),
                 }),
 
                 /* 19 */ new TestCase(new TestCaseStep[]{
@@ -867,6 +874,38 @@ public class MultitenantTest {
                         new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(
                                 new EmailChangeNotAllowedException()),
                 }),
+                /* 48 */ new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t2, "test3@example.com"),
+                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdateEmailPasswordUserEmail(t2, 1, "test2@example.com"),
+                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                }),
+
+                /* 49 */ new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
+                        new CreatePlessUserWithEmail(t2, "test3@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdatePlessUserEmail(t2, 1, "test2@example.com"),
+                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                }),
+
+                /* 50 */ new TestCase(new TestCaseStep[]{
+                        new CreateThirdPartyUser(t1, "google", "gid1", "test1@example.com"),
+                        new CreateThirdPartyUser(t2, "google", "gid3", "test3@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdateThirdPartyUserEmail(t2, "google", "gid3", "test2@example.com"),
+                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                })
         };
 
         int i = 0;
@@ -935,7 +974,10 @@ public class MultitenantTest {
                     this.execute(main);
                     fail();
                 } catch (Exception e) {
-                    assertEquals(this.e.getClass(), e.getClass());
+                    if (!this.e.getClass().equals(e.getClass())) {
+                        throw new RuntimeException(e);
+                    }
+//                    assertEquals(this.e.getClass(), e.getClass());
                 }
             }
         }
@@ -1138,6 +1180,27 @@ public class MultitenantTest {
             Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(userIndex).getSupertokensUserId(), null,
                     new Passwordless.FieldUpdate(phoneNumber));
+        }
+    }
+
+    private static class UpdateThirdPartyUserEmail extends TestCaseStep {
+        private final TenantIdentifier tenantIdentifier;
+        private final String thirdPartyId;
+        private final String thirdPartyUserId;
+        private final String email;
+
+        public UpdateThirdPartyUserEmail(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId,
+                                         String email) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.thirdPartyId = thirdPartyId;
+            this.thirdPartyUserId = thirdPartyUserId;
+            this.email = email;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            ThirdParty.signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email);
         }
     }
 

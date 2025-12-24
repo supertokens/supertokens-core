@@ -20,7 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
@@ -739,7 +739,7 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
-            PhoneNumberChangeNotAllowedException {
+            io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
         updateUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, emailUpdate, phoneNumberUpdate);
@@ -749,7 +749,7 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
-            PhoneNumberChangeNotAllowedException {
+            io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException {
         PasswordlessSQLStorage plStorage = StorageUtils.getPasswordlessStorage(storage);
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
@@ -778,29 +778,10 @@ public class Passwordless {
             AuthRecipeSQLStorage authRecipeSQLStorage = StorageUtils.getAuthRecipeStorage(storage);
             plStorage.startTransaction(con -> {
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, lM.email)) {
-                    if (user.isPrimaryUser) {
-                        for (String tenantId : user.tenantIds) {
-                            AuthRecipeUserInfo[] existingUsersWithNewEmail =
-                                    authRecipeSQLStorage.listPrimaryUsersByEmail_Transaction(
-                                            appIdentifier, con,
-                                            emailUpdate.newValue);
-
-                            for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                if (!userWithSameEmail.tenantIds.contains(tenantId)) {
-                                    continue;
-                                }
-                                if (userWithSameEmail.isPrimaryUser &&
-                                        !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
-                                    throw new StorageTransactionLogicException(
-                                            new EmailChangeNotAllowedException());
-                                }
-                            }
-                        }
-                    }
                     try {
                         plStorage.updateUserEmail_Transaction(appIdentifier, con, recipeUserId,
                                 emailUpdate.newValue);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                    } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (lM.email != null) {
@@ -828,7 +809,7 @@ public class Passwordless {
                                         !userWithSamePhoneNumber.getSupertokensUserId()
                                                 .equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
-                                            new PhoneNumberChangeNotAllowedException());
+                                            new io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException());
                                 }
                             }
                         }
@@ -868,8 +849,8 @@ public class Passwordless {
                 throw (EmailChangeNotAllowedException) e.actualException;
             }
 
-            if (e.actualException instanceof PhoneNumberChangeNotAllowedException) {
-                throw (PhoneNumberChangeNotAllowedException) e.actualException;
+            if (e.actualException instanceof io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException) {
+                throw (io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException) e.actualException;
             }
         }
     }

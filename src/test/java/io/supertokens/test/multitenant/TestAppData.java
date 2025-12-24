@@ -25,6 +25,7 @@ import java.util.Arrays;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -68,7 +69,6 @@ import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
 import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.session.Session;
@@ -227,7 +227,7 @@ public class TestAppData {
                 ((WebAuthNSQLStorage) appStorage).signUpWithCredentialsRegister_Transaction(app, con, "userId", "test2@example.com", "example.com", credential);
             } catch (DuplicateUserIdException e) {
                 throw new RuntimeException(e);
-            } catch (DuplicateUserEmailException e) {
+            } catch (DuplicateEmailException e) {
                 throw new RuntimeException(e);
             }
             return null;

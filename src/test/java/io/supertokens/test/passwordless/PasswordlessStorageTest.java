@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -381,7 +382,7 @@ public class PasswordlessStorageTest {
                     try {
                         storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userIdNotExists,
                                 email3);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                    } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     storage.commitTransaction(con);
@@ -425,7 +426,7 @@ public class PasswordlessStorageTest {
                     try {
                         storage.updateUserEmail_Transaction(
                                 process.getAppForTesting().toAppIdentifier(), con, userIdEmail1, email2);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                    } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     storage.commitTransaction(con);
@@ -447,7 +448,7 @@ public class PasswordlessStorageTest {
                 storage.startTransaction(con -> {
                     try {
                         storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userIdEmail1, email2);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                    } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     storage.commitTransaction(con);
@@ -517,7 +518,7 @@ public class PasswordlessStorageTest {
                 storage.startTransaction(con -> {
                     try {
                         storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userIdPhone1, email);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                    } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     storage.commitTransaction(con);
@@ -568,7 +569,7 @@ public class PasswordlessStorageTest {
         storage.startTransaction(con -> {
             try {
                 storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userId, email2);
-            } catch (UnknownUserIdException | DuplicateEmailException e) {
+            } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                 throw new StorageTransactionLogicException(e);
             }
             storage.commitTransaction(con);
@@ -579,7 +580,7 @@ public class PasswordlessStorageTest {
         storage.startTransaction(con -> {
             try {
                 storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userId, null);
-            } catch (UnknownUserIdException | DuplicateEmailException e) {
+            } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                 throw new StorageTransactionLogicException(e);
             }
             try {
@@ -606,7 +607,7 @@ public class PasswordlessStorageTest {
         storage.startTransaction(con -> {
             try {
                 storage.updateUserEmail_Transaction(process.getAppForTesting().toAppIdentifier(), con, userId, email);
-            } catch (UnknownUserIdException | DuplicateEmailException e) {
+            } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException e) {
                 throw new StorageTransactionLogicException(e);
             }
             try {

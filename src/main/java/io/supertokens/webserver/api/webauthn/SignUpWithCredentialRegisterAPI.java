@@ -20,10 +20,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserEmailException;
 import io.supertokens.pluginInterface.webauthn.exceptions.WebauthNOptionsNotExistsException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webauthn.WebAuthN;
@@ -86,7 +86,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             result.addProperty("status", "INVALID_OPTIONS_ERROR");
             result.addProperty("reason", e.getMessage());
             sendJsonResponse(200, result, resp);
-        } catch (DuplicateUserEmailException e) {
+        } catch (DuplicateEmailException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             sendJsonResponse(200, result, resp);
