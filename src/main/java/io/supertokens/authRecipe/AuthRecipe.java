@@ -910,11 +910,11 @@ public class AuthRecipe {
                         }
                         canMakePrimaryUsers.add(result);
                     }
-                        authRecipeStorage.makePrimaryUsers_Transaction(appIdentifier, con,
-                                canMakePrimaryUsers.stream().map(canMakePrimaryUser -> canMakePrimaryUser.user.id).collect(
-                                        Collectors.toList()));
+                    authRecipeStorage.makePrimaryUsers_Transaction(appIdentifier, con,
+                            canMakePrimaryUsers.stream().map(canMakePrimaryUser -> canMakePrimaryUser.user.id).collect(
+                                    Collectors.toList()));
 
-                        authRecipeStorage.commitTransaction(con);
+                    authRecipeStorage.commitTransaction(con);
 
                     for(CreatePrimaryUserBulkResult result : results) {
                         if (result.wasAlreadyAPrimaryUser) {
