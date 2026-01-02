@@ -16,9 +16,26 @@
 
 package io.supertokens.authRecipe;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.authRecipe.exception.*;
+import io.supertokens.authRecipe.exception.BulkImportRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -26,6 +43,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -45,12 +63,6 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.TestOnly;
-
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -314,7 +326,13 @@ public class AuthRecipe {
             }
         }
 
-        authRecipeStorage.checkIfLoginMethodsCanBeLinked_Transaction(con, appIdentifier, tenantIds, emails, phoneNumbers, thirdParties, primaryUser.getSupertokensUserId());
+        io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult canLinkResult =
+                authRecipeStorage.checkIfLoginMethodsCanBeLinked_Transaction(con, appIdentifier, tenantIds, emails,
+                        phoneNumbers, thirdParties, primaryUser.getSupertokensUserId());
+        if (!canLinkResult.ok) {
+            throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                    canLinkResult.primaryUserId, canLinkResult.message);
+        }
         return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
@@ -658,7 +676,12 @@ public class AuthRecipe {
         // nor is it linked to a primary user
         assert (targetUser.loginMethods.length == 1);
 
-        authRecipeStorage.checkIfLoginMethodCanBecomePrimary_Transaction(appIdentifier, con, targetUser.loginMethods[0]);
+        CanBecomePrimaryResult result = authRecipeStorage.checkIfLoginMethodCanBecomePrimary_Transaction(appIdentifier,
+                con, targetUser.loginMethods[0]);
+
+        if (!result.ok) {
+            throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(result.primaryUserId, result.message);
+        }
 
         return new CreatePrimaryUserResult(targetUser, false);
     }

@@ -24,8 +24,9 @@ import io.supertokens.inmemorydb.config.SQLiteConfig;
 import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
+import io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
-import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
@@ -1330,20 +1331,23 @@ public class Start
     }
 
     @Override
-    public void checkIfLoginMethodCanBecomePrimary_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                               LoginMethod loginMethod) throws
-            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, StorageQueryException {
+    public CanBecomePrimaryResult checkIfLoginMethodCanBecomePrimary_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                                                 LoginMethod loginMethod) throws
+            StorageQueryException {
         // TODO
+        return null;
     }
 
     @Override
-    public void checkIfLoginMethodsCanBeLinked_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
-                                                           Set<String> tenantIds, Set<String> emails,
-                                                           Set<String> phoneNumbers,
-                                                           Set<LoginMethod.ThirdParty> thirdParties,
-                                                           String primaryUserId)
-            throws AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, StorageQueryException {
+    public CanLinkAccountsResult checkIfLoginMethodsCanBeLinked_Transaction(TransactionConnection con,
+                                                                            AppIdentifier appIdentifier,
+                                                                            Set<String> tenantIds, Set<String> emails,
+                                                                            Set<String> phoneNumbers,
+                                                                            Set<LoginMethod.ThirdParty> thirdParties,
+                                                                            String primaryUserId)
+            throws StorageQueryException {
         // TODO
+        return null;
     }
 
     @Override
