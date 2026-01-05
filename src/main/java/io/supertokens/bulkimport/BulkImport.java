@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
@@ -536,11 +537,11 @@ public class BulkImport {
     }
 
     private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                    List<BulkImportUser> users, List<AuthRecipeUserInfo> allUsersWithSameExtraData)
+                                                    List<BulkImportUser> users, Map<String, Map<String, String>> primaryUserLookup)
             throws StorageTransactionLogicException {
         try {
             AuthRecipe.linkMultipleAccountsForBulkImport(main, appIdentifier, storage,
-                    users, allUsersWithSameExtraData);
+                    users, primaryUserLookup);
         } catch (TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(new Exception("E023: " + e.getMessage()));
         } catch (FeatureNotEnabledException e) {

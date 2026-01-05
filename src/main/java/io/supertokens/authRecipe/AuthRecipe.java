@@ -45,6 +45,7 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
@@ -340,7 +341,7 @@ public class AuthRecipe {
                                                                                               AppIdentifier appIdentifier,
                                                                                               Storage storage,
                                                                                               List<BulkImportUser> users,
-                                                                                              List<AuthRecipeUserInfo> allUsersWithExtraData)
+                                                                                              Map<String, Map<String, String>> primaryUserLookup)
             throws StorageQueryException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
@@ -372,11 +373,11 @@ public class AuthRecipe {
 
                     try {
                         bulkCheckIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
-                                recipeUser, primaryUserId, allUsersWithExtraData);
+                                recipeUser, primaryUserId, primaryUserLookup);
                         BulkImportUser currentPrimaryUser = BulkImportUserUtils.findUserByPrimaryId(users, primaryUserId);
                         for (BulkImportUser.LoginMethod currLoginMethod : currentPrimaryUser.loginMethods) {
                             bulkCheckIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds,
-                                    currLoginMethod, primaryUserId, allUsersWithExtraData);
+                                    currLoginMethod, primaryUserId, primaryUserLookup);
                         }
 
                         results.add(new CanLinkAccountsBulkResult(recipeUserId, primaryUserId, false, null, currentPrimaryUser));
@@ -395,7 +396,7 @@ public class AuthRecipe {
                                                                   AuthRecipeSQLStorage authRecipeStorage,
                                                                   Set<String> tenantIds, BulkImportUser.LoginMethod currLoginMethod,
                                                                   String primaryUserId,
-                                                                  List<AuthRecipeUserInfo> allUsersWithExtraData)
+                                                                  Map<String, Map<String, String>> primaryUserLookup)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
         // we loop through the union of both the user's tenantIds and check that the criteria for
         // linking accounts is not violated in any of them. We do a union and not an intersection
@@ -407,63 +408,46 @@ public class AuthRecipe {
         // u1 and u2 to be primary users with the same email in the same tenant. If we do an
         // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
         // do the checks in both.
+
         for (String tenantId : tenantIds) {
             // we do not bother with getting the storage for each tenant here because
             // we get the tenants from the user itself, and the user can only be shared across
             // tenants of the same storage - therefore, the storage will be the same.
 
+            Map<String, String> tenantLookup = primaryUserLookup.get(tenantId);
+
             if (currLoginMethod.email != null) {
-                List<AuthRecipeUserInfo> usersWithSameEmail =
-                        allUsersWithExtraData.stream().filter(authRecipeUserInfo -> Arrays.stream(
-                                authRecipeUserInfo.loginMethods).map(loginMethod -> loginMethod.email).collect(
-                                Collectors.toList()).contains(currLoginMethod.email)).collect(Collectors.toList());
-                for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                    if (!user.tenantIds.contains(tenantId)) {
-                        continue;
-                    }
-                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUserId)) {
+                if (tenantLookup != null) {
+                    String existingPrimaryUserId = tenantLookup.get(currLoginMethod.email);
+                    if (existingPrimaryUserId != null && !existingPrimaryUserId.equals(primaryUserId)) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                user.getSupertokensUserId(),
+                                existingPrimaryUserId,
                                 "This user's email is already associated with another user ID");
                     }
                 }
             }
 
             if (currLoginMethod.phoneNumber != null) {
-                List<AuthRecipeUserInfo> usersWithSamePhoneNumber =
-                        allUsersWithExtraData.stream().filter(authRecipeUserInfo -> Arrays.stream(
-                                authRecipeUserInfo.loginMethods).map(loginMethod -> loginMethod.phoneNumber).collect(
-                                Collectors.toList()).contains(currLoginMethod.phoneNumber)).collect(Collectors.toList());
-                for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                    if (!user.tenantIds.contains(tenantId)) {
-                        continue;
-                    }
-                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUserId)) {
+                if (tenantLookup != null) {
+                    String existingPrimaryUserId = tenantLookup.get(currLoginMethod.phoneNumber);
+                    if (existingPrimaryUserId != null && !existingPrimaryUserId.equals(primaryUserId)) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                user.getSupertokensUserId(),
+                                existingPrimaryUserId,
                                 "This user's phone number is already associated with another user" +
                                         " ID");
                     }
                 }
             }
 
-            if (currLoginMethod.thirdPartyId != null) {
-                List<AuthRecipeUserInfo> extraUsersWithThirdParty = allUsersWithExtraData.stream().filter(authRecipeUserInfo -> Arrays.stream(
-                        authRecipeUserInfo.loginMethods).anyMatch(loginMethod1 -> loginMethod1.thirdParty != null)).collect(Collectors.toList());
-                for(AuthRecipeUserInfo extraUser : extraUsersWithThirdParty) {
-                    if(extraUser.isPrimaryUser && extraUser.tenantIds.contains(tenantId)
-                            && !extraUser.getSupertokensUserId().equals(primaryUserId)) {
-                        for (LoginMethod loginMethodExtra : extraUser.loginMethods) {
-                            if (loginMethodExtra.thirdParty != null &&
-                                    loginMethodExtra.thirdParty.userId.equals(currLoginMethod.thirdPartyUserId)
-                                    && loginMethodExtra.thirdParty.id.equals(currLoginMethod.thirdPartyId)) {
-
-                                throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                        extraUser.getSupertokensUserId(),
-                                        "This user's third party login is already associated with another" +
-                                                " user ID");
-                            }
-                        }
+            if (currLoginMethod.thirdPartyId != null && currLoginMethod.thirdPartyUserId != null) {
+                if (tenantLookup != null) {
+                    String thirdPartyAccountInfoValue = new LoginMethod.ThirdParty(currLoginMethod.thirdPartyId, currLoginMethod.thirdPartyUserId).getAccountInfoValue();
+                    String existingPrimaryUserId = tenantLookup.get(thirdPartyAccountInfoValue);
+                    if (existingPrimaryUserId != null && !existingPrimaryUserId.equals(primaryUserId)) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                existingPrimaryUserId,
+                                "This user's third party login is already associated with another" +
+                                        " user ID");
                     }
                 }
             }
@@ -551,7 +535,7 @@ public class AuthRecipe {
     public static void linkMultipleAccountsForBulkImport(Main main, AppIdentifier appIdentifier,
                                                          Storage storage,
                                                          List<BulkImportUser> users,
-                                                         List<AuthRecipeUserInfo> usersWithSameExtraData)
+                                                         Map<String, Map<String, String>> primaryUserLookup)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
         if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
@@ -565,7 +549,7 @@ public class AuthRecipe {
 
             authRecipeStorage.startTransaction(con -> {
                 List<CanLinkAccountsBulkResult> canLinkAccounts = canLinkMultipleAccountsHelperForBulkImport(con, appIdentifier,
-                        authRecipeStorage, users, usersWithSameExtraData);
+                        authRecipeStorage, users, primaryUserLookup);
                 Map<String, String> recipeUserByPrimaryUserNeedsLinking = new HashMap<>();
                 if(!canLinkAccounts.isEmpty()){
                     for(CanLinkAccountsBulkResult canLinkAccountsBulkResult : canLinkAccounts) {
@@ -701,11 +685,17 @@ public class AuthRecipe {
         DistinctAuthIdentifiers mailPhoneThirdParty = getDistinctAuthIdentifiers(bulkImportUsers);
 
         List<CreatePrimaryUserBulkResult> results = new ArrayList<>();
-        List<AuthRecipeUserInfo> allUsersWithProvidedExtraData =
-                List.of(authRecipeStorage.
-                        listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction(appIdentifier, con,
-                                new ArrayList<>(mailPhoneThirdParty.allEmails), new ArrayList<>(mailPhoneThirdParty.allPhoneNumber),
-                                mailPhoneThirdParty.allThirdParty)); // this is multiple - not so cheap DB query, but we need to do it
+        List<PrimaryUserIdByAccountInfo> primaryUserIdsByAccountInfo =
+                authRecipeStorage.getPrimaryUserIdsByAccountInfo_Transaction(appIdentifier, con,
+                        new ArrayList<>(mailPhoneThirdParty.allEmails),
+                        new ArrayList<>(mailPhoneThirdParty.allPhoneNumber),
+                        mailPhoneThirdParty.allThirdParty);
+
+        Map<String, Map<String, String>> primaryUserLookup = new HashMap<>();
+        for (PrimaryUserIdByAccountInfo info : primaryUserIdsByAccountInfo) {
+            primaryUserLookup.computeIfAbsent(info.tenantId, k -> new HashMap<>())
+                    .put(info.accountInfoValue, info.primaryUserId);
+        }
 
         for (BulkImportUser targetUser : bulkImportUsers) {
             BulkImportUser.LoginMethod primaryLoginMethod = BulkImportUserUtils.getPrimaryLoginMethod(targetUser);
@@ -717,72 +707,47 @@ public class AuthRecipe {
                 // will handle this. In the bulk import we have no means to check this.
                 boolean errorFound = false;
                 for (String tenantId : loginMethod.tenantIds) {
+                    Map<String, String> tenantLookup = primaryUserLookup.get(tenantId);
+                    
                     if (loginMethod.email != null) {
-                        List<AuthRecipeUserInfo> usersWithSameEmail = allUsersWithProvidedExtraData.stream()
-                                .filter(authRecipeUserInfo -> Arrays.stream(
-                                                authRecipeUserInfo.loginMethods).map(loginMethod1 -> loginMethod1.email)
-                                        .collect(Collectors.toList()).contains(loginMethod.email)).collect(
-                                        Collectors.toList());
-                        for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                            if (!user.tenantIds.contains(tenantId)) {
-                                continue;
-                            }
-                            if (user.isPrimaryUser) {
+                        if (tenantLookup != null) {
+                            String primaryUserId = tenantLookup.get(loginMethod.email);
+                            if (primaryUserId != null) {
                                 results.add(new CreatePrimaryUserBulkResult(targetUser, primaryLoginMethod, false,
                                         new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                                user.getSupertokensUserId(),
+                                                primaryUserId,
                                                 "This user's email is already associated with another user ID")));
                                 errorFound = true;
-                                break;
                             }
                         }
                     }
 
                     if (loginMethod.phoneNumber != null) {
-                        List<AuthRecipeUserInfo> usersWithSamePhoneNumber = allUsersWithProvidedExtraData.stream()
-                                .filter(authRecipeUserInfo -> Arrays.stream(
-                                                authRecipeUserInfo.loginMethods).map(loginMethod1 -> loginMethod1.phoneNumber)
-                                        .collect(Collectors.toList()).contains(loginMethod.phoneNumber)).collect(
-                                        Collectors.toList());
-                        for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                            if (!user.tenantIds.contains(tenantId)) {
-                                continue;
-                            }
-                            if (user.isPrimaryUser) {
+                        if (tenantLookup != null) {
+                            String primaryUserId = tenantLookup.get(loginMethod.phoneNumber);
+                            if (primaryUserId != null) {
                                 results.add(new CreatePrimaryUserBulkResult(targetUser, primaryLoginMethod, false,
                                         new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                                user.getSupertokensUserId(),
+                                                primaryUserId,
                                                 "This user's phone number is already associated with another user" +
                                                         " ID")));
                                 errorFound = true;
-                                break;
                             }
                         }
                     }
 
                     if (loginMethod.thirdPartyId != null && loginMethod.thirdPartyUserId != null) {
-                        List<AuthRecipeUserInfo> extraUsersWithThirdParty = allUsersWithProvidedExtraData.stream()
-                                .filter(authRecipeUserInfo -> Arrays.stream(
-                                                authRecipeUserInfo.loginMethods)
-                                        .anyMatch(loginMethod1 -> loginMethod1.thirdParty != null))
-                                .collect(Collectors.toList());
-                        for (AuthRecipeUserInfo extraUser : extraUsersWithThirdParty) {
-                            if (extraUser.isPrimaryUser && extraUser.tenantIds.contains(tenantId)) {
-                                for (LoginMethod loginMethodExtra : extraUser.loginMethods) {
-                                    if (loginMethodExtra.thirdParty != null &&
-                                            loginMethodExtra.thirdParty.userId.equals(loginMethod.thirdPartyUserId)
-                                            && loginMethodExtra.thirdParty.id.equals(loginMethod.thirdPartyId)) {
-
-                                        results.add(
-                                                new CreatePrimaryUserBulkResult(targetUser, primaryLoginMethod, false,
-                                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                                                extraUser.getSupertokensUserId(),
-                                                                "This user's third party login is already associated with another" +
-                                                                        " user ID")));
-                                        errorFound = true;
-                                        break;
-                                    }
-                                }
+                        if (tenantLookup != null) {
+                            String thirdPartyAccountInfoValue = new LoginMethod.ThirdParty(loginMethod.thirdPartyId, loginMethod.thirdPartyUserId).getAccountInfoValue();
+                            String primaryUserId = tenantLookup.get(thirdPartyAccountInfoValue);
+                            if (primaryUserId != null) {
+                                results.add(
+                                        new CreatePrimaryUserBulkResult(targetUser, primaryLoginMethod, false,
+                                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                                        primaryUserId,
+                                                        "This user's third party login is already associated with another" +
+                                                                " user ID")));
+                                errorFound = true;
                             }
                         }
                     }
@@ -795,7 +760,7 @@ public class AuthRecipe {
         }
         CreatePrimaryUsersResultHolder resultHolder = new CreatePrimaryUsersResultHolder();
         resultHolder.createPrimaryUserBulkResults = results;
-        resultHolder.usersWithSameExtraData = allUsersWithProvidedExtraData;
+        resultHolder.usersWithSameExtraData = primaryUserLookup;
         return resultHolder;
     }
 
@@ -898,7 +863,7 @@ public class AuthRecipe {
     //helper class to return together the results of primary user creation and the users with the same extradata (email, phone, etc)
     public static class CreatePrimaryUsersResultHolder {
         public List<CreatePrimaryUserBulkResult> createPrimaryUserBulkResults;
-        public List<AuthRecipeUserInfo> usersWithSameExtraData;
+        public Map<String, Map<String, String>> usersWithSameExtraData;
     }
 
     public static CreatePrimaryUsersResultHolder createPrimaryUsersForBulkImport(Main main,

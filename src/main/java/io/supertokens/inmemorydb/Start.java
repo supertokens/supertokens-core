@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
@@ -1360,6 +1361,17 @@ public class Start
     public void deleteAccountInfoReservations_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                           String userId) throws StorageQueryException {
         // TODO
+    }
+
+    @Override
+    public List<PrimaryUserIdByAccountInfo> getPrimaryUserIdsByAccountInfo_Transaction(AppIdentifier appIdentifier,
+                                                                                       TransactionConnection con,
+                                                                                       List<String> emails,
+                                                                                       List<String> phoneNumbers,
+                                                                                       Map<String, String> thirdPartyIdToThirdPartyUserId)
+            throws StorageQueryException {
+        // TODO
+        return List.of();
     }
 
     @Override
