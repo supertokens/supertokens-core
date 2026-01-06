@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.1]
+
+- Fixes request context for SAML to support all login types on IDP
+
 ## [11.3.0]
 
 - Adds SAML features
