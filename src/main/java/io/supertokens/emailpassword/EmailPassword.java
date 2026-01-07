@@ -670,8 +670,7 @@ public class EmailPassword {
                     if (email != null) {
                         try {
                             epStorage.updateUsersEmail_Transaction(appIdentifier, transaction, userId, email);
-                        } catch (DuplicateEmailException | EmailChangeNotAllowedException |
-                                 PhoneNumberChangeNotAllowedException e) {
+                        } catch (DuplicateEmailException | EmailChangeNotAllowedException e) {
                             throw new StorageTransactionLogicException(e);
                         }
                     }

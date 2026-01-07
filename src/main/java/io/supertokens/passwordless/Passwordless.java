@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -817,7 +818,8 @@ public class Passwordless {
                     try {
                         plStorage.updateUserPhoneNumber_Transaction(appIdentifier, con, recipeUserId,
                                 phoneNumberUpdate.newValue);
-                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                    } catch (UnknownUserIdException | DuplicatePhoneNumberException |
+                             PhoneNumberChangeNotAllowedException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (lM.phoneNumber != null) {
@@ -849,7 +851,7 @@ public class Passwordless {
                 throw (EmailChangeNotAllowedException) e.actualException;
             }
 
-            if (e.actualException instanceof io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException) {
+            if (e.actualException instanceof PhoneNumberChangeNotAllowedException) {
                 throw (io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException) e.actualException;
             }
         }

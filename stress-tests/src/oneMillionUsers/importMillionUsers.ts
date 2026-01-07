@@ -75,24 +75,26 @@ export const importMillionUsers = async (deployment: any) => {
             },
           }
         );
+
+        const count: any = await response.json();
+        const failedCount: any = await failedCountResponse.json();
+        console.log(
+          `    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${(((lastCount - count.count) * 1000) / (Date.now() - lastTime)).toFixed(1)}, Failed=${failedCount.count}`
+        );
+  
+        if (count.count - failedCount.count === 0) {
+          break;
+        }
+  
+        lastCount = count.count;
+        lastTime = Date.now();
+  
       } catch (error) {
         // Ignoring any error from this fetch request
         console.log('    Error fetching user count, continuing anyway...');
         failedCountResponse = { json: async () => ({ count: 0 }) };
       }
 
-      const count: any = await response.json();
-      const failedCount: any = await failedCountResponse.json();
-      console.log(
-        `    Progress: Time=${formatTime(Date.now() - st)}, UsersLeft=${count.count}, Rate=${(((lastCount - count.count) * 1000) / (Date.now() - lastTime)).toFixed(1)}, Failed=${failedCount.count}`
-      );
-
-      if (count.count - failedCount.count === 0) {
-        break;
-      }
-
-      lastCount = count.count;
-      lastTime = Date.now();
     }
   });
 };

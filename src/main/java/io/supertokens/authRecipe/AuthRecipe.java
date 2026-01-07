@@ -332,7 +332,7 @@ public class AuthRecipe {
                         phoneNumbers, thirdParties, primaryUser.getSupertokensUserId());
         if (!canLinkResult.ok) {
             throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                    canLinkResult.primaryUserId, canLinkResult.message);
+                    canLinkResult.conflictingPrimaryUserId, canLinkResult.message);
         }
         return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
@@ -664,7 +664,7 @@ public class AuthRecipe {
                 con, targetUser.loginMethods[0]);
 
         if (!result.ok) {
-            throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(result.primaryUserId, result.message);
+            throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(result.conflictingPrimaryUserId, result.message);
         }
 
         return new CreatePrimaryUserResult(targetUser, false);
