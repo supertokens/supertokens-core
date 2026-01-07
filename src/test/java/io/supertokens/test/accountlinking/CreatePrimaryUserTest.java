@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -31,7 +31,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -541,7 +541,7 @@ public class CreatePrimaryUserTest {
         try {
             AuthRecipe.createPrimaryUser(process.getProcess(), emailPasswordUser2.getSupertokensUserId());
             assert (false);
-        } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
+        } catch (CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
             assert (e.primaryUserId.equals(emailPasswordUser1.getSupertokensUserId()));
             assert (e.getMessage().equals("This user ID is already linked to another user ID"));
         }

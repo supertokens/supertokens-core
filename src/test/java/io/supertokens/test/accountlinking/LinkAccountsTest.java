@@ -22,7 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -32,7 +32,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
@@ -325,7 +325,7 @@ public class LinkAccountsTest {
         try {
             AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user3.getSupertokensUserId());
             assert (false);
-        } catch (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException e) {
+        } catch (CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException e) {
             assert (e.recipeUser.getSupertokensUserId().equals(user.getSupertokensUserId()));
             assert (e.getMessage().equals("The input recipe user ID is already linked to another user ID"));
         }

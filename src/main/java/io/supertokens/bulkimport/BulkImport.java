@@ -20,11 +20,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
@@ -48,7 +47,7 @@ import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInser
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -501,7 +500,7 @@ public class BulkImport {
                                 + userid
                                 + " but it doesn't exist. This should not happen. Please contact support.";
                         errorsByPosition.put(userid, new Exception(message));
-                    } else if (exception instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
+                    } else if (exception instanceof CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
                         String message = "E021: We tried to create the primary user for the userId "
                                 + userid
                                 + " but it is already linked with another primary user.";
@@ -569,7 +568,7 @@ public class BulkImport {
                                 + " to the primary userId " + recipeUID
                                 + " but the account info is already associated with another primary user.";
                         errorByPosition.put(userId, new Exception(message));
-                    } else if (currentException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
+                    } else if (currentException instanceof CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
                         String message = "E028: We tried to link the userId " + recipeUID
                                 + " to the primary userId " + userId
                                 + " but it is already linked with another primary user.";

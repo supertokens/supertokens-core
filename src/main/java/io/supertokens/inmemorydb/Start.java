@@ -40,7 +40,7 @@ import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
@@ -1332,8 +1332,8 @@ public class Start
     }
 
     @Override
-    public CanBecomePrimaryResult checkIfLoginMethodCanBecomePrimary_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                                                 LoginMethod loginMethod) throws
+    public CanBecomePrimaryResult checkIfLoginMethodCanBecomePrimary(AppIdentifier appIdentifier,
+                                                                     String recipeUserId) throws
             StorageQueryException {
         // TODO
         return null;
@@ -3150,13 +3150,14 @@ public class Start
     }
 
     @Override
-    public void makePrimaryUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId)
+    public boolean makePrimaryUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId)
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
             // we do not bother returning if a row was updated here or not, cause it's happening
             // in a transaction anyway.
             GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, appIdentifier, userId);
+            return false; // TODO
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

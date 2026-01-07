@@ -21,11 +21,11 @@ import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -73,7 +73,7 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
                 userId = storageAndMapping.userIdMapping.superTokensUserId;
             }
 
-            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.canCreatePrimaryUser(appIdentifier, storage,
+            AuthRecipe.CanCreatePrimaryUserResult result = AuthRecipe.canCreatePrimaryUser(appIdentifier, storage,
                     userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -100,7 +100,7 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
             } catch (StorageQueryException ex) {
                 throw new ServletException(ex);
             }
-        } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
+        } catch (CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR");

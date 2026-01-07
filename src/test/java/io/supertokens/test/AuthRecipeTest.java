@@ -24,8 +24,8 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
@@ -42,7 +42,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -689,8 +689,8 @@ public class AuthRecipeTest {
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException, HttpResponseException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
-            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, UnknownUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, EmailVerificationInvalidTokenException,
+            CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, UnknownUserIdException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, EmailVerificationInvalidTokenException,
             StorageTransactionLogicException, NoSuchAlgorithmException, EmailAlreadyVerifiedException,
             InvalidKeySpecException {
         String[] args = {"../"};

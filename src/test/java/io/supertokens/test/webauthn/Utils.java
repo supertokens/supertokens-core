@@ -31,8 +31,8 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
@@ -40,7 +40,7 @@ import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenE
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -348,7 +348,7 @@ public class Utils {
     public static List<AuthRecipeUserInfo> createEmailPasswordUsers(TestingProcessManager.TestingProcess process, int noUsers, boolean makePrimary)
             throws DuplicateEmailException, StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, UnknownUserIdException {
         return createEmailPasswordUsers(process, noUsers, makePrimary, 0);
     }
@@ -356,7 +356,7 @@ public class Utils {
     public static List<AuthRecipeUserInfo> createEmailPasswordUsers(TestingProcessManager.TestingProcess process, int noUsers, boolean makePrimary, int emailIndexStart)
             throws DuplicateEmailException, StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, UnknownUserIdException {
 
         List<AuthRecipeUserInfo> epUsers = new ArrayList<>();
@@ -372,7 +372,7 @@ public class Utils {
 
     public static void makePrimaryUserFrom(TestingProcessManager.TestingProcess process, String supertokensUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
         AuthRecipe.createPrimaryUser(process.getProcess(),
                 process.getAppForTesting().toAppIdentifier(), StorageLayer.getStorage(process.getProcess()), supertokensUserId);
@@ -387,7 +387,7 @@ public class Utils {
 
     public static void linkAccounts(Main main, List<String> primaryUserIds, List<String> recipeUserIds)
             throws AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
-            StorageQueryException, RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            StorageQueryException, CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
             FeatureNotEnabledException, UnknownUserIdException {
         for(int i = 0; i < primaryUserIds.size(); i++){
             AuthRecipe.LinkAccountsResult result = AuthRecipe.linkAccounts(main,

@@ -36,7 +36,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -56,7 +56,7 @@ import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAs
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
@@ -762,7 +762,7 @@ public class MultitenantTest {
                         new AssociateUserToTenant(t1, 0),
                         new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
                         new LinkAccounts(t1, 0, 1).expect(
-                                new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
+                                new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
                 }),
 
                 /* 36 */ new TestCase(new TestCaseStep[]{
