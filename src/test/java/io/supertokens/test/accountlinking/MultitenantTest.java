@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -36,9 +37,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -47,7 +46,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -55,8 +53,11 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
@@ -76,8 +77,8 @@ public class MultitenantTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
-//    @Rule
-//    public TestRule retryFlaky = Utils.retryFlakyTest();
+    @Rule
+    public TestRule retryFlaky = Utils.retryFlakyTest();
 
     @AfterClass
     public static void afterTesting() {
@@ -386,530 +387,544 @@ public class MultitenantTest {
         t2 = new TenantIdentifier(null, "a1", "t1");
         t3 = new TenantIdentifier(null, "a1", "t2");
 
-        TestCase[] testCases = new TestCase[]{
-                /* 0 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new AssociateUserToTenant(t2, 0),
-                }),
-                /* 1 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test@example.com"),
-                        new AssociateUserToTenant(t2, 0),
-                        new MakePrimaryUser(t1, 0),
-                }),
-                /* 2 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new SignInEmailPasswordUser(t2, 0).expect(new WrongCredentialsException())
-                }),
-
-                /* 3 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()),
-                        new AssociateUserToTenant(t2, 2), // Allowed
-                }),
-
-                /* 4 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 5 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(
-                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
-                }),
-
-                /* 6 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()),
-                        new AssociateUserToTenant(t2, 2), // Allowed
-                }),
-
-                /* 7 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 8 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(
-                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
-                }),
-
-                /* 9 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t1, 2),
-                        new AssociateUserToTenant(t2, 2), // Allowed
-                }),
-
-                /* 10 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 11 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(
-                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
-                }),
-
-                /* 12 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test2@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new UpdatePlessUserEmail(t1, 0, "test2@example.com"),
-                }),
-
-                /* 13 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserEmail(t1, 0, "test3@example.com").expect(
-                                new DuplicateEmailException()),
-                }),
-
-                /* 14 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
-                                new DuplicateEmailException()),
-                }),
-
-                /* 15 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithPhone(t1, "+1000001"),
-                        new CreatePlessUserWithPhone(t1, "+1000003"),
-                        new CreatePlessUserWithPhone(t2, "+1000002"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserPhone(t1, 0, "+1000003").expect(new PhoneNumberChangeNotAllowedException()),
-                }),
-
-                /* 16 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithPhone(t1, "+1000001"),
-                        new CreatePlessUserWithPhone(t1, "+1000003"),
-                        new CreatePlessUserWithPhone(t2, "+1000002"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserPhone(t1, 1, "+1000001").expect(new PhoneNumberChangeNotAllowedException()),
-                }),
-
-                /* 17 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(
-                                new DuplicateEmailException()),
-                }),
-
-                /* 18 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
-                                new DuplicateEmailException()),
-                }),
-
-                /* 19 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()),
-                        new AssociateUserToTenant(t2, 2), // Allowed
-                }),
-
-                /* 20 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 21 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(
-                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
-                }),
-
-                /* 22 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t1, 2),
-                        new AssociateUserToTenant(t2, 2), // Allowed
-                }),
-
-                /* 23 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 24 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateEmailPasswordUser(t3, "test1@example.com"),
-                        new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(
-                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
-                }),
-
-                /* 25 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test2@example.com"),
-                }),
-
-                /* 26 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-
-                /* 27 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"),
-                        new CreateEmailPasswordUser(t2, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-
-                /* 28 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithPhone(t1, "+1000001"),
-                        new CreatePlessUserWithPhone(t2, "+1000002"),
-                        new CreatePlessUserWithPhone(t3, "+1000001"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t1, 2).expect(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
-                }),
-
-                /* 29 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"),
-                        new CreateThirdPartyUser(t3, "google", "googleid1", "test3@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t1, 2).expect(new io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
-                        new AssociateUserToTenant(t2, 2).expect(
-                                new io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
-                }),
-                /* 30 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new MakePrimaryUser(t1, 2),
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-                /* 31 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new UnlinkAccount(t1, 0),
-                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
-                }),
-
-                /* 32 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new UnlinkAccount(t1, 0),
-                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
-                }),
-
-                /* 33 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid2", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new UnlinkAccount(t1, 0),
-                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
-                }),
-                /* 34 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new DisassociateUserFromTenant(t1, 0),
-                        new AssociateUserToTenant(t2, 0),
-                        new TestCaseStep() {
-                            @Override
-                            public void execute(Main main) throws Exception {
-                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
-                                        TestCase.users.get(0).getSupertokensUserId());
-                                assertEquals(2, user.loginMethods.length);
-                                assertTrue(user.loginMethods[0].tenantIds.contains(t2.getTenantId()));
-                                assertTrue(user.loginMethods[1].tenantIds.contains(t1.getTenantId()));
-                            }
-                        }
-                }),
-
-                /* 35 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new DisassociateUserFromTenant(t1, 0),
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new DisassociateUserFromTenant(t1, 1),
-                        new MakePrimaryUser(t1, 0),
-                        new MakePrimaryUser(t1, 1),
-                        new AssociateUserToTenant(t1, 0),
-                        new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
-                        new LinkAccounts(t1, 0, 1).expect(
-                                new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
-                }),
-
-                /* 36 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new DisassociateUserFromTenant(t1, 0),
-                        new CreateEmailPasswordUser(t1, "test@example.com"),
-                        new DisassociateUserFromTenant(t1, 1),
-                        new MakePrimaryUser(t1, 0),
-                        new AssociateUserToTenant(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
-                        new AssociateUserToTenant(t2, 1),
-                }),
-                /* 37 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new UnlinkAccount(t1, 0),
-                        new TestCaseStep() {
-                            @Override
-                            public void execute(Main main) throws Exception {
-                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipe.deleteUser(t1.toAppIdentifier(), t1Storage,
-                                        TestCase.users.get(1).getSupertokensUserId());
-                            }
-                        },
-                        new TestCaseStep() {
-                            @Override
-                            public void execute(Main main) throws Exception {
-                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
-                                        TestCase.users.get(0).getSupertokensUserId());
-                                assertNull(user);
-                            }
-                        }
-                }),
-
-                /* 38 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com"),
-                }),
-                /* 39 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"),
-                }),
-
-                /* 40 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 1),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com"),
-                }),
-                /* 41 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"),
-                }),
-
-                /* 42 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new MakePrimaryUser(t1, 1),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-                /* 43 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new MakePrimaryUser(t1, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-
-                /* 44 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"), // allowed
-                }),
-                /* 45 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"), // allowed
-                }),
-                /* 46 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new MakePrimaryUser(t1, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-                /* 47 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test3@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 1),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
-                        new MakePrimaryUser(t2, 2),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(
-                                new EmailChangeNotAllowedException()),
-                }),
-                /* 48 */ new TestCase(new TestCaseStep[]{
-                        new CreateEmailPasswordUser(t1, "test1@example.com"),
-                        new CreateEmailPasswordUser(t2, "test3@example.com"),
-                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdateEmailPasswordUserEmail(t2, 1, "test2@example.com"),
-                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 49 */ new TestCase(new TestCaseStep[]{
-                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
-                        new CreatePlessUserWithEmail(t2, "test3@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserEmail(t2, 1, "test2@example.com"),
-                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                }),
-
-                /* 50 */ new TestCase(new TestCaseStep[]{
-                        new CreateThirdPartyUser(t1, "google", "gid1", "test1@example.com"),
-                        new CreateThirdPartyUser(t2, "google", "gid3", "test3@example.com"),
-                        new CreateEmailPasswordUser(t1, "test2@example.com"),
-                        new MakePrimaryUser(t1, 0),
-                        new LinkAccounts(t1, 0, 2),
-                        new MakePrimaryUser(t2, 1),
-                        new UpdateThirdPartyUserEmail(t2, "google", "gid3", "test2@example.com"),
-                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
-                })
+        TestRun[] testCases = new TestRun[]{
+            (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0));
+            },
+            /* 1 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+            },
+            /* 2 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new SignInEmailPasswordUser(t2, 0).expect(new WrongCredentialsException()));
+            },
+            /* 3 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+            },
+            /* 4 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 5 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+                testCase.executeStep(new MakePrimaryUser(t3, 2).expect(
+                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")));
+            },
+            /* 6 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+            },
+            /* 7 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 8 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+                testCase.executeStep(new MakePrimaryUser(t3, 2).expect(
+                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")));
+            },
+            /* 9 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+            },
+            /* 10 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 11 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+                testCase.executeStep(new MakePrimaryUser(t3, 2).expect(
+                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")));
+            },
+            /* 12 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test2@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 0, "test2@example.com"));
+            },
+            /* 13 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 0, "test3@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 14 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 15 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithPhone(t1, "+1000001"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t1, "+1000003"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t2, "+1000002"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdatePlessUserPhone(t1, 0, "+1000003").expect(new PhoneNumberChangeNotAllowedException()));
+            },
+            /* 16 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithPhone(t1, "+1000001"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t1, "+1000003"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t2, "+1000002"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdatePlessUserPhone(t1, 1, "+1000001").expect(new PhoneNumberChangeNotAllowedException()));
+            },
+            /* 17 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 18 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 19 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2).expect(new DuplicateEmailException()));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+            },
+            /* 20 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 21 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+                testCase.executeStep(new MakePrimaryUser(t3, 2).expect(
+                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")));
+            },
+            /* 22 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+            },
+            /* 23 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 24 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateEmailPasswordUser(t3, "test1@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2));
+                testCase.executeStep(new MakePrimaryUser(t3, 2).expect(
+                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")));
+            },
+            /* 25 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test2@example.com"));
+            },
+            /* 26 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 27 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 28 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithPhone(t1, "+1000001"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t2, "+1000002"));
+                testCase.executeStep(new CreatePlessUserWithPhone(t3, "+1000001"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2).expect(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")));
+            },
+            /* 29 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t3, "google", "googleid1", "test3@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new MakePrimaryUser(t3, 2));
+                testCase.executeStep(new AssociateUserToTenant(t1, 2).expect(new io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")));
+                testCase.executeStep(new AssociateUserToTenant(t2, 2).expect(
+                        new io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")));
+            },
+            /* 30 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new MakePrimaryUser(t1, 2));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 31 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new UnlinkAccount(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()));
+            },
+            /* 32 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new UnlinkAccount(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()));
+            },
+            /* 33 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid1", "test@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid2", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new UnlinkAccount(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()));
+            },
+            /* 34 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new DisassociateUserFromTenant(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t2, 0));
+                testCase.executeStep(new TestCaseStep() {
+                    @Override
+                    public void execute(TestCase testCase, Main main) throws Exception {
+                        Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                        AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
+                                testCase.users.get(0).getSupertokensUserId());
+                        assertEquals(2, user.loginMethods.length);
+                        assertTrue(user.loginMethods[0].tenantIds.contains(t2.getTenantId()));
+                        assertTrue(user.loginMethods[1].tenantIds.contains(t1.getTenantId()));
+                    }
+                });
+            },
+            /* 35 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new DisassociateUserFromTenant(t1, 0));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new DisassociateUserFromTenant(t1, 1));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new AssociateUserToTenant(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException(null)));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1).expect(
+                        new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null)));
+            },
+            /* 36 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new DisassociateUserFromTenant(t1, 0));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test@example.com"));
+                testCase.executeStep(new DisassociateUserFromTenant(t1, 1));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new AssociateUserToTenant(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()));
+                testCase.executeStep(new AssociateUserToTenant(t2, 1));
+            },
+            /* 37 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new UnlinkAccount(t1, 0));
+                testCase.executeStep(new TestCaseStep() {
+                    @Override
+                    public void execute(TestCase testCase, Main main) throws Exception {
+                        Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                        AuthRecipe.deleteUser(t1.toAppIdentifier(), t1Storage,
+                                testCase.users.get(1).getSupertokensUserId());
+                    }
+                });
+                testCase.executeStep(new TestCaseStep() {
+                    @Override
+                    public void execute(TestCase testCase, Main main) throws Exception {
+                        Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                        AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
+                                testCase.users.get(0).getSupertokensUserId());
+                        assertNull(user);
+                    }
+                });
+            },
+            /* 38 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 1, "test1@example.com"));
+            },
+            /* 39 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"));
+            },
+            /* 40 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 1, "test1@example.com"));
+            },
+            /* 41 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"));
+            },
+            /* 42 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 43 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 44 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"));
+            },
+            /* 45 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"));
+            },
+            /* 46 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new MakePrimaryUser(t1, 1));
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 47 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test3@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 1));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t2, 2));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(
+                        new EmailChangeNotAllowedException()));
+            },
+            /* 48 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test1@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t2, "test3@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdateEmailPasswordUserEmail(t2, 1, "test2@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 49 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreatePlessUserWithEmail(t1, "test1@example.com"));
+                testCase.executeStep(new CreatePlessUserWithEmail(t2, "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdatePlessUserEmail(t2, 1, "test2@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            },
+            /* 50 */ (Main main) -> {
+                TestCase testCase = new TestCase(main);
+                testCase.executeStep(new CreateThirdPartyUser(t1, "google", "gid1", "test1@example.com"));
+                testCase.executeStep(new CreateThirdPartyUser(t2, "google", "gid3", "test3@example.com"));
+                testCase.executeStep(new CreateEmailPasswordUser(t1, "test2@example.com"));
+                testCase.executeStep(new MakePrimaryUser(t1, 0));
+                testCase.executeStep(new LinkAccounts(t1, 0, 2));
+                testCase.executeStep(new MakePrimaryUser(t2, 1));
+                testCase.executeStep(new UpdateThirdPartyUserEmail(t2, "google", "gid3", "test2@example.com"));
+                testCase.executeStep(new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")));
+            }
         };
 
-        int i = 0;
-        for (TestCase testCase : testCases) {
+        int tc = 0;
+        for (TestRun t : testCases) {
             String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
@@ -923,38 +938,35 @@ public class MultitenantTest {
 
             createTenants(process.getProcess());
 
-            System.out.println("Executing test case : " + i);
-            testCase.doTest(process.getProcess());
+            System.out.println("Executing test case : " + tc);
+            t.doTest(process.getProcess());
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-            i++;
+            tc++;
         }
     }
 
+    private static interface TestRun {
+        void doTest(Main main) throws Exception;
+    }
+
     private static class TestCase {
-        TestCaseStep[] steps;
-        public static List<AuthRecipeUserInfo> users;
+        public List<AuthRecipeUserInfo> users;
+        Main main;
 
-        public static void resetUsers() {
-            users = new ArrayList<>();
-        }
-
-        public static void addUser(AuthRecipeUserInfo user) {
+        public void addUser(AuthRecipeUserInfo user) {
             users.add(user);
         }
 
-        public TestCase(TestCaseStep[] steps) {
-            this.steps = steps;
+        public TestCase(Main main) {
+            this.users = new ArrayList<>();
+            this.main = main;
         }
 
-        public void doTest(Main main) throws Exception {
-            TestCase.resetUsers();
-
-            for (TestCaseStep step : steps) {
-                step.doStep(main);
-                Thread.sleep(20);
-            }
+        public void executeStep(TestCaseStep step) throws Exception {
+            step.doStep(this, main);
+            Thread.sleep(20);
         }
     }
 
@@ -966,23 +978,22 @@ public class MultitenantTest {
             return this;
         }
 
-        public void doStep(Main main) throws Exception {
+        public void doStep(TestCase testCase, Main main) throws Exception {
             if (e == null) {
-                this.execute(main);
+                this.execute(testCase, main);
             } else {
                 try {
-                    this.execute(main);
+                    this.execute(testCase, main);
                     fail();
                 } catch (Exception e) {
                     if (!this.e.getClass().equals(e.getClass())) {
                         throw new RuntimeException(e);
                     }
-//                    assertEquals(this.e.getClass(), e.getClass());
                 }
             }
         }
 
-        abstract public void execute(Main main) throws Exception;
+        abstract public void execute(TestCase testCase, Main main) throws Exception;
     }
 
     private static class CreateEmailPasswordUser extends TestCaseStep {
@@ -995,11 +1006,11 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, main, email,
                     "password");
-            TestCase.addUser(user);
+            testCase.addUser(user);
         }
     }
 
@@ -1013,7 +1024,7 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifier,
                     storage, main,
@@ -1021,7 +1032,7 @@ public class MultitenantTest {
             AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, storage, main,
                     code.deviceId,
                     code.deviceIdHash, code.userInputCode, null).user;
-            TestCase.addUser(user);
+            testCase.addUser(user);
         }
     }
 
@@ -1035,7 +1046,7 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifier,
                     storage, main,
@@ -1043,7 +1054,7 @@ public class MultitenantTest {
             AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, storage, main,
                     code.deviceId,
                     code.deviceIdHash, code.userInputCode, null).user;
-            TestCase.addUser(user);
+            testCase.addUser(user);
         }
     }
 
@@ -1062,12 +1073,12 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipeUserInfo user = ThirdParty.signInUp(tenantIdentifier, storage, main,
                     thirdPartyId,
                     thirdPartyUserId, email).user;
-            TestCase.addUser(user);
+            testCase.addUser(user);
         }
     }
 
@@ -1081,10 +1092,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipe.createPrimaryUser(main, tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId());
+                    testCase.users.get(userIndex).getSupertokensUserId());
         }
     }
 
@@ -1100,11 +1111,11 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipe.linkAccounts(main, tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(recipeUserIndex).getSupertokensUserId(),
-                    TestCase.users.get(primaryUserIndex).getSupertokensUserId());
+                    testCase.users.get(recipeUserIndex).getSupertokensUserId(),
+                    testCase.users.get(primaryUserIndex).getSupertokensUserId());
         }
     }
 
@@ -1118,10 +1129,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Multitenancy.addUserIdToTenant(main, tenantIdentifier, storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId());
+                    testCase.users.get(userIndex).getSupertokensUserId());
         }
     }
 
@@ -1137,10 +1148,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             EmailPassword.updateUsersEmailOrPassword(tenantIdentifier.toAppIdentifier(), storage,
-                    main, TestCase.users.get(userIndex).getSupertokensUserId(), email, null);
+                    main, testCase.users.get(userIndex).getSupertokensUserId(), email, null);
         }
     }
 
@@ -1156,10 +1167,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId(), new Passwordless.FieldUpdate(email), null);
+                    testCase.users.get(userIndex).getSupertokensUserId(), new Passwordless.FieldUpdate(email), null);
         }
     }
 
@@ -1175,10 +1186,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId(), null,
+                    testCase.users.get(userIndex).getSupertokensUserId(), null,
                     new Passwordless.FieldUpdate(phoneNumber));
         }
     }
@@ -1198,7 +1209,7 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             ThirdParty.signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email);
         }
@@ -1214,10 +1225,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipe.unlinkAccounts(main, tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId());
+                    testCase.users.get(userIndex).getSupertokensUserId());
         }
     }
 
@@ -1231,10 +1242,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             EmailPassword.signIn(tenantIdentifier, storage, main,
-                    TestCase.users.get(userIndex).loginMethods[0].email, "password");
+                    testCase.users.get(userIndex).loginMethods[0].email, "password");
         }
     }
 
@@ -1248,10 +1259,10 @@ public class MultitenantTest {
         }
 
         @Override
-        public void execute(Main main) throws Exception {
+        public void execute(TestCase testCase, Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Multitenancy.removeUserIdFromTenant(main, tenantIdentifier, storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId(), null);
+                    testCase.users.get(userIndex).getSupertokensUserId(), null);
         }
     }
 }

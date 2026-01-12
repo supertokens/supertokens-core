@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
@@ -300,7 +301,8 @@ public class ThirdParty {
                                 try {
                                     tpStorage.updateUserEmail_Transaction(appIdentifier, con, lM1.getSupertokensUserId(),
                                             thirdPartyId, thirdPartyUserId, email);
-                                } catch (EmailChangeNotAllowedException | DuplicateEmailException e) {
+                                } catch (EmailChangeNotAllowedException | DuplicateEmailException |
+                                         UnknownUserIdException e) {
                                     throw new StorageTransactionLogicException(e);
                                 }
                             }
@@ -311,6 +313,10 @@ public class ThirdParty {
                     } catch (StorageTransactionLogicException e) {
                         if (e.actualException instanceof EmailChangeNotAllowedException) {
                             throw (EmailChangeNotAllowedException) e.actualException;
+                        } else if (e.actualException instanceof DuplicateEmailException) {
+                            throw new IllegalStateException("should never happen", e);
+                        } else if (e.actualException instanceof UnknownUserIdException) {
+                            throw new IllegalStateException("should never happen", e);
                         }
                         throw new StorageQueryException(e);
                     }

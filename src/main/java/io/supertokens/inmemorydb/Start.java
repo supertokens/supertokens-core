@@ -28,6 +28,8 @@ import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
@@ -1231,6 +1233,15 @@ public class Start
     }
 
     @Override
+    public void updateUserEmailAndPhone_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                    String recipeUserId, String newEmail, boolean shouldUpdateEmail,
+                                                    String newPhoneNumber, boolean shouldUpdatePhoneNumber)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, DuplicateEmailException,
+            EmailChangeNotAllowedException, DuplicatePhoneNumberException, PhoneNumberChangeNotAllowedException {
+        // TODO
+    }
+
+    @Override
     public AuthRecipeUserInfo signUp(
             TenantIdentifier tenantIdentifier, String id, String email,
             LoginMethod.ThirdParty thirdParty, long timeJoined)
@@ -1340,12 +1351,8 @@ public class Start
     }
 
     @Override
-    public CanLinkAccountsResult checkIfLoginMethodsCanBeLinked_Transaction(TransactionConnection con,
-                                                                            AppIdentifier appIdentifier,
-                                                                            Set<String> tenantIds, Set<String> emails,
-                                                                            Set<String> phoneNumbers,
-                                                                            Set<LoginMethod.ThirdParty> thirdParties,
-                                                                            String primaryUserId)
+    public CanLinkAccountsResult checkIfLoginMethodsCanBeLinked(AppIdentifier appIdentifier,
+                                                                            String primaryUserId, String recipeUserId)
             throws StorageQueryException {
         // TODO
         return null;
@@ -1361,17 +1368,6 @@ public class Start
     public void deleteAccountInfoReservations_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                           String userId) throws StorageQueryException {
         // TODO
-    }
-
-    @Override
-    public List<PrimaryUserIdByAccountInfo> getPrimaryUserIdsByAccountInfo_Transaction(AppIdentifier appIdentifier,
-                                                                                       TransactionConnection con,
-                                                                                       List<String> emails,
-                                                                                       List<String> phoneNumbers,
-                                                                                       Map<String, String> thirdPartyIdToThirdPartyUserId)
-            throws StorageQueryException {
-        // TODO
-        return List.of();
     }
 
     @Override
@@ -1698,56 +1694,6 @@ public class Start
         try {
             PasswordlessQueries.deleteCode_Transaction(this, sqlCon, tenantIdentifier, deviceIdHash);
         } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
-                                            String email)
-            throws StorageQueryException, UnknownUserIdException, DuplicateEmailException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, userId,
-                    email);
-            if (updated_rows != 1) {
-                throw new UnknownUserIdException();
-            }
-        } catch (SQLException e) {
-            if (e instanceof SQLiteException) {
-                if (isUniqueConstraintError(e.getMessage(),
-                        Config.getConfig(this).getPasswordlessUserToTenantTable(),
-                        new String[]{"app_id", "tenant_id", "email"})) {
-                    throw new DuplicateEmailException();
-                }
-            }
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void updateUserPhoneNumber_Transaction(AppIdentifier appIdentifier, TransactionConnection
-            con, String userId, String phoneNumber)
-            throws StorageQueryException, UnknownUserIdException, DuplicatePhoneNumberException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier,
-                    userId,
-                    phoneNumber);
-
-            if (updated_rows != 1) {
-                throw new UnknownUserIdException();
-            }
-
-        } catch (SQLException e) {
-            if (e instanceof SQLiteException) {
-                if (isUniqueConstraintError(e.getMessage(),
-                        Config.getConfig(this).getPasswordlessUserToTenantTable(),
-                        new String[]{"app_id", "tenant_id", "phone_number"})) {
-                    throw new DuplicatePhoneNumberException();
-                }
-            }
-
             throw new StorageQueryException(e);
         }
     }
@@ -3177,13 +3123,14 @@ public class Start
     }
 
     @Override
-    public void linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
+    public boolean linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
                                          String primaryUserId) throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
             // we do not bother returning if a row was updated here or not, cause it's happening
             // in a transaction anyway.
             GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+            return false; // TODO
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3582,7 +3529,7 @@ public class Start
     @Override
     public WebAuthNStoredCredential saveCredentials(TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
             throws StorageQueryException, DuplicateCredentialException,
-            io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException, TenantOrAppNotFoundException {
+            UnknownUserIdException, TenantOrAppNotFoundException {
         try {
              return WebAuthNQueries.saveCredential(this, tenantIdentifier, credential);
         } catch (SQLException e) {
@@ -3598,7 +3545,7 @@ public class Start
                         config.getWebAuthNUsersTable(),
                         new String[]{"user_id"},
                         new Object[]{tenantIdentifier.getAppId()})) {
-                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
+                    throw new UnknownUserIdException();
                 } else if (isForeignKeyConstraintError(
                         serverMessage,
                         config.getTenantsTable(),
@@ -3855,7 +3802,7 @@ public class Start
 
     @Override
     public void updateUserEmail(TenantIdentifier tenantIdentifier, String userId, String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException,
+            throws StorageQueryException, UnknownUserIdException,
             DuplicateEmailException {
         try {
             WebAuthNQueries.updateUserEmail(this, tenantIdentifier, userId, newEmail);
@@ -3872,7 +3819,7 @@ public class Start
                         config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "user_id"},
                         new Object[]{tenantIdentifier.getAppId(), userId})) {
-                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
+                    throw new UnknownUserIdException();
                 }
             }
             throw new StorageQueryException(e);
@@ -3882,7 +3829,7 @@ public class Start
     @Override
     public void updateUserEmail_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con, String userId,
                                             String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException,
+            throws StorageQueryException, UnknownUserIdException,
             DuplicateEmailException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
@@ -3900,7 +3847,7 @@ public class Start
                         config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "user_id"},
                         new Object[]{tenantIdentifier.getAppId(), userId})) {
-                    throw new io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException();
+                    throw new UnknownUserIdException();
                 }
             }
             throw new StorageQueryException(e);

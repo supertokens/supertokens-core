@@ -19,10 +19,10 @@ package io.supertokens.webserver.api.webauthn;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.webauthn.exceptions.UserIdNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webauthn.WebAuthN;
 import io.supertokens.webserver.InputParser;
@@ -63,7 +63,7 @@ public class GenerateRecoverAccountTokenAPI extends WebserverAPI {
             response.addProperty("token", token);
 
             sendJsonResponse(200, response, resp);
-        } catch (UserIdNotFoundException e) {
+        } catch (UnknownUserIdException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             sendJsonResponse(200, response, resp);
