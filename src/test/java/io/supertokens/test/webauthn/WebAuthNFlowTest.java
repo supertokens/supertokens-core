@@ -183,14 +183,14 @@ public class WebAuthNFlowTest {
 
         assertEquals("OK", listCredentialsResponse.get("status").getAsString());
 
-        System.out.println(listCredentialsResponse);
+        //System.out.println(listCredentialsResponse);
 
         //create and register credential for user
         JsonObject registerCredentialResponse = Utils.registerCredentialForUser(process.getProcess(),
                 signInResponse.get("user").getAsJsonObject().get("emails").getAsJsonArray().get(0).getAsString(),
                 webauthnRecipeUserId);
 
-        System.out.println(registerCredentialResponse);
+        //System.out.println(registerCredentialResponse);
         assertEquals("OK", registerCredentialResponse.get("status").getAsString());
 
     }
