@@ -7,9 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
 ## [11.3.2]
 
 - Adds more tests to webauthn
+
+## [11.3.1]
+
+- Fixes request context for SAML to support all login types on IDP
 
 ## [11.3.0]
 
@@ -50,6 +55,7 @@ CREATE TABLE IF NOT EXISTS saml_relay_state (
     state TEXT NOT NULL,
     redirect_uri TEXT NOT NULL,
     created_at BIGINT NOT NULL,
+    expires_at BIGINT NOT NULL,
     CONSTRAINT saml_relay_state_pkey PRIMARY KEY(app_id, tenant_id, relay_state),
     CONSTRAINT saml_relay_state_app_id_fkey FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE,
     CONSTRAINT saml_relay_state_tenant_id_fkey FOREIGN KEY(app_id, tenant_id) REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE
@@ -65,6 +71,7 @@ CREATE TABLE IF NOT EXISTS saml_claims (
     code VARCHAR(256) NOT NULL,
     claims TEXT NOT NULL,
     created_at BIGINT NOT NULL,
+    expires_at BIGINT NOT NULL,
     CONSTRAINT saml_claims_pkey PRIMARY KEY(app_id, tenant_id, code),
     CONSTRAINT saml_claims_app_id_fkey FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE,
     CONSTRAINT saml_claims_tenant_id_fkey FOREIGN KEY(app_id, tenant_id) REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE
