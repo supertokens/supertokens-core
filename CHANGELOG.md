@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.1]
+
+- Adds more tests to webauthn
+
 ## [11.3.0]
 
 - Adds SAML features
