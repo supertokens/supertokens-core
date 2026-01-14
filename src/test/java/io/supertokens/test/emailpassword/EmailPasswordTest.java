@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
@@ -924,7 +925,7 @@ public class EmailPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), "someemail1@gmail.com",
                     null);
             assert (false);
-        } catch (DuplicateEmailException ignored) {
+        } catch (EmailChangeNotAllowedException ignored) {
 
         }
 
@@ -1010,7 +1011,7 @@ public class EmailPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), "someemail1@gmail.com",
                     null);
             assert (false);
-        } catch (DuplicateEmailException ignored) {
+        } catch (EmailChangeNotAllowedException ignored) {
 
         }
 

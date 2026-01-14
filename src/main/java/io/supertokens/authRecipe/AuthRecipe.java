@@ -23,11 +23,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import io.supertokens.pluginInterface.authRecipe.exceptions.*;
+import io.supertokens.pluginInterface.bulkimport.PrimaryUser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 
@@ -143,16 +143,20 @@ public class AuthRecipe {
         return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
-    public static List<AuthRecipeUserInfo> getUsersById(AppIdentifier appIdentifier, Storage storage, List<String> userIds)
-            throws StorageQueryException {
-        AuthRecipeSQLStorage authStorage = StorageUtils.getAuthRecipeStorage(storage);
-        try {
-            return authStorage.startTransaction(con -> {
-                return authStorage.getPrimaryUsersByIds_Transaction(appIdentifier, con, userIds);
-            });
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e);
+    public static void reservePrimaryUserAccountInfos(Main main, Storage storage, AppIdentifier appIdentifier, List<PrimaryUser> primaryUsers)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+        if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
+            throw new FeatureNotEnabledException(
+                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
+
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+
+        authRecipeStorage.startTransaction(con -> {
+           authRecipeStorage.reservePrimaryUserAccountInfos_Transaction(con, primaryUsers);
+           return null;
+        });
     }
 
     public static class CreatePrimaryUserResult {
@@ -170,21 +174,6 @@ public class AuthRecipe {
 
         public CanCreatePrimaryUserResult(boolean wasAlreadyAPrimaryUser) {
             this.wasAlreadyAPrimaryUser = wasAlreadyAPrimaryUser;
-        }
-    }
-
-    public static class CreatePrimaryUserBulkResult {
-        public BulkImportUser user;
-        public BulkImportUser.LoginMethod primaryLoginMethod;
-        public boolean wasAlreadyAPrimaryUser;
-        public Exception error;
-
-        public CreatePrimaryUserBulkResult(BulkImportUser user, BulkImportUser.LoginMethod primaryLoginMethod,
-                                           boolean wasAlreadyAPrimaryUser, Exception error) {
-            this.user = user;
-            this.primaryLoginMethod = primaryLoginMethod;
-            this.wasAlreadyAPrimaryUser = wasAlreadyAPrimaryUser;
-            this.error = error;
         }
     }
 
@@ -468,48 +457,6 @@ public class AuthRecipe {
         }
     }
 
-    public static void linkMultipleAccountsForBulkImport(Main main, AppIdentifier appIdentifier,
-                                                         Storage storage,
-                                                         List<BulkImportUser> users,
-                                                         Map<String, Map<String, String>> primaryUserLookup)
-            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
-
-        if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
-            throw new FeatureNotEnabledException(
-                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
-        }
-
-        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        Map<String, Exception> errorByUserId = new HashMap<>();
-        try {
-
-            authRecipeStorage.startTransaction(con -> {
-                List<CanLinkAccountsBulkResult> canLinkAccounts = canLinkMultipleAccountsHelperForBulkImport(con, appIdentifier,
-                        authRecipeStorage, users, primaryUserLookup);
-                Map<String, String> recipeUserByPrimaryUserNeedsLinking = new HashMap<>();
-                if(!canLinkAccounts.isEmpty()){
-                    for(CanLinkAccountsBulkResult canLinkAccountsBulkResult : canLinkAccounts) {
-                        if(!canLinkAccountsBulkResult.alreadyLinked && canLinkAccountsBulkResult.error != null) {
-                            errorByUserId.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.error);
-                        } else {
-                            recipeUserByPrimaryUserNeedsLinking.put(canLinkAccountsBulkResult.recipeUserId, canLinkAccountsBulkResult.primaryUserId);
-                        }
-                    }
-                    // link the remaining
-                    authRecipeStorage.linkMultipleAccounts_Transaction(appIdentifier, con, recipeUserByPrimaryUserNeedsLinking);
-
-                    authRecipeStorage.commitTransaction(con);
-                }
-                if(!errorByUserId.isEmpty()) {
-                    throw new StorageQueryException(new BulkImportBatchInsertException("link accounts errors", errorByUserId));
-                }
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
     public static class LinkAccountsResult {
         public final AuthRecipeUserInfo user;
         public final boolean wasAlreadyLinked;
@@ -566,37 +513,6 @@ public class AuthRecipe {
                 throw new IllegalStateException("should never happen");
         }
 
-    }
-
-    private static CreatePrimaryUsersResultHolder canCreatePrimaryUsersHelperForBulkImport(TransactionConnection con,
-                                                                                              AppIdentifier appIdentifier,
-                                                                                              Storage storage,
-                                                                                              List<BulkImportUser> bulkImportUsers)
-            throws StorageQueryException, UnknownUserIdException{
-
-        return null; // TODO
-    }
-
-    @NotNull
-    private static DistinctAuthIdentifiers getDistinctAuthIdentifiers(List<BulkImportUser> bulkImportUsers) {
-        Set<String> allEmails = new HashSet<>();
-        Set<String> allPhoneNumber = new HashSet<>();
-        Map<String, String> allThirdParty = new HashMap<>();
-        for (BulkImportUser user : bulkImportUsers) {
-            for (BulkImportUser.LoginMethod loginMethod : user.loginMethods) {
-                if (loginMethod.email != null) {
-                    allEmails.add(loginMethod.email);
-                }
-                if (loginMethod.phoneNumber != null) {
-                    allPhoneNumber.add(loginMethod.phoneNumber);
-                }
-                if (loginMethod.thirdPartyId != null && loginMethod.thirdPartyUserId != null) {
-                    allThirdParty.put(loginMethod.thirdPartyUserId, loginMethod.thirdPartyId);
-                }
-            }
-        }
-        DistinctAuthIdentifiers mailPhoneThirdparty = new DistinctAuthIdentifiers(allEmails, allPhoneNumber, allThirdParty);
-        return mailPhoneThirdparty;
     }
 
     private static class DistinctAuthIdentifiers {
@@ -662,76 +578,6 @@ public class AuthRecipe {
                 throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
             }
             throw new StorageQueryException(e);
-        }
-    }
-
-    //helper class to return together the results of primary user creation and the users with the same extradata (email, phone, etc)
-    public static class CreatePrimaryUsersResultHolder {
-        public List<CreatePrimaryUserBulkResult> createPrimaryUserBulkResults;
-        public Map<String, Map<String, String>> usersWithSameExtraData;
-    }
-
-    public static CreatePrimaryUsersResultHolder createPrimaryUsersForBulkImport(Main main,
-                                                                                    AppIdentifier appIdentifier,
-                                                                                    Storage storage,
-                                                                                    List<BulkImportUser> bulkImportUsers)
-            throws StorageQueryException, TenantOrAppNotFoundException,
-            FeatureNotEnabledException {
-
-        if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
-            throw new FeatureNotEnabledException(
-                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
-        }
-
-        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        Map<String, Exception> errorsByUserId = new HashMap<>();
-        try {
-            return authRecipeStorage.startTransaction(con -> {
-
-                try {
-                    CreatePrimaryUsersResultHolder resultHolder = canCreatePrimaryUsersHelperForBulkImport(con, appIdentifier, authRecipeStorage,
-                            bulkImportUsers);
-                    List<CreatePrimaryUserBulkResult> results = resultHolder.createPrimaryUserBulkResults;
-                    List<CreatePrimaryUserBulkResult> canMakePrimaryUsers = new ArrayList<>();
-                    for(CreatePrimaryUserBulkResult result : results) {
-                        if (result.wasAlreadyAPrimaryUser) {
-                            continue;
-                        }
-                        if(result.error != null) {
-                            errorsByUserId.put(result.user.id, result.error);
-                            continue;
-                        }
-                        canMakePrimaryUsers.add(result);
-                    }
-                    authRecipeStorage.makePrimaryUsers_Transaction(appIdentifier, con,
-                            canMakePrimaryUsers.stream().map(canMakePrimaryUser -> canMakePrimaryUser.user.id).collect(
-                                    Collectors.toList()));
-
-                    authRecipeStorage.commitTransaction(con);
-
-                    for(CreatePrimaryUserBulkResult result : results) {
-                        if (result.wasAlreadyAPrimaryUser) {
-                            continue;
-                        }
-                        if(result.error != null) {
-                            errorsByUserId.put(result.user.id, result.error);
-                            continue;
-                        }
-                        result.primaryLoginMethod.isPrimary = true;
-                        result.user.primaryUserId = result.primaryLoginMethod.superTokensUserId;
-                    }
-
-                    if(!errorsByUserId.isEmpty()) {
-                        throw new StorageTransactionLogicException(new BulkImportBatchInsertException("create primary users errors", errorsByUserId));
-                    }
-
-                    return resultHolder;
-                } catch (UnknownUserIdException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
-            });
-        } catch (StorageTransactionLogicException  e) {
-            throw new StorageQueryException(e.actualException);
         }
     }
 

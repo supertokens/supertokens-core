@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowe
 import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.bulkimport.PrimaryUser;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -1367,6 +1368,12 @@ public class Start
     @Override
     public void deleteAccountInfoReservations_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                           String userId) throws StorageQueryException {
+        // TODO
+    }
+
+    @Override
+    public void reservePrimaryUserAccountInfos_Transaction(TransactionConnection con, List<PrimaryUser> primaryUsers)
+            throws StorageQueryException {
         // TODO
     }
 
@@ -3110,19 +3117,6 @@ public class Start
     }
 
     @Override
-    public void makePrimaryUsers_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                             List<String> userIds) throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            // we do not bother returning if a row was updated here or not, cause it's happening
-            // in a transaction anyway.
-            GeneralQueries.makePrimaryUsers_Transaction(this, sqlCon, appIdentifier, userIds);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public boolean linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
                                          String primaryUserId) throws StorageQueryException {
         try {
@@ -3134,13 +3128,6 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-    }
-
-    @Override
-    public void linkMultipleAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                 Map<String, String> recipeUserIdByPrimaryUserId)
-            throws StorageQueryException {
-        throw new UnsupportedOperationException("'linkMultipleAccounts_Transaction' is not supported for in-memory db");
     }
 
     @Override
