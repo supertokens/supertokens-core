@@ -9,7 +9,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.3.2]
 
+- Adds more tests to webauthn
 - Regenerates `implementationDependencies.json`
+- Adds support for Android native origins (those starting with `android:apk-key-hash:`) in WebAuthn
 
 ## [11.3.1]
 
@@ -20,7 +22,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds SAML features
 - Fixes potential deadlock issue with `TelemetryProvider`
 - Adds DeadlockLogger as an utility for discovering deadlock issues
-- Adds support for Android native origins (those starting with `android:apk-key-hash:`) in WebAuthn
 
 ### Migration
 
