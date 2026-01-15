@@ -22,6 +22,7 @@ import io.supertokens.webauthn.exception.InvalidWebauthNOptionsException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Base64;
 import java.util.List;
 
 public class OptionsValidator {
@@ -40,6 +41,36 @@ public class OptionsValidator {
     }
 
     private static void validateOrigin(String origin, String rpId) throws InvalidWebauthNOptionsException {
+        // Support Android origins (android:apk-key-hash:<base64Url-string-without-padding-of-fingerprint>)
+        if (origin.startsWith("android:apk-key-hash:")) {
+            String hash = origin.substring("android:apk-key-hash:".length());
+
+            // Validate that the hash is not empty
+            if (hash.isEmpty()) {
+                throw new InvalidWebauthNOptionsException("Android origin must contain a valid base64 hash");
+            }
+
+            // Validate base64 characters first before checking length
+            try {
+                Base64.getUrlDecoder().decode(hash);
+            } catch (IllegalArgumentException error) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must be valid URL-safe base64 (no padding)");
+            }
+
+            // SHA-256 fingerprint in base64url (no padding) is always 43 characters and decodes to 32 bytes
+            if (hash.length() != 43) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must be 43 characters (base64url SHA-256)");
+            }
+
+            // Verify it decodes to exactly 32 bytes (SHA-256)
+            if (Base64.getUrlDecoder().decode(hash).length != 32) {
+                throw new InvalidWebauthNOptionsException("Android origin hash must decode to 32 bytes (SHA-256)");
+            }
+
+            return;
+        }
+
+        // Validate standard HTTP(S) origins
         try {
             URL originUrl = new URL(origin);
             if (!originUrl.getHost().endsWith(rpId)) {
