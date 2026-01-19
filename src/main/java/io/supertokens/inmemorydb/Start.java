@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
-import io.supertokens.pluginInterface.authRecipe.PrimaryUserIdByAccountInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
