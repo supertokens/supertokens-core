@@ -269,27 +269,53 @@ public class BulkImport {
         }
 
         List<ImportUserBase> importedUsers = new ArrayList<>();
-        // TODO we should process all the primary login methods first and then add the non-primary ones
-        if (sortedLoginMethods.containsKey("emailpassword")) {
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
-            importedUsers.addAll(
-                    processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword"),
+        {
+            // On the first iteration, just import the primary users. Otherwise, we end up with foreign key issues.
+            if (sortedLoginMethods.containsKey("emailpassword")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
+                importedUsers.addAll(
+                        processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword").stream().filter(lM -> lM.isPrimary).toList(),
                                 appIdentifier, primaryUserIdMap));
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
+            }
+            if (sortedLoginMethods.containsKey("thirdparty")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
+                importedUsers.addAll(
+                        processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty").stream().filter(lM -> lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
+            }
+            if (sortedLoginMethods.containsKey("passwordless")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
+                importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
+                        sortedLoginMethods.get("passwordless").stream().filter(lM -> lM.isPrimary).toList(), primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
+            }
         }
-        if (sortedLoginMethods.containsKey("thirdparty")) {
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
-            importedUsers.addAll(
-                    processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty"),
-                            appIdentifier, primaryUserIdMap));
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
+        {
+            // On the first iteration, just import the primary users. Otherwise, we end up with foreign key issues.
+            if (sortedLoginMethods.containsKey("emailpassword")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
+                importedUsers.addAll(
+                        processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword").stream().filter(lM -> !lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
+            }
+            if (sortedLoginMethods.containsKey("thirdparty")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
+                importedUsers.addAll(
+                        processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty").stream().filter(lM -> !lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
+            }
+            if (sortedLoginMethods.containsKey("passwordless")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
+                importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
+                        sortedLoginMethods.get("passwordless").stream().filter(lM -> !lM.isPrimary).toList(), primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
+            }
         }
-        if (sortedLoginMethods.containsKey("passwordless")) {
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
-            importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
-                    sortedLoginMethods.get("passwordless"), primaryUserIdMap));
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
-        }
+
         Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
         List.of("emailpassword", "thirdparty", "passwordless").forEach(actualKeys::remove);
         if(!actualKeys.isEmpty()){

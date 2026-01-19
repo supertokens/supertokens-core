@@ -3030,51 +3030,6 @@ public class Start
     }
 
     @Override
-    public List<AuthRecipeUserInfo> getPrimaryUsersByIds_Transaction(AppIdentifier appIdentifier,
-                                                                     TransactionConnection con, List<String> userIds)
-            throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.getPrimaryUsersInfoForUserIds_Transaction(this, sqlCon, appIdentifier, userIds);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(AppIdentifier appIdentifier,
-                                                                    TransactionConnection con, String email)
-            throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.listPrimaryUsersByEmail_Transaction(this, sqlCon, appIdentifier, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction(
-            AppIdentifier appIdentifier, TransactionConnection con, List<String> emails, List<String> phones,
-            Map<String, String> thirdpartyIdToThirdpartyUserId) throws StorageQueryException {
-        throw new UnsupportedOperationException("'listPrimaryUsersByMultipleEmailsOrPhoneNumbersOrThirdparty_Transaction' is not supported for in-memory db");
-    }
-
-    @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(AppIdentifier appIdentifier,
-                                                                          TransactionConnection con,
-                                                                          String phoneNumber)
-            throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.listPrimaryUsersByPhoneNumber_Transaction(this, sqlCon, appIdentifier,
-                    phoneNumber);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByThirdPartyInfo(AppIdentifier appIdentifier,
                                                                  String thirdPartyId,
                                                                  String thirdPartyUserId)
