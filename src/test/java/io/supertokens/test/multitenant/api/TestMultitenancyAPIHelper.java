@@ -78,7 +78,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -90,7 +90,7 @@ public class TestMultitenancyAPIHelper {
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/list"),
-                null, 1000, 2500, null,
+                null, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -106,7 +106,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant,
                         "/recipe/multitenancy/connectionuridomain/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -149,7 +149,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
-                requestBody, 10000, 25000, null,
+                requestBody, 10000, 10000, null,
                 version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -160,7 +160,7 @@ public class TestMultitenancyAPIHelper {
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
-                null, 1000, 2500, null,
+                null, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -174,7 +174,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -218,7 +218,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -229,7 +229,7 @@ public class TestMultitenancyAPIHelper {
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/list"),
-                null, 1000, 2500, null,
+                null, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -243,7 +243,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -260,7 +260,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
-                null, 1000, 2500, null,
+                null, 1000, 1000, null,
                 version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -274,7 +274,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "multitenancy");
 
         return response;
@@ -287,7 +287,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -311,7 +311,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -326,7 +326,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,
                         "/recipe/multitenancy/config/thirdparty/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -348,7 +348,7 @@ public class TestMultitenancyAPIHelper {
         }
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/users"),
-                params, 1000, 2500, null,
+                params, 1000, 1000, null,
                 SemVer.v3_0.get(), null);
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
@@ -373,7 +373,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("password", password);
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 version.get(), "emailpassword");
         return signUpResponse;
     }
@@ -386,7 +386,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("password", password);
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signin"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 version.get(), "emailpassword");
         return signUpResponse;
     }
@@ -424,7 +424,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
-                1000, 2500, null,
+                1000, 1000, null,
                 version.get(), "thirdparty");
         return response;
     }
@@ -456,7 +456,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
-                createCodeRequestBody, 1000, 2500, null,
+                createCodeRequestBody, 1000, 1000, null,
                 version.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
@@ -495,7 +495,7 @@ public class TestMultitenancyAPIHelper {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
-                consumeCodeRequestBody, 1000, 2500, null,
+                consumeCodeRequestBody, 1000, 1000, null,
                 version.get(), "passwordless");
     }
 
@@ -508,7 +508,7 @@ public class TestMultitenancyAPIHelper {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
-                consumeCodeRequestBody, 1000, 2500, null,
+                consumeCodeRequestBody, 1000, 1000, null,
                 version.get(), "passwordless");
     }
 
@@ -548,7 +548,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
-                createCodeRequestBody, 1000, 2500, null,
+                createCodeRequestBody, 1000, 1000, null,
                 version.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
@@ -594,7 +594,7 @@ public class TestMultitenancyAPIHelper {
     public static void removeLicense(Main main) throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(main, "",
                 "http://localhost:3567/ee/license", null,
-                1000, 2500, null,
+                1000, 1000, null,
                 SemVer.v3_0.get(), null);
         assertEquals("OK", response.get("status").getAsString());
     }
@@ -605,7 +605,7 @@ public class TestMultitenancyAPIHelper {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 2500, null, SemVer.v3_0.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "emailpassword");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -620,7 +620,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
-                1000, 2500, null,
+                1000, 1000, null,
                 SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
     }
@@ -631,7 +631,7 @@ public class TestMultitenancyAPIHelper {
         params.put("userId", userId);
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/user/id"),
-                params, 1000, 2500, null,
+                params, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "");
         return response;
     }
@@ -644,7 +644,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.add("metadataUpdate", metadata);
         JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
         return resp;
     }
@@ -655,7 +655,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata/remove"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
 
         return resp;
@@ -667,7 +667,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("role", role);
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role"),
-                requestBody, 1000, 2500, null, WebserverAPI.getLatestCDIVersion().get(),
+                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(),
                 "userroles");
         assertEquals("OK", response.get("status").getAsString());
     }
@@ -679,7 +679,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/role"), requestBody, 1000, 2500,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/role"), requestBody, 1000, 1000,
                 null,
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
 
@@ -704,7 +704,7 @@ public class TestMultitenancyAPIHelper {
         request.addProperty("role", role);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role/remove"), request, 1000, 2500,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role/remove"), request, 1000, 1000,
                 null,
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
         assertEquals(2, response.entrySet().size());
@@ -719,7 +719,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/token"),
-                requestBody, 1000, 2500, null,
+                requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
@@ -731,7 +731,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"),
-                verifyResponseBody, 1000, 2500, null,
+                verifyResponseBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
@@ -746,7 +746,7 @@ public class TestMultitenancyAPIHelper {
 
         HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/remove"), body,
-                1000, 2500, null,
+                1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }
