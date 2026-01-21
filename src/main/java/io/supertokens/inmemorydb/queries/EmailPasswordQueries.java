@@ -16,31 +16,37 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import static java.lang.System.currentTimeMillis;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static io.supertokens.pluginInterface.RECIPE_ID.EMAIL_PASSWORD;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.authRecipe.ACCOUNT_INFO_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
-import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
-import static io.supertokens.inmemorydb.config.Config.getConfig;
-import static io.supertokens.pluginInterface.RECIPE_ID.EMAIL_PASSWORD;
-import static java.lang.System.currentTimeMillis;
 
 public class EmailPasswordQueries {
 
@@ -290,6 +296,11 @@ public class EmailPasswordQueries {
                     });
                 }
 
+                { // recipe_user_tenants
+                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, userId,
+                            EMAIL_PASSWORD.toString(), ACCOUNT_INFO_TYPE.EMAIL, "", "", email);
+                }
+
                 { // emailpassword_users
                     String QUERY = "INSERT INTO " + getConfig(start).getEmailPasswordUsersTable()
                             + "(app_id, user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?, ?)";
@@ -451,23 +462,6 @@ public class EmailPasswordQueries {
         return Collections.emptyList();
     }
 
-    public static String lockEmail_Transaction(Start start, Connection con,
-                                               AppIdentifier appIdentifier,
-                                               String email)
-            throws StorageQueryException, SQLException {
-        String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUsersTable() +
-                " WHERE app_id = ? AND email = ?";
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, email);
-        }, result -> {
-            if (result.next()) {
-                return result.getString("user_id");
-            }
-            return null;
-        });
-    }
-
     public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier,
                                                     String email)
             throws StorageQueryException, SQLException {
@@ -486,28 +480,6 @@ public class EmailPasswordQueries {
                 return result.getString("user_id");
             }
             return null;
-        });
-    }
-
-    public static List<String> getPrimaryUserIdsUsingEmail_Transaction(Start start, Connection con,
-                                                                       AppIdentifier appIdentifier,
-                                                                       String email)
-            throws StorageQueryException, SQLException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getEmailPasswordUsersTable() + " AS ep" +
-                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
-                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
-                " WHERE ep.app_id = ? AND ep.email = ?";
-
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, email);
-        }, result -> {
-            List<String> userIds = new ArrayList<>();
-            while (result.next()) {
-                userIds.add(result.getString("user_id"));
-            }
-            return userIds;
         });
     }
 

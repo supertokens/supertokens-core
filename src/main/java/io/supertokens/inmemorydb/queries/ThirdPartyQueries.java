@@ -16,12 +16,28 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static io.supertokens.pluginInterface.RECIPE_ID.THIRD_PARTY;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.authRecipe.ACCOUNT_INFO_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
@@ -29,17 +45,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
-import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
-import static io.supertokens.inmemorydb.config.Config.getConfig;
-import static io.supertokens.pluginInterface.RECIPE_ID.THIRD_PARTY;
 
 public class ThirdPartyQueries {
 
@@ -124,6 +129,17 @@ public class ThirdPartyQueries {
                     });
                 }
 
+                { // recipe_user_tenants
+                    // Insert row for email
+                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                            THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.EMAIL, thirdParty.id, thirdParty.userId, email);
+
+                    // Insert row for third party id
+                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                            THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.THIRD_PARTY, "", "",
+                            new LoginMethod.ThirdParty(thirdParty.id, thirdParty.userId).getAccountInfoValue());
+                }
+
                 { // thirdparty_users
                     String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUsersTable()
                             + "(app_id, third_party_id, third_party_user_id, user_id, email, time_joined)"
@@ -193,30 +209,6 @@ public class ThirdPartyQueries {
                 });
             }
         }
-    }
-
-    public static List<String> lockEmail_Transaction(Start start, Connection con,
-                                                     AppIdentifier appIdentifier,
-                                                     String email) throws SQLException, StorageQueryException {
-        // normally the query below will use a for update, but sqlite doesn't support it.
-        ((ConnectionWithLocks) con).lock(
-                appIdentifier.getAppId() + "~" + email +
-                        Config.getConfig(start).getThirdPartyUsersTable());
-
-        String QUERY = "SELECT tp.user_id as user_id "
-                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " WHERE tp.app_id = ? AND tp.email = ?";
-
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, email);
-        }, result -> {
-            List<String> finalResult = new ArrayList<>();
-            while (result.next()) {
-                finalResult.add(result.getString("user_id"));
-            }
-            return finalResult;
-        });
     }
 
     public static List<String> lockThirdPartyInfo_Transaction(Start start, Connection con,

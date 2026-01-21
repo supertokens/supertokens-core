@@ -543,6 +543,29 @@ public class GeneralQueries {
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsAppIdTenantIdIndex(start), NO_OP_SETTER);
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsExpiresAtIndex(start), NO_OP_SETTER);
         }
+
+        if (!doesTableExists(start, Config.getConfig(start).getRecipeUserAccountInfosTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, AccountInfoQueries.getQueryToCreateRecipeUserAccountInfosTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getRecipeUserTenantsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, AccountInfoQueries.getQueryToCreateRecipeUserTenantsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, AccountInfoQueries.getQueryToCreateTenantIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+            update(start, AccountInfoQueries.getQueryToCreateRecipeUserIdIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+            update(start, AccountInfoQueries.getQueryToCreateAccountInfoIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getPrimaryUserTenantsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, AccountInfoQueries.getQueryToCreatePrimaryUserTenantsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, AccountInfoQueries.getQueryToCreatePrimaryUserIndexForPrimaryUserTenantsTable(start), NO_OP_SETTER);
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
@@ -1118,13 +1141,16 @@ public class GeneralQueries {
             throws SQLException, StorageQueryException {
         {
             String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
-                    "user_id = ?";
+                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
+                    "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
+                    "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
+                    ") WHERE app_id = ? AND user_id = ?";
 
             update(sqlCon, QUERY, pst -> {
-                pst.setString(1, primaryUserId);
-                pst.setString(2, appIdentifier.getAppId());
-                pst.setString(3, recipeUserId);
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, recipeUserId);
             });
         }
 
@@ -1132,13 +1158,16 @@ public class GeneralQueries {
 
         {
             String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
-                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
-                    "user_id = ?";
+                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
+                    "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
+                    "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
+                    ") WHERE app_id = ? AND user_id = ?";
 
             update(sqlCon, QUERY, pst -> {
-                pst.setString(1, primaryUserId);
-                pst.setString(2, appIdentifier.getAppId());
-                pst.setString(3, recipeUserId);
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, recipeUserId);
             });
         }
     }

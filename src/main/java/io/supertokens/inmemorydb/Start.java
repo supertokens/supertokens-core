@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb;
 
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.inmemorydb.config.Config;
@@ -27,8 +28,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.CanLinkAccountsResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
-import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
-import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.*;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.PrimaryUser;
@@ -42,7 +42,6 @@ import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
-import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
@@ -111,16 +110,20 @@ import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStoredCredential;
 import io.supertokens.pluginInterface.webauthn.exceptions.*;
 import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import org.sqlite.SQLiteException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 import java.util.*;
+
+import io.supertokens.pluginInterface.authRecipe.ACCOUNT_INFO_TYPE;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
@@ -822,6 +825,10 @@ public class Start
                         || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
                         new String[]{"app_id", "user_id"})) {
                     throw new DuplicateUserIdException();
+                } else if (isPrimaryKeyError(serverMessage, config.getRecipeUserTenantsTable(),
+                        new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
+                    throw new DuplicateEmailException();
+
                 } else if (isForeignKeyConstraintError(
                         serverMessage,
                         config.getAppsTable(),
@@ -927,9 +934,12 @@ public class Start
     @Override
     public void updateUsersEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection conn, String userId,
                                              String email)
-            throws StorageQueryException, DuplicateEmailException {
+            throws StorageQueryException, DuplicateEmailException, EmailChangeNotAllowedException,
+            UnknownUserIdException {
         Connection sqlCon = (Connection) conn.getConnection();
         try {
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+                ACCOUNT_INFO_TYPE.EMAIL, email);
             EmailPasswordQueries.updateUsersEmail_Transaction(this, sqlCon, appIdentifier, userId, email);
         } catch (SQLException e) {
             if (isUniqueConstraintError(e.getMessage(),
@@ -938,6 +948,8 @@ public class Start
                 throw new DuplicateEmailException();
             }
             throw new StorageQueryException(e);
+        } catch (DuplicatePhoneNumberException | DuplicateThirdPartyUserException | PhoneNumberChangeNotAllowedException e) {
+            throw new IllegalStateException("should never happen");
         }
     }
 
@@ -1196,13 +1208,19 @@ public class Start
     @Override
     public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
                                             String thirdPartyId, String thirdPartyUserId,
-                                            String newEmail) throws StorageQueryException {
+                                            String newEmail)
+            throws StorageQueryException, EmailChangeNotAllowedException, DuplicateEmailException,
+            UnknownUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+                ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
                     thirdPartyUserId, newEmail);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
+        } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
+            throw new IllegalStateException("should never happen");
         }
     }
 
@@ -1238,7 +1256,63 @@ public class Start
                                                     String newPhoneNumber, boolean shouldUpdatePhoneNumber)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, DuplicateEmailException,
             EmailChangeNotAllowedException, DuplicatePhoneNumberException, PhoneNumberChangeNotAllowedException {
-        // TODO
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+
+            // Update non-nulls first
+            if (newEmail != null) {
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
+                        newEmail);
+                if (updated_rows != 1) {
+                    throw new UnknownUserIdException();
+                }
+            }
+            if (newPhoneNumber != null) {
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
+                        newPhoneNumber);
+                if (updated_rows != 1) {
+                    throw new UnknownUserIdException();
+                }
+            }
+
+            // now update the nulls
+            if (newEmail == null && shouldUpdateEmail) {
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
+                        newEmail);
+                if (updated_rows != 1) {
+                    throw new UnknownUserIdException();
+                }
+            }
+            if (newPhoneNumber == null && shouldUpdatePhoneNumber) {
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
+                        newPhoneNumber);
+                if (updated_rows != 1) {
+                    throw new UnknownUserIdException();
+                }
+            }
+
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String serverMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isUniqueConstraintError(serverMessage,
+                        config.getPasswordlessUserToTenantTable(), new String[]{"app_id", "tenant_id", "email"})) {
+                    throw new DuplicateEmailException();
+                }
+                if (isUniqueConstraintError(serverMessage,
+                        config.getPasswordlessUserToTenantTable(), new String[]{"app_id", "tenant_id", "phone_number"})) {
+                    throw new DuplicatePhoneNumberException();
+                }
+            }
+            throw new StorageQueryException(e);
+        } catch (DuplicateThirdPartyUserException e) {
+            throw new IllegalStateException("should never happen", e);
+        }
     }
 
     @Override
@@ -1257,7 +1331,9 @@ public class Start
                 if (isUniqueConstraintError(serverMessage, config.getThirdPartyUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "third_party_id", "third_party_user_id"})) {
                     throw new DuplicateThirdPartyUserException();
-
+                } else if (isPrimaryKeyError(serverMessage, config.getRecipeUserTenantsTable(),
+                        new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
+                    throw new DuplicateThirdPartyUserException();
                 } else if (isPrimaryKeyError(serverMessage, config.getThirdPartyUsersTable(),
                         new String[]{"app_id", "user_id"})
                         || isPrimaryKeyError(serverMessage, config.getUsersTable(),
@@ -1345,35 +1421,35 @@ public class Start
     @Override
     public CanBecomePrimaryResult checkIfLoginMethodCanBecomePrimary(AppIdentifier appIdentifier,
                                                                      String recipeUserId) throws
-            StorageQueryException {
-        // TODO
-        return null;
+            StorageQueryException, UnknownUserIdException {
+        return AccountInfoQueries.checkIfLoginMethodCanBecomePrimary(this, appIdentifier, recipeUserId);
     }
 
     @Override
     public CanLinkAccountsResult checkIfLoginMethodsCanBeLinked(AppIdentifier appIdentifier,
                                                                             String primaryUserId, String recipeUserId)
-            throws StorageQueryException {
-        // TODO
-        return null;
+            throws StorageQueryException, UnknownUserIdException {
+        return AccountInfoQueries.checkIfLoginMethodsCanBeLinked(this, appIdentifier, primaryUserId, recipeUserId);
     }
 
     @Override
     public void addTenantIdToPrimaryUser_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
-                                                     String supertokensUserId) {
-        // TODO
+                                                     String supertokensUserId)
+            throws AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException, StorageQueryException,
+            AnotherPrimaryUserWithEmailAlreadyExistsException, AnotherPrimaryUserWithPhoneNumberAlreadyExistsException {
+        AccountInfoQueries.addTenantIdToPrimaryUser_Transaction(this, con, tenantIdentifier, supertokensUserId);
     }
 
     @Override
     public void deleteAccountInfoReservations_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                           String userId) throws StorageQueryException {
-        // TODO
+        AccountInfoQueries.removeAccountInfoReservationsForDeletingUser_Transaction(this, con, appIdentifier, userId);
     }
 
     @Override
     public void reservePrimaryUserAccountInfos_Transaction(TransactionConnection con, List<PrimaryUser> primaryUsers)
             throws StorageQueryException {
-        // TODO
+        throw new UnsupportedOperationException("'reservePrimaryUserAccountInfos_Transaction' is not supported for in-memory db");
     }
 
     @Override
@@ -1806,6 +1882,17 @@ public class Start
             if (e.actualException instanceof SQLiteException) {
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.actualException.getMessage();
+
+                if (isPrimaryKeyError(serverMessage, config.getRecipeUserTenantsTable(),
+                        new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
+                    // For passwordless, recipe_user_tenants primary key error means duplicate email or phone number
+                    // Determine which one based on what was provided
+                    if (email != null) {
+                        throw new DuplicateEmailException();
+                    } else {
+                        throw new DuplicatePhoneNumberException();
+                    }
+                }
 
                 if (isPrimaryKeyError(serverMessage, config.getPasswordlessUsersTable(),
                         new String[]{"app_id", "user_id"})
@@ -2484,6 +2571,8 @@ public class Start
                 throw new UnknownUserIdException();
             }
 
+            AccountInfoQueries.addTenantIdToRecipeUser_Transaction(this, sqlCon, tenantIdentifier, userId);
+
             boolean added;
             if (recipeId.equals("emailpassword")) {
                 added = EmailPasswordQueries.addUserIdToTenant_Transaction(this, sqlCon, tenantIdentifier,
@@ -2561,6 +2650,9 @@ public class Start
                     } else {
                         throw new IllegalStateException("Should never come here!");
                     }
+
+                    AccountInfoQueries.removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, userId);
+                    AccountInfoQueries.removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, userId);
 
                     sqlCon.commit();
                     return removed;
@@ -3058,13 +3150,18 @@ public class Start
 
     @Override
     public boolean makePrimaryUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
             // we do not bother returning if a row was updated here or not, cause it's happening
             // in a transaction anyway.
-            GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, appIdentifier, userId);
-            return false; // TODO
+
+            boolean didBecomePrimary = AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(this, sqlCon, appIdentifier, userId);
+            if (didBecomePrimary) {
+                GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, appIdentifier, userId);
+            }
+            return didBecomePrimary;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3072,13 +3169,17 @@ public class Start
 
     @Override
     public boolean linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
-                                         String primaryUserId) throws StorageQueryException {
+                                         String primaryUserId)
+            throws StorageQueryException, CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
+            UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            // we do not bother returning if a row was updated here or not, cause it's happening
-            // in a transaction anyway.
-            GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
-            return false; // TODO
+            boolean didLinkAccounts = AccountInfoQueries.reserveAccountInfoForLinking_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+            if (didLinkAccounts) {
+                GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+            }
+            return didLinkAccounts;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3093,6 +3194,7 @@ public class Start
             // we do not bother returning if a row was updated here or not, cause it's happening
             // in a transaction anyway.
             GeneralQueries.unlinkAccounts_Transaction(this, sqlCon, appIdentifier, primaryUserId, recipeUserId);
+            AccountInfoQueries.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(this, sqlCon, appIdentifier, recipeUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3595,6 +3697,9 @@ public class Start
                 if (isUniqueConstraintError(serverMessage, config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "email"})) {
                     throw new DuplicateEmailException();
+                } else if (isPrimaryKeyError(serverMessage, config.getRecipeUserTenantsTable(),
+                        new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
+                    throw new DuplicateEmailException();
                 } else if (isPrimaryKeyError(serverMessage, config.getWebAuthNUsersTable(),
                         new String[]{"app_id", "user_id"})
                         || isPrimaryKeyError(serverMessage, config.getUsersTable(),
@@ -3640,6 +3745,9 @@ public class Start
 
                 if (isUniqueConstraintError(serverMessage, config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "email"})) {
+                    throw new DuplicateEmailException();
+                } else if (isPrimaryKeyError(serverMessage, config.getRecipeUserTenantsTable(),
+                        new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
                     throw new DuplicateEmailException();
                 } else if (isPrimaryKeyError(serverMessage, config.getWebAuthNUsersTable(),
                         new String[]{"app_id", "user_id"})
@@ -3771,9 +3879,10 @@ public class Start
     public void updateUserEmail_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con, String userId,
                                             String newEmail)
             throws StorageQueryException, UnknownUserIdException,
-            DuplicateEmailException {
+            DuplicateEmailException, EmailChangeNotAllowedException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             WebAuthNQueries.updateUserEmail_Transaction(this, sqlCon, tenantIdentifier, userId, newEmail);
         } catch (StorageQueryException e) {
             if (e.getCause() instanceof SQLiteException){
@@ -3792,6 +3901,8 @@ public class Start
                 }
             }
             throw new StorageQueryException(e);
+        } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
+            throw new IllegalStateException("should never happen");
         }
     }
 
