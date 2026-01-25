@@ -49,6 +49,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
 
 public class AccountInfoQueries {
     static String getQueryToCreateRecipeUserAccountInfosTable(Start start) {
@@ -867,6 +868,196 @@ public class AccountInfoQueries {
             });
 
             // all okay
+            return true;
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    /**
+     * Reserves account info for linking with LockedUser enforcement.
+     * This method requires LockedUser objects proving that proper row-level locks have been acquired.
+     *
+     * @param recipeUser The locked recipe user being linked
+     * @param primaryUser The locked primary user to link to
+     */
+    public static boolean reserveAccountInfoForLinking_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                                    LockedUser recipeUser, LockedUser primaryUser)
+            throws StorageQueryException, UnknownUserIdException,
+            InputUserIdIsNotAPrimaryUserException, CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+
+        // Extract user IDs from locked users
+        String recipeUserId = recipeUser.getRecipeUserId();
+        String primaryUserId = primaryUser.getPrimaryUserId();
+
+        // Validate that the primary user is actually a primary user
+        if (primaryUserId == null || !primaryUser.isPrimary()) {
+            throw new InputUserIdIsNotAPrimaryUserException(primaryUser.getRecipeUserId());
+        }
+
+        // Validate that the recipe user is not already linked to a different primary
+        if (recipeUser.isLinked()) {
+            String existingPrimaryId = recipeUser.getPrimaryUserId();
+            if (!existingPrimaryId.equals(primaryUserId)) {
+                // Recipe user is already linked to a different primary
+                try {
+                    AuthRecipeUserInfo recipeUserInfo = GeneralQueries.getPrimaryUserInfoForUserId_Transaction(
+                            start, sqlCon, appIdentifier, recipeUserId);
+                    if (recipeUserInfo == null) {
+                        throw new UnknownUserIdException();
+                    }
+                    throw new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUserInfo);
+                } catch (SQLException e) {
+                    throw new StorageQueryException(e);
+                }
+            } else {
+                // Already linked to the same primary user
+                return false;
+            }
+        }
+
+        try {
+            String primaryUserTenantsTable = Config.getConfig(start).getPrimaryUserTenantsTable();
+            String recipeUserTenantsTable = Config.getConfig(start).getRecipeUserTenantsTable();
+            String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
+
+            // Note: Advisory lock is not needed since we have row-level locks via LockedUser
+            // and InMemoryDB is single-connection anyway
+
+            // Step 1: Get all tenant/account combinations to insert
+            String selectCombinationsQuery = "SELECT all_tenants.tenant_id, all_accounts.account_info_type, all_accounts.account_info_value"
+                    + " FROM ("
+                    + "   SELECT tenant_id FROM " + primaryUserTenantsTable
+                    + "   WHERE app_id = ? AND primary_user_id = ?"
+                    + "   UNION"
+                    + "   SELECT tenant_id FROM " + recipeUserTenantsTable + " WHERE app_id = ? AND recipe_user_id = ?"
+                    + " ) all_tenants CROSS JOIN ("
+                    + "   SELECT account_info_type, account_info_value FROM " + primaryUserTenantsTable
+                    + "   WHERE app_id = ? AND primary_user_id = ?"
+                    + "   UNION"
+                    + "   SELECT account_info_type, account_info_value FROM " + recipeUserAccountInfosTable + " WHERE app_id = ? AND recipe_user_id = ? AND primary_user_id is NULL"
+                    + " ) all_accounts";
+
+            List<String[]> combinationsToInsert = new ArrayList<>();
+            final String finalPrimaryUserId = primaryUserId;
+
+            execute(sqlCon, selectCombinationsQuery, pst -> {
+                pst.setString(1, appIdentifier.getAppId()); // tenant subquery 1: primary_user_tenants.app_id
+                pst.setString(2, finalPrimaryUserId);       // tenant subquery 1: primary_user_id
+                pst.setString(3, appIdentifier.getAppId()); // tenant subquery 2: recipe_user_tenants.app_id
+                pst.setString(4, recipeUserId);             // tenant subquery 2: recipe_user_tenants.recipe_user_id
+
+                pst.setString(5, appIdentifier.getAppId()); // account subquery 1: primary_user_tenants.app_id
+                pst.setString(6, finalPrimaryUserId);       // account subquery 1: primary_user_id
+                pst.setString(7, appIdentifier.getAppId()); // account subquery 2: recipe_user_account_infos.app_id
+                pst.setString(8, recipeUserId);             // account subquery 2: recipe_user_account_infos.recipe_user_id
+            }, rs -> {
+                while (rs.next()) {
+                    combinationsToInsert.add(new String[]{
+                            rs.getString("tenant_id"),
+                            rs.getString("account_info_type"),
+                            rs.getString("account_info_value")
+                    });
+                }
+                return null;
+            });
+
+            // Step 2: Check for conflicts - find existing rows that would conflict
+            String[] conflict = null;
+            if (!combinationsToInsert.isEmpty()) {
+                StringBuilder conflictCheckQuery = new StringBuilder();
+                conflictCheckQuery.append("SELECT tenant_id, account_info_type, account_info_value, primary_user_id FROM ")
+                        .append(primaryUserTenantsTable)
+                        .append(" WHERE app_id = ? AND (");
+
+                for (int i = 0; i < combinationsToInsert.size(); i++) {
+                    if (i > 0) {
+                        conflictCheckQuery.append(" OR ");
+                    }
+                    conflictCheckQuery.append("(tenant_id = ? AND account_info_type = ? AND account_info_value = ?)");
+                }
+                conflictCheckQuery.append(")");
+
+                conflict = execute(sqlCon, conflictCheckQuery.toString(), pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    int idx = 2;
+                    for (String[] combo : combinationsToInsert) {
+                        pst.setString(idx++, combo[0]); // tenant_id
+                        pst.setString(idx++, combo[1]); // account_info_type
+                        pst.setString(idx++, combo[2]); // account_info_value
+                    }
+                }, rs -> {
+                    String[] firstConflict = null;
+                    while (rs.next()) {
+                        String returnedPrimaryUserId = rs.getString("primary_user_id");
+                        String accountInfoType = rs.getString("account_info_type");
+
+                        // Check if the returned primary_user_id is different from the expected primaryUserId
+                        if (!finalPrimaryUserId.equals(returnedPrimaryUserId)) {
+                            if (firstConflict == null) {
+                                firstConflict = new String[]{returnedPrimaryUserId, accountInfoType};
+                            }
+                            // Prioritize THIRD_PARTY conflicts
+                            if (ACCOUNT_INFO_TYPE.THIRD_PARTY.toString().equals(accountInfoType)) {
+                                return new String[]{returnedPrimaryUserId, accountInfoType};
+                            }
+                        }
+                    }
+                    return firstConflict;
+                });
+
+                // Step 3: Insert new rows using INSERT OR IGNORE (to skip existing ones)
+                String insertQuery = "INSERT OR IGNORE INTO " + primaryUserTenantsTable
+                        + " (app_id, tenant_id, account_info_type, account_info_value, primary_user_id)"
+                        + " VALUES (?, ?, ?, ?, ?)";
+
+                for (String[] combo : combinationsToInsert) {
+                    update(sqlCon, insertQuery, pst -> {
+                        pst.setString(1, appIdentifier.getAppId());
+                        pst.setString(2, combo[0]); // tenant_id
+                        pst.setString(3, combo[1]); // account_info_type
+                        pst.setString(4, combo[2]); // account_info_value
+                        pst.setString(5, finalPrimaryUserId);
+                    });
+                }
+            }
+
+            // Throw conflict if any row had a different primary_user_id
+            if (conflict != null && conflict[0] != null) {
+                String conflictingPrimaryUserId = conflict[0].trim();
+                String accountInfoType = conflict[1];
+
+                String message;
+                if (ACCOUNT_INFO_TYPE.EMAIL.toString().equals(accountInfoType)) {
+                    message = "This user's email is already associated with another user ID";
+                } else if (ACCOUNT_INFO_TYPE.PHONE_NUMBER.toString().equals(accountInfoType)) {
+                    message = "This user's phone number is already associated with another user ID";
+                } else if (ACCOUNT_INFO_TYPE.THIRD_PARTY.toString().equals(accountInfoType)) {
+                    message = "This user's third party login is already associated with another user ID";
+                } else {
+                    message = "Account info is already associated with another user ID";
+                }
+
+                throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(conflictingPrimaryUserId, message);
+            }
+
+            // Update primary_user_id in recipe_user_account_infos to link the recipe user to the primary user
+            String UPDATE_QUERY = "UPDATE " + recipeUserAccountInfosTable
+                    + " SET primary_user_id = ?"
+                    + " WHERE app_id = ? AND recipe_user_id = ?";
+
+            int rowsUpdated = update(sqlCon, UPDATE_QUERY, pst -> {
+                pst.setString(1, primaryUserId);
+                pst.setString(2, appIdentifier.getAppId());
+                pst.setString(3, recipeUserId);
+            });
+
+            if (rowsUpdated == 0) {
+                throw new UnknownUserIdException();
+            }
+
+            // Link succeeded
             return true;
         } catch (SQLException e) {
             throw new StorageQueryException(e);

@@ -3180,7 +3180,18 @@ public class Start
             UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            boolean didLinkAccounts = AccountInfoQueries.reserveAccountInfoForLinking_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+
+            // Acquire locks on both users to prevent race conditions
+            LockedUserPair lockedUsers;
+            try {
+                lockedUsers = UserLockingQueries.lockUsersForLinking(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+            } catch (UserNotFoundForLockingException e) {
+                throw new UnknownUserIdException();
+            }
+
+            // Use the LockedUser version of reserveAccountInfoForLinking_Transaction
+            boolean didLinkAccounts = AccountInfoQueries.reserveAccountInfoForLinking_Transaction(
+                    this, sqlCon, appIdentifier, lockedUsers.getRecipeUser(), lockedUsers.getPrimaryUser());
             if (didLinkAccounts) {
                 GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
             }
@@ -4060,5 +4071,22 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    // AccountInfoStorage implementation
+
+    @Override
+    public boolean reserveAccountInfoForLinking_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser recipeUser,
+            LockedUser primaryUser)
+            throws StorageQueryException, UnknownUserIdException,
+            InputUserIdIsNotAPrimaryUserException,
+            CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        return AccountInfoQueries.reserveAccountInfoForLinking_Transaction(
+                this, sqlCon, appIdentifier, recipeUser, primaryUser);
     }
 }
