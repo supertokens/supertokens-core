@@ -1435,7 +1435,21 @@ public class AccountInfoQueries {
         }
     }
 
-    public static void updateAccountInfo_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, String userId, ACCOUNT_INFO_TYPE accountInfoType, String accountInfoValue)
+    /**
+     * Updates account info (email or phone number) for a user with LockedUser enforcement.
+     * This method requires a LockedUser parameter to ensure proper locking has been acquired,
+     * preventing race conditions during concurrent operations.
+     *
+     * @param start The Start instance
+     * @param sqlCon The SQL connection
+     * @param appIdentifier The app context
+     * @param user The locked user whose account info is being updated
+     * @param accountInfoType The type of account info to update (EMAIL or PHONE_NUMBER only)
+     * @param accountInfoValue The new value for the account info (null to remove)
+     */
+    public static void updateAccountInfo_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                     LockedUser user, ACCOUNT_INFO_TYPE accountInfoType,
+                                                     String accountInfoValue)
             throws
             EmailChangeNotAllowedException, PhoneNumberChangeNotAllowedException, StorageQueryException,
             DuplicateEmailException, DuplicatePhoneNumberException, DuplicateThirdPartyUserException,
@@ -1446,34 +1460,17 @@ public class AccountInfoQueries {
                     "updateAccountInfo_Transaction should only be called with accountInfoType EMAIL or PHONE_NUMBER");
         }
 
-        String primaryUserId = null;
+        // Get user ID and primary user ID from the LockedUser (already verified during lock acquisition)
+        String userId = user.getRecipeUserId();
+        String primaryUserId = user.getPrimaryUserId();
 
         try {
             String primaryUserTenantsTable = Config.getConfig(start).getPrimaryUserTenantsTable();
             String recipeUserTenantsTable = Config.getConfig(start).getRecipeUserTenantsTable();
             String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
 
-            // Find primary user ID and whether this recipe user is linked (or itself is a primary user).
-            // Query recipe_user_tenants to get primary_user_id. If primary_user_id IS NOT NULL, the user is linked or primary.
-            // If primary_user_id = recipe_user_id, the user is primary. Otherwise, it's linked to that primary.
-            String[] primaryUserIds = execute(sqlCon,
-                    "SELECT DISTINCT primary_user_id FROM " + recipeUserAccountInfosTable
-                            + " WHERE app_id = ? AND recipe_user_id = ?",
-                    pst -> {
-                        pst.setString(1, appIdentifier.getAppId());
-                        pst.setString(2, userId);
-                    },
-                    rs -> {
-                        if (rs.next()) {
-                            return new String[]{rs.getString("primary_user_id")};
-                        }
-                        return null;
-                    });
-            if (primaryUserIds == null) {
-                throw new UnknownUserIdException();
-            }
-
-            primaryUserId = primaryUserIds[0];
+            // Note: No need to query for primaryUserId - we already have it from LockedUser.
+            // The lock guarantees the state hasn't changed since lock acquisition.
 
             // 1. Delete from primary_user_tenants to remove old account info if not contributed by any other linked user.
             if (primaryUserId != null) {

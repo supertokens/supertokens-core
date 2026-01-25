@@ -943,7 +943,9 @@ public class Start
             UnknownUserIdException {
         Connection sqlCon = (Connection) conn.getConnection();
         try {
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                 ACCOUNT_INFO_TYPE.EMAIL, email);
             EmailPasswordQueries.updateUsersEmail_Transaction(this, sqlCon, appIdentifier, userId, email);
         } catch (SQLException e) {
@@ -955,6 +957,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (DuplicatePhoneNumberException | DuplicateThirdPartyUserException | PhoneNumberChangeNotAllowedException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -1218,7 +1222,9 @@ public class Start
             UnknownUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                 ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
                     thirdPartyUserId, newEmail);
@@ -1226,6 +1232,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -1264,9 +1272,12 @@ public class Start
         try {
             Connection sqlCon = (Connection) con.getConnection();
 
+            // Acquire lock once to get LockedUser for all calls
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, recipeUserId);
+
             // Update non-nulls first
             if (newEmail != null) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
                 int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newEmail);
                 if (updated_rows != 1) {
@@ -1274,7 +1285,7 @@ public class Start
                 }
             }
             if (newPhoneNumber != null) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
                 int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newPhoneNumber);
                 if (updated_rows != 1) {
@@ -1284,7 +1295,7 @@ public class Start
 
             // now update the nulls
             if (newEmail == null && shouldUpdateEmail) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
                 int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newEmail);
                 if (updated_rows != 1) {
@@ -1292,7 +1303,7 @@ public class Start
                 }
             }
             if (newPhoneNumber == null && shouldUpdatePhoneNumber) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
                 int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newPhoneNumber);
                 if (updated_rows != 1) {
@@ -1317,6 +1328,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen", e);
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -3898,7 +3911,9 @@ public class Start
             DuplicateEmailException, EmailChangeNotAllowedException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             WebAuthNQueries.updateUserEmail_Transaction(this, sqlCon, tenantIdentifier, userId, newEmail);
         } catch (StorageQueryException e) {
             if (e.getCause() instanceof SQLiteException){
@@ -3919,6 +3934,10 @@ public class Start
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
         }
     }
 
@@ -4088,5 +4107,20 @@ public class Start
         Connection sqlCon = (Connection) con.getConnection();
         return AccountInfoQueries.reserveAccountInfoForLinking_Transaction(
                 this, sqlCon, appIdentifier, recipeUser, primaryUser);
+    }
+
+    @Override
+    public void updateAccountInfo_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser user,
+            ACCOUNT_INFO_TYPE accountInfoType,
+            String newAccountInfoValue)
+            throws StorageQueryException, UnknownUserIdException,
+            EmailChangeNotAllowedException, PhoneNumberChangeNotAllowedException,
+            DuplicateEmailException, DuplicatePhoneNumberException, DuplicateThirdPartyUserException {
+        Connection sqlCon = (Connection) con.getConnection();
+        AccountInfoQueries.updateAccountInfo_Transaction(
+                this, sqlCon, appIdentifier, user, accountInfoType, newAccountInfoValue);
     }
 }

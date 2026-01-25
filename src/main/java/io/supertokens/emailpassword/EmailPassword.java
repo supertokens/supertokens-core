@@ -58,6 +58,9 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -646,9 +649,18 @@ public class EmailPassword {
             EmailChangeNotAllowedException {
         EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
         try {
             epStorage.startTransaction(transaction -> {
                 try {
+                    // Acquire lock on the user to prevent race conditions during email/password update
+                    LockedUser lockedUser;
+                    try {
+                        lockedUser = lockingStorage.lockUser(appIdentifier, transaction, userId);
+                    } catch (UserNotFoundForLockingException e) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
+                    }
+
                     AuthRecipeUserInfo user = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
                             transaction, userId);
 
