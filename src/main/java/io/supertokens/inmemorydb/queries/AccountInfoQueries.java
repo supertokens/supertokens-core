@@ -1228,8 +1228,23 @@ public class AccountInfoQueries {
         }
     }
 
-    public static void addTenantIdToRecipeUser_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId)
+    /**
+     * Adds a tenant to a recipe user's tenant associations with LockedUser enforcement.
+     * This method requires a LockedUser parameter to ensure proper row-level locks have been acquired,
+     * preventing race conditions during concurrent tenant association and linking operations.
+     *
+     * @param user The locked user to associate with the tenant
+     */
+    public static void addTenantIdToRecipeUser_Transaction(Start start, Connection sqlCon,
+                                                            TenantIdentifier tenantIdentifier, LockedUser user)
             throws StorageQueryException, DuplicateEmailException, DuplicateThirdPartyUserException, DuplicatePhoneNumberException {
+        // Validate that the lock is still valid for this connection
+        if (!user.isValidForConnection(sqlCon)) {
+            throw new IllegalStateException("LockedUser is not valid for this connection - lock may have been released or acquired on a different connection");
+        }
+
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        String userId = user.getRecipeUserId();
         String recipeUserTenantsTable = Config.getConfig(start).getRecipeUserTenantsTable();
         String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
 
@@ -1245,7 +1260,7 @@ public class AccountInfoQueries {
             List<String[]> recordsToInsert = new ArrayList<>();
 
             execute(sqlCon, selectQuery, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(1, appIdentifier.getAppId());
                 pst.setString(2, userId);
             }, rs -> {
                 while (rs.next()) {
@@ -1277,7 +1292,7 @@ public class AccountInfoQueries {
                 conflictCheckQuery.append(")");
 
                 conflictAccountInfoType = execute(sqlCon, conflictCheckQuery.toString(), pst -> {
-                    pst.setString(1, tenantIdentifier.getAppId());
+                    pst.setString(1, appIdentifier.getAppId());
                     pst.setString(2, tenantIdentifier.getTenantId());
                     int idx = 3;
                     for (String[] record : recordsToInsert) {
@@ -1314,7 +1329,7 @@ public class AccountInfoQueries {
 
                 for (String[] record : recordsToInsert) {
                     update(sqlCon, insertQuery, pst -> {
-                        pst.setString(1, tenantIdentifier.getAppId());
+                        pst.setString(1, appIdentifier.getAppId());
                         pst.setString(2, userId);
                         pst.setString(3, tenantIdentifier.getTenantId());
                         pst.setString(4, record[0]); // recipe_id
