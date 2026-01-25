@@ -94,11 +94,16 @@ import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.LockedUserPair;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
+import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
@@ -130,7 +135,7 @@ public class Start
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
         ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage,
-        SAMLStorage {
+        SAMLStorage, UserLockingStorage, AccountInfoStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -4016,5 +4021,44 @@ public class Start
     @Override
     public int countSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
         return SAMLQueries.countSAMLClients(this, tenantIdentifier);
+    }
+
+    // UserLockingStorage implementation
+
+    @Override
+    @Nonnull
+    public LockedUser lockUser(AppIdentifier appIdentifier, TransactionConnection con, String userId)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    @Nonnull
+    public List<LockedUser> lockUsers(AppIdentifier appIdentifier, TransactionConnection con, List<String> userIds)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUsers(this, sqlCon, appIdentifier, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    @Nonnull
+    public LockedUserPair lockUsersForLinking(AppIdentifier appIdentifier, TransactionConnection con,
+                                               String recipeUserId, String primaryUserId)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUsersForLinking(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
