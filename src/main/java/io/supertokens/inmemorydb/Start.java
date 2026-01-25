@@ -3172,10 +3172,18 @@ public class Start
             CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            // we do not bother returning if a row was updated here or not, cause it's happening
-            // in a transaction anyway.
 
-            boolean didBecomePrimary = AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(this, sqlCon, appIdentifier, userId);
+            // Acquire lock on the user to prevent race conditions
+            LockedUser lockedUser;
+            try {
+                lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            } catch (UserNotFoundForLockingException e) {
+                throw new UnknownUserIdException();
+            }
+
+            // Use the LockedUser version of addPrimaryUserAccountInfo_Transaction
+            boolean didBecomePrimary = AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(
+                    this, sqlCon, appIdentifier, lockedUser);
             if (didBecomePrimary) {
                 GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, appIdentifier, userId);
             }
@@ -4122,5 +4130,18 @@ public class Start
         Connection sqlCon = (Connection) con.getConnection();
         AccountInfoQueries.updateAccountInfo_Transaction(
                 this, sqlCon, appIdentifier, user, accountInfoType, newAccountInfoValue);
+    }
+
+    @Override
+    public boolean addPrimaryUserAccountInfo_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser primaryUser)
+            throws StorageQueryException, UnknownUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        return AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(
+                this, sqlCon, appIdentifier, primaryUser);
     }
 }
