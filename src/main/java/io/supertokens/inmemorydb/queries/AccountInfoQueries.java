@@ -115,6 +115,11 @@ public class AccountInfoQueries {
                 + Config.getConfig(start).getRecipeUserTenantsTable() + "(recipe_user_id);";
     }
 
+    static String getQueryToCreateRecipeUserIdIndexForRecipeUserAccountInfoTable(Start start) {
+        return "CREATE INDEX IF NOT EXISTS idx_recipe_user_account_infos_app_recipe_user ON "
+                + Config.getConfig(start).getRecipeUserAccountInfosTable() + "(app_id, recipe_user_id);";
+    }
+
     static String getQueryToCreateAccountInfoIndexForRecipeUserTenantsTable(Start start) {
         return "CREATE INDEX IF NOT EXISTS idx_recipe_user_tenants_account_info ON "
                 + Config.getConfig(start).getRecipeUserTenantsTable()

@@ -556,6 +556,7 @@ public class GeneralQueries {
             // indexes
             update(start, AccountInfoQueries.getQueryToCreateTenantIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
             update(start, AccountInfoQueries.getQueryToCreateRecipeUserIdIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+            update(start, AccountInfoQueries.getQueryToCreateRecipeUserIdIndexForRecipeUserAccountInfoTable(start), NO_OP_SETTER);
             update(start, AccountInfoQueries.getQueryToCreateAccountInfoIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
         }
 
