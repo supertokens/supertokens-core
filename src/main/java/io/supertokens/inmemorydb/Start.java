@@ -4144,4 +4144,16 @@ public class Start
         return AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(
                 this, sqlCon, appIdentifier, primaryUser);
     }
+
+    @Override
+    public void removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser recipeUser,
+            LockedUser primaryUser)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        AccountInfoQueries.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+                this, sqlCon, appIdentifier, recipeUser, primaryUser);
+    }
 }

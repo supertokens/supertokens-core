@@ -1566,6 +1566,48 @@ public class AccountInfoQueries {
         }
     }
 
+    /**
+     * Removes account info reservations from primary_user_tenants when unlinking a recipe user from a primary user.
+     * This method requires LockedUser parameters to ensure proper locking has been acquired,
+     * preventing race conditions during concurrent unlink operations.
+     *
+     * @param start The Start instance
+     * @param sqlCon The SQL connection
+     * @param appIdentifier The app context
+     * @param recipeUser The locked recipe user being unlinked
+     * @param primaryUser The locked primary user from which the recipe user is being unlinked
+     * @throws StorageQueryException on database errors
+     * @throws IllegalStateException if the recipe user is not linked to the specified primary user
+     */
+    public static void removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+            Start start, Connection sqlCon, AppIdentifier appIdentifier,
+            LockedUser recipeUser, LockedUser primaryUser) throws StorageQueryException {
+
+        String recipeUserId = recipeUser.getRecipeUserId();
+        String primaryUserId = primaryUser.getRecipeUserId();
+
+        // Verify the recipe user is part of the primary user group
+        // Case 1: Recipe user is linked to a primary (different user)
+        // Case 2: Recipe user IS the primary (same user, unlinking itself)
+        if (recipeUser.isLinked()) {
+            // Recipe user is linked to a primary - verify it's the correct primary
+            if (!recipeUser.getPrimaryUserId().equals(primaryUserId)) {
+                throw new IllegalStateException("Recipe user " + recipeUserId + " is not linked to primary user " + primaryUserId);
+            }
+        } else if (recipeUser.isPrimary()) {
+            // Recipe user is the primary itself - verify both users are the same
+            if (!recipeUserId.equals(primaryUserId)) {
+                throw new IllegalStateException("Recipe user " + recipeUserId + " is a primary user but primaryUser parameter is " + primaryUserId);
+            }
+        } else {
+            // Recipe user is standalone (not linked, not primary) - cannot unlink
+            throw new IllegalStateException("Recipe user " + recipeUserId + " is not part of any primary user group");
+        }
+
+        // Delegate to the existing implementation that uses user ID strings
+        removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(start, sqlCon, appIdentifier, recipeUserId);
+    }
+
     public static void removeAccountInfoReservationsForDeletingUser_Transaction(Start start, TransactionConnection con,
                                                                                 AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
