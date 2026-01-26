@@ -35,15 +35,19 @@ public class LockedUserImpl implements LockedUser {
     @Nonnull
     private final String recipeUserId;
 
+    @Nonnull
+    private final String recipeId;
+
     @Nullable
     private final String primaryUserId;
 
     // WeakReference so we don't prevent connection from being garbage collected
     private final WeakReference<Connection> connectionRef;
 
-    public LockedUserImpl(@Nonnull String recipeUserId, @Nullable String primaryUserId,
-                          @Nonnull Connection connection) {
+    public LockedUserImpl(@Nonnull String recipeUserId, @Nonnull String recipeId,
+                          @Nullable String primaryUserId, @Nonnull Connection connection) {
         this.recipeUserId = recipeUserId;
+        this.recipeId = recipeId;
         this.primaryUserId = primaryUserId;
         this.connectionRef = new WeakReference<>(connection);
     }
@@ -52,6 +56,12 @@ public class LockedUserImpl implements LockedUser {
     @Nonnull
     public String getRecipeUserId() {
         return recipeUserId;
+    }
+
+    @Override
+    @Nonnull
+    public String getRecipeId() {
+        return recipeId;
     }
 
     @Override
@@ -87,6 +97,7 @@ public class LockedUserImpl implements LockedUser {
         }
         return "LockedUser{" +
                "recipeUserId='" + recipeUserId + '\'' +
+               ", recipeId='" + recipeId + '\'' +
                ", primaryUserId='" + primaryUserId + '\'' +
                ", isLinked=" + isLinked() +
                ", isPrimary=" + isPrimary() +

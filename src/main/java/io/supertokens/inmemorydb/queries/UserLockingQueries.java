@@ -41,6 +41,19 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 public class UserLockingQueries {
 
     /**
+     * Holds user lock data fetched from app_id_to_user_id table.
+     */
+    private static class UserLockData {
+        final String primaryOrRecipeUserId;  // empty string if not linked/primary, null if not found
+        final String recipeId;
+
+        UserLockData(String primaryOrRecipeUserId, String recipeId) {
+            this.primaryOrRecipeUserId = primaryOrRecipeUserId;
+            this.recipeId = recipeId;
+        }
+    }
+
+    /**
      * Locks a single user and returns LockedUser.
      * Also locks the primary user if the user is linked.
      */
@@ -63,21 +76,21 @@ public class UserLockingQueries {
             return Collections.emptyList();
         }
 
-        // Step 1: Read primary user mappings for all users
-        Map<String, String> userToPrimary = new HashMap<>();
+        // Step 1: Read user lock data for all users
+        Map<String, UserLockData> userToLockData = new HashMap<>();
         Set<String> allIdsToLock = new TreeSet<>();  // TreeSet for consistent ordering
 
         for (String userId : userIds) {
             allIdsToLock.add(userId);
-            String primaryId = readPrimaryUserId(start, con, appIdentifier, userId);
-            if (primaryId == null) {
+            UserLockData lockData = readUserLockData(start, con, appIdentifier, userId);
+            if (lockData == null) {
                 throw new UserNotFoundForLockingException(userId);
             }
-            userToPrimary.put(userId, primaryId);
+            userToLockData.put(userId, lockData);
             // Empty string means user exists but is not primary/linked - don't add as additional lock target
             // Non-empty and different from userId means user is linked to a primary
-            if (!primaryId.isEmpty() && !primaryId.equals(userId)) {
-                allIdsToLock.add(primaryId);
+            if (!lockData.primaryOrRecipeUserId.isEmpty() && !lockData.primaryOrRecipeUserId.equals(userId)) {
+                allIdsToLock.add(lockData.primaryOrRecipeUserId);
             }
         }
 
@@ -87,23 +100,23 @@ public class UserLockingQueries {
             lockSingleUser(start, con, appIdentifier, id);
         }
 
-        // Step 3: Re-read primary mappings (may have changed in concurrent scenario)
+        // Step 3: Re-read user data (may have changed in concurrent scenario)
         List<LockedUser> result = new ArrayList<>();
         for (String userId : userIds) {
-            String confirmedPrimary = readPrimaryUserId(start, con, appIdentifier, userId);
-            if (confirmedPrimary == null) {
+            UserLockData confirmedData = readUserLockData(start, con, appIdentifier, userId);
+            if (confirmedData == null) {
                 throw new UserNotFoundForLockingException(userId);
             }
 
             // Convert empty string to null for LockedUserImpl (user is not primary or linked)
-            String primaryUserIdForLock = confirmedPrimary.isEmpty() ? null : confirmedPrimary;
+            String primaryUserIdForLock = confirmedData.primaryOrRecipeUserId.isEmpty() ? null : confirmedData.primaryOrRecipeUserId;
 
             // If primary changed and is not null/empty, we need to "lock" the new primary too
             if (primaryUserIdForLock != null && !allIdsToLock.contains(primaryUserIdForLock)) {
                 lockSingleUser(start, con, appIdentifier, primaryUserIdForLock);
             }
 
-            result.add(new LockedUserImpl(userId, primaryUserIdForLock, con));
+            result.add(new LockedUserImpl(userId, confirmedData.recipeId, primaryUserIdForLock, con));
         }
 
         return result;
@@ -144,17 +157,17 @@ public class UserLockingQueries {
     }
 
     /**
-     * Reads the primary_or_recipe_user_id for a user (without locking).
+     * Reads user lock data (primary_or_recipe_user_id and recipe_id) for a user (without locking).
      * Uses app_id_to_user_id table because users may not be in all_auth_recipe_users
      * if they've been removed from all tenants.
      * Returns null if user doesn't exist.
-     * Returns empty string "" if user exists but is not primary or linked.
-     * Returns the primary_or_recipe_user_id if user is primary or linked.
+     * Returns UserLockData with empty string primaryOrRecipeUserId if user exists but is not primary or linked.
+     * Returns UserLockData with the primary_or_recipe_user_id if user is primary or linked.
      */
-    private static String readPrimaryUserId(Start start, Connection con, AppIdentifier appIdentifier, String userId)
+    private static UserLockData readUserLockData(Start start, Connection con, AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {
 
-        String QUERY = "SELECT primary_or_recipe_user_id, is_linked_or_is_a_primary_user FROM " + Config.getConfig(start).getAppIdToUserIdTable()
+        String QUERY = "SELECT primary_or_recipe_user_id, is_linked_or_is_a_primary_user, recipe_id FROM " + Config.getConfig(start).getAppIdToUserIdTable()
             + " WHERE app_id = ? AND user_id = ?";
 
         return execute(con, QUERY, pst -> {
@@ -162,12 +175,13 @@ public class UserLockingQueries {
             pst.setString(2, userId);
         }, rs -> {
             if (rs.next()) {
+                String recipeId = rs.getString("recipe_id");
                 boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
                 if (isLinkedOrPrimary) {
-                    return rs.getString("primary_or_recipe_user_id");
+                    return new UserLockData(rs.getString("primary_or_recipe_user_id"), recipeId);
                 } else {
                     // User exists but is not primary or linked - return empty string to distinguish from not found
-                    return "";
+                    return new UserLockData("", recipeId);
                 }
             }
             return null;
