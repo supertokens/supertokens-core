@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -1614,24 +1615,16 @@ public class GeneralQueries {
                 .collect(Collectors.toList());
     }
 
-    public static String getRecipeIdForUser_Transaction(Start start, Connection sqlCon,
-                                                        TenantIdentifier tenantIdentifier, String userId)
-            throws SQLException, StorageQueryException {
-
-        ((ConnectionWithLocks) sqlCon).lock(
-                tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
-
-        String QUERY = "SELECT recipe_id FROM " + getConfig(start).getAppIdToUserIdTable()
-                + " WHERE app_id = ? AND user_id = ?";
-        return execute(sqlCon, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, userId);
-        }, result -> {
-            if (result.next()) {
-                return result.getString("recipe_id");
-            }
-            return null;
-        });
+    /**
+     * Gets the recipe ID for a user that is already locked.
+     * The recipe ID is stored in the LockedUser object, which was fetched from
+     * app_id_to_user_id during lock acquisition.
+     *
+     * @param lockedUser The locked user (lock must be held)
+     * @return The recipe ID string
+     */
+    public static String getRecipeIdForUser_Transaction(LockedUser lockedUser) {
+        return lockedUser.getRecipeId();
     }
 
     public static Map<String, List<String>> getTenantIdsForUserIds_transaction(Start start, Connection sqlCon,

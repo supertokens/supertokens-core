@@ -2582,15 +2582,12 @@ public class Start
             DuplicateThirdPartyUserException, DuplicatePhoneNumberException, UnknownUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(this, sqlCon, tenantIdentifier,
-                    userId);
-
-            if (recipeId == null) {
-                throw new UnknownUserIdException();
-            }
-
-            // Acquire lock on the user before modifying tenant associations
+            // First acquire lock on the user - throws UserNotFoundForLockingException if user doesn't exist
             LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+
+            // Get recipe ID from LockedUser (fetched from app_id_to_user_id during lock acquisition)
+            String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(lockedUser);
+
             AccountInfoQueries.addTenantIdToRecipeUser_Transaction(this, sqlCon, tenantIdentifier, lockedUser);
 
             boolean added;
@@ -2651,13 +2648,17 @@ public class Start
             return this.startTransaction(con -> {
                 Connection sqlCon = (Connection) con.getConnection();
                 try {
-                    String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(this, sqlCon, tenantIdentifier,
-                            userId);
-
-                    if (recipeId == null) {
+                    // First acquire lock on the user - if user doesn't exist, return false
+                    LockedUser lockedUser;
+                    try {
+                        lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+                    } catch (UserNotFoundForLockingException e) {
                         sqlCon.commit();
                         return false; // No auth user to remove
                     }
+
+                    // Get recipe ID from LockedUser (fetched from app_id_to_user_id during lock acquisition)
+                    String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(lockedUser);
 
                     boolean removed;
                     if (recipeId.equals("emailpassword")) {
