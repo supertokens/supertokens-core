@@ -1452,10 +1452,10 @@ public class Start
 
     @Override
     public void addTenantIdToPrimaryUser_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
-                                                     String supertokensUserId)
+                                                     LockedUser primaryUser)
             throws AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException, StorageQueryException,
             AnotherPrimaryUserWithEmailAlreadyExistsException, AnotherPrimaryUserWithPhoneNumberAlreadyExistsException {
-        AccountInfoQueries.addTenantIdToPrimaryUser_Transaction(this, con, tenantIdentifier, supertokensUserId);
+        AccountInfoQueries.addTenantIdToPrimaryUser_Transaction(this, con, tenantIdentifier, primaryUser);
     }
 
     @Override

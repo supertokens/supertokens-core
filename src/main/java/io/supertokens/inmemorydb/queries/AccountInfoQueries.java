@@ -1370,11 +1370,24 @@ public class AccountInfoQueries {
         }
     }
 
-    public static void addTenantIdToPrimaryUser_Transaction(Start start, TransactionConnection con, TenantIdentifier tenantIdentifier, String supertokensUserId)
+    /**
+     * Adds account info entries to primary_user_tenants when adding a tenant to a primary user.
+     * This method requires a LockedUser parameter to ensure proper row-level locking has been acquired.
+     *
+     * @param primaryUser The locked primary user whose account info should be reserved for this tenant
+     */
+    public static void addTenantIdToPrimaryUser_Transaction(Start start, TransactionConnection con, TenantIdentifier tenantIdentifier, LockedUser primaryUser)
             throws StorageQueryException,
             AnotherPrimaryUserWithPhoneNumberAlreadyExistsException,
             AnotherPrimaryUserWithEmailAlreadyExistsException,
             AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException {
+
+        // Verify the user is a primary user
+        if (!primaryUser.isPrimary()) {
+            throw new IllegalStateException("User must be a primary user");
+        }
+
+        String supertokensUserId = primaryUser.getRecipeUserId();
         Connection sqlCon = (Connection) con.getConnection();
         String primaryUserTenantsTable = Config.getConfig(start).getPrimaryUserTenantsTable();
         String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
