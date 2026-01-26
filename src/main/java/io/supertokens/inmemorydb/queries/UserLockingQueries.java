@@ -74,7 +74,9 @@ public class UserLockingQueries {
                 throw new UserNotFoundForLockingException(userId);
             }
             userToPrimary.put(userId, primaryId);
-            if (!primaryId.equals(userId)) {
+            // Empty string means user exists but is not primary/linked - don't add as additional lock target
+            // Non-empty and different from userId means user is linked to a primary
+            if (!primaryId.isEmpty() && !primaryId.equals(userId)) {
                 allIdsToLock.add(primaryId);
             }
         }
@@ -93,12 +95,15 @@ public class UserLockingQueries {
                 throw new UserNotFoundForLockingException(userId);
             }
 
-            // If primary changed, we need to "lock" the new primary too
-            if (!allIdsToLock.contains(confirmedPrimary)) {
-                lockSingleUser(start, con, appIdentifier, confirmedPrimary);
+            // Convert empty string to null for LockedUserImpl (user is not primary or linked)
+            String primaryUserIdForLock = confirmedPrimary.isEmpty() ? null : confirmedPrimary;
+
+            // If primary changed and is not null/empty, we need to "lock" the new primary too
+            if (primaryUserIdForLock != null && !allIdsToLock.contains(primaryUserIdForLock)) {
+                lockSingleUser(start, con, appIdentifier, primaryUserIdForLock);
             }
 
-            result.add(new LockedUserImpl(userId, confirmedPrimary, con));
+            result.add(new LockedUserImpl(userId, primaryUserIdForLock, con));
         }
 
         return result;
@@ -117,13 +122,15 @@ public class UserLockingQueries {
 
     /**
      * Verifies a user exists (simulates lock acquisition).
+     * Uses app_id_to_user_id table because users may not be in all_auth_recipe_users
+     * if they've been removed from all tenants.
      * Note: SQLite doesn't support FOR UPDATE, so this is just a SELECT.
      */
     private static void lockSingleUser(Start start, Connection con, AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException, UserNotFoundForLockingException {
 
         // SQLite doesn't support FOR UPDATE, so we just do a regular SELECT
-        String QUERY = "SELECT user_id FROM " + Config.getConfig(start).getUsersTable()
+        String QUERY = "SELECT user_id FROM " + Config.getConfig(start).getAppIdToUserIdTable()
             + " WHERE app_id = ? AND user_id = ?";
 
         Boolean found = execute(con, QUERY, pst -> {
@@ -138,11 +145,16 @@ public class UserLockingQueries {
 
     /**
      * Reads the primary_or_recipe_user_id for a user (without locking).
+     * Uses app_id_to_user_id table because users may not be in all_auth_recipe_users
+     * if they've been removed from all tenants.
+     * Returns null if user doesn't exist.
+     * Returns empty string "" if user exists but is not primary or linked.
+     * Returns the primary_or_recipe_user_id if user is primary or linked.
      */
     private static String readPrimaryUserId(Start start, Connection con, AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {
 
-        String QUERY = "SELECT primary_or_recipe_user_id FROM " + Config.getConfig(start).getUsersTable()
+        String QUERY = "SELECT primary_or_recipe_user_id, is_linked_or_is_a_primary_user FROM " + Config.getConfig(start).getAppIdToUserIdTable()
             + " WHERE app_id = ? AND user_id = ?";
 
         return execute(con, QUERY, pst -> {
@@ -150,7 +162,13 @@ public class UserLockingQueries {
             pst.setString(2, userId);
         }, rs -> {
             if (rs.next()) {
-                return rs.getString("primary_or_recipe_user_id");
+                boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
+                if (isLinkedOrPrimary) {
+                    return rs.getString("primary_or_recipe_user_id");
+                } else {
+                    // User exists but is not primary or linked - return empty string to distinguish from not found
+                    return "";
+                }
             }
             return null;
         });

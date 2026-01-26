@@ -1053,11 +1053,31 @@ public class AccountInfoQueries {
 
         // Extract user IDs from locked users
         String recipeUserId = recipeUser.getRecipeUserId();
+        // getPrimaryUserId() returns the actual primary user ID, which works whether:
+        // - primaryUser is a primary user (returns its own ID)
+        // - primaryUser is a linked user (returns the ID of the primary it's linked to)
+        // - primaryUser is standalone (returns null)
         String primaryUserId = primaryUser.getPrimaryUserId();
 
-        // Validate that the primary user is actually a primary user
-        if (primaryUserId == null || !primaryUser.isPrimary()) {
+        // Validate that the user passed as "primary" is actually part of a primary user group
+        // (either is a primary user or is linked to one)
+        if (primaryUserId == null) {
             throw new InputUserIdIsNotAPrimaryUserException(primaryUser.getRecipeUserId());
+        }
+
+        // Validate that the recipe user is not already a primary user themselves
+        // A primary user cannot be linked as a recipe user to another primary
+        if (recipeUser.isPrimary()) {
+            try {
+                AuthRecipeUserInfo recipeUserInfo = GeneralQueries.getPrimaryUserInfoForUserId_Transaction(
+                        start, sqlCon, appIdentifier, recipeUserId);
+                if (recipeUserInfo == null) {
+                    throw new UnknownUserIdException();
+                }
+                throw new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUserInfo);
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
         }
 
         // Validate that the recipe user is not already linked to a different primary
