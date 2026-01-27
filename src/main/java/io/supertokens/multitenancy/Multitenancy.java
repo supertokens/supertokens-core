@@ -67,6 +67,10 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -419,6 +423,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage userLockingStorage = (UserLockingStorage) storage;
+        AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
         try {
             return authRecipeStorage.startTransaction(con -> {
                 String tenantId = tenantIdentifier.getTenantId();
@@ -427,7 +433,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
                 try {
                     if (userToAssociate != null && userToAssociate.isPrimaryUser) {
-                        authRecipeStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, userToAssociate.getSupertokensUserId());
+                        // Acquire lock on the primary user before adding tenant info
+                        LockedUser lockedPrimaryUser = userLockingStorage.lockUser(
+                                tenantIdentifier.toAppIdentifier(), con, userToAssociate.getSupertokensUserId());
+                        accountInfoStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, lockedPrimaryUser);
                     }
 
                     // userToAssociate may be null if the user is not associated to any tenants, we can still try and
@@ -443,6 +452,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                          AnotherPrimaryUserWithEmailAlreadyExistsException |
                          AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (UserNotFoundForLockingException e) {
+                    // This should not happen since we just fetched the user, but if it does, treat as unknown user
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
             });
         } catch (StorageTransactionLogicException e) {
