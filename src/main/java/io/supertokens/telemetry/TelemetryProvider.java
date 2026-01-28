@@ -65,6 +65,9 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
 
     public static void createLogEvent(Main main, TenantIdentifier tenantIdentifier, String logMessage,
                                       String logLevel) {
+        if (getInstance(main) == null || getInstance(main).openTelemetry == null) {
+            return; // not initialized
+        }
         getInstance(main).openTelemetry.getTracer("core-tracer")
                 .spanBuilder(logLevel)
                 .setParent(Context.current())
@@ -81,6 +84,9 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
     }
 
     public static Span startSpan(Main main, TenantIdentifier tenantIdentifier, String spanName) {
+        if (getInstance(main) == null || getInstance(main).openTelemetry == null) {
+            return null; // not initialized
+        }
         Span span = getInstance(main).openTelemetry.getTracer("core-tracer")
                 .spanBuilder(spanName)
                 .setParent(Context.current())
@@ -113,11 +119,15 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
             return getInstance(main).openTelemetry; // already initialized
         }
 
+        String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
+        if (collectorUri == null || collectorUri.isEmpty()) {
+            return null;
+        }
+
         Resource resource = Resource.getDefault().toBuilder()
                 .put(SERVICE_NAME, "supertokens-core")
                 .build();
 
-        String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
 
         SdkTracerProvider sdkTracerProvider =
                 SdkTracerProvider.builder()
@@ -155,6 +165,9 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource {
     }
 
     public static void closeTelemetry(Main main) {
+        if (getInstance(main) == null || getInstance(main).openTelemetry == null) {
+            return; // not initialized
+        }
         OpenTelemetry telemetry = getInstance(main).openTelemetry;
         if (telemetry instanceof OpenTelemetrySdk) {
             ((OpenTelemetrySdk) telemetry).close();
