@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.5]
+
+- Fixes opentelemetry opt-in
+
 ## [10.0.4]
 
 - Adds internal opentelemetry support for logging
