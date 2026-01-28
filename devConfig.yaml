@@ -175,6 +175,6 @@ disable_telemetry: true
 # the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
 
-# (OPTIONAL | Default: http://localhost:4317) string value. The URL of the OpenTelemetry collector to which the core
+# (OPTIONAL | Default: null) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
