@@ -211,7 +211,7 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    private String otel_collector_connection_uri = "http://localhost:4317";
+    private String otel_collector_connection_uri = null;
 
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
