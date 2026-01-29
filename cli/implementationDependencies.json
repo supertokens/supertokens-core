@@ -1,55 +1,50 @@
 {
-  "_comment": "Contains list of implementation dependencies URL for this project",
-  "list": [
-    {
-      "jar": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1.jar",
-      "name": "Gson 2.3.1",
-      "src": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1.jar",
-      "name": "Jackson Dataformat 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
-      "name": "SnakeYAML 2.2",
-      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1.jar",
-      "name": "Jackson core 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar",
-      "name": "Jackson databind 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1.jar",
-      "name": "Jackson annotation 2.16.1",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
-      "name": "Argon2-jvm 2.11",
-      "src": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11.jar",
-      "name": "Argon2-jvm no libs 2.11",
-      "src": "https://repo1.maven.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
-      "name": "SQLite JDBC Driver 3.30.1",
-      "src": "https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
-    },
-    {
-      "jar": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar",
-      "name": "JNA 5.8.0",
-      "src": "https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0-sources.jar"
-    }
-  ]
+"_comment": "Contains list of implementation dependencies URL for this project. This is a generated file, don't modify the contents by hand.",
+"list": [
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1.jar",
+		"name":"gson 2.3.1",
+		"src":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1.jar",
+		"name":"jackson-dataformat-yaml 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar",
+		"name":"jackson-databind 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1.jar",
+		"name":"jackson-core 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1.jar",
+		"name":"jackson-annotations 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
+		"name":"snakeyaml 2.2",
+		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
+		"name":"argon2-jvm 2.11",
+		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11.jar",
+		"name":"argon2-jvm-nolibs 2.11",
+		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
+		"name":"jbcrypt 0.4",
+		"src":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
+	}
+]
 }

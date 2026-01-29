@@ -171,6 +171,6 @@ disable_telemetry: true
 # (Optional | Default: null) string value. The encryption key used for saving OAuth client secret on the database.
 # oauth_client_secret_encryption_key:
 
-# (OPTIONAL | Default: http://localhost:4317) string value. The URL of the OpenTelemetry collector to which the core
+# (OPTIONAL | Default: null) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
