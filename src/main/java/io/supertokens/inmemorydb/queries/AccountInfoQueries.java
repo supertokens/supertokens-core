@@ -1484,7 +1484,7 @@ public class AccountInfoQueries {
         }
     }
 
-    public static void removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+    public static void removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, LockedUser user) throws StorageQueryException {
         try {
             String QUERY = "DELETE FROM " + Config.getConfig(start).getRecipeUserTenantsTable()
                     + " WHERE app_id = ? AND tenant_id = ? AND recipe_user_id = ?";
@@ -1492,51 +1492,53 @@ public class AccountInfoQueries {
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, userId);
+                pst.setString(3, user.getRecipeUserId());
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
-    public static void removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+    public static void removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, LockedUser user) throws StorageQueryException {
+        String primaryUserId = user.getPrimaryUserId();
+        // If the user is not linked to any primary user, there's nothing to delete
+        if (primaryUserId == null) {
+            return;
+        }
+
         try {
             String primaryUserTenantsTable = Config.getConfig(start).getPrimaryUserTenantsTable();
             String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
             String recipeUserTenantsTable = Config.getConfig(start).getRecipeUserTenantsTable();
 
-            // This query removes rows from the primary_user_tenants table for the given primary user (identified by the passed-in userId),
+            // This query removes rows from the primary_user_tenants table for the given primary user,
             // but only for those tenants that the user is no longer associated with after a tenant removal operation.
             // It does so by:
-            //   1. Identifying the primary_user_id linked to the given recipe_user (by userId).
+            //   1. Using the primary_user_id from the LockedUser (already known from the lock acquisition).
             //   2. Deleting only those primary_user_tenants rows (for this app and primary_user_id) whose tenant_id is NOT present
             //      in the list of tenants remaining for any of the primary user's linked recipe users,
             //      except for the tenant/user combination being removed (i.e., tenant_id != removed tenant).
             //   3. Effectively, this ensures that account info reservations in primary_user_tenants only remain on tenants
             //      where the primary user (or any linked user) is still active after this tenant of user is removed.
+            String recipeUserId = user.getRecipeUserId();
             String QUERY = "DELETE FROM " + primaryUserTenantsTable
-                    + " WHERE app_id = ? AND primary_user_id IN ("
-                    + "     SELECT primary_user_id FROM " + recipeUserAccountInfosTable + " WHERE recipe_user_id = ? LIMIT 1"
-                    + " ) AND (tenant_id) NOT IN ("
+                    + " WHERE app_id = ? AND primary_user_id = ? AND (tenant_id) NOT IN ("
                     + "     SELECT DISTINCT tenant_id"
                     + "     FROM " + recipeUserTenantsTable
                     + "     WHERE recipe_user_id IN ("
                     + "         SELECT recipe_user_id"
                     + "         FROM " + recipeUserAccountInfosTable
-                    + "         WHERE primary_user_id IN ("
-                    + "             SELECT primary_user_id FROM " + recipeUserAccountInfosTable
-                    + "             WHERE recipe_user_id = ? LIMIT 1"
-                    + "         ) AND ((recipe_user_id = ? AND tenant_id != ?) OR recipe_user_id != ?)"
+                    + "         WHERE primary_user_id = ? AND ((recipe_user_id = ? AND tenant_id != ?) OR recipe_user_id != ?)"
                     + "     )"
                     + " )";
 
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, userId);
-                pst.setString(3, userId);
-                pst.setString(4, userId);
+                pst.setString(2, primaryUserId);
+                pst.setString(3, primaryUserId);
+                pst.setString(4, recipeUserId);
                 pst.setString(5, tenantIdentifier.getTenantId());
-                pst.setString(6, userId);
+                pst.setString(6, recipeUserId);
             });
         } catch (SQLException e) {
             throw new StorageQueryException(e);
