@@ -113,10 +113,6 @@ public abstract class Utils extends Mockito {
             // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
             commentConfigValue("disable_telemetry");
 
-            TestingProcessManager.killAll();
-            TestingProcessManager.deleteAllInformation();
-            TestingProcessManager.killAll();
-
             byteArrayOutputStream = new ByteArrayOutputStream();
             System.setErr(new PrintStream(byteArrayOutputStream));
         } catch (Exception e) {

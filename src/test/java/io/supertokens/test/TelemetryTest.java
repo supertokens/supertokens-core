@@ -115,8 +115,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryWorks() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
-        process.startProcess();
+        TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
@@ -194,8 +193,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryWorksWithApiDomainAndWebsiteDomainSet() throws Exception {
         String[] args = {"../"};
 
-        TestingProcess process = TestingProcessManager.start(args, false);
-        process.startProcess();
+        TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
