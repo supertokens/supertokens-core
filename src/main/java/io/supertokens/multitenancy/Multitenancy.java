@@ -427,20 +427,22 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
         try {
             return authRecipeStorage.startTransaction(con -> {
-                String tenantId = tenantIdentifier.getTenantId();
-                AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(
-                        tenantIdentifier.toAppIdentifier(), con, userId);
-
                 try {
-                    if (userToAssociate != null && userToAssociate.isPrimaryUser) {
-                        // Acquire lock on the primary user before adding tenant info
-                        LockedUser lockedPrimaryUser = userLockingStorage.lockUser(
-                                tenantIdentifier.toAppIdentifier(), con, userToAssociate.getSupertokensUserId());
-                        accountInfoStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, lockedPrimaryUser);
+                    // IMPORTANT: Lock the user being added FIRST to serialize with concurrent linking operations.
+                    // The locking mechanism automatically locks the primary user too if this user is linked.
+                    // This ensures that if the user is being linked concurrently, we either see the linked state
+                    // (if linking completed before our lock) or the linking waits for our operation to complete.
+                    LockedUser lockedUser = userLockingStorage.lockUser(
+                            tenantIdentifier.toAppIdentifier(), con, userId);
+
+                    // After locking, check if the user is part of a primary user group (either IS primary or IS linked)
+                    // The locking mechanism already locked the primary user if this user is linked.
+                    if (lockedUser.getPrimaryUserId() != null) {
+                        accountInfoStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, lockedUser);
                     }
 
-                    // userToAssociate may be null if the user is not associated to any tenants, we can still try and
-                    // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
+                    // Add the user to the tenant
+                    // Note: user may not be in any tenants yet (CDI 3.0 allows disassociation from all tenants)
                     // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
                             con, userId);
@@ -453,7 +455,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                          AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 } catch (UserNotFoundForLockingException e) {
-                    // This should not happen since we just fetched the user, but if it does, treat as unknown user
+                    // User doesn't exist
                     throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
             });

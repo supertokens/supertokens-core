@@ -111,21 +111,17 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
                 }
 
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                appIdentifier, authRecipeStorage,
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                con, appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
 
-                if (primaryUser.getSupertokensUserId().equals(recipeUserId)) {
+                if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
-                        // Lock the primary user (same as recipe user in this case)
-                        // lockedRecipeUser is already the primary in this case
-                        LockedUser lockedPrimaryUser = lockedRecipeUser;
-
+                        // TODO: we could shortcircuit this: we can actually just remove all primary claims
                         // Remove account info reservations with LockedUser enforcement
                         accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
-                                appIdentifier, con, lockedRecipeUser, lockedPrimaryUser);
+                                appIdentifier, con, lockedRecipeUser, lockedRecipeUser);
 
                         authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con,
                                 primaryUser.getSupertokensUserId(), recipeUserId);
@@ -142,19 +138,12 @@ public class AuthRecipe {
                                 true);
                     }
                 } else {
-                    // Lock the primary user explicitly
-                    LockedUser lockedPrimaryUser;
-                    try {
-                        lockedPrimaryUser = lockingStorage.lockUser(appIdentifier, con, primaryUser.getSupertokensUserId());
-                    } catch (UserNotFoundForLockingException e) {
-                        throw new StorageTransactionLogicException(new UnknownUserIdException());
-                    }
-
+                    // TODO: we should probably only pass the locked recipe user.
                     // Remove account info reservations with LockedUser enforcement
                     accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
-                            appIdentifier, con, lockedRecipeUser, lockedPrimaryUser);
+                            appIdentifier, con, lockedRecipeUser, lockedRecipeUser);
 
-                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, primaryUser.getSupertokensUserId(),
+                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, lockedRecipeUser.getPrimaryUserId(),
                             recipeUserId);
                     return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                 }
