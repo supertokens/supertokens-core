@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -35,6 +36,7 @@ import java.util.zip.DeflaterOutputStream;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
@@ -67,6 +69,7 @@ import org.opensaml.xmlsec.signature.impl.X509DataBuilder;
 import org.opensaml.xmlsec.signature.support.SignatureConstants;
 import org.opensaml.xmlsec.signature.support.SignatureException;
 import org.opensaml.xmlsec.signature.support.SignatureValidator;
+import org.opensaml.xmlsec.signature.support.Signer;
 import org.w3c.dom.Element;
 
 import com.google.gson.JsonArray;
@@ -278,7 +281,15 @@ public class SAML {
         authnRequest.setAssertionConsumerServiceURL(acsUrl);
 
         if (enableRequestSigning) {
+            SAMLCertificate samlCertificate = SAMLCertificate.getInstance(appIdentifier, main);
+            X509Certificate spCertificate = samlCertificate.getCertificate();
+            PrivateKey spPrivateKey = samlCertificate.getPrivateKey();
+
+            // Create signing credential with both certificate and private key
+            Credential signingCredential = CredentialSupport.getSimpleCredential(spCertificate, spPrivateKey);
+
             Signature signature = new SignatureBuilder().buildObject();
+            signature.setSigningCredential(signingCredential);
             signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA256);
             signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
 
@@ -287,7 +298,6 @@ public class SAML {
             X509Data x509Data = new X509DataBuilder().buildObject();
             org.opensaml.xmlsec.signature.X509Certificate x509CertElement = new org.opensaml.xmlsec.signature.impl.X509CertificateBuilder().buildObject();
 
-            X509Certificate spCertificate = SAMLCertificate.getInstance(appIdentifier, main).getCertificate();
             String certString = java.util.Base64.getEncoder().encodeToString(spCertificate.getEncoded());
             x509CertElement.setValue(certString);
             x509Data.getX509Certificates().add(x509CertElement);
@@ -295,6 +305,20 @@ public class SAML {
             signature.setKeyInfo(keyInfo);
 
             authnRequest.setSignature(signature);
+
+            // Marshall the AuthnRequest to prepare for signing
+            try {
+                XMLObjectSupport.marshall(authnRequest);
+            } catch (MarshallingException e) {
+                throw new RuntimeException("Failed to marshall AuthnRequest for signing", e);
+            }
+
+            // Perform the actual signing operation
+            try {
+                Signer.signObject(signature);
+            } catch (SignatureException e) {
+                throw new RuntimeException("Failed to sign AuthnRequest", e);
+            }
         }
 
         return authnRequest;
