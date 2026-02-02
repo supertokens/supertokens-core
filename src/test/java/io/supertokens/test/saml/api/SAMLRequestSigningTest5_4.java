@@ -304,6 +304,165 @@ public class SAMLRequestSigningTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * Test that updating a client's enableRequestSigning from true to false works correctly.
+     */
+    @Test
+    public void testUpdateEnableRequestSigningTrueToFalse() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        // Create a SAML client with enableRequestSigning=true
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid-update-test";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+        String metadataXMLBase64 = Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
+
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml");
+        JsonArray redirectURIs = new JsonArray();
+        redirectURIs.add("http://localhost:3000/auth/callback/saml");
+        createClientInput.add("redirectURIs", redirectURIs);
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
+        createClientInput.addProperty("enableRequestSigning", true);
+
+        JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp.get("status").getAsString());
+        String clientId = createResp.get("clientId").getAsString();
+        assertTrue("enableRequestSigning should be true initially", createResp.get("enableRequestSigning").getAsBoolean());
+
+        // Verify signing works initially
+        JsonObject loginBody = new JsonObject();
+        loginBody.addProperty("clientId", clientId);
+        loginBody.addProperty("redirectURI", "http://localhost:3000/auth/callback/saml");
+        loginBody.addProperty("acsURL", "http://localhost:3000/acs");
+
+        JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        String samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
+        Document doc = parseXML(samlRequestXML);
+        assertEquals("Should have signature before update", 1, doc.getElementsByTagNameNS(XMLDSIG_NS, "Signature").getLength());
+
+        // Update client to disable signing
+        JsonObject updateInput = new JsonObject();
+        updateInput.addProperty("clientId", clientId);
+        updateInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml");
+        updateInput.add("redirectURIs", redirectURIs);
+        updateInput.addProperty("metadataXML", metadataXMLBase64);
+        updateInput.addProperty("enableRequestSigning", false);  // Disable signing
+
+        JsonObject updateResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", updateInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", updateResp.get("status").getAsString());
+        assertFalse("enableRequestSigning should be false after update", updateResp.get("enableRequestSigning").getAsBoolean());
+
+        // Verify signing is now disabled
+        loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
+        doc = parseXML(samlRequestXML);
+        assertEquals("Should NOT have signature after disabling", 0, doc.getElementsByTagNameNS(XMLDSIG_NS, "Signature").getLength());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Test that updating a client's enableRequestSigning from false to true works correctly.
+     */
+    @Test
+    public void testUpdateEnableRequestSigningFalseToTrue() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        // Create a SAML client with enableRequestSigning=false
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid-update-test-2";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
+        String metadataXMLBase64 = Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
+
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml");
+        JsonArray redirectURIs = new JsonArray();
+        redirectURIs.add("http://localhost:3000/auth/callback/saml");
+        createClientInput.add("redirectURIs", redirectURIs);
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
+        createClientInput.addProperty("enableRequestSigning", false);
+
+        JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp.get("status").getAsString());
+        String clientId = createResp.get("clientId").getAsString();
+        assertFalse("enableRequestSigning should be false initially", createResp.get("enableRequestSigning").getAsBoolean());
+
+        // Verify no signing initially
+        JsonObject loginBody = new JsonObject();
+        loginBody.addProperty("clientId", clientId);
+        loginBody.addProperty("redirectURI", "http://localhost:3000/auth/callback/saml");
+        loginBody.addProperty("acsURL", "http://localhost:3000/acs");
+
+        JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        String samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
+        Document doc = parseXML(samlRequestXML);
+        assertEquals("Should NOT have signature before update", 0, doc.getElementsByTagNameNS(XMLDSIG_NS, "Signature").getLength());
+
+        // Update client to enable signing
+        JsonObject updateInput = new JsonObject();
+        updateInput.addProperty("clientId", clientId);
+        updateInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml");
+        updateInput.add("redirectURIs", redirectURIs);
+        updateInput.addProperty("metadataXML", metadataXMLBase64);
+        updateInput.addProperty("enableRequestSigning", true);  // Enable signing
+
+        JsonObject updateResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", updateInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", updateResp.get("status").getAsString());
+        assertTrue("enableRequestSigning should be true after update", updateResp.get("enableRequestSigning").getAsBoolean());
+
+        // Verify signing is now enabled with non-empty values
+        loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
+        doc = parseXML(samlRequestXML);
+
+        NodeList signatureNodes = doc.getElementsByTagNameNS(XMLDSIG_NS, "Signature");
+        assertEquals("Should have signature after enabling", 1, signatureNodes.getLength());
+
+        Element signatureElement = (Element) signatureNodes.item(0);
+        NodeList digestValueNodes = signatureElement.getElementsByTagNameNS(XMLDSIG_NS, "DigestValue");
+        assertFalse("DigestValue should not be empty after enabling signing",
+                digestValueNodes.item(0).getTextContent().trim().isEmpty());
+
+        NodeList signatureValueNodes = signatureElement.getElementsByTagNameNS(XMLDSIG_NS, "SignatureValue");
+        assertFalse("SignatureValue should not be empty after enabling signing",
+                signatureValueNodes.item(0).getTextContent().trim().isEmpty());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // ============ Helper Methods ============
 
     /**
