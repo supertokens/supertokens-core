@@ -89,6 +89,8 @@ public class UserMetadataQueries {
     public static JsonObject getUserMetadata_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                          String userId)
             throws SQLException, StorageQueryException {
+        // Note: Ideally caller should obtain user lock via UserLockingStorage before calling this method.
+        // The ConnectionWithLocks.lock() is kept for InMemoryDB test isolation (similar to PostgreSQL advisory lock).
         ((ConnectionWithLocks) con).lock(
                 appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getUserMetadataTable());
 

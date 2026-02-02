@@ -41,6 +41,9 @@ import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -261,6 +264,7 @@ public class ThirdParty {
                 } else {
                     // Email needs updating, so repeat everything in a transaction
                     try {
+                        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
 
                         tpStorage.startTransaction(con -> {
                             AuthRecipeUserInfo userFromDb1 = null;
@@ -299,11 +303,17 @@ public class ThirdParty {
 
                             if (!email.equals(lM1.email)) {
                                 try {
+                                    // Acquire lock on the user to prevent race conditions during email update
+                                    LockedUser lockedUser = lockingStorage.lockUser(appIdentifier, con,
+                                            lM1.getSupertokensUserId());
+
                                     tpStorage.updateUserEmail_Transaction(appIdentifier, con, lM1.getSupertokensUserId(),
                                             thirdPartyId, thirdPartyUserId, email);
                                 } catch (EmailChangeNotAllowedException | DuplicateEmailException |
                                          UnknownUserIdException e) {
                                     throw new StorageTransactionLogicException(e);
+                                } catch (UserNotFoundForLockingException e) {
+                                    throw new StorageTransactionLogicException(new UnknownUserIdException());
                                 }
                             }
 

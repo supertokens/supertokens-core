@@ -275,15 +275,6 @@ public class SAML {
         nameIDPolicy.setAllowCreate(true);
         authnRequest.setNameIDPolicy(nameIDPolicy);
 
-        RequestedAuthnContext rac = (RequestedAuthnContext) builders.getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME)
-                .buildObject(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
-        rac.setComparison(org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration.EXACT);
-        AuthnContextClassRef classRef = (AuthnContextClassRef) builders.getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME)
-                .buildObject(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
-        classRef.setURI(AuthnContext.PASSWORD_AUTHN_CTX);
-        rac.getAuthnContextClassRefs().add(classRef);
-        authnRequest.setRequestedAuthnContext(rac);
-
         authnRequest.setAssertionConsumerServiceURL(acsUrl);
 
         if (enableRequestSigning) {

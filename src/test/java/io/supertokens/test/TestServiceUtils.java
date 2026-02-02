@@ -59,27 +59,56 @@ public class TestServiceUtils {
 
         private static final int PG_DB_PORT = new Random().nextInt(5000) + 15000;
 
+        private static final boolean PRINT_QUERY_STATS = "true".equalsIgnoreCase(System.getenv("ST_PRINT_QUERY_STATS"));
+
         static {
             System.setProperty("ST_POSTGRESQL_PLUGIN_SERVER_PORT", "" + PG_DB_PORT);
         }
 
         private static int runQuery(String query) throws InterruptedException, IOException {
-            System.out.println("Running query: " + query);
+            // System.out.println("Running query: " + query);
             return CmdHelper.runCommand(new String[] {
                     "docker", "exec", PG_SERVICE_NAME, "psql", "-U", "root", "postgres", "-c", query
             });
         }
 
+        private static void runQueryWithOutput(String query) throws InterruptedException, IOException {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command(new String[] {
+                    "docker", "exec", PG_SERVICE_NAME, "psql", "-U", "root", "postgres", "-c", query
+            });
+            processBuilder.inheritIO();
+            Process process = processBuilder.start();
+            process.waitFor();
+        }
+
         public static void startService() throws IOException, InterruptedException {
             if (!System.getenv().containsKey("ST_PLUGIN_NAME") || System.getenv("ST_PLUGIN_NAME").equals("postgresql")) {
-                int exitCode = CmdHelper.runCommand(new String[] {
-                        "docker", "run", "--rm", "--name", PG_SERVICE_NAME,
-                        "-e", "POSTGRES_USER=root",
-                        "-e", "POSTGRES_PASSWORD=root",
-                        "-d", "-p", PG_DB_PORT + ":5432",
-                        "postgres",
-                        "-c", "max_connections=1000"
-                });
+                String[] dockerCmd;
+                if (PRINT_QUERY_STATS) {
+                    // Use Percona with pg_stat_statements enabled
+                    dockerCmd = new String[] {
+                            "docker", "run", "--rm", "--name", PG_SERVICE_NAME,
+                            "-e", "POSTGRES_USER=root",
+                            "-e", "POSTGRES_PASSWORD=root",
+                            "-d", "-p", PG_DB_PORT + ":5432",
+                            "percona/percona-distribution-postgresql:13",
+                            "-c", "max_connections=1000",
+                            "-c", "shared_preload_libraries=pg_stat_statements",
+                            "-c", "pg_stat_statements.track=all"
+                    };
+                } else {
+                    dockerCmd = new String[] {
+                            "docker", "run", "--rm", "--name", PG_SERVICE_NAME,
+                            "-e", "POSTGRES_USER=root",
+                            "-e", "POSTGRES_PASSWORD=root",
+                            "-d", "-p", PG_DB_PORT + ":5432",
+                            "percona/percona-distribution-postgresql:13",
+                            "-c", "max_connections=1000"
+                    };
+                }
+
+                int exitCode = CmdHelper.runCommand(dockerCmd);
 
                 if (exitCode != 0) {
                     throw new RuntimeException("Failed to start PostgreSQL service");
@@ -104,10 +133,42 @@ public class TestServiceUtils {
                         Thread.sleep(200);
                     }
                 }
+
+                if (PRINT_QUERY_STATS) {
+                    // Enable pg_stat_statements extension
+                    runQuery("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;");
+                    // Reset stats at start
+                    runQuery("SELECT pg_stat_statements_reset();");
+                    System.out.println("[PostgreSQL] Query stats tracking enabled (ST_PRINT_QUERY_STATS=true)");
+                }
+            }
+        }
+
+        public static void printQueryStats() throws IOException, InterruptedException {
+            if (PRINT_QUERY_STATS) {
+                System.out.println("\n" + "=".repeat(80));
+                System.out.println("PostgreSQL Query Performance Stats (pg_stat_statements)");
+                System.out.println("=".repeat(80));
+                runQueryWithOutput(
+                    "SELECT " +
+                    "  calls, " +
+                    "  round(total_exec_time::numeric, 2) as total_ms, " +
+                    "  round(mean_exec_time::numeric, 2) as mean_ms, " +
+                    "  round(min_exec_time::numeric, 2) as min_ms, " +
+                    "  round(max_exec_time::numeric, 2) as max_ms, " +
+                    "  rows, " +
+                    "  left(query, 80) as query " +
+                    "FROM pg_stat_statements " +
+                    "WHERE userid = (SELECT usesysid FROM pg_user WHERE usename = 'root') " +
+                    "ORDER BY total_exec_time DESC " +
+                    "LIMIT 50;"
+                );
+                System.out.println("=".repeat(80) + "\n");
             }
         }
 
         public static void killService() throws IOException, InterruptedException {
+            printQueryStats();
             CmdHelper.runCommand(new String[] {
                     "docker", "stop", PG_SERVICE_NAME
             });
@@ -123,7 +184,7 @@ public class TestServiceUtils {
         }
 
         private static int runQuery(String query) throws InterruptedException, IOException {
-            System.out.println("Running query: " + query);
+            // System.out.println("Running query: " + query);
             return CmdHelper.runCommand(new String[] {
                     "docker", "exec", MYSQL_SERVICE_NAME, "mysql", "-uroot", "-proot", "-e", query
             });

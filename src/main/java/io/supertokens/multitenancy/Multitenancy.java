@@ -67,6 +67,10 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -419,19 +423,26 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage userLockingStorage = (UserLockingStorage) storage;
+        AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
         try {
             return authRecipeStorage.startTransaction(con -> {
-                String tenantId = tenantIdentifier.getTenantId();
-                AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(
-                        tenantIdentifier.toAppIdentifier(), con, userId);
-
                 try {
-                    if (userToAssociate != null && userToAssociate.isPrimaryUser) {
-                        authRecipeStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, userToAssociate.getSupertokensUserId());
+                    // IMPORTANT: Lock the user being added FIRST to serialize with concurrent linking operations.
+                    // The locking mechanism automatically locks the primary user too if this user is linked.
+                    // This ensures that if the user is being linked concurrently, we either see the linked state
+                    // (if linking completed before our lock) or the linking waits for our operation to complete.
+                    LockedUser lockedUser = userLockingStorage.lockUser(
+                            tenantIdentifier.toAppIdentifier(), con, userId);
+
+                    // After locking, check if the user is part of a primary user group (either IS primary or IS linked)
+                    // The locking mechanism already locked the primary user if this user is linked.
+                    if (lockedUser.getPrimaryUserId() != null) {
+                        accountInfoStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, lockedUser);
                     }
 
-                    // userToAssociate may be null if the user is not associated to any tenants, we can still try and
-                    // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
+                    // Add the user to the tenant
+                    // Note: user may not be in any tenants yet (CDI 3.0 allows disassociation from all tenants)
                     // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
                             con, userId);
@@ -443,6 +454,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                          AnotherPrimaryUserWithEmailAlreadyExistsException |
                          AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (UserNotFoundForLockingException e) {
+                    // User doesn't exist
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
             });
         } catch (StorageTransactionLogicException e) {
