@@ -34,7 +34,9 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
@@ -551,5 +553,41 @@ public class Totp {
 
         TOTPDevice[] devices = totpStorage.getDevices(appIdentifier, userId);
         return devices;
+    }
+
+    /**
+     * Get TOTP device verification status for multiple users in a single query.
+     * Returns a map of userId to their TOTP status:
+     * - null: user has no TOTP devices
+     * - false: user has TOTP devices but none are verified
+     * - true: user has at least one verified TOTP device
+     */
+    public static Map<String, Boolean> getBulkDeviceStatus(AppIdentifier appIdentifier, Storage storage,
+                                                           List<String> userIds)
+            throws StorageQueryException {
+        TOTPSQLStorage totpStorage = StorageUtils.getTOTPStorage(storage);
+
+        Map<String, TOTPDevice[]> devicesMap = totpStorage.getDevicesForMultipleUsers(appIdentifier, userIds);
+
+        // Convert to hasVerifiedDevice Boolean map (nullable)
+        Map<String, Boolean> result = new HashMap<>();
+        for (String userId : userIds) {
+            TOTPDevice[] devices = devicesMap.get(userId);
+            if (devices == null || devices.length == 0) {
+                // No TOTP devices for this user
+                result.put(userId, null);
+            } else {
+                // Has devices, check if any are verified
+                boolean hasVerifiedDevice = false;
+                for (TOTPDevice device : devices) {
+                    if (device.verified) {
+                        hasVerifiedDevice = true;
+                        break;
+                    }
+                }
+                result.put(userId, hasVerifiedDevice);
+            }
+        }
+        return result;
     }
 }

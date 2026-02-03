@@ -27,6 +27,9 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -103,6 +106,45 @@ public class UserMetadataQueries {
                 return jp.parse(result.getString("user_metadata")).getAsJsonObject();
             }
             return null;
+        });
+    }
+
+    public static Map<String, JsonObject> getMultipleUsersMetadatas_Transaction(Start start, Connection con,
+                                                                                  AppIdentifier appIdentifier,
+                                                                                  List<String> userIds)
+            throws SQLException, StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        // Lock each user's metadata row
+        for (String userId : userIds) {
+            ((ConnectionWithLocks) con).lock(
+                    appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getUserMetadataTable());
+        }
+
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < userIds.size(); i++) {
+            if (i > 0) placeholders.append(", ");
+            placeholders.append("?");
+        }
+
+        String QUERY = "SELECT user_id, user_metadata FROM " + getConfig(start).getUserMetadataTable()
+                + " WHERE app_id = ? AND user_id IN (" + placeholders + ")";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            for (int i = 0; i < userIds.size(); i++) {
+                pst.setString(2 + i, userIds.get(i));
+            }
+        }, result -> {
+            Map<String, JsonObject> metadataMap = new HashMap<>();
+            JsonParser jp = new JsonParser();
+            while (result.next()) {
+                String odurId = result.getString("user_id");
+                metadataMap.put(odurId, jp.parse(result.getString("user_metadata")).getAsJsonObject());
+            }
+            return metadataMap;
         });
     }
 

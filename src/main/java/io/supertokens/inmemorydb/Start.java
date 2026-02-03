@@ -1948,7 +1948,12 @@ public class Start
                                                                          TransactionConnection con,
                                                                          List<String> userIds)
             throws StorageQueryException {
-        throw new UnsupportedOperationException("'getMultipleUsersMetadatas_Transaction' is not supported for in-memory db");
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserMetadataQueries.getMultipleUsersMetadatas_Transaction(this, sqlCon, appIdentifier, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
 
@@ -2908,6 +2913,19 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public Map<String, TOTPDevice[]> getDevicesForMultipleUsers(AppIdentifier appIdentifier, List<String> userIds)
+            throws StorageQueryException {
+        Map<String, TOTPDevice[]> result = new HashMap<>();
+        for (String userId : userIds) {
+            TOTPDevice[] devices = getDevices(appIdentifier, userId);
+            if (devices != null && devices.length > 0) {
+                result.put(userId, devices);
+            }
+        }
+        return result;
     }
 
     @Override
