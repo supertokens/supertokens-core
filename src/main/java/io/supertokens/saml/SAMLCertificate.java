@@ -68,6 +68,11 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
     private static final String SAML_KEY_PAIR_NAME = "saml_key_pair";
     private static final String SAML_CERTIFICATE_NAME = "saml_certificate";
 
+    // Static test certificate - generated once per JVM with smaller key size for speed
+    private static volatile KeyPair staticTestKeyPair = null;
+    private static volatile X509Certificate staticTestCertificate = null;
+    private static final Object staticTestLock = new Object();
+
     private KeyPair spKeyPair = null;
     private X509Certificate spCertificate = null;
 
@@ -88,11 +93,103 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
 
     public synchronized X509Certificate getCertificate()
             throws StorageQueryException, TenantOrAppNotFoundException {
+        // In testing mode, use static test certificate (generated once per JVM, with smaller key size)
+        if (Main.isTesting) {
+            ensureStaticTestCertificateExists();
+            return staticTestCertificate;
+        }
+
         if (this.spCertificate == null || this.spCertificate.getNotAfter().before(new Date())) {
             maybeGenerateNewCertificateAndUpdateInDb();
         }
 
         return this.spCertificate;
+    }
+
+    /**
+     * Returns the private key for the SP certificate.
+     * This is needed for signing SAML AuthnRequests.
+     */
+    public synchronized PrivateKey getPrivateKey()
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        // In testing mode, use static test certificate (generated once per JVM, with smaller key size)
+        if (Main.isTesting) {
+            ensureStaticTestCertificateExists();
+            return staticTestKeyPair.getPrivate();
+        }
+
+        if (this.spKeyPair == null || this.spCertificate == null || this.spCertificate.getNotAfter().before(new Date())) {
+            maybeGenerateNewCertificateAndUpdateInDb();
+        }
+
+        return this.spKeyPair.getPrivate();
+    }
+
+    /**
+     * Ensures the static test certificate exists, generating it once per JVM if needed.
+     * Uses 2048-bit keys instead of 4096-bit for faster generation.
+     */
+    private static void ensureStaticTestCertificateExists() {
+        if (staticTestCertificate != null) {
+            return;
+        }
+        synchronized (staticTestLock) {
+            if (staticTestCertificate != null) {
+                return;
+            }
+            try {
+                // Generate with smaller key size for speed (2048 instead of 4096)
+                KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+                keyGen.initialize(2048);
+                staticTestKeyPair = keyGen.generateKeyPair();
+                staticTestCertificate = generateSelfSignedCertificateForKeyPair(staticTestKeyPair);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to generate static test certificate", e);
+            }
+        }
+    }
+
+    private static X509Certificate generateSelfSignedCertificateForKeyPair(KeyPair keyPair)
+            throws CertIOException, OperatorCreationException, CertificateException {
+        Date notBefore = new Date();
+        Date notAfter = new Date(notBefore.getTime() + 10 * 365L * 24 * 60 * 60 * 1000); // 10 year validity
+
+        X500Name subject = new X500Name("CN=SAML-SP-TEST, O=SuperTokens, C=US");
+        X500Name issuer = subject;
+
+        SecureRandom random = new SecureRandom();
+        java.math.BigInteger serialNumber = new java.math.BigInteger(128, random);
+
+        JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
+                issuer, serialNumber, notBefore, notAfter, subject, keyPair.getPublic());
+
+        KeyUsage keyUsage = new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment);
+        certBuilder.addExtension(Extension.keyUsage, true, keyUsage);
+
+        BasicConstraints basicConstraints = new BasicConstraints(false);
+        certBuilder.addExtension(Extension.basicConstraints, true, basicConstraints);
+
+        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA")
+                .build(keyPair.getPrivate());
+
+        X509CertificateHolder certHolder = certBuilder.build(contentSigner);
+        JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
+        return converter.getCertificate(certHolder);
+    }
+
+    /**
+     * Warm-up method for SAML tests. Call this during test setup to pre-initialize
+     * the OpenSAML library and test certificate, ensuring predictable timing during actual tests.
+     * This method is idempotent and safe to call multiple times.
+     */
+    public static void warmUpForTesting() {
+        if (!Main.isTesting) {
+            return;
+        }
+        // Initialize OpenSAML library
+        SAMLBootstrap.initialize();
+        // Pre-generate the static test certificate
+        ensureStaticTestCertificateExists();
     }
 
     private void maybeGenerateNewCertificateAndUpdateInDb() throws TenantOrAppNotFoundException {

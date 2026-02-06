@@ -158,14 +158,18 @@ public class BulkImportFlowTest {
         Utils.setValueInConfig("bulk_migration_batch_size", "1000");
         Utils.setValueInConfig("log_level", "DEBUG");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
+        // Start with startProcess=false to avoid race condition with feature flag setup
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Main main = process.getProcess();
+        // Set feature flags BEFORE starting the process to avoid race condition
         setFeatureFlags(main, new EE_FEATURES[] {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 60);
 
+        // Now start the process after feature flags are set
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
@@ -223,14 +227,18 @@ public class BulkImportFlowTest {
                         Utils.setValueInConfig("bulk_migration_parallelism", "14");
                         Utils.setValueInConfig("bulk_migration_batch_size", "4000");
                         System.out.println("Started new core");
-                        process = TestingProcessManager.startIsolatedProcess(args, true);
+                        // Start with startProcess=false to avoid race condition with feature flag setup
+                        process = TestingProcessManager.startIsolatedProcess(args, false);
                         main = process.getProcess();
+                        // Set feature flags BEFORE starting the process to avoid race condition
                         setFeatureFlags(main, new EE_FEATURES[] {
                                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
                         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
                         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
                         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 60);
 
+                        // Now start the process after feature flags are set
+                        process.startProcess();
                         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
                         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
@@ -931,14 +939,18 @@ public class BulkImportFlowTest {
         //Utils.setValueInConfig("bulk_migration_batch_size", "1000");
         Utils.setValueInConfig("log_level", "DEBUG");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, true);
+        // Start with startProcess=false to avoid race condition with feature flag setup
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         Main main = process.getProcess();
+        // Set feature flags BEFORE starting the process to avoid race condition
         setFeatureFlags(main, new EE_FEATURES[] {
                 EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, intervalInSeconds);
 
+        // Now start the process after feature flags are set
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));

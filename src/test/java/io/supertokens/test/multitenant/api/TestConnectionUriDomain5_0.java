@@ -76,9 +76,11 @@ public class TestConnectionUriDomain5_0 {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.startIsolatedProcess(args);
+        // Use startProcess=false to avoid race condition with feature flag setup
+        this.process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        // Now start the process after feature flags are set
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }
@@ -378,9 +380,11 @@ public class TestConnectionUriDomain5_0 {
 
         for (int i = 0; i < valueForCreate.length; i++) {
             String[] args = {"../"};
-            this.process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            this.process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

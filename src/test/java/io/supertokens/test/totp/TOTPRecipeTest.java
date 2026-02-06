@@ -562,7 +562,6 @@ public class TOTPRecipeTest {
                     assert (usedCodes.length == 0);
 
                     usedCodes = getAllUsedCodesUtil(result.process, storage, "other-user");
-                    System.out.println("Point2 " + usedCodes.length);
                     assert (usedCodes.length == 3); // 1 for device verification and 2 for code verification
 
                     // But for other users things should still be there:
