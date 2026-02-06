@@ -478,4 +478,114 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testUpdateClientSecret() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        // Create a client with a secret
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        createClientInput.add("redirectURIs", new JsonArray());
+        createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid-secret-test";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, km.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
+
+        String originalSecret = "original-secret-123";
+        createClientInput.addProperty("clientSecret", originalSecret);
+
+        JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp.get("status").getAsString());
+        String clientId = createResp.get("clientId").getAsString();
+        assertEquals(originalSecret, createResp.get("clientSecret").getAsString());
+
+        // Update the client with a new secret
+        JsonObject updateInput = new JsonObject();
+        updateInput.addProperty("clientId", clientId);
+        updateInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        updateInput.add("redirectURIs", new JsonArray());
+        updateInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+        updateInput.addProperty("metadataXML", metadataXMLBase64);
+
+        String newSecret = "new-secret-456";
+        updateInput.addProperty("clientSecret", newSecret);
+
+        JsonObject updateResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", updateInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", updateResp.get("status").getAsString());
+        assertEquals(clientId, updateResp.get("clientId").getAsString());
+        assertEquals(newSecret, updateResp.get("clientSecret").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAddClientSecretToExistingClient() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        // Create a client WITHOUT a secret
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        createClientInput.add("redirectURIs", new JsonArray());
+        createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String idpEntityId = "https://saml.example.com/entityid-add-secret-test";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, km.certificate);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
+        // Note: NOT setting clientSecret
+
+        JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp.get("status").getAsString());
+        String clientId = createResp.get("clientId").getAsString();
+        assertFalse("Client should not have clientSecret initially", createResp.has("clientSecret"));
+
+        // Update to add a secret
+        JsonObject updateInput = new JsonObject();
+        updateInput.addProperty("clientId", clientId);
+        updateInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        updateInput.add("redirectURIs", new JsonArray());
+        updateInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+        updateInput.addProperty("metadataXML", metadataXMLBase64);
+
+        String newSecret = "added-secret-789";
+        updateInput.addProperty("clientSecret", newSecret);
+
+        JsonObject updateResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", updateInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", updateResp.get("status").getAsString());
+        assertTrue("Client should now have clientSecret", updateResp.has("clientSecret"));
+        assertEquals(newSecret, updateResp.get("clientSecret").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

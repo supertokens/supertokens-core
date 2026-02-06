@@ -95,6 +95,19 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
         return this.spCertificate;
     }
 
+    /**
+     * Returns the private key for the SP certificate.
+     * This is needed for signing SAML AuthnRequests.
+     */
+    public synchronized PrivateKey getPrivateKey()
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (this.spKeyPair == null || this.spCertificate == null || this.spCertificate.getNotAfter().before(new Date())) {
+            maybeGenerateNewCertificateAndUpdateInDb();
+        }
+
+        return this.spKeyPair.getPrivate();
+    }
+
     private void maybeGenerateNewCertificateAndUpdateInDb() throws TenantOrAppNotFoundException {
          SQLStorage storage = (SQLStorage) StorageLayer.getStorage(
                 this.appIdentifier.getAsPublicTenantIdentifier(), main);
