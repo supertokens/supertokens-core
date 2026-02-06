@@ -255,7 +255,7 @@ public class PasswordHashingTest {
         assert (config.getArgon2MemoryKb() == 87795);
         assert (config.getArgon2Parallelism() == 2);
         assert (config.getArgon2HashingPoolSize() == 1);
-        assert (config.getBcryptLogRounds() == 11);
+        assert (config.getBcryptLogRounds() == 4); // Default when testing
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -489,7 +489,7 @@ public class PasswordHashingTest {
             }
 
             hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
-            assert (hash.startsWith("$2a$11$"));
+            assert (hash.startsWith("$2a$04$"));
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
 

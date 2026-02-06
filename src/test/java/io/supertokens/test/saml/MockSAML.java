@@ -1,5 +1,7 @@
 package io.supertokens.test.saml;
 
+import io.supertokens.saml.SAMLBootstrap;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -297,6 +299,8 @@ public class MockSAML {
     }
 
     public static KeyInfo buildKeyInfoWithCert(X509Certificate cert) {
+        // Ensure OpenSAML is initialized before using it
+        SAMLBootstrap.initialize();
         KeyInfoBuilder keyInfoBuilder = new KeyInfoBuilder();
         KeyInfo keyInfo = keyInfoBuilder.buildObject();
         X509DataBuilder x509DataBuilder = new X509DataBuilder();
@@ -315,6 +319,8 @@ public class MockSAML {
     }
 
     private static <T> T build(QName qName) {
+        // Ensure OpenSAML is initialized before using it
+        SAMLBootstrap.initialize();
         return (T) Objects.requireNonNull(
                 XMLObjectProviderRegistrySupport.getBuilderFactory().getBuilder(qName)).buildObject(qName);
     }

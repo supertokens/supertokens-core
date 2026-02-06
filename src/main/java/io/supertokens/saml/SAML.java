@@ -103,6 +103,9 @@ import net.shibboleth.utilities.java.support.xml.XMLParserException;
 public class SAML {
     public static void checkForSAMLFeature(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+        // Lazily initialize OpenSAML when SAML features are first used
+        SAMLBootstrap.initialize();
+
         EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
         for (EE_FEATURES f : features) {
             if (f == EE_FEATURES.SAML) {
@@ -236,6 +239,9 @@ public class SAML {
     }
 
     public static EntityDescriptor loadIdpMetadata(String metadataXML) throws MalformedSAMLMetadataXMLException {
+        // Ensure OpenSAML is initialized (idempotent)
+        SAMLBootstrap.initialize();
+
         try {
             byte[] bytes = metadataXML.getBytes(StandardCharsets.UTF_8);
             try (InputStream inputStream = new java.io.ByteArrayInputStream(bytes)) {

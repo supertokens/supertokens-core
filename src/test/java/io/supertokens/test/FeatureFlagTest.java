@@ -434,7 +434,7 @@ public class FeatureFlagTest {
                     )
             );
 
-            System.out.println("Added tenant " + i);
+            // System.out.println("Added tenant " + i);
         }
 
         long startTime = System.currentTimeMillis();

@@ -125,6 +125,13 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-test
     testImplementation group: 'com.webauthn4j', name: 'webauthn4j-test', version: '0.28.6.RELEASE'
+
+    // PostgreSQL JDBC driver for test database isolation (used by DatabaseTestHelper)
+    // TODO: Consider refactoring to use the PostgreSQL plugin's existing database connection
+    //       logic instead of adding this driver directly to Core. This would avoid the
+    //       additional dependency but requires coordination with the plugin infrastructure.
+    // https://mvnrepository.com/artifact/org.postgresql/postgresql
+    testImplementation group: 'org.postgresql', name: 'postgresql', version: '42.7.2'
 }
 application {
     mainClass.set("io.supertokens.Main")

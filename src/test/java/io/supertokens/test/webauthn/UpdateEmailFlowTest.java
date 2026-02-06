@@ -238,8 +238,7 @@ public class UpdateEmailFlowTest {
         assertEquals("OK", updateEmailResponse.get("status").getAsString());
 
         JsonObject signInResponse = Utils.signInWithUser(process.getProcess(), users.get(0));
-        System.out.println(signInResponse);
-
+        assertEquals("OK", signInResponse.get("status").getAsString());
     }
 
     @Test

@@ -36,6 +36,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class CLIOptionsTest {
 
@@ -106,6 +107,9 @@ public class CLIOptionsTest {
 
     @Test
     public void testMultipleInstancesAtTheSameTime() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../", "port=3567"};
 
         try {

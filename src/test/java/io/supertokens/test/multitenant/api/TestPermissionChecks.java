@@ -113,9 +113,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -182,9 +187,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -254,9 +264,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -322,9 +337,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -438,9 +458,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
@@ -576,9 +601,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -654,9 +684,14 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -746,9 +781,12 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -827,6 +865,8 @@ public class TestPermissionChecks {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -887,9 +927,12 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -966,9 +1009,12 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -1077,9 +1123,12 @@ public class TestPermissionChecks {
             Utils.reset();
             String[] args = {"../"};
 
-            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            // Use startProcess=false to avoid race condition with feature flag setup
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            // Now start the process after feature flags are set
+            process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

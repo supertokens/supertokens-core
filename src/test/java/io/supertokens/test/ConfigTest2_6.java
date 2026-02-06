@@ -259,10 +259,19 @@ public class ConfigTest2_6 {
         assertEquals(5, config.getTotpMaxAttempts()); // 5
         assertEquals(900, config.getTotpRateLimitCooldownTimeSec()); // 15 minutes
 
-        assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
-                CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
-        assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
-                CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
+        // Log paths depend on whether file logging is enabled via environment variables
+        if (Utils.isFileLoggingEnabled()) {
+            assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
+                    CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
+            assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
+                    CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
+        } else {
+            // When INFO_LOG_PATH or ERROR_LOG_PATH envvars are set to "null", console logging is used
+            assertEquals("Config info log path should be null when file logging disabled",
+                    "null", config.getInfoLogPath(process.getProcess()));
+            assertEquals("Config error log path should be null when file logging disabled",
+                    "null", config.getErrorLogPath(process.getProcess()));
+        }
         assertEquals("Config access signing key interval did not match default",
                 config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis(), 7 * 24 * 60 * 60 * 1000);
 

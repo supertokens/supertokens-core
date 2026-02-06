@@ -1081,7 +1081,6 @@ public class CronjobTest {
         assertEquals(14, allTasks.size());
 
         for (CronTask task : allTasks) {
-            System.out.println(task.getClass().getName());
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());
             assertEquals(delays.get(task.getClass().getName()).intValue(), task.getInitialWaitTimeSeconds());
         }
@@ -1135,8 +1134,6 @@ public class CronjobTest {
     public void testThatBulkMigrationCronJobLoadedWhenNoEnvVarSet() throws Exception {
         String[] args = {"../"};
 
-        setEnv(Collections.emptyMap());
-
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -1152,8 +1149,6 @@ public class CronjobTest {
         assertNotNull(bulkImportCron);
         assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
 
-        setEnv(Collections.emptyMap());
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -1161,77 +1156,85 @@ public class CronjobTest {
     @Test
     public void testThatBulkMigrationCronJobLoadedWhenEnvVarSetToTrue() throws Exception {
         String[] args = {"../"};
-        setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "true"));
+        Map<String, String> originalValues = setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "true"));
+        try {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
+            Main main = process.getProcess();
+            ResourceDistributor resourceDistributor = main.getResourceDistributor();
+            ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
+            assertEquals("true", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+            assertNotNull(bulkImportCron);
+            assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        } finally {
+            restoreEnv(originalValues);
         }
-
-        Main main = process.getProcess();
-        ResourceDistributor resourceDistributor = main.getResourceDistributor();
-        ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
-        assertEquals("true", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
-        assertNotNull(bulkImportCron);
-        assertTrue(bulkImportCron instanceof ProcessBulkImportUsers);
-
-        setEnv(Collections.emptyMap());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
     public void testThatBulkMigrationCronJobNotLoadedWhenEnvVarSetToFalse() throws Exception {
         String[] args = {"../"};
-        setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "false"));
+        Map<String, String> originalValues = setEnv(Map.of("BULK_MIGRATION_CRON_ENABLED", "false"));
+        try {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
+            Main main = process.getProcess();
+            ResourceDistributor resourceDistributor = main.getResourceDistributor();
+            ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
+            assertEquals("false", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
+            assertNull(bulkImportCron);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        } finally {
+            restoreEnv(originalValues);
         }
-
-        Main main = process.getProcess();
-        ResourceDistributor resourceDistributor = main.getResourceDistributor();
-        ResourceDistributor.SingletonResource bulkImportCron = resourceDistributor.getResource(ProcessBulkImportUsers.RESOURCE_KEY);
-        assertEquals("false", System.getenv("BULK_MIGRATION_CRON_ENABLED"));
-        assertNull(bulkImportCron);
-
-        setEnv(Collections.emptyMap());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    protected static void setEnv(Map<String, String> newenv) throws Exception {
+    private static Map<String, String> getWritableEnv() {
         try {
-            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
-            theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
-            env.putAll(newenv);
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
-            theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>) theCaseInsensitiveEnvironmentField.get(null);
-            cienv.putAll(newenv);
-        } catch (NoSuchFieldException e) {
-            Class[] classes = Collections.class.getDeclaredClasses();
             Map<String, String> env = System.getenv();
-            for(Class cl : classes) {
-                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
-                    Field field = cl.getDeclaredField("m");
-                    field.setAccessible(true);
-                    Object obj = field.get(env);
-                    Map<String, String> map = (Map<String, String>) obj;
-                    map.clear();
-                    map.putAll(newenv);
-                }
+            Class<?> cl = env.getClass();
+            Field field = cl.getDeclaredField("m");
+            field.setAccessible(true);
+            return (Map<String, String>) field.get(env);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to get writable environment", e);
+        }
+    }
+
+    protected static Map<String, String> setEnv(Map<String, String> newenv) {
+        Map<String, String> originalValues = new HashMap<>();
+        Map<String, String> writableEnv = getWritableEnv();
+        for (String key : newenv.keySet()) {
+            originalValues.put(key, writableEnv.get(key));
+            writableEnv.put(key, newenv.get(key));
+        }
+        return originalValues;
+    }
+
+    protected static void restoreEnv(Map<String, String> originalValues) {
+        Map<String, String> writableEnv = getWritableEnv();
+        for (Map.Entry<String, String> entry : originalValues.entrySet()) {
+            if (entry.getValue() == null) {
+                writableEnv.remove(entry.getKey());
+            } else {
+                writableEnv.put(entry.getKey(), entry.getValue());
             }
         }
     }

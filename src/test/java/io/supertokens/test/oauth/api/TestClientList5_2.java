@@ -116,6 +116,9 @@ public class TestClientList5_2 {
         Set<String> clientIds = new HashSet<>();
         for (int i = 0; i < 100; i++) {
             JsonObject client = createClient(process.getProcess(), new JsonObject());
+            if (!client.has("clientId")) {
+                System.out.println(client);
+            }
             clientIds.add(client.get("clientId").getAsString());
         }
 
@@ -167,6 +170,9 @@ public class TestClientList5_2 {
             JsonObject clientBody = new JsonObject();
             clientBody.add("clientName", new JsonPrimitive("Hello"));
             JsonObject client = createClient(process.getProcess(), clientBody);
+            if (!client.has("clientId")) {
+                System.out.println(client);
+            }
             clientIds.add(client.get("clientId").getAsString());
         }
 

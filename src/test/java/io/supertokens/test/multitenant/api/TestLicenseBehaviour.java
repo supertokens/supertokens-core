@@ -64,7 +64,9 @@ public class TestLicenseBehaviour {
 
         String[] args = {"../"};
 
-        this.process = TestingProcessManager.startIsolatedProcess(args);
+        // Use startProcess=false to ensure process starts after any setup
+        this.process = TestingProcessManager.startIsolatedProcess(args, false);
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }
 
@@ -185,7 +187,8 @@ public class TestLicenseBehaviour {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         String[] args = {"../"};
-        this.process = TestingProcessManager.startIsolatedProcess(args);
+        // Use startProcess=false to ensure process starts after any setup
+        this.process = TestingProcessManager.startIsolatedProcess(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
