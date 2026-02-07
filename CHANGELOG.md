@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.3.3]
 
 - Catches and logs RuntimeException while initializing SAML
+- Fixes SAML request signing
 
 ## [11.3.2]
 
