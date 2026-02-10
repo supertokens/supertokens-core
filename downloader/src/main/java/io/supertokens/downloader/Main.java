@@ -75,7 +75,7 @@ public class Main {
                 .getDependencyJarLinksURLForCLI(versionFileParser.getCoreVersion(), planType, withSource, mode);
 
         // ------------
-        Logging.info("Fetching dependency locations...");
+        Logging.info("Fetching Dependency Locations...");
         String[] coreDependencyJarsLinks = HTTPRequest.getDependencyJarLinks(coreDependencyJarsGetURL);
 
         String[] pluginInterfaceDependencyJarsLinks = HTTPRequest
