@@ -143,12 +143,15 @@ public class UserMetadata {
     public static Map<String, JsonObject> getBulkUserMetadata(AppIdentifier appIdentifier, Storage storage,
                                                               @Nonnull java.util.List<String> userIds)
             throws StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
+
         UserMetadataSQLStorage umdStorage = StorageUtils.getUserMetadataStorage(storage);
 
         try {
             return umdStorage.startTransaction(con -> {
                 Map<String, JsonObject> metadataMap = umdStorage.getMultipleUsersMetadatas_Transaction(appIdentifier, con, userIds);
-                umdStorage.commitTransaction(con);
 
                 // Ensure all requested userIds are in the result, with null for missing ones
                 Map<String, JsonObject> result = new java.util.HashMap<>();
