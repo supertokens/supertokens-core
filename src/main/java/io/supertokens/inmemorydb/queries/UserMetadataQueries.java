@@ -125,7 +125,9 @@ public class UserMetadataQueries {
 
         StringBuilder placeholders = new StringBuilder();
         for (int i = 0; i < userIds.size(); i++) {
-            if (i > 0) placeholders.append(", ");
+            if (i > 0) {
+                placeholders.append(", ");
+            }
             placeholders.append("?");
         }
 
@@ -141,8 +143,8 @@ public class UserMetadataQueries {
             Map<String, JsonObject> metadataMap = new HashMap<>();
             JsonParser jp = new JsonParser();
             while (result.next()) {
-                String odurId = result.getString("user_id");
-                metadataMap.put(odurId, jp.parse(result.getString("user_metadata")).getAsJsonObject());
+                String userId = result.getString("user_id");
+                metadataMap.put(userId, jp.parse(result.getString("user_metadata")).getAsJsonObject());
             }
             return metadataMap;
         });
