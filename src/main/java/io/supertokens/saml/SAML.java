@@ -99,6 +99,7 @@ import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.saml.exceptions.SAMLRequestSigningException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
@@ -200,7 +201,7 @@ public class SAML {
     public static String createRedirectURL(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                            String clientId, String redirectURI, String state, String acsURL)
             throws StorageQueryException, InvalidClientException, TenantOrAppNotFoundException,
-            CertificateEncodingException, FeatureNotEnabledException {
+            CertificateEncodingException, FeatureNotEnabledException, SAMLRequestSigningException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
         CoreConfig config = Config.getConfig(tenantIdentifier, main);
@@ -256,7 +257,8 @@ public class SAML {
     }
 
     private static AuthnRequest buildAuthnRequest(Main main, AppIdentifier appIdentifier, String idpSsoUrl, String spEntityId, String acsUrl, boolean enableRequestSigning)
-            throws TenantOrAppNotFoundException, StorageQueryException, CertificateEncodingException {
+            throws TenantOrAppNotFoundException, StorageQueryException, CertificateEncodingException,
+            SAMLRequestSigningException {
         XMLObjectBuilderFactory builders = XMLObjectProviderRegistrySupport.getBuilderFactory();
 
         AuthnRequest authnRequest = (AuthnRequest) builders
@@ -306,18 +308,13 @@ public class SAML {
 
             authnRequest.setSignature(signature);
 
-            // Marshall the AuthnRequest to prepare for signing
+            // Marshalling builds the DOM tree on the authnRequest in-place,
+            // which Signer.signObject() requires to compute the signature.
             try {
                 XMLObjectSupport.marshall(authnRequest);
-            } catch (MarshallingException e) {
-                throw new RuntimeException("Failed to marshall AuthnRequest for signing", e);
-            }
-
-            // Perform the actual signing operation
-            try {
                 Signer.signObject(signature);
-            } catch (SignatureException e) {
-                throw new RuntimeException("Failed to sign AuthnRequest", e);
+            } catch (MarshallingException | SignatureException e) {
+                throw new SAMLRequestSigningException("Failed to sign AuthnRequest", e);
             }
         }
 

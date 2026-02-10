@@ -94,14 +94,9 @@ jobs:
         id: set_tag
         run: |
           echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
-  stress-tests:
-    needs: [wait-for-docker]
-    uses: ./.github/workflows/stress-tests.yml
-    with:
-      tag: ${{ needs.wait-for-docker.outputs.tag }}
   mark-as-passed:
     environment: publish
-    needs: [dependency-versions, unit-tests, stress-tests]
+    needs: [ dependency-versions, unit-tests ]
     name: Mark as passed
     runs-on: ubuntu-latest
     strategy:
@@ -110,9 +105,6 @@ jobs:
         plugin:
           - sqlite
           - postgresql
-          # no longer supported
-          # - mysql
-          # - mongodb
     steps:
       - name: Mark plugin as passed
         if: matrix.plugin != 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] != ''

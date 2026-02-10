@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.3]
+
+- Catches and logs RuntimeException while initializing SAML
+- Fixes SAML request signing
+
 ## [11.3.2]
 
 - Adds more tests to webauthn
