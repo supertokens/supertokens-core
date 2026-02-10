@@ -65,19 +65,8 @@ public class BulkGetUserMetadataAPI extends WebserverAPI {
             return;
         }
 
-        if (userIdsArray.size() > MAX_USER_IDS) {
-            throw new ServletException(new BadRequestException(
-                    "You can only query up to " + MAX_USER_IDS + " users at a time."));
-        }
-
-        // Extract user IDs from the JSON array
-        List<String> userIds = new ArrayList<>();
-        for (JsonElement element : userIdsArray) {
-            if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
-                throw new ServletException(new BadRequestException("userIds array must contain only strings"));
-            }
-            userIds.add(element.getAsString());
-        }
+        validateUserIdsArray(userIdsArray);
+        List<String> userIds = parseUserIds(userIdsArray);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -85,22 +74,42 @@ public class BulkGetUserMetadataAPI extends WebserverAPI {
 
             Map<String, JsonObject> metadataMap = UserMetadata.getBulkUserMetadata(appIdentifier, storage, userIds);
 
-            // Build response
-            JsonArray usersArray = new JsonArray();
-            for (String userId : userIds) {
-                JsonObject userObj = new JsonObject();
-                userObj.addProperty("userId", userId);
-                userObj.add("metadata", metadataMap.get(userId)); // null if user has no metadata
-                usersArray.add(userObj);
-            }
-
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            response.add("users", usersArray);
+            response.add("users", buildUsersResponse(userIds, metadataMap));
             super.sendJsonResponse(200, response, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
+    }
+
+    private void validateUserIdsArray(JsonArray userIdsArray) throws ServletException {
+        if (userIdsArray.size() > MAX_USER_IDS) {
+            throw new ServletException(new BadRequestException(
+                    "You can only query up to " + MAX_USER_IDS + " users at a time."));
+        }
+    }
+
+    private static List<String> parseUserIds(JsonArray userIdsArray) throws ServletException {
+        List<String> userIds = new ArrayList<>();
+        for (JsonElement element : userIdsArray) {
+            if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+                throw new ServletException(new BadRequestException("userIds array must contain only strings"));
+            }
+            userIds.add(element.getAsString());
+        }
+        return userIds;
+    }
+
+    private static JsonArray buildUsersResponse(List<String> userIds, Map<String, JsonObject> metadataMap) {
+        JsonArray usersArray = new JsonArray();
+        for (String userId : userIds) {
+            JsonObject userObj = new JsonObject();
+            userObj.addProperty("userId", userId);
+            userObj.add("metadata", metadataMap.get(userId)); // null if user has no metadata
+            usersArray.add(userObj);
+        }
+        return usersArray;
     }
 }
