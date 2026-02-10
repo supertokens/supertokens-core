@@ -2918,6 +2918,9 @@ public class Start
     @Override
     public Map<String, TOTPDevice[]> getDevicesForMultipleUsers(AppIdentifier appIdentifier, List<String> userIds)
             throws StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new HashMap<>();
+        }
         Map<String, TOTPDevice[]> result = new HashMap<>();
         for (String userId : userIds) {
             TOTPDevice[] devices = getDevices(appIdentifier, userId);

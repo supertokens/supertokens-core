@@ -565,6 +565,10 @@ public class Totp {
     public static Map<String, Boolean> getBulkDeviceStatus(AppIdentifier appIdentifier, Storage storage,
                                                            List<String> userIds)
             throws StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
         TOTPSQLStorage totpStorage = StorageUtils.getTOTPStorage(storage);
 
         Map<String, TOTPDevice[]> devicesMap = totpStorage.getDevicesForMultipleUsers(appIdentifier, userIds);
