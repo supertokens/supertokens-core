@@ -204,11 +204,9 @@ public class BulkImportFlowTest {
 
         // Phase 1: Let processing run for 10s, then kill and restart with different config
         Thread.sleep(10_000);
-        System.out.println("Killing core");
         process.kill(false);
         Utils.setValueInConfig("bulk_migration_parallelism", "14");
         Utils.setValueInConfig("bulk_migration_batch_size", "4000");
-        System.out.println("Started new core");
         process = TestingProcessManager.startIsolatedProcess(args, false);
         main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
@@ -640,6 +638,9 @@ public class BulkImportFlowTest {
 
         // bulk import all of the users
         {
+            // Clear stale BULK_IMPORT_COMPLETE events that fired before upload
+            // (the cron sees 0 NEW + 0 PROCESSING users on startup and fires the event)
+            ProcessState.getInstance(main).clear();
             JsonObject bulkUploadResponse = uploadBulkImportUsersJson(main, allUsersJson);
             assertEquals("OK", bulkUploadResponse.get("status").getAsString());
         }
