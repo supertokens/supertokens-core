@@ -421,9 +421,10 @@ public class FeatureFlagTest {
 
         for (int i = 0; i < 500; i++) {
             TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t" + i);
+            // Use forceReloadResources=false for intermediate tenants to avoid O(n^2) overhead.
+            // Only the last tenant triggers feature flag, signing key, and cronjob reload.
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, null, null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -431,7 +432,10 @@ public class FeatureFlagTest {
                             new PasswordlessConfig(true),
                             null, null,
                             new JsonObject()
-                    )
+                    ),
+                    false, // shouldPreventProtectedConfigUpdate
+                    true,  // skipThirdPartyConfigValidation
+                    i == 499 // forceReloadResources - only on last iteration
             );
         }
 
