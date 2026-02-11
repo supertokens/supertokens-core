@@ -17,6 +17,7 @@
 package io.supertokens.cronjobs.bulkimport;
 
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.config.Config;
@@ -152,6 +153,13 @@ public class ProcessBulkImportUsers extends CronTask {
         }
 
         executorService.shutdownNow();
+
+        // Signal completion for tests that wait on this event
+        long remaining = bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW)
+                + bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING);
+        if (remaining == 0) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.BULK_IMPORT_COMPLETE, null);
+        }
     }
 
     @Override
