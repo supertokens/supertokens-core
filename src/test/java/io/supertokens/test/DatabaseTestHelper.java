@@ -17,10 +17,19 @@
 
 package io.supertokens.test;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -272,5 +281,201 @@ public class DatabaseTestHelper {
      */
     public static String getPassword() {
         return PG_PASSWORD;
+    }
+
+    /**
+     * Take a snapshot of pg_stat_monitor numeric counters for a given database.
+     * Returns a map of queryid -> (column_name -> cumulative_value), aggregated across buckets.
+     * Used as the "before" baseline so that collectPgStatMonitorData can compute per-test deltas.
+     */
+    public static Map<String, Map<String, Double>> takePgStatMonitorSnapshot(String datname) {
+        Map<String, Map<String, Double>> snapshot = new HashMap<>();
+        if (datname == null || datname.isEmpty()) return snapshot;
+
+        String collectEnv = System.getenv("COLLECT_PG_STAT_MONITOR");
+        if (!"true".equalsIgnoreCase(collectEnv)) return snapshot;
+
+        String adminUrl = String.format("jdbc:postgresql://%s:%s/%s", PG_HOST, PG_PORT, PG_ADMIN_DATABASE);
+
+        try (Connection conn = DriverManager.getConnection(adminUrl, PG_USER, PG_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT * FROM pg_stat_monitor WHERE datname = ?")) {
+
+            pstmt.setString(1, datname);
+            ResultSet rs = pstmt.executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+
+            int queryidCol = findColumnIndex(meta, columnCount, "queryid");
+
+            while (rs.next()) {
+                String queryid = queryidCol > 0
+                        ? String.valueOf(rs.getObject(queryidCol)) : "row_" + rs.getRow();
+                Map<String, Double> row = snapshot.computeIfAbsent(queryid, k -> new HashMap<>());
+                for (int i = 1; i <= columnCount; i++) {
+                    Object value = rs.getObject(i);
+                    if (value instanceof Number) {
+                        row.merge(meta.getColumnName(i), ((Number) value).doubleValue(), Double::sum);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println(
+                    "[PgStatMonitor] Warning: Could not take snapshot for " + datname + ": "
+                            + e.getMessage());
+        }
+        return snapshot;
+    }
+
+    /**
+     * Collect pg_stat_monitor data for a given database and write per-test delta to a JSON file.
+     * Only runs if COLLECT_PG_STAT_MONITOR environment variable is set to "true".
+     * Connects to the "postgres" database where pg_stat_monitor extension is installed.
+     *
+     * @param beforeSnapshot snapshot taken before the test started (from takePgStatMonitorSnapshot)
+     */
+    public static void collectPgStatMonitorData(String datname, String testName,
+                                                 Map<String, Map<String, Double>> beforeSnapshot) {
+        if (datname == null || datname.isEmpty()) return;
+
+        String collectEnv = System.getenv("COLLECT_PG_STAT_MONITOR");
+        if (!"true".equalsIgnoreCase(collectEnv)) return;
+
+        if (beforeSnapshot == null) beforeSnapshot = Collections.emptyMap();
+
+        String adminUrl = String.format("jdbc:postgresql://%s:%s/%s", PG_HOST, PG_PORT, PG_ADMIN_DATABASE);
+
+        try (Connection conn = DriverManager.getConnection(adminUrl, PG_USER, PG_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT * FROM pg_stat_monitor WHERE datname = ?")) {
+
+            pstmt.setString(1, datname);
+            ResultSet rs = pstmt.executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+            int queryidCol = findColumnIndex(meta, columnCount, "queryid");
+
+            // Aggregate rows by queryid (across time buckets)
+            Map<String, Map<String, Double>> afterNumeric = new LinkedHashMap<>();
+            Map<String, Map<String, String>> afterStrings = new LinkedHashMap<>();
+
+            while (rs.next()) {
+                String queryid = queryidCol > 0
+                        ? String.valueOf(rs.getObject(queryidCol)) : "row_" + rs.getRow();
+                Map<String, Double> numRow = afterNumeric.computeIfAbsent(
+                        queryid, k -> new LinkedHashMap<>());
+                Map<String, String> strRow = afterStrings.computeIfAbsent(
+                        queryid, k -> new LinkedHashMap<>());
+                for (int i = 1; i <= columnCount; i++) {
+                    String colName = meta.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    if (value instanceof Number) {
+                        numRow.merge(colName, ((Number) value).doubleValue(), Double::sum);
+                    } else if (!strRow.containsKey(colName)) {
+                        strRow.put(colName, value != null ? value.toString() : null);
+                    }
+                }
+            }
+
+            // Build JSON with delta values
+            StringBuilder json = new StringBuilder();
+            json.append("[\n");
+            boolean firstRow = true;
+            int rowCount = 0;
+
+            for (String queryid : afterNumeric.keySet()) {
+                Map<String, Double> afterVals = afterNumeric.get(queryid);
+                Map<String, Double> beforeVals = beforeSnapshot.getOrDefault(
+                        queryid, Collections.emptyMap());
+
+                // Skip queries with no new activity
+                boolean hasActivity = false;
+                for (Map.Entry<String, Double> col : afterVals.entrySet()) {
+                    if (col.getValue() - beforeVals.getOrDefault(col.getKey(), 0.0) > 0) {
+                        hasActivity = true;
+                        break;
+                    }
+                }
+                if (!hasActivity) continue;
+
+                if (!firstRow) json.append(",\n");
+                firstRow = false;
+                rowCount++;
+
+                json.append("  {");
+                boolean firstCol = true;
+
+                // Non-numeric columns (query text, datname, etc.)
+                for (Map.Entry<String, String> col : afterStrings.getOrDefault(
+                        queryid, Collections.emptyMap()).entrySet()) {
+                    if (!firstCol) json.append(", ");
+                    firstCol = false;
+                    json.append("\"").append(escapeJsonString(col.getKey())).append("\": ");
+                    if (col.getValue() == null) {
+                        json.append("null");
+                    } else {
+                        json.append("\"").append(escapeJsonString(col.getValue())).append("\"");
+                    }
+                }
+
+                // Numeric columns as deltas
+                for (Map.Entry<String, Double> col : afterVals.entrySet()) {
+                    if (!firstCol) json.append(", ");
+                    firstCol = false;
+                    double delta = col.getValue() - beforeVals.getOrDefault(col.getKey(), 0.0);
+                    json.append("\"").append(escapeJsonString(col.getKey())).append("\": ");
+                    if (delta == Math.floor(delta) && !Double.isInfinite(delta)) {
+                        json.append((long) delta);
+                    } else {
+                        json.append(delta);
+                    }
+                }
+                json.append("}");
+            }
+            json.append("\n]");
+
+            // Write to file
+            String outputDir = System.getenv("PG_STAT_MONITOR_OUTPUT_DIR");
+            if (outputDir == null || outputDir.isEmpty()) {
+                outputDir = "pg_stat_monitor_output";
+            }
+            File dir = new File(outputDir);
+            dir.mkdirs();
+
+            String safeName = (testName != null ? testName : "unknown")
+                    .replaceAll("[^a-zA-Z0-9._-]", "_");
+            String filename = datname + "_" + safeName + "_" + System.currentTimeMillis() + ".json";
+            File outputFile = new File(dir, filename);
+            try (FileWriter fw = new FileWriter(outputFile)) {
+                fw.write(json.toString());
+            }
+
+            System.out.println(
+                    "[PgStatMonitor] Collected " + rowCount + " query stats for " + datname
+                            + " (" + testName + ") -> " + outputFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            System.err.println(
+                    "[PgStatMonitor] Warning: Could not collect pg_stat_monitor data for " + datname
+                            + ": " + e.getMessage());
+        }
+    }
+
+    private static int findColumnIndex(ResultSetMetaData meta, int columnCount, String name)
+            throws SQLException {
+        for (int i = 1; i <= columnCount; i++) {
+            if (name.equals(meta.getColumnName(i))) return i;
+        }
+        return -1;
+    }
+
+    private static String escapeJsonString(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

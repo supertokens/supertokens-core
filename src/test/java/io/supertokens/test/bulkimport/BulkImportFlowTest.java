@@ -106,6 +106,7 @@ public class BulkImportFlowTest {
         // Note2: the successfully processed users get deleted from the bulk_import_users table
         {
             long count = NUMBER_OF_USERS_TO_UPLOAD;
+            long pollTimeoutMs = 300_000; // 5 minutes
             while(true) {
                 try {
                     JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
@@ -129,6 +130,9 @@ public class BulkImportFlowTest {
                     } else {
                         throw e;
                     }
+                }
+                if (System.currentTimeMillis() - processingStarted > pollTimeoutMs) {
+                    fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
                 }
                 Thread.sleep(1000);
             }
@@ -204,6 +208,7 @@ public class BulkImportFlowTest {
         // Note2: the successfully processed users get deleted from the bulk_import_users table
         {
             long count = NUMBER_OF_USERS_TO_UPLOAD;
+            long pollTimeoutMs = 300_000; // 5 minutes
             while(true) {
                 try {
                     JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
@@ -251,6 +256,9 @@ public class BulkImportFlowTest {
                         throw e;
                     }
                 }
+                if (System.currentTimeMillis() - processingStarted > pollTimeoutMs) {
+                    fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
+                }
                 Thread.sleep(1000);
             }
         }
@@ -296,6 +304,8 @@ public class BulkImportFlowTest {
 
         long count = NUMBER_OF_USERS_TO_UPLOAD;
         int failedUsersNumber = 0;
+        long pollStart = System.currentTimeMillis();
+        long pollTimeoutMs = 120_000; // 2 minutes
         while (true) {
             response = loadBulkImportUsersCountWithStatus(main, null);
             assertEquals("OK", response.get("status").getAsString());
@@ -310,6 +320,9 @@ public class BulkImportFlowTest {
             count = newUsersNumber + processingUsersNumber;
             if(count == 0) {
                 break;
+            }
+            if (System.currentTimeMillis() - pollStart > pollTimeoutMs) {
+                fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
             }
             Thread.sleep(5000); // 5 seconds
         }
@@ -358,6 +371,8 @@ public class BulkImportFlowTest {
 
         long count = NUMBER_OF_USERS_TO_UPLOAD;
         int failedUsersNumber = 0;
+        long pollStart = System.currentTimeMillis();
+        long pollTimeoutMs = 120_000; // 2 minutes
         while (true) {
             response = loadBulkImportUsersCountWithStatus(main, null);
             assertEquals("OK", response.get("status").getAsString());
@@ -372,6 +387,9 @@ public class BulkImportFlowTest {
             count = newUsersNumber + processingUsersNumber;
             if(count == 0) {
                 break;
+            }
+            if (System.currentTimeMillis() - pollStart > pollTimeoutMs) {
+                fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
             }
             Thread.sleep(5000); // 5 seconds
         }
@@ -526,6 +544,8 @@ public class BulkImportFlowTest {
 
         long count = NUMBER_OF_USERS_TO_UPLOAD;
         int failedUsersNumber = 0;
+        long pollStart = System.currentTimeMillis();
+        long pollTimeoutMs = 120_000; // 2 minutes
         while (true) {
             response = loadBulkImportUsersCountWithStatus(main, null);
             assertEquals("OK", response.get("status").getAsString());
@@ -537,6 +557,9 @@ public class BulkImportFlowTest {
             count = newUsersNumber + processingUsersNumber;
             if(count == 0) {
                 break;
+            }
+            if (System.currentTimeMillis() - pollStart > pollTimeoutMs) {
+                fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
             }
             Thread.sleep(5000);
         }
@@ -586,6 +609,8 @@ public class BulkImportFlowTest {
         // Note2: the successfully processed users get deleted from the bulk_import_users table
 
         long count = NUMBER_OF_USERS_TO_UPLOAD;
+        long pollStart = System.currentTimeMillis();
+        long pollTimeoutMs = 120_000; // 2 minutes
         while (true) {
             response = loadBulkImportUsersCountWithStatus(main, null);
             assertEquals("OK", response.get("status").getAsString());
@@ -597,6 +622,9 @@ public class BulkImportFlowTest {
             count = newUsersNumber + processingUsersNumber;
             if(count == 0) {
                 break;
+            }
+            if (System.currentTimeMillis() - pollStart > pollTimeoutMs) {
+                fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
             }
             Thread.sleep(5000); // 5 seconds
         }
@@ -651,7 +679,9 @@ public class BulkImportFlowTest {
         // Note2: the successfully processed users get deleted from the bulk_import_users table
         {
             long count = NUMBER_OF_USERS_TO_UPLOAD;
-            while(count != 0) {
+            long pollStart = System.currentTimeMillis();
+            long pollTimeoutMs = 300_000; // 5 minutes
+            while(true) {
                 JsonObject response = loadBulkImportUsersCountWithStatus(main, null);
                 assertEquals("OK", response.get("status").getAsString());
                 int newUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
@@ -659,7 +689,13 @@ public class BulkImportFlowTest {
 
                 count = newUsersNumber + processingUsersNumber;
 
-                Thread.sleep(60000); // one minute
+                if (count == 0) {
+                    break;
+                }
+                if (System.currentTimeMillis() - pollStart > pollTimeoutMs) {
+                    fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s with " + count + " users remaining");
+                }
+                Thread.sleep(5000); // 5 seconds
             }
         }
 
@@ -926,7 +962,7 @@ public class BulkImportFlowTest {
 
     @NotNull
     private Main startCronProcess(String parallelism) throws IOException, InterruptedException, TenantOrAppNotFoundException {
-        return startCronProcess(parallelism, 5 * 60);
+        return startCronProcess(parallelism, 10);
     }
 
 

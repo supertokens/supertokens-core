@@ -262,10 +262,12 @@ public class LoggingTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        // Use startProcess=false to avoid race condition with feature flag setup
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         try {

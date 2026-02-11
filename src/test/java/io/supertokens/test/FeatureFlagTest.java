@@ -433,16 +433,14 @@ public class FeatureFlagTest {
                             new JsonObject()
                     )
             );
-
-            // System.out.println("Added tenant " + i);
         }
 
         long startTime = System.currentTimeMillis();
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
                 null, 5000, 5000, null, WebserverAPI.getLatestCDIVersion().get(), "");
-
         long timeTaken = System.currentTimeMillis() - startTime;
+
         assertTrue(timeTaken < 2500);
         Assert.assertEquals("OK", response.get("status").getAsString());
 

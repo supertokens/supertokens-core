@@ -46,6 +46,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -75,12 +76,11 @@ public abstract class Utils extends Mockito {
             Process process = pb.start();
             process.waitFor();
 
-            // remove webserver-temp folders created by tomcat
-            final File webserverTemp = new File(installDir + "webserver-temp");
-            try {
-                FileUtils.deleteDirectory(webserverTemp);
-            } catch (Exception ignored) {
-            }
+            // Note: We don't delete webserver-temp here because:
+            // 1. Each Webserver creates its own UUID subdirectory (webserver-temp/UUID/)
+            // 2. Each Webserver cleans up its own subdirectory in stop()
+            // 3. Deleting the entire webserver-temp folder causes cross-worker conflicts
+            //    when tests run in parallel (one worker's cleanup deletes another's temp dir)
 
             // remove .started folders created by processes
             final File dotStartedFolder = new File(installDir + startedDir);
@@ -218,9 +218,26 @@ public abstract class Utils extends Mockito {
 
     public static TestRule getOnFailure() {
         return new TestWatcher() {
+            private Map<String, Map<String, Double>> pgStatBefore;
+
+            @Override
+            protected void starting(Description description) {
+                pgStatBefore = DatabaseTestHelper.takePgStatMonitorSnapshot(
+                        DatabaseTestHelper.getCurrentTestDatabase());
+            }
+
             @Override
             protected void failed(Throwable e, Description description) {
-                System.out.println(byteArrayOutputStream.toString(StandardCharsets.UTF_8));
+                if (byteArrayOutputStream != null) {
+                    System.out.println(byteArrayOutputStream.toString(StandardCharsets.UTF_8));
+                }
+            }
+
+            @Override
+            protected void finished(Description description) {
+                String testName = description.getClassName() + "." + description.getMethodName();
+                DatabaseTestHelper.collectPgStatMonitorData(
+                        DatabaseTestHelper.getCurrentTestDatabase(), testName, pgStatBefore);
             }
         };
     }

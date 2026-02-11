@@ -434,7 +434,12 @@ public class Main {
         // Do not kill for now
          assertIsTesting();
          wakeUpMainThreadToShutdown();
-         mainThread.join();
+         mainThread.join(60_000); // 60s timeout to prevent infinite hang
+         if (mainThread.isAlive()) {
+             System.err.println("[TEST] WARNING: Main thread did not shut down within 60s, interrupting...");
+             mainThread.interrupt();
+             mainThread.join(5_000); // Give it 5 more seconds after interrupt
+         }
     }
 
     // must not throw any error

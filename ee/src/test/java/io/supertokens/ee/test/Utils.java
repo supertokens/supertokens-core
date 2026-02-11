@@ -78,6 +78,23 @@ public abstract class Utils extends Mockito {
             // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
             commentConfigValue("disable_telemetry");
 
+            // Set PostgreSQL host and port from environment variables (for Docker test environments)
+            String pgHost = System.getenv("TEST_PG_HOST");
+            if (pgHost == null || pgHost.isEmpty()) {
+                pgHost = System.getProperty("TEST_PG_HOST");
+            }
+            if (pgHost != null && !pgHost.isEmpty()) {
+                setValueInConfig("postgresql_host", "\"" + pgHost + "\"");
+            }
+
+            String pgPort = System.getenv("TEST_PG_PORT");
+            if (pgPort == null || pgPort.isEmpty()) {
+                pgPort = System.getProperty("TEST_PG_PORT");
+            }
+            if (pgPort != null && !pgPort.isEmpty()) {
+                setValueInConfig("postgresql_port", pgPort);
+            }
+
             TestingProcessManager.killAll();
             TestingProcessManager.deleteAllInformation();
             TestingProcessManager.killAll();
