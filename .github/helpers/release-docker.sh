@@ -34,10 +34,10 @@ done
 # Create and push manifest for multi-arch image
 echo "Creating and pushing multi-arch manifest for $TARGET_IMAGE..."
 
-errormessage=$( docker manifest create "$TARGET_IMAGE" "${TEMP_IMAGES[@]}" )
+errormessage=$( docker manifest create "$TARGET_IMAGE" "${TEMP_IMAGES[@]}" 2>&1 )
 echo "ErrorMessage: $errormessage"
 echo "✅ Created manifest for $TARGET_IMAGE..."
 
-errormessage=$( docker manifest push "$TARGET_IMAGE" )
+errormessage=$( docker manifest push "$TARGET_IMAGE" 2>&1 )
 echo "ErrorMessage: $errormessage"
 echo "✅ Multi-arch image pushed as $TARGET_IMAGE"
