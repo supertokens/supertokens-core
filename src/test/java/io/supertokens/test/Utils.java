@@ -55,12 +55,20 @@ public abstract class Utils extends Mockito {
 
     private static ByteArrayOutputStream byteArrayOutputStream;
 
+    public static String getInstallDir() {
+        String dir = System.getenv("INSTALL_DIR");
+        if (dir == null || dir.isEmpty()) {
+            return "../";
+        }
+        return dir.endsWith("/") ? dir : dir + "/";
+    }
+
     public static void afterTesting() {
         TestingProcessManager.killAllIsolatedProcesses();
 
         String startedDir = ".started" + System.getProperty("org.gradle.test.worker", "");
 
-        String installDir = "../";
+        String installDir = getInstallDir();
         try {
             // Drop the test database (if one was created for this test)
             try {
@@ -108,7 +116,7 @@ public abstract class Utils extends Mockito {
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
         HttpRequestForTesting.disableAddingAppId = false;
-        String installDir = "../";
+        String installDir = getInstallDir();
         CoreConfig.setDisableOAuthValidationForTest(false);
         ResourceDistributor.setAppForTesting(TenantIdentifier.BASE_TENANT);
         PasswordHashing.bypassHashCachingInTesting = false;
@@ -181,14 +189,15 @@ public abstract class Utils extends Mockito {
         StringBuilder originalFileContent = new StringBuilder();
         String workerId = System.getProperty("org.gradle.test.worker", "");
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("../config" + workerId + ".yaml"))) {
+        String configPath = getInstallDir() + "config" + workerId + ".yaml";
+        try (BufferedReader reader = new BufferedReader(new FileReader(configPath))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../config" + workerId + ".yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(configPath))) {
                 writer.write(modifiedFileContent);
             }
         }
@@ -203,14 +212,15 @@ public abstract class Utils extends Mockito {
         String newStr = "\n" + key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();
         String workerId = System.getProperty("org.gradle.test.worker", "");
-        try (BufferedReader reader = new BufferedReader(new FileReader("../config" + workerId + ".yaml"))) {
+        String configPath = getInstallDir() + "config" + workerId + ".yaml";
+        try (BufferedReader reader = new BufferedReader(new FileReader(configPath))) {
             String currentReadingLine = reader.readLine();
             while (currentReadingLine != null) {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
             String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../config" + workerId + ".yaml"))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(configPath))) {
                 writer.write(modifiedFileContent);
             }
         }

@@ -46,6 +46,12 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private CLIOptions(String[] args) {
         checkIfArgsIsCorrect(args);
         String installationPath = args[0];
+        if (Main.isTesting) {
+            String envDir = System.getenv("INSTALL_DIR");
+            if (envDir != null && !envDir.isEmpty()) {
+                installationPath = envDir;
+            }
+        }
         String configFilePathTemp = null;
         String tempDirLocationPath = null;
         Integer portTemp = null;

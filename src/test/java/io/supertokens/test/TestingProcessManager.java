@@ -487,7 +487,7 @@ public class TestingProcessManager {
      * Utility function to wrap tests with, as they require TestingProcess
      */
     public static void withSharedProcess(ProcessConsumer consumer) throws Exception {
-        String[] args = {"../"};
+        String[] args = {Utils.getInstallDir()};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
