@@ -16,8 +16,19 @@
 
 package io.supertokens.multitenancy;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.jetbrains.annotations.TestOnly;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -26,16 +37,22 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullConnectionUriDomainException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullTenantException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -53,10 +70,6 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
-import org.jetbrains.annotations.TestOnly;
-
-import java.io.IOException;
-import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
@@ -412,123 +425,23 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(
                         tenantIdentifier.toAppIdentifier(), con, userId);
 
-                if (userToAssociate != null && userToAssociate.isPrimaryUser) {
-                    Set<String> emails = new HashSet<>();
-                    Set<String> phoneNumbers = new HashSet<>();
-                    Set<LoginMethod.ThirdParty> thirdParties = new HashSet<>();
-
-                    // Loop through all the emails, phoneNumbers and thirdPartyInfos and check for conflicts
-                    for (LoginMethod lM : userToAssociate.loginMethods) {
-                        if (lM.email != null) {
-                            emails.add(lM.email);
-                        }
-                        if (lM.phoneNumber != null) {
-                            phoneNumbers.add(lM.phoneNumber);
-                        }
-                        if (lM.thirdParty != null) {
-                            thirdParties.add(lM.thirdParty);
-                        }
-                    }
-
-                    for (String email : emails) {
-                        AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                tenantIdentifier.toAppIdentifier(), con, email);
-                        for (AuthRecipeUserInfo userWithSameEmail : usersWithSameEmail) {
-                            if (userWithSameEmail.getSupertokensUserId()
-                                    .equals(userToAssociate.getSupertokensUserId())) {
-                                continue; // it's the same user, no need to check anything
-                            }
-                            if (userWithSameEmail.isPrimaryUser && userWithSameEmail.tenantIds.contains(tenantId) &&
-                                    !userWithSameEmail.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : userWithSameEmail.loginMethods) {
-                                    if (lm1.tenantIds.contains(tenantId)) {
-                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) && email.equals(lm1.email) &&
-                                                    lm1.email.equals(lm2.email)) {
-                                                throw new StorageTransactionLogicException(
-                                                        new DuplicateEmailException());
-                                            }
-                                        }
-                                    }
-                                }
-                                throw new StorageTransactionLogicException(
-                                        new AnotherPrimaryUserWithEmailAlreadyExistsException(
-                                                userWithSameEmail.getSupertokensUserId()));
-                            }
-                        }
-                    }
-
-                    for (String phoneNumber : phoneNumbers) {
-                        AuthRecipeUserInfo[] usersWithSamePhoneNumber =
-                                authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(
-                                        tenantIdentifier.toAppIdentifier(), con, phoneNumber);
-                        for (AuthRecipeUserInfo userWithSamePhoneNumber : usersWithSamePhoneNumber) {
-                            if (userWithSamePhoneNumber.getSupertokensUserId()
-                                    .equals(userToAssociate.getSupertokensUserId())) {
-                                continue; // it's the same user, no need to check anything
-                            }
-                            if (userWithSamePhoneNumber.tenantIds.contains(tenantId) &&
-                                    !userWithSamePhoneNumber.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : userWithSamePhoneNumber.loginMethods) {
-                                    if (lm1.tenantIds.contains(tenantId)) {
-                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) &&
-                                                    phoneNumber.equals(lm1.phoneNumber) &&
-                                                    lm1.phoneNumber.equals(lm2.phoneNumber)) {
-                                                throw new StorageTransactionLogicException(
-                                                        new DuplicatePhoneNumberException());
-                                            }
-                                        }
-                                    }
-                                }
-                                throw new StorageTransactionLogicException(
-                                        new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(
-                                                userWithSamePhoneNumber.getSupertokensUserId()));
-                            }
-                        }
-                    }
-
-                    for (LoginMethod.ThirdParty tp : thirdParties) {
-                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo =
-                                authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
-                                        tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
-                        for (AuthRecipeUserInfo userWithSameThirdPartyInfo : usersWithSameThirdPartyInfo) {
-                            if (userWithSameThirdPartyInfo.getSupertokensUserId()
-                                    .equals(userToAssociate.getSupertokensUserId())) {
-                                continue; // it's the same user, no need to check anything
-                            }
-                            if (userWithSameThirdPartyInfo.tenantIds.contains(tenantId) &&
-                                    !userWithSameThirdPartyInfo.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : userWithSameThirdPartyInfo.loginMethods) {
-                                    if (lm1.tenantIds.contains(tenantId)) {
-                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) && tp.equals(lm1.thirdParty) &&
-                                                    lm1.thirdParty.equals(lm2.thirdParty)) {
-                                                throw new StorageTransactionLogicException(
-                                                        new DuplicateThirdPartyUserException());
-                                            }
-                                        }
-                                    }
-                                }
-
-                                throw new StorageTransactionLogicException(
-                                        new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(
-                                                userWithSameThirdPartyInfo.getSupertokensUserId()));
-                            }
-                        }
-                    }
-                }
-
-                // userToAssociate may be null if the user is not associated to any tenants, we can still try and
-                // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
-                // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                 try {
+                    if (userToAssociate != null && userToAssociate.isPrimaryUser) {
+                        authRecipeStorage.addTenantIdToPrimaryUser_Transaction(tenantIdentifier, con, userToAssociate.getSupertokensUserId());
+                    }
+
+                    // userToAssociate may be null if the user is not associated to any tenants, we can still try and
+                    // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
+                    // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
                             con, userId);
                     authRecipeStorage.commitTransaction(con);
                     return result;
                 } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
-                         DuplicateThirdPartyUserException | DuplicateEmailException e) {
+                         DuplicateThirdPartyUserException | DuplicateEmailException |
+                         AnotherPrimaryUserWithPhoneNumberAlreadyExistsException |
+                         AnotherPrimaryUserWithEmailAlreadyExistsException |
+                         AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 }
             });
