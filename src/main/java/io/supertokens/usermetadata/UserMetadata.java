@@ -135,6 +135,36 @@ public class UserMetadata {
         return metadata;
     }
 
+    /**
+     * Get metadata for multiple users in a single query.
+     * Returns a map of userId to their metadata.
+     * Users without metadata will have null as their value.
+     */
+    public static Map<String, JsonObject> getBulkUserMetadata(AppIdentifier appIdentifier, Storage storage,
+                                                              @Nonnull java.util.List<String> userIds)
+            throws StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
+
+        UserMetadataSQLStorage umdStorage = StorageUtils.getUserMetadataStorage(storage);
+
+        try {
+            return umdStorage.startTransaction(con -> {
+                Map<String, JsonObject> metadataMap = umdStorage.getMultipleUsersMetadatas_Transaction(appIdentifier, con, userIds);
+
+                // Ensure all requested userIds are in the result, with null for missing ones
+                Map<String, JsonObject> result = new java.util.HashMap<>();
+                for (String userId : userIds) {
+                    result.put(userId, metadataMap.get(userId)); // null if not found
+                }
+                return result;
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     @TestOnly
     public static void deleteUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);

@@ -183,6 +183,132 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
+    /**
+     * Fast path for addNewOrUpdateAppOrTenant: instead of doing the full 2 × getNormalisedConfigsForAllTenants
+     * diff, it only normalizes configs for the affected tenants (the changed tenant + its children
+     * in the inheritance hierarchy). Detects actual changes to avoid replacing resources when
+     * configs haven't changed (preserving object identity for tests that check assertEquals).
+     */
+    public List<TenantIdentifier> refreshAfterKnownTenantChange(TenantIdentifier changedTenant) {
+        try {
+            return main.getResourceDistributor().withResourceDistributorLock(() -> {
+                try {
+                    TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
+                    TenantConfig[] filteredTenantsFromDb = this.getFilteredTenantConfigs(tenantsFromDb);
+
+                    boolean sameNumberOfTenants =
+                            filteredTenantsFromDb.length == this.tenantConfigs.length;
+
+                    // Build set of existing tenant IDs for new-tenant detection
+                    Set<TenantIdentifier> existingTenantIds = new HashSet<>();
+                    for (TenantConfig tc : this.tenantConfigs) {
+                        existingTenantIds.add(tc.tenantIdentifier);
+                    }
+
+                    // Compute the affected set: the changed tenant + children that inherit from it
+                    List<TenantIdentifier> affectedTenants = new ArrayList<>();
+                    affectedTenants.add(changedTenant);
+
+                    // If the changed tenant is a parent (app or CUD level), child tenants
+                    // inherit its config and may also need reloading
+                    if (changedTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                        for (TenantConfig tc : filteredTenantsFromDb) {
+                            TenantIdentifier ti = tc.tenantIdentifier;
+                            if (ti.equals(changedTenant)) continue;
+
+                            boolean isChild;
+                            if (changedTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                                // CUD level parent: affects all tenants in this CUD
+                                isChild = ti.getConnectionUriDomain()
+                                        .equals(changedTenant.getConnectionUriDomain());
+                            } else {
+                                // App level parent: affects all tenants in this app
+                                isChild = ti.getConnectionUriDomain()
+                                        .equals(changedTenant.getConnectionUriDomain())
+                                        && ti.getAppId().equals(changedTenant.getAppId());
+                            }
+                            if (isChild) {
+                                affectedTenants.add(ti);
+                            }
+                        }
+                    }
+
+                    // For each affected tenant that already exists, check if its normalized
+                    // config actually changed compared to the in-memory state.
+                    // New tenants are NOT added to tenantsThatChanged — they are handled by
+                    // the full loadConfig + loadStorageLayer calls below (which create resources
+                    // for all tenants in tenantConfigs). This matches the behavior of the
+                    // original refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged.
+                    JsonObject baseConfig = Config.getBaseConfigAsJsonObject(main);
+                    List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
+                    for (TenantIdentifier affected : affectedTenants) {
+                        if (existingTenantIds.contains(affected)) {
+                            JsonObject normFromDb = Config.getNormalisedConfigForTenant(
+                                    affected, filteredTenantsFromDb, baseConfig);
+                            JsonObject normFromMemory = Config.getNormalisedConfigForTenant(
+                                    affected, this.tenantConfigs, baseConfig);
+                            if (!normFromDb.equals(normFromMemory)) {
+                                tenantsThatChanged.add(affected);
+                            }
+                        }
+                        // New tenants (not in existingTenantIds) are skipped here;
+                        // sameNumberOfTenants will be false, preventing early return.
+                    }
+
+                    this.dangerous_allCUDsFromDb.clear();
+                    for (TenantConfig tenant : tenantsFromDb) {
+                        this.dangerous_allCUDsFromDb.add(tenant.tenantIdentifier.getConnectionUriDomain());
+                    }
+                    this.tenantConfigs = filteredTenantsFromDb;
+
+                    if (tenantsThatChanged.isEmpty() && sameNumberOfTenants) {
+                        return tenantsThatChanged;
+                    }
+
+                    ProcessState.getInstance(main)
+                            .addState(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB, null);
+
+                    // Use the same full loading as the original code path.
+                    // Config + storage are loaded here; the finally block only needs
+                    // to load feature flags, signing keys, and refresh cronjobs.
+                    loadConfig(tenantsThatChanged);
+                    loadStorageLayer();
+
+                    return tenantsThatChanged;
+                } catch (Exception e) {
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                    return new ArrayList<>();
+                }
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Called from addNewOrUpdateAppOrTenant's finally block (when forceReloadResources=true).
+     * Config + storage are already loaded by refreshAfterKnownTenantChange, so this only
+     * loads feature flags, signing keys, and refreshes cronjobs for the changed tenants.
+     */
+    public void incrementalReloadResources(List<TenantIdentifier> tenantsThatChanged) {
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                try {
+                    // Config and storage are already loaded by refreshAfterKnownTenantChange.
+                    // Only load the remaining resources here.
+                    loadFeatureFlag(tenantsThatChanged);
+                    loadSigningKeys(tenantsThatChanged);
+                    refreshCronjobs();
+                } catch (Exception e) {
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                }
+                return null;
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public void forceReloadAllResources(List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
@@ -206,8 +332,18 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
     }
 
+    public void loadConfigIncremental(List<TenantIdentifier> tenantsThatChanged)
+            throws IOException, InvalidConfigException {
+        Config.loadConfigForChangedTenants(main, this.tenantConfigs, tenantsThatChanged);
+    }
+
     public void loadStorageLayer() throws IOException, InvalidConfigException {
         StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
+    }
+
+    public void loadStorageLayerIncremental(List<TenantIdentifier> tenantsThatChanged)
+            throws IOException, InvalidConfigException {
+        StorageLayer.loadStorageForChangedTenants(main, this.tenantConfigs, tenantsThatChanged);
     }
 
     public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {

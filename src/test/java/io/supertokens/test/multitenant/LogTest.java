@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class LogTest {
     @Rule
@@ -61,6 +62,10 @@ public class LogTest {
 
     @Test
     public void testLogThatEachLineIsUniqueOnStartup() throws Exception {
+        // Skip this test if file logging is disabled - when logging goes to console,
+        // the output contains different/additional lines which changes the expected behavior
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../"};
         Utils.setValueInConfig("log_level", "DEBUG");
 

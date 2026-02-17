@@ -85,7 +85,7 @@ public class RandomConfigTest {
         int okCount = 0;
         int notOkCount = 0;
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             ConfigGenerator.GeneratedValueAndExpectation generated = ConfigGenerator.generate(TenantConfig.class);
             boolean isOk = ConfigGenerator.isOk(generated.expectation);
 

@@ -91,7 +91,6 @@ public class ConfigMapperTest {
         {
             JsonObject config = new JsonObject();
             config.addProperty("float_property", 100);
-            System.out.println(ConfigMapper.mapConfig(config, DummyConfig.class).float_property);
             assertEquals((float) 100, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
         }
         {

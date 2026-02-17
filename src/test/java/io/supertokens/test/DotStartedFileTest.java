@@ -51,19 +51,20 @@ public class DotStartedFileTest {
 
     @Test
     public void fiveProcessInParallelDotStartedFileTest() throws Exception {
-        TestingProcessManager.TestingProcess process1 = TestingProcessManager.startIsolatedProcess(new String[]{"../", "port=7080"}, true);
+        // Use dynamic port allocation to avoid conflicts during parallel test execution
+        TestingProcessManager.TestingProcess process1 = TestingProcessManager.startIsolatedProcess(new String[]{"../"}, true);
         assertNotNull(process1.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process2 = TestingProcessManager.startIsolatedProcess(new String[]{"../", "port=7081"}, true);
+        TestingProcessManager.TestingProcess process2 = TestingProcessManager.startIsolatedProcess(new String[]{"../"}, true);
         assertNotNull(process2.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process3 = TestingProcessManager.startIsolatedProcess(new String[]{"../", "port=7082"}, true);
+        TestingProcessManager.TestingProcess process3 = TestingProcessManager.startIsolatedProcess(new String[]{"../"}, true);
         assertNotNull(process3.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process4 = TestingProcessManager.startIsolatedProcess(new String[]{"../", "port=7083"}, true);
+        TestingProcessManager.TestingProcess process4 = TestingProcessManager.startIsolatedProcess(new String[]{"../"}, true);
         assertNotNull(process4.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TestingProcessManager.TestingProcess process5 = TestingProcessManager.startIsolatedProcess(new String[]{"../", "port=7084"}, true);
+        TestingProcessManager.TestingProcess process5 = TestingProcessManager.startIsolatedProcess(new String[]{"../"}, true);
         assertNotNull(process5.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         File[] flist = new File("../.started" + System.getProperty("org.gradle.test.worker", "")).listFiles();

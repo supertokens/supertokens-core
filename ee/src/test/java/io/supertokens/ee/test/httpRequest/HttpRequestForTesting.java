@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Map;
 
 public class HttpRequestForTesting {
@@ -121,7 +122,9 @@ public class HttpRequestForTesting {
         URL obj = getURL(main, requestID, url);
         InputStream inputStream = null;
         HttpURLConnection con = null;
+        // String reqInfo = method + " " + url + " (requestID=" + requestID + ")";
         try {
+            // System.out.println("[" + Instant.now() + "] Before connecting: " + reqInfo);
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
             con.setConnectTimeout(connectionTimeoutMS);
@@ -148,7 +151,9 @@ public class HttpRequestForTesting {
                 }
             }
 
+            // System.out.println("[" + Instant.now() + "] Before getting status code: " + reqInfo);
             int responseCode = con.getResponseCode();
+            // System.out.println("[" + Instant.now() + "] After getting status code (" + responseCode + "): " + reqInfo);
 
             if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
                 inputStream = con.getInputStream();
@@ -172,6 +177,7 @@ public class HttpRequestForTesting {
             }
             throw new HttpResponseException(responseCode, response.toString());
         } finally {
+            // System.out.println("[" + Instant.now() + "] Finally block: " + reqInfo);
             if (inputStream != null) {
                 inputStream.close();
             }

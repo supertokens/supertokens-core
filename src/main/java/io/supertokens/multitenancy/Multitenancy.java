@@ -179,6 +179,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 }
             }
 
+            // Build the tenant list including the target (for config inheritance resolution)
             TenantConfig[] existingTenants = getAllTenants(main);
             boolean updated = false;
             for (int i = 0; i < existingTenants.length; i++) {
@@ -197,10 +198,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 existingTenants[existingTenants.length - 1] = targetTenantConfig;
             }
 
-            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
-                    existingTenants,
+            // Validate only the target tenant instead of re-normalizing and re-validating all tenants.
+            // Existing tenants were already validated when they were added.
+            JsonObject normalisedConfig = Config.getNormalisedConfigForTenant(
+                    targetTenantConfig.tenantIdentifier, existingTenants,
                     Config.getBaseConfigAsJsonObject(main));
-            Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
+            Config.assertSingleTenantConfigIsValid(main, targetTenantConfig.tenantIdentifier,
+                    normalisedConfig, targetTenantConfig);
         }
 
         // validate third party config
@@ -256,13 +260,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         try {
             StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);
             creationInSharedDbSucceeded = true;
-            // we do not want to refresh the resources for this new tenant here cause
-            // it will cause creation of signing keys in the key_value table, which depends on
-            // the tenant being there in the tenants table. But that insertion is done in the addTenantIdInUserPool
-            // function below. So in order to actually refresh the resources, we have a finally block here which
-            // calls the forceReloadAllResources function.
+            // Use the fast refresh path that skips the expensive normalized config diff.
+            // We know exactly which tenant changed — it's the one we just created.
+            // This incrementally loads config + storage for just the new tenant.
             tenantsThatChanged = MultitenancyHelper.getInstance(main)
-                    .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
+                    .refreshAfterKnownTenantChange(newTenant.tenantIdentifier);
             try {
                 ((MultitenancyStorage) StorageLayer.getStorage(newTenant.tenantIdentifier, main))
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
@@ -276,8 +278,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!creationInSharedDbSucceeded) {
                 try {
                     StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
+                    // Use the fast refresh path for the update case as well.
                     tenantsThatChanged = MultitenancyHelper.getInstance(main)
-                            .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
+                            .refreshAfterKnownTenantChange(newTenant.tenantIdentifier);
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
@@ -312,7 +315,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
         } finally {
             if (forceReloadResources) {
-                MultitenancyHelper.getInstance(main).forceReloadAllResources(tenantsThatChanged);
+                // Config + storage are already loaded by refreshAfterKnownTenantChange.
+                // Only load the remaining resources here (feature flags, signing keys, cronjobs).
+                MultitenancyHelper.getInstance(main).incrementalReloadResources(tenantsThatChanged);
             }
         }
     }

@@ -113,7 +113,10 @@ public class TestLoginRequest5_2 {
         JsonObject clientInResponse = loginRequestResponse.getAsJsonObject("client");
         verifyClientStructure(clientInResponse);
 
-        assertTrue(loginRequestResponse.get("requestUrl").getAsString().startsWith("http://localhost:4444/oauth2/auth?"));
+        String oauthHost = System.getProperty("ST_OAUTH_PROVIDER_SERVICE_HOST", System.getenv().getOrDefault("TEST_OAUTH_HOST", "localhost"));
+        String oauthPort = System.getProperty("ST_OAUTH_PROVIDER_SERVICE_PORT", System.getenv().getOrDefault("TEST_OAUTH_PUBLIC_PORT", "4444"));
+        String expectedRequestUrlPrefix = "http://" + oauthHost + ":" + oauthPort + "/oauth2/auth?";
+        assertTrue(loginRequestResponse.get("requestUrl").getAsString().startsWith(expectedRequestUrlPrefix));
         assertTrue(loginRequestResponse.has("sessionId"));
 
         process.kill();
@@ -209,6 +212,7 @@ public class TestLoginRequest5_2 {
         JsonObject acceptResponse = acceptLoginRequest(process.getProcess(), loginChallenge);
 
         assertEquals("OK", acceptResponse.get("status").getAsString());
+        System.out.println(acceptResponse);
 
         redirectTo = acceptResponse.get("redirectTo").getAsString();
         assertTrue(redirectTo.startsWith("{apiDomain}"));
