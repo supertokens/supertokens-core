@@ -16,26 +16,17 @@
 
 package io.supertokens.saml;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
+import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
@@ -48,17 +39,19 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
-import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
-import io.supertokens.storageLayer.StorageLayer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class SAMLCertificate extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.saml.SAMLCertificate";
@@ -85,9 +78,9 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
                 // Creation of new certificate is slow, not really necessary to create one for each test
                 this.getCertificate();
             }
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | RuntimeException e) {
             Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching SAML key and certificate",
-                    false, e);
+                    true, e);
         }
     }
 

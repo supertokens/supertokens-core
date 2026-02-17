@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set +e
 
 # Check for required arguments
 if [ "$#" -ne 2 ]; then
@@ -28,12 +28,16 @@ for PLATFORM in "${PLATFORMS[@]}"; do
   docker tag "$SOURCE_IMAGE" "$TEMP_TAG"
 
   echo "Pushing $TEMP_TAG..."
-  docker push "$TEMP_TAG"
+  docker push --platform "$PLATFORM" "$TEMP_TAG"
 done
 
 # Create and push manifest for multi-arch image
 echo "Creating and pushing multi-arch manifest for $TARGET_IMAGE..."
+
 docker manifest create "$TARGET_IMAGE" "${TEMP_IMAGES[@]}"
+
+echo "✅ Created manifest for $TARGET_IMAGE..."
+
 docker manifest push "$TARGET_IMAGE"
 
 echo "✅ Multi-arch image pushed as $TARGET_IMAGE"
