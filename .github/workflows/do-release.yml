@@ -448,18 +448,51 @@ jobs:
           git config --global user.email "<>"
 
       - name: Tag plugin-interface
+        id: tag-pi
         if: inputs.release-plugin-interface
         run: |
           cd supertokens-root/supertokens-plugin-interface
           ./addReleaseTag
 
+      - name: Create plugin-interface GitHub release
+        if: steps.tag-pi.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.plugin-interface-version }}" \
+            --repo supertokens/supertokens-plugin-interface \
+            --title "v${{ inputs.plugin-interface-version }}" \
+            --generate-notes
+
       - name: Tag postgresql-plugin
+        id: tag-pg
         if: inputs.release-postgresql-plugin
         run: |
           cd supertokens-root/supertokens-postgresql-plugin
           ./addReleaseTag
 
+      - name: Create postgresql-plugin GitHub release
+        if: steps.tag-pg.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.postgresql-plugin-version }}" \
+            --repo supertokens/supertokens-postgresql-plugin \
+            --title "v${{ inputs.postgresql-plugin-version }}" \
+            --generate-notes
+
       - name: Tag core
+        id: tag-core
         run: |
           cd supertokens-root/supertokens-core
           ./addReleaseTag
+
+      - name: Create core GitHub release
+        if: steps.tag-core.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.core-version }}" \
+            --repo supertokens/supertokens-core \
+            --title "v${{ inputs.core-version }}" \
+            --generate-notes
