@@ -1,148 +1,465 @@
-name: Do Release
+name: Release
 
 on:
   workflow_dispatch:
     inputs:
       core-version:
-        description: 'Core version'
+        description: 'Core version (e.g. 11.4.0)'
         required: true
         type: string
       plugin-interface-version:
-        description: 'Plugin interface version'
+        description: 'Plugin interface version (e.g. 8.4.0)'
         required: true
         type: string
-      new-release-for-plugin-interface:
-        description: 'New release for plugin interface'
-        required: true
-        type: boolean
       postgresql-plugin-version:
-        description: 'Postgres plugin version'
+        description: 'PostgreSQL plugin version (e.g. 9.4.0)'
         required: true
-      new-release-for-postgresql-plugin:
-        description: 'New release for postgres plugin'
+        type: string
+      release-plugin-interface:
+        description: 'Release a new plugin-interface version'
         required: true
         type: boolean
+        default: true
+      release-postgresql-plugin:
+        description: 'Release a new postgresql-plugin version'
+        required: true
+        type: boolean
+        default: true
       is-latest-release:
         description: 'Is this the latest release?'
         required: true
         type: boolean
+        default: true
 
 jobs:
+  # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
-    name: Dependency Branches
+    name: Resolve dependencies
     environment: publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}
-      versions: ${{ steps.result.outputs.versions }}
-
     steps:
       - uses: actions/checkout@v4
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
           run-for: add-dev-tag
-          core-version: ${{ github.event.inputs.core-version }}
-          plugin-interface-version: ${{ github.event.inputs.plugin-interface-version }}
-          postgresql-plugin-version: ${{ github.event.inputs.postgresql-plugin-version }}
-  release-docker:
+          core-version: ${{ inputs.core-version }}
+          plugin-interface-version: ${{ inputs.plugin-interface-version }}
+          postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+
+  # ── Register new versions with the SuperTokens API ────────────────
+  register-core-version:
+    name: Register core version
     environment: publish
-    name: Release Docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: dependency-branches
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Register core version
+        env:
+          SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+        run: python .github/helpers/register-new-core-version.py
+
+  register-plugin-version:
+    name: Register PostgreSQL plugin version
+    if: inputs.release-postgresql-plugin
+    environment: publish
+    runs-on: ubuntu-22.04
+    needs: dependency-branches
+    steps:
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v4
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v4
+        with:
+          path: supertokens-plugin
+          repository: supertokens/supertokens-postgresql-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Register plugin version
+        env:
+          SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+          PLUGIN_NAME: postgresql
+        run: |
+          cd supertokens-plugin
+          python ../.github/helpers/register-new-plugin-version.py
+
+  # ── Run unit tests (sqlite + postgresql) ──────────────────────────
+  test:
+    name: Tests (${{ matrix.plugin }})
+    needs: [ dependency-branches, register-core-version, register-plugin-version ]
+    # Run even when register-plugin-version is skipped (core-only release)
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - sqlite
+          - postgresql
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: root
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U root"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 21.0.7
           distribution: zulu
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-root
+          path: supertokens-root
+          ref: master
+
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v4
+        with:
+          path: supertokens-root/supertokens-core
+
+      - name: Checkout supertokens-plugin-interface
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: supertokens-root/supertokens-plugin-interface
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+
+      - name: Checkout supertokens-postgresql-plugin
+        if: matrix.plugin == 'postgresql'
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          path: supertokens-root/supertokens-postgresql-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+
+      - name: Load modules
+        run: |
+          cd supertokens-root
+          cat > modules.txt <<'EOF'
+          core,master
+          plugin-interface,master
+          ${{ matrix.plugin }}-plugin,master
+          EOF
+          ./loadModules
+
+      - name: Create PostgreSQL test databases
+        if: matrix.plugin == 'postgresql'
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: root
+          PGPASSWORD: root
+        run: |
+          for db in supertokens $(seq -f 'st%.0f' 0 50); do
+            psql -d root -c "CREATE DATABASE \"$db\";" 2>/dev/null || true
+          done
+
+      - name: Setup test environment
+        run: cd supertokens-root && ./utils/setupTestEnv --local
+
+      - name: Run tests
+        env:
+          ST_PLUGIN_NAME: ${{ matrix.plugin }}
+        run: |
+          cd supertokens-root
+          ./gradlew test
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+          detailed_summary: true
+          include_passed: false
+          annotate_notice: true
+
+  # ── Mark test results on the SuperTokens API ──────────────────────
+  mark-as-passed:
+    name: Mark as passed (${{ matrix.plugin }})
+    environment: publish
+    needs: [ dependency-branches, test ]
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - sqlite
+          - postgresql
+    steps:
+      - name: Mark plugin as passed
+        if: matrix.plugin != 'sqlite' && inputs.release-postgresql-plugin
+        uses: muhfaris/request-action@main
+        with:
+          url: https://api.supertokens.io/0/plugin
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ inputs.postgresql-plugin-version }}",
+              "planType": "FREE",
+              "name": "${{ matrix.plugin }}",
+              "testPassed": true
+            }
+      - name: Mark core as passed
+        if: matrix.plugin == 'sqlite'
+        uses: muhfaris/request-action@main
+        with:
+          url: https://api.supertokens.io/0/core
+          method: PATCH
+          headers: |
+            {
+              "Content-Type": "application/json",
+              "api-version": "0"
+            }
+          body: |
+            {
+              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
+              "version": "${{ inputs.core-version }}",
+              "planType": "FREE",
+              "testPassed": true
+            }
+
+  # ── Build and publish the dev Docker image ────────────────────────
+  build-docker:
+    name: Build Docker image
+    needs: [ dependency-branches, mark-as-passed ]
+    runs-on: ubuntu-22.04
+    outputs:
+      dev-tag: ${{ steps.set_tag.outputs.TAG }}
+    steps:
+      - name: Set up JDK 21.0.7
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21.0.7
+          distribution: zulu
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-root
+          path: supertokens-root
+          ref: master
+
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v4
+        with:
+          path: supertokens-root/supertokens-core
+
+      - name: Checkout supertokens-plugin-interface
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: supertokens-root/supertokens-plugin-interface
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          path: supertokens-root/supertokens-postgresql-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+
+      - name: Load modules
+        run: |
+          cd supertokens-root
+          cat > modules.txt <<'EOF'
+          core,master
+          plugin-interface,master
+          postgresql-plugin,master
+          EOF
+          ./loadModules
+
+      - name: Setup test environment
+        run: cd supertokens-root && ./utils/setupTestEnv --local
+
+      - name: Generate config file
+        run: |
+          cd supertokens-root
+          cat supertokens-core/config.yaml > config.yaml
+          cat supertokens-postgresql-plugin/config.yaml >> config.yaml
+
+      - name: Compute image tag
+        id: set_tag
+        run: |
+          echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Tag and Push Docker Image
-        run: |
-          tag=${{ github.event.inputs.core-version }}
-          major=$(echo $tag | cut -d. -f1)
-          minor=$(echo $tag | cut -d. -f1,2)
 
-          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$major
-          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$minor
-          bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:$tag
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-          if [ "${{ github.event.inputs.is-latest-release }}" == "true" ]; then
-            bash .github/helpers/release-docker.sh supertokens/supertokens-dev-postgresql:$minor supertokens/supertokens-postgresql:latest
-          fi
-  add-release-tag:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push dev image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ./supertokens-root
+          tags: supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}
+          file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+
+  # ── Stress tests ──────────────────────────────────────────────────
+  stress-tests:
+    name: Stress tests
+    needs: build-docker
+    uses: ./.github/workflows/stress-tests.yml
+    with:
+      tag: ${{ needs.build-docker.outputs.dev-tag }}
+
+  # ── Tag and publish the release Docker image ──────────────────────
+  release-docker:
+    name: Release Docker image
     environment: publish
-    runs-on: ubuntu-latest
+    needs: [ build-docker, stress-tests ]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Tag and push release images
+        run: |
+          tag="${{ inputs.core-version }}"
+          major=$(echo "$tag" | cut -d. -f1)
+          minor=$(echo "$tag" | cut -d. -f1,2)
+          dev_tag="${{ needs.build-docker.outputs.dev-tag }}"
+
+          bash .github/helpers/release-docker.sh \
+            "supertokens/supertokens-dev-postgresql:$dev_tag" \
+            "supertokens/supertokens-postgresql:$tag"
+
+          bash .github/helpers/release-docker.sh \
+            "supertokens/supertokens-dev-postgresql:$dev_tag" \
+            "supertokens/supertokens-postgresql:$minor"
+
+          bash .github/helpers/release-docker.sh \
+            "supertokens/supertokens-dev-postgresql:$dev_tag" \
+            "supertokens/supertokens-postgresql:$major"
+
+          if [ "${{ inputs.is-latest-release }}" == "true" ]; then
+            bash .github/helpers/release-docker.sh \
+              "supertokens/supertokens-dev-postgresql:$dev_tag" \
+              "supertokens/supertokens-postgresql:latest"
+          fi
+
+  # ── Tag all repos with release versions ───────────────────────────
+  add-release-tags:
+    name: Add release tags
+    environment: publish
     needs: [dependency-branches, release-docker]
+    runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 21.0.7
           distribution: zulu
-      - uses: actions/checkout@v2
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v4
         with:
           repository: supertokens/supertokens-root
-          path: ./supertokens-root
+          path: supertokens-root
           ref: master
+
       - name: Checkout supertokens-core
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-core.git
           cd supertokens-core
           git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+
       - name: Checkout supertokens-plugin-interface
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-plugin-interface.git
           cd supertokens-plugin-interface
           git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+
       - name: Checkout supertokens-postgresql-plugin
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-postgresql-plugin.git
           cd supertokens-postgresql-plugin
           git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
-      - name: Add release password
+
+      - name: Write release password
         run: |
           cd supertokens-root
           echo "${{ secrets.SUPERTOKENS_API_KEY }}" > releasePassword
           echo "${{ secrets.SUPERTOKENS_API_KEY }}" > apiPassword
-      - name: Load Modules
+
+      - name: Load modules
         run: |
           cd supertokens-root
-          echo "core,master
+          cat > modules.txt <<'EOF'
+          core,master
           plugin-interface,master
           postgresql-plugin,master
-          " > modules.txt
-          cat modules.txt
+          EOF
           ./loadModules
-      - name: Setup test env
+
+      - name: Setup test environment
         run: cd supertokens-root && ./utils/setupTestEnv --local
+
       - name: Git config
         run: |
           git config --global user.name "Supertokens Bot"
           git config --global user.email "<>"
-      - name: Add release tag to plugin interface
-        if: ${{ github.event.inputs.new-release-for-plugin-interface == 'true' }}
+
+      - name: Tag plugin-interface
+        if: inputs.release-plugin-interface
         run: |
-          echo "Adding release tag to plugin interface"
           cd supertokens-root/supertokens-plugin-interface
           ./addReleaseTag
-      - name: Add release tag to postgres plugin
-        if: ${{ github.event.inputs.new-release-for-postgresql-plugin == 'true' }}
+
+      - name: Tag postgresql-plugin
+        if: inputs.release-postgresql-plugin
         run: |
-          echo "Adding release tag to postgres plugin"
           cd supertokens-root/supertokens-postgresql-plugin
           ./addReleaseTag
-      - name: Add release tag to core
+
+      - name: Tag core
         run: |
-          echo "Adding release tag to core"
           cd supertokens-root/supertokens-core
           ./addReleaseTag
