@@ -17,19 +17,39 @@
 		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.2/jackson-dataformat-yaml-2.18.2-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
-		"name":"snakeyaml 2.3",
-		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
-	},
-	{
 		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2.jar",
 		"name":"jackson-databind 2.18.2",
 		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.18.2/jackson-databind-2.18.2-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2.jar",
+		"name":"jackson-core 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.18.2/jackson-core-2.18.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2.jar",
+		"name":"jackson-annotations 2.18.2",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.18.2/jackson-annotations-2.18.2-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3.jar",
+		"name":"snakeyaml 2.3",
+		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.3/snakeyaml-2.3-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11.jar",
 		"name":"argon2-jvm 2.11",
 		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11.jar",
+		"name":"argon2-jvm-nolibs 2.11",
+		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar",
+		"name":"jna 5.8.0",
+		"src":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
