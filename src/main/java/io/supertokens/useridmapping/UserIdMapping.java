@@ -416,6 +416,16 @@ public class UserIdMapping {
         }
     }
 
+    public static String getExternalUserId(AppIdentifier appIdentifier, Storage storage, String userId)
+            throws StorageQueryException {
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifier, storage, userId, UserIdType.SUPERTOKENS);
+        if (mapping == null || mapping.externalUserId == null) {
+            return userId;
+        } else {
+            return mapping.externalUserId;
+        }
+    }
+
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
             AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)

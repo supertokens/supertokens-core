@@ -94,11 +94,16 @@ import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.LockedUserPair;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
+import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
@@ -130,7 +135,7 @@ public class Start
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
         ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage,
-        SAMLStorage {
+        SAMLStorage, UserLockingStorage, AccountInfoStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -938,7 +943,9 @@ public class Start
             UnknownUserIdException {
         Connection sqlCon = (Connection) conn.getConnection();
         try {
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                 ACCOUNT_INFO_TYPE.EMAIL, email);
             EmailPasswordQueries.updateUsersEmail_Transaction(this, sqlCon, appIdentifier, userId, email);
         } catch (SQLException e) {
@@ -950,6 +957,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (DuplicatePhoneNumberException | DuplicateThirdPartyUserException | PhoneNumberChangeNotAllowedException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -1213,7 +1222,9 @@ public class Start
             UnknownUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, userId,
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                 ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
                     thirdPartyUserId, newEmail);
@@ -1221,6 +1232,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -1259,9 +1272,12 @@ public class Start
         try {
             Connection sqlCon = (Connection) con.getConnection();
 
+            // Acquire lock once to get LockedUser for all calls
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, recipeUserId);
+
             // Update non-nulls first
             if (newEmail != null) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
                 int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newEmail);
                 if (updated_rows != 1) {
@@ -1269,7 +1285,7 @@ public class Start
                 }
             }
             if (newPhoneNumber != null) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
                 int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newPhoneNumber);
                 if (updated_rows != 1) {
@@ -1279,7 +1295,7 @@ public class Start
 
             // now update the nulls
             if (newEmail == null && shouldUpdateEmail) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
                 int updated_rows = PasswordlessQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newEmail);
                 if (updated_rows != 1) {
@@ -1287,7 +1303,7 @@ public class Start
                 }
             }
             if (newPhoneNumber == null && shouldUpdatePhoneNumber) {
-                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, recipeUserId, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
+                AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser, ACCOUNT_INFO_TYPE.PHONE_NUMBER, newPhoneNumber);
                 int updated_rows = PasswordlessQueries.updateUserPhoneNumber_Transaction(this, sqlCon, appIdentifier, recipeUserId,
                         newPhoneNumber);
                 if (updated_rows != 1) {
@@ -1312,6 +1328,8 @@ public class Start
             throw new StorageQueryException(e);
         } catch (DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen", e);
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -1434,10 +1452,10 @@ public class Start
 
     @Override
     public void addTenantIdToPrimaryUser_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
-                                                     String supertokensUserId)
+                                                     LockedUser primaryUser)
             throws AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException, StorageQueryException,
             AnotherPrimaryUserWithEmailAlreadyExistsException, AnotherPrimaryUserWithPhoneNumberAlreadyExistsException {
-        AccountInfoQueries.addTenantIdToPrimaryUser_Transaction(this, con, tenantIdentifier, supertokensUserId);
+        AccountInfoQueries.addTenantIdToPrimaryUser_Transaction(this, con, tenantIdentifier, primaryUser);
     }
 
     @Override
@@ -2569,14 +2587,13 @@ public class Start
             DuplicateThirdPartyUserException, DuplicatePhoneNumberException, UnknownUserIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(this, sqlCon, tenantIdentifier,
-                    userId);
+            // First acquire lock on the user - throws UserNotFoundForLockingException if user doesn't exist
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
 
-            if (recipeId == null) {
-                throw new UnknownUserIdException();
-            }
+            // Get recipe ID from LockedUser (fetched from app_id_to_user_id during lock acquisition)
+            String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(lockedUser);
 
-            AccountInfoQueries.addTenantIdToRecipeUser_Transaction(this, sqlCon, tenantIdentifier, userId);
+            AccountInfoQueries.addTenantIdToRecipeUser_Transaction(this, sqlCon, tenantIdentifier, lockedUser);
 
             boolean added;
             if (recipeId.equals("emailpassword")) {
@@ -2624,6 +2641,8 @@ public class Start
             }
 
             throw new StorageQueryException(throwables);
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
         }
     }
 
@@ -2634,13 +2653,17 @@ public class Start
             return this.startTransaction(con -> {
                 Connection sqlCon = (Connection) con.getConnection();
                 try {
-                    String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(this, sqlCon, tenantIdentifier,
-                            userId);
-
-                    if (recipeId == null) {
+                    // First acquire lock on the user - if user doesn't exist, return false
+                    LockedUser lockedUser;
+                    try {
+                        lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+                    } catch (UserNotFoundForLockingException e) {
                         sqlCon.commit();
                         return false; // No auth user to remove
                     }
+
+                    // Get recipe ID from LockedUser (fetched from app_id_to_user_id during lock acquisition)
+                    String recipeId = GeneralQueries.getRecipeIdForUser_Transaction(lockedUser);
 
                     boolean removed;
                     if (recipeId.equals("emailpassword")) {
@@ -2656,8 +2679,8 @@ public class Start
                         throw new IllegalStateException("Should never come here!");
                     }
 
-                    AccountInfoQueries.removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, userId);
-                    AccountInfoQueries.removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, userId);
+                    AccountInfoQueries.removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, lockedUser);
+                    AccountInfoQueries.removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(this, sqlCon, tenantIdentifier, lockedUser);
 
                     sqlCon.commit();
                     return removed;
@@ -3175,10 +3198,18 @@ public class Start
             CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            // we do not bother returning if a row was updated here or not, cause it's happening
-            // in a transaction anyway.
 
-            boolean didBecomePrimary = AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(this, sqlCon, appIdentifier, userId);
+            // Acquire lock on the user to prevent race conditions
+            LockedUser lockedUser;
+            try {
+                lockedUser = UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+            } catch (UserNotFoundForLockingException e) {
+                throw new UnknownUserIdException();
+            }
+
+            // Use the LockedUser version of addPrimaryUserAccountInfo_Transaction
+            boolean didBecomePrimary = AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(
+                    this, sqlCon, appIdentifier, lockedUser);
             if (didBecomePrimary) {
                 GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, appIdentifier, userId);
             }
@@ -3196,7 +3227,18 @@ public class Start
             UnknownUserIdException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            boolean didLinkAccounts = AccountInfoQueries.reserveAccountInfoForLinking_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+
+            // Acquire locks on both users to prevent race conditions
+            LockedUserPair lockedUsers;
+            try {
+                lockedUsers = UserLockingQueries.lockUsersForLinking(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+            } catch (UserNotFoundForLockingException e) {
+                throw new UnknownUserIdException();
+            }
+
+            // Use the LockedUser version of reserveAccountInfoForLinking_Transaction
+            boolean didLinkAccounts = AccountInfoQueries.reserveAccountInfoForLinking_Transaction(
+                    this, sqlCon, appIdentifier, lockedUsers.getRecipeUser(), lockedUsers.getPrimaryUser());
             if (didLinkAccounts) {
                 GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
             }
@@ -3903,7 +3945,9 @@ public class Start
             DuplicateEmailException, EmailChangeNotAllowedException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
+            // Acquire lock to get LockedUser for the new API
+            LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+            AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), lockedUser, ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             WebAuthNQueries.updateUserEmail_Transaction(this, sqlCon, tenantIdentifier, userId, newEmail);
         } catch (StorageQueryException e) {
             if (e.getCause() instanceof SQLiteException){
@@ -3924,6 +3968,10 @@ public class Start
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
             throw new IllegalStateException("should never happen");
+        } catch (UserNotFoundForLockingException e) {
+            throw new UnknownUserIdException();
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
         }
     }
 
@@ -4037,5 +4085,112 @@ public class Start
     @Override
     public int countSAMLClients(TenantIdentifier tenantIdentifier) throws StorageQueryException {
         return SAMLQueries.countSAMLClients(this, tenantIdentifier);
+    }
+
+    // UserLockingStorage implementation
+
+    @Override
+    @Nonnull
+    public LockedUser lockUser(AppIdentifier appIdentifier, TransactionConnection con, String userId)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUser(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    @Nonnull
+    public List<LockedUser> lockUsers(AppIdentifier appIdentifier, TransactionConnection con, List<String> userIds)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUsers(this, sqlCon, appIdentifier, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    @Nonnull
+    public LockedUserPair lockUsersForLinking(AppIdentifier appIdentifier, TransactionConnection con,
+                                               String recipeUserId, String primaryUserId)
+            throws StorageQueryException, UserNotFoundForLockingException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserLockingQueries.lockUsersForLinking(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    // AccountInfoStorage implementation
+
+    @Override
+    public boolean reserveAccountInfoForLinking_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser recipeUser,
+            LockedUser primaryUser)
+            throws StorageQueryException, UnknownUserIdException,
+            InputUserIdIsNotAPrimaryUserException,
+            CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        return AccountInfoQueries.reserveAccountInfoForLinking_Transaction(
+                this, sqlCon, appIdentifier, recipeUser, primaryUser);
+    }
+
+    @Override
+    public void updateAccountInfo_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser user,
+            ACCOUNT_INFO_TYPE accountInfoType,
+            String newAccountInfoValue)
+            throws StorageQueryException, UnknownUserIdException,
+            EmailChangeNotAllowedException, PhoneNumberChangeNotAllowedException,
+            DuplicateEmailException, DuplicatePhoneNumberException, DuplicateThirdPartyUserException {
+        Connection sqlCon = (Connection) con.getConnection();
+        AccountInfoQueries.updateAccountInfo_Transaction(
+                this, sqlCon, appIdentifier, user, accountInfoType, newAccountInfoValue);
+    }
+
+    @Override
+    public boolean addPrimaryUserAccountInfo_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser primaryUser)
+            throws StorageQueryException, UnknownUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        return AccountInfoQueries.addPrimaryUserAccountInfo_Transaction(
+                this, sqlCon, appIdentifier, primaryUser);
+    }
+
+    @Override
+    public void removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+            AppIdentifier appIdentifier,
+            TransactionConnection con,
+            LockedUser recipeUser)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        AccountInfoQueries.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+                this, sqlCon, appIdentifier, recipeUser);
+    }
+
+    @Override
+    public void addTenantIdToRecipeUser_Transaction(
+            TenantIdentifier tenantIdentifier,
+            TransactionConnection con,
+            LockedUser user)
+            throws StorageQueryException, DuplicateEmailException,
+            DuplicateThirdPartyUserException, DuplicatePhoneNumberException {
+        Connection sqlCon = (Connection) con.getConnection();
+        AccountInfoQueries.addTenantIdToRecipeUser_Transaction(
+                this, sqlCon, tenantIdentifier, user);
     }
 }

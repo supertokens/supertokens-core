@@ -46,6 +46,9 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -752,9 +755,10 @@ public class Passwordless {
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
             io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException {
         PasswordlessSQLStorage plStorage = StorageUtils.getPasswordlessStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
 
-        // We do not lock the user here, because we decided that even if the device cleanup used outdated information
-        // it wouldn't leave the system in an incosistent state/cause problems.
+        // Note: Locking is now required for READ_COMMITTED isolation level migration.
+        // We lock the user to prevent race conditions during email/phone updates.
         AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifier, storage, recipeUserId);
         if (user == null) {
             throw new UnknownUserIdException();
@@ -778,6 +782,9 @@ public class Passwordless {
         try {
             plStorage.startTransaction(con -> {
                 try {
+                    // Acquire lock on the user to prevent race conditions during email/phone update
+                    LockedUser lockedUser = lockingStorage.lockUser(appIdentifier, con, recipeUserId);
+
                     plStorage.updateUserEmailAndPhone_Transaction(appIdentifier, con, recipeUserId,
                         emailUpdate != null ? emailUpdate.newValue : null,
                         emailUpdate != null,
@@ -786,6 +793,8 @@ public class Passwordless {
                 } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException |
                          DuplicatePhoneNumberException | PhoneNumberChangeNotAllowedException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (UserNotFoundForLockingException e) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
 
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, lM.email)) {

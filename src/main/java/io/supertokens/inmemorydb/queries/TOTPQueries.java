@@ -217,7 +217,8 @@ public class TOTPQueries {
     public static TOTPDevice[] getDevices_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                       String userId)
             throws StorageQueryException, SQLException {
-
+        // Note: Ideally caller should obtain user lock via UserLockingStorage before calling this method.
+        // The ConnectionWithLocks.lock() is kept for InMemoryDB test isolation.
         ((ConnectionWithLocks) con).lock(
                 appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getTotpUserDevicesTable());
 

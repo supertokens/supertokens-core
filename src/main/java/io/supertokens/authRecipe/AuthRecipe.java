@@ -53,6 +53,10 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
+import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -77,8 +81,26 @@ public class AuthRecipe {
                                          Storage storage, String recipeUserId)
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
+        AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
+
         try {
             UnlinkResult res = authRecipeStorage.startTransaction(con -> {
+                // Acquire lock on the recipe user first
+                LockedUser lockedRecipeUser;
+                try {
+                    lockedRecipeUser = lockingStorage.lockUser(appIdentifier, con, recipeUserId);
+                } catch (UserNotFoundForLockingException e) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                // Check if the user is part of a primary user group
+                if (lockedRecipeUser.getPrimaryUserId() == null) {
+                    // User is standalone, not part of any primary group
+                    throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
+                }
+
+                // Get the primary user info for additional checks
                 AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier, con,
                         recipeUserId);
                 if (primaryUser == null) {
@@ -89,14 +111,16 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
                 }
 
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                appIdentifier, authRecipeStorage,
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                con, appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
 
-                if (primaryUser.getSupertokensUserId().equals(recipeUserId)) {
+                if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
+                        accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+                                appIdentifier, con, lockedRecipeUser);
+
                         authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con,
                                 primaryUser.getSupertokensUserId(), recipeUserId);
                         return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId,
@@ -112,7 +136,10 @@ public class AuthRecipe {
                                 true);
                     }
                 } else {
-                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, primaryUser.getSupertokensUserId(),
+                    accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
+                            appIdentifier, con, lockedRecipeUser);
+
+                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, lockedRecipeUser.getPrimaryUserId(),
                             recipeUserId);
                     return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                 }

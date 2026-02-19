@@ -195,7 +195,7 @@ public abstract class Utils extends Mockito {
 
     public static TestRule retryFlakyTest() {
         return new TestRule() {
-            private final int retryCount = 10;
+            private final int retryCount = 3;
 
             public Statement apply(Statement base, Description description) {
                 return statement(base, description);
