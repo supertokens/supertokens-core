@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "9.0.3"
+version = "9.0.4"
 
 repositories {
     mavenCentral()
