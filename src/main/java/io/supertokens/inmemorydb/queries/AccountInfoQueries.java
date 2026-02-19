@@ -1415,30 +1415,14 @@ try {
      */
     public static void removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
             Start start, Connection sqlCon, AppIdentifier appIdentifier,
-            LockedUser recipeUser, LockedUser primaryUser) throws StorageQueryException {
+            LockedUser recipeUser) throws StorageQueryException {
 
         String recipeUserId = recipeUser.getRecipeUserId();
-        String primaryUserId = primaryUser.getRecipeUserId();
 
-        // Verify the recipe user is part of the primary user group
-        // Case 1: Recipe user is linked to a primary (different user)
-        // Case 2: Recipe user IS the primary (same user, unlinking itself)
-        if (recipeUser.isLinked()) {
-            // Recipe user is linked to a primary - verify it's the correct primary
-            if (!recipeUser.getPrimaryUserId().equals(primaryUserId)) {
-                throw new IllegalStateException("Recipe user " + recipeUserId + " is not linked to primary user " + primaryUserId);
-            }
-        } else if (recipeUser.isPrimary()) {
-            // Recipe user is the primary itself - verify both users are the same
-            if (!recipeUserId.equals(primaryUserId)) {
-                throw new IllegalStateException("Recipe user " + recipeUserId + " is a primary user but primaryUser parameter is " + primaryUserId);
-            }
-        } else {
-            // Recipe user is standalone (not linked, not primary) - cannot unlink
+        if (!recipeUser.isLinked() && !recipeUser.isPrimary()) {
             throw new IllegalStateException("Recipe user " + recipeUserId + " is not part of any primary user group");
         }
 
-        // Delegate to the existing implementation that uses user ID strings
         removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(start, sqlCon, appIdentifier, recipeUserId);
     }
 

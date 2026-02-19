@@ -118,10 +118,8 @@ public class AuthRecipe {
                 if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
-                        // TODO: we could shortcircuit this: we can actually just remove all primary claims
-                        // Remove account info reservations with LockedUser enforcement
                         accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
-                                appIdentifier, con, lockedRecipeUser, lockedRecipeUser);
+                                appIdentifier, con, lockedRecipeUser);
 
                         authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con,
                                 primaryUser.getSupertokensUserId(), recipeUserId);
@@ -138,10 +136,8 @@ public class AuthRecipe {
                                 true);
                     }
                 } else {
-                    // TODO: we should probably only pass the locked recipe user.
-                    // Remove account info reservations with LockedUser enforcement
                     accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
-                            appIdentifier, con, lockedRecipeUser, lockedRecipeUser);
+                            appIdentifier, con, lockedRecipeUser);
 
                     authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, lockedRecipeUser.getPrimaryUserId(),
                             recipeUserId);
