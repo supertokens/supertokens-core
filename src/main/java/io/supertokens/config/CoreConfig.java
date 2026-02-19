@@ -309,9 +309,8 @@ public class CoreConfig {
     @JsonProperty
     @ConfigDescription(
             "The URL of the OpenTelemetry collector to which the core will send telemetry data. " +
-                    "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: " +
-                    "http://localhost:4317)")
-    private String otel_collector_connection_uri = "http://localhost:4317";
+                    "This should be in the format http://<host>:<port> or https://<host>:<port>. (Default: null)")
+    private String otel_collector_connection_uri = null;
 
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
