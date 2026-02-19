@@ -382,7 +382,7 @@ public class BulkImportFlowTest {
 
         for(JsonElement userJson : failedUsersLs.get("users").getAsJsonArray()) {
             String errorMessage = userJson.getAsJsonObject().get("errorMessage").getAsString();
-            assertTrue(errorMessage.startsWith("E003:"));
+            assertTrue(errorMessage.startsWith("E027:"));
         }
 
     }
@@ -547,7 +547,7 @@ public class BulkImportFlowTest {
 
         for(JsonElement userJson : failedUsersLs.get("users").getAsJsonArray()) {
             String errorMessage = userJson.getAsJsonObject().get("errorMessage").getAsString();
-            assertTrue(errorMessage.startsWith("E003:"));
+            assertTrue(errorMessage.startsWith("E027:"));
         }
 
     }
@@ -669,8 +669,7 @@ public class BulkImportFlowTest {
         JsonArray faileds = failedUsers.getAsJsonArray("users");
         for (JsonElement failedUser : faileds) {
             String errorMessage = failedUser.getAsJsonObject().get("errorMessage").getAsString();
-            assertTrue(errorMessage.startsWith("E003:") || errorMessage.startsWith("E005:")
-                    || errorMessage.startsWith("E006:") || errorMessage.startsWith("E007:")); // duplicate email, phone, etc errors
+            assertTrue(errorMessage.startsWith("E027:")); // conflicting account info
         }
 
     }
