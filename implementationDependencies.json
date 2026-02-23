@@ -12,14 +12,24 @@
 		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
-		"name":"snakeyaml 2.2",
-		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
-	},
-	{
 		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1.jar",
 		"name":"jackson-databind 2.16.1",
 		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.16.1/jackson-databind-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1.jar",
+		"name":"jackson-core 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1.jar",
+		"name":"jackson-annotations 2.16.1",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.16.1/jackson-annotations-2.16.1-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
+		"name":"snakeyaml 2.2",
+		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
@@ -62,6 +72,16 @@
 		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm/2.11/argon2-jvm-2.11-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11.jar",
+		"name":"argon2-jvm-nolibs 2.11",
+		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar",
+		"name":"jna 5.8.0",
+		"src":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0.jar",
 		"name":"java-jwt 4.4.0",
 		"src":"https://repo.maven.apache.org/maven2/com/auth0/java-jwt/4.4.0/java-jwt-4.4.0-sources.jar"
@@ -102,6 +122,11 @@
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.51.0/opentelemetry-api-1.51.0-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.51.0/opentelemetry-context-1.51.0.jar",
+		"name":"opentelemetry-context 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.51.0/opentelemetry-context-1.51.0-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.51.0/opentelemetry-exporter-logging-1.51.0.jar",
 		"name":"opentelemetry-exporter-logging 1.51.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.51.0/opentelemetry-exporter-logging-1.51.0-sources.jar"
@@ -112,9 +137,84 @@
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.51.0/opentelemetry-sdk-1.51.0-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-common/1.51.0/opentelemetry-sdk-common-1.51.0.jar",
+		"name":"opentelemetry-sdk-common 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-common/1.51.0/opentelemetry-sdk-common-1.51.0-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.51.0/opentelemetry-exporter-otlp-1.51.0.jar",
 		"name":"opentelemetry-exporter-otlp 1.51.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.51.0/opentelemetry-exporter-otlp-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-sender-okhttp/1.51.0/opentelemetry-exporter-sender-okhttp-1.51.0.jar",
+		"name":"opentelemetry-exporter-sender-okhttp 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-sender-okhttp/1.51.0/opentelemetry-exporter-sender-okhttp-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0.jar",
+		"name":"okhttp 4.12.0",
+		"src":"https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/squareup/okio/okio/3.6.0/okio-3.6.0.jar",
+		"name":"okio 3.6.0",
+		"src":"https://repo.maven.apache.org/maven2/com/squareup/okio/okio/3.6.0/okio-3.6.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.6.0/okio-jvm-3.6.0.jar",
+		"name":"okio-jvm 3.6.0",
+		"src":"https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.6.0/okio-jvm-3.6.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.10/kotlin-stdlib-jdk8-1.9.10.jar",
+		"name":"kotlin-stdlib-jdk8 1.9.10",
+		"src":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.10/kotlin-stdlib-jdk8-1.9.10-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.10/kotlin-stdlib-jdk7-1.9.10.jar",
+		"name":"kotlin-stdlib-jdk7 1.9.10",
+		"src":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.10/kotlin-stdlib-jdk7-1.9.10-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.10/kotlin-stdlib-1.9.10.jar",
+		"name":"kotlin-stdlib 1.9.10",
+		"src":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.10/kotlin-stdlib-1.9.10-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.10/kotlin-stdlib-common-1.9.10.jar",
+		"name":"kotlin-stdlib-common 1.9.10",
+		"src":"https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.10/kotlin-stdlib-common-1.9.10-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-common/1.51.0/opentelemetry-exporter-common-1.51.0.jar",
+		"name":"opentelemetry-exporter-common 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-common/1.51.0/opentelemetry-exporter-common-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.51.0/opentelemetry-sdk-extension-autoconfigure-spi-1.51.0.jar",
+		"name":"opentelemetry-sdk-extension-autoconfigure-spi 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.51.0/opentelemetry-sdk-extension-autoconfigure-spi-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp-common/1.51.0/opentelemetry-exporter-otlp-common-1.51.0.jar",
+		"name":"opentelemetry-exporter-otlp-common 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp-common/1.51.0/opentelemetry-exporter-otlp-common-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-trace/1.51.0/opentelemetry-sdk-trace-1.51.0.jar",
+		"name":"opentelemetry-sdk-trace 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-trace/1.51.0/opentelemetry-sdk-trace-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-metrics/1.51.0/opentelemetry-sdk-metrics-1.51.0.jar",
+		"name":"opentelemetry-sdk-metrics 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-metrics/1.51.0/opentelemetry-sdk-metrics-1.51.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-logs/1.51.0/opentelemetry-sdk-logs-1.51.0.jar",
+		"name":"opentelemetry-sdk-logs 1.51.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-logs/1.51.0/opentelemetry-sdk-logs-1.51.0-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/semconv/opentelemetry-semconv/1.34.0/opentelemetry-semconv-1.34.0.jar",
