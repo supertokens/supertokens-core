@@ -147,11 +147,10 @@ core_config_version: 0
 # CDI.
 # supertokens_max_cdi_version:
 
-
 # (OPTIONAL | Default: null) string value. If specified, the supertokens service will only load the specified CUD even
 # if there are more CUDs in the database and block all other CUDs from being used from this instance.
 # supertokens_saas_load_only_cud:
 
-# (OPTIONAL | Default: http://localhost:4317) string value. The URL of the OpenTelemetry collector to which the core
+# (OPTIONAL | Default: null) string value. The URL of the OpenTelemetry collector to which the core
 # will send telemetry data. This should be in the format http://<host>:<port> or https://<host>:<port>.
 # otel_collector_connection_uri:
