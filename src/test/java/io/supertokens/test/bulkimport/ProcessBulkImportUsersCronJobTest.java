@@ -17,6 +17,8 @@
 
 package io.supertokens.test.bulkimport;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -52,8 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ProcessBulkImportUsersCronJobTest {
     @Rule
@@ -160,6 +161,184 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, publicTenant, storage,
                 bulkImportUser,
                 container.users[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldNotLeakThreadPoolOnWorkerException() throws Exception {
+        int parallelism = 8;
+        int userCount = 15; // with chunkSize = 15/8+1 = 2, this produces exactly 8 chunks
+
+        Utils.setValueInConfig("bulk_migration_parallelism", String.valueOf(parallelism));
+
+        Main.isTesting_skipBulkImportUserValidationInCronJob = true;
+
+        String[] args = {"../"};
+        TestingProcess process = startCronProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        FeatureFlagTestContent.getInstance(main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
+
+        // Short interval so multiple cycles fire during the test window
+        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 2);
+        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 4);
+
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        // Create BulkImportUsers with login methods that have EMPTY tenantIds lists.
+        // This passes DB insertion but causes NoSuchElementException in
+        // ProcessBulkUsersImportWorker.partitionUsersByStorage() when it calls
+        // user.loginMethods.getFirst().tenantIds.getFirst()
+        List<BulkImportUser> users = new ArrayList<>();
+        for (int i = 0; i < userCount; i++) {
+            String email = "threadleak-test-" + i + "@example.com";
+            String id = io.supertokens.utils.Utils.getUUID();
+            JsonObject userMetadata = new JsonParser().parse("{\"key1\":\"value1\"}").getAsJsonObject();
+
+            List<BulkImportUser.LoginMethod> loginMethods = new ArrayList<>();
+            loginMethods.add(new BulkImportUser.LoginMethod(
+                    new ArrayList<>(), // empty tenantIds — triggers NoSuchElementException
+                    "emailpassword",
+                    true,  // isVerified
+                    true,  // isPrimary
+                    System.currentTimeMillis(),
+                    email,
+                    "$2a", // passwordHash
+                    "BCRYPT",
+                    null, null, null, null,
+                    io.supertokens.utils.Utils.getUUID()));
+
+            users.add(new BulkImportUser(id, null, userMetadata, new ArrayList<>(), new ArrayList<>(), loginMethods));
+        }
+
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        // Count pool threads in WAITING state before the cron fires
+        long threadsBefore = countLeakedPoolThreads();
+        System.out.println("=== BEFORE cron start: " + threadsBefore + " pool threads ===");
+        dumpPoolThreads("BEFORE");
+
+        // Start the cron job
+        Cronjobs.addCronjob(main,
+                (ProcessBulkImportUsers) main.getResourceDistributor().getResource(
+                        new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
+
+        // Wait for the first cron error to confirm the exception path is hit
+        ProcessState.EventAndException errorEvent = process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, 15000);
+        assertNotNull("Expected CRON_TASK_ERROR_LOGGING from the worker exception", errorEvent);
+
+        long threadsAfterFirstCycle = countLeakedPoolThreads();
+        long leakedFirstCycle = threadsAfterFirstCycle - threadsBefore;
+        System.out.println(
+                "=== AFTER first cycle: " + threadsAfterFirstCycle + " pool threads (+" + leakedFirstCycle + ") ===");
+        dumpPoolThreads("AFTER_FIRST_CYCLE");
+
+        // Wait for additional cron cycles to accumulate more leaked threads.
+        // With 4s interval, 12s gives us ~2-3 more cycles.
+        Thread.sleep(12_000);
+
+        long threadsAfterMultipleCycles = countLeakedPoolThreads();
+        long totalLeaked = threadsAfterMultipleCycles - threadsBefore;
+        System.out.println(
+                "=== AFTER multiple cycles: " + threadsAfterMultipleCycles + " pool threads (+" + totalLeaked +
+                        ") ===");
+        dumpPoolThreads("AFTER_MULTIPLE_CYCLES");
+
+        // With the fix (try/finally around executorService.shutdownNow()):
+        //   - Each cycle's pool is shut down promptly, leaked threads = 0.
+        // Without the fix:
+        //   - Each cycle leaks up to `parallelism` (8) threads (one per chunk).
+        //   - Users stay in PROCESSING status and are re-picked every cycle.
+        //   - After 2+ cycles we expect 16+ leaked threads, failing this assertion.
+        int maxAcceptableLeakedThreads = parallelism / 2;
+        assertTrue(
+                "Thread pool leak detected! " + totalLeaked + " threads leaked across cron cycles "
+                        + "(before=" + threadsBefore
+                        + ", afterFirst=" + threadsAfterFirstCycle
+                        + ", afterAll=" + threadsAfterMultipleCycles + "). "
+                        + "ExecutorService.shutdownNow() is likely not called on the error path.",
+                totalLeaked <= maxAcceptableLeakedThreads);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private long countLeakedPoolThreads() {
+        return Thread.getAllStackTraces().keySet().stream()
+                .filter(t -> t.getName().matches("pool-\\d+-thread-\\d+")
+                        && t.getState() == Thread.State.WAITING)
+                .count();
+    }
+
+    private void dumpPoolThreads(String label) {
+        Thread.getAllStackTraces().forEach((thread, stack) -> {
+            if (!thread.getName().matches("pool-\\d+-thread-\\d+")) {
+                return;
+            }
+            System.out.println("  [" + label + "] " + thread.getName()
+                    + " state=" + thread.getState()
+                    + " daemon=" + thread.isDaemon());
+            // for (StackTraceElement frame : stack) {
+            //     System.out.println("    at " + frame);
+            // }
+        });
+    }
+
+    @Test
+    public void shouldFailBulkImportUsersWithNoTenantWithoutExternalIdWithRoles() throws Exception {
+        TestingProcess process = startCronProcess();
+        if (process == null) {
+            return;
+        }
+
+        Main main = process.getProcess();
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        int usersCount = 1;
+        List<BulkImportUser> users = generateBulkImportUserWithNoExternalIdWithRoles(usersCount, List.of(), 0,
+                List.of("role1", "role2"));
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        BulkImportUser bulkImportUser = users.get(0);
+
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+
+        assertEquals(1, usersAfterProcessing.size());
+        assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
+        assertTrue(usersAfterProcessing.get(0).errorMessage.contains("LoginMethod "));
+        assertTrue(usersAfterProcessing.get(0).errorMessage.contains("has no tenantId"));
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
+        assertEquals(0, container.users.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
