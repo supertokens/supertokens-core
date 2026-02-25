@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.0.6]
+
+- Backport: fixes thread leak with bulk import
+
 ## [10.0.5]
 
 - Fixes opentelemetry opt-in
