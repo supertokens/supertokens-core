@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.7]
+
+- Backport: fixes thread leak in bulk import
+
 ## [10.1.6]
 
 - Fixes opentelemtry opt-in
