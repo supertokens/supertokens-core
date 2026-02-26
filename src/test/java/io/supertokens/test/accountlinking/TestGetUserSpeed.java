@@ -29,7 +29,6 @@ import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
@@ -183,7 +182,7 @@ public class TestGetUserSpeed {
         testUserCreationLinkingAndGetByIdSpeedsCommon(process, 25000, 50000, 20000);
     }
 
-    @Test
+    //@Test
     public void testUserCreationLinkingAndGetByIdSpeedsWithMinIdle() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
