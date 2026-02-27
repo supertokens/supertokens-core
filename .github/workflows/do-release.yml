@@ -116,7 +116,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:18
         env:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: root
@@ -147,6 +147,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: supertokens-root/supertokens-core
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v4
