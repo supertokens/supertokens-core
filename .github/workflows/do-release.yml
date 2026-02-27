@@ -125,10 +125,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          -c max_connections=1000
-          -c autovacuum_naptime=1
-          -c autovacuum_vacuum_threshold=10
-          -c autovacuum_analyze_threshold=10
+          -c 'max_connections=1000'
+          -c 'autovacuum_naptime=1'
+          -c 'autovacuum_vacuum_threshold=10'
+          -c 'autovacuum_analyze_threshold=10'
           --health-cmd "pg_isready -U root"
           --health-interval 5s
           --health-timeout 3s
