@@ -315,7 +315,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
         for(BulkImportUser user: users) {
             TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                     appIdentifier.getAppId(), user.loginMethods.getFirst().tenantIds.getFirst());
-
+            
             SQLStorage bulkImportProxyStorage =  (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
             if(!result.containsKey(bulkImportProxyStorage)){
                 result.put(bulkImportProxyStorage, new ArrayList<>());
