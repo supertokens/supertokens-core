@@ -128,6 +128,10 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+          -c max_connections=1000
+          -c autovacuum_naptime=1
+          -c autovacuum_vacuum_threshold=10
+          -c autovacuum_analyze_threshold=10
 
     steps:
       - name: Set up JDK 21.0.7
