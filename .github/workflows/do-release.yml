@@ -115,22 +115,6 @@ jobs:
           - postgresql
         shard: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
 
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: root
-          POSTGRES_DB: root
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U root"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-          postgres -c max_connections=1000 -c autovacuum_naptime=1 -c autovacuum_vacuum_threshold=10 -c autovacuum_analyze_threshold=10
-
     steps:
       - name: Set up JDK 21.0.7
         uses: actions/setup-java@v4
@@ -176,17 +160,9 @@ jobs:
           EOF
           ./loadModules
 
-      - name: Create PostgreSQL test databases
+      - name: Start PostgreSQL
         if: matrix.plugin == 'postgresql'
-        env:
-          PGHOST: localhost
-          PGPORT: "5432"
-          PGUSER: root
-          PGPASSWORD: root
-        run: |
-          for db in supertokens $(seq -f 'st%.0f' 0 50); do
-            psql -d root -c "CREATE DATABASE \"$db\";" 2>/dev/null || true
-          done
+        run: supertokens-root/supertokens-postgresql-plugin/startDb.sh
 
       - name: Setup test environment
         run: cd supertokens-root && ./utils/setupTestEnv --local
