@@ -102,7 +102,7 @@ jobs:
 
   # ── Run unit tests (sqlite + postgresql) ──────────────────────────
   test:
-    name: Tests (${{ matrix.plugin }})
+    name: Tests (${{ matrix.plugin }}, shard ${{ matrix.shard }}/10)
     needs: [ dependency-branches, register-core-version, register-plugin-version ]
     # Run even when register-plugin-version is skipped (core-only release)
     if: ${{ !cancelled() && !failure() }}
@@ -113,6 +113,7 @@ jobs:
         plugin:
           - sqlite
           - postgresql
+        shard: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
 
     services:
       postgres:
@@ -124,14 +125,14 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U root"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
           -c max_connections=1000
           -c autovacuum_naptime=1
           -c autovacuum_vacuum_threshold=10
           -c autovacuum_analyze_threshold=10
+          --health-cmd "pg_isready -U root"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
 
     steps:
       - name: Set up JDK 21.0.7
@@ -198,7 +199,11 @@ jobs:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
-          ./gradlew test
+          ALL_TESTS=$(find supertokens-core/src/test/java -name "*Test.java" | sort | \
+            sed 's|.*/java/||;s|\.java$||;s|/|.|g')
+          SHARD_IDX=$(( ${{ matrix.shard }} - 1 ))
+          TESTS_FILTER=$(echo "$ALL_TESTS" | awk -v idx=$SHARD_IDX 'NR % 10 == idx {print "--tests " $0}' | tr '\n' ' ')
+          ./gradlew test $TESTS_FILTER
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
