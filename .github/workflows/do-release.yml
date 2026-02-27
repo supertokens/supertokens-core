@@ -58,6 +58,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
@@ -76,6 +78,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v4
         with:

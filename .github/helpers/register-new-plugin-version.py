@@ -55,11 +55,6 @@ def check_if_tag_exists(tag):
         print(f"Error checking for tag {tag}")
         return False
 
-dev_tag = f"dev-v{plugin_version}"
-if not check_if_tag_exists(dev_tag):
-    print(f"Tag {dev_tag} does not exist. Exiting!")
-    exit(0)
-
 register_plugin_version(
 	supertokens_api_key=os.environ.get("SUPERTOKENS_API_KEY"),
 	plugin_version=plugin_version,
