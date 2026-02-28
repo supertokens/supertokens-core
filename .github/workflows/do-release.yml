@@ -240,7 +240,7 @@ jobs:
   # ── Build and publish the dev Docker image ────────────────────────
   build-docker:
     name: Build Docker image
-    needs: [ dependency-branches, mark-as-passed ]
+    needs: [ dependency-branches ]
     runs-on: ubuntu-22.04
     outputs:
       dev-tag: ${{ steps.set_tag.outputs.TAG }}
@@ -322,10 +322,20 @@ jobs:
           file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
 
+  # ── Wait for Docker image to be available on Docker Hub ──────────
+  wait-for-docker:
+    name: Wait for Docker image
+    needs: build-docker
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Docker image
+        run: python .github/helpers/wait-for-docker.py
+
   # ── Stress tests ──────────────────────────────────────────────────
   stress-tests:
     name: Stress tests
-    needs: build-docker
+    needs: [ build-docker, wait-for-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
       tag: ${{ needs.build-docker.outputs.dev-tag }}
@@ -334,7 +344,7 @@ jobs:
   release-docker:
     name: Release Docker image
     environment: publish
-    needs: [ build-docker, stress-tests ]
+    needs: [ build-docker, stress-tests, mark-as-passed ]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
