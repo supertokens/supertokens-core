@@ -103,9 +103,7 @@ jobs:
   # ── Run unit tests (sqlite + postgresql) ──────────────────────────
   test:
     name: Tests (${{ matrix.plugin }}, shard ${{ matrix.shard }}/10)
-    needs: [ dependency-branches, register-core-version, register-plugin-version ]
-    # Run even when register-plugin-version is skipped (core-only release)
-    if: ${{ !cancelled() && !failure() }}
+    needs: [ dependency-branches, register-core-version ]
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -191,7 +189,8 @@ jobs:
   mark-as-passed:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
-    needs: [ dependency-branches, test ]
+    needs: [ dependency-branches, register-plugin-version, test ]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
