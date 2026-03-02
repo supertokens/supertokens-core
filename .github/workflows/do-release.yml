@@ -102,7 +102,7 @@ jobs:
 
   # ── Run unit tests (sqlite + postgresql) ──────────────────────────
   test:
-    name: Tests (${{ matrix.plugin }}, shard ${{ matrix.shard }}/10)
+    name: Tests (${{ matrix.plugin }}
     needs: [ dependency-branches, register-core-version ]
     runs-on: ubuntu-22.04
     strategy:
