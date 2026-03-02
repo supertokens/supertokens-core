@@ -121,7 +121,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.reflections/reflections
     testImplementation group: 'org.reflections', name: 'reflections', version: '0.9.10'
 
-    testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit4:1.4.1'
 
     // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-test
     testImplementation group: 'com.webauthn4j', name: 'webauthn4j-test', version: '0.28.6.RELEASE'

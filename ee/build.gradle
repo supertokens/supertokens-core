@@ -45,7 +45,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
-    testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit4:1.4.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
     testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.16.1'
