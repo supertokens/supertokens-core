@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}
+      core-sha: ${{ steps.shas.outputs.core }}
+      plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
+      postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
       - uses: actions/checkout@v4
       - uses: supertokens/get-core-dependencies-action@main
@@ -48,6 +51,23 @@ jobs:
           core-version: ${{ inputs.core-version }}
           plugin-interface-version: ${{ inputs.plugin-interface-version }}
           postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      - name: Resolve commit SHAs
+        id: shas
+        env:
+          BRANCHES: ${{ steps.result.outputs.branches }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          core_branch=$(echo "$BRANCHES" | jq -r '.core')
+          pi_branch=$(echo "$BRANCHES" | jq -r '.["plugin-interface"]')
+          pg_branch=$(echo "$BRANCHES" | jq -r '.postgresql')
+
+          core_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-core.git" "refs/heads/$core_branch" | cut -f1)
+          pi_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-plugin-interface.git" "refs/heads/$pi_branch" | cut -f1)
+          pg_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-postgresql-plugin.git" "refs/heads/$pg_branch" | cut -f1)
+
+          echo "core=$core_sha" >> $GITHUB_OUTPUT
+          echo "plugin-interface=$pi_sha" >> $GITHUB_OUTPUT
+          echo "postgresql=$pg_sha" >> $GITHUB_OUTPUT
 
   # ── Register new versions with the SuperTokens API ────────────────
   register-core-version:
@@ -59,7 +79,7 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
         with:
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+          ref: ${{ needs.dependency-branches.outputs.core-sha }}
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
@@ -79,13 +99,13 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
         with:
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+          ref: ${{ needs.dependency-branches.outputs.core-sha }}
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v4
         with:
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
           fetch-depth: 0
           fetch-tags: true
       - name: Set up Python 3.11
@@ -102,7 +122,7 @@ jobs:
 
   # ── Run unit tests (sqlite + postgresql) ──────────────────────────
   test:
-    name: Tests (${{ matrix.plugin }}
+    name: Tests (${{ matrix.plugin }})
     needs: [ dependency-branches, register-core-version ]
     runs-on: ubuntu-22.04
     strategy:
@@ -130,14 +150,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: supertokens-root/supertokens-core
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+          ref: ${{ needs.dependency-branches.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v4
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+          ref: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
@@ -145,7 +165,7 @@ jobs:
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
 
       - name: Load modules
         run: |
@@ -266,20 +286,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: supertokens-root/supertokens-core
+          ref: ${{ needs.dependency-branches.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v4
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+          ref: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v4
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
-          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
 
       - name: Load modules
         run: |
@@ -406,22 +427,19 @@ jobs:
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-core.git
-          cd supertokens-core
-          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+          git -C supertokens-core checkout ${{ needs.dependency-branches.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-plugin-interface.git
-          cd supertokens-plugin-interface
-          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+          git -C supertokens-plugin-interface checkout ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-postgresql-plugin.git
-          cd supertokens-postgresql-plugin
-          git checkout ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          git -C supertokens-postgresql-plugin checkout ${{ needs.dependency-branches.outputs.postgresql-sha }}
 
       - name: Write release password
         run: |
