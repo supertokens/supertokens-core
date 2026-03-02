@@ -196,41 +196,38 @@ jobs:
     steps:
       - name: Mark plugin as passed
         if: matrix.plugin != 'sqlite' && inputs.release-postgresql-plugin
-        uses: muhfaris/request-action@main
-        with:
-          url: https://api.supertokens.io/0/plugin
-          method: PATCH
-          headers: |
-            {
-              "Content-Type": "application/json",
-              "api-version": "0"
-            }
-          body: |
-            {
-              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
-              "version": "${{ inputs.postgresql-plugin-version }}",
-              "planType": "FREE",
-              "name": "${{ matrix.plugin }}",
-              "testPassed": true
-            }
+        env:
+          SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X PATCH \
+            -H "Content-Type: application/json" \
+            -H "api-version: 0" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.postgresql-plugin-version }}\",\"planType\":\"FREE\",\"name\":\"${{ matrix.plugin }}\",\"testPassed\":true}" \
+            https://api.supertokens.io/0/plugin)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "$body"
+          if [ "$status" != "200" ] && [ "$status" != "409" ]; then
+            echo "API request failed with status $status"
+            exit 1
+          fi
       - name: Mark core as passed
         if: matrix.plugin == 'sqlite'
-        uses: muhfaris/request-action@main
-        with:
-          url: https://api.supertokens.io/0/core
-          method: PATCH
-          headers: |
-            {
-              "Content-Type": "application/json",
-              "api-version": "0"
-            }
-          body: |
-            {
-              "password": "${{ secrets.SUPERTOKENS_API_KEY }}",
-              "version": "${{ inputs.core-version }}",
-              "planType": "FREE",
-              "testPassed": true
-            }
+        env:
+          SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X PATCH \
+            -H "Content-Type: application/json" \
+            -H "api-version: 0" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true}" \
+            https://api.supertokens.io/0/core)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "$body"
+          if [ "$status" != "200" ] && [ "$status" != "409" ]; then
+            echo "API request failed with status $status"
+            exit 1
+          fi
 
   # ── Build and publish the dev Docker image ────────────────────────
   build-docker:
