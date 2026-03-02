@@ -111,7 +111,6 @@ jobs:
         plugin:
           - sqlite
           - postgresql
-        shard: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
 
     steps:
       - name: Set up JDK 21.0.7
@@ -170,11 +169,7 @@ jobs:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
-          ALL_TESTS=$(find supertokens-core/src/test/java -name "*Test.java" | sort | \
-            sed 's|.*/java/||;s|\.java$||;s|/|.|g')
-          SHARD_IDX=$(( ${{ matrix.shard }} - 1 ))
-          TESTS_FILTER=$(echo "$ALL_TESTS" | awk -v idx=$SHARD_IDX 'NR % 10 == idx {print "--tests " $0}' | tr '\n' ' ')
-          ./gradlew test $TESTS_FILTER
+          ./gradlew test 
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
