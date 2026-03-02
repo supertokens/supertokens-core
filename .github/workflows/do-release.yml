@@ -164,6 +164,18 @@ jobs:
       - name: Setup test environment
         run: cd supertokens-root && ./utils/setupTestEnv --local
 
+      - name: Check implementationDependencies.json is up to date
+        run: |
+          cd supertokens-root
+          ./gradlew generateDependenciesJson
+          git -C supertokens-core diff --exit-code \
+            implementationDependencies.json \
+            ee/implementationDependencies.json \
+            cli/implementationDependencies.json
+          if [ "${{ matrix.plugin }}" = "postgresql" ]; then
+            git -C supertokens-postgresql-plugin diff --exit-code implementationDependencies.json
+          fi
+
       - name: Run tests
         env:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
