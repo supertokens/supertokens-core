@@ -78,8 +78,14 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.dependency-branches.outputs.core-sha }}
+        # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
+      - name: Fetch release data files from release branch
+        run: |
+          git fetch origin ${{ needs.dependency-branches.outputs.core-sha }}
+          git checkout ${{ needs.dependency-branches.outputs.core-sha }} -- \
+            build.gradle \
+            pluginInterfaceSupported.json \
+            coreDriverInterfaceSupported.json
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
@@ -98,8 +104,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.dependency-branches.outputs.core-sha }}
+        # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
+        # (No data files from core are needed here; postgresql plugin provides them)
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v4
         with:
