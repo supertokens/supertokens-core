@@ -239,7 +239,7 @@ jobs:
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "$body"
-          if [ "$status" != "200" ] && [ "$status" != "409" ]; then
+          if [ "$status" != "200" ]; then
             echo "API request failed with status $status"
             exit 1
           fi
@@ -256,7 +256,7 @@ jobs:
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "$body"
-          if [ "$status" != "200" ] && [ "$status" != "409" ]; then
+          if [ "$status" != "200" ]; then
             echo "API request failed with status $status"
             exit 1
           fi
