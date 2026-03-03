@@ -30,6 +30,11 @@ on:
         required: true
         type: boolean
         default: true
+      run-stress-tests:
+        description: 'Run stress tests'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   # ── Resolve branches for the given versions ───────────────────────
@@ -366,6 +371,7 @@ jobs:
   # ── Stress tests ──────────────────────────────────────────────────
   stress-tests:
     name: Stress tests
+    if: inputs.run-stress-tests
     needs: [ build-docker, wait-for-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
@@ -376,6 +382,7 @@ jobs:
     name: Release Docker image
     environment: publish
     needs: [ build-docker, stress-tests, mark-as-passed ]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
