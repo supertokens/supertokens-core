@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.1]
+
+- Fixes OTEL initialization when there is no javaagent
+
 ## [11.4.0]
 
 - Exposes bulk query APIs for usermetadata and TOTP
