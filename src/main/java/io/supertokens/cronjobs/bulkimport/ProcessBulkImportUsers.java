@@ -83,6 +83,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 + " batch size, one batch split into " + numberOfBatchChunks + " chunks");
 
         executorService = Executors.newFixedThreadPool(numberOfBatchChunks);
+
         String[] allUserRoles = StorageUtils.getUserRolesStorage(bulkImportSQLStorage).getRoles(app);
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
 
@@ -148,10 +149,10 @@ public class ProcessBulkImportUsers extends CronTask {
                 Logging.error(main, app.getAsPublicTenantIdentifier(), "Error while processing bulk import users", true,
                         e);
                 throw new RuntimeException(e);
+            } finally {
+                executorService.shutdownNow();
             }
         }
-
-        executorService.shutdownNow();
     }
 
     @Override

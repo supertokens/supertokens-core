@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.4.1]
 
 - Fixes OTEL initialization when there is no javaagent
+- Fixes a thread-leak issue with Bulk Migration
 
 ## [11.4.0]
 
