@@ -421,6 +421,7 @@ jobs:
     name: Add release tags
     environment: publish
     needs: [dependency-branches, release-docker]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
