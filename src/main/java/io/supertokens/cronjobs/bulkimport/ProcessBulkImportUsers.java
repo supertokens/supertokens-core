@@ -95,48 +95,69 @@ public class ProcessBulkImportUsers extends CronTask {
         long usersProcessed = 0;
 
         Logging.debug(main, app.getAsPublicTenantIdentifier(), "Found " + (newUsers + processingUsers) + " waiting for processing"
-                + " (" + newUsers + " new, " + processingUsers + " processing)");;
+                + " (" + newUsers + " new, " + processingUsers + " processing)");
+        try {
+            while (usersProcessed < (newUsers + processingUsers)) {
 
-        while(usersProcessed < (newUsers + processingUsers)) {
+                List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
+                        bulkMigrationBatchSize);
 
-            List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
-                    bulkMigrationBatchSize);
+                Logging.debug(main, app.getAsPublicTenantIdentifier(), "Loaded " + users.size() + " users to process");
 
-            Logging.debug(main, app.getAsPublicTenantIdentifier(), "Loaded " + users.size() + " users to process");
-
-            if (users == null || users.isEmpty()) {
-                // "No more users to process!"
-                break;
-            }
-
-            List<List<BulkImportUser>> loadedUsersChunks = makeChunksOf(users, numberOfBatchChunks);
-
-            try {
-                List<Future<?>> tasks = new ArrayList<>();
-                for (int i = 0; i < numberOfBatchChunks && i < loadedUsersChunks.size(); i++) {
-                    tasks.add(
-                            executorService.submit(new ProcessBulkUsersImportWorker(main, app, loadedUsersChunks.get(i),
-                                    bulkImportSQLStorage, bulkImportUserUtils)));
+                if (users == null || users.isEmpty()) {
+                    // "No more users to process!"
+                    break;
                 }
 
-                for (Future<?> task : tasks) {
-                    while (!task.isDone()) {
-                        Logging.debug(main, app.getAsPublicTenantIdentifier(), "Waiting for task " + task + " to finish");
-                        Thread.sleep(1000);
+                List<List<BulkImportUser>> loadedUsersChunks = makeChunksOf(users, numberOfBatchChunks);
+                for (List<BulkImportUser> chunk : loadedUsersChunks) {
+                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Chunk size: " + chunk.size());
+                }
+
+                try {
+                    List<Future<?>> tasks = new ArrayList<>();
+                    for (int i = 0; i < numberOfBatchChunks && i < loadedUsersChunks.size(); i++) {
+                        tasks.add(
+                                executorService.submit(
+                                        new ProcessBulkUsersImportWorker(main, app, loadedUsersChunks.get(i),
+                                                bulkImportSQLStorage, bulkImportUserUtils)));
                     }
-                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Task " + task + " finished");
-                    Void result = (Void) task.get(); //to know if there were any errors while executing and for waiting in this thread for all the other threads to finish up
-                    usersProcessed += loadedUsersChunks.get(tasks.indexOf(task)).size();
-                    failedUsers = bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
-                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Chunk " + tasks.indexOf(task) + " finished processing, all chunks processed: "
-                            + usersProcessed + " users (" + failedUsers + " failed)");
-                }
 
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            } finally {
-                executorService.shutdownNow();
+                    for (Future<?> task : tasks) {
+                        while (!task.isDone()) {
+                            Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                                    "Waiting for task " + task + " to finish");
+                            Thread.sleep(1000);
+                        }
+                        Logging.debug(main, app.getAsPublicTenantIdentifier(), "Task " + task + " finished");
+                        try {
+                            Void result = (Void) task.get(); //to know if there were any errors while executing and for
+                            // waiting in this thread for all the other threads to finish up
+                            Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                                    "Task " + task + " finished with result: " + result);
+                        } catch (ExecutionException executionException) {
+                            Logging.error(main, app.getAsPublicTenantIdentifier(),
+                                    "Error while processing bulk import users", true,
+                                    executionException);
+                            throw new RuntimeException(executionException);
+                        }
+                        usersProcessed += loadedUsersChunks.get(tasks.indexOf(task)).size();
+                        failedUsers = bulkImportSQLStorage.getBulkImportUsersCount(app,
+                                BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
+                        Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                                "Chunk " + tasks.indexOf(task) + " finished processing, all chunks processed: "
+                                        + usersProcessed + " users (" + failedUsers + " failed)");
+                    }
+                    Logging.debug(main, app.getAsPublicTenantIdentifier(), "Processing round finished");
+                } catch (InterruptedException e) {
+                    Logging.error(main, app.getAsPublicTenantIdentifier(), "Error while processing bulk import users",
+                            true,
+                            e);
+                    throw new RuntimeException(e);
+                }
             }
+        } finally {
+            executorService.shutdownNow();
         }
     }
 
