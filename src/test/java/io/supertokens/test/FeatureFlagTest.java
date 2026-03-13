@@ -185,7 +185,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 2; // MFA + MULTITENANCY
+                assert features.size() == 3; // MFA + MULTITENANCY + ACCOUNT_LINKING
             }
             assert features.contains(new JsonPrimitive("mfa"));
             assert maus.size() == 31;
@@ -245,7 +245,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 2; // MFA + MULTITENANCY
+                assert features.size() == 3; // MFA + MULTITENANCY + ACCOUNT_LINKING
             }
 
             assert features.contains(new JsonPrimitive("mfa"));
@@ -289,7 +289,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 2; // MFA + MULTITENANCY
+                assert features.size() == 3; // MFA + MULTITENANCY + ACCOUNT_LINKING
             }
 
             assert features.contains(new JsonPrimitive("mfa"));
