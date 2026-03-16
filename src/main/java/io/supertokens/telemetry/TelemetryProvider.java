@@ -116,7 +116,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
     private static OpenTelemetry initializeOpenTelemetry(Main main) {
         String collectorUri = Config.getBaseConfig(main).getOtelCollectorConnectionURI();
 
-        if (GlobalOpenTelemetry.get() != null) {
+        if (GlobalOpenTelemetry.get() != null && !GlobalOpenTelemetry.get().equals(OpenTelemetry.noop())) {
             return GlobalOpenTelemetry.get(); // already initialized
         }
 
