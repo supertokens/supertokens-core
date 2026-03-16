@@ -47,6 +47,11 @@
 		"src":"https://repo.maven.apache.org/maven2/de/mkammerer/argon2-jvm-nolibs/2.11/argon2-jvm-nolibs-2.11-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar",
+		"name":"jna 5.8.0",
+		"src":"https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.8.0/jna-5.8.0-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar",
 		"name":"jbcrypt 0.4",
 		"src":"https://repo.maven.apache.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4-sources.jar"
