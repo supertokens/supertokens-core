@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.2.2]
 
+- Fixes OTEL init without javaagent
 - Backport: fixes bulk import thread leak
 
 ## [11.2.1]
