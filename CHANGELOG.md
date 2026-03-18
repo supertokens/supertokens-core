@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.2.2]
+
+- Backport: fixes bulk import thread leak
+
 ## [11.2.1]
 
 - Fixes deadlock issue with `ResourceDistributor`
