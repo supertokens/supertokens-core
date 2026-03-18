@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.4]
+
+- Backport: fixes thread leak in bulk import
+
 ## [11.3.3]
 
 - Catches and logs RuntimeException while initializing SAML
