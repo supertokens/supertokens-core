@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -653,5 +654,24 @@ public class ProcessBulkImportUsersCronJobTest {
         Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
 
         return process;
+    }
+
+    //will not wait after timeout was reached
+    private void waitForProcessingWithTimeout(AppIdentifier appIdentifier, BulkImportSQLStorage storage,
+                                              int timeoutSeconds)
+            throws StorageQueryException, InterruptedException {
+        long numberOfUnprocessedUsers = 1;
+        long startTime = System.currentTimeMillis();
+        long currentTime = 0;
+        while (numberOfUnprocessedUsers > 0) {
+            numberOfUnprocessedUsers = (storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.NEW)
+                    + storage.getBulkImportUsersCount(appIdentifier, BULK_IMPORT_USER_STATUS.PROCESSING));
+            Thread.sleep(1000);
+            currentTime = System.currentTimeMillis();
+            if ((currentTime - startTime) > (timeoutSeconds * 1000L)) {
+                System.out.println("Timeout of " + timeoutSeconds + " seconds reached.");
+                break;
+            }
+        }
     }
 }

@@ -176,6 +176,7 @@ public abstract class Utils extends Mockito {
         };
     }
 
+
     public static JsonObject signUpRequest_2_4(TestingProcessManager.TestingProcess process, String email,
                                                String password) throws IOException, HttpResponseException {
 

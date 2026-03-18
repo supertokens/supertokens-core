@@ -560,6 +560,9 @@ public class BulkImportUserUtils {
         // Now validate that all the tenants share the same storage
         String commonTenantUserPoolId = null;
         for (LoginMethod loginMethod : loginMethods) {
+            if (loginMethod.tenantIds == null || loginMethod.tenantIds.isEmpty()) {
+                errors.add("LoginMethod '" + loginMethod + "' has no tenantId");
+            }
             for (String tenantId : loginMethod.tenantIds) {
                 TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                         appIdentifier.getAppId(), tenantId);
