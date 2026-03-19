@@ -26,7 +26,12 @@ on:
         type: boolean
         default: true
       is-latest-release:
-        description: 'Is this the latest release?'
+        description: 'Is this the latest release? (tags the Docker image as "latest")'
+        required: true
+        type: boolean
+        default: true
+      is-latest-for-major:
+        description: 'Is this the latest release for its major version? (tags the Docker image with the major version, e.g. "9")'
         required: true
         type: boolean
         default: true
@@ -396,11 +401,13 @@ jobs:
             "supertokens/supertokens-dev-postgresql:$dev_tag" \
             "supertokens/supertokens-postgresql:$minor"
 
-          if [ "${{ inputs.is-latest-release }}" == "true" ]; then
+          if [ "${{ inputs.is-latest-for-major }}" == "true" ]; then
             bash .github/helpers/release-docker.sh \
               "supertokens/supertokens-dev-postgresql:$dev_tag" \
               "supertokens/supertokens-postgresql:$major"
+          fi
 
+          if [ "${{ inputs.is-latest-release }}" == "true" ]; then
             bash .github/helpers/release-docker.sh \
               "supertokens/supertokens-dev-postgresql:$dev_tag" \
               "supertokens/supertokens-postgresql:latest"
