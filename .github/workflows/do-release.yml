@@ -358,21 +358,11 @@ jobs:
           file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
 
-  # ── Wait for Docker image to be available on Docker Hub ──────────
-  wait-for-docker:
-    name: Wait for Docker image
-    needs: build-docker
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Wait for Docker image
-        run: python .github/helpers/wait-for-docker.py
-
   # ── Stress tests ──────────────────────────────────────────────────
   stress-tests:
     name: Stress tests
     if: inputs.run-stress-tests
-    needs: [ build-docker, wait-for-docker ]
+    needs: [ build-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
       tag: ${{ needs.build-docker.outputs.dev-tag }}
