@@ -396,11 +396,11 @@ jobs:
             "supertokens/supertokens-dev-postgresql:$dev_tag" \
             "supertokens/supertokens-postgresql:$minor"
 
-          bash .github/helpers/release-docker.sh \
-            "supertokens/supertokens-dev-postgresql:$dev_tag" \
-            "supertokens/supertokens-postgresql:$major"
-
           if [ "${{ inputs.is-latest-release }}" == "true" ]; then
+            bash .github/helpers/release-docker.sh \
+              "supertokens/supertokens-dev-postgresql:$dev_tag" \
+              "supertokens/supertokens-postgresql:$major"
+
             bash .github/helpers/release-docker.sh \
               "supertokens/supertokens-dev-postgresql:$dev_tag" \
               "supertokens/supertokens-postgresql:latest"
@@ -484,7 +484,8 @@ jobs:
           gh release create "v${{ inputs.plugin-interface-version }}" \
             --repo supertokens/supertokens-plugin-interface \
             --title "v${{ inputs.plugin-interface-version }}" \
-            --generate-notes
+            --generate-notes \
+            ${{ inputs.is-latest-release && '--latest' || '--no-latest' }}
 
       - name: Tag postgresql-plugin
         id: tag-pg
@@ -501,7 +502,8 @@ jobs:
           gh release create "v${{ inputs.postgresql-plugin-version }}" \
             --repo supertokens/supertokens-postgresql-plugin \
             --title "v${{ inputs.postgresql-plugin-version }}" \
-            --generate-notes
+            --generate-notes \
+            ${{ inputs.is-latest-release && '--latest' || '--no-latest' }}
 
       - name: Tag core
         id: tag-core
@@ -517,4 +519,5 @@ jobs:
           gh release create "v${{ inputs.core-version }}" \
             --repo supertokens/supertokens-core \
             --title "v${{ inputs.core-version }}" \
-            --generate-notes
+            --generate-notes \
+            ${{ inputs.is-latest-release && '--latest' || '--no-latest' }}
