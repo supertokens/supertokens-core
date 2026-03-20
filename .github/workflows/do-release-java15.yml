@@ -160,7 +160,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
@@ -296,7 +296,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
@@ -432,7 +432,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         run: |
