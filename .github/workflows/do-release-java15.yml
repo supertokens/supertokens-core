@@ -197,6 +197,29 @@ jobs:
         if: matrix.plugin == 'postgresql'
         run: supertokens-root/supertokens-postgresql-plugin/startDb.sh
 
+      - name: Start Hydra
+        run: |
+          docker run -d \
+            --name hydra \
+            --network host \
+            -e DSN=memory \
+            -e URLS_SELF_ISSUER=http://localhost:4444 \
+            -e URLS_LOGIN=http://localhost:3001/auth/oauth/login \
+            -e URLS_CONSENT=http://localhost:3001/auth/oauth/consent \
+            -e URLS_LOGOUT=http://localhost:3001/auth/oauth/logout \
+            -e SECRETS_SYSTEM=thisIsATestSecretThatIsAtLeast32Chars \
+            -e SECRETS_COOKIE=thisIsATestCookieSecretAtLeast32 \
+            -e SERVE_COOKIES_SAME_SITE_MODE=Lax \
+            oryd/hydra:v2.2.0 serve all --dev
+          for i in $(seq 1 30); do
+            if wget -q --spider http://localhost:4444/health/alive 2>/dev/null; then
+              echo "Hydra is ready"
+              break
+            fi
+            echo "Waiting for Hydra... ($i/30)"
+            sleep 2
+          done
+
       - name: Setup test environment
         run: cd supertokens-root && ./utils/setupTestEnv --local
 
