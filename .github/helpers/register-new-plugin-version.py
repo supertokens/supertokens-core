@@ -1,6 +1,5 @@
 import json
 import os
-import subprocess
 
 import http.client
 
@@ -46,19 +45,6 @@ plugin_version = read_plugin_version()
 
 with open('pluginInterfaceSupported.json', 'r') as fd:
 	plugin_interface_array = json.load(fd)['versions']
-
-def check_if_tag_exists(tag):
-    try:
-        result = subprocess.run(['git', 'tag', '-l', tag], capture_output=True, text=True)
-        return tag in result.stdout
-    except subprocess.CalledProcessError:
-        print(f"Error checking for tag {tag}")
-        return False
-
-dev_tag = f"dev-v{plugin_version}"
-if not check_if_tag_exists(dev_tag):
-    print(f"Tag {dev_tag} does not exist. Exiting!")
-    exit(0)
 
 register_plugin_version(
 	supertokens_api_key=os.environ.get("SUPERTOKENS_API_KEY"),
