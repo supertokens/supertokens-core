@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.2]
+
+- Fixes Tenant/App/CUD APIs to not to lock the whole world for a read
+
 ## [11.4.1]
 
 - Fixes OTEL initialization when there is no javaagent

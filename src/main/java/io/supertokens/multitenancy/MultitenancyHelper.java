@@ -52,7 +52,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
     private Main main;
-    private TenantConfig[] tenantConfigs;
+    private volatile TenantConfig[] tenantConfigs;
 
     // when the core has `supertokens_saas_load_only_cud` set, the tenantConfigs array will be filtered
     // based on the config value. However, we need to keep all the list of CUDs from the db to be able
@@ -247,20 +247,14 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     public TenantConfig[] getAllTenants() {
-        try {
-            return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
-                // Returning a deep copy of the tenantConfigs array so that the functions consuming it
-                // do not modify the original array
-                TenantConfig[] tenantConfigs = new TenantConfig[this.tenantConfigs.length];
-
-                for (int i = 0; i < this.tenantConfigs.length; i++) {
-                    tenantConfigs[i] = new TenantConfig(this.tenantConfigs[i]);
-                }
-                return tenantConfigs;
-            });
-        } catch (ResourceDistributor.FuncException e) {
-            throw new IllegalStateException(e);
+        // Capture the volatile reference first so the loop operates on a stable snapshot,
+        // even if a refresh reassigns tenantConfigs mid-iteration.
+        TenantConfig[] snapshot = this.tenantConfigs;
+        TenantConfig[] result = new TenantConfig[snapshot.length];
+        for (int i = 0; i < snapshot.length; i++) {
+            result[i] = new TenantConfig(snapshot[i]);
         }
+        return result;
     }
 
     private TenantConfig[] getFilteredTenantConfigs(TenantConfig[] inputTenantConfigs) {

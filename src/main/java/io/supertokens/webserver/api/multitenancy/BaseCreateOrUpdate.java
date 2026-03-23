@@ -31,7 +31,6 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -57,7 +56,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         try {
             // Try fetching the existing tenant config
-
             TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
                     new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(),
                             targetTenantIdentifier.getAppId(),
