@@ -39,6 +39,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -60,9 +61,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -355,13 +353,11 @@ public class OAuthTokenAPI extends WebserverAPI {
         lock.lock();
         try {
             if (storage instanceof OAuthSQLStorage) {
-                handleNonRotatingRefreshSQL(req, resp, appIdentifier, (OAuthSQLStorage) storage, oauthClient,
+                handleNonRotatingRefresh(req, resp, appIdentifier, (OAuthSQLStorage) storage, oauthClient,
                         externalRefreshToken, formFields, headers, iss, accessTokenUpdate, idTokenUpdate,
                         useDynamicKey);
             } else {
-                handleNonRotatingRefreshPlain(req, resp, appIdentifier, storage, oauthClient,
-                        externalRefreshToken, formFields, headers, iss, accessTokenUpdate, idTokenUpdate,
-                        useDynamicKey);
+                throw new IllegalStateException("invalid storage for OAuth");
             }
         } finally {
             lock.unlock();
@@ -372,7 +368,7 @@ public class OAuthTokenAPI extends WebserverAPI {
      * SQL path: DB transaction with {@code SELECT … FOR UPDATE} covering the full Hydra
      * round-trip. The caller must already hold the JVM lock for this token.
      */
-    private void handleNonRotatingRefreshSQL(
+    private void handleNonRotatingRefresh(
             HttpServletRequest req, HttpServletResponse resp,
             AppIdentifier appIdentifier, OAuthSQLStorage sqlStorage, OAuthClient oauthClient,
             String externalRefreshToken, Map<String, String> formFields, Map<String, String> headers,
@@ -385,7 +381,7 @@ public class OAuthTokenAPI extends WebserverAPI {
             sqlStorage.startTransaction(con -> {
                 try {
                     // ── 1. SELECT … FOR UPDATE ─────────────────────────────────────
-                    String internalToken = sqlStorage.getRefreshTokenMappingForUpdate(
+                    String internalToken = sqlStorage.getRefreshTokenMappingForUpdate_Transaction(
                             appIdentifier, con, externalRefreshToken);
                     // Null means no mapping yet (auth-code path stores null); fall back
                     // to using the external token directly — same as getInternalRefreshToken.
@@ -463,7 +459,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 .get("exp").getAsLong();
 
                         // UPDATE inside the same transaction — atomically replaces internal token
-                        sqlStorage.updateOAuthSessionInternal(appIdentifier, con, externalRefreshToken,
+                        sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, externalRefreshToken,
                                 newInternalToken, sessionHandle, jti, refreshTokenExp);
                     }
 
@@ -480,7 +476,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     throw new StorageTransactionLogicException(e);
                 }
                 return null;
-            }, SQLStorage.TransactionIsolationLevel.READ_COMMITTED);
+            });
 
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof IOException) throw (IOException) e.actualException;
@@ -494,117 +490,5 @@ public class OAuthTokenAPI extends WebserverAPI {
         if (finalResponse[0] != null) {
             super.sendJsonResponse(200, finalResponse[0], resp);
         }
-    }
-
-    /**
-     * Non-SQL path: JVM lock only, plain reads/writes (no DB-level row lock).
-     * The caller must already hold the JVM lock for this token.
-     */
-    private void handleNonRotatingRefreshPlain(
-            HttpServletRequest req, HttpServletResponse resp,
-            AppIdentifier appIdentifier, Storage storage, OAuthClient oauthClient,
-            String externalRefreshToken, Map<String, String> formFields, Map<String, String> headers,
-            String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey)
-            throws IOException, ServletException {
-
-        // ── 1. Read current internal token ────────────────────────────────────
-        String internalToken;
-        try {
-            internalToken = OAuth.getInternalRefreshToken(main, appIdentifier, storage, externalRefreshToken);
-        } catch (StorageQueryException e) {
-            throw new ServletException(e);
-        }
-
-        // ── 2. Introspect with Hydra ──────────────────────────────────────────
-        Map<String, String> introspectFields = new HashMap<>();
-        introspectFields.put("token", internalToken);
-        HttpRequestForOAuthProvider.Response introspectResp = OAuthProxyHelper.proxyFormPOST(
-                main, req, resp, appIdentifier, storage,
-                null, "/admin/oauth2/introspect", true, false,
-                introspectFields, new HashMap<>());
-        if (introspectResp == null) return;
-
-        JsonObject refreshTokenPayload = introspectResp.jsonResponse.getAsJsonObject();
-        try {
-            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage,
-                    refreshTokenPayload, externalRefreshToken, oauthClient.clientId);
-        } catch (StorageQueryException | TenantOrAppNotFoundException |
-                 FeatureNotEnabledException | InvalidConfigException e) {
-            throw new ServletException(e);
-        }
-
-        if (!refreshTokenPayload.get("active").getAsBoolean()) {
-            OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException(
-                    "token_inactive",
-                    "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.",
-                    401));
-            return;
-        }
-
-        // ── 3. Exchange with Hydra ────────────────────────────────────────────
-        formFields.put("refresh_token", internalToken);
-        HttpRequestForOAuthProvider.Response exchangeResp = OAuthProxyHelper.proxyFormPOST(
-                main, req, resp, appIdentifier, storage,
-                oauthClient.clientId, "/oauth2/token", false, false,
-                formFields, headers);
-        if (exchangeResp == null) return;
-
-        // ── 4. Transform tokens ───────────────────────────────────────────────
-        try {
-            exchangeResp.jsonResponse = OAuth.transformTokens(main, appIdentifier, storage,
-                    exchangeResp.jsonResponse.getAsJsonObject(),
-                    iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
-        } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
-                 | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException
-                 | JWTCreationException | JWTException | UnsupportedJWTSigningAlgorithmException
-                 | StorageTransactionLogicException e) {
-            throw new ServletException(e);
-        }
-
-        // ── 5. Extract gid / jti / sessionHandle ─────────────────────────────
-        String gid = null, jti = null, sessionHandle = null;
-        if (exchangeResp.jsonResponse.getAsJsonObject().has("access_token")) {
-            try {
-                JsonObject atPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main,
-                        exchangeResp.jsonResponse.getAsJsonObject().get("access_token").getAsString());
-                gid = atPayload.get("gid").getAsString();
-                jti = atPayload.get("jti").getAsString();
-                if (atPayload.has("sessionHandle")) {
-                    sessionHandle = atPayload.get("sessionHandle").getAsString();
-                    updateLastActive(appIdentifier, sessionHandle);
-                }
-            } catch (TryRefreshTokenException | StorageQueryException | TenantOrAppNotFoundException
-                     | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException e) {
-                // ignore — shouldn't happen
-            }
-        }
-
-        // ── 6. Update session mapping ─────────────────────────────────────────
-        if (exchangeResp.jsonResponse.getAsJsonObject().has("refresh_token")) {
-            String newInternalToken = exchangeResp.jsonResponse.getAsJsonObject()
-                    .get("refresh_token").getAsString();
-
-            Map<String, String> newIntrospectFields = new HashMap<>();
-            newIntrospectFields.put("token", newInternalToken);
-            HttpRequestForOAuthProvider.Response newIntrospectResp = OAuthProxyHelper.proxyFormPOST(
-                    main, req, resp, appIdentifier, storage,
-                    null, "/admin/oauth2/introspect", true, false,
-                    newIntrospectFields, new HashMap<>());
-            if (newIntrospectResp == null) {
-                throw new IllegalStateException("Should never come here");
-            }
-            long refreshTokenExp = newIntrospectResp.jsonResponse.getAsJsonObject().get("exp").getAsLong();
-
-            try {
-                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, oauthClient.clientId,
-                        gid, externalRefreshToken, newInternalToken, sessionHandle, jti, refreshTokenExp);
-            } catch (StorageQueryException | OAuthClientNotFoundException e) {
-                throw new ServletException(e);
-            }
-            exchangeResp.jsonResponse.getAsJsonObject().remove("refresh_token");
-        }
-
-        exchangeResp.jsonResponse.getAsJsonObject().addProperty("status", "OK");
-        super.sendJsonResponse(200, exchangeResp.jsonResponse.getAsJsonObject(), resp);
     }
 }
