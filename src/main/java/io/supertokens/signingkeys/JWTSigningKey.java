@@ -77,8 +77,11 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             } else {
                 try {
                     JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
-                    jwtSigningKey.generateKeysForSupportedAlgos(main);
+                    // Register before generateKeysForSupportedAlgos so getInstance() can find it
+                    // (generateKeysForSupportedAlgos calls getInstance internally)
+                    main.getResourceDistributor().setResource(app, RESOURCE_KEY, jwtSigningKey);
                     newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), jwtSigningKey);
+                    jwtSigningKey.generateKeysForSupportedAlgos(main);
                 } catch (Exception e) {
                     Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
                     // continue loading other resources
