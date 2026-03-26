@@ -27,12 +27,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 // the purpose of this class is to tie singleton classes to s specific main instance. So that
 // when the main instance dies, those singleton classes die too.
 
 public class ResourceDistributor {
-    private final Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
+    private final Map<KeyClass, SingletonResource> resources = new ConcurrentHashMap<>(1);
     private final Main main;
 
     private static TenantIdentifier appUsedForTesting = TenantIdentifier.BASE_TENANT;
@@ -100,22 +101,13 @@ public class ResourceDistributor {
     public SingletonResource setResource(TenantIdentifier tenantIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
-        SingletonResource alreadyExists = resources.get(new KeyClass(tenantIdentifier, key));
-        if (alreadyExists != null) {
-            return alreadyExists;
-        }
-        resources.put(new KeyClass(tenantIdentifier, key), resource);
-        return resource;
+        SingletonResource existing = resources.putIfAbsent(new KeyClass(tenantIdentifier, key), resource);
+        return existing != null ? existing : resource;
     }
 
     public SingletonResource removeResource(TenantIdentifier tenantIdentifier,
                                                          @Nonnull String key) {
-        SingletonResource singletonResource = resources.get(new KeyClass(tenantIdentifier, key));
-        if (singletonResource == null) {
-            return null;
-        }
-        resources.remove(new KeyClass(tenantIdentifier, key));
-        return singletonResource;
+        return resources.remove(new KeyClass(tenantIdentifier, key));
     }
 
     public SingletonResource setResource(AppIdentifier appIdentifier,
@@ -141,6 +133,16 @@ public class ResourceDistributor {
         }
     }
 
+    /**
+     * Atomically swaps resources for {@code inputKey}: adds/updates new entries first, then
+     * removes stale ones. Readers never observe a gap where valid tenants are temporarily absent
+     * (unlike a clearAllResourcesWithResourceKey followed by individual setResource calls).
+     */
+    public void replaceResourcesWithResourceKey(String inputKey, Map<KeyClass, SingletonResource> newResources) {
+        resources.putAll(newResources);
+        resources.keySet().removeIf(k -> k.key.equals(inputKey) && !newResources.containsKey(k));
+    }
+
     public Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
         Map<KeyClass, SingletonResource> result = new HashMap<>();
         resources.forEach((key, value) -> {
@@ -161,6 +163,11 @@ public class ResourceDistributor {
         T performTask() throws FuncException;
     }
 
+    // TODO(cleanup): every loadForAllTenants / loadAllTenantConfig call site acquires this lock from inside
+    //  forceReloadAllResources or refreshTenantsInCore..., which already holds it. The inner acquisitions are
+    //  safe (Java synchronized is reentrant) but redundant. Now that the map is a ConcurrentHashMap and reloads
+    //  use replaceResourcesWithResourceKey, the inner calls can be removed and the locking model becomes:
+    //  the outer lock serialises concurrent reloads; ConcurrentHashMap handles reader safety.
     public synchronized <T> T withResourceDistributorLock(Func<T> func) throws FuncException {
         return func.performTask();
     }

@@ -50,6 +50,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -294,24 +295,24 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                        new HashMap<>();
                 for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
                     if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
-                                resource);
+                        newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
                     } else {
                         try {
-                            main.getResourceDistributor()
-                                    .setResource(app, RESOURCE_KEY,
-                                            new SAMLCertificate(app, main));
+                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
+                                    new SAMLCertificate(app, main));
                         } catch (TenantOrAppNotFoundException e) {
                             Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
                             // continue loading other resources
                         }
                     }
                 }
+                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {

@@ -131,28 +131,27 @@ public class Config extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                        new HashMap<>();
                 for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
                     try {
                         ResourceDistributor.SingletonResource resource = existingResources.get(
-                                new ResourceDistributor.KeyClass(
-                                        key.getTenantIdentifier(),
-                                        RESOURCE_KEY));
+                                new ResourceDistributor.KeyClass(key.getTenantIdentifier(), RESOURCE_KEY));
                         if (resource != null && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
-                            main.getResourceDistributor()
-                                    .setResource(key.getTenantIdentifier(),
-                                            RESOURCE_KEY,
-                                            resource);
+                            newResources.put(
+                                    new ResourceDistributor.KeyClass(key.getTenantIdentifier(), RESOURCE_KEY),
+                                    resource);
                         } else {
-                            main.getResourceDistributor()
-                                    .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
-                                            new Config(main, normalisedConfigs.get(key)));
+                            newResources.put(
+                                    new ResourceDistributor.KeyClass(key.getTenantIdentifier(), RESOURCE_KEY),
+                                    new Config(main, normalisedConfigs.get(key)));
                         }
                     } catch (Exception e) {
                         Logging.error(main, key.getTenantIdentifier(), e.getMessage(), false);
                         // continue loading other resources
                     }
                 }
+                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {

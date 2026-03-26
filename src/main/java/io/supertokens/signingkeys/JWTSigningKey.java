@@ -39,6 +39,7 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -69,27 +70,25 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                        new HashMap<>();
                 for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
                     if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
-                                resource);
+                        newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
                     } else {
                         try {
                             JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
-                            main.getResourceDistributor()
-                                    .setResource(app, RESOURCE_KEY, jwtSigningKey);
-
                             jwtSigningKey.generateKeysForSupportedAlgos(main);
-
+                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), jwtSigningKey);
                         } catch (Exception e) {
                             Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
                             // continue loading other resources
                         }
                     }
                 }
+                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
