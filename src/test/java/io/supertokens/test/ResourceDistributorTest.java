@@ -29,6 +29,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.Assert.*;
 
 public class ResourceDistributorTest {
@@ -109,5 +115,177 @@ public class ResourceDistributorTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+    }
+
+    /**
+     * Concurrent reads (getResource iterates keySet) and writes (clearAllResourcesWithResourceKey)
+     * must not throw ConcurrentModificationException. This would have failed reliably with the
+     * original HashMap — the fix is switching to ConcurrentHashMap.
+     */
+    @Test
+    public void testConcurrentReadWriteNoConcurrentModificationException() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ResourceDistributor rd = process.getProcess().getResourceDistributor();
+        int tenantCount = 50;
+
+        for (int i = 0; i < tenantCount; i++) {
+            rd.setResource(new TenantIdentifier(null, null, "t" + i), ResourceA.RESOURCE_ID, new ResourceA());
+        }
+
+        AtomicBoolean failed = new AtomicBoolean(false);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        AtomicBoolean running = new AtomicBoolean(true);
+
+        // Reader threads continuously walk keySet() via getResource
+        int readerCount = 10;
+        ExecutorService readers = Executors.newFixedThreadPool(readerCount);
+        for (int i = 0; i < readerCount; i++) {
+            final int idx = i;
+            readers.submit(() -> {
+                while (running.get()) {
+                    try {
+                        rd.getResource(new TenantIdentifier(null, null, "t" + (idx % tenantCount)),
+                                ResourceA.RESOURCE_ID);
+                    } catch (TenantOrAppNotFoundException ignored) {
+                        // acceptable — resource may be transiently absent during clear
+                    } catch (Throwable t) {
+                        error.set(t);
+                        failed.set(true);
+                        running.set(false);
+                    }
+                }
+            });
+        }
+
+        // Writer repeatedly clears and repopulates
+        for (int round = 0; round < 200 && !failed.get(); round++) {
+            rd.clearAllResourcesWithResourceKey(ResourceA.RESOURCE_ID);
+            for (int i = 0; i < tenantCount; i++) {
+                rd.setResource(new TenantIdentifier(null, null, "t" + i), ResourceA.RESOURCE_ID, new ResourceA());
+            }
+        }
+
+        running.set(false);
+        readers.shutdown();
+        assertTrue(readers.awaitTermination(30, TimeUnit.SECONDS));
+
+        if (failed.get()) {
+            throw new AssertionError("Unexpected exception in reader thread", error.get());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * When many threads race to setResource for the same key, exactly one instance wins and
+     * every caller — including the losers — gets that same winning instance back.
+     * This would have been a check-then-act race with the original get+put; the fix is putIfAbsent.
+     */
+    @Test
+    public void testSetResourceIsAtomicUnderConcurrency() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ResourceDistributor rd = process.getProcess().getResourceDistributor();
+        TenantIdentifier tenant = new TenantIdentifier(null, null, null);
+
+        int threadCount = 100;
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        // Collect the instance each thread got back
+        ConcurrentLinkedQueue<ResourceDistributor.SingletonResource> results = new ConcurrentLinkedQueue<>();
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        for (int i = 0; i < threadCount; i++) {
+            pool.submit(() -> {
+                try {
+                    startLatch.await();
+                    results.add(rd.setResource(tenant, ResourceA.RESOURCE_ID, new ResourceA()));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        startLatch.countDown(); // release all threads simultaneously
+        pool.shutdown();
+        assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS));
+
+        assertEquals(threadCount, results.size());
+        // All threads must have received the identical winning instance
+        ResourceDistributor.SingletonResource first = results.peek();
+        for (ResourceDistributor.SingletonResource r : results) {
+            assertSame(first, r);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Tenants that are present before and after a replaceResourcesWithResourceKey call must
+     * never be invisible to a concurrent reader. The old clear-then-repopulate pattern had a
+     * window where the map was empty; replaceResourcesWithResourceKey eliminates it by writing
+     * new entries before removing stale ones.
+     */
+    @Test
+    public void testReplaceResourcesWithResourceKeyHasNoReaderGap() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ResourceDistributor rd = process.getProcess().getResourceDistributor();
+        int tenantCount = 20;
+
+        for (int i = 0; i < tenantCount; i++) {
+            rd.setResource(new TenantIdentifier(null, null, "t" + i), ResourceA.RESOURCE_ID, new ResourceA());
+        }
+
+        AtomicBoolean gapDetected = new AtomicBoolean(false);
+        AtomicBoolean running = new AtomicBoolean(true);
+
+        // Readers must never get TenantOrAppNotFoundException — the tenants are always in the new set
+        int readerCount = 8;
+        ExecutorService readers = Executors.newFixedThreadPool(readerCount);
+        for (int i = 0; i < readerCount; i++) {
+            final int tenantIdx = i % tenantCount;
+            readers.submit(() -> {
+                while (running.get()) {
+                    try {
+                        rd.getResource(new TenantIdentifier(null, null, "t" + tenantIdx), ResourceA.RESOURCE_ID);
+                    } catch (TenantOrAppNotFoundException e) {
+                        gapDetected.set(true);
+                        running.set(false);
+                    }
+                }
+            });
+        }
+
+        // Writer repeatedly replaces with the same set of tenants (new instances, same keys)
+        for (int round = 0; round < 500 && !gapDetected.get(); round++) {
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources = new HashMap<>();
+            for (int i = 0; i < tenantCount; i++) {
+                TenantIdentifier t = new TenantIdentifier(null, null, "t" + i);
+                newResources.put(new ResourceDistributor.KeyClass(t, ResourceA.RESOURCE_ID), new ResourceA());
+            }
+            rd.replaceResourcesWithResourceKey(ResourceA.RESOURCE_ID, newResources);
+        }
+
+        running.set(false);
+        readers.shutdown();
+        assertTrue(readers.awaitTermination(30, TimeUnit.SECONDS));
+
+        assertFalse("Reader observed a gap (TenantOrAppNotFoundException) during replaceResourcesWithResourceKey",
+                gapDetected.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
