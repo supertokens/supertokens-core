@@ -23,9 +23,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -122,15 +120,7 @@ public class ResourceDistributor {
     }
 
     public void clearAllResourcesWithResourceKey(String inputKey) {
-        List<KeyClass> toRemove = new ArrayList<>();
-        resources.forEach((key, value) -> {
-            if (key.key.equals(inputKey)) {
-                toRemove.add(key);
-            }
-        });
-        for (KeyClass keyClass : toRemove) {
-            resources.remove(keyClass);
-        }
+        resources.keySet().removeIf(k -> k.key.equals(inputKey));
     }
 
     /**
@@ -163,20 +153,7 @@ public class ResourceDistributor {
         T performTask() throws FuncException;
     }
 
-    // TODO(cleanup): every loadForAllTenants / loadAllTenantConfig call site acquires this lock from inside
-    //  forceReloadAllResources or refreshTenantsInCore..., which already holds it. The inner acquisitions are
-    //  safe (Java synchronized is reentrant) but redundant. Now that the map is a ConcurrentHashMap and reloads
-    //  use replaceResourcesWithResourceKey, the inner calls can be removed and the locking model becomes:
-    //  the outer lock serialises concurrent reloads; ConcurrentHashMap handles reader safety.
     public synchronized <T> T withResourceDistributorLock(Func<T> func) throws FuncException {
-        return func.performTask();
-    }
-
-    public interface FuncWithReturn<T> {
-        T performTask() throws FuncException;
-    }
-
-    public synchronized <T> T withResourceDistributorLockWithReturn(FuncWithReturn<T> func) throws FuncException {
         return func.performTask();
     }
 

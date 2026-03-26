@@ -71,34 +71,27 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
 
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
                                          List<TenantIdentifier> tenantsThatChanged) {
-        try {
-            main.getResourceDistributor().withResourceDistributorLock(() -> {
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                        main.getResourceDistributor()
-                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
-                        new HashMap<>();
-                for (AppIdentifier app : apps) {
-                    ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
-                    } else {
-                        try {
-                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
-                                    new SigningKeys(app, main));
-                        } catch (Exception e) {
-                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
-                            // continue loading other resources
-                        }
-                    }
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                new HashMap<>();
+        for (AppIdentifier app : apps) {
+            ResourceDistributor.SingletonResource resource = existingResources.get(
+                    new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+            if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
+            } else {
+                try {
+                    newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
+                            new SigningKeys(app, main));
+                } catch (Exception e) {
+                    Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                    // continue loading other resources
                 }
-                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
-                return null;
-            });
-        } catch (ResourceDistributor.FuncException e) {
-            throw new IllegalStateException("should never happen", e);
+            }
         }
+        main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
     }
 
     private SigningKeys(AppIdentifier appIdentifier, Main main) {

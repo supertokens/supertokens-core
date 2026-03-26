@@ -127,34 +127,27 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
                                          List<TenantIdentifier> tenantsThatChanged) {
-        try {
-            main.getResourceDistributor().withResourceDistributorLock(() -> {
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                        main.getResourceDistributor()
-                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
-                        new HashMap<>();
-                for (AppIdentifier app : apps) {
-                    try {
-                        ResourceDistributor.SingletonResource resource = existingResources.get(
-                                new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                        if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
-                        } else {
-                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
-                                    new FeatureFlag(main, app));
-                        }
-                    } catch (Exception e) {
-                        Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
-                        // continue loading other resources
-                    }
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                new HashMap<>();
+        for (AppIdentifier app : apps) {
+            try {
+                ResourceDistributor.SingletonResource resource = existingResources.get(
+                        new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+                if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                    newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
+                } else {
+                    newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
+                            new FeatureFlag(main, app));
                 }
-                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
-                return null;
-            });
-        } catch (ResourceDistributor.FuncException e) {
-            throw new IllegalStateException("should never happen", e);
+            } catch (Exception e) {
+                Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                // continue loading other resources
+            }
         }
+        main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
     }
 
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException, TenantOrAppNotFoundException {

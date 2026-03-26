@@ -63,37 +63,29 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged)
-            throws UnsupportedJWTSigningAlgorithmException {
-        try {
-            main.getResourceDistributor().withResourceDistributorLock(() -> {
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                        main.getResourceDistributor()
-                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
-                        new HashMap<>();
-                for (AppIdentifier app : apps) {
-                    ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
-                    } else {
-                        try {
-                            JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
-                            jwtSigningKey.generateKeysForSupportedAlgos(main);
-                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), jwtSigningKey);
-                        } catch (Exception e) {
-                            Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
-                            // continue loading other resources
-                        }
-                    }
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                new HashMap<>();
+        for (AppIdentifier app : apps) {
+            ResourceDistributor.SingletonResource resource = existingResources.get(
+                    new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+            if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
+            } else {
+                try {
+                    JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
+                    jwtSigningKey.generateKeysForSupportedAlgos(main);
+                    newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), jwtSigningKey);
+                } catch (Exception e) {
+                    Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
+                    // continue loading other resources
                 }
-                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
-                return null;
-            });
-        } catch (ResourceDistributor.FuncException e) {
-            throw new IllegalStateException("should never happen", e);
+            }
         }
+        main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
     }
 
     public enum SupportedAlgorithms {
