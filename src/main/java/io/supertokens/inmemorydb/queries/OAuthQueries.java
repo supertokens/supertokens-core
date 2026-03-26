@@ -416,7 +416,7 @@ public class OAuthQueries {
                                                          String externalRefreshToken)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT internal_refresh_token FROM " + Config.getConfig(start).getOAuthSessionsTable() +
-                " WHERE app_id = ? AND external_refresh_token = ? FOR UPDATE";
+                " WHERE app_id = ? AND external_refresh_token = ?";
         return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, externalRefreshToken);
