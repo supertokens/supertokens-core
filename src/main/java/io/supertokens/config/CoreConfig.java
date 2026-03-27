@@ -1130,14 +1130,15 @@ public class CoreConfig {
         }
 
         if (Main.isTesting) {
+            String oauthHost = System.getProperty("ST_OAUTH_PROVIDER_SERVICE_HOST", "localhost");
             if (oauth_provider_public_service_url == null) {
-                oauth_provider_public_service_url = "http://localhost:" + System.getProperty("ST_OAUTH_PROVIDER_SERVICE_PORT");
+                oauth_provider_public_service_url = "http://" + oauthHost + ":" + System.getProperty("ST_OAUTH_PROVIDER_SERVICE_PORT");
             }
             if (oauth_provider_admin_service_url == null) {
-                oauth_provider_admin_service_url = "http://localhost:" + System.getProperty("ST_OAUTH_PROVIDER_ADMIN_PORT");
+                oauth_provider_admin_service_url = "http://" + oauthHost + ":" + System.getProperty("ST_OAUTH_PROVIDER_ADMIN_PORT");
             }
             if (oauth_provider_url_configured_in_oauth_provider == null) {
-                oauth_provider_url_configured_in_oauth_provider = "http://localhost:4444";
+                oauth_provider_url_configured_in_oauth_provider = "http://" + oauthHost + ":4444";
             }
             if (oauth_client_secret_encryption_key == null) {
                 oauth_client_secret_encryption_key = "clientsecretencryptionkey";

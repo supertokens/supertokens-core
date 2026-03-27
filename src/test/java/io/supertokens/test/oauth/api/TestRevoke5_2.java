@@ -239,7 +239,6 @@ public class TestRevoke5_2 {
 
         // revoke client id
         JsonObject revokeSessionhandleResponse = revokeSessionHandle(process.getProcess(), session.session.handle);
-        System.out.println(revokeSessionhandleResponse.toString());
         assertEquals("OK", revokeSessionhandleResponse.get("status").getAsString());
 
         Thread.sleep(1000);

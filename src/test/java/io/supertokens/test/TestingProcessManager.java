@@ -90,7 +90,7 @@ public class TestingProcessManager {
     }
 
     public static int getFreePort() {
-        while (true) {
+        for (int attempt = 0; attempt < 1000; attempt++) {
             int randomPort = 10000 + (int)(Math.random() * (20000 - 10000));
             try {
                 java.net.Socket socket = new java.net.Socket("localhost", randomPort);
@@ -113,6 +113,7 @@ public class TestingProcessManager {
                 throw new RuntimeException(e4);
             }
         }
+        throw new RuntimeException("Could not find a free port after 1000 attempts");
     }
 
     public static abstract class SharedProcess extends Thread implements TestingProcess {
@@ -159,7 +160,7 @@ public class TestingProcessManager {
 
                 synchronized (waitForInit) {
                     instance.start();
-                    waitForInit.wait();
+                    waitForInit.wait(30_000); // 30s timeout to prevent infinite hang if Main() constructor fails
                 }
 
                 EventAndException e = instance.checkOrWaitForEvents(
@@ -384,7 +385,7 @@ public class TestingProcessManager {
 
                 synchronized (waitForInit) {
                     mainProcess.start();
-                    waitForInit.wait();
+                    waitForInit.wait(30_000); // 30s timeout to prevent infinite hang if Main() constructor fails
                 }
                 isolatedProcesses.add(mainProcess);
 
@@ -486,7 +487,7 @@ public class TestingProcessManager {
      * Utility function to wrap tests with, as they require TestingProcess
      */
     public static void withSharedProcess(ProcessConsumer consumer) throws Exception {
-        String[] args = {"../"};
+        String[] args = {Utils.getInstallDir()};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -297,6 +298,169 @@ public class Config extends ResourceDistributor.SingletonResource {
                 baseConfigJson);
 
         return result;
+    }
+
+    /**
+     * Normalizes config for a single tenant by walking the inheritance chain:
+     * tenant's own config → app-level parent → CUD-level parent → base config.
+     * This is O(n) to scan for parent configs but avoids normalizing ALL tenants.
+     */
+    public static JsonObject getNormalisedConfigForTenant(
+            TenantIdentifier target, TenantConfig[] allTenants, JsonObject baseConfigJson) {
+
+        if (target.equals(new TenantIdentifier(null, null, null))) {
+            return baseConfigJson;
+        }
+
+        TenantIdentifier appParent = new TenantIdentifier(
+                target.getConnectionUriDomain(), target.getAppId(), null);
+        TenantIdentifier cudParent = new TenantIdentifier(
+                target.getConnectionUriDomain(), null, null);
+
+        JsonObject ownConfig = null;
+        JsonObject appConfig = null;
+        JsonObject cudConfig = null;
+
+        for (TenantConfig tenant : allTenants) {
+            if (tenant.tenantIdentifier.equals(target)) {
+                ownConfig = tenant.coreConfig;
+            } else if (tenant.tenantIdentifier.equals(appParent)) {
+                appConfig = tenant.coreConfig;
+            } else if (tenant.tenantIdentifier.equals(cudParent)) {
+                cudConfig = tenant.coreConfig;
+            }
+        }
+
+        JsonObject finalJson = new JsonObject();
+        if (ownConfig != null) mergeConfigInto(finalJson, ownConfig);
+        if (appConfig != null) mergeConfigInto(finalJson, appConfig);
+        if (cudConfig != null) mergeConfigInto(finalJson, cudConfig);
+        mergeConfigInto(finalJson, baseConfigJson);
+
+        return finalJson;
+    }
+
+    private static void mergeConfigInto(JsonObject target, JsonObject source) {
+        source.entrySet().forEach(entry -> {
+            if (!target.has(entry.getKey())) {
+                target.add(entry.getKey(), entry.getValue());
+            }
+        });
+    }
+
+    /**
+     * Loads Config resources only for the specified changed tenants, without clearing
+     * and rebuilding all Config resources. Used for incremental tenant updates.
+     */
+    public static void loadConfigForChangedTenants(Main main, TenantConfig[] allTenants,
+                                                    List<TenantIdentifier> tenantsThatChanged)
+            throws IOException, InvalidConfigException {
+        if (tenantsThatChanged == null || tenantsThatChanged.isEmpty()) {
+            return;
+        }
+
+        JsonObject baseConfig = getBaseConfigAsJsonObject(main);
+
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                for (TenantIdentifier changed : tenantsThatChanged) {
+                    try {
+                        JsonObject normalised = getNormalisedConfigForTenant(changed, allTenants, baseConfig);
+                        main.getResourceDistributor().removeResource(changed, RESOURCE_KEY);
+                        main.getResourceDistributor().setResource(changed, RESOURCE_KEY,
+                                new Config(main, normalised));
+                    } catch (Exception e) {
+                        Logging.error(main, changed, e.getMessage(), false);
+                    }
+                }
+                return null;
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException("should never happen", e);
+        }
+    }
+
+    /**
+     * Validates a single tenant's config against existing resources, without re-normalizing
+     * or re-validating all existing tenants.
+     */
+    public static void assertSingleTenantConfigIsValid(Main main, TenantIdentifier targetTenant,
+                                                        JsonObject normalisedConfig,
+                                                        TenantConfig targetTenantConfig)
+            throws InvalidConfigException, IOException {
+
+        // 1. Create a Storage instance for the target tenant to get its userPoolId
+        Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfig, targetTenant, true);
+        String userPoolId = storage.getUserPoolId();
+        String connectionUriAndAppId =
+                targetTenant.getConnectionUriDomain() + "|" + targetTenant.getAppId();
+
+        // 2. Build constraint maps from existing StorageLayer resources
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+
+        Map<String, String> userPoolIdToCUD = new HashMap<>();
+        Map<String, Storage> userPoolToStorage = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                existingStorages.entrySet()) {
+            TenantIdentifier existingTenant = entry.getKey().getTenantIdentifier();
+            if (existingTenant.equals(targetTenant)) {
+                continue; // skip the target tenant itself (may be an update)
+            }
+            Storage existingStorage = ((StorageLayer) entry.getValue()).getUnderlyingStorage();
+            String existingPoolId = existingStorage.getUserPoolId();
+            userPoolIdToCUD.put(existingPoolId, existingTenant.getConnectionUriDomain());
+            userPoolToStorage.putIfAbsent(existingPoolId, existingStorage);
+        }
+
+        // 3. Check userPoolId → CUD uniqueness
+        String existingCUD = userPoolIdToCUD.get(userPoolId);
+        if (existingCUD != null && !existingCUD.equals(targetTenant.getConnectionUriDomain())) {
+            throw new InvalidConfigException(
+                    "ConnectionUriDomain: " + existingCUD +
+                            " cannot be mapped to the same user pool as " +
+                            targetTenant.getConnectionUriDomain());
+        }
+
+        // 4. Check storage config conflicts within the same userPoolId
+        Storage existingStorageForPool = userPoolToStorage.get(userPoolId);
+        if (existingStorageForPool != null) {
+            existingStorageForPool.assertThatConfigFromSameUserPoolIsNotConflicting(normalisedConfig);
+        }
+
+        // 5. Validate the target config AND check core config conflicts within the same app.
+        // Always create a new Config to validate the target config (calls normalizeAndValidate).
+        Config targetConfig = new Config(main, normalisedConfig);
+
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingConfigs =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                existingConfigs.entrySet()) {
+            TenantIdentifier existingTenant = entry.getKey().getTenantIdentifier();
+            if (existingTenant.equals(targetTenant)) {
+                continue;
+            }
+            String existingCUDAndApp =
+                    existingTenant.getConnectionUriDomain() + "|" + existingTenant.getAppId();
+            if (existingCUDAndApp.equals(connectionUriAndAppId)) {
+                CoreConfig existingCore;
+                if (existingTenant.equals(new TenantIdentifier(null, null, null))) {
+                    // For the base tenant, create a fresh Config from baseConfigJson for comparison.
+                    // The stored base Config uses isBaseTenant=true normalization which may produce
+                    // different defaults. Using the JSON constructor ensures consistent comparison.
+                    existingCore = new Config(main, getBaseConfigAsJsonObject(main)).core;
+                } else {
+                    existingCore = ((Config) entry.getValue()).core;
+                }
+                existingCore.assertThatConfigFromSameAppIdAreNotConflicting(targetConfig.core);
+                break; // only need one existing config per app
+            }
+        }
+
+        // 6. Check non-base configs don't have per-core settings
+        if (!targetTenant.equals(new TenantIdentifier(null, null, null))) {
+            CoreConfig.assertThatCertainConfigIsNotSetForAppOrTenants(targetTenantConfig.coreConfig);
+        }
     }
 
     public static CoreConfig getConfig(TenantIdentifier tenantIdentifier, Main main)

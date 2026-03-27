@@ -380,6 +380,81 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    /**
+     * Loads StorageLayer resources only for the specified changed tenants, without clearing
+     * and rebuilding all storage resources. Reuses existing storage instances when the
+     * userPoolId + connectionPoolId match.
+     */
+    public static void loadStorageForChangedTenants(Main main, TenantConfig[] allTenants,
+                                                     List<TenantIdentifier> tenantsThatChanged)
+            throws InvalidConfigException, IOException {
+        if (tenantsThatChanged == null || tenantsThatChanged.isEmpty()) {
+            return;
+        }
+
+        JsonObject baseConfig = Config.getBaseConfigAsJsonObject(main);
+
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                // Build existing pool ID → storage mapping from current resources
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
+                        main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<String, Storage> existingPoolToStorage = new HashMap<>();
+                for (ResourceDistributor.SingletonResource resource : existingStorageMap.values()) {
+                    Storage s = ((StorageLayer) resource).storage;
+                    String uniqueId = s.getUserPoolId() + "~" + s.getConnectionPoolId();
+                    existingPoolToStorage.putIfAbsent(uniqueId, s);
+                }
+
+                for (TenantIdentifier changed : tenantsThatChanged) {
+                    try {
+                        JsonObject normConfig = Config.getNormalisedConfigForTenant(
+                                changed, allTenants, baseConfig);
+                        Storage newStorage = getNewStorageInstance(main, normConfig, changed, true);
+                        String userPoolId = newStorage.getUserPoolId();
+                        String connectionPoolId = newStorage.getConnectionPoolId();
+                        String uniqueId = userPoolId + "~" + connectionPoolId;
+
+                        // Reuse existing storage if same pool exists
+                        Storage storageToUse;
+                        boolean isNewPool;
+                        if (existingPoolToStorage.containsKey(uniqueId)) {
+                            storageToUse = existingPoolToStorage.get(uniqueId);
+                            isNewPool = false;
+                        } else {
+                            storageToUse = newStorage;
+                            isNewPool = true;
+                        }
+
+                        storageToUse.setLogLevels(Config.getBaseConfig(main).getLogLevels(main));
+
+                        // Remove old resource for this tenant (if any), then set new
+                        main.getResourceDistributor().removeResource(changed, RESOURCE_KEY);
+                        main.getResourceDistributor().setResource(changed, RESOURCE_KEY,
+                                new StorageLayer(storageToUse));
+
+                        // Init storage if this is a new pool
+                        if (isNewPool) {
+                            storageToUse.initStorage(false, new ArrayList<>(List.of(changed)));
+                            storageToUse.initFileLogging(
+                                    Config.getBaseConfig(main).getInfoLogPath(main),
+                                    Config.getBaseConfig(main).getErrorLogPath(main),
+                                    TelemetryProvider.getInstance(main));
+                            existingPoolToStorage.put(uniqueId, storageToUse);
+                        }
+                    } catch (DbInitException e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                    } catch (Exception e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                    }
+                }
+                return null;
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Storage getBaseStorage(Main main) {
         try {
             return getInstance(new TenantIdentifier(null, null, null), main).storage;

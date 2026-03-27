@@ -36,6 +36,7 @@ import java.util.Set;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class LogLevelTest {
     @Rule
@@ -163,6 +164,9 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelNoneOutput() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         {
             Utils.setValueInConfig("log_level", "NONE");
             String[] args = {"../"};
@@ -207,6 +211,9 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelErrorOutput() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         {
             Utils.setValueInConfig("log_level", "ERROR");
             String[] args = {"../"};
@@ -261,6 +268,9 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelWarnOutput() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         {
             Utils.setValueInConfig("log_level", "WARN");
             String[] args = {"../"};
@@ -315,6 +325,9 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelInfoOutput() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         {
             Utils.setValueInConfig("log_level", "INFO");
             String[] args = {"../"};
@@ -369,6 +382,9 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelDebugOutput() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         {
             Utils.setValueInConfig("log_level", "DEBUG");
             String[] args = {"../"};

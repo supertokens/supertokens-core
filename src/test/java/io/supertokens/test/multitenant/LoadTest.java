@@ -79,8 +79,13 @@ public class LoadTest {
                     new PasswordlessConfig(false),
                     null, null, config);
             try {
-                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
-                        tenants[insideLoop]);
+                // Use forceReloadResources=false for intermediate tenants to avoid O(n^2) overhead.
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(),
+                        tenants[insideLoop],
+                        false, // shouldPreventProtectedConfigUpdate
+                        true,  // skipThirdPartyConfigValidation
+                        i == 99 // forceReloadResources - only on last iteration
+                );
             } catch (Exception e) {
                 e.printStackTrace();
             }

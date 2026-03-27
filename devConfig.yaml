@@ -105,7 +105,7 @@ disable_telemetry: true
 # password_hashing_alg:
 
 # (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
-# bcrypt_log_rounds:
+bcrypt_log_rounds: 4
 
 # (OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
 # argon2_iterations:

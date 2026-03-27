@@ -165,7 +165,6 @@ public class HelloAPITest {
         HttpRequestForTesting.disableAddingAppId = true;
 
         for (String helloUrl : HELLO_ROUTES) {
-            System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
                     null, Utils.getCdiVersionStringLatestForTests(), "");
@@ -256,7 +255,6 @@ public class HelloAPITest {
         HttpRequestForTesting.disableAddingAppId = true;
 
         for (String helloUrl : HELLO_ROUTES) {
-            System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
                     null, Utils.getCdiVersionStringLatestForTests(), "");
@@ -371,7 +369,6 @@ public class HelloAPITest {
         };
 
         for (String helloUrl : HELLO_ROUTES) {
-            System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
                     null, Utils.getCdiVersionStringLatestForTests(), "");
@@ -386,7 +383,6 @@ public class HelloAPITest {
         // Not found
         for (String notFoundUrl : NOT_FOUND_ROUTES) {
             try {
-                System.out.println(notFoundUrl);
                 String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         notFoundUrl, null, 1000, 1000,
                         null, Utils.getCdiVersionStringLatestForTests(), "");
