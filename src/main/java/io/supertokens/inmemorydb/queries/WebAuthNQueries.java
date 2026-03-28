@@ -285,12 +285,15 @@ public class WebAuthNQueries {
             try {
                 // app_id_to_user_id
                 String insertAppIdToUserId = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
-                        + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
+                        + "(app_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                        + " VALUES(?, ?, ?, ?, ?, ?)";
                 update(sqlCon, insertAppIdToUserId, pst -> {
                     pst.setString(1, tenantIdentifier.getAppId());
                     pst.setString(2, userId);
                     pst.setString(3, userId);
                     pst.setString(4, WEBAUTHN.toString());
+                    pst.setLong(5, timeJoined);
+                    pst.setLong(6, timeJoined);
                 });
 
                 // all_auth_recipe_users

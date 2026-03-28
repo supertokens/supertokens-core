@@ -194,6 +194,8 @@ public class GeneralQueries {
                 + "recipe_id VARCHAR(128) NOT NULL,"
                 + "primary_or_recipe_user_id CHAR(36) NOT NULL,"
                 + "is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "time_joined BIGINT NOT NULL DEFAULT 0,"
+                + "primary_or_recipe_user_time_joined BIGINT NOT NULL DEFAULT 0,"
                 + "PRIMARY KEY (app_id, user_id), "
                 + "FOREIGN KEY (app_id, primary_or_recipe_user_id) REFERENCES " +
                 Config.getConfig(start).getAppIdToUserIdTable()
@@ -1235,7 +1237,8 @@ public class GeneralQueries {
 
         {
             String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
-                    " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ?" +
+                    " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ?," +
+                    " primary_or_recipe_user_time_joined = time_joined" +
                     " WHERE app_id = ? AND user_id = ?";
 
             update(sqlCon, QUERY, pst -> {
@@ -1851,16 +1854,30 @@ public class GeneralQueries {
     public static void updateTimeJoinedForPrimaryUser_Transaction(Start start, Connection sqlCon,
                                                                   AppIdentifier appIdentifier, String primaryUserId)
             throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
-                getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
-                " app_id = ? AND primary_or_recipe_user_id = ?";
-        update(sqlCon, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, primaryUserId);
-            pst.setString(3, appIdentifier.getAppId());
-            pst.setString(4, primaryUserId);
-        });
+        {
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                    getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                    " app_id = ? AND primary_or_recipe_user_id = ?";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, primaryUserId);
+            });
+        }
+        {
+            String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                    " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                    getConfig(start).getAppIdToUserIdTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                    " app_id = ? AND primary_or_recipe_user_id = ?";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, primaryUserId);
+            });
+        }
     }
 
     public static void updateTimeJoinedForPrimaryUsers_Transaction(Start start, Connection sqlCon,
@@ -1870,10 +1887,21 @@ public class GeneralQueries {
                 " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
                 getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
                 " app_id = ? AND primary_or_recipe_user_id = ?";
+        String APP_ID_QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                getConfig(start).getAppIdToUserIdTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                " app_id = ? AND primary_or_recipe_user_id = ?";
 
         List<PreparedStatementValueSetter> setters = new ArrayList<>();
+        List<PreparedStatementValueSetter> appIdSetters = new ArrayList<>();
         for(String primaryUserId : primaryUserIds) {
             setters.add(pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, primaryUserId);
+            });
+            appIdSetters.add(pst -> {
                 pst.setString(1, appIdentifier.getAppId());
                 pst.setString(2, primaryUserId);
                 pst.setString(3, appIdentifier.getAppId());
@@ -1882,6 +1910,7 @@ public class GeneralQueries {
         }
 
         executeBatch(sqlCon, QUERY, setters);
+        executeBatch(sqlCon, APP_ID_QUERY, appIdSetters);
     }
 
     private static class AllAuthRecipeUsersResultHolder {
