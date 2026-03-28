@@ -81,9 +81,9 @@ public class GeneralQueries {
                 + " (app_id, tenant_id) ON DELETE CASCADE,"
                 + "FOREIGN KEY (app_id, primary_or_recipe_user_id) REFERENCES " +
                 Config.getConfig(start).getAppIdToUserIdTable()
-                + " (app_id, user_id) ON DELETE CASCADE,"
+                + " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE,"
                 + "FOREIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable()
-                + " (app_id, user_id) ON DELETE CASCADE"
+                + " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE"
                 + ");";
     }
 
@@ -199,7 +199,7 @@ public class GeneralQueries {
                 + "PRIMARY KEY (app_id, user_id), "
                 + "FOREIGN KEY (app_id, primary_or_recipe_user_id) REFERENCES " +
                 Config.getConfig(start).getAppIdToUserIdTable()
-                + " (app_id, user_id) ON DELETE CASCADE,"
+                + " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE,"
                 + "FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable()
                 + " (app_id) ON DELETE CASCADE"
                 + ");";

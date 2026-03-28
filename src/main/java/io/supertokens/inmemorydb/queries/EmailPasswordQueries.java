@@ -60,7 +60,7 @@ public class EmailPasswordQueries {
                 + "PRIMARY KEY (app_id, user_id),"
                 + "FOREIGN KEY(app_id, user_id)"
                 + " REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable() +
-                " (app_id, user_id) ON DELETE CASCADE"
+                " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE"
                 + ");";
     }
 

@@ -60,7 +60,7 @@ public class WebAuthNQueries {
                 " CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id), " +
                 " CONSTRAINT webauthn_users_to_app_id_fkey " +
                 " FOREIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable() +
-                " (app_id, user_id) ON DELETE CASCADE " +
+                " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE " +
                 ");";
     }
 
