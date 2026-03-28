@@ -16,8 +16,8 @@
 
 package io.supertokens.test.accountlinking;
 
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
-import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import org.junit.Test;
 
 /**

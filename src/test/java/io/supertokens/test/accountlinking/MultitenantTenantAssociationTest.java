@@ -16,12 +16,12 @@
 
 package io.supertokens.test.accountlinking;
 
-import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
-import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
-import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import org.junit.Test;
 
 /**
@@ -244,7 +244,8 @@ public class MultitenantTenantAssociationTest extends MultitenantTestBase {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 1),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t1, 2).expect(new DuplicatePhoneNumberException()),
+                        new AssociateUserToTenant(t1, 2).expect(
+                                new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
                         new AssociateUserToTenant(t2, 2).expect(
                                 new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
                 }),
@@ -257,7 +258,8 @@ public class MultitenantTenantAssociationTest extends MultitenantTestBase {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 1),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t1, 2).expect(new DuplicateThirdPartyUserException()),
+                        new AssociateUserToTenant(t1, 2).expect(
+                                new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
                         new AssociateUserToTenant(t2, 2).expect(
                                 new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
                 })

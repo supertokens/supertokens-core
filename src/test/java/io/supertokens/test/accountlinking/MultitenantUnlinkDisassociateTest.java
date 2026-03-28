@@ -18,11 +18,12 @@ package io.supertokens.test.accountlinking;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.Test;
 
@@ -102,9 +103,9 @@ public class MultitenantUnlinkDisassociateTest extends MultitenantTestBase {
                         new MakePrimaryUser(t1, 0),
                         new MakePrimaryUser(t1, 1),
                         new AssociateUserToTenant(t1, 0),
-                        new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
+                        new AssociateUserToTenant(t1, 1).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException(null)),
                         new LinkAccounts(t1, 0, 1).expect(
-                                new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
+                                new CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null)),
                 }),
 
                 // Case 36: EP: Disassociate, MakePrimary, associate, link, re-associate → DuplicateEmail on t1, allowed t2
