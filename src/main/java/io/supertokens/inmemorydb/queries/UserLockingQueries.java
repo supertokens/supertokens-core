@@ -25,6 +25,8 @@ import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.LockedUserPair;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 
+import io.supertokens.inmemorydb.Utils;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -41,19 +43,6 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 public class UserLockingQueries {
 
     /**
-     * Holds user lock data fetched from app_id_to_user_id table.
-     */
-    private static class UserLockData {
-        final String primaryOrRecipeUserId;  // empty string if not linked/primary, null if not found
-        final String recipeId;
-
-        UserLockData(String primaryOrRecipeUserId, String recipeId) {
-            this.primaryOrRecipeUserId = primaryOrRecipeUserId;
-            this.recipeId = recipeId;
-        }
-    }
-
-    /**
      * Locks a single user and returns LockedUser.
      * Also locks the primary user if the user is linked.
      */
@@ -63,10 +52,10 @@ public class UserLockingQueries {
     }
 
     /**
-     * Locks multiple users with deadlock prevention (consistent ordering).
+     * Locks multiple users (and their primaries) with a single query.
+     * ORDER BY user_id maintains consistent ordering with PostgreSQL implementation.
      *
-     * Note: FOR UPDATE is not used in SQLite as it's not supported,
-     * but ordering is still maintained for consistency with PostgreSQL implementation.
+     * Note: SQLite doesn't support FOR UPDATE, so this just reads and verifies users exist.
      */
     public static List<LockedUser> lockUsers(Start start, Connection con, AppIdentifier appIdentifier,
                                               List<String> userIds)
@@ -76,47 +65,56 @@ public class UserLockingQueries {
             return Collections.emptyList();
         }
 
-        // Step 1: Read user lock data for all users
-        Map<String, UserLockData> userToLockData = new HashMap<>();
-        Set<String> allIdsToLock = new TreeSet<>();  // TreeSet for consistent ordering
+        String table = Config.getConfig(start).getAppIdToUserIdTable();
+        String placeholders = Utils.generateCommaSeperatedQuestionMarks(userIds.size());
 
+        // Single query that reads both the requested users AND their primary users (if linked).
+        // Mirrors the PostgreSQL query but without FOR UPDATE (SQLite doesn't support it).
+        String QUERY = "SELECT u.user_id, u.primary_or_recipe_user_id, u.is_linked_or_is_a_primary_user, u.recipe_id"
+                + " FROM " + table + " u"
+                + " WHERE u.app_id = ? AND u.user_id IN ("
+                + "   SELECT user_id FROM " + table + " WHERE app_id = ? AND user_id IN (" + placeholders + ")"
+                + "   UNION"
+                + "   SELECT primary_or_recipe_user_id FROM " + table
+                + "     WHERE app_id = ? AND user_id IN (" + placeholders + ")"
+                + "     AND is_linked_or_is_a_primary_user = TRUE"
+                + " )"
+                + " ORDER BY u.user_id";
+
+        // Build the result map from a single query
+        Map<String, LockedUser> lockedByUserId = execute(con, QUERY, pst -> {
+            int idx = 1;
+            pst.setString(idx++, appIdentifier.getAppId());
+            // First subquery params
+            pst.setString(idx++, appIdentifier.getAppId());
+            for (String uid : userIds) {
+                pst.setString(idx++, uid);
+            }
+            // Second subquery params
+            pst.setString(idx++, appIdentifier.getAppId());
+            for (String uid : userIds) {
+                pst.setString(idx++, uid);
+            }
+        }, rs -> {
+            Map<String, LockedUser> map = new HashMap<>();
+            while (rs.next()) {
+                String uid = rs.getString("user_id");
+                String recipeId = rs.getString("recipe_id");
+                boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
+                String primaryUserId = isLinkedOrPrimary ? rs.getString("primary_or_recipe_user_id") : null;
+                map.put(uid, new LockedUserImpl(uid, recipeId, primaryUserId, con));
+            }
+            return map;
+        });
+
+        // Build result list in the same order as requested, verifying all users were found
+        List<LockedUser> result = new ArrayList<>(userIds.size());
         for (String userId : userIds) {
-            allIdsToLock.add(userId);
-            UserLockData lockData = readUserLockData(start, con, appIdentifier, userId);
-            if (lockData == null) {
+            LockedUser locked = lockedByUserId.get(userId);
+            if (locked == null) {
                 throw new UserNotFoundForLockingException(userId);
             }
-            userToLockData.put(userId, lockData);
-            // Empty string means user exists but is not primary/linked - don't add as additional lock target
-            // Non-empty and different from userId means user is linked to a primary
-            if (!lockData.primaryOrRecipeUserId.isEmpty() && !lockData.primaryOrRecipeUserId.equals(userId)) {
-                allIdsToLock.add(lockData.primaryOrRecipeUserId);
-            }
-        }
-
-        // Step 2: "Lock" all users in consistent alphabetical order
-        // Note: SQLite doesn't support FOR UPDATE, this just verifies users exist
-        for (String id : allIdsToLock) {
-            lockSingleUser(start, con, appIdentifier, id);
-        }
-
-        // Step 3: Re-read user data (may have changed in concurrent scenario)
-        List<LockedUser> result = new ArrayList<>();
-        for (String userId : userIds) {
-            UserLockData confirmedData = readUserLockData(start, con, appIdentifier, userId);
-            if (confirmedData == null) {
-                throw new UserNotFoundForLockingException(userId);
-            }
-
-            // Convert empty string to null for LockedUserImpl (user is not primary or linked)
-            String primaryUserIdForLock = confirmedData.primaryOrRecipeUserId.isEmpty() ? null : confirmedData.primaryOrRecipeUserId;
-
-            // If primary changed and is not null/empty, we need to "lock" the new primary too
-            if (primaryUserIdForLock != null && !allIdsToLock.contains(primaryUserIdForLock)) {
-                lockSingleUser(start, con, appIdentifier, primaryUserIdForLock);
-            }
-
-            result.add(new LockedUserImpl(userId, confirmedData.recipeId, primaryUserIdForLock, con));
+            result.add(locked);
         }
 
         return result;
@@ -131,60 +129,5 @@ public class UserLockingQueries {
 
         List<LockedUser> locked = lockUsers(start, con, appIdentifier, List.of(recipeUserId, primaryUserId));
         return new LockedUserPair(locked.get(0), locked.get(1));
-    }
-
-    /**
-     * Verifies a user exists (simulates lock acquisition).
-     * Uses app_id_to_user_id table because users may not be in all_auth_recipe_users
-     * if they've been removed from all tenants.
-     * Note: SQLite doesn't support FOR UPDATE, so this is just a SELECT.
-     */
-    private static void lockSingleUser(Start start, Connection con, AppIdentifier appIdentifier, String userId)
-            throws SQLException, StorageQueryException, UserNotFoundForLockingException {
-
-        // SQLite doesn't support FOR UPDATE, so we just do a regular SELECT
-        String QUERY = "SELECT user_id FROM " + Config.getConfig(start).getAppIdToUserIdTable()
-            + " WHERE app_id = ? AND user_id = ?";
-
-        Boolean found = execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-        }, rs -> rs.next());
-
-        if (!found) {
-            throw new UserNotFoundForLockingException(userId);
-        }
-    }
-
-    /**
-     * Reads user lock data (primary_or_recipe_user_id and recipe_id) for a user (without locking).
-     * Uses app_id_to_user_id table because users may not be in all_auth_recipe_users
-     * if they've been removed from all tenants.
-     * Returns null if user doesn't exist.
-     * Returns UserLockData with empty string primaryOrRecipeUserId if user exists but is not primary or linked.
-     * Returns UserLockData with the primary_or_recipe_user_id if user is primary or linked.
-     */
-    private static UserLockData readUserLockData(Start start, Connection con, AppIdentifier appIdentifier, String userId)
-            throws SQLException, StorageQueryException {
-
-        String QUERY = "SELECT primary_or_recipe_user_id, is_linked_or_is_a_primary_user, recipe_id FROM " + Config.getConfig(start).getAppIdToUserIdTable()
-            + " WHERE app_id = ? AND user_id = ?";
-
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-        }, rs -> {
-            if (rs.next()) {
-                String recipeId = rs.getString("recipe_id");
-                boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
-                if (isLinkedOrPrimary) {
-                    return new UserLockData(rs.getString("primary_or_recipe_user_id"), recipeId);
-                } else {
-                    // User exists but is not primary or linked - return empty string to distinguish from not found
-                    return new UserLockData("", recipeId);
-                }
-            }
-            return null;
-        });
     }
 }

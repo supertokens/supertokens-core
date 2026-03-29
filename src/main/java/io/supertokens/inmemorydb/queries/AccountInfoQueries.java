@@ -612,7 +612,7 @@ public class AccountInfoQueries {
 
                 if (primaryUserId[0] != null) {
                     if (primaryUserId[0].equals(recipeUserId)) {
-                        return CanBecomePrimaryResult.wasAlreadyAPrimeryUserResult();
+                        return CanBecomePrimaryResult.wasAlreadyAPrimaryUserResult();
                     } else {
                         return CanBecomePrimaryResult.linkedWithAnotherPrimaryUserResult(primaryUserId[0]);
                     }
