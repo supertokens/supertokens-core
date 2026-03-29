@@ -1136,7 +1136,7 @@ public class GeneralQueries {
                                                                         String thirdPartyId,
                                                                         String thirdPartyUserId)
             throws SQLException, StorageQueryException {
-        List<String> userIds = ThirdPartyQueries.listUserIdsByThirdPartyInfo(start, appIdentifier,
+        List<String> userIds = AccountInfoQueries.listPrimaryUserIdsByThirdPartyInfo(start, appIdentifier,
                 thirdPartyId, thirdPartyUserId);
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, appIdentifier, userIds);
 
@@ -1151,17 +1151,10 @@ public class GeneralQueries {
                                                                                     String thirdPartyId,
                                                                                     String thirdPartyUserId)
             throws SQLException, StorageQueryException {
-        // we first lock on the table based on thirdparty info and tenant - this will ensure that any other
-        // query happening related to the account linking on this third party info / tenant will wait for this to
-        // finish,
-        // and vice versa.
-
-        ThirdPartyQueries.lockThirdPartyInfo_Transaction(start, sqlCon, appIdentifier, thirdPartyId,
-                thirdPartyUserId);
-
-        // now that we have locks on all the relevant tables, we can read from them safely
-        List<String> userIds = ThirdPartyQueries.listUserIdsByThirdPartyInfo_Transaction(start, sqlCon, appIdentifier,
-                thirdPartyId, thirdPartyUserId);
+        // Note: Locking is now done at the core level via UserLockingStorage.lockUser()
+        // This method just queries the users without acquiring locks.
+        List<String> userIds = AccountInfoQueries.listPrimaryUserIdsByThirdPartyInfo_Transaction(start, sqlCon,
+                appIdentifier, thirdPartyId, thirdPartyUserId);
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds_Transaction(start, sqlCon, appIdentifier,
                 userIds);
 
@@ -1174,29 +1167,7 @@ public class GeneralQueries {
     public static AuthRecipeUserInfo[] listPrimaryUsersByEmail(Start start, TenantIdentifier tenantIdentifier,
                                                                String email)
             throws StorageQueryException, SQLException {
-        List<String> userIds = new ArrayList<>();
-        String emailPasswordUserId = EmailPasswordQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier,
-                email);
-        if (emailPasswordUserId != null) {
-            userIds.add(emailPasswordUserId);
-        }
-
-        String passwordlessUserId = PasswordlessQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier,
-                email);
-        if (passwordlessUserId != null) {
-            userIds.add(passwordlessUserId);
-        }
-
-        userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email));
-
-        String webauthnUserId = WebAuthNQueries.getPrimaryUserIdForTenantUsingEmail(start, tenantIdentifier, email);
-        if(webauthnUserId != null) {
-            userIds.add(webauthnUserId);
-        }
-
-        // remove duplicates from userIds
-        Set<String> userIdsSet = new HashSet<>(userIds);
-        userIds = new ArrayList<>(userIdsSet);
+        List<String> userIds = AccountInfoQueries.listPrimaryUserIdsByEmail(start, tenantIdentifier, email);
 
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),
                 userIds);
@@ -1211,13 +1182,7 @@ public class GeneralQueries {
                                                                      TenantIdentifier tenantIdentifier,
                                                                      String phoneNumber)
             throws StorageQueryException, SQLException {
-        List<String> userIds = new ArrayList<>();
-
-        String passwordlessUserId = PasswordlessQueries.getPrimaryUserByPhoneNumber(start, tenantIdentifier,
-                phoneNumber);
-        if (passwordlessUserId != null) {
-            userIds.add(passwordlessUserId);
-        }
+        List<String> userIds = AccountInfoQueries.listPrimaryUserIdsByPhoneNumber(start, tenantIdentifier, phoneNumber);
 
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),
                 userIds);
@@ -1233,7 +1198,7 @@ public class GeneralQueries {
                                                                     String thirdPartyId,
                                                                     String thirdPartyUserId)
             throws StorageQueryException, SQLException {
-        String userId = ThirdPartyQueries.getUserIdByThirdPartyInfo(start, tenantIdentifier,
+        String userId = AccountInfoQueries.getPrimaryUserIdByThirdPartyInfo(start, tenantIdentifier,
                 thirdPartyId, thirdPartyUserId);
         return getPrimaryUserInfoForUserId(start, tenantIdentifier.toAppIdentifier(), userId);
     }
