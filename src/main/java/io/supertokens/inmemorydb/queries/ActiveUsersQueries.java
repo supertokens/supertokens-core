@@ -50,7 +50,7 @@ public class ActiveUsersQueries {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY = "SELECT count(1) as c FROM ("
                 + "  SELECT count(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
-                + "  FROM " + Config.getConfig(start).getUsersTable()
+                + "  FROM " + Config.getConfig(start).getAppIdToUserIdTable()
                 + "  WHERE primary_or_recipe_user_id IN ("
                 + "    SELECT user_id FROM " + Config.getConfig(start).getUserLastActiveTable()
                 + "    WHERE app_id = ? AND last_active_time >= ?"
