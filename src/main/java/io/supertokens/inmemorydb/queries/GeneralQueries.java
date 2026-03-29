@@ -759,246 +759,121 @@ public class GeneralQueries {
         List<String> usersFromQuery;
 
         if (dashboardSearchTags != null) {
-            ArrayList<String> queryList = new ArrayList<>();
-            {
-                StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
+            boolean hasEmails = dashboardSearchTags.emails != null;
+            boolean hasPhones = dashboardSearchTags.phoneNumbers != null;
+            boolean hasProviders = dashboardSearchTags.providers != null;
 
-                {
-                    // check if we should search through the emailpassword table
-                    if (dashboardSearchTags.shouldEmailPasswordTableBeSearched()) {
-                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable" +
-                                " JOIN " + getConfig(start).getEmailPasswordUserToTenantTable()
-                                + " AS emailpasswordTable ON allAuthUsersTable.app_id = emailpasswordTable.app_id AND "
-                                + "allAuthUsersTable.tenant_id = emailpasswordTable.tenant_id AND "
-                                + "allAuthUsersTable.user_id = emailpasswordTable.user_id";
+            if (!hasEmails && !hasPhones && !hasProviders) {
+                usersFromQuery = new ArrayList<>();
+            } else {
+                ArrayList<String> queryParams = new ArrayList<>();
 
-                        // attach email tags to queries
-                        QUERY = QUERY +
-                                " WHERE (emailpasswordTable.app_id = ? AND emailpasswordTable.tenant_id = ?) AND"
-                                + " ( emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ? ";
-                        queryList.add(tenantIdentifier.getAppId());
-                        queryList.add(tenantIdentifier.getTenantId());
-                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
-                        queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                            QUERY += " OR emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
-                            queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
-                        }
+                StringBuilder query = new StringBuilder(
+                        "SELECT DISTINCT auid.primary_or_recipe_user_id,"
+                                + " auid.primary_or_recipe_user_time_joined"
+                                + " FROM " + getConfig(start).getAppIdToUserIdTable() + " auid"
+                                + " JOIN " + getConfig(start).getRecipeUserTenantsTable() + " rut"
+                                + " ON auid.app_id = rut.app_id AND auid.user_id = rut.recipe_user_id");
 
-                        QUERY += " )";
+                if (hasEmails && hasPhones) {
+                    // Email + Phone: self-join needed (only passwordless users have both)
+                    query.append(" JOIN ").append(getConfig(start).getRecipeUserTenantsTable()).append(" rut_phone")
+                            .append(" ON auid.app_id = rut_phone.app_id AND auid.user_id = rut_phone.recipe_user_id")
+                            .append(" AND rut_phone.tenant_id = rut.tenant_id");
+                }
 
-                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
-                                .append(" LIMIT 1000) AS emailpasswordResultTable");
+                query.append(" WHERE rut.app_id = ? AND rut.tenant_id = ?");
+                queryParams.add(tenantIdentifier.getAppId());
+                queryParams.add(tenantIdentifier.getTenantId());
+
+                if (hasEmails && hasPhones) {
+                    // Email condition on rut (SQLite LIKE is case-insensitive for ASCII)
+                    query.append(" AND rut.account_info_type = 'email' AND (");
+                    for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
+                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
+                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                     }
-                }
-
-                {
-                    // check if we should search through the thirdparty table
-                    if (dashboardSearchTags.shouldThirdPartyTableBeSearched()) {
-                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable"
-                                + " JOIN " + getConfig(start).getThirdPartyUserToTenantTable()
-                                +
-                                " AS thirdPartyToTenantTable ON allAuthUsersTable.app_id = thirdPartyToTenantTable" +
-                                ".app_id AND"
-                                + " allAuthUsersTable.tenant_id = thirdPartyToTenantTable.tenant_id AND"
-                                + " allAuthUsersTable.user_id = thirdPartyToTenantTable.user_id"
-                                + " JOIN " + getConfig(start).getThirdPartyUsersTable()
-                                + " AS thirdPartyTable ON thirdPartyToTenantTable.app_id = thirdPartyTable.app_id AND"
-                                + " thirdPartyToTenantTable.user_id = thirdPartyTable.user_id";
-
-                        // check if email tag is present
-                        if (dashboardSearchTags.emails != null) {
-
-                            QUERY +=
-                                    " WHERE (thirdPartyToTenantTable.app_id = ? AND thirdPartyToTenantTable.tenant_id" +
-                                            " = ?)"
-                                            + " AND ( thirdPartyTable.email LIKE ? OR thirdPartyTable.email LIKE ?";
-                            queryList.add(tenantIdentifier.getAppId());
-                            queryList.add(tenantIdentifier.getTenantId());
-                            queryList.add(dashboardSearchTags.emails.get(0) + "%");
-                            queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
-
-                            for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                                QUERY += " OR thirdPartyTable.email LIKE ? OR thirdPartyTable.email LIKE ?";
-                                queryList.add(dashboardSearchTags.emails.get(i) + "%");
-                                queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
-                            }
-
-                            QUERY += " )";
-
-                        }
-
-                        // check if providers tag is present
-                        if (dashboardSearchTags.providers != null) {
-                            if (dashboardSearchTags.emails != null) {
-                                QUERY += " AND ";
-                            } else {
-                                QUERY += " WHERE (thirdPartyToTenantTable.app_id = ? AND thirdPartyToTenantTable" +
-                                        ".tenant_id = ?) AND ";
-                                queryList.add(tenantIdentifier.getAppId());
-                                queryList.add(tenantIdentifier.getTenantId());
-                            }
-
-                            QUERY += " ( thirdPartyTable.third_party_id LIKE ?";
-                            queryList.add(dashboardSearchTags.providers.get(0) + "%");
-                            for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
-                                QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                                queryList.add(dashboardSearchTags.providers.get(i) + "%");
-                            }
-
-                            QUERY += " )";
-                        }
-
-                        // check if we need to append this to an existing search query
-                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS thirdPartyResultTable");
-
-                        } else {
-                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS thirdPartyResultTable");
-
-                        }
+                    query.append(")");
+                    // Phone condition on rut_phone
+                    query.append(" AND rut_phone.account_info_type = 'phone' AND (");
+                    for (int i = 0; i < dashboardSearchTags.phoneNumbers.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut_phone.account_info_value LIKE ?");
+                        queryParams.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
                     }
-                }
+                    query.append(")");
 
-                {
-                    // check if we should search through the passwordless table
-                    if (dashboardSearchTags.shouldPasswordlessTableBeSearched()) {
-                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable" +
-                                " JOIN " + getConfig(start).getPasswordlessUserToTenantTable()
-                                + " AS passwordlessTable ON allAuthUsersTable.app_id = passwordlessTable.app_id AND"
-                                + " allAuthUsersTable.tenant_id = passwordlessTable.tenant_id AND"
-                                + " allAuthUsersTable.user_id = passwordlessTable.user_id";
-
-                        // check if email tag is present
-                        if (dashboardSearchTags.emails != null) {
-
-                            QUERY = QUERY + " WHERE (passwordlessTable.app_id = ? AND passwordlessTable.tenant_id = ?)"
-                                    + " AND ( passwordlessTable.email LIKE ? OR passwordlessTable.email LIKE ?";
-                            queryList.add(tenantIdentifier.getAppId());
-                            queryList.add(tenantIdentifier.getTenantId());
-                            queryList.add(dashboardSearchTags.emails.get(0) + "%");
-                            queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
-                            for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                                QUERY += " OR passwordlessTable.email LIKE ? OR passwordlessTable.email LIKE ?";
-                                queryList.add(dashboardSearchTags.emails.get(i) + "%");
-                                queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
-                            }
-
-                            QUERY += " )";
-                        }
-
-                        // check if phone tag is present
-                        if (dashboardSearchTags.phoneNumbers != null) {
-
-                            if (dashboardSearchTags.emails != null) {
-                                QUERY += " AND ";
-                            } else {
-                                QUERY += " WHERE (passwordlessTable.app_id = ? AND passwordlessTable.tenant_id = ?) " +
-                                        "AND ";
-                                queryList.add(tenantIdentifier.getAppId());
-                                queryList.add(tenantIdentifier.getTenantId());
-                            }
-
-                            QUERY += " ( passwordlessTable.phone_number LIKE ?";
-                            queryList.add(dashboardSearchTags.phoneNumbers.get(0) + "%");
-                            for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
-                                QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
-                            }
-
-                            QUERY += " )";
-                        }
-
-                        // check if we need to append this to an existing search query
-                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS passwordlessResultTable");
-
-                        } else {
-                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS passwordlessResultTable");
-
-                        }
+                } else if (hasEmails && hasProviders) {
+                    // Email + Provider: single row match (email rows of thirdparty users have third_party_id)
+                    query.append(" AND rut.account_info_type = 'email' AND (");
+                    for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
+                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
+                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                     }
-                }
-
-                {
-                    // check if we should search through the webauthn table
-                    if (dashboardSearchTags.shouldWebauthnTableBeSearched()) {
-                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable" +
-                                " JOIN " + getConfig(start).getWebAuthNUserToTenantTable()
-                                + " AS webauthnTable ON allAuthUsersTable.app_id = webauthnTable.app_id AND "
-                                + "allAuthUsersTable.tenant_id = webauthnTable.tenant_id AND "
-                                + "allAuthUsersTable.user_id = webauthnTable.user_id";
-
-                        // attach email tags to queries
-                        QUERY = QUERY +
-                                " WHERE (webauthnTable.app_id = ? AND webauthnTable.tenant_id = ?) AND"
-                                + " ( webauthnTable.email LIKE ? OR webauthnTable.email LIKE ? ";
-                        queryList.add(tenantIdentifier.getAppId());
-                        queryList.add(tenantIdentifier.getTenantId());
-                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
-                        queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                            QUERY += " OR webauthnTable.email LIKE ? OR webauthnTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
-                            queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
-                        }
-
-                        QUERY += " )";
-
-                        // check if we need to append this to an existing search query
-                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS webauthnResultTable");
-
-                        } else {
-                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY)
-                                    .append(" LIMIT 1000) AS webauthnResultTable");
-
-                        }
+                    query.append(") AND (");
+                    for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.third_party_id LIKE ?");
+                        queryParams.add(dashboardSearchTags.providers.get(i) + "%");
                     }
+                    query.append(")");
+
+                } else if (hasEmails) {
+                    query.append(" AND rut.account_info_type = 'email' AND (");
+                    for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
+                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
+                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                    }
+                    query.append(")");
+
+                } else if (hasPhones) {
+                    query.append(" AND rut.account_info_type = 'phone' AND (");
+                    for (int i = 0; i < dashboardSearchTags.phoneNumbers.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.account_info_value LIKE ?");
+                        queryParams.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                    }
+                    query.append(")");
+
+                } else if (hasProviders) {
+                    query.append(" AND rut.third_party_id <> '' AND (");
+                    for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
+                        if (i > 0) query.append(" OR");
+                        query.append(" rut.third_party_id LIKE ?");
+                        queryParams.add(dashboardSearchTags.providers.get(i) + "%");
+                    }
+                    query.append(")");
                 }
 
-                if (USER_SEARCH_TAG_CONDITION.toString().length() == 0) {
-                    usersFromQuery = new ArrayList<>();
-                } else {
+                query.append(" ORDER BY auid.primary_or_recipe_user_time_joined ").append(timeJoinedOrder)
+                        .append(", auid.primary_or_recipe_user_id DESC LIMIT 1000");
 
-                    String finalQuery =
-                            "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined  FROM ( " +
-                                    USER_SEARCH_TAG_CONDITION.toString() + " )"
-                                    + " AS finalResultTable ORDER BY primary_or_recipe_user_time_joined " +
-                                    timeJoinedOrder + ", primary_or_recipe_user_id DESC ";
-                    usersFromQuery = execute(start, finalQuery, pst -> {
-                        for (int i = 1; i <= queryList.size(); i++) {
-                            pst.setString(i, queryList.get(i - 1));
-                        }
-                    }, result -> {
-                        List<String> temp = new ArrayList<>();
-                        while (result.next()) {
-                            temp.add(result.getString("primary_or_recipe_user_id"));
-                        }
-                        return temp;
-                    });
-                }
+                usersFromQuery = execute(start, query.toString(), pst -> {
+                    for (int i = 0; i < queryParams.size(); i++) {
+                        pst.setString(i + 1, queryParams.get(i));
+                    }
+                }, result -> {
+                    List<String> temp = new ArrayList<>();
+                    while (result.next()) {
+                        temp.add(result.getString("primary_or_recipe_user_id"));
+                    }
+                    return temp;
+                });
             }
 
         } else {
             StringBuilder RECIPE_ID_CONDITION = new StringBuilder();
             if (includeRecipeIds != null && includeRecipeIds.length > 0) {
-                RECIPE_ID_CONDITION.append("recipe_id IN (");
+                RECIPE_ID_CONDITION.append("auid.recipe_id IN (");
                 for (int i = 0; i < includeRecipeIds.length; i++) {
-
                     RECIPE_ID_CONDITION.append("?");
                     if (i != includeRecipeIds.length - 1) {
-                        // not the last element
                         RECIPE_ID_CONDITION.append(",");
                     }
                 }
@@ -1011,18 +886,21 @@ public class GeneralQueries {
                     recipeIdCondition = recipeIdCondition + " AND";
                 }
                 String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-                String QUERY = "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined FROM " +
-                        getConfig(start).getUsersTable() + " WHERE "
-                        + recipeIdCondition + " (primary_or_recipe_user_time_joined " + timeJoinedOrderSymbol
-                        +
-                        " ? OR (primary_or_recipe_user_time_joined = ? AND primary_or_recipe_user_id <= ?)) AND " +
-                        "app_id = ? AND tenant_id = ?"
-                        + " ORDER BY primary_or_recipe_user_time_joined " + timeJoinedOrder
-                        + ", primary_or_recipe_user_id DESC LIMIT ?";
+                String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id,"
+                        + " auid.primary_or_recipe_user_time_joined"
+                        + " FROM " + getConfig(start).getAppIdToUserIdTable() + " auid"
+                        + " JOIN " + getConfig(start).getRecipeUserTenantsTable() + " rut"
+                        + " ON auid.app_id = rut.app_id AND auid.user_id = rut.recipe_user_id"
+                        + " WHERE " + recipeIdCondition
+                        + " (auid.primary_or_recipe_user_time_joined " + timeJoinedOrderSymbol
+                        + " ? OR (auid.primary_or_recipe_user_time_joined = ?"
+                        + " AND auid.primary_or_recipe_user_id <= ?))"
+                        + " AND auid.app_id = ? AND rut.tenant_id = ?"
+                        + " ORDER BY auid.primary_or_recipe_user_time_joined " + timeJoinedOrder
+                        + ", auid.primary_or_recipe_user_id DESC LIMIT ?";
                 usersFromQuery = execute(start, QUERY, pst -> {
                     if (includeRecipeIds != null) {
                         for (int i = 0; i < includeRecipeIds.length; i++) {
-                            // i+1 cause this starts with 1 and not 0
                             pst.setString(i + 1, includeRecipeIds[i].toString());
                         }
                     }
@@ -1042,17 +920,21 @@ public class GeneralQueries {
                 });
             } else {
                 String recipeIdCondition = RECIPE_ID_CONDITION.toString();
-                String QUERY = "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined FROM " +
-                        getConfig(start).getUsersTable() + " WHERE ";
+                String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id,"
+                        + " auid.primary_or_recipe_user_time_joined"
+                        + " FROM " + getConfig(start).getAppIdToUserIdTable() + " auid"
+                        + " JOIN " + getConfig(start).getRecipeUserTenantsTable() + " rut"
+                        + " ON auid.app_id = rut.app_id AND auid.user_id = rut.recipe_user_id"
+                        + " WHERE ";
                 if (!recipeIdCondition.equals("")) {
                     QUERY += recipeIdCondition + " AND";
                 }
-                QUERY += " app_id = ? AND tenant_id = ? ORDER BY primary_or_recipe_user_time_joined " + timeJoinedOrder
-                        + ", primary_or_recipe_user_id DESC LIMIT ?";
+                QUERY += " auid.app_id = ? AND rut.tenant_id = ?"
+                        + " ORDER BY auid.primary_or_recipe_user_time_joined " + timeJoinedOrder
+                        + ", auid.primary_or_recipe_user_id DESC LIMIT ?";
                 usersFromQuery = execute(start, QUERY, pst -> {
                     if (includeRecipeIds != null) {
                         for (int i = 0; i < includeRecipeIds.length; i++) {
-                            // i+1 cause this starts with 1 and not 0
                             pst.setString(i + 1, includeRecipeIds[i].toString());
                         }
                     }
