@@ -310,7 +310,7 @@ public class ThirdPartyQueries {
 
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
                 " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
                 " WHERE tp.app_id = ? AND tp.third_party_id = ? AND tp.third_party_user_id = ?";
 
@@ -334,7 +334,7 @@ public class ThirdPartyQueries {
 
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
                 " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
                 " WHERE tp.app_id = ? AND tp.third_party_id = ? AND tp.third_party_user_id = ?";
 

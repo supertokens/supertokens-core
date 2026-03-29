@@ -1234,7 +1234,7 @@ public class GeneralQueries {
 
     public static String getPrimaryUserIdStrForUserId(Start start, AppIdentifier appIdentifier, String id)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable() +
+        String QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getAppIdToUserIdTable() +
                 " WHERE user_id = ? AND app_id = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, id);
@@ -1284,10 +1284,10 @@ public class GeneralQueries {
         // column
         String QUERY =
                 "SELECT au.user_id, au.primary_or_recipe_user_id, au.is_linked_or_is_a_primary_user, au.recipe_id, " +
-                        "aaru.tenant_id, aaru.time_joined FROM " +
+                        "au.time_joined, rt.tenant_id FROM " +
                         getConfig(start).getAppIdToUserIdTable() + " as au " +
-                        "LEFT JOIN " + getConfig(start).getUsersTable() +
-                        " as aaru ON au.app_id = aaru.app_id AND au.user_id = aaru.user_id" +
+                        "LEFT JOIN " + getConfig(start).getRecipeUserTenantsTable() +
+                        " as rt ON au.app_id = rt.app_id AND au.user_id = rt.recipe_user_id" +
                         " WHERE au.primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
                         getConfig(start).getAppIdToUserIdTable() + " WHERE (user_id IN ("
                         + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
@@ -1381,10 +1381,10 @@ public class GeneralQueries {
         // column
         String QUERY =
                 "SELECT au.user_id, au.primary_or_recipe_user_id, au.is_linked_or_is_a_primary_user, au.recipe_id, " +
-                        "aaru.tenant_id, aaru.time_joined FROM " +
+                        "au.time_joined, rt.tenant_id FROM " +
                         getConfig(start).getAppIdToUserIdTable() + " as au" +
-                        " LEFT JOIN " + getConfig(start).getUsersTable() +
-                        " as aaru ON au.app_id = aaru.app_id AND au.user_id = aaru.user_id" +
+                        " LEFT JOIN " + getConfig(start).getRecipeUserTenantsTable() +
+                        " as rt ON au.app_id = rt.app_id AND au.user_id = rt.recipe_user_id" +
                         " WHERE au.primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
                         getConfig(start).getAppIdToUserIdTable() + " WHERE (user_id IN ("
                         + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
@@ -1483,9 +1483,9 @@ public class GeneralQueries {
                                                                                String[] userIds)
             throws SQLException, StorageQueryException {
         if (userIds != null && userIds.length > 0) {
-            StringBuilder QUERY = new StringBuilder("SELECT user_id, tenant_id "
-                    + "FROM " + getConfig(start).getUsersTable());
-            QUERY.append(" WHERE user_id IN (");
+            StringBuilder QUERY = new StringBuilder("SELECT DISTINCT recipe_user_id AS user_id, tenant_id "
+                    + "FROM " + getConfig(start).getRecipeUserTenantsTable());
+            QUERY.append(" WHERE recipe_user_id IN (");
             for (int i = 0; i < userIds.length; i++) {
 
                 QUERY.append("?");
@@ -1526,9 +1526,9 @@ public class GeneralQueries {
                                                                    String[] userIds)
             throws SQLException, StorageQueryException {
         if (userIds != null && userIds.length > 0) {
-            StringBuilder QUERY = new StringBuilder("SELECT user_id, tenant_id "
-                    + "FROM " + getConfig(start).getUsersTable());
-            QUERY.append(" WHERE user_id IN (");
+            StringBuilder QUERY = new StringBuilder("SELECT DISTINCT recipe_user_id AS user_id, tenant_id "
+                    + "FROM " + getConfig(start).getRecipeUserTenantsTable());
+            QUERY.append(" WHERE recipe_user_id IN (");
             for (int i = 0; i < userIds.length; i++) {
 
                 QUERY.append("?");
