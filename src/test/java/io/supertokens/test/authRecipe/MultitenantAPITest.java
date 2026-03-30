@@ -59,12 +59,14 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
 public class MultitenantAPITest {
     TestingProcessManager.TestingProcess process;
     TenantIdentifier t1, t2, t3;
+    String appId;
 
     HashMap<TenantIdentifier, ArrayList<String>> tenantToUsers;
     HashMap<String, ArrayList<String>> recipeToUsers;
@@ -98,6 +100,7 @@ public class MultitenantAPITest {
             return;
         }
 
+        appId = UUID.randomUUID().toString().substring(0, 8);
         createTenants();
     }
 
@@ -105,12 +108,12 @@ public class MultitenantAPITest {
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
-        // User pool 1 - (null, a1, null)
-        // User pool 2 - (null, a1, t1), (null, a1, t2)
+        // User pool 1 - (null, appId, null)
+        // User pool 2 - (null, appId, t1), (null, appId, t2)
 
         { // tenant 1
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", null);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, appId, null);
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 1);
@@ -131,14 +134,14 @@ public class MultitenantAPITest {
 
         { // tenant 2
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t1");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, appId, "t1");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, appId, null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -152,14 +155,14 @@ public class MultitenantAPITest {
 
         { // tenant 3
             JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t2");
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, appId, "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
-                    new TenantIdentifier(null, "a1", null),
+                    new TenantIdentifier(null, appId, null),
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
@@ -171,9 +174,9 @@ public class MultitenantAPITest {
             );
         }
 
-        t1 = new TenantIdentifier(null, "a1", null);
-        t2 = new TenantIdentifier(null, "a1", "t1");
-        t3 = new TenantIdentifier(null, "a1", "t2");
+        t1 = new TenantIdentifier(null, appId, null);
+        t2 = new TenantIdentifier(null, appId, "t1");
+        t3 = new TenantIdentifier(null, appId, "t2");
     }
 
     private void createUsers()
