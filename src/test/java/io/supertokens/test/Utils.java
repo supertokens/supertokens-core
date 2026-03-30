@@ -117,6 +117,17 @@ public abstract class Utils extends Mockito {
             TestingProcessManager.deleteAllInformation();
             TestingProcessManager.killAll();
 
+            // clean up any .started file/directory that survived an abnormal process exit
+            final File dotStarted = new File(installDir + ".started");
+            try {
+                if (dotStarted.isDirectory()) {
+                    FileUtils.deleteDirectory(dotStarted);
+                } else if (dotStarted.exists()) {
+                    dotStarted.delete();
+                }
+            } catch (Exception ignored) {
+            }
+
             byteArrayOutputStream = new ByteArrayOutputStream();
             System.setErr(new PrintStream(byteArrayOutputStream));
         } catch (Exception e) {
