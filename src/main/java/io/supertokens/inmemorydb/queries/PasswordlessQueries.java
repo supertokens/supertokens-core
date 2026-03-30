@@ -431,21 +431,17 @@ public class PasswordlessQueries {
                 }
 
                 { // recipe_user_tenants
-                    ACCOUNT_INFO_TYPE accountInfoType;
-                    String accountInfoValue;
-
                     if (email != null) {
-                        accountInfoType = ACCOUNT_INFO_TYPE.EMAIL;
-                        accountInfoValue = email;
-                    } else if (phoneNumber != null) {
-                        accountInfoType = ACCOUNT_INFO_TYPE.PHONE_NUMBER;
-                        accountInfoValue = phoneNumber;
-                    } else {
+                        AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                                PASSWORDLESS.toString(), ACCOUNT_INFO_TYPE.EMAIL, "", "", email);
+                    }
+                    if (phoneNumber != null) {
+                        AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                                PASSWORDLESS.toString(), ACCOUNT_INFO_TYPE.PHONE_NUMBER, "", "", phoneNumber);
+                    }
+                    if (email == null && phoneNumber == null) {
                         throw new IllegalArgumentException("Either email or phoneNumber must be provided");
                     }
-
-                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
-                            PASSWORDLESS.toString(), accountInfoType, "", "", accountInfoValue);
                 }
 
                 { // passwordless_users
@@ -504,9 +500,8 @@ public class PasswordlessQueries {
                         result.getString("user_id"),
                         result.getString("tenant_id"),
                         result.getString("email"),
-                        result.getString("phoneNumber")
+                        result.getString("phone_number")
                 ));
-                PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
             }
             return userInfos.toArray(new UserInfoWithTenantId[0]);
         });
