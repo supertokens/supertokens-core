@@ -71,6 +71,7 @@ public class DotStartedFileTest {
         TestingProcessManager.TestingProcess process5 = TestingProcessManager.start(args);
         assertNotNull(process5.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+
         File[] flist = new File("../.started").listFiles();
         assert flist != null;
         int processCounter = flist.length;
