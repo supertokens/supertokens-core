@@ -257,8 +257,8 @@ public class PasswordlessQueries {
 
         String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessDevicesTable()
                 + " WHERE app_id = ? AND phone_number = ? AND tenant_id IN ("
-                + "    SELECT tenant_id FROM " + getConfig(start).getPasswordlessUserToTenantTable()
-                + "    WHERE app_id = ? AND user_id = ?"
+                + "    SELECT tenant_id FROM " + getConfig(start).getRecipeUserTenantsTable()
+                + "    WHERE app_id = ? AND recipe_user_id = ?"
                 + ")";
 
         update(con, QUERY, pst -> {
@@ -289,8 +289,8 @@ public class PasswordlessQueries {
 
         String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessDevicesTable()
                 + " WHERE app_id = ? AND email = ? AND tenant_id IN ("
-                + "    SELECT tenant_id FROM " + getConfig(start).getPasswordlessUserToTenantTable()
-                + "    WHERE app_id = ? AND user_id = ?"
+                + "    SELECT tenant_id FROM " + getConfig(start).getRecipeUserTenantsTable()
+                + "    WHERE app_id = ? AND recipe_user_id = ?"
                 + ")";
 
         update(con, QUERY, pst -> {
@@ -401,12 +401,15 @@ public class PasswordlessQueries {
             try {
                 { // app_id_to_user_id
                     String QUERY = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
-                            + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
+                            + "(app_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                            + " VALUES(?, ?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
                         pst.setString(2, id);
                         pst.setString(3, id);
                         pst.setString(4, PASSWORDLESS.toString());
+                        pst.setLong(5, timeJoined);
+                        pst.setLong(6, timeJoined);
                     });
                 }
 
@@ -428,21 +431,17 @@ public class PasswordlessQueries {
                 }
 
                 { // recipe_user_tenants
-                    ACCOUNT_INFO_TYPE accountInfoType;
-                    String accountInfoValue;
-
                     if (email != null) {
-                        accountInfoType = ACCOUNT_INFO_TYPE.EMAIL;
-                        accountInfoValue = email;
-                    } else if (phoneNumber != null) {
-                        accountInfoType = ACCOUNT_INFO_TYPE.PHONE_NUMBER;
-                        accountInfoValue = phoneNumber;
-                    } else {
+                        AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                                PASSWORDLESS.toString(), ACCOUNT_INFO_TYPE.EMAIL, "", "", email);
+                    }
+                    if (phoneNumber != null) {
+                        AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                                PASSWORDLESS.toString(), ACCOUNT_INFO_TYPE.PHONE_NUMBER, "", "", phoneNumber);
+                    }
+                    if (email == null && phoneNumber == null) {
                         throw new IllegalArgumentException("Either email or phoneNumber must be provided");
                     }
-
-                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
-                            PASSWORDLESS.toString(), accountInfoType, "", "", accountInfoValue);
                 }
 
                 { // passwordless_users
@@ -484,12 +483,12 @@ public class PasswordlessQueries {
     private static UserInfoWithTenantId[] getUserInfosWithTenant_Transaction(Start start, Connection con,
                                                                              AppIdentifier appIdentifier, String userId)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT pl_users.user_id as user_id, pl_users.email as email, "
-                + "pl_users.phone_number as phone_number, pl_users_to_tenant.tenant_id as tenant_id "
+        String QUERY = "SELECT DISTINCT pl_users.user_id as user_id, pl_users.email as email, "
+                + "pl_users.phone_number as phone_number, rut.tenant_id as tenant_id "
                 + "FROM " + getConfig(start).getPasswordlessUsersTable() + " AS pl_users "
-                + "JOIN " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pl_users_to_tenant "
-                + "ON pl_users.app_id = pl_users_to_tenant.app_id AND pl_users.user_id = pl_users_to_tenant.user_id "
-                + "WHERE pl_users_to_tenant.app_id = ? AND pl_users_to_tenant.user_id = ?";
+                + "JOIN " + getConfig(start).getRecipeUserTenantsTable() + " AS rut "
+                + "ON pl_users.app_id = rut.app_id AND pl_users.user_id = rut.recipe_user_id "
+                + "WHERE rut.app_id = ? AND rut.recipe_user_id = ?";
         return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
@@ -501,9 +500,8 @@ public class PasswordlessQueries {
                         result.getString("user_id"),
                         result.getString("tenant_id"),
                         result.getString("email"),
-                        result.getString("phoneNumber")
+                        result.getString("phone_number")
                 ));
-                PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
             }
             return userInfos.toArray(new UserInfoWithTenantId[0]);
         });
@@ -818,11 +816,12 @@ public class PasswordlessQueries {
     public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier,
                                                     String email)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
-                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
-                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.email = ?";
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid" +
+                " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id" +
+                " WHERE rut.app_id = ? AND rut.tenant_id = ? AND rut.account_info_type = 'email'" +
+                " AND rut.account_info_value = ? AND rut.recipe_id = 'passwordless'";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -839,11 +838,12 @@ public class PasswordlessQueries {
     public static String getPrimaryUserByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
                                                      @Nonnull String phoneNumber)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
-                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
-                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.phone_number = ?";
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid" +
+                " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id" +
+                " WHERE rut.app_id = ? AND rut.tenant_id = ? AND rut.account_info_type = 'phone'" +
+                " AND rut.account_info_value = ? AND rut.recipe_id = 'passwordless'";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());

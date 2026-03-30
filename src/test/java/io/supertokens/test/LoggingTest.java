@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class LoggingTest {
     @Rule
@@ -64,6 +65,9 @@ public class LoggingTest {
 
     @Test
     public void noErrorLogsOnCoreStart() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -92,6 +96,9 @@ public class LoggingTest {
 
     @Test
     public void defaultLogging() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -134,6 +141,9 @@ public class LoggingTest {
 
     @Test
     public void customLogging() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         try {
             String[] args = {"../"};
 
@@ -252,10 +262,12 @@ public class LoggingTest {
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
-        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        // Use startProcess=false to avoid race condition with feature flag setup
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         try {
@@ -350,6 +362,9 @@ public class LoggingTest {
 
     @Test
     public void testThatSubFoldersAreCreated() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
@@ -379,6 +394,9 @@ public class LoggingTest {
 
     @Test
     public void testDefaultLoggingFilePath() throws Exception {
+        // Skip this test if file logging is disabled (envvar set to null)
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
 

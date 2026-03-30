@@ -60,7 +60,7 @@ public class WebAuthNQueries {
                 " CONSTRAINT webauthn_users_pkey PRIMARY KEY (app_id, user_id), " +
                 " CONSTRAINT webauthn_users_to_app_id_fkey " +
                 " FOREIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable() +
-                " (app_id, user_id) ON DELETE CASCADE " +
+                " (app_id, user_id) ON DELETE CASCADE ON UPDATE CASCADE " +
                 ");";
     }
 
@@ -285,12 +285,15 @@ public class WebAuthNQueries {
             try {
                 // app_id_to_user_id
                 String insertAppIdToUserId = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
-                        + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
+                        + "(app_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                        + " VALUES(?, ?, ?, ?, ?, ?)";
                 update(sqlCon, insertAppIdToUserId, pst -> {
                     pst.setString(1, tenantIdentifier.getAppId());
                     pst.setString(2, userId);
                     pst.setString(3, userId);
                     pst.setString(4, WEBAUTHN.toString());
+                    pst.setLong(5, timeJoined);
+                    pst.setLong(6, timeJoined);
                 });
 
                 // all_auth_recipe_users
@@ -409,16 +412,17 @@ public class WebAuthNQueries {
                                                                          TenantIdentifier tenantIdentifier,
                                                                          String email)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
-                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
-                " WHERE ep.app_id = ? AND ep.email = ? AND ep.tenant_id = ?";
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"
+                + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ? AND rut.account_info_type = 'email'"
+                + " AND rut.account_info_value = ? AND rut.recipe_id = 'webauthn'";
 
         return execute(sqlConnection, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, email);
-            pst.setString(3, tenantIdentifier.getTenantId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
         }, result -> {
             if (result.next()) {
                  return result.getString("user_id");
@@ -430,11 +434,12 @@ public class WebAuthNQueries {
     public static String getPrimaryUserIdForAppUsingEmail_Transaction(Start start, Connection sqlConnection,
                                                                       AppIdentifier appIdentifier, String email)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
-                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
-                " WHERE ep.app_id = ? AND ep.email = ?";
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserAccountInfosTable() + " AS ruai"
+                + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid"
+                + " ON ruai.app_id = auid.app_id AND ruai.recipe_user_id = auid.user_id"
+                + " WHERE ruai.app_id = ? AND ruai.account_info_type = 'email'"
+                + " AND ruai.account_info_value = ? AND ruai.recipe_id = 'webauthn'";
 
         return execute(sqlConnection, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -523,9 +528,8 @@ public class WebAuthNQueries {
 
         String QUERY = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
                 "credentials.id as credential_id, email_verification.email as email_verified, user_id_mapping.external_user_id as external_user_id," +
-                "all_users.tenant_id as tenant_id " +
+                "(SELECT rt.tenant_id FROM " + getConfig(start).getRecipeUserTenantsTable() + " rt WHERE rt.app_id = webauthn.app_id AND rt.recipe_user_id = webauthn.user_id LIMIT 1) as tenant_id " +
                 "FROM " + getConfig(start).getWebAuthNUsersTable() + " as webauthn " +
-                "JOIN " + getConfig(start).getUsersTable() + " as all_users ON webauthn.app_id = all_users.app_id AND webauthn.user_id = all_users.user_id " +
                 "LEFT JOIN " + getConfig(start).getWebAuthNCredentialsTable() + " as credentials ON webauthn.user_id = credentials.user_id " +
                 "LEFT JOIN " + getConfig(start).getUserIdMappingTable() + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
                 "LEFT JOIN " + getConfig(start).getEmailVerificationTable() + " as email_verification ON webauthn.app_id = email_verification.app_id AND (user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id OR webauthn.user_id = email_verification.user_id)" +

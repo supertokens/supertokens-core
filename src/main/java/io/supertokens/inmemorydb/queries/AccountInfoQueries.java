@@ -612,7 +612,7 @@ public class AccountInfoQueries {
 
                 if (primaryUserId[0] != null) {
                     if (primaryUserId[0].equals(recipeUserId)) {
-                        return CanBecomePrimaryResult.wasAlreadyAPrimeryUserResult();
+                        return CanBecomePrimaryResult.wasAlreadyAPrimaryUserResult();
                     } else {
                         return CanBecomePrimaryResult.linkedWithAnotherPrimaryUserResult(primaryUserId[0]);
                     }
@@ -1631,5 +1631,130 @@ try {
             }
             throw new StorageQueryException(e);
         }
+    }
+
+    // ── Lookup queries (migrated from per-recipe queries) ──
+
+    public static List<String> listPrimaryUserIdsByEmail(Start start, TenantIdentifier tenantIdentifier,
+                                                          String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = ? AND rut.account_info_value = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, ACCOUNT_INFO_TYPE.EMAIL.toString());
+            pst.setString(4, email);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
+    }
+
+    public static List<String> listPrimaryUserIdsByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
+                                                                String phoneNumber)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = ? AND rut.account_info_value = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, ACCOUNT_INFO_TYPE.PHONE_NUMBER.toString());
+            pst.setString(4, phoneNumber);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
+    }
+
+    public static String getPrimaryUserIdByThirdPartyInfo(Start start, TenantIdentifier tenantIdentifier,
+                                                           String thirdPartyId, String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
+        String accountInfoValue = thirdPartyId + "::" + thirdPartyUserId;
+        String QUERY = "SELECT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = ? AND rut.account_info_value = ?"
+                + " LIMIT 1";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, ACCOUNT_INFO_TYPE.THIRD_PARTY.toString());
+            pst.setString(4, accountInfoValue);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("primary_or_recipe_user_id");
+            }
+            return null;
+        });
+    }
+
+    public static List<String> listPrimaryUserIdsByThirdPartyInfo(Start start, AppIdentifier appIdentifier,
+                                                                    String thirdPartyId, String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
+        String accountInfoValue = thirdPartyId + "::" + thirdPartyUserId;
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserAccountInfosTable() + " ruai"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON ruai.app_id = auid.app_id AND ruai.recipe_user_id = auid.user_id"
+                + " WHERE ruai.app_id = ?"
+                + " AND ruai.account_info_type = ? AND ruai.account_info_value = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, ACCOUNT_INFO_TYPE.THIRD_PARTY.toString());
+            pst.setString(3, accountInfoValue);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
+    }
+
+    public static List<String> listPrimaryUserIdsByThirdPartyInfo_Transaction(Start start, Connection sqlCon,
+                                                                               AppIdentifier appIdentifier,
+                                                                               String thirdPartyId,
+                                                                               String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
+        String accountInfoValue = thirdPartyId + "::" + thirdPartyUserId;
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserAccountInfosTable() + " ruai"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON ruai.app_id = auid.app_id AND ruai.recipe_user_id = auid.user_id"
+                + " WHERE ruai.app_id = ?"
+                + " AND ruai.account_info_type = ? AND ruai.account_info_value = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, ACCOUNT_INFO_TYPE.THIRD_PARTY.toString());
+            pst.setString(3, accountInfoValue);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
     }
 }

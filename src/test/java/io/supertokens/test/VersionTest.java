@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.version.Version;
 import io.supertokens.version.VersionFile;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +75,12 @@ public class VersionTest {
 
     @Test
     public void versionFileMissingTest() throws Exception {
+        // Skip this test in parallel execution as it modifies the global version.yaml file
+        // which can cause other tests to fail if they try to read it while it's deleted
+        String workerId = System.getProperty("org.gradle.test.worker", "");
+        Assume.assumeTrue("Skipping in parallel test execution - modifies global version.yaml",
+                workerId.isEmpty());
+
         String installDir = "../";
 
         try {

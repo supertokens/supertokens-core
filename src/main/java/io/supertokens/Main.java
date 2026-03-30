@@ -44,7 +44,6 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.saml.SAMLBootstrap;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.version.Version;
@@ -116,7 +115,7 @@ public class Main {
         try {
             suppressIllegalAccessWarning();
             if (Main.isTesting) {
-                System.out.println("Process ID: " + this.getProcessId());
+                // System.out.println("Process ID: " + this.getProcessId());
             }
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.INIT, null);
             try {
@@ -185,8 +184,8 @@ public class Main {
         // init file logging
         Logging.initFileLogging(this);
 
-        // Required for SAML related stuff
-        SAMLBootstrap.initialize();
+        // Note: SAMLBootstrap.initialize() is now called lazily when SAML features are first used
+        // This avoids the overhead of OpenSAML initialization for processes that don't use SAML
 
         // initialise cron job handler
         Cronjobs.init(this);
@@ -435,7 +434,12 @@ public class Main {
         // Do not kill for now
          assertIsTesting();
          wakeUpMainThreadToShutdown();
-         mainThread.join();
+         mainThread.join(60_000); // 60s timeout to prevent infinite hang
+         if (mainThread.isAlive()) {
+             System.err.println("[TEST] WARNING: Main thread did not shut down within 60s, interrupting...");
+             mainThread.interrupt();
+             mainThread.join(5_000); // Give it 5 more seconds after interrupt
+         }
     }
 
     // must not throw any error
