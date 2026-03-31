@@ -1524,33 +1524,57 @@ public class GeneralQueries {
         MigrationMode mode = Config.getConfig(start).getMigrationMode();
 
         if (mode.writesToOldTables()) {
-            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
-                    "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
-                    "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
-                    ") WHERE app_id = ? AND user_id = ?";
+            if (mode.writesToNewTables()) {
+                String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                        " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
+                        "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
+                        "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
+                        ") WHERE app_id = ? AND user_id = ?";
 
-            update(sqlCon, QUERY, pst -> {
-                pst.setString(1, appIdentifier.getAppId());
-                pst.setString(2, primaryUserId);
-                pst.setString(3, appIdentifier.getAppId());
-                pst.setString(4, recipeUserId);
-            });
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, primaryUserId);
+                    pst.setString(3, appIdentifier.getAppId());
+                    pst.setString(4, recipeUserId);
+                });
+            } else {
+                String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                        " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ?" +
+                        " WHERE app_id = ? AND user_id = ?";
+
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, primaryUserId);
+                    pst.setString(2, appIdentifier.getAppId());
+                    pst.setString(3, recipeUserId);
+                });
+            }
         }
 
         {
-            String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
-                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
-                    "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
-                    "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
-                    ") WHERE app_id = ? AND user_id = ?";
+            if (mode.writesToNewTables()) {
+                String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                        " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
+                        "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
+                        "   WHERE app_id = ? AND recipe_user_id = ? LIMIT 1" +
+                        ") WHERE app_id = ? AND user_id = ?";
 
-            update(sqlCon, QUERY, pst -> {
-                pst.setString(1, appIdentifier.getAppId());
-                pst.setString(2, primaryUserId);
-                pst.setString(3, appIdentifier.getAppId());
-                pst.setString(4, recipeUserId);
-            });
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, primaryUserId);
+                    pst.setString(3, appIdentifier.getAppId());
+                    pst.setString(4, recipeUserId);
+                });
+            } else {
+                String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                        " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ?" +
+                        " WHERE app_id = ? AND user_id = ?";
+
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, primaryUserId);
+                    pst.setString(2, appIdentifier.getAppId());
+                    pst.setString(3, recipeUserId);
+                });
+            }
         }
 
         // Must be called AFTER both all_auth_recipe_users and app_id_to_user_id have been updated
