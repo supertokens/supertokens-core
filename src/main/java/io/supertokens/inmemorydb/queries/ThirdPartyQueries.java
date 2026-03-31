@@ -354,7 +354,37 @@ public class ThirdPartyQueries {
     public static String getUserIdByThirdPartyInfo(Start start, TenantIdentifier tenantIdentifier,
                                                    String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getUserIdByThirdPartyInfo_new(start, tenantIdentifier, thirdPartyId, thirdPartyUserId);
+        }
+        return getUserIdByThirdPartyInfo_legacy(start, tenantIdentifier, thirdPartyId, thirdPartyUserId);
+    }
 
+    private static String getUserIdByThirdPartyInfo_legacy(Start start, TenantIdentifier tenantIdentifier,
+                                                            String thirdPartyId, String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp.tenant_id = ? AND tp.third_party_id = ? AND tp.third_party_user_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, thirdPartyId);
+            pst.setString(4, thirdPartyUserId);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getUserIdByThirdPartyInfo_new(Start start, TenantIdentifier tenantIdentifier,
+                                                         String thirdPartyId, String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT DISTINCT a.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"
                 + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS a"
@@ -412,6 +442,39 @@ public class ThirdPartyQueries {
 
     public static List<String> getPrimaryUserIdUsingEmail(Start start,
                                                           TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdUsingEmail_new(start, tenantIdentifier, email);
+        }
+        return getPrimaryUserIdUsingEmail_legacy(start, tenantIdentifier, email);
+    }
+
+    private static List<String> getPrimaryUserIdUsingEmail_legacy(Start start,
+                                                                   TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " JOIN " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_tenants" +
+                " ON tp_tenants.app_id = all_users.app_id AND tp_tenants.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp_tenants.tenant_id = ? AND tp.email = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
+        });
+    }
+
+    private static List<String> getPrimaryUserIdUsingEmail_new(Start start,
+                                                                TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT a.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"

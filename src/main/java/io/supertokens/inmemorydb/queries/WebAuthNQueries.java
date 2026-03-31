@@ -412,6 +412,38 @@ public class WebAuthNQueries {
                                                                          TenantIdentifier tenantIdentifier,
                                                                          String email)
             throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdForTenantUsingEmail_Transaction_new(start, sqlConnection, tenantIdentifier, email);
+        }
+        return getPrimaryUserIdForTenantUsingEmail_Transaction_legacy(start, sqlConnection, tenantIdentifier, email);
+    }
+
+    private static String getPrimaryUserIdForTenantUsingEmail_Transaction_legacy(Start start, Connection sqlConnection,
+                                                                                  TenantIdentifier tenantIdentifier,
+                                                                                  String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.email = ? AND ep.tenant_id = ?";
+
+        return execute(sqlConnection, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, email);
+            pst.setString(3, tenantIdentifier.getTenantId());
+        }, result -> {
+            if (result.next()) {
+                 return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getPrimaryUserIdForTenantUsingEmail_Transaction_new(Start start, Connection sqlConnection,
+                                                                               TenantIdentifier tenantIdentifier,
+                                                                               String email)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"
                 + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid"
@@ -433,6 +465,35 @@ public class WebAuthNQueries {
 
     public static String getPrimaryUserIdForAppUsingEmail_Transaction(Start start, Connection sqlConnection,
                                                                       AppIdentifier appIdentifier, String email)
+            throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdForAppUsingEmail_Transaction_new(start, sqlConnection, appIdentifier, email);
+        }
+        return getPrimaryUserIdForAppUsingEmail_Transaction_legacy(start, sqlConnection, appIdentifier, email);
+    }
+
+    private static String getPrimaryUserIdForAppUsingEmail_Transaction_legacy(Start start, Connection sqlConnection,
+                                                                               AppIdentifier appIdentifier, String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getWebAuthNUserToTenantTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.email = ?";
+
+        return execute(sqlConnection, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getPrimaryUserIdForAppUsingEmail_Transaction_new(Start start, Connection sqlConnection,
+                                                                            AppIdentifier appIdentifier, String email)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getRecipeUserAccountInfosTable() + " AS ruai"

@@ -468,6 +468,36 @@ public class EmailPasswordQueries {
     public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier,
                                                     String email)
             throws StorageQueryException, SQLException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdUsingEmail_new(start, tenantIdentifier, email);
+        }
+        return getPrimaryUserIdUsingEmail_legacy(start, tenantIdentifier, email);
+    }
+
+    private static String getPrimaryUserIdUsingEmail_legacy(Start start, TenantIdentifier tenantIdentifier,
+                                                             String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getPrimaryUserIdUsingEmail_new(Start start, TenantIdentifier tenantIdentifier,
+                                                          String email)
+            throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"
                 + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid"

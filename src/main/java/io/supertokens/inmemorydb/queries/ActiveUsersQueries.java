@@ -47,6 +47,41 @@ public class ActiveUsersQueries {
     public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier,
                                                                         long sinceTime)
             throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return countUsersActiveSinceAndHasMoreThanOneLoginMethod_new(start, appIdentifier, sinceTime);
+        }
+        return countUsersActiveSinceAndHasMoreThanOneLoginMethod_legacy(start, appIdentifier, sinceTime);
+    }
+
+    private static int countUsersActiveSinceAndHasMoreThanOneLoginMethod_legacy(Start start,
+                                                                                 AppIdentifier appIdentifier,
+                                                                                 long sinceTime)
+            throws SQLException, StorageQueryException {
+        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
+        String QUERY = "SELECT count(1) as c FROM ("
+                + "  SELECT count(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
+                + "  FROM " + Config.getConfig(start).getUsersTable()
+                + "  WHERE primary_or_recipe_user_id IN ("
+                + "    SELECT user_id FROM " + Config.getConfig(start).getUserLastActiveTable()
+                + "    WHERE app_id = ? AND last_active_time >= ?"
+                + "  )"
+                + "  GROUP BY app_id, primary_or_recipe_user_id"
+                + ") uc WHERE num_login_methods > 1";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setLong(2, sinceTime);
+        }, result -> {
+            if (result.next()) {
+                return result.getInt("c");
+            }
+            return 0;
+        });
+    }
+
+    private static int countUsersActiveSinceAndHasMoreThanOneLoginMethod_new(Start start,
+                                                                              AppIdentifier appIdentifier,
+                                                                              long sinceTime)
+            throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY = "SELECT count(1) as c FROM ("
                 + "  SELECT count(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
