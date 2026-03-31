@@ -66,7 +66,7 @@ public class DotStartedFileTest {
         TestingProcessManager.TestingProcess process4 = TestingProcessManager.start(args);
         assertNotNull(process4.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Utils.setValueInConfig("port", "8084");
+        Utils.setValueInConfig("port", "8085");
 
         TestingProcessManager.TestingProcess process5 = TestingProcessManager.start(args);
         assertNotNull(process5.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
