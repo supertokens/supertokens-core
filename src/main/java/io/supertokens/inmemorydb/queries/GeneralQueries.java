@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.inmemorydb.*;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.MigrationMode;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -1466,7 +1467,9 @@ public class GeneralQueries {
     public static void makePrimaryUser_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                    String userId)
             throws SQLException, StorageQueryException {
-        {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
+        if (mode.writesToOldTables()) {
             String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                     " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
 
@@ -1489,6 +1492,7 @@ public class GeneralQueries {
     public static void makePrimaryUsers_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                     List<String> userIds)
             throws SQLException, StorageQueryException {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
 
         String users_update_QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                 " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
@@ -1508,14 +1512,18 @@ public class GeneralQueries {
                 pst.setString(2, userId);
             });
         }
-        executeBatch(sqlCon, users_update_QUERY, usersSetter);
+        if (mode.writesToOldTables()) {
+            executeBatch(sqlCon, users_update_QUERY, usersSetter);
+        }
         executeBatch(sqlCon, appid_to_userid_update_QUERY, appIdToUserIdSetter);
     }
 
     public static void linkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                 String recipeUserId, String primaryUserId)
             throws SQLException, StorageQueryException {
-        {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
+        if (mode.writesToOldTables()) {
             String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                     " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = (" +
                     "   SELECT primary_user_id FROM " + getConfig(start).getRecipeUserAccountInfosTable() +
@@ -1558,6 +1566,8 @@ public class GeneralQueries {
             return;
         }
 
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
         String update_users_QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                     " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
                     "user_id = ?";
@@ -1578,14 +1588,16 @@ public class GeneralQueries {
                 pst.setString(2, appIdentifier.getAppId());
                 pst.setString(3, recipeUserId);
             });
-            updateUsersSetter.add(pst -> {
+            updateAppIdToUserIdSetter.add(pst -> {
                 pst.setString(1, primaryUserId);
                 pst.setString(2, appIdentifier.getAppId());
                 pst.setString(3, recipeUserId);
             });
         }
 
-        executeBatch(sqlCon, update_users_QUERY, updateUsersSetter);
+        if (mode.writesToOldTables()) {
+            executeBatch(sqlCon, update_users_QUERY, updateUsersSetter);
+        }
         executeBatch(sqlCon, update_appid_to_userid_QUERY, updateAppIdToUserIdSetter);
         updateTimeJoinedForPrimaryUsers_Transaction(start, sqlCon, appIdentifier,
                 new ArrayList<>(recipeUserIdToPrimaryUserId.values()));
@@ -1594,7 +1606,9 @@ public class GeneralQueries {
     public static void unlinkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                   String primaryUserId, String recipeUserId)
             throws SQLException, StorageQueryException {
-        {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
+        if (mode.writesToOldTables()) {
             String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                     " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ?, " +
                     "primary_or_recipe_user_time_joined = time_joined WHERE app_id = ? AND " +
@@ -2317,7 +2331,9 @@ public class GeneralQueries {
     public static void updateTimeJoinedForPrimaryUser_Transaction(Start start, Connection sqlCon,
                                                                   AppIdentifier appIdentifier, String primaryUserId)
             throws SQLException, StorageQueryException {
-        {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
+        if (mode.writesToOldTables()) {
             String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                     " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
                     getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
@@ -2346,6 +2362,8 @@ public class GeneralQueries {
     public static void updateTimeJoinedForPrimaryUsers_Transaction(Start start, Connection sqlCon,
                                                                   AppIdentifier appIdentifier, List<String> primaryUserIds)
             throws SQLException, StorageQueryException {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
         String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                 " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
                 getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
@@ -2372,7 +2390,9 @@ public class GeneralQueries {
             });
         }
 
-        executeBatch(sqlCon, QUERY, setters);
+        if (mode.writesToOldTables()) {
+            executeBatch(sqlCon, QUERY, setters);
+        }
         executeBatch(sqlCon, APP_ID_QUERY, appIdSetters);
     }
 
