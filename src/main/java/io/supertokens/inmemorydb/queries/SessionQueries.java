@@ -107,6 +107,18 @@ public class SessionQueries {
     public static SessionInfo getSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                          String sessionHandle)
             throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getSessionInfo_Transaction_impl(start, con, tenantIdentifier, sessionHandle,
+                    getConfig(start).getAppIdToUserIdTable());
+        }
+        return getSessionInfo_Transaction_impl(start, con, tenantIdentifier, sessionHandle,
+                getConfig(start).getUsersTable());
+    }
+
+    private static SessionInfo getSessionInfo_Transaction_impl(Start start, Connection con,
+                                                                TenantIdentifier tenantIdentifier,
+                                                                String sessionHandle, String userIdTable)
+            throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con).lock(
                 tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle +
@@ -137,7 +149,7 @@ public class SessionQueries {
                 "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
                 "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +
                     "SELECT primary_or_recipe_user_id " +
-                    "FROM " + getConfig(start).getAppIdToUserIdTable() + " " +
+                    "FROM " + userIdTable + " " +
                     "WHERE app_id = ? AND user_id IN (" +
                         "SELECT user_id FROM (" +
                             "SELECT um1.supertokens_user_id as user_id, 0 as o1 " +
@@ -151,7 +163,7 @@ public class SessionQueries {
                 ") " +
                 "UNION " +
                 "SELECT primary_or_recipe_user_id, 1 as o " +
-                "FROM " + getConfig(start).getAppIdToUserIdTable() + " " +
+                "FROM " + userIdTable + " " +
                 "WHERE app_id = ? AND user_id IN (" +
                     "SELECT user_ID FROM (" +
                         "SELECT um1.supertokens_user_id as user_id, 0 as o2 " +
@@ -373,6 +385,39 @@ public class SessionQueries {
     }
 
     public static SessionInfo getSession(Start start, TenantIdentifier tenantIdentifier, String sessionHandle)
+            throws SQLException, StorageQueryException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getSession_new(start, tenantIdentifier, sessionHandle);
+        }
+        return getSession_legacy(start, tenantIdentifier, sessionHandle);
+    }
+
+    private static SessionInfo getSession_legacy(Start start, TenantIdentifier tenantIdentifier, String sessionHandle)
+            throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
+                        ".expires_at, "
+                        +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        ".primary_or_recipe_user_id FROM " +
+                        getConfig(start).getSessionInfoTable()
+                        + " AS sess LEFT JOIN " + getConfig(start).getUsersTable() +
+                        " as users ON sess.app_id = users.app_id AND sess.user_id = users.user_id WHERE sess.app_id =" +
+                        " ? AND " +
+                        "sess.tenant_id = ? AND sess.session_handle = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, sessionHandle);
+        }, result -> {
+            if (result.next()) {
+                return SessionInfoRowMapper.getInstance().mapOrThrow(result, true);
+            }
+            return null;
+        });
+    }
+
+    private static SessionInfo getSession_new(Start start, TenantIdentifier tenantIdentifier, String sessionHandle)
             throws SQLException, StorageQueryException {
         String QUERY =
                 "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
