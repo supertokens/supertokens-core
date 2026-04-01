@@ -459,7 +459,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 .get("exp").getAsLong();
 
                         // UPDATE inside the same transaction — atomically replaces internal token
-                        sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, externalRefreshToken,
+                        sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, gid,
                                 newInternalToken, sessionHandle, jti, refreshTokenExp);
                     }
 

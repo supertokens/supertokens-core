@@ -3502,12 +3502,12 @@ public class Start
 
     @Override
     public void updateOAuthSessionInternal_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                       String externalRefreshToken, String newInternalRefreshToken,
+                                                       String gid, String newInternalRefreshToken,
                                                        String sessionHandle, String jti, long exp)
             throws StorageQueryException {
         try {
             OAuthQueries.updateOAuthSessionInternal(this, (Connection) con.getConnection(),
-                    appIdentifier, externalRefreshToken, newInternalRefreshToken, sessionHandle, jti, exp);
+                    appIdentifier, gid, newInternalRefreshToken, sessionHandle, jti, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

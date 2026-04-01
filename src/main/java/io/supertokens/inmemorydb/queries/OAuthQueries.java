@@ -430,7 +430,7 @@ public class OAuthQueries {
 
     public static void updateOAuthSessionInternal(Start start, Connection con,
                                                    AppIdentifier appIdentifier,
-                                                   String externalRefreshToken,
+                                                   String gid,
                                                    String newInternalRefreshToken,
                                                    String sessionHandle,
                                                    String jti,
@@ -438,14 +438,14 @@ public class OAuthQueries {
             throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + Config.getConfig(start).getOAuthSessionsTable() +
                 " SET internal_refresh_token = ?, session_handle = ?, jti = CONCAT(jti, ?), exp = ?" +
-                " WHERE app_id = ? AND external_refresh_token = ?";
+                " WHERE gid = ? AND app_id = ?";
         update(con, QUERY, pst -> {
             pst.setString(1, newInternalRefreshToken);
             pst.setString(2, sessionHandle);
             pst.setString(3, jti + ",");
             pst.setLong(4, exp);
-            pst.setString(5, appIdentifier.getAppId());
-            pst.setString(6, externalRefreshToken);
+            pst.setString(5, gid);
+            pst.setString(6, appIdentifier.getAppId());
         });
     }
 
