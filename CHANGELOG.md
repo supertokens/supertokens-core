@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.4.2]
 
+- Fixes Tenant/App/CUD APIs to not to lock the whole world for a read
 - Fixes concurrency issue with oauth refresh tokens
 
 ## [11.4.1]
