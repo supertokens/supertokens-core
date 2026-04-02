@@ -1,18 +1,18 @@
-name: Release
+name: Release (Java 15)
 
 on:
   workflow_dispatch:
     inputs:
       core-version:
-        description: 'Core version (e.g. 11.4.0)'
+        description: 'Core version (e.g. 10.1.7)'
         required: true
         type: string
       plugin-interface-version:
-        description: 'Plugin interface version (e.g. 8.4.0)'
+        description: 'Plugin interface version (e.g. 7.1.1)'
         required: true
         type: string
       postgresql-plugin-version:
-        description: 'PostgreSQL plugin version (e.g. 9.4.0)'
+        description: 'PostgreSQL plugin version (e.g. 8.1.5)'
         required: true
         type: string
       release-plugin-interface:
@@ -29,7 +29,7 @@ on:
         description: 'Is this the latest release? (tags the Docker image as "latest")'
         required: true
         type: boolean
-        default: true
+        default: false
       is-latest-for-major:
         description: 'Is this the latest release for its major version? (tags the Docker image with the major version, e.g. "9")'
         required: true
@@ -149,10 +149,10 @@ jobs:
           - postgresql
 
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK 15
         uses: actions/setup-java@v4
         with:
-          java-version: 21.0.7
+          java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
@@ -217,7 +217,7 @@ jobs:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
-          ./gradlew test 
+          ./gradlew test
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
@@ -285,10 +285,10 @@ jobs:
     outputs:
       dev-tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK 15
         uses: actions/setup-java@v4
         with:
-          java-version: 21.0.7
+          java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
@@ -421,10 +421,10 @@ jobs:
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK 15
         uses: actions/setup-java@v4
         with:
-          java-version: 21.0.7
+          java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
