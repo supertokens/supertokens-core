@@ -22,12 +22,13 @@ jobs:
     steps:
       - name: Run Azure Container Scan
         id: container-scan
-        uses: Azure/container-scan@v0
+        uses: Azure/container-scan@v0.1
         continue-on-error: true
         with:
           image-name: ${{ github.event.inputs.image_name }}
           severity-threshold: LOW
           run-quality-checks: false
+          trivy-version: v0.69.2
         env:
           DOCKER_CONTENT_TRUST: 1
 
