@@ -157,8 +157,8 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
-      runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
       matrix:
+        runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
         plugin:
           - sqlite
           - postgresql
