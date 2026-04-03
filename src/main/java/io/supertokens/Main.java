@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.backfill.BackfillReservationTables;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredSAMLData.DeleteExpiredSAMLData;
@@ -278,6 +279,9 @@ public class Main {
         if(bulkMigrationCronEnabled) {
             Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
         }
+
+        // Backfill reservation tables — self-skips when migration_mode is LEGACY
+        Cronjobs.addCronjob(this, BackfillReservationTables.init(this, uniqueUserPoolIdsTenants));
 
         Cronjobs.addCronjob(this, CleanupOAuthSessionsAndChallenges.init(this, uniqueUserPoolIdsTenants));
 

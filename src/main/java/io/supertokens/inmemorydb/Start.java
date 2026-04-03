@@ -105,6 +105,7 @@ import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokens
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.pluginInterface.accountinfo.AccountInfoStorage;
+import io.supertokens.pluginInterface.migration.MigrationBackfillStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
@@ -136,7 +137,7 @@ public class Start
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
         ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, WebAuthNSQLStorage,
-        SAMLStorage, UserLockingStorage, AccountInfoStorage {
+        SAMLStorage, UserLockingStorage, AccountInfoStorage, MigrationBackfillStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -4260,5 +4261,27 @@ public class Start
         Connection sqlCon = (Connection) con.getConnection();
         AccountInfoQueries.addTenantIdToRecipeUser_Transaction(
                 this, sqlCon, tenantIdentifier, user);
+    }
+
+    // MigrationBackfillStorage implementation
+
+    @Override
+    public MigrationMode getMigrationMode() {
+        return Config.getConfig(this).getMigrationMode();
+    }
+
+    @Override
+    public int getBackfillPendingUsersCount(AppIdentifier appIdentifier) {
+        return 0; // InMemoryDB always has all data in sync
+    }
+
+    @Override
+    public int backfillUsersBatch(AppIdentifier appIdentifier, int batchSize) {
+        return 0; // Nothing to backfill in InMemoryDB
+    }
+
+    @Override
+    public int verifyBackfillCompleteness(AppIdentifier appIdentifier) {
+        return 0; // Always consistent in InMemoryDB
     }
 }
