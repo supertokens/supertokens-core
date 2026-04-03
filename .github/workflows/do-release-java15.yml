@@ -41,6 +41,9 @@ on:
         type: boolean
         default: true
 
+env:
+  total-runners: 6
+
 jobs:
   # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
