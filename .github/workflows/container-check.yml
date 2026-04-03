@@ -28,7 +28,7 @@ jobs:
           image-name: ${{ github.event.inputs.image_name }}
           severity-threshold: LOW
           run-quality-checks: false
-          trivy-version: v0.69.2
+          trivy-version: 0.69.2
         env:
           DOCKER_CONTENT_TRUST: 1
 
