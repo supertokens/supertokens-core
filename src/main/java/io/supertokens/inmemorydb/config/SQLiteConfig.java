@@ -23,7 +23,7 @@ import java.util.Set;
 
 public class SQLiteConfig {
 
-    private static MigrationMode migrationMode = MigrationMode.LEGACY;
+    private static MigrationMode migrationMode = MigrationMode.MIGRATED;
 
     public static void setMigrationModeForTesting(MigrationMode mode) {
         migrationMode = mode;
