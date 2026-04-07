@@ -41,6 +41,7 @@ import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.jwt.JWT.JWTException;
@@ -476,7 +477,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     throw new StorageTransactionLogicException(e);
                 }
                 return null;
-            });
+            }, SQLStorage.TransactionIsolationLevel.REPEATABLE_READ);
 
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof IOException) throw (IOException) e.actualException;
