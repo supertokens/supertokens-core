@@ -453,10 +453,22 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 main, req, resp, appIdentifier, sqlStorage,
                                 null, "/admin/oauth2/introspect", true, false,
                                 newIntrospectFields, new HashMap<>());
+                        long refreshTokenExp;
                         if (newIntrospectResp == null) {
-                            throw new IllegalStateException("Should never come here");
+                            // Post-exchange introspect failed transiently (Hydra unavailable).
+                            // The old internal token was already consumed by Hydra; we cannot
+                            // roll back that operation. Commit with the old token's expiry as a
+                            // fallback so the new mapping is persisted and the session is not
+                            // permanently broken.
+                            refreshTokenExp = refreshTokenPayload.get("exp").getAsLong();
+                            sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, gid,
+                                    newInternalToken, sessionHandle, jti, refreshTokenExp);
+                            sqlStorage.commitTransaction(con);
+                            // proxyFormPOST already wrote an error to resp; leave finalResponse null
+                            // so we don't double-respond. The client can retry safely.
+                            return null;
                         }
-                        long refreshTokenExp = newIntrospectResp.jsonResponse.getAsJsonObject()
+                        refreshTokenExp = newIntrospectResp.jsonResponse.getAsJsonObject()
                                 .get("exp").getAsLong();
 
                         // UPDATE inside the same transaction — atomically replaces internal token
