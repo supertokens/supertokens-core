@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.3]
+
+- Fix: uses the right transaction isolation level with oauth2 refresh tokens to avoid false-positive conflicts at DB
+  level
+
 ## [11.4.2]
 
 - Fixes Tenant/App/CUD APIs to not to lock the whole world for a read
