@@ -359,6 +359,12 @@ public class TestOAuthRefreshRaceCondition {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+        // SQLite uses table-level locking; concurrent writes to oauth_sessions from different
+        // connections always contend regardless of which row they target.  The parallel
+        // concurrency scenario only makes sense against a row-locking DB (PostgreSQL / MySQL).
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
