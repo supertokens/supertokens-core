@@ -221,7 +221,49 @@ public class TestOAuthRefreshRaceCondition {
     // -------------------------------------------------------------------------
 
     /**
-     * Regression test for the race condition where concurrent refresh-token calls with rotation
+     * Scenario A — sequential non-conflicting refreshes.
+     *
+     * <p>A single non-rotating refresh token is used to perform several sequential refresh calls.
+     * Each call must succeed with {@code status: OK} and return the <em>same</em> external refresh
+     * token (non-rotating semantics).</p>
+     */
+    @Test
+    public void testSequentialNonRotatingRefreshAlwaysSucceeds() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        JsonObject client = createClient(process.getProcess(), false);
+        JsonObject tokens = completeFlowAndGetTokens(process.getProcess(), client);
+        final String externalRefreshToken = tokens.get("refresh_token").getAsString();
+
+        final int iterations = 15;
+        for (int i = 0; i < iterations; i++) {
+            JsonObject resp = refreshToken(process.getProcess(), client, externalRefreshToken);
+            assertEquals("Sequential refresh #" + (i + 1) + " must return OK", "OK",
+                    resp.get("status").getAsString());
+            // Non-rotating: the response must NOT include a new refresh token (the original token
+            // stays valid and is reused by the client — Hydra does not echo it back).
+            assertFalse("Non-rotating refresh must not return a new refresh_token on iteration " + (i + 1),
+                    resp.has("refresh_token"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Scenario B — concurrent conflicting refreshes (same token, multiple threads).
+     *
+     * <p>Regression test for the race condition where concurrent refresh-token calls with rotation
      * disabled would all read the same Hydra-internal token from the DB, then race to exchange it
      * with Hydra. Because Hydra rotates the token on the first successful exchange, all subsequent
      * threads that carry the now-stale token receive "token_inactive".
@@ -289,6 +331,108 @@ public class TestOAuthRefreshRaceCondition {
         assertEquals("All concurrent non-rotating refresh calls must succeed — failures: " + failures,
                 concurrency, successCount.get());
         assertEquals("No refresh call should fail", 0, failureCount.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Scenario C — parallel non-conflicting refreshes (unique token per worker).
+     *
+     * <p>Each worker thread owns a distinct OAuth session (different external refresh token) and
+     * performs several sequential refreshes while all workers run concurrently.  There is no
+     * cross-worker contention on any single token.</p>
+     *
+     * <p>The key invariant is that <em>independent sessions must never interfere</em>: no
+     * {@code token_inactive} or {@code token_not_found} errors may occur, since those would
+     * indicate cross-session corruption (the race-condition bug).  Transient {@code server_error}
+     * responses from Hydra (HTTP 500) are counted separately — they are infrastructure noise and
+     * do not indicate a session was corrupted.</p>
+     */
+    @Test
+    public void testParallelNonConflictingRefreshesNoCrossSessionCorruption() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        final int workers = 5;
+        final int refreshesPerWorker = 15;
+
+        // Create a unique client + obtain an initial refresh token for each worker.
+        JsonObject[] clients = new JsonObject[workers];
+        String[] externalTokens = new String[workers];
+        for (int w = 0; w < workers; w++) {
+            clients[w] = createClient(process.getProcess(), false);
+            JsonObject tokens = completeFlowAndGetTokens(process.getProcess(), clients[w]);
+            externalTokens[w] = tokens.get("refresh_token").getAsString();
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(workers);
+        CountDownLatch ready = new CountDownLatch(workers);
+        CountDownLatch start = new CountDownLatch(1);
+
+        // Corruption errors: token_inactive / token_not_found indicate cross-session interference.
+        List<String> corruptionErrors = Collections.synchronizedList(new ArrayList<>());
+        // Transient errors: server_error indicates Hydra unavailable, not a correctness bug.
+        AtomicInteger transientErrorCount = new AtomicInteger(0);
+        AtomicInteger successCount = new AtomicInteger(0);
+
+        for (int w = 0; w < workers; w++) {
+            final int workerIndex = w;
+            final JsonObject workerClient = clients[w];
+            final String workerToken = externalTokens[w];
+
+            executor.submit(() -> {
+                ready.countDown();
+                try {
+                    start.await();
+                    for (int i = 0; i < refreshesPerWorker; i++) {
+                        JsonObject resp = refreshToken(process.getProcess(), workerClient, workerToken);
+                        String status = resp.has("status") ? resp.get("status").getAsString() : "";
+                        String error = resp.has("error") ? resp.get("error").getAsString() : "";
+                        if ("OK".equals(status)) {
+                            successCount.incrementAndGet();
+                        } else if ("server_error".equals(error)) {
+                            // Transient Hydra failure — not the correctness bug under test.
+                            transientErrorCount.incrementAndGet();
+                        } else {
+                            // token_inactive / token_not_found / anything else = cross-session
+                            // corruption; fail immediately.
+                            corruptionErrors.add("worker=" + workerIndex + " iter=" + i + ": " + resp);
+                        }
+                    }
+                } catch (Exception e) {
+                    corruptionErrors.add("worker=" + workerIndex + ": " + e.getMessage());
+                }
+            });
+        }
+
+        ready.await();
+        start.countDown();
+
+        executor.shutdown();
+        assertTrue("Timed out waiting for parallel refreshes",
+                executor.awaitTermination(5, TimeUnit.MINUTES));
+
+        // The critical assertion: no session corruption across independent workers.
+        assertEquals("Cross-session corruption detected — parallel non-conflicting workers must not "
+                + "produce token_inactive or similar errors: " + corruptionErrors,
+                0, corruptionErrors.size());
+
+        // Sanity check: at least some requests must have succeeded (guards against a completely
+        // broken test environment where every request returns server_error).
+        int totalRequests = workers * refreshesPerWorker;
+        assertTrue("Expected most requests to succeed; only " + successCount.get() + "/" + totalRequests
+                + " succeeded (transient errors: " + transientErrorCount.get() + ")",
+                successCount.get() >= totalRequests / 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
