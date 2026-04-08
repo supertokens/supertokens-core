@@ -41,6 +41,9 @@ on:
         type: boolean
         default: true
 
+env:
+  total-runners: 6
+
 jobs:
   # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
@@ -137,13 +140,28 @@ jobs:
           python ../.github/helpers/register-new-plugin-version.py
 
   # ── Run unit tests (sqlite + postgresql) ──────────────────────────
+  runner-indexes:
+    runs-on: ubuntu-22.04
+    name: Generate runner indexes
+    needs: dependency-branches
+    outputs:
+      json: ${{ steps.generate-index-list.outputs.json }}
+    steps:
+      - id: generate-index-list
+        run: |
+          MAX_INDEX=$((${{ env.total-runners }}-1))
+          INDEX_LIST=$(seq 0 ${MAX_INDEX})
+          INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
+          echo "::set-output name=json::${INDEX_JSON}"
+
   test:
-    name: Tests (${{ matrix.plugin }})
-    needs: [ dependency-branches, register-core-version ]
+    name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
+    needs: [ dependency-branches, register-core-version, runner-indexes ]
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
+        runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
         plugin:
           - sqlite
           - postgresql
@@ -160,7 +178,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
@@ -197,6 +215,29 @@ jobs:
         if: matrix.plugin == 'postgresql'
         run: supertokens-root/supertokens-postgresql-plugin/startDb.sh
 
+      - name: Start Hydra
+        run: |
+          docker run -d \
+            --name hydra \
+            --network host \
+            -e DSN=memory \
+            -e URLS_SELF_ISSUER=http://localhost:4444 \
+            -e URLS_LOGIN=http://localhost:3001/auth/oauth/login \
+            -e URLS_CONSENT=http://localhost:3001/auth/oauth/consent \
+            -e URLS_LOGOUT=http://localhost:3001/auth/oauth/logout \
+            -e SECRETS_SYSTEM=thisIsATestSecretThatIsAtLeast32Chars \
+            -e SECRETS_COOKIE=thisIsATestCookieSecretAtLeast32 \
+            -e SERVE_COOKIES_SAME_SITE_MODE=Lax \
+            oryd/hydra:v2.2.0 serve all --dev
+          for i in $(seq 1 30); do
+            if wget -q --spider http://localhost:4444/health/alive 2>/dev/null; then
+              echo "Hydra is ready"
+              break
+            fi
+            echo "Waiting for Hydra... ($i/30)"
+            sleep 2
+          done
+
       - name: Setup test environment
         run: cd supertokens-root && ./utils/setupTestEnv --local
 
@@ -212,12 +253,34 @@ jobs:
             git -C supertokens-postgresql-plugin diff --exit-code implementationDependencies.json
           fi
 
+      - uses: chaosaffe/split-tests@v1-alpha.1
+        id: split-tests
+        name: Split tests
+        with:
+          glob: 'supertokens-root/*/src/test/java/**/*.java'
+          split-total: ${{ env.total-runners }}
+          split-index: ${{ matrix.runner-index }}
+      - run: 'echo "This runner will execute the following tests: ${{ steps.split-tests.outputs.test-suite }}"'
+
       - name: Run tests
         env:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
         run: |
           cd supertokens-root
-          ./gradlew test
+          echo "./gradlew test \\" > test.sh
+          chmod +x test.sh
+          IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
+          for test in "${TESTS[@]}"; do
+            test_name="${test%.java}"
+            test_name="${test_name#supertokens-root/supertokens-core/src/test/java/}"
+            test_name="${test_name//\//.}"
+            echo "  --tests $test_name \\" >> test.sh
+          done
+          echo "" >> test.sh
+          echo "this is the test command:"
+          cat test.sh
+          echo "--------------------------------"
+          ./test.sh
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
@@ -296,7 +359,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v4
@@ -432,7 +495,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
         run: |
