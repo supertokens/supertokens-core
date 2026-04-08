@@ -28,6 +28,7 @@ def register_core_version(supertokens_api_key, core_version, plugin_interface_ar
 	
 	if response.status != 200:
 		print(f"failed core PUT API status code: {response.status}. Exiting!")
+		print(f"Response body: {response.read().decode('utf-8')}")
 		exit(1)
 	
 	conn.close()
