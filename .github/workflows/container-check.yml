@@ -38,31 +38,24 @@ jobs:
         run: |
           SCAN_REPORT_PATH="trivy-results.json"
 
-          {
-            echo "summary<<EOF"
+          # Build the Slack summary as a SINGLE LINE using \n escape sequences (literal
+          # backslash-n in bash double quotes).  When GitHub Actions substitutes this
+          # single-line value into the double-quoted YAML scalar in the Slack payload,
+          # the YAML parser treats \n as the newline character — avoiding the YAML
+          # newline-folding-to-space problem that breaks multiline output variables.
+          if [ -f "$SCAN_REPORT_PATH" ]; then
+            critical=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            high=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            medium=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            low=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            total_vulns=$(jq '[.Results[].Vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
 
-            if [ -f "$SCAN_REPORT_PATH" ]; then
-              critical=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-              high=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-              medium=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-              low=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-              total_vulns=$(jq '[.Results[].Vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            summary="*Image:* \`supertokens/supertokens-postgresql:latest\`\n*Scan Date:* \`$(date -u)\`\n\n*Total Vulnerabilities:* ${total_vulns}\n\n:red_circle: *Critical*: ${critical}\n:large_orange_circle: *High*: ${high}\n:large_yellow_circle: *Medium*: ${medium}\n:large_green_circle: *Low*: ${low}"
+          else
+            summary=":x: *Scan results not found or scan failed*"
+          fi
 
-              echo "**Image:** \`supertokens/supertokens-postgresql:latest\`"
-              echo "**Scan Date:** \`$(date -u)\`"
-              echo ""
-              echo "**Total Vulnerabilities:** $total_vulns"
-              echo ""
-              echo "- 🔴 **Critical**: $critical"
-              echo "- 🟠 **High**: $high"
-              echo "- 🟡 **Medium**: $medium"
-              echo "- 🟢 **Low**: $low"
-            else
-              echo "❌ **Scan results not found or scan failed**"
-            fi
-
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
 
       - name: Add to Action Summary
         run: |
