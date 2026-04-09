@@ -235,7 +235,7 @@ jobs:
           python-version: '3.11'
       - name: Wait for Docker build
         env:
-          SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/helpers/wait-for-docker.py
       - name: Set image tag
         id: set_tag
