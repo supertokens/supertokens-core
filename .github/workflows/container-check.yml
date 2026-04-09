@@ -3,7 +3,7 @@ name: Container Security Scan
 on:
   # Allow manual triggering
   workflow_dispatch:
-  
+
   # Run automatically once a day at 2 AM UTC
   schedule:
     - cron: '0 2 * * *'
@@ -12,109 +12,98 @@ jobs:
   container-scan:
     name: Scan SuperTokens PostgreSQL Container
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Run Azure Container Scan
+      - name: Run Trivy vulnerability scanner
         id: container-scan
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
-          image-name: supertokens/supertokens-postgresql:latest
-          severity-threshold: LOW
-          run-quality-checks: false
-        env:
-          DOCKER_CONTENT_TRUST: 1
+          image-ref: supertokens/supertokens-postgresql:latest
+          format: json
+          output: trivy-results.json
+          severity: LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: '0'
 
       - name: Upload scan results
         id: upload-scan-results
         uses: actions/upload-artifact@v4
         with:
           name: container-scan-results
-          path: |
-            ${{ steps.container-scan.outputs.scan-report-path }}
+          path: trivy-results.json
           retention-days: 30
 
       - name: Generate Security Summary
         id: security-summary
         run: |
-          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          SCAN_REPORT_PATH="trivy-results.json"
 
-          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`\n" >> $GITHUB_OUTPUT
-          echo "**Scan Date:** \`$(date -u)\`\n" >> $GITHUB_OUTPUT
-          echo "\n" >> $GITHUB_OUTPUT
-
-          # Get the scan report path from the container scan output
-          SCAN_REPORT_PATH="${{ steps.container-scan.outputs.scan-report-path }}"
-          
+          # Build the Slack summary as a SINGLE LINE using \n escape sequences (literal
+          # backslash-n in bash double quotes).  When GitHub Actions substitutes this
+          # single-line value into the double-quoted YAML scalar in the Slack payload,
+          # the YAML parser treats \n as the newline character — avoiding the YAML
+          # newline-folding-to-space problem that breaks multiline output variables.
           if [ -f "$SCAN_REPORT_PATH" ]; then
-            # Count vulnerabilities by severity using the correct JSON structure
-            critical=$(jq '[.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            high=$(jq '[.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            medium=$(jq '[.vulnerabilities[]? | select(.severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            low=$(jq '[.vulnerabilities[]? | select(.severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            
-            total_vulns=$(jq '[.vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            
-            echo "**Total Vulnerabilities:** $total_vulns\n" >> $GITHUB_OUTPUT
-            echo "\n" >> $GITHUB_OUTPUT
-            
-            echo "- 🔴 **Critical**: $critical\n" >> $GITHUB_OUTPUT
-            echo "- 🟠 **High**: $high\n" >> $GITHUB_OUTPUT
-            echo "- 🟡 **Medium**: $medium\n" >> $GITHUB_OUTPUT
-            echo "- 🟢 **Low**: $low\n" >> $GITHUB_OUTPUT
-            echo "\n" >> $GITHUB_OUTPUT
+            critical=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            high=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            medium=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            low=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            total_vulns=$(jq '[.Results[].Vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+
+            summary="*Image:* \`supertokens/supertokens-postgresql:latest\`\n*Scan Date:* \`$(date -u)\`\n\n*Total Vulnerabilities:* ${total_vulns}\n\n:red_circle: *Critical*: ${critical}\n:large_orange_circle: *High*: ${high}\n:large_yellow_circle: *Medium*: ${medium}\n:large_green_circle: *Low*: ${low}"
           else
-            echo "❌ **Scan results not found or scan failed**" >> $GITHUB_OUTPUT
+            summary=":x: *Scan results not found or scan failed*"
           fi
 
-          echo "\n" >> $GITHUB_OUTPUT
-
-          echo "[📃 Download the full report](${{ steps.upload-scan-results.outputs.artifact-url }})\n" >> $GITHUB_OUTPUT
-
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
 
       - name: Add to Action Summary
         run: |
-          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Scan Date:** \`$(date -u)\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Get the scan report path from the container scan output
-          SCAN_REPORT_PATH="${{ steps.container-scan.outputs.scan-report-path }}"
-          
-          if [ -f "$SCAN_REPORT_PATH" ]; then
-            # Count vulnerabilities by severity using the correct JSON structure
-            critical=$(jq '[.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            high=$(jq '[.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            medium=$(jq '[.vulnerabilities[]? | select(.severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            low=$(jq '[.vulnerabilities[]? | select(.severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            
-            total_vulns=$(jq '[.vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
-            
-            echo "**Total Vulnerabilities:** $total_vulns" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            echo "- 🔴 **Critical**: $critical" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟠 **High**: $high" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟡 **Medium**: $medium" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟢 **Low**: $low" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+          SCAN_REPORT_PATH="trivy-results.json"
 
-          echo "**Vulnerabilities:**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| ID | Package | Severity | | Description |" >> $GITHUB_STEP_SUMMARY
-          echo "|----|---------|----------|-|-------------|" >> $GITHUB_STEP_SUMMARY
-          
-          # Extract and format vulnerabilities into a table with colored severity indicators, excluding LOW severity
-          jq -r '.vulnerabilities[]? | select(.severity != "LOW") | "| \(.vulnerabilityId // "N/A") | \(.packageName // "N/A") | \(.severity // "UNKNOWN") | \(if .severity == "CRITICAL" then "🔴" elif .severity == "HIGH" then "🟠" elif .severity == "MEDIUM" then "🟡" else "🟢" end) | \((.description // "No description available") | gsub("\n"; " ")) |"' "$SCAN_REPORT_PATH" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`supertokens/supertokens-postgresql:latest\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Scan Date:** \`$(date -u)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f "$SCAN_REPORT_PATH" ]; then
+            critical=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            high=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            medium=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            low=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "LOW")] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+            total_vulns=$(jq '[.Results[].Vulnerabilities[]?] | length' "$SCAN_REPORT_PATH" 2>/dev/null || echo "0")
+
+            echo "**Total Vulnerabilities:** $total_vulns" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 🔴 **Critical**: $critical" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 🟠 **High**: $high" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 🟡 **Medium**: $medium" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 🟢 **Low**: $low" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+
+            echo "**Vulnerabilities:**" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ID | Package | Severity | | Description |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|----|---------|----------|-|-------------|" >> "$GITHUB_STEP_SUMMARY"
+
+            jq -r '
+              .Results[].Vulnerabilities[]?
+              | select(.Severity != "LOW")
+              | "| \(.VulnerabilityID // "N/A") | \(.PkgName // "N/A") | \(.Severity // "UNKNOWN") | \(
+                  if .Severity == "CRITICAL" then "🔴"
+                  elif .Severity == "HIGH" then "🟠"
+                  elif .Severity == "MEDIUM" then "🟡"
+                  else "🟢" end
+                ) | \((.Description // "No description available") | gsub("[[:cntrl:]]"; " ")) |"
+            ' "$SCAN_REPORT_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+            echo "" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "❌ **Scan results not found or scan failed**" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Scan results not found or scan failed**" >> "$GITHUB_STEP_SUMMARY"
           fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[📃 Download the full report](${{ steps.upload-scan-results.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[📃 Download the full report](${{ steps.upload-scan-results.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post notification on Slack channel
         id: deployment_message
@@ -130,5 +119,7 @@ jobs:
                 text:
                   type: "plain_text"
                   text: "${{ steps.container-scan.outcome == 'success' && '✅' || '❌' }} Vulnerability Report: ${{ steps.container-scan.outcome == 'success' && 'All okay' || 'Needs attention' }}"
-              - type: "markdown"
-                text: "${{ steps.security-summary.outputs.summary }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.security-summary.outputs.summary }}"
