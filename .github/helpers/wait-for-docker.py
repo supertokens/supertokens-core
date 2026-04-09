@@ -5,7 +5,11 @@ import os
 import sys
 
 REPO = "supertokens/supertokens-core"
-SHA = os.environ.get("GITHUB_SHA")
+# COMMIT_SHA is set explicitly by the workflow step: for PR events it is the
+# branch HEAD SHA (github.event.pull_request.head.sha); for push events it
+# equals GITHUB_SHA.  We fall back to GITHUB_SHA so the script stays usable
+# when invoked outside of that workflow step.
+SHA = os.environ.get("COMMIT_SHA") or os.environ.get("GITHUB_SHA")
 NAME = os.environ.get("WORKFLOW_NAME", "Publish Dev Docker Image")
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 

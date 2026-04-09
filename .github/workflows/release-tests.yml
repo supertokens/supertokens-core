@@ -236,6 +236,10 @@ jobs:
       - name: Wait for Docker build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # For PR events GITHUB_SHA is the synthetic merge commit, not the branch
+          # HEAD that triggered the Docker publish workflow. Use the PR head SHA when
+          # available, falling back to GITHUB_SHA for direct push events.
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python .github/helpers/wait-for-docker.py
       - name: Set image tag
         id: set_tag
