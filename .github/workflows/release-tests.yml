@@ -52,6 +52,7 @@ jobs:
         with:
           path: supertokens-root/supertokens-core
           token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ github.head_ref }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v4
@@ -101,6 +102,9 @@ jobs:
 
             if ! git diff --cached --quiet; then
               changed=true
+              echo "::group::implementationDependencies.json diff in $repo_dir"
+              git diff --cached
+              echo "::endgroup::"
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
               git commit -m "chore: update implementationDependencies.json"
