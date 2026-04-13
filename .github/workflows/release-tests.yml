@@ -52,6 +52,7 @@ jobs:
         with:
           path: supertokens-root/supertokens-core
           token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ github.head_ref }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v4
@@ -101,6 +102,9 @@ jobs:
 
             if ! git diff --cached --quiet; then
               changed=true
+              echo "::group::implementationDependencies.json diff in $repo_dir"
+              git diff --cached
+              echo "::endgroup::"
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
               git commit -m "chore: update implementationDependencies.json"
@@ -231,7 +235,11 @@ jobs:
           python-version: '3.11'
       - name: Wait for Docker build
         env:
-          SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # For PR events GITHUB_SHA is the synthetic merge commit, not the branch
+          # HEAD that triggered the Docker publish workflow. Use the PR head SHA when
+          # available, falling back to GITHUB_SHA for direct push events.
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python .github/helpers/wait-for-docker.py
       - name: Set image tag
         id: set_tag
