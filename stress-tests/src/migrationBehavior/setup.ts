@@ -225,8 +225,11 @@ export async function getUser(userId: string) {
   return SuperTokens.getUser(userId);
 }
 
-export async function deleteUser(userId: string): Promise<void> {
-  await SuperTokens.deleteUser(userId);
+export async function deleteUser(
+  userId: string,
+  removeAllLinkedAccounts: boolean = false
+): Promise<void> {
+  await SuperTokens.deleteUser(userId, removeAllLinkedAccounts);
 }
 
 // ── Core API Helpers (direct HTTP) ──────────────────────────────────────────
@@ -346,7 +349,7 @@ export async function appTpSignInUp(
   const resp = await appScopedRequest(appId, 'POST', '/recipe/signinup', {
     thirdPartyId,
     thirdPartyUserId: tpUserId,
-    email: { id: e },
+    email: { id: e, isVerified: false },
   });
   if (resp.body?.status !== 'OK') {
     throw new Error(`appTpSignInUp failed: ${JSON.stringify(resp.body)}`);
@@ -392,7 +395,10 @@ export async function appUnlinkAccount(appId: string, recipeUserId: string): Pro
 }
 
 /**
- * Get user by ID in a specific app via direct HTTP.
+ * Get user by ID in a specific app via direct HTTP. Throws if the call fails
+ * with anything other than UNKNOWN_USER_ID_ERROR (in which case it returns
+ * undefined). This makes it easy to distinguish "user truly doesn't exist"
+ * from "request failed for some other reason" in tests.
  */
 export async function appGetUser(
   appId: string,
@@ -402,14 +408,29 @@ export async function appGetUser(
   if (resp.body?.status === 'OK') {
     return resp.body.user;
   }
-  return undefined;
+  if (resp.body?.status === 'UNKNOWN_USER_ID_ERROR') {
+    return undefined;
+  }
+  throw new Error(
+    `appGetUser(${appId}, ${userId}) failed: HTTP ${resp.status} body=${JSON.stringify(resp.body)}`
+  );
 }
 
 /**
- * Delete user in a specific app via direct HTTP.
+ * Delete user in a specific app via direct HTTP. Defaults to removing only
+ * the specified recipe user (not the whole linked group). Pass
+ * `removeAllLinkedAccounts=true` to match the core's default behaviour and
+ * delete every linked login method along with the primary.
  */
-export async function appDeleteUser(appId: string, userId: string): Promise<void> {
-  await appScopedRequest(appId, 'POST', '/user/remove', { userId });
+export async function appDeleteUser(
+  appId: string,
+  userId: string,
+  removeAllLinkedAccounts: boolean = false
+): Promise<void> {
+  await appScopedRequest(appId, 'POST', '/user/remove', {
+    userId,
+    removeAllLinkedAccounts,
+  });
 }
 
 /**
@@ -439,7 +460,7 @@ export async function appTpUpdateEmail(
   const resp = await appScopedRequest(appId, 'POST', '/recipe/signinup', {
     thirdPartyId,
     thirdPartyUserId,
-    email: { id: newEmail },
+    email: { id: newEmail, isVerified: false },
   });
   if (resp.body?.status !== 'OK') {
     throw new Error(`appTpUpdateEmail failed: ${JSON.stringify(resp.body)}`);

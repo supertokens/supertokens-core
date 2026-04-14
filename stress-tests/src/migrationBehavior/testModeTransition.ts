@@ -90,6 +90,7 @@ test('blue-green: full LEGACY → DW_READ_OLD → DW_READ_NEW → MIGRATED lifec
   await appUpdateEmail(appId, legacyUser2, updatedEmail);
 
   primary = await appGetUser(appId, legacyUser1);
+  assertNotNull(primary, 'legacy primary readable after appUpdateEmail in DW_READ_OLD');
   const updatedMethod = primary.loginMethods.find(
     (lm: any) => lm.recipeUserId === legacyUser2
   );
@@ -99,6 +100,7 @@ test('blue-green: full LEGACY → DW_READ_OLD → DW_READ_NEW → MIGRATED lifec
   // Link the legacy TP user to the legacy primary (now dual-writing)
   await appLinkAccounts(appId, legacyTpUser, legacyUser1);
   primary = await appGetUser(appId, legacyUser1);
+  assertNotNull(primary, 'legacy primary readable after linking legacyTpUser');
   assertEqual(primary.loginMethods.length, 3, 'legacy primary should now have 3 methods');
 
   // ─── Phase 3: DUAL_WRITE_READ_NEW ─────────────────────────────────
@@ -113,11 +115,13 @@ test('blue-green: full LEGACY → DW_READ_OLD → DW_READ_NEW → MIGRATED lifec
   const { userId: rnUser } = await appSignUp(appId);
   await appLinkAccounts(appId, rnUser, dwUser1);
   dwPrimary = await appGetUser(appId, dwUser1);
+  assertNotNull(dwPrimary, 'DW primary readable after READ_NEW link');
   assertEqual(dwPrimary.loginMethods.length, 4, 'DW primary has 4 methods after READ_NEW link');
 
   // Unlink one user
   await appUnlinkAccount(appId, dwUser2);
   dwPrimary = await appGetUser(appId, dwUser1);
+  assertNotNull(dwPrimary, 'DW primary readable after unlink');
   assertEqual(dwPrimary.loginMethods.length, 3, 'DW primary has 3 methods after unlink');
 
   const unlinked = await appGetUser(appId, dwUser2);
@@ -136,12 +140,14 @@ test('blue-green: full LEGACY → DW_READ_OLD → DW_READ_NEW → MIGRATED lifec
   const { userId: migUser } = await appSignUp(appId);
   await appLinkAccounts(appId, migUser, dwUser1);
   dwPrimary = await appGetUser(appId, dwUser1);
+  assertNotNull(dwPrimary, 'DW primary readable after MIGRATED link');
   assertEqual(dwPrimary.loginMethods.length, 4, 'DW primary has 4 methods after MIGRATED link');
 
   // Update TP email in MIGRATED mode
   const newTpEmail = uniqueEmail('tp-migrated');
   await appTpUpdateEmail(appId, 'google', dwTpId, newTpEmail);
   dwPrimary = await appGetUser(appId, dwUser1);
+  assertNotNull(dwPrimary, 'DW primary readable after TP email update');
   const tpMethod = dwPrimary.loginMethods.find(
     (lm: any) => lm.recipeUserId === dwTpUser
   );
@@ -151,6 +157,7 @@ test('blue-green: full LEGACY → DW_READ_OLD → DW_READ_NEW → MIGRATED lifec
   // Delete in MIGRATED mode
   await appDeleteUser(appId, migUser);
   dwPrimary = await appGetUser(appId, dwUser1);
+  assertNotNull(dwPrimary, 'DW primary readable after MIGRATED delete');
   assertEqual(dwPrimary.loginMethods.length, 3, 'DW primary has 3 methods after MIGRATED delete');
 });
 
@@ -200,6 +207,7 @@ test('blue-green: rollback from DW_READ_NEW to DW_READ_OLD', async () => {
   await appLinkAccounts(appId, linkedId, primaryId);
 
   let primary = await appGetUser(appId, primaryId);
+  assertNotNull(primary, 'primary readable in READ_OLD');
   assertEqual(primary.loginMethods.length, 2, 'should have 2 methods in READ_OLD');
 
   // Move forward to READ_NEW
@@ -208,6 +216,7 @@ test('blue-green: rollback from DW_READ_NEW to DW_READ_OLD', async () => {
   const { userId: rnUser } = await appSignUp(appId);
   await appLinkAccounts(appId, rnUser, primaryId);
   primary = await appGetUser(appId, primaryId);
+  assertNotNull(primary, 'primary readable in READ_NEW');
   assertEqual(primary.loginMethods.length, 3, 'should have 3 methods in READ_NEW');
 
   // ROLLBACK: switch back to READ_OLD
@@ -222,6 +231,7 @@ test('blue-green: rollback from DW_READ_NEW to DW_READ_OLD', async () => {
   const { userId: postRollbackUser } = await appSignUp(appId);
   await appLinkAccounts(appId, postRollbackUser, primaryId);
   primary = await appGetUser(appId, primaryId);
+  assertNotNull(primary, 'primary readable after post-rollback link');
   assertEqual(primary.loginMethods.length, 4, 'link works after rollback');
 });
 
@@ -240,9 +250,9 @@ test('blue-green: email conflict detection works after mode transition', async (
   // Switch to READ_NEW
   await createOrUpdateApp(appId, 'DUAL_WRITE_READ_NEW');
 
-  // Another user tries to become primary with the same email
-  const { userId: user2 } = await appSignUp(appId, conflictEmail + '2');
-  await appUpdateEmail(appId, user2, conflictEmail);
+  // TP user with the conflicting email — allowed to create (different recipe),
+  // but createPrimaryUser must reject because email is already claimed.
+  const { userId: user2 } = await appTpSignInUp(appId, 'google', conflictEmail);
 
   const resp = await appScopedRequest(appId, 'POST', '/recipe/accountlinking/user/primary', {
     recipeUserId: user2,
@@ -256,8 +266,7 @@ test('blue-green: email conflict detection works after mode transition', async (
   // Switch to MIGRATED — conflict should still be detected
   await createOrUpdateApp(appId, 'MIGRATED');
 
-  const { userId: user3 } = await appSignUp(appId, conflictEmail + '3');
-  await appUpdateEmail(appId, user3, conflictEmail);
+  const { userId: user3 } = await appTpSignInUp(appId, 'google', conflictEmail);
 
   const resp2 = await appScopedRequest(appId, 'POST', '/recipe/accountlinking/user/primary', {
     recipeUserId: user3,

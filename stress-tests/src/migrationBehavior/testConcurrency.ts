@@ -65,7 +65,7 @@ test('concurrent linkAccounts + updateEmail produces consistent state', async ()
     if (recipe.isPrimaryUser && recipe.id === primaryId) {
       // User was linked — verify via primary view
       const linkedMethod = primary!.loginMethods.find(
-        (lm: any) => lm.recipeUserId === recipeId
+        (lm: any) => lm.recipeUserId.getAsString() === recipeId
       );
       assertNotNull(linkedMethod, `iter ${iter}: linked user should be in primary's methods`);
     } else {
@@ -152,7 +152,7 @@ test('concurrent deleteUser + linkAccounts does not produce orphaned state', asy
     if (recipe === undefined) {
       // Deleted — primary should not reference it
       const hasOrphaned = primary!.loginMethods.some(
-        (lm: any) => lm.recipeUserId === recipeId
+        (lm: any) => lm.recipeUserId.getAsString() === recipeId
       );
       assert(!hasOrphaned, `iter ${iter}: primary should not have deleted user's method`);
     } else {
@@ -160,7 +160,7 @@ test('concurrent deleteUser + linkAccounts does not produce orphaned state', asy
       if (recipe.id === primaryId) {
         // Was linked
         const linked = primary!.loginMethods.find(
-          (lm: any) => lm.recipeUserId === recipeId
+          (lm: any) => lm.recipeUserId.getAsString() === recipeId
         );
         assertNotNull(linked, `iter ${iter}: linked user should appear in primary`);
       }

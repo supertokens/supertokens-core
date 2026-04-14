@@ -63,12 +63,9 @@ test('createPrimaryUser fails when email conflicts with existing primary', async
   const { userId: user1 } = await createEpUser(email);
   await makePrimary(user1);
 
-  // Create second user and update email to match
-  const { userId: user2 } = await createEpUser(email + '2');
-  await EmailPassword.updateEmailOrPassword({
-    recipeUserId: SuperTokens.convertToRecipeUserId(user2),
-    email: email,
-  });
+  // Create a TP user with the same email — allowed because it's a different
+  // recipe; createPrimaryUser must reject the conflict.
+  const { userId: user2 } = await createTpUser('google', email);
 
   const resp = await AccountLinking.createPrimaryUser(
     SuperTokens.convertToRecipeUserId(user2)
@@ -151,9 +148,9 @@ test('linkAccounts fails when email conflicts with another primary', async () =>
   const { userId: primary2 } = await createEpUser();
   await makePrimary(primary2);
 
-  // Create recipe user with same email as primary1
-  const { userId: recipeId } = await createEpUser(email1);
-  // Try to link to primary2 — should fail because email conflicts with primary1
+  // TP user with email1 — allowed (different recipe), but linking to primary2
+  // must fail because email1 is already claimed by primary1's group.
+  const { userId: recipeId } = await createTpUser('google', email1);
   const resp = await AccountLinking.linkAccounts(
     SuperTokens.convertToRecipeUserId(recipeId),
     primary2
@@ -230,7 +227,8 @@ test('canLinkAccounts detects email conflict', async () => {
   const { userId: primary2 } = await createEpUser();
   await makePrimary(primary2);
 
-  const { userId: recipeId } = await createEpUser(email);
+  // TP user with primary1's email — creation allowed, canLink must detect conflict.
+  const { userId: recipeId } = await createTpUser('google', email);
   const resp = await AccountLinking.canLinkAccounts(
     SuperTokens.convertToRecipeUserId(recipeId),
     primary2

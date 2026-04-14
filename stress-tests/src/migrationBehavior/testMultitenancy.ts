@@ -6,7 +6,6 @@
  */
 
 import SuperTokens from 'supertokens-node';
-import AccountLinking from 'supertokens-node/recipe/accountlinking';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Multitenancy from 'supertokens-node/recipe/multitenancy';
 
@@ -16,6 +15,7 @@ import {
   assertEqual,
   assertNotNull,
   createEpUser,
+  createTpUser,
   makePrimary,
   linkUsers,
   getUser,
@@ -64,32 +64,28 @@ test('associateUserToTenant rejects duplicate email in same tenant', async () =>
   await ensureTenant('tenant-dup');
 
   const email = uniqueEmail('dup-tenant');
-  const { userId: user1 } = await createEpUser(email);
-  await Multitenancy.associateUserToTenant(
-    'tenant-dup',
-    SuperTokens.convertToRecipeUserId(user1)
-  );
 
-  // Create second user with same email in public
-  // (different user, same email — allowed in public but not in tenant-dup if user1 is there)
-  const { userId: user2 } = await createEpUser(email + '2');
+  // user1: EP in tenant-dup (signed up directly on that tenant).
+  const signUp1 = await EmailPassword.signUp('tenant-dup', email, 'Password123!');
+  if (signUp1.status !== 'OK') {
+    throw new Error(`signUp on tenant-dup failed: ${signUp1.status}`);
+  }
 
-  // Update user2 email to match
-  await EmailPassword.updateEmailOrPassword({
-    recipeUserId: SuperTokens.convertToRecipeUserId(user2),
-    email: email,
-  });
+  // user2: EP in public with the same email — allowed because different tenant.
+  const signUp2 = await EmailPassword.signUp('public', email, 'Password123!');
+  if (signUp2.status !== 'OK') {
+    throw new Error(`signUp on public failed: ${signUp2.status}`);
+  }
 
-  // Try to associate user2 to tenant-dup where user1 already has that email
+  // Associating user2 to tenant-dup must fail — an EP user with this email
+  // already exists in tenant-dup.
   const resp = await Multitenancy.associateUserToTenant(
     'tenant-dup',
-    SuperTokens.convertToRecipeUserId(user2)
+    SuperTokens.convertToRecipeUserId(signUp2.user.id)
   );
 
-  // Should fail because email already exists in that tenant
   assert(
-    resp.status === 'UNKNOWN_USER_ID_ERROR' ||
-      resp.status === 'EMAIL_ALREADY_EXISTS_ERROR' ||
+    resp.status === 'EMAIL_ALREADY_EXISTS_ERROR' ||
       resp.status === 'ASSOCIATION_NOT_ALLOWED_ERROR',
     `Expected tenant conflict, got ${resp.status}`
   );
