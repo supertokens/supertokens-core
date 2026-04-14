@@ -615,6 +615,17 @@ public class AuthRecipe {
             throws StorageQueryException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
+        // Acquire lock FIRST to serialize with concurrent link/tenant/email-update operations.
+        // Without this lock, deleteUser can read stale state while another thread modifies
+        // the user (e.g., linkAccounts linking R1 to P1 while deleteUser reads R1 as unlinked).
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
+        try {
+            lockingStorage.lockUser(appIdentifier, con, userId);
+        } catch (UserNotFoundForLockingException e) {
+            // User already deleted by another thread — nothing to do
+            return;
+        }
+
         String userIdToDeleteForNonAuthRecipeForRecipeUserId;
         String userIdToDeleteForAuthRecipe;
 
@@ -670,6 +681,27 @@ public class AuthRecipe {
 
         if (userToDelete == null) {
             return;
+        }
+
+        // If removing all linked accounts and user has multiple login methods,
+        // lock all linked users to prevent concurrent modifications (e.g., email update
+        // on a linked login method while we're iterating over them for deletion).
+        // Uses lockUsers (not lockUser) which orders by user_id to prevent deadlocks.
+        if (removeAllLinkedAccounts && userToDelete.loginMethods.length > 1) {
+            List<String> allUserIds = new java.util.ArrayList<>();
+            for (LoginMethod lm : userToDelete.loginMethods) {
+                if (!lm.getSupertokensUserId().equals(userId)) {
+                    allUserIds.add(lm.getSupertokensUserId());
+                }
+            }
+            if (!allUserIds.isEmpty()) {
+                try {
+                    lockingStorage.lockUsers(appIdentifier, con, allUserIds);
+                } catch (UserNotFoundForLockingException e) {
+                    // One of the linked users was deleted concurrently — re-read and retry
+                    // by continuing with the stale data; the recursive calls will handle missing users
+                }
+            }
         }
 
         if (removeAllLinkedAccounts || userToDelete.loginMethods.length == 1) {

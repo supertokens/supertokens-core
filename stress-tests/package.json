@@ -8,6 +8,13 @@
     "start": "node dist/index.js",
     "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
     "one-million-users": "ts-node src/oneMillionUsers/index.ts",
+    "migration-tests": "ts-node src/migrationBehavior/index.ts",
+    "migration-tests:all-modes": "ts-node src/migrationBehavior/runAllModes.ts",
+    "migration-tests:legacy": "MIGRATION_MODE=LEGACY ts-node src/migrationBehavior/index.ts",
+    "migration-tests:dual-write-old": "MIGRATION_MODE=DUAL_WRITE_READ_OLD ts-node src/migrationBehavior/index.ts",
+    "migration-tests:dual-write-new": "MIGRATION_MODE=DUAL_WRITE_READ_NEW ts-node src/migrationBehavior/index.ts",
+    "migration-tests:migrated": "MIGRATION_MODE=MIGRATED ts-node src/migrationBehavior/index.ts",
+    "migration-tests:blue-green": "INCLUDE_TRANSITION_TESTS=true ts-node src/migrationBehavior/index.ts",
     "format": "prettier --write \"**/*.{ts,js,json}\""
   },
   "keywords": [],
