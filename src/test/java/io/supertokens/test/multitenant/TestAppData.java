@@ -132,7 +132,10 @@ public class TestAppData {
 
         String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers",
                 "tenant_first_factors", "tenant_required_secondary_factors",
-                "recipe_user_tenants", "recipe_user_account_infos", "primary_user_tenants"};
+                "recipe_user_tenants", "recipe_user_account_infos", "primary_user_tenants",
+                // Legacy tables that are not populated in MIGRATED mode.
+                "all_auth_recipe_users", "emailpassword_user_to_tenant", "thirdparty_user_to_tenant",
+                "passwordless_user_to_tenant", "webauthn_user_to_tenant"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 

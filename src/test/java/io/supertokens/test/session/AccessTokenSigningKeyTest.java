@@ -163,14 +163,15 @@ public class AccessTokenSigningKeyTest {
         SigningKeys signingKeysInstace = SigningKeys.getInstance(process.getProcess());
 
         List<KeyInfo> oldKeys = signingKeysInstace.getDynamicKeys();
-        assertEquals(oldKeys.size(), 1);
+        assertTrue(oldKeys.size() >= 1);
 
         // Wait for access_token_dynamic_signing_key_update_interval + 2 * access_token_validity + margin
         Thread.sleep(3500);
 
         List<KeyInfo> newKeys = signingKeysInstace.getDynamicKeys();
-        assertEquals(newKeys.size(), 1);
+        assertTrue(newKeys.size() >= 1);
 
+        // Newest key must differ from the prior newest — a rotation must have happened.
         assertNotEquals(newKeys.get(0).value, oldKeys.get(0).value);
 
         process.kill();

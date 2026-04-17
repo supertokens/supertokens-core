@@ -244,7 +244,8 @@ public class ConfigTest2_6 {
 
         // absolute file path
         File f = new File("../temp/config.yaml");
-        args = new String[]{"../", "configFile=" + f.getAbsolutePath()};
+        int port = TestingProcessManager.getFreePort();
+        args = new String[]{"../", "configFile=" + f.getAbsolutePath(), "port=" + port};
 
         process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
