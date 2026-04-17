@@ -67,45 +67,88 @@ public class UserLockingQueries {
 
         String table = Config.getConfig(start).getAppIdToUserIdTable();
         String placeholders = Utils.generateCommaSeperatedQuestionMarks(userIds.size());
+        String appId = appIdentifier.getAppId();
 
-        // Single query that reads both the requested users AND their primary users (if linked).
-        // Mirrors the PostgreSQL query but without FOR UPDATE (SQLite doesn't support it).
-        String QUERY = "SELECT u.user_id, u.primary_or_recipe_user_id, u.is_linked_or_is_a_primary_user, u.recipe_id"
-                + " FROM " + table + " u"
-                + " WHERE u.app_id = ? AND u.user_id IN ("
-                + "   SELECT user_id FROM " + table + " WHERE app_id = ? AND user_id IN (" + placeholders + ")"
-                + "   UNION"
-                + "   SELECT primary_or_recipe_user_id FROM " + table
-                + "     WHERE app_id = ? AND user_id IN (" + placeholders + ")"
-                + "     AND is_linked_or_is_a_primary_user = TRUE"
-                + " )"
-                + " ORDER BY u.user_id";
+        // Two-query approach matching the PostgreSQL optimisation.
+        // SQLite doesn't support FOR UPDATE so we just read, but we keep
+        // the same two-step structure for consistency.
 
-        // Build the result map from a single query
-        Map<String, LockedUser> lockedByUserId = execute(con, QUERY, pst -> {
+        // --- Round 1: find primary user IDs for any linked input users ------
+        String FIND_PRIMARIES =
+                "SELECT primary_or_recipe_user_id FROM " + table
+                + " WHERE app_id = ? AND user_id IN (" + placeholders + ")"
+                + "   AND is_linked_or_is_a_primary_user = TRUE"
+                + "   AND primary_or_recipe_user_id <> user_id";
+
+        Set<String> allIdsToLock = new LinkedHashSet<>(userIds);
+        execute(con, FIND_PRIMARIES, pst -> {
             int idx = 1;
-            pst.setString(idx++, appIdentifier.getAppId());
-            // First subquery params
-            pst.setString(idx++, appIdentifier.getAppId());
-            for (String uid : userIds) {
-                pst.setString(idx++, uid);
-            }
-            // Second subquery params
-            pst.setString(idx++, appIdentifier.getAppId());
+            pst.setString(idx++, appId);
             for (String uid : userIds) {
                 pst.setString(idx++, uid);
             }
         }, rs -> {
-            Map<String, LockedUser> map = new HashMap<>();
             while (rs.next()) {
-                String uid = rs.getString("user_id");
-                String recipeId = rs.getString("recipe_id");
-                boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
-                String primaryUserId = isLinkedOrPrimary ? rs.getString("primary_or_recipe_user_id") : null;
-                map.put(uid, new LockedUserImpl(uid, recipeId, primaryUserId, con));
+                allIdsToLock.add(rs.getString("primary_or_recipe_user_id").trim());
             }
-            return map;
+            return null;
         });
+
+        // --- Round 2: read all discovered user IDs --------------------------
+        // Post-read validation mirrors the PostgreSQL post-lock validation:
+        // if any returned row's primary_or_recipe_user_id is not in the read
+        // set, expand and re-read. Capped at 3 attempts.
+        // SQLite is single-threaded so this can't actually race, but keeping
+        // the structure identical to the PG plugin avoids silent divergence.
+
+        final int MAX_LOCK_EXPANSION_ATTEMPTS = 3;
+        Map<String, LockedUser> lockedByUserId = null;
+
+        for (int attempt = 0; attempt < MAX_LOCK_EXPANSION_ATTEMPTS; attempt++) {
+            String allPlaceholders = Utils.generateCommaSeperatedQuestionMarks(allIdsToLock.size());
+            String READ_QUERY = "SELECT u.user_id, u.primary_or_recipe_user_id, u.is_linked_or_is_a_primary_user, u.recipe_id"
+                    + " FROM " + table + " u"
+                    + " WHERE u.app_id = ? AND u.user_id IN (" + allPlaceholders + ")"
+                    + " ORDER BY u.user_id";
+
+            // Need a copy for the lambda since allIdsToLock may be mutated after
+            List<String> idsSnapshot = new ArrayList<>(allIdsToLock);
+            lockedByUserId = execute(con, READ_QUERY, pst -> {
+                int idx = 1;
+                pst.setString(idx++, appId);
+                for (String uid : idsSnapshot) {
+                    pst.setString(idx++, uid);
+                }
+            }, rs -> {
+                Map<String, LockedUser> map = new HashMap<>();
+                while (rs.next()) {
+                    String uid = rs.getString("user_id");
+                    String recipeId = rs.getString("recipe_id");
+                    boolean isLinkedOrPrimary = rs.getBoolean("is_linked_or_is_a_primary_user");
+                    String primaryUid = isLinkedOrPrimary ? rs.getString("primary_or_recipe_user_id") : null;
+                    map.put(uid, new LockedUserImpl(uid, recipeId, primaryUid, con));
+                }
+                return map;
+            });
+
+            // Post-read validation: check if any user's primary is outside the read set.
+            boolean needsExpansion = false;
+            for (LockedUser lu : lockedByUserId.values()) {
+                String primary = lu.getPrimaryUserId();
+                if (primary != null && !allIdsToLock.contains(primary)) {
+                    allIdsToLock.add(primary);
+                    needsExpansion = true;
+                }
+            }
+            if (!needsExpansion) {
+                break;
+            }
+            if (attempt == MAX_LOCK_EXPANSION_ATTEMPTS - 1) {
+                throw new SQLException(
+                        "Failed to stabilise user lock set after " + MAX_LOCK_EXPANSION_ATTEMPTS
+                        + " attempts — concurrent re-linking is preventing lock convergence");
+            }
+        }
 
         // Build result list in the same order as requested, verifying all users were found
         List<LockedUser> result = new ArrayList<>(userIds.size());
