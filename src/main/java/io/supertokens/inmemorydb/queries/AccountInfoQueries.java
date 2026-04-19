@@ -1638,12 +1638,15 @@ try {
     public static List<String> listPrimaryUserIdsByEmail(Start start, TenantIdentifier tenantIdentifier,
                                                           String email)
             throws SQLException, StorageQueryException {
+        // third_party_id = '' enables full index utilization on idx_recipe_user_tenants_account_info.
+        // See PostgreSQL AccountInfoQueries for detailed explanation.
         String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
                 + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
                 + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
                 + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
                 + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
-                + " AND rut.account_info_type = ? AND rut.account_info_value = ?";
+                + " AND rut.account_info_type = ? AND rut.third_party_id = ''"
+                + " AND rut.account_info_value = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -1662,12 +1665,14 @@ try {
     public static List<String> listPrimaryUserIdsByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
                                                                 String phoneNumber)
             throws SQLException, StorageQueryException {
+        // See comment in listPrimaryUserIdsByEmail for why third_party_id = '' is needed.
         String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
                 + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
                 + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
                 + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
                 + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
-                + " AND rut.account_info_type = ? AND rut.account_info_value = ?";
+                + " AND rut.account_info_type = ? AND rut.third_party_id = ''"
+                + " AND rut.account_info_value = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
