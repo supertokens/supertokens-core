@@ -34,6 +34,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.CanBecomePrimaryResult;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -473,7 +474,7 @@ public class AuthRecipe {
             throws StorageQueryException {
         Set<AuthRecipeUserInfo> result = new HashSet<>();
 
-        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        AuthRecipeStorage authRecipeStorage = StorageUtils.getAuthRecipeReadOnlyStorage(storage);
         if (email != null) {
             AuthRecipeUserInfo[] users = authRecipeStorage
                     .listPrimaryUsersByEmail(tenantIdentifier, email);
