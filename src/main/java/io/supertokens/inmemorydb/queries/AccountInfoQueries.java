@@ -335,6 +335,18 @@ public class AccountInfoQueries {
         return conflict;
     }
 
+    /**
+     * Asserts that the given LockedUser is still valid for the current connection.
+     * Call this at the top of every method that accepts both a LockedUser and a Connection
+     * to enforce the contract that locks must not cross connection boundaries.
+     */
+    private static void assertValidForConnection(LockedUser user, Connection sqlCon) {
+        if (!user.isValidForConnection(sqlCon)) {
+            throw new IllegalStateException(
+                    "LockedUser is not valid for this connection - lock may have been released or acquired on a different connection");
+        }
+    }
+
     public static void addRecipeUserAccountInfo_Transaction(Start start, Connection sqlCon,
                                                             TenantIdentifier tenantIdentifier, String userId,
                                                             String recipeId, ACCOUNT_INFO_TYPE accountInfoType,
@@ -448,6 +460,7 @@ public class AccountInfoQueries {
             CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
 
         String userId = primaryUser.getRecipeUserId();
+        assertValidForConnection(primaryUser, sqlCon);
 
         // Fast-path checks via LockedUser state (avoids a DB round-trip)
         if (primaryUser.isLinked()) {
@@ -716,6 +729,10 @@ public class AccountInfoQueries {
             InputUserIdIsNotAPrimaryUserException, CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
 
+        // Verify both locks are still valid for this connection before any work
+        assertValidForConnection(recipeUser, sqlCon);
+        assertValidForConnection(primaryUser, sqlCon);
+
         // Extract user IDs from locked users
         String recipeUserId = recipeUser.getRecipeUserId();
         // getPrimaryUserId() returns the actual primary user ID, which works whether:
@@ -854,9 +871,7 @@ try {
                                                             TenantIdentifier tenantIdentifier, LockedUser user)
             throws StorageQueryException, DuplicateEmailException, DuplicateThirdPartyUserException, DuplicatePhoneNumberException {
         // Validate that the lock is still valid for this connection
-        if (!user.isValidForConnection(sqlCon)) {
-            throw new IllegalStateException("LockedUser is not valid for this connection - lock may have been released or acquired on a different connection");
-        }
+        assertValidForConnection(user, sqlCon);
 
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
         String userId = user.getRecipeUserId();
@@ -984,6 +999,7 @@ try {
 
         String supertokensUserId = primaryUser.getRecipeUserId();
         Connection sqlCon = (Connection) con.getConnection();
+        assertValidForConnection(primaryUser, sqlCon);
         String primaryUserTenantsTable = Config.getConfig(start).getPrimaryUserTenantsTable();
         String recipeUserAccountInfosTable = Config.getConfig(start).getRecipeUserAccountInfosTable();
 
@@ -1080,6 +1096,7 @@ try {
     }
 
     public static void removeAccountInfoForRecipeUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, LockedUser user) throws StorageQueryException {
+        assertValidForConnection(user, sqlCon);
         try {
             String QUERY = "DELETE FROM " + Config.getConfig(start).getRecipeUserTenantsTable()
                     + " WHERE app_id = ? AND tenant_id = ? AND recipe_user_id = ?";
@@ -1095,6 +1112,7 @@ try {
     }
 
     public static void removeAccountInfoReservationForPrimaryUserWhileRemovingTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, LockedUser user) throws StorageQueryException {
+        assertValidForConnection(user, sqlCon);
         String primaryUserId = user.getPrimaryUserId();
         // If the user is not linked to any primary user, there's nothing to delete
         if (primaryUserId == null) {
@@ -1228,6 +1246,7 @@ try {
             Start start, Connection sqlCon, AppIdentifier appIdentifier,
             LockedUser recipeUser) throws StorageQueryException {
 
+        assertValidForConnection(recipeUser, sqlCon);
         String recipeUserId = recipeUser.getRecipeUserId();
 
         if (!recipeUser.isLinked() && !recipeUser.isPrimary()) {
@@ -1294,6 +1313,8 @@ try {
             throw new IllegalArgumentException(
                     "updateAccountInfo_Transaction should only be called with accountInfoType EMAIL or PHONE_NUMBER");
         }
+
+        assertValidForConnection(user, sqlCon);
 
         // Get user ID and primary user ID from the LockedUser (already verified during lock acquisition)
         String userId = user.getRecipeUserId();
