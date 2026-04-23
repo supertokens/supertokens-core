@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.4]
+
+- Fix: adds the otel-javaagent to the installed distribution
+
 ## [11.4.3]
 
 - Fix: uses the right transaction isolation level with oauth2 refresh tokens to avoid false-positive conflicts at DB
