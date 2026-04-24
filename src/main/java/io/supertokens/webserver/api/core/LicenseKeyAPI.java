@@ -50,6 +50,10 @@ public class LicenseKeyAPI extends WebserverAPI {
         // API is app specific and can be queried only from public tenant
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
+        if (licenseKey == null && input.size() > 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'licenseKey' is missing in JSON input"));
+        }
         try {
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
             this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
