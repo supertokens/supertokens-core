@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.4.4]
 
 - Fix: adds the otel-javaagent to the installed distribution
+- Fix: validate licenseKey field to reject misspelled or malformed input
 
 ## [11.4.3]
 
