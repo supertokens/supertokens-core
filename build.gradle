@@ -27,7 +27,7 @@ java {
     }
 }
 
-version = "11.4.4"
+version = "11.4.5"
 
 repositories {
     mavenCentral()
@@ -51,7 +51,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.18.2'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.12'
+    api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.21'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
@@ -86,7 +86,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.webauthn4j/webauthn4j-core
     implementation group: 'com.webauthn4j', name: 'webauthn4j-core', version: '0.28.6.RELEASE'
 
-    implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.17.0-alpha")
+    implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:2.27.0-alpha")
+    //alpha because of jmx-metrics collector
 
     // Open SAML
     implementation group: 'org.opensaml', name: 'opensaml-core', version: '4.3.1'

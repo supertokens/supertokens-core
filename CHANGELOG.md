@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.5]
+
+- Fix: upgrade embedded tomcat and the OTEL related libs because of security vulnerabilities
+
 ## [11.4.4]
 
 - Fix: adds the otel-javaagent to the installed distribution
