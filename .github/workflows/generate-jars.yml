@@ -1,0 +1,284 @@
+name: Retroactively Generate JARs
+
+on:
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: 'Core version to regenerate JARs for (e.g. 11.4.0, no v prefix)'
+        required: true
+        type: string
+      java-version:
+        description: 'JDK version used to build (e.g. 21.0.7 for modern releases, 15.0.2 for older backports)'
+        required: false
+        type: string
+        default: '21.0.7'
+      commit-to-github:
+        description: 'Also commit the generated JARs to the GitHub repositories and update tags'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  generate-jars:
+    environment: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK ${{ inputs.java-version }}
+        uses: actions/setup-java@v2
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: zulu
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v4
+        with:
+          repository: supertokens/supertokens-root
+          path: ./supertokens-root
+          ref: ${{ startsWith(inputs.java-version, '15') && 'for_jdk_15_releases' || 'master' }}
+
+      - name: Clone repositories
+        run: |
+          cd supertokens-root
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-core.git
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-plugin-interface.git
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-postgresql-plugin.git
+
+      - name: Discover related versions
+        id: versions
+        run: |
+          CORE_VER="${{ github.event.inputs.core-version }}"
+          CORE_DIR=supertokens-root/supertokens-core
+          PI_DIR=supertokens-root/supertokens-plugin-interface
+          PG_DIR=supertokens-root/supertokens-postgresql-plugin
+
+          # Read plugin-interface minor version from core tag's JSON (no checkout needed)
+          PI_MINOR=$(git -C "$CORE_DIR" show "v${CORE_VER}:pluginInterfaceSupported.json" \
+            | jq -r '.versions[0]')
+          if [[ -z "$PI_MINOR" || "$PI_MINOR" == "null" ]]; then
+            echo "Error: cannot determine plugin-interface version for core v${CORE_VER}" >&2
+            exit 1
+          fi
+          echo "Plugin-interface minor: $PI_MINOR"
+
+          # Latest plugin-interface release tag for this minor
+          PI_VER=$(git -C "$PI_DIR" tag \
+            | grep -E "^v${PI_MINOR}\." \
+            | sed 's/^v//' \
+            | sort -V | tail -1)
+          if [[ -z "$PI_VER" ]]; then
+            echo "Error: no plugin-interface tag found for minor ${PI_MINOR}" >&2
+            exit 1
+          fi
+          echo "Plugin-interface version: $PI_VER"
+
+          # Latest postgresql-plugin tag whose pluginInterfaceSupported.json matches the same minor
+          PG_VER=""
+          for pg_tag in $(git -C "$PG_DIR" tag --sort=-version:refname | grep -E '^v[0-9]'); do
+            pg_pi=$(git -C "$PG_DIR" show "${pg_tag}:pluginInterfaceSupported.json" 2>/dev/null \
+              | jq -r '.versions[0]' 2>/dev/null || true)
+            if [[ "$pg_pi" == "$PI_MINOR" ]]; then
+              PG_VER="${pg_tag#v}"
+              break
+            fi
+          done
+          if [[ -z "$PG_VER" ]]; then
+            echo "Error: no postgresql-plugin tag found for plugin-interface minor ${PI_MINOR}" >&2
+            exit 1
+          fi
+          echo "PostgreSQL-plugin version: $PG_VER"
+
+          echo "pi_version=$PI_VER" >> $GITHUB_OUTPUT
+          echo "pg_version=$PG_VER" >> $GITHUB_OUTPUT
+
+      - name: Checkout release tags
+        run: |
+          CORE_VER="${{ github.event.inputs.core-version }}"
+          PI_VER="${{ steps.versions.outputs.pi_version }}"
+          PG_VER="${{ steps.versions.outputs.pg_version }}"
+
+          git -C supertokens-root/supertokens-core             checkout "v${CORE_VER}"
+          git -C supertokens-root/supertokens-plugin-interface  checkout "v${PI_VER}"
+          git -C supertokens-root/supertokens-postgresql-plugin checkout "v${PG_VER}"
+
+      - name: Set up Gradle project
+        run: |
+          cd supertokens-root
+          {
+            echo "include 'supertokens-core'"
+            echo "include 'supertokens-plugin-interface'"
+            echo "include 'supertokens-postgresql-plugin'"
+            for mod in cli downloader ee; do
+              [[ -d "supertokens-core/$mod" ]] && echo "include 'supertokens-core:$mod'"
+            done
+          } > settings.gradle
+
+      - name: Git config
+        run: |
+          git config --global user.name "Supertokens Bot"
+          git config --global user.email "<>"
+
+      # ── plugin-interface ────────────────────────────────────────────────
+
+      - name: Build JARs for plugin-interface
+        run: |
+          cd supertokens-root/supertokens-plugin-interface
+          ./runBuild
+
+      - name: Distribute JARs for plugin-interface
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
+          COMMIT_TO_GITHUB: ${{ github.event.inputs.commit-to-github }}
+        run: |
+          PI_VER="${{ steps.versions.outputs.pi_version }}"
+          cd supertokens-root/supertokens-plugin-interface
+
+          # S3 upload
+          if [[ -z "$S3_BUCKET" ]]; then
+            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for plugin-interface"
+          else
+            s3_dest="s3://${S3_BUCKET}/${S3_JAR_PREFIX:+$S3_JAR_PREFIX/}supertokens-plugin-interface/v${PI_VER}/"
+            if aws s3 sync ./jar/ "$s3_dest"; then
+              echo "✓ Uploaded plugin-interface v${PI_VER} JARs to S3"
+            else
+              echo "::warning::Failed to upload plugin-interface v${PI_VER} JARs to S3"
+            fi
+          fi
+
+          # GitHub commit (only when checkbox is ticked)
+          if [[ "$COMMIT_TO_GITHUB" == "true" ]]; then
+            git add --all "./jar/*" > /dev/null 2>&1
+            if git diff --cached --quiet 2>/dev/null; then
+              echo "plugin-interface JARs unchanged — no GitHub commit needed"
+            elif git commit -m "build for release v${PI_VER}"; then
+              git push --delete origin "v${PI_VER}" 2>/dev/null || true
+              git tag --delete "v${PI_VER}" 2>/dev/null || true
+              git tag "v${PI_VER}" HEAD
+              if git push --force origin "v${PI_VER}"; then
+                PI_MINOR=$(echo "${PI_VER}" | cut -d. -f1,2)
+                git push origin "HEAD:refs/heads/${PI_MINOR}" || \
+                  echo "::warning::Branch ${PI_MINOR} is ahead of v${PI_VER} — commit reachable only via tag"
+                echo "✓ Committed plugin-interface JARs to GitHub and updated tag v${PI_VER}"
+              else
+                echo "::warning::Committed plugin-interface JARs but failed to update tag v${PI_VER} on GitHub"
+              fi
+            else
+              echo "::warning::Failed to commit plugin-interface JARs to GitHub"
+            fi
+          fi
+
+      # ── postgresql-plugin ───────────────────────────────────────────────
+
+      - name: Build JARs for postgresql-plugin
+        run: |
+          cd supertokens-root/supertokens-postgresql-plugin
+          ./runBuild
+
+      - name: Distribute JARs for postgresql-plugin
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
+          COMMIT_TO_GITHUB: ${{ github.event.inputs.commit-to-github }}
+        run: |
+          PG_VER="${{ steps.versions.outputs.pg_version }}"
+          cd supertokens-root/supertokens-postgresql-plugin
+
+          # S3 upload
+          if [[ -z "$S3_BUCKET" ]]; then
+            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for postgresql-plugin"
+          else
+            s3_dest="s3://${S3_BUCKET}/${S3_JAR_PREFIX:+$S3_JAR_PREFIX/}supertokens-postgresql-plugin/v${PG_VER}/"
+            if aws s3 sync ./jar/ "$s3_dest"; then
+              echo "✓ Uploaded postgresql-plugin v${PG_VER} JARs to S3"
+            else
+              echo "::warning::Failed to upload postgresql-plugin v${PG_VER} JARs to S3"
+            fi
+          fi
+
+          # GitHub commit (only when checkbox is ticked)
+          if [[ "$COMMIT_TO_GITHUB" == "true" ]]; then
+            git add --all "./jar/*" > /dev/null 2>&1
+            if git diff --cached --quiet 2>/dev/null; then
+              echo "postgresql-plugin JARs unchanged — no GitHub commit needed"
+            elif git commit -m "build for release v${PG_VER}"; then
+              git push --delete origin "v${PG_VER}" 2>/dev/null || true
+              git tag --delete "v${PG_VER}" 2>/dev/null || true
+              git tag "v${PG_VER}" HEAD
+              if git push --force origin "v${PG_VER}"; then
+                PG_MINOR=$(echo "${PG_VER}" | cut -d. -f1,2)
+                git push origin "HEAD:refs/heads/${PG_MINOR}" || \
+                  echo "::warning::Branch ${PG_MINOR} is ahead of v${PG_VER} — commit reachable only via tag"
+                echo "✓ Committed postgresql-plugin JARs to GitHub and updated tag v${PG_VER}"
+              else
+                echo "::warning::Committed postgresql-plugin JARs but failed to update tag v${PG_VER} on GitHub"
+              fi
+            else
+              echo "::warning::Failed to commit postgresql-plugin JARs to GitHub"
+            fi
+          fi
+
+      # ── core ────────────────────────────────────────────────────────────
+
+      - name: Build JARs for core
+        run: |
+          cd supertokens-root/supertokens-core
+          ./runBuild
+
+      - name: Distribute JARs for core
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
+          COMMIT_TO_GITHUB: ${{ github.event.inputs.commit-to-github }}
+        run: |
+          CORE_VER="${{ github.event.inputs.core-version }}"
+          cd supertokens-root/supertokens-core
+
+          # S3 upload — gather main JAR and all sub-module JARs into a staging dir
+          if [[ -z "$S3_BUCKET" ]]; then
+            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for core"
+          else
+            staging=$(mktemp -d)
+            cp ./jar/* "$staging/" 2>/dev/null || true
+            for mod in cli downloader ee; do
+              [[ -d "./$mod/jar" ]] && cp ./$mod/jar/* "$staging/" 2>/dev/null || true
+            done
+            s3_dest="s3://${S3_BUCKET}/${S3_JAR_PREFIX:+$S3_JAR_PREFIX/}supertokens-core/v${CORE_VER}/"
+            if aws s3 sync "$staging/" "$s3_dest"; then
+              echo "✓ Uploaded core v${CORE_VER} JARs to S3"
+            else
+              echo "::warning::Failed to upload core v${CORE_VER} JARs to S3"
+            fi
+            rm -rf "$staging"
+          fi
+
+          # GitHub commit (only when checkbox is ticked)
+          if [[ "$COMMIT_TO_GITHUB" == "true" ]]; then
+            git add --all "./jar/*" > /dev/null 2>&1
+            git add --all "./**/jar/*" > /dev/null 2>&1
+            if git diff --cached --quiet 2>/dev/null; then
+              echo "core JARs unchanged — no GitHub commit needed"
+            elif git commit -m "build for release v${CORE_VER}"; then
+              git push --delete origin "v${CORE_VER}" 2>/dev/null || true
+              git tag --delete "v${CORE_VER}" 2>/dev/null || true
+              git tag "v${CORE_VER}" HEAD
+              if git push --force origin "v${CORE_VER}"; then
+                CORE_MINOR=$(echo "${CORE_VER}" | cut -d. -f1,2)
+                git push origin "HEAD:refs/heads/${CORE_MINOR}" || \
+                  echo "::warning::Branch ${CORE_MINOR} is ahead of v${CORE_VER} — commit reachable only via tag"
+                echo "✓ Committed core JARs to GitHub and updated tag v${CORE_VER}"
+              else
+                echo "::warning::Committed core JARs but failed to update tag v${CORE_VER} on GitHub"
+              fi
+            else
+              echo "::warning::Failed to commit core JARs to GitHub"
+            fi
+          fi
