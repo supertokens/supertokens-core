@@ -25,6 +25,7 @@ import io.supertokens.cli.logging.Logging;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,14 +150,19 @@ public class StartHandler extends CommandHandler {
             try {
                 ProcessBuilder pb = new ProcessBuilder(commands);
                 Logging.info("Command to be run: " + String.join(" ", pb.command()));
-                pb.redirectErrorStream(true);
                 Process process = pb.start();
+
+                Thread stderrLoggerThread = new Thread(() -> logProcessStream(process.getErrorStream(), true),
+                        "supertokens-cli-stderr-logger");
+                stderrLoggerThread.setDaemon(true);
+                stderrLoggerThread.start();
+
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
                      BufferedReader reader = new BufferedReader(in)) {
                     String line;
                     boolean success = false;
                     while ((line = reader.readLine()) != null) {
-                        Logging.info(line); // TODO: make error go to Logging.error and other go to Logging.info - later
+                        Logging.info(line);
                         if (line.startsWith("Started SuperTokens on")) {
                             success = true;
                             break;
@@ -188,6 +194,22 @@ public class StartHandler extends CommandHandler {
             } finally {
                 Main.removeShutdownHook();
             }
+        }
+    }
+
+    private static void logProcessStream(InputStream inputStream, boolean isErrorStream) {
+        try (InputStreamReader in = new InputStreamReader(inputStream);
+             BufferedReader reader = new BufferedReader(in)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (isErrorStream) {
+                    Logging.error(line);
+                } else {
+                    Logging.info(line);
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore stream reading errors here, they are handled by startup failure handling in caller.
         }
     }
 
