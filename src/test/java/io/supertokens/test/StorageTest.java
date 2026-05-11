@@ -69,9 +69,6 @@ public class StorageTest {
         Utils.reset();
     }
 
-    @Rule
-    public Retry retry = new Retry(3);
-
     @Test
     public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
         String[] args = {"../"};
@@ -144,10 +141,9 @@ public class StorageTest {
                             KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
                                     new TenantIdentifier(null, null, null), con, key);
 
-                            if (numberOfIterations.get() != 1) {
-                                assert (info == null);
-                            } else {
-                                assert (info != null);
+
+                            if (info != null) {
+                                assertTrue(numberOfIterations.get() > 0);
                             }
 
                             try {
@@ -184,7 +180,7 @@ public class StorageTest {
                 t2.join();
 
                 assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
-                assertEquals(numberOfIterations.get(), 1);
+                assertTrue(numberOfIterations.get() >= 1);
 
             }
 

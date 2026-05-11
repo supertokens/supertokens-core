@@ -18,7 +18,7 @@ package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -26,7 +26,9 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -296,29 +298,13 @@ public class ThirdParty {
                             }
 
                             if (!email.equals(lM1.email)) {
-                                // before updating the email, we must check for if another primary user has the same
-                                // email, and if they do, then we do not allow the update.
-                                if (userFromDb1.isPrimaryUser) {
-                                    for (String tenantId : userFromDb1.tenantIds) {
-                                        AuthRecipeUserInfo[] userBasedOnEmail =
-                                                authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                                        appIdentifier, con, email
-                                                );
-                                        for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
-                                            if (!userWithSameEmail.tenantIds.contains(tenantId)) {
-                                                continue;
-                                            }
-                                            if (userWithSameEmail.isPrimaryUser &&
-                                                    !userWithSameEmail.getSupertokensUserId()
-                                                            .equals(userFromDb1.getSupertokensUserId())) {
-                                                throw new StorageTransactionLogicException(
-                                                        new EmailChangeNotAllowedException());
-                                            }
-                                        }
-                                    }
+                                try {
+                                    tpStorage.updateUserEmail_Transaction(appIdentifier, con, lM1.getSupertokensUserId(),
+                                            thirdPartyId, thirdPartyUserId, email);
+                                } catch (EmailChangeNotAllowedException | DuplicateEmailException |
+                                         UnknownUserIdException e) {
+                                    throw new StorageTransactionLogicException(e);
                                 }
-                                tpStorage.updateUserEmail_Transaction(appIdentifier, con,
-                                        thirdPartyId, thirdPartyUserId, email);
                             }
 
                             tpStorage.commitTransaction(con);
@@ -327,6 +313,10 @@ public class ThirdParty {
                     } catch (StorageTransactionLogicException e) {
                         if (e.actualException instanceof EmailChangeNotAllowedException) {
                             throw (EmailChangeNotAllowedException) e.actualException;
+                        } else if (e.actualException instanceof DuplicateEmailException) {
+                            throw new IllegalStateException("should never happen", e);
+                        } else if (e.actualException instanceof UnknownUserIdException) {
+                            throw new IllegalStateException("should never happen", e);
                         }
                         throw new StorageQueryException(e);
                     }

@@ -54,7 +54,7 @@ function createThirdPartyLoginMethod(email: string, tenantIds: string[]): LoginM
     recipeId: 'thirdparty',
     email,
     thirdPartyId: 'google',
-    thirdPartyUserId: String(hashCode(email)),
+    thirdPartyUserId: email,
     isVerified: true,
     isPrimary: false,
     timeJoinedInMSSinceEpoch:

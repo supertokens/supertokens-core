@@ -200,4 +200,16 @@ public class SQLiteConfig {
     public String getSAMLRelayStateTable() { return "saml_relay_state"; }
 
     public String getSAMLClaimsTable() { return "saml_claims"; }
+
+    public String getRecipeUserAccountInfosTable() {
+        return "recipe_user_account_infos";
+    }
+
+    public String getRecipeUserTenantsTable() {
+        return "recipe_user_tenants";
+    }
+
+    public String getPrimaryUserTenantsTable() {
+        return "primary_user_tenants";
+    }
 }

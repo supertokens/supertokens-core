@@ -16,38 +16,51 @@
 
 package io.supertokens.bulkimport;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
 import io.supertokens.output.Logging;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.authRecipe.ACCOUNT_INFO_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.bulkimport.ImportUserBase;
+import io.supertokens.pluginInterface.bulkimport.PrimaryUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -74,14 +87,6 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
 // Current range: E001 to E046.
@@ -210,12 +215,12 @@ public class BulkImport {
             Storage bulkImportProxyStorage, List<BulkImportUser> users, Storage[] allStoragesForApp)
             throws StorageTransactionLogicException {
         try {
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Reserving account infos for primary users");
+            reservePrimaryAccountInfos(main, appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Reserving account infos for primary users DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods..");
             processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods DONE");
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating Primary users and linking accounts..");
-            createPrimaryUsersAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, users);
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating Primary users and linking accounts DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings..");
             createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings DONE");
@@ -243,71 +248,93 @@ public class BulkImport {
         //sort login methods together
         Logging.debug(main, TenantIdentifier.BASE_TENANT, "Sorting login methods by recipeId..");
         Map<String, List<LoginMethod>> sortedLoginMethods = new HashMap<>();
+        Map<String, String> primaryUserIdMap = new HashMap<>();
+
         for (BulkImportUser user: users) {
+            boolean isPrimary = user.loginMethods.stream().anyMatch(lM -> lM.isPrimary);
+            String primaryUserId = null;
+            if (isPrimary) {
+                primaryUserId = user.loginMethods.stream().filter(lM -> lM.isPrimary).findFirst().get().superTokensUserId;
+            }
+
             for(LoginMethod loginMethod : user.loginMethods){
                 if(!sortedLoginMethods.containsKey(loginMethod.recipeId)) {
                     sortedLoginMethods.put(loginMethod.recipeId, new ArrayList<>());
                 }
                 sortedLoginMethods.get(loginMethod.recipeId).add(loginMethod);
+                if (isPrimary) {
+                    primaryUserIdMap.put(loginMethod.superTokensUserId, primaryUserId);
+                }
             }
         }
 
-            List<ImportUserBase> importedUsers = new ArrayList<>();
-        if (sortedLoginMethods.containsKey("emailpassword")) {
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
-            importedUsers.addAll(
-                    processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword"),
-                                appIdentifier));
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
+        List<ImportUserBase> importedUsers = new ArrayList<>();
+        {
+            // On the first iteration, just import the primary users. Otherwise, we end up with foreign key issues.
+            if (sortedLoginMethods.containsKey("emailpassword")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
+                importedUsers.addAll(
+                        processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword").stream().filter(lM -> lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
             }
             if (sortedLoginMethods.containsKey("thirdparty")) {
                 Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
                 importedUsers.addAll(
-                        processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty"),
-                                appIdentifier));
+                        processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty").stream().filter(lM -> lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
                 Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
             }
             if (sortedLoginMethods.containsKey("passwordless")) {
                 Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
                 importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
-                        sortedLoginMethods.get("passwordless")));
+                        sortedLoginMethods.get("passwordless").stream().filter(lM -> lM.isPrimary).toList(), primaryUserIdMap));
                 Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
             }
-            Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
-            List.of("emailpassword", "thirdparty", "passwordless").forEach(actualKeys::remove);
-            if(!actualKeys.isEmpty()){
-                throw new StorageTransactionLogicException(
-                        new IllegalArgumentException("E001: Unknown recipeId(s) [" +
-                                actualKeys.stream().map(s -> s+" ") + "] for loginMethod."));
+        }
+        {
+            // On the first iteration, just import the primary users. Otherwise, we end up with foreign key issues.
+            if (sortedLoginMethods.containsKey("emailpassword")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods..");
+                importedUsers.addAll(
+                        processEmailPasswordLoginMethods(main, storage, sortedLoginMethods.get("emailpassword").stream().filter(lM -> !lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing emailpassword login methods DONE");
             }
+            if (sortedLoginMethods.containsKey("thirdparty")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods..");
+                importedUsers.addAll(
+                        processThirdpartyLoginMethods(main, storage, sortedLoginMethods.get("thirdparty").stream().filter(lM -> !lM.isPrimary).toList(),
+                                appIdentifier, primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing thirdparty login methods DONE");
+            }
+            if (sortedLoginMethods.containsKey("passwordless")) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods..");
+                importedUsers.addAll(processPasswordlessLoginMethods(main, appIdentifier, storage,
+                        sortedLoginMethods.get("passwordless").stream().filter(lM -> !lM.isPrimary).toList(), primaryUserIdMap));
+                Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing passwordless login methods DONE");
+            }
+        }
 
-            Map<String, Exception> errorsById = new HashMap<>();
-            for (Map.Entry<String, List<LoginMethod>> loginMethodEntries : sortedLoginMethods.entrySet()) {
-                for (LoginMethod loginMethod : loginMethodEntries.getValue()) {
-                    try {
-                        associateUserToTenants(main, appIdentifier, storage, loginMethod, loginMethod.tenantIds.get(0));
-                    } catch (StorageTransactionLogicException e){
-                        errorsById.put(loginMethod.superTokensUserId, e.actualException);
-                    }
-                }
-            }
-            if(!errorsById.isEmpty()){
-                throw new StorageTransactionLogicException(new BulkImportBatchInsertException("tenant association errors", errorsById));
-            }
+        Set<String> actualKeys = new HashSet<>(sortedLoginMethods.keySet());
+        List.of("emailpassword", "thirdparty", "passwordless").forEach(actualKeys::remove);
+        if(!actualKeys.isEmpty()){
+            throw new StorageTransactionLogicException(
+                    new IllegalArgumentException("E001: Unknown recipeId(s) [" +
+                            actualKeys.stream().map(s -> s+" ") + "] for loginMethod."));
+        }
     }
 
     private static List<? extends ImportUserBase> processPasswordlessLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                                              List<LoginMethod> loginMethods)
+                                                                                  List<LoginMethod> loginMethods,
+                                                                                  Map<String, String> primaryUserIdMap)
             throws StorageTransactionLogicException {
         try {
             List<PasswordlessImportUser> usersToImport = new ArrayList<>();
             for (LoginMethod loginMethod : loginMethods) {
-                TenantIdentifier tenantIdentifierForLoginMethod = new TenantIdentifier(
-                        appIdentifier.getConnectionUriDomain(),
-                        appIdentifier.getAppId(), loginMethod.tenantIds.get(
-                        0)); // the cron runs per app. The app stays the same, the tenant can change
-               usersToImport.add(new PasswordlessImportUser(loginMethod.superTokensUserId, loginMethod.phoneNumber,
-                        loginMethod.email, tenantIdentifierForLoginMethod, loginMethod.timeJoinedInMSSinceEpoch));
+                String primaryUserId = primaryUserIdMap.get(loginMethod.superTokensUserId);
+                usersToImport.add(new PasswordlessImportUser(loginMethod.superTokensUserId, loginMethod.phoneNumber,
+                        loginMethod.email, appIdentifier, loginMethod.timeJoinedInMSSinceEpoch, primaryUserId, loginMethod.tenantIds));
             }
 
             Passwordless.createPasswordlessUsers(storage, usersToImport);
@@ -342,16 +369,15 @@ public class BulkImport {
     }
 
     private static List<? extends ImportUserBase> processThirdpartyLoginMethods(Main main, Storage storage, List<LoginMethod> loginMethods,
-                                                      AppIdentifier appIdentifier)
+                                                                                AppIdentifier appIdentifier,
+                                                                                Map<String, String> primaryUserIdMap)
             throws StorageTransactionLogicException {
         try {
             List<ThirdPartyImportUser> usersToImport = new ArrayList<>();
             for (LoginMethod loginMethod: loginMethods){
-                TenantIdentifier tenantIdentifierForLoginMethod =  new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                        appIdentifier.getAppId(), loginMethod.tenantIds.get(0)); // the cron runs per app. The app stays the same, the tenant can change
-
+                String primaryUserId = primaryUserIdMap.get(loginMethod.superTokensUserId);
                 usersToImport.add(new ThirdPartyImportUser(loginMethod.email, loginMethod.superTokensUserId, loginMethod.thirdPartyId,
-                        loginMethod.thirdPartyUserId, tenantIdentifierForLoginMethod, loginMethod.timeJoinedInMSSinceEpoch));
+                        loginMethod.thirdPartyUserId, appIdentifier, loginMethod.timeJoinedInMSSinceEpoch, primaryUserId, loginMethod.tenantIds));
             }
             ThirdParty.createMultipleThirdPartyUsers(storage, usersToImport);
 
@@ -381,7 +407,8 @@ public class BulkImport {
     }
 
     private static List<? extends ImportUserBase>  processEmailPasswordLoginMethods(Main main, Storage storage, List<LoginMethod> loginMethods,
-                                                               AppIdentifier appIdentifier)
+                                                                                    AppIdentifier appIdentifier,
+                                                                                    Map<String, String> primaryUserIdMap)
             throws StorageTransactionLogicException {
         try {
 
@@ -398,8 +425,9 @@ public class BulkImport {
                             .createHashWithSalt(tenantIdentifierForLoginMethod.toAppIdentifier(), emailPasswordLoginMethod.plainTextPassword);
                 }
                 emailPasswordLoginMethod.passwordHash = passwordHash;
+                String primaryUserId = primaryUserIdMap.get(emailPasswordLoginMethod.superTokensUserId);
                 usersToImport.add(new EmailPasswordImportUser(emailPasswordLoginMethod.superTokensUserId, emailPasswordLoginMethod.email,
-                        emailPasswordLoginMethod.passwordHash, tenantIdentifierForLoginMethod, emailPasswordLoginMethod.timeJoinedInMSSinceEpoch));
+                        emailPasswordLoginMethod.passwordHash, appIdentifier, emailPasswordLoginMethod.timeJoinedInMSSinceEpoch, primaryUserId, emailPasswordLoginMethod.tenantIds));
             }
 
             EmailPassword.createMultipleUsersWithPasswordHash(storage, usersToImport);
@@ -425,71 +453,49 @@ public class BulkImport {
         }
     }
 
-    private static void associateUserToTenants(Main main, AppIdentifier appIdentifier, Storage storage, LoginMethod lm,
-            String firstTenant) throws StorageTransactionLogicException {
-        for (String tenantId : lm.tenantIds) {
-            try {
-                if (tenantId.equals(firstTenant)) {
-                    continue;
-                }
-
-                TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                        appIdentifier.getAppId(), tenantId);
-                Multitenancy.addUserIdToTenant(main, tenantIdentifier, storage, lm.superTokensUserId);
-            } catch (TenantOrAppNotFoundException e) {
-                throw new StorageTransactionLogicException(new Exception("E009: " + e.getMessage()));
-            } catch (StorageQueryException e) {
-                throw new StorageTransactionLogicException(e);
-            } catch (UnknownUserIdException e) {
-                throw new StorageTransactionLogicException(new Exception("E010: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but it doesn't exist. This should not happen. Please contact support."));
-            } catch (AnotherPrimaryUserWithEmailAlreadyExistsException e) {
-                throw new StorageTransactionLogicException(new Exception("E011: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another primary user with email " + lm.email + " already exists."));
-            } catch (AnotherPrimaryUserWithPhoneNumberAlreadyExistsException e) {
-                throw new StorageTransactionLogicException(new Exception("E012: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another primary user with phoneNumber " + lm.phoneNumber + " already exists."));
-            } catch (AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
-                throw new StorageTransactionLogicException(new Exception("E013: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another primary user with thirdPartyId " + lm.thirdPartyId + " and thirdPartyUserId "
-                        + lm.thirdPartyUserId + " already exists."));
-            } catch (DuplicateEmailException e) {
-                throw new StorageTransactionLogicException(new Exception("E014: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another user with email " + lm.email + " already exists."));
-            } catch (DuplicatePhoneNumberException e) {
-                throw new StorageTransactionLogicException(new Exception("E015: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another user with phoneNumber " + lm.phoneNumber + " already exists."));
-            } catch (DuplicateThirdPartyUserException e) {
-                throw new StorageTransactionLogicException(new Exception("E016: " + "We tried to add the userId "
-                        + lm.getSuperTokenOrExternalUserId() + " to the tenantId " + tenantId
-                        + " but another user with thirdPartyId " + lm.thirdPartyId + " and thirdPartyUserId "
-                        + lm.thirdPartyUserId + " already exists."));
-            } catch (FeatureNotEnabledException e) {
-                throw new StorageTransactionLogicException(new Exception("E017: " + e.getMessage()));
-            }
-        }
-    }
-
-    private static void createPrimaryUsersAndLinkAccounts(Main main,
-                                                          AppIdentifier appIdentifier, Storage storage,
-                                                          List<BulkImportUser> users)
+    private static void reservePrimaryAccountInfos(Main main,
+                                                   AppIdentifier appIdentifier, Storage storage,
+                                                   List<BulkImportUser> users)
             throws StorageTransactionLogicException, StorageQueryException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
 
-        List<BulkImportUser> usersForAccountLinking = filterUsersInNeedOfAccountLinking(users);
+        List<PrimaryUser> primaryUsers = new ArrayList<>();
 
-        if(usersForAccountLinking.isEmpty()){
+        for (var user : users) {
+            if (user.loginMethods.stream().noneMatch(lM -> lM.isPrimary)) {
+                continue; // not a primary user
+            }
+
+            Set<PrimaryUser.AccountInfo> accountInfos = new HashSet<>();
+            Set<String> tenantIds = new HashSet<>();
+            String primaryUserId = null;
+            for (var lM : user.loginMethods) {
+                if (lM.isPrimary) {
+                    primaryUserId = lM.superTokensUserId;
+                }
+                tenantIds.addAll(lM.tenantIds);
+
+                if (lM.email != null) {
+                    accountInfos.add(new PrimaryUser.AccountInfo(ACCOUNT_INFO_TYPE.EMAIL, lM.email));
+                }
+                if (lM.phoneNumber != null) {
+                    accountInfos.add(new PrimaryUser.AccountInfo(ACCOUNT_INFO_TYPE.PHONE_NUMBER, lM.phoneNumber));
+                }
+                if (lM.thirdPartyId != null) {
+                    accountInfos.add(new PrimaryUser.AccountInfo(ACCOUNT_INFO_TYPE.THIRD_PARTY,
+                            new io.supertokens.pluginInterface.authRecipe.LoginMethod.ThirdParty(lM.thirdPartyId, lM.thirdPartyUserId).getAccountInfoValue()));
+                }
+            }
+
+            primaryUsers.add(new PrimaryUser(appIdentifier, accountInfos.stream().toList(), tenantIds.stream().toList(), primaryUserId));
+        }
+
+        if (primaryUsers.isEmpty()) {
             return;
         }
-        AuthRecipe.CreatePrimaryUsersResultHolder resultHolder;
+
         try {
-            resultHolder = AuthRecipe.createPrimaryUsersForBulkImport(main, appIdentifier, storage, usersForAccountLinking);
+            AuthRecipe.reservePrimaryUserAccountInfos(main, storage, appIdentifier, primaryUsers);
         } catch (StorageQueryException e) {
             if(e.getCause() instanceof BulkImportBatchInsertException){
                 Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
@@ -500,7 +506,7 @@ public class BulkImport {
                                 + userid
                                 + " but it doesn't exist. This should not happen. Please contact support.";
                         errorsByPosition.put(userid, new Exception(message));
-                    } else if (exception instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
+                    } else if (exception instanceof CannotBecomePrimarySinceRecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
                         String message = "E021: We tried to create the primary user for the userId "
                                 + userid
                                 + " but it is already linked with another primary user.";
@@ -521,65 +527,6 @@ public class BulkImport {
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E019: " + e.getMessage()));
         }
-        if(resultHolder != null && resultHolder.usersWithSameExtraData != null){
-            linkAccountsForMultipleUser(main, appIdentifier, storage, usersForAccountLinking, resultHolder.usersWithSameExtraData);
-        }
-    }
-
-    private static List<BulkImportUser> filterUsersInNeedOfAccountLinking(List<BulkImportUser> allUsers) {
-        if (allUsers == null || allUsers.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return allUsers.stream().filter(bulkImportUser -> bulkImportUser.loginMethods.stream()
-                .anyMatch(loginMethod -> loginMethod.isPrimary) || bulkImportUser.loginMethods.size() > 1)
-                .collect(Collectors.toList());
-    }
-
-    private static void linkAccountsForMultipleUser(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                    List<BulkImportUser> users, List<AuthRecipeUserInfo> allUsersWithSameExtraData)
-            throws StorageTransactionLogicException {
-        try {
-            AuthRecipe.linkMultipleAccountsForBulkImport(main, appIdentifier, storage,
-                    users, allUsersWithSameExtraData);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new StorageTransactionLogicException(new Exception("E023: " + e.getMessage()));
-        } catch (FeatureNotEnabledException e) {
-            throw new StorageTransactionLogicException(new Exception("E024: " + e.getMessage()));
-        } catch (StorageQueryException e) {
-            if (e.getCause() instanceof BulkImportBatchInsertException) {
-                Map<String, String> recipeUserIdByPrimaryUserId = BulkImportUserUtils.collectRecipeIdsToPrimaryIds(users);
-
-                Map<String, Exception> errorByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
-                for (String userId : errorByPosition.keySet()) {
-                    Exception currentException = errorByPosition.get(userId);
-                    String recipeUID = recipeUserIdByPrimaryUserId.get(userId);
-                    if (currentException instanceof UnknownUserIdException) {
-                        String message = "E025: We tried to link the userId " + recipeUID
-                                + " to the primary userId " + userId
-                                + " but it doesn't exist.";
-                        errorByPosition.put(userId, new Exception(message));
-                    } else if (currentException instanceof InputUserIdIsNotAPrimaryUserException) {
-                        String message = "E026: We tried to link the userId " + recipeUID
-                                + " to the primary userId " + userId
-                                + " but it is not a primary user.";
-                        errorByPosition.put(userId, new Exception(message));
-                    } else if (currentException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
-                        String message = "E027: We tried to link the userId " + userId
-                                + " to the primary userId " + recipeUID
-                                + " but the account info is already associated with another primary user.";
-                        errorByPosition.put(userId, new Exception(message));
-                    } else if (currentException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
-                        String message = "E028: We tried to link the userId " + recipeUID
-                                + " to the primary userId " + userId
-                                + " but it is already linked with another primary user.";
-                        errorByPosition.put(userId, new Exception(message));
-                    }
-                }
-                throw new StorageTransactionLogicException(
-                        new BulkImportBatchInsertException("link accounts translated", errorByPosition));
-            }
-            throw new StorageTransactionLogicException(e);
-        }
     }
 
     public static void createMultipleUserIdMapping(AppIdentifier appIdentifier,
@@ -594,7 +541,7 @@ public class BulkImport {
         }
         try {
             if(!superTokensUserIdToExternalUserId.isEmpty()) {
-                List<UserIdMapping.UserIdBulkMappingResult> mappingResults = UserIdMapping.createMultipleUserIdMappings(
+                UserIdMapping.createMultipleUserIdMappings(
                         appIdentifier, storages,
                         superTokensUserIdToExternalUserId,
                         false, true);

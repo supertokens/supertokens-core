@@ -20,7 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
-import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
@@ -29,10 +29,11 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -739,7 +740,7 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
-            PhoneNumberChangeNotAllowedException {
+            io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
         updateUser(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
                 userId, emailUpdate, phoneNumberUpdate);
@@ -749,7 +750,7 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
-            PhoneNumberChangeNotAllowedException {
+            io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException {
         PasswordlessSQLStorage plStorage = StorageUtils.getPasswordlessStorage(storage);
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
@@ -775,34 +776,19 @@ public class Passwordless {
             throw new UserWithoutContactInfoException();
         }
         try {
-            AuthRecipeSQLStorage authRecipeSQLStorage = StorageUtils.getAuthRecipeStorage(storage);
             plStorage.startTransaction(con -> {
-                if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, lM.email)) {
-                    if (user.isPrimaryUser) {
-                        for (String tenantId : user.tenantIds) {
-                            AuthRecipeUserInfo[] existingUsersWithNewEmail =
-                                    authRecipeSQLStorage.listPrimaryUsersByEmail_Transaction(
-                                            appIdentifier, con,
-                                            emailUpdate.newValue);
+                try {
+                    plStorage.updateUserEmailAndPhone_Transaction(appIdentifier, con, recipeUserId,
+                        emailUpdate != null ? emailUpdate.newValue : null,
+                        emailUpdate != null,
+                        phoneNumberUpdate != null ? phoneNumberUpdate.newValue : null,
+                        phoneNumberUpdate != null);
+                } catch (UnknownUserIdException | DuplicateEmailException | EmailChangeNotAllowedException |
+                         DuplicatePhoneNumberException | PhoneNumberChangeNotAllowedException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
 
-                            for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                if (!userWithSameEmail.tenantIds.contains(tenantId)) {
-                                    continue;
-                                }
-                                if (userWithSameEmail.isPrimaryUser &&
-                                        !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
-                                    throw new StorageTransactionLogicException(
-                                            new EmailChangeNotAllowedException());
-                                }
-                            }
-                        }
-                    }
-                    try {
-                        plStorage.updateUserEmail_Transaction(appIdentifier, con, recipeUserId,
-                                emailUpdate.newValue);
-                    } catch (UnknownUserIdException | DuplicateEmailException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
+                if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, lM.email)) {
                     if (lM.email != null) {
                         plStorage.deleteDevicesByEmail_Transaction(appIdentifier, con, lM.email,
                                 recipeUserId);
@@ -813,32 +799,6 @@ public class Passwordless {
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, lM.phoneNumber)) {
-                    if (user.isPrimaryUser) {
-                        for (String tenantId : user.tenantIds) {
-                            AuthRecipeUserInfo[] existingUsersWithNewPhoneNumber =
-                                    authRecipeSQLStorage.listPrimaryUsersByPhoneNumber_Transaction(
-                                            appIdentifier, con,
-                                            phoneNumberUpdate.newValue);
-
-                            for (AuthRecipeUserInfo userWithSamePhoneNumber : existingUsersWithNewPhoneNumber) {
-                                if (!userWithSamePhoneNumber.tenantIds.contains(tenantId)) {
-                                    continue;
-                                }
-                                if (userWithSamePhoneNumber.isPrimaryUser &&
-                                        !userWithSamePhoneNumber.getSupertokensUserId()
-                                                .equals(user.getSupertokensUserId())) {
-                                    throw new StorageTransactionLogicException(
-                                            new PhoneNumberChangeNotAllowedException());
-                                }
-                            }
-                        }
-                    }
-                    try {
-                        plStorage.updateUserPhoneNumber_Transaction(appIdentifier, con, recipeUserId,
-                                phoneNumberUpdate.newValue);
-                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
                     if (lM.phoneNumber != null) {
                         plStorage.deleteDevicesByPhoneNumber_Transaction(appIdentifier, con,
                                 lM.phoneNumber, recipeUserId);
@@ -869,7 +829,7 @@ public class Passwordless {
             }
 
             if (e.actualException instanceof PhoneNumberChangeNotAllowedException) {
-                throw (PhoneNumberChangeNotAllowedException) e.actualException;
+                throw (io.supertokens.pluginInterface.authRecipe.exceptions.PhoneNumberChangeNotAllowedException) e.actualException;
             }
         }
     }
