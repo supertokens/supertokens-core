@@ -95,7 +95,15 @@ public class RefreshSessionAPI extends WebserverAPI {
                     appIdentifier.getAppId(), sessionInfo.session.tenantId);
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
 
-            if (storage.getType() == STORAGE_TYPE.SQL) {
+            // Skip the userid_mapping lookup and the user_last_active upsert when the same
+            // session user_id was marked active recently. With default 1h access tokens and
+            // diverse user_ids this gate rarely fires — refreshes are typically further
+            // apart than the throttle window. Its real value is capping the blast radius
+            // of refresh loops, burst patterns (e.g. many tabs refreshing at once), and
+            // load tests that concentrate on a small user set; it is not expected to move
+            // the needle on steady-state per-request latency.
+            if (storage.getType() == STORAGE_TYPE.SQL
+                    && !ActiveUsers.wasRecentlyActive(appIdentifier, sessionInfo.session.userId)) {
                 try {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
@@ -104,6 +112,9 @@ public class RefreshSessionAPI extends WebserverAPI {
                     } else {
                         ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.session.userId);
                     }
+                    // Also mark by the session's user_id so the next refresh can short-circuit
+                    // the mapping lookup, not just the upsert.
+                    ActiveUsers.markRecentlyActive(appIdentifier, sessionInfo.session.userId);
                 } catch (StorageQueryException ignored) {
                 }
             }
