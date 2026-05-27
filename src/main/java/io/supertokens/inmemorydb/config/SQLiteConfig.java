@@ -81,6 +81,10 @@ public class SQLiteConfig {
         return "user_last_active";
     }
 
+    public String getActivityLogTable() {
+        return "activity_log";
+    }
+
     public String getAccessTokenSigningKeysTable() {
         return "session_access_token_signing_keys";
     }

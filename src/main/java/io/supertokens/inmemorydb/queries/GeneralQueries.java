@@ -252,6 +252,14 @@ public class GeneralQueries {
                     NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getActivityLogTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, ActivityLogQueries.getQueryToCreateActivityLogTable(start), NO_OP_SETTER);
+
+            // index
+            update(start, ActivityLogQueries.getQueryToCreateCreatedAtIndex(start), NO_OP_SETTER);
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getAccessTokenSigningKeysTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateAccessTokenSigningKeysTable(start), NO_OP_SETTER);
