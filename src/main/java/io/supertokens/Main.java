@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.bulkimport.HashPlaintextPasswordsInBulkImportUsers;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredSAMLData.DeleteExpiredSAMLData;
@@ -275,8 +276,9 @@ public class Main {
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
-        // initializes ProcessBulkImportUsers cronjob to process bulk import users
+        // initializes bulk import cronjobs: first hash plaintext passwords, then process users
         if(bulkMigrationCronEnabled) {
+            Cronjobs.addCronjob(this, HashPlaintextPasswordsInBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
             Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
         }
 

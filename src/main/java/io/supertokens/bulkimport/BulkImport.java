@@ -98,6 +98,8 @@ public class BulkImport {
     public static final int DELETE_USERS_MAX_LIMIT = 500;
     // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_INTERVAL_SECONDS = 5*60; // 5 minutes
+    // Time interval in seconds between two consecutive runs of HashPlaintextPasswordsInBulkImportUsers Cron Job
+    public static final int HASH_PASSWORDS_INTERVAL_SECONDS = 60; // 1 minute
     private static final Logger log = LoggerFactory.getLogger(BulkImport.class);
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
@@ -394,10 +396,13 @@ public class BulkImport {
 
                 String passwordHash = emailPasswordLoginMethod.passwordHash;
                 if (passwordHash == null && emailPasswordLoginMethod.plainTextPassword != null) {
-                    passwordHash = PasswordHashing.getInstance(main)
-                            .createHashWithSalt(tenantIdentifierForLoginMethod.toAppIdentifier(), emailPasswordLoginMethod.plainTextPassword);
+                    // Users with plaintext passwords are pre-hashed by HashPlaintextPasswordsInBulkImportUsers
+                    // before becoming eligible for import (see getBulkImportUsersAndChangeStatusToProcessing).
+                    // Reaching this path indicates a race condition or a bug.
+                    throw new StorageTransactionLogicException(new Exception(
+                            "E047: Cannot import emailpassword login method with an unhashed password. " +
+                            "Wait for the password pre-hashing task to complete before retrying."));
                 }
-                emailPasswordLoginMethod.passwordHash = passwordHash;
                 usersToImport.add(new EmailPasswordImportUser(emailPasswordLoginMethod.superTokensUserId, emailPasswordLoginMethod.email,
                         emailPasswordLoginMethod.passwordHash, tenantIdentifierForLoginMethod, emailPasswordLoginMethod.timeJoinedInMSSinceEpoch));
             }
