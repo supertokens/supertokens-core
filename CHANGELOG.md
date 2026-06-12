@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.5]
+
+- Backport: fixes saml xsw vulnerability
+
 ## [11.3.4]
 
 - Fixes OTEL initialization when there is no javaagent
