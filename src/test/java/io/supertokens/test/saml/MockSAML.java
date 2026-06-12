@@ -220,51 +220,9 @@ public class MockSAML {
         status.setStatusCode(statusCode);
         response.setStatus(status);
 
-        Assertion assertion = build(Assertion.DEFAULT_ELEMENT_NAME);
-        assertion.setID(randomId());
-        assertion.setIssueInstant(now);
-        assertion.setVersion(SAMLVersion.VERSION_20);
-
-        Issuer assertionIssuer = build(Issuer.DEFAULT_ELEMENT_NAME);
-        assertionIssuer.setValue(issuerEntityId);
-        assertion.setIssuer(assertionIssuer);
-
-        Subject subject = build(Subject.DEFAULT_ELEMENT_NAME);
-        NameID nameIdObj = build(NameID.DEFAULT_ELEMENT_NAME);
-        nameIdObj.setValue(nameId);
-        nameIdObj.setFormat(NameIDType.PERSISTENT);
-        subject.setNameID(nameIdObj);
-
-        SubjectConfirmation sc = build(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
-        sc.setMethod(SubjectConfirmation.METHOD_BEARER);
-        SubjectConfirmationData scd = build(SubjectConfirmationData.DEFAULT_ELEMENT_NAME);
-        scd.setRecipient(acsUrl);
-        scd.setNotOnOrAfter(notOnOrAfter);
-        if (inResponseTo != null) {
-            scd.setInResponseTo(inResponseTo);
-        }
-        sc.setSubjectConfirmationData(scd);
-        subject.getSubjectConfirmations().add(sc);
-        assertion.setSubject(subject);
-
-        Conditions conditions = build(Conditions.DEFAULT_ELEMENT_NAME);
-        conditions.setNotBefore(now.minusSeconds(1));
-        conditions.setNotOnOrAfter(notOnOrAfter);
-        AudienceRestriction ar = build(AudienceRestriction.DEFAULT_ELEMENT_NAME);
-        Audience aud = build(Audience.DEFAULT_ELEMENT_NAME);
-        aud.setURI(audience);
-        ar.getAudiences().add(aud);
-        conditions.getAudienceRestrictions().add(ar);
-        assertion.setConditions(conditions);
-
-        AuthnStatement authnStatement = build(AuthnStatement.DEFAULT_ELEMENT_NAME);
-        authnStatement.setAuthnInstant(now);
-        AuthnContext authnContext = build(AuthnContext.DEFAULT_ELEMENT_NAME);
-        AuthnContextClassRef classRef = build(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
-        classRef.setURI(AuthnContext.PASSWORD_AUTHN_CTX);
-        authnContext.setAuthnContextClassRef(classRef);
-        authnStatement.setAuthnContext(authnContext);
-        assertion.getAuthnStatements().add(authnStatement);
+        Assertion assertion = buildAssertion(
+                issuerEntityId, nameId, audience, acsUrl, inResponseTo,
+                now, notOnOrAfter, true /* withConditions */);
 
         if (attributes != null && !attributes.isEmpty()) {
             AttributeStatement attrStatement = build(AttributeStatement.DEFAULT_ELEMENT_NAME);
@@ -344,6 +302,137 @@ public class MockSAML {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Builds a SAML Response that demonstrates the XML Signature Wrapping (XSW) attack:
+     *
+     *   - Assertion 1 (signed):   legitimateNameId — the attacker's own IdP-issued identity.
+     *   - Assertion 2 (unsigned): forgedNameId     — the victim identity the attacker wants to impersonate.
+     *
+     * The signed assertion carries full conditions/audience so it passes all validation checks.
+     * The forged assertion deliberately has no Conditions, so the timestamp and audience checks
+     * skip it (both iterate assertions and branch on conditions == null → continue).
+     *
+     * extractAllClaims() iterates both assertions in order.  Because Gson's JsonObject.add()
+     * is last-writer-wins, the second assertion's NameID overwrites the first, and the returned
+     * claims carry forgedNameId — even though only legitimateNameId was ever signed by the IdP.
+     *
+     * Without a fix the callback returns OK and getUserInfo resolves to forgedNameId.
+     * With a fix the callback must reject the response (or only consume the signed assertion).
+     */
+    public static String generateXSWWrappedSAMLResponseBase64(
+            String issuerEntityId,
+            String audience,
+            String acsUrl,
+            String legitimateNameId,
+            String forgedNameId,
+            String inResponseTo,
+            KeyMaterial keyMaterial,
+            int notOnOrAfterSeconds
+    ) {
+        Instant now = Instant.now();
+        Instant notOnOrAfter = now.plusSeconds(Math.max(60, notOnOrAfterSeconds));
+
+        Response response = build(Response.DEFAULT_ELEMENT_NAME);
+        response.setID(randomId());
+        response.setVersion(SAMLVersion.VERSION_20);
+        response.setIssueInstant(now);
+        response.setDestination(acsUrl);
+        if (inResponseTo != null) {
+            response.setInResponseTo(inResponseTo);
+        }
+
+        Issuer responseIssuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        responseIssuer.setValue(issuerEntityId);
+        response.setIssuer(responseIssuer);
+
+        Status status = build(Status.DEFAULT_ELEMENT_NAME);
+        StatusCode statusCode = build(StatusCode.DEFAULT_ELEMENT_NAME);
+        statusCode.setValue(StatusCode.SUCCESS);
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        // Assertion 1: legitimate, signed by the real IdP key.
+        Assertion legitimateAssertion = buildAssertion(
+                issuerEntityId, legitimateNameId, audience, acsUrl, inResponseTo,
+                now, notOnOrAfter, true /* withConditions */);
+        signAssertion(legitimateAssertion, keyMaterial);
+
+        // Assertion 2: forged, unsigned.  No Conditions so that timestamp and
+        // audience validation loops skip it (both guard on conditions == null).
+        Assertion forgedAssertion = buildAssertion(
+                issuerEntityId, forgedNameId, null /* audience */, acsUrl, inResponseTo,
+                now, notOnOrAfter, false /* withConditions */);
+        // intentionally left unsigned
+
+        // Order matters: forged comes last so its NameID wins in extractAllClaims().
+        response.getAssertions().add(legitimateAssertion);
+        response.getAssertions().add(forgedAssertion);
+
+        String xml = toXmlString(response);
+        return Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Assertion buildAssertion(
+            String issuerEntityId,
+            String nameId,
+            String audience,
+            String acsUrl,
+            String inResponseTo,
+            Instant now,
+            Instant notOnOrAfter,
+            boolean withConditions
+    ) {
+        Assertion assertion = build(Assertion.DEFAULT_ELEMENT_NAME);
+        assertion.setID(randomId());
+        assertion.setIssueInstant(now);
+        assertion.setVersion(SAMLVersion.VERSION_20);
+
+        Issuer assertionIssuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        assertionIssuer.setValue(issuerEntityId);
+        assertion.setIssuer(assertionIssuer);
+
+        Subject subject = build(Subject.DEFAULT_ELEMENT_NAME);
+        NameID nameIdObj = build(NameID.DEFAULT_ELEMENT_NAME);
+        nameIdObj.setValue(nameId);
+        nameIdObj.setFormat(NameIDType.PERSISTENT);
+        subject.setNameID(nameIdObj);
+
+        SubjectConfirmation sc = build(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
+        sc.setMethod(SubjectConfirmation.METHOD_BEARER);
+        SubjectConfirmationData scd = build(SubjectConfirmationData.DEFAULT_ELEMENT_NAME);
+        scd.setRecipient(acsUrl);
+        scd.setNotOnOrAfter(notOnOrAfter);
+        if (inResponseTo != null) {
+            scd.setInResponseTo(inResponseTo);
+        }
+        sc.setSubjectConfirmationData(scd);
+        subject.getSubjectConfirmations().add(sc);
+        assertion.setSubject(subject);
+
+        if (withConditions && audience != null) {
+            Conditions conditions = build(Conditions.DEFAULT_ELEMENT_NAME);
+            conditions.setNotBefore(now.minusSeconds(1));
+            conditions.setNotOnOrAfter(notOnOrAfter);
+            AudienceRestriction ar = build(AudienceRestriction.DEFAULT_ELEMENT_NAME);
+            Audience aud = build(Audience.DEFAULT_ELEMENT_NAME);
+            aud.setURI(audience);
+            ar.getAudiences().add(aud);
+            conditions.getAudienceRestrictions().add(ar);
+            assertion.setConditions(conditions);
+        }
+
+        AuthnStatement authnStatement = build(AuthnStatement.DEFAULT_ELEMENT_NAME);
+        authnStatement.setAuthnInstant(now);
+        AuthnContext authnContext = build(AuthnContext.DEFAULT_ELEMENT_NAME);
+        AuthnContextClassRef classRef = build(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
+        classRef.setURI(AuthnContext.PASSWORD_AUTHN_CTX);
+        authnContext.setAuthnContextClassRef(classRef);
+        authnStatement.setAuthnContext(authnContext);
+        assertion.getAuthnStatements().add(authnStatement);
+
+        return assertion;
     }
 
     private static String randomId() {

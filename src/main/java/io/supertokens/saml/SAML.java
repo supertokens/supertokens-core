@@ -369,14 +369,22 @@ public class SAML {
             return;
         }
 
+        // XSW defence: when assertion-level signing is used, every assertion in the
+        // response must carry a valid IdP signature. Accepting a mix of signed and
+        // unsigned assertions lets an attacker append an unsigned forged assertion
+        // after their own legitimate one; extractAllClaims() is last-writer-wins, so
+        // the forged assertion's NameID overwrites the signed one.
         boolean foundSignedAssertion = false;
         for (Assertion assertion : samlResponse.getAssertions()) {
             Signature assertionSignature = assertion.getSignature();
-            if (assertionSignature != null) {
-                Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
-                SignatureValidator.validate(assertionSignature, credential);
-                foundSignedAssertion = true;
+            if (assertionSignature == null) {
+                throw new SignatureException(
+                        "Unsigned assertion found in a response using assertion-level signing; " +
+                        "all assertions must be individually signed to prevent XML Signature Wrapping");
             }
+            Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
+            SignatureValidator.validate(assertionSignature, credential);
+            foundSignedAssertion = true;
         }
 
         if (!foundSignedAssertion) {
