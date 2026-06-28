@@ -16,7 +16,7 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
       - uses: actions/checkout@v4
-      - uses: supertokens/get-core-dependencies-action@main
+      - uses: supertokens/actions/get-core-dependencies-action@main
         with:
           run-for: PR
         id: result
