@@ -264,6 +264,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Config.getBaseConfigAsJsonObject(main));
 
         Map<ResourceDistributor.KeyClass, Storage> resourceKeyToStorageMap = new HashMap<>();
+        // The normalised config that "won" for each pool (userPoolId~connectionPoolId), i.e. the
+        // config of the first storage instance built for that pool. Used below to refresh the config
+        // of a reused (existing) storage instance so non-pool config changes take effect (see the
+        // reuse branch inside the lock).
+        Map<String, JsonObject> idToConfig = new HashMap<>();
         {
             Map<String, Storage> idToStorageMap = new HashMap<>();
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
@@ -279,6 +284,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
                 } else {
                     idToStorageMap.put(uniqueId, storage);
+                    idToConfig.put(uniqueId, normalisedConfigs.get(key));
                     resourceKeyToStorageMap.put(key, storage);
                 }
             }
@@ -308,6 +314,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
 
                 Set<String> uniquePoolsInUse = new HashSet<>();
+                // Pools whose reused instance we've already refreshed this pass, so that a pool shared
+                // by several tenants only reloads its config once.
+                Set<String> refreshedReusedPools = new HashSet<>();
 
                 for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
                     Storage currStorage = resourceKeyToStorageMap.get(key);
@@ -315,8 +324,28 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     String connectionPoolId = currStorage.getConnectionPoolId();
                     String uniqueId = userPoolId + "~" + connectionPoolId;
                     if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
-                        // we reuse the existing storage layer
-                        resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
+                        // we reuse the existing storage layer (its connection pool is still live).
+                        // But we must refresh the reused instance's config from the freshly
+                        // normalised config: non-pool config properties (e.g. migration_mode, which
+                        // is neither a @UserPoolProperty nor a @ConnectionPoolProperty) do not change
+                        // the userPoolId/connectionPoolId, so without this the reused instance would
+                        // keep serving its stale config until the next core restart. loadConfig only
+                        // replaces the in-memory config resource; the connection pool is untouched.
+                        // We use idToConfig.get(uniqueId) (the pool's winning config) rather than this
+                        // key's config so that all tenants sharing the pool resolve to the same config,
+                        // matching the first-wins deduplication done when the instances were built above.
+                        Storage reusedStorage = idToExistingStorageLayerMap.get(uniqueId).storage;
+                        if (refreshedReusedPools.add(uniqueId)) {
+                            try {
+                                reusedStorage.loadConfig(idToConfig.get(uniqueId),
+                                        Config.getBaseConfig(main).getLogLevels(main), key.getTenantIdentifier());
+                            } catch (InvalidConfigException e) {
+                                // The same config was already accepted by getNewStorageInstance above,
+                                // so this should not happen; surface it rather than reuse stale config.
+                                throw new ResourceDistributor.FuncException(e);
+                            }
+                        }
+                        resourceKeyToStorageMap.put(key, reusedStorage);
                     }
 
                     resourceKeyToStorageMap.get(key).setLogLevels(Config.getBaseConfig(main).getLogLevels(main));
@@ -355,6 +384,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
 
         } catch (ResourceDistributor.FuncException e) {
+            if (e.getCause() instanceof InvalidConfigException) {
+                throw (InvalidConfigException) e.getCause();
+            }
             throw new RuntimeException(e);
         }
 
@@ -404,6 +436,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         if (existingPoolToStorage.containsKey(uniqueId)) {
                             storageToUse = existingPoolToStorage.get(uniqueId);
                             isNewPool = false;
+                            // Refresh the reused instance's config: non-pool config properties
+                            // (e.g. migration_mode) do not change the pool identity, so without this
+                            // the reused instance keeps serving its stale config until the next core
+                            // restart. loadConfig only swaps the in-memory config; the live pool stays.
+                            storageToUse.loadConfig(normConfig,
+                                    Config.getBaseConfig(main).getLogLevels(main), changed);
                         } else {
                             storageToUse = newStorage;
                             isNewPool = true;

@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Fixes an issue where updating a tenant's `migration_mode` (or any other non-pool `coreConfig` property) through the multitenancy CRUD endpoint did not take effect on the live storage instance until the next core restart. When the storage layer reuses an existing instance (same `userPoolId`/`connectionPoolId`), its config is now refreshed in place so the change applies immediately.
+
 ## [12.0.4]
 
 - Fixes an issue with deleting user-id mapped users
