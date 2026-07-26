@@ -7,6 +7,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Three session-related config options (parsing and validation only; behaviour is wired up in later changes):
+  - `refresh_token_rotation_grace_period` (seconds, default 30, range 0-300, cannot differ across an app's tenants) -
+    how long a previously active refresh token remains accepted after a rotation.
+  - `access_token_validity_jitter` (fraction, default 0.05, range 0-0.25, cannot differ across an app's tenants) -
+    subtractive randomization of access token validity at issuance; 0 disables it.
+  - `recent_token_reuse_behaviour` (`TOKEN_THEFT` (default) | `UNAUTHORISED`, config.yaml only) - how the reuse of a
+    recently rotated-out refresh token is reported. The session is revoked regardless of this setting.
+
 ## [12.0.7]
 
 - Fix no-op account info updates
