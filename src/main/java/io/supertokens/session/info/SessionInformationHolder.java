@@ -41,14 +41,27 @@ public class SessionInformationHolder {
     @Nullable
     public final String antiCsrfToken;
 
+    // CDI >= 5.5 stateless verify (PLAN-002 unit 6): a read-only flag set on a checkDatabase verify when the
+    // stored session payload differs from the token's, so SDKs can background-refresh. null on every other path
+    // (including all CDI <= 5.4 responses), so Gson omits it and those responses stay byte-identical.
+    @Nullable
+    public final Boolean payloadUpdateAvailable;
+
     public SessionInformationHolder(@Nonnull SessionInfo session, @Nullable TokenInfo accessToken,
                                     @Nullable TokenInfo refreshToken, @Nullable TokenInfo idRefreshToken,
                                     @Nullable String antiCsrfToken) {
+        this(session, accessToken, refreshToken, idRefreshToken, antiCsrfToken, null);
+    }
+
+    public SessionInformationHolder(@Nonnull SessionInfo session, @Nullable TokenInfo accessToken,
+                                    @Nullable TokenInfo refreshToken, @Nullable TokenInfo idRefreshToken,
+                                    @Nullable String antiCsrfToken, @Nullable Boolean payloadUpdateAvailable) {
         this.session = session;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.idRefreshToken = idRefreshToken;
         this.antiCsrfToken = antiCsrfToken;
+        this.payloadUpdateAvailable = payloadUpdateAvailable;
     }
 
     public JsonObject toJsonObject() {

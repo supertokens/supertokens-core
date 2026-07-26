@@ -23,6 +23,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `STALE_LINEAGE`), revokes the session, and is reported per `recent_token_reuse_behaviour` (`STALE_LINEAGE` is
   always token theft). The reuse subtype is added to the theft/unauthorised refresh responses. Grace hits and
   reuse emit telemetry (`REFRESH_TOKEN_GRACE_PERIOD_HIT`, `REFRESH_TOKEN_REUSE_DETECTED`).
+- On CDI >= 5.5, session verification is stateless: `/recipe/session/verify` never writes to the database and
+  never returns a replacement access token on any path (rotation now happens only at refresh). Any validly
+  signed, unexpired access token short-circuits, and with `checkDatabase = true` the response carries
+  `payloadUpdateAvailable: true` when the stored session payload differs from the token's (instead of swapping
+  tokens), and rejects access tokens whose refresh-token lineage matches neither the current nor the previous
+  refresh token with `UNAUTHORISED` (the client refreshes; the refresh path holds the real reuse checks).
 
 ### Changed
 
