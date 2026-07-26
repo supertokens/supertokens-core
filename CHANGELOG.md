@@ -23,6 +23,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `STALE_LINEAGE`), revokes the session, and is reported per `recent_token_reuse_behaviour` (`STALE_LINEAGE` is
   always token theft). The reuse subtype is added to the theft/unauthorised refresh responses. Grace hits and
   reuse emit telemetry (`REFRESH_TOKEN_GRACE_PERIOD_HIT`, `REFRESH_TOKEN_REUSE_DETECTED`).
+- On CDI >= 5.5, `POST /recipe/session` and `POST /recipe/session/refresh` accept an optional `accessTokenValidity`
+  (in milliseconds) that overrides the configured `access_token_validity` for the access token minted by that call
+  only. It is shorten-only - validated `0 < accessTokenValidity <= configured access_token_validity`, with
+  out-of-range values rejected as a 400 rather than clamped - nothing about it is persisted, and the refresh token
+  validity is not overridable.
 
 ### Changed
 

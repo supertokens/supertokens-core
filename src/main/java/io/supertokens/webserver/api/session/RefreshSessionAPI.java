@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;
+import io.supertokens.exceptions.AccessTokenValidityOutOfRangeException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -72,6 +73,11 @@ public class RefreshSessionAPI extends WebserverAPI {
         Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v3_0)
                 ? InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", version.lesserThan(SemVer.v5_0))
                 : null;
+        // Optional per-mint access token validity override (ms), CDI >= 5.5 only (PLAN-002 decision 11).
+        // Shorten-only; validated against the configured access_token_validity in Session.refreshSession.
+        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_5)
+                ? InputParser.parseLongOrThrowError(input, "accessTokenValidity", true)
+                : null;
 
         assert enableAntiCsrf != null;
         assert refreshToken != null;
@@ -90,7 +96,8 @@ public class RefreshSessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf, accessTokenVersion,
-                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey), version);
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey), version,
+                    accessTokenValidity);
             TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                     appIdentifier.getAppId(), sessionInfo.session.tenantId);
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
@@ -136,6 +143,8 @@ public class RefreshSessionAPI extends WebserverAPI {
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
+        } catch (AccessTokenValidityOutOfRangeException e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
             Logging.debug(main, tenantIdentifierForLogging,
                     Utils.exceptionStacktraceToString(e));
