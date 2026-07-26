@@ -17,6 +17,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `recent_token_reuse_behaviour` (`TOKEN_THEFT` (default) | `UNAUTHORISED`, config.yaml only) - how the reuse of a
     recently rotated-out refresh token is reported. The session is revoked regardless of this setting.
 
+### Changed
+
+- `access_token_validity_jitter` is now applied when a fresh access token is minted on session creation and refresh:
+  `exp = now + validity * (1 - U[0, jitter])`. The jitter is subtract-only, so an access token is never valid for
+  longer than the configured `access_token_validity`; set the config to 0 to disable. Token regeneration is exempt
+  (it preserves the original token's absolute expiry) and access token verification does not re-roll the jitter.
+
 ## [12.0.7]
 
 - Fix no-op account info updates

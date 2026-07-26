@@ -178,7 +178,7 @@ public class Session {
 
         TokenInfo accessToken = AccessToken.createNewAccessToken(tenantIdentifier, main, sessionHandle,
                 recipeUserId, primaryUserId, Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken,
-                null, version, useStaticKey);
+                null, version, useStaticKey, true); // fresh mint: apply access_token_validity_jitter
 
         StorageUtils.getSessionStorage(storage)
                 .createNewSession(tenantIdentifier, sessionHandle, recipeUserId,
@@ -622,7 +622,7 @@ public class Session {
                                     Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
                                     null, accessTokenVersion,
-                                    useStaticKey);
+                                    useStaticKey, true); // fresh mint: apply access_token_validity_jitter
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
@@ -722,7 +722,7 @@ public class Session {
                                 sessionInfo.recipeUserId, sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                 Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
                                 null, accessTokenVersion,
-                                useStaticKey);
+                                useStaticKey, true); // fresh mint: apply access_token_validity_jitter
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
                                 newRefreshToken.createdTime);

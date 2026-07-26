@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.jwt.JWTSigningFunctions;
@@ -198,6 +199,21 @@ public class AccessToken {
         return AccessTokenInfo.fromJSON(appIdentifier, jwtInfo.payload, jwtInfo.version);
     }
 
+    /**
+     * Applies subtractive access token validity jitter ({@code access_token_validity_jitter},
+     * PLAN-002 decision 8): returns {@code validityMillis * (1 - U[0, jitter])}. The jitter is
+     * subtract-only by contract - the returned value never exceeds {@code validityMillis} - so every
+     * upper-bound guarantee that depends on the access token lifetime (revocation horizon,
+     * signing-key overlap) still holds. A jitter of 0 (or less) disables it.
+     */
+    private static long jitteredValidity(long validityMillis, double jitter) {
+        if (jitter <= 0) {
+            return validityMillis;
+        }
+        // U[0, jitter], subtracted so the token lifetime is only ever shortened, never lengthened.
+        return (long) (validityMillis * (1 - Math.random() * jitter));
+    }
+
     @TestOnly
     public static TokenInfo createNewAccessToken(@Nonnull Main main,
                                                  @Nonnull String sessionHandle,
@@ -229,6 +245,25 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
             AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
+        // Default entry point: no validity jitter. Callers that mint fresh tokens on session creation
+        // and refresh opt into jitter via the overload below; verify-time promotion and regenerate
+        // (which preserves the original expiry) keep the configured validity as-is.
+        return createNewAccessToken(tenantIdentifier, main, sessionHandle, recipeUserId, primaryUserId,
+                refreshTokenHash1, parentRefreshTokenHash1, userData, antiCsrfToken, expiryTime, version,
+                useStaticKey, false);
+    }
+
+    public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
+                                                 @Nonnull String sessionHandle,
+                                                 @Nonnull String recipeUserId, @Nonnull String primaryUserId,
+                                                 @Nonnull String refreshTokenHash1,
+                                                 @Nullable String parentRefreshTokenHash1,
+                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
+                                                 @Nullable Long expiryTime, VERSION version, boolean useStaticKey,
+                                                 boolean applyValidityJitter)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
+            AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
 
         Utils.PubPriKey signingKey;
 
@@ -237,7 +272,14 @@ public class AccessToken {
         if (expiryTime != null) {
             expires = expiryTime;
         } else {
-            expires = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidityInMillis();
+            CoreConfig config = Config.getConfig(tenantIdentifier, main);
+            long validity = config.getAccessTokenValidityInMillis();
+            // Jitter is applied only at fresh mints that opt in (session creation and refresh). The
+            // expiry and timeCreated derive from this single `now`, so a token's lifetime is exactly
+            // the (possibly jittered) validity with no second-boundary skew.
+            expires = now + (applyValidityJitter
+                    ? jitteredValidity(validity, config.getAccessTokenValidityJitter())
+                    : validity);
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, recipeUserId, primaryUserId, refreshTokenHash1,
                 expires,

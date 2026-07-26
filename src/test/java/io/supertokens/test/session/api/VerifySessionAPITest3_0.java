@@ -155,7 +155,10 @@ public class VerifySessionAPITest3_0 {
         Instant expires = decodedJWT.getExpiresAtAsInstant();
         long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
-        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
+        // access_token_validity_jitter can shorten the token by up to (jitter * validity), subtract-only
+        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500)
+                .minusMillis((long) (validityInMS * Config.getConfig(process.getProcess())
+                        .getAccessTokenValidityJitter())));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
 
         assertNull(decodedJWT.getIssuer());
@@ -245,7 +248,10 @@ public class VerifySessionAPITest3_0 {
         Instant expires = decodedJWT.getExpiresAtAsInstant();
         long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
-        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
+        // access_token_validity_jitter can shorten the token by up to (jitter * validity), subtract-only
+        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500)
+                .minusMillis((long) (validityInMS * Config.getConfig(process.getProcess())
+                        .getAccessTokenValidityJitter())));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
 
         assertNull(decodedJWT.getIssuer());
