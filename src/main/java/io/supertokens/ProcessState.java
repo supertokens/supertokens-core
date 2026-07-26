@@ -100,7 +100,11 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG,
         LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB,
         BULK_IMPORT_COMPLETE,
-        BACKFILL_COMPLETE
+        BACKFILL_COMPLETE,
+        // CDI >= 5.5 refresh-time rotation (PLAN-002): a grace-window re-rotation was served, and a
+        // refresh-token reuse was detected and the session revoked, respectively.
+        REFRESH_TOKEN_GRACE_PERIOD_HIT,
+        REFRESH_TOKEN_REUSE_DETECTED
     }
 
     public static class EventAndException {

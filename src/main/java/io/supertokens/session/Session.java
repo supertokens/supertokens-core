@@ -25,9 +25,11 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.AccessTokenPayloadError;
+import io.supertokens.exceptions.RefreshTokenReuseSubtype;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.output.Logging;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -56,6 +58,7 @@ import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -401,11 +404,15 @@ public class Session {
                                 || sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(accessToken.refreshTokenHash1))
                                 || JWTPayloadNeedsUpdating) {
                             if (promote) {
+                                // Dual-write invariant (PLAN-002 decision 10): a write that changes
+                                // refresh_token_hash_2 also records the retired hash as prev and the rotation
+                                // timestamp, so sessions migrate safely across CDI versions in both directions.
+                                long now = System.currentTimeMillis();
                                 sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con,
                                         accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
-                                        System.currentTimeMillis() +
-                                                config.getRefreshTokenValidityInMillis(), sessionInfo.useStaticKey);
+                                        sessionInfo.refreshTokenHash2, now,
+                                        now + config.getRefreshTokenValidityInMillis(), sessionInfo.useStaticKey);
                             }
                             sessionStorage.commitTransaction(con);
 
@@ -536,19 +543,45 @@ public class Session {
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
+        // No CDI version supplied -> legacy (CDI <= 5.4) refresh semantics, byte-identical to before the
+        // refresh-time rotation work. Existing tests keep exercising the old behaviour through this overload.
+        return refreshSession(main, refreshToken, antiCsrfToken, enableAntiCsrf, accessTokenVersion, SemVer.v5_4);
+    }
+
+    @TestOnly
+    public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
+                                                          @Nullable String antiCsrfToken, boolean enableAntiCsrf,
+                                                          AccessToken.VERSION accessTokenVersion, SemVer cdiVersion)
+            throws StorageTransactionLogicException,
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return refreshSession(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion, null);
+                    enableAntiCsrf, accessTokenVersion, null, cdiVersion);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    // Legacy overload without an explicit CDI version -> CDI <= 5.4 refresh semantics. Retained so callers
+    // and tests that predate refresh-time rotation keep compiling and behaving identically.
+    public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
+                                                          @Nonnull String refreshToken,
+                                                          @Nullable String antiCsrfToken, boolean enableAntiCsrf,
+                                                          AccessToken.VERSION accessTokenVersion,
+                                                          Boolean shouldUseStaticKey)
+            throws StorageTransactionLogicException,
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
+        return refreshSession(appIdentifier, main, refreshToken, antiCsrfToken, enableAntiCsrf, accessTokenVersion,
+                shouldUseStaticKey, SemVer.v5_4);
     }
 
     public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
                                                           AccessToken.VERSION accessTokenVersion,
-                                                          Boolean shouldUseStaticKey)
+                                                          Boolean shouldUseStaticKey, SemVer cdiVersion)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
@@ -566,14 +599,46 @@ public class Session {
         Storage storage = StorageLayer.getStorage(refreshTokenInfo.tenantIdentifier, main);
         return refreshSessionHelper(
                 tenantIdentifier, storage, main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion,
-                shouldUseStaticKey);
+                shouldUseStaticKey, cdiVersion);
+    }
+
+    // True when the presented refresh token is a child (via its token-internal parent hash) of the refresh
+    // token whose double-hash is parentHash2. Mirrors the legacy Case B lineage test; used by the CDI >= 5.5
+    // flow for case 2 (child of current -> promote+rotate) and ORPHANED_BRANCH classification (child of prev).
+    private static boolean refreshTokenChildMatches(RefreshToken.RefreshTokenInfo info, String parentHash2)
+            throws NoSuchAlgorithmException {
+        return (info.type == RefreshToken.TYPE.FREE && info.parentRefreshTokenHash2 != null
+                && info.parentRefreshTokenHash2.equals(parentHash2))
+                || (info.parentRefreshTokenHash1 != null
+                && Utils.hashSHA256(info.parentRefreshTokenHash1).equals(parentHash2));
+    }
+
+    // Builds the refresh response for a CDI >= 5.5 rotation (cases 1/2/3): a fresh access token whose
+    // parentRefreshTokenHash1 is null (there is exactly one live token and no lineage-acceptance rule on
+    // CDI 5.5 - decision 3), alongside the just-minted refresh token.
+    private static SessionInformationHolder buildRefreshedSession(TenantIdentifier tenantIdentifier, Main main,
+            String sessionHandle, io.supertokens.pluginInterface.session.SessionInfo sessionInfo,
+            TokenInfo newRefreshToken, String antiCsrfToken, AccessToken.VERSION accessTokenVersion,
+            boolean useStaticKey)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
+            AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
+        TokenInfo newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier, main, sessionHandle,
+                sessionInfo.recipeUserId, sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
+                null, sessionInfo.userDataInJWT, antiCsrfToken, null, accessTokenVersion, useStaticKey);
+        TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
+                newRefreshToken.createdTime);
+        return new SessionInformationHolder(
+                new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.recipeUserId,
+                        sessionInfo.userDataInJWT, tenantIdentifier.getTenantId()),
+                newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
     }
 
     private static SessionInformationHolder refreshSessionHelper(
             TenantIdentifier tenantIdentifier, Storage storage, Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo,
             boolean enableAntiCsrf,
-            AccessToken.VERSION accessTokenVersion, Boolean shouldUseStaticKey)
+            AccessToken.VERSION accessTokenVersion, Boolean shouldUseStaticKey, SemVer cdiVersion)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError,
             TenantOrAppNotFoundException {
@@ -600,11 +665,90 @@ public class Session {
                         boolean useStaticKey =
                                 shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
 
+                        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_5)) {
+                            // ===== CDI >= 5.5: refresh-time rotation with grace window (PLAN-002 cases 1-4) =====
+                            long now = System.currentTimeMillis();
+                            String presentedHash2 = Utils.hashSHA256(Utils.hashSHA256(refreshToken));
+                            String currentHash = sessionInfo.refreshTokenHash2;
+                            String prevHash = sessionInfo.prevRefreshTokenHash2;
+                            Long rotatedAt = sessionInfo.refreshTokenRotatedAt;
+                            long graceMs = config.getRefreshTokenRotationGracePeriodInMillis();
+
+                            // Case 1 (presented == current) and case 2 (presented is an un-promoted child of
+                            // current, minted by an old-CDI refresh) both rotate; the token being retired is the
+                            // presented one, so prev := presentedHash2 in both.
+                            if (presentedHash2.equals(currentHash)
+                                    || refreshTokenChildMatches(refreshTokenInfo, currentHash)) {
+                                String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
+                                final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(
+                                        tenantIdentifier, main, sessionHandle, sessionInfo.recipeUserId,
+                                        Utils.hashSHA256(refreshToken), antiCsrfToken);
+                                sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
+                                        Utils.hashSHA256(Utils.hashSHA256(newRefreshToken.token)),
+                                        presentedHash2, now, now + config.getRefreshTokenValidityInMillis(),
+                                        useStaticKey);
+                                sessionStorage.commitTransaction(con);
+                                return buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
+                                        newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey);
+                            }
+
+                            // Case 3: presented == prev within the grace window -> re-rotate. Single write of
+                            // current only; prev, rotated_at and expiry stay put so repeated retries with the
+                            // window root keep recovering for the whole window. The child displaced here is dead.
+                            if (prevHash != null && rotatedAt != null && presentedHash2.equals(prevHash)
+                                    && now <= rotatedAt + graceMs) {
+                                String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
+                                final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(
+                                        tenantIdentifier, main, sessionHandle, sessionInfo.recipeUserId,
+                                        Utils.hashSHA256(refreshToken), antiCsrfToken);
+                                sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
+                                        Utils.hashSHA256(Utils.hashSHA256(newRefreshToken.token)),
+                                        prevHash, rotatedAt, sessionInfo.expiry, useStaticKey);
+                                sessionStorage.commitTransaction(con);
+                                ProcessState.getInstance(main).addState(
+                                        ProcessState.PROCESS_STATE.REFRESH_TOKEN_GRACE_PERIOD_HIT, null);
+                                Logging.debug(main, tenantIdentifier,
+                                        "Refresh token rotation grace-window re-rotation for session "
+                                                + sessionHandle + " (" + (now - rotatedAt) + "ms since rotation)");
+                                return buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
+                                        newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey);
+                            }
+
+                            // Case 4: reuse. Classify, log telemetry, and report per recent_token_reuse_behaviour.
+                            // The session is revoked in the outer catch for every subtype (decision 4).
+                            RefreshTokenReuseSubtype subtype;
+                            if (prevHash != null && presentedHash2.equals(prevHash)) {
+                                subtype = RefreshTokenReuseSubtype.RECENT_PREV;   // matched prev, window expired
+                            } else if (prevHash != null && refreshTokenChildMatches(refreshTokenInfo, prevHash)) {
+                                subtype = RefreshTokenReuseSubtype.ORPHANED_BRANCH; // displaced by a grace re-rotation
+                            } else {
+                                subtype = RefreshTokenReuseSubtype.STALE_LINEAGE;
+                            }
+                            sessionStorage.commitTransaction(con);
+                            ProcessState.getInstance(main).addState(
+                                    ProcessState.PROCESS_STATE.REFRESH_TOKEN_REUSE_DETECTED, null);
+                            Logging.debug(main, tenantIdentifier, "Refresh token reuse (" + subtype
+                                    + ") detected for session " + sessionHandle
+                                    + (rotatedAt != null ? " (" + (now - rotatedAt) + "ms since rotation)" : ""));
+                            // STALE_LINEAGE is always theft; RECENT_PREV / ORPHANED_BRANCH follow the config.
+                            if (subtype == RefreshTokenReuseSubtype.STALE_LINEAGE
+                                    || !"UNAUTHORISED".equals(config.getRecentTokenReuseBehaviour())) {
+                                throw new TokenTheftDetectedException(sessionHandle, sessionInfo.recipeUserId,
+                                        sessionInfo.userId, subtype);
+                            }
+                            throw new UnauthorisedException("refresh token reuse detected", subtype);
+                        }
+
+                        // ===== Legacy (CDI <= 5.4): byte-identical behaviour, plus the dual-write invariant
+                        // (decision 10) so that any write which changes refresh_token_hash_2 also records prev
+                        // and rotated_at, keeping sessions safe to cross CDI versions mid-lifetime. =====
                         if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
                             if (useStaticKey != sessionInfo.useStaticKey) {
-                                // We do not update anything except the static key status
+                                // We do not update anything except the static key status -> refresh_token_hash_2 is
+                                // unchanged, so the existing rotation state is preserved (not a rotation).
                                 sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
-                                        sessionInfo.refreshTokenHash2, sessionInfo.expiry,
+                                        sessionInfo.refreshTokenHash2, sessionInfo.prevRefreshTokenHash2,
+                                        sessionInfo.refreshTokenRotatedAt, sessionInfo.expiry,
                                         useStaticKey);
                             }
 
@@ -640,16 +784,19 @@ public class Session {
                                 || (refreshTokenInfo.parentRefreshTokenHash1 != null
                                 && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
                                 .equals(sessionInfo.refreshTokenHash2))) {
+                            // Case B promote: refresh_token_hash_2 changes, so record prev := old current + now.
+                            long nowLegacy = System.currentTimeMillis();
                             sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + config.getRefreshTokenValidityInMillis(),
+                                    sessionInfo.refreshTokenHash2, nowLegacy,
+                                    nowLegacy + config.getRefreshTokenValidityInMillis(),
                                     useStaticKey);
 
                             sessionStorage.commitTransaction(con);
 
                             return refreshSessionHelper(tenantIdentifier, storage, main, refreshToken,
                                     refreshTokenInfo, enableAntiCsrf,
-                                    accessTokenVersion, shouldUseStaticKey);
+                                    accessTokenVersion, shouldUseStaticKey, cdiVersion);
                         }
 
                         sessionStorage.commitTransaction(con);
@@ -668,9 +815,23 @@ public class Session {
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
-                    throw (UnauthorisedException) e.actualException;
+                    UnauthorisedException ue = (UnauthorisedException) e.actualException;
+                    if (ue.reuseSubtype != null) {
+                        // CDI >= 5.5 recent-reuse reported as Unauthorised: the session is still revoked
+                        // (decision 4 - the config alters reporting only, never enforcement).
+                        revokeSessionUsingSessionHandles(tenantIdentifier, storage,
+                                new String[]{refreshTokenInfo.sessionHandle});
+                    }
+                    throw ue;
                 } else if (e.actualException instanceof TokenTheftDetectedException) {
-                    throw (TokenTheftDetectedException) e.actualException;
+                    TokenTheftDetectedException te = (TokenTheftDetectedException) e.actualException;
+                    if (te.reuseSubtype != null) {
+                        // CDI >= 5.5 reuse: revoke server-side so revocation no longer depends on the SDK acting
+                        // on the theft response. Legacy (CDI <= 5.4) theft has a null subtype and is untouched.
+                        revokeSessionUsingSessionHandles(tenantIdentifier, storage,
+                                new String[]{refreshTokenInfo.sessionHandle});
+                    }
+                    throw te;
                 } else if (e.actualException instanceof AccessTokenPayloadError) {
                     throw (AccessTokenPayloadError) e.actualException;
                 } else if (e.actualException instanceof TenantOrAppNotFoundException) {
@@ -750,7 +911,7 @@ public class Session {
                         }
                         return refreshSessionHelper(
                                 tenantIdentifier, storage, main, refreshToken, refreshTokenInfo,
-                                enableAntiCsrf, accessTokenVersion, shouldUseStaticKey);
+                                enableAntiCsrf, accessTokenVersion, shouldUseStaticKey, cdiVersion);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.recipeUserId, sessionInfo.userId);
