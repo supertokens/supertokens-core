@@ -3958,6 +3958,17 @@ public class Start
     }
 
     @Override
+    public void removeOptions_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                          String optionsId) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            WebAuthNQueries.removeOptions_Transaction(this, sqlCon, tenantIdentifier, optionsId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void addRecoverAccountToken(TenantIdentifier tenantIdentifier, AccountRecoveryTokenInfo accountRecoveryTokenInfo)
             throws DuplicateRecoverAccountTokenException, StorageQueryException {
         try {
