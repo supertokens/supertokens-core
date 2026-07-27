@@ -370,6 +370,17 @@ public class CoreConfig {
                     "null)")
     private String supertokens_max_cdi_version = null;
 
+    @EnvName("SUPERTOKENS_MIN_CDI_VERSION")
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "The minimum CDI version that the core will accept. Requests using a CDI version lower than this are " +
+                    "rejected with a 400. Useful for refusing older CDI versions entirely (for example to require " +
+                    "the tenant-scope enforcement that applies from CDI 5.0). When set to null, all CDI versions " +
+                    "supported by the core are accepted. (Default: null)")
+    private String supertokens_min_cdi_version = null;
+
     @EnvName("SUPERTOKENS_SAAS_LOAD_ONLY_CUD")
     @ConfigYamlOnly
     @JsonProperty
@@ -964,6 +975,23 @@ public class CoreConfig {
             }
         }
 
+        if (supertokens_min_cdi_version != null) {
+            SemVer minVersion;
+            try {
+                minVersion = new SemVer(supertokens_min_cdi_version);
+            } catch (IllegalArgumentException e) {
+                throw new InvalidConfigException("supertokens_min_cdi_version is not a valid semantic version");
+            }
+            if (!WebserverAPI.supportedVersions.contains(minVersion)) {
+                throw new InvalidConfigException("supertokens_min_cdi_version is not a supported version");
+            }
+            if (supertokens_max_cdi_version != null
+                    && minVersion.greaterThan(new SemVer(supertokens_max_cdi_version))) {
+                throw new InvalidConfigException(
+                        "supertokens_min_cdi_version cannot be greater than supertokens_max_cdi_version");
+            }
+        }
+
         if (bulk_migration_parallelism < 1) {
             throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
         }
@@ -1290,6 +1318,10 @@ public class CoreConfig {
 
     public String getMaxCDIVersion() {
         return this.supertokens_max_cdi_version;
+    }
+
+    public String getMinCDIVersion() {
+        return this.supertokens_min_cdi_version;
     }
 
     private boolean isAnySet(List<String> configs){

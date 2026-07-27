@@ -617,6 +617,20 @@ public abstract class WebserverAPI extends HttpServlet {
         return req.getHeader("rId");
     }
 
+    public SemVer getMinCDIVersionForRequest(HttpServletRequest req) throws ServletException {
+        String minCDIVersionStr = null;
+        try {
+            minCDIVersionStr = Config.getConfig(
+                    getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main).getMinCDIVersion();
+        } catch (TenantOrAppNotFoundException e) {
+            // ignore missing app; there is no configured minimum to enforce
+        }
+        if (minCDIVersionStr != null) {
+            return new SemVer(minCDIVersionStr);
+        }
+        return null;
+    }
+
     protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
         SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
         String version = req.getHeader("cdi-version");
@@ -627,6 +641,13 @@ public abstract class WebserverAPI extends HttpServlet {
             if (versionFromRequest.greaterThan(maxCDIVersion)) {
                 throw new ServletException(
                         new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
+            }
+
+            SemVer minCDIVersion = getMinCDIVersionForRequest(req);
+            if (minCDIVersion != null && versionFromRequest.lesserThan(minCDIVersion)) {
+                throw new ServletException(new BadRequestException(
+                        "cdi-version " + versionFromRequest + " is lower than the minimum allowed version "
+                                + minCDIVersion));
             }
 
             return versionFromRequest;
