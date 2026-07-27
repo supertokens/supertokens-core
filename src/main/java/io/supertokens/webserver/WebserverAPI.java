@@ -636,7 +636,12 @@ public abstract class WebserverAPI extends HttpServlet {
         String version = req.getHeader("cdi-version");
 
         if (version != null) {
-            SemVer versionFromRequest = new SemVer(version);
+            SemVer versionFromRequest;
+            try {
+                versionFromRequest = new SemVer(version);
+            } catch (RuntimeException e) {
+                throw new ServletException(new BadRequestException("cdi-version header is invalid"));
+            }
 
             if (versionFromRequest.greaterThan(maxCDIVersion)) {
                 throw new ServletException(
