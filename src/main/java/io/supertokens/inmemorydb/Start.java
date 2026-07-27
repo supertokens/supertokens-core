@@ -1493,6 +1493,26 @@ public class Start
     }
 
     @Override
+    public Map<Integer, Integer> countUsersActiveSinceGroupedByDay(AppIdentifier appIdentifier, long sinceTime,
+                                                                   long now) throws StorageQueryException {
+        // in-memory storage is dev/test only: derive buckets from the existing cumulative counts
+        Map<Integer, Integer> buckets = new HashMap<>();
+        int previous = 0;
+        for (int day = 0; ; day++) {
+            long threshold = now - ((long) (day + 1)) * 24 * 60 * 60 * 1000L;
+            if (threshold < sinceTime) {
+                break;
+            }
+            int cumulative = countUsersActiveSince(appIdentifier, threshold);
+            if (cumulative - previous > 0) {
+                buckets.put(day, cumulative - previous);
+            }
+            previous = cumulative;
+        }
+        return buckets;
+    }
+
+    @Override
     public int countUsersActiveSince(AppIdentifier appIdentifier, long time) throws StorageQueryException {
         try {
             return ActiveUsersQueries.countUsersActiveSince(this, appIdentifier, time);
