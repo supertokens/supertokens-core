@@ -7,6 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Security: app-specific management APIs now reject non-public/unknown tenant paths on every CDI version (the public-tenant guard was only enforced for CDI >= 5.0, letting `/sometenant/recipe/...` on CDI 3.0-4.0 bypass it)
+- Security: the api-key and IP-allow/deny checks no longer fail open when the request's tenant does not exist; they resolve against the app's public tenant instead
+
 ## [12.0.7]
 
 - Fix no-op account info updates

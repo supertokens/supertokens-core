@@ -205,9 +205,14 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             String apiKey = getApiKeyFromRequest(req);
 
-            // first we try the normal API key
+            // Resolve the API keys from the app's public tenant rather than the raw request
+            // tenant. api_keys is @NotConflictingInApp (identical across an app's tenants), so
+            // for a real tenant this is equivalent, but it also resolves for an unknown tenant
+            // segment (e.g. /ghosttenant/...) under a real app — which previously threw
+            // TenantOrAppNotFoundException and caused this check to be skipped entirely,
+            // letting an unauthenticated caller through.
             String[] keys = Config.getConfig(
-                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
                     this.main).getAPIKeys();
             if (keys != null) {
                 if (apiKey == null) {
@@ -241,7 +246,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
         } catch (TenantOrAppNotFoundException e) {
-            // ignore as the tenant doesn't exist, we expect API to handle this issue
+            // this exception could be thrown from Config.getConfig(
+            //                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
+            //                    this.main).getAPIKeys();
+            // but the default tenant should exist in any case.
+            // just to be safe, throwing an exception here, but this should never happen.
+            throw new ServletException(new APIKeyUnauthorisedException());
         }
     }
 
@@ -395,10 +405,12 @@ public abstract class WebserverAPI extends HttpServlet {
     protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
             throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
 
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-            if (getTenantId(req) != null) {
-                throw new BadPermissionException("Only public tenantId can call this app specific API");
-            }
+        // This is a security boundary: app-specific APIs must run in the public tenant
+        // context only. It must be enforced on every CDI version. It was previously gated
+        // on CDI >= 5.0, which let callers on older versions reach this handler via a
+        // non-public (including unknown) tenant path segment.
+        if (getTenantId(req) != null) {
+            throw new BadPermissionException("Only public tenantId can call this app specific API");
         }
 
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
@@ -408,10 +420,10 @@ public abstract class WebserverAPI extends HttpServlet {
     protected Storage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-            if (getTenantId(req) != null) {
-                throw new BadPermissionException("Only public tenantId can call this app specific API");
-            }
+        // Security boundary, enforced on every CDI version (see the note in
+        // enforcePublicTenantAndGetAllStoragesForApp).
+        if (getTenantId(req) != null) {
+            throw new BadPermissionException("Only public tenantId can call this app specific API");
         }
 
         AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -451,7 +463,14 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
         } catch (TenantOrAppNotFoundException e) {
-            return true; // tenant not found, so no IP access control
+            // Unknown tenant: fall back to the app's public-tenant IP rules rather than
+            // skipping IP access control (which would let an unknown tenant path segment
+            // bypass an IP allow/deny configured on the app).
+            try {
+                config = Config.getConfig(getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main);
+            } catch (TenantOrAppNotFoundException e2) {
+                return true; // no app either, so no IP access control to apply
+            }
         }
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
