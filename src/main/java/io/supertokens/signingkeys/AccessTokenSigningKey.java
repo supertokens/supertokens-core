@@ -39,6 +39,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage.TransactionIsolationLevel;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -226,7 +227,10 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
             try {
-                // start transaction
+                // SERIALIZABLE (not the default READ_COMMITTED): on a concurrent rotation, READ COMMITTED lets
+                // each instance's SELECT snapshot predate the other's INSERT, so both create a key. SERIALIZABLE
+                // aborts the loser with serialization_failure (SQLSTATE 40); the plugin's startTransaction retry
+                // re-runs it, by which time the other's key is visible, so no duplicate is created.
                 validKeys = sqlStorage.startTransaction(con -> {
                     List<SigningKeys.KeyInfo> validKeysFromSQL = new ArrayList<>();
 
@@ -269,7 +273,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
                     sqlStorage.commitTransaction(con);
                     return validKeysFromSQL;
-                });
+                }, TransactionIsolationLevel.SERIALIZABLE);
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
                     throw (TenantOrAppNotFoundException) e.actualException;
