@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 - Security: the API key and IP allow/deny checks no longer fail open when a request targets an unknown tenant/app; they resolve against the app's public tenant and reject (401) otherwise, closing an unauthenticated bypass of `api_keys` via an unknown tenant path on older CDI versions
+- Adds `supertokens_min_cdi_version` config to reject requests using a CDI version below a configured minimum
 - Adds CDI 5.5: webauthn sign-in options are single-use — consumed atomically on successful sign in (replay returns `OPTIONS_NOT_FOUND_ERROR`); requests on CDI <= 5.4 are unaffected. Requires SDKs on CDI 5.5 to verify each assertion exactly once (see supertokens-core#1195)
 - Adds `removeOptions_Transaction` to `WebAuthNSQLStorage` (plugin-interface addition; needs a plugin-interface version bump at release)
 
