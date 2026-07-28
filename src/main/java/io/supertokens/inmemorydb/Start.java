@@ -1492,6 +1492,16 @@ public class Start
         }
     }
 
+    @TestOnly
+    public void updateLastActive(AppIdentifier appIdentifier, String userId, long timestamp)
+            throws StorageQueryException {
+        try {
+            ActiveUsersQueries.updateUserLastActive(this, appIdentifier, userId, timestamp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     @Override
     public Map<Integer, Integer> countUsersActiveSinceGroupedByDay(AppIdentifier appIdentifier, long sinceTime,
                                                                    long now) throws StorageQueryException {
