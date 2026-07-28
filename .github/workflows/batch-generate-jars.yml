@@ -26,22 +26,14 @@ jobs:
     outputs:
       matrix: ${{ steps.parse.outputs.matrix }}
     steps:
+      - name: Checkout workflow tooling
+        uses: actions/checkout@v4
+
       - name: Parse versions into matrix
         id: parse
-        run: |
-          # Accept newline- or comma-separated versions; strip whitespace and blank lines.
-          versions=$(printf '%s' "${{ inputs.core-versions }}" \
-            | tr ',\n' '\n\n' \
-            | sed 's/[[:space:]]//g' \
-            | grep -v '^$' \
-            | jq -R . \
-            | jq -sc .)
-          if [[ "$versions" == "[]" ]]; then
-            echo "::error::No versions parsed from input — check formatting" >&2
-            exit 1
-          fi
-          echo "Versions to process: $versions"
-          echo "matrix={\"version\":$versions}" >> $GITHUB_OUTPUT
+        env:
+          CORE_VERSIONS: ${{ inputs.core-versions }}
+        run: ./.github/helpers/parse-core-version-matrix.sh
 
   # ── Fan out: one generate-jars run per version ────────────────────────
   generate:

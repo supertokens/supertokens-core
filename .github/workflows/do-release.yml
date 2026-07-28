@@ -146,5 +146,7 @@ jobs:
     uses: ./.github/workflows/generate-jars.yml
     with:
       core-version: ${{ inputs.core-version }}
+      plugin-interface-version: ${{ inputs.plugin-interface-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
     secrets: inherit

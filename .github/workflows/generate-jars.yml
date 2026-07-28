@@ -12,6 +12,14 @@ on:
         required: false
         type: string
         default: '21.0.7'
+      plugin-interface-version:
+        description: 'Exact stable plugin-interface version (optional for retroactive builds)'
+        required: false
+        type: string
+      postgresql-plugin-version:
+        description: 'Exact stable PostgreSQL plugin version (optional for retroactive builds)'
+        required: false
+        type: string
       commit-to-github:
         description: 'Also commit the generated JARs to the GitHub repositories and update tags'
         required: false
@@ -26,6 +34,12 @@ on:
         required: false
         type: string
         default: '21.0.7'
+      plugin-interface-version:
+        required: false
+        type: string
+      postgresql-plugin-version:
+        required: false
+        type: string
       commit-to-github:
         required: false
         type: boolean
@@ -35,7 +49,15 @@ jobs:
   generate-jars:
     environment: publish
     runs-on: ubuntu-latest
+    concurrency:
+      group: generate-jars-${{ inputs.core-version }}
+      cancel-in-progress: false
     steps:
+      - name: Checkout workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: ./workflow-tools
+
       - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v2
         with:
@@ -58,50 +80,14 @@ jobs:
 
       - name: Discover related versions
         id: versions
-        run: |
-          CORE_VER="${{ inputs.core-version }}"
-          CORE_DIR=supertokens-root/supertokens-core
-          PI_DIR=supertokens-root/supertokens-plugin-interface
-          PG_DIR=supertokens-root/supertokens-postgresql-plugin
-
-          # Read plugin-interface minor version from core tag's JSON (no checkout needed)
-          PI_MINOR=$(git -C "$CORE_DIR" show "v${CORE_VER}:pluginInterfaceSupported.json" \
-            | jq -r '.versions[0]')
-          if [[ -z "$PI_MINOR" || "$PI_MINOR" == "null" ]]; then
-            echo "Error: cannot determine plugin-interface version for core v${CORE_VER}" >&2
-            exit 1
-          fi
-          echo "Plugin-interface minor: $PI_MINOR"
-
-          # Latest plugin-interface release tag for this minor
-          PI_VER=$(git -C "$PI_DIR" tag \
-            | grep -E "^v${PI_MINOR}\." \
-            | sed 's/^v//' \
-            | sort -V | tail -1)
-          if [[ -z "$PI_VER" ]]; then
-            echo "Error: no plugin-interface tag found for minor ${PI_MINOR}" >&2
-            exit 1
-          fi
-          echo "Plugin-interface version: $PI_VER"
-
-          # Latest postgresql-plugin tag whose pluginInterfaceSupported.json matches the same minor
-          PG_VER=""
-          for pg_tag in $(git -C "$PG_DIR" tag --sort=-version:refname | grep -E '^v[0-9]'); do
-            pg_pi=$(git -C "$PG_DIR" show "${pg_tag}:pluginInterfaceSupported.json" 2>/dev/null \
-              | jq -r '.versions[0]' 2>/dev/null || true)
-            if [[ "$pg_pi" == "$PI_MINOR" ]]; then
-              PG_VER="${pg_tag#v}"
-              break
-            fi
-          done
-          if [[ -z "$PG_VER" ]]; then
-            echo "Error: no postgresql-plugin tag found for plugin-interface minor ${PI_MINOR}" >&2
-            exit 1
-          fi
-          echo "PostgreSQL-plugin version: $PG_VER"
-
-          echo "pi_version=$PI_VER" >> $GITHUB_OUTPUT
-          echo "pg_version=$PG_VER" >> $GITHUB_OUTPUT
+        env:
+          CORE_VERSION: ${{ inputs.core-version }}
+          INPUT_PLUGIN_INTERFACE_VERSION: ${{ inputs.plugin-interface-version }}
+          INPUT_POSTGRESQL_VERSION: ${{ inputs.postgresql-plugin-version }}
+          CORE_DIR: ${{ github.workspace }}/supertokens-root/supertokens-core
+          PLUGIN_INTERFACE_DIR: ${{ github.workspace }}/supertokens-root/supertokens-plugin-interface
+          POSTGRESQL_DIR: ${{ github.workspace }}/supertokens-root/supertokens-postgresql-plugin
+        run: ./workflow-tools/.github/helpers/discover-package-versions.sh
 
       - name: Checkout release tags
         run: |
@@ -148,17 +134,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PI_VER="${{ steps.versions.outputs.pi_version }}"
+          S3_JAR_PREFIX="${S3_JAR_PREFIX%/}"
           cd supertokens-root/supertokens-plugin-interface
 
           # S3 upload
           if [[ -z "$S3_BUCKET" ]]; then
-            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for plugin-interface"
+            echo "S3_BUCKET is required to publish plugin-interface JARs" >&2
+            exit 1
           else
             s3_dest="s3://${S3_BUCKET}/${S3_JAR_PREFIX:+$S3_JAR_PREFIX/}supertokens-plugin-interface/v${PI_VER}/"
             if aws s3 sync ./jar/ "$s3_dest"; then
               echo "✓ Uploaded plugin-interface v${PI_VER} JARs to S3"
             else
-              echo "::warning::Failed to upload plugin-interface v${PI_VER} JARs to S3"
+              echo "Failed to upload plugin-interface v${PI_VER} JARs to S3" >&2
+              exit 1
             fi
           fi
 
@@ -207,17 +196,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PG_VER="${{ steps.versions.outputs.pg_version }}"
+          S3_JAR_PREFIX="${S3_JAR_PREFIX%/}"
           cd supertokens-root/supertokens-postgresql-plugin
 
           # S3 upload
           if [[ -z "$S3_BUCKET" ]]; then
-            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for postgresql-plugin"
+            echo "S3_BUCKET is required to publish PostgreSQL plugin JARs" >&2
+            exit 1
           else
             s3_dest="s3://${S3_BUCKET}/${S3_JAR_PREFIX:+$S3_JAR_PREFIX/}supertokens-postgresql-plugin/v${PG_VER}/"
             if aws s3 sync ./jar/ "$s3_dest"; then
               echo "✓ Uploaded postgresql-plugin v${PG_VER} JARs to S3"
             else
-              echo "::warning::Failed to upload postgresql-plugin v${PG_VER} JARs to S3"
+              echo "Failed to upload postgresql-plugin v${PG_VER} JARs to S3" >&2
+              exit 1
             fi
           fi
 
@@ -266,11 +258,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           CORE_VER="${{ inputs.core-version }}"
+          S3_JAR_PREFIX="${S3_JAR_PREFIX%/}"
           cd supertokens-root/supertokens-core
 
           # S3 upload — gather main JAR and all sub-module JARs into a staging dir
           if [[ -z "$S3_BUCKET" ]]; then
-            echo "::warning::S3_BUCKET is not configured — skipping S3 upload for core"
+            echo "S3_BUCKET is required to publish core JARs" >&2
+            exit 1
           else
             staging=$(mktemp -d)
             cp ./jar/* "$staging/" 2>/dev/null || true
@@ -281,7 +275,8 @@ jobs:
             if aws s3 sync "$staging/" "$s3_dest"; then
               echo "✓ Uploaded core v${CORE_VER} JARs to S3"
             else
-              echo "::warning::Failed to upload core v${CORE_VER} JARs to S3"
+              echo "Failed to upload core v${CORE_VER} JARs to S3" >&2
+              exit 1
             fi
             rm -rf "$staging"
           fi
@@ -313,3 +308,18 @@ jobs:
               echo "::warning::Failed to commit core JARs to GitHub"
             fi
           fi
+
+      - name: Build and upload downloadable packages
+        env:
+          CORE_VERSION: ${{ inputs.core-version }}
+          PLUGIN_INTERFACE_VERSION: ${{ steps.versions.outputs.pi_version }}
+          POSTGRESQL_VERSION: ${{ steps.versions.outputs.pg_version }}
+          ROOT_DIR: ${{ github.workspace }}/supertokens-root
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
+          S3_JRE_PREFIX: core-runtime/jre
+          S3_PACKAGE_PREFIX: packages/v1
+        run: ./workflow-tools/.github/helpers/build-core-packages.sh
