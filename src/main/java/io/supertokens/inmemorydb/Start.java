@@ -1492,6 +1492,36 @@ public class Start
         }
     }
 
+    @TestOnly
+    public void updateLastActive(AppIdentifier appIdentifier, String userId, long timestamp)
+            throws StorageQueryException {
+        try {
+            ActiveUsersQueries.updateUserLastActive(this, appIdentifier, userId, timestamp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public Map<Integer, Integer> countUsersActiveSinceGroupedByDay(AppIdentifier appIdentifier, long sinceTime,
+                                                                   long now) throws StorageQueryException {
+        // in-memory storage is dev/test only: derive buckets from the existing cumulative counts
+        Map<Integer, Integer> buckets = new HashMap<>();
+        int previous = 0;
+        for (int day = 0; ; day++) {
+            long threshold = now - ((long) (day + 1)) * 24 * 60 * 60 * 1000L;
+            if (threshold < sinceTime) {
+                break;
+            }
+            int cumulative = countUsersActiveSince(appIdentifier, threshold);
+            if (cumulative - previous > 0) {
+                buckets.put(day, cumulative - previous);
+            }
+            previous = cumulative;
+        }
+        return buckets;
+    }
+
     @Override
     public int countUsersActiveSince(AppIdentifier appIdentifier, long time) throws StorageQueryException {
         try {
@@ -3952,6 +3982,17 @@ public class Start
         try {
             Connection sqlCon = (Connection) con.getConnection();
             WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, credentialId, counter);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeOptions_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                          String optionsId) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            WebAuthNQueries.removeOptions_Transaction(this, sqlCon, tenantIdentifier, optionsId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

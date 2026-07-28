@@ -38,6 +38,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -988,5 +989,43 @@ public class FeatureFlagTest {
         }
 
         assertEquals(requiredFeatures, foundFeatures);
+    }
+
+    @Test
+    public void testSAMLStatsContainTenantStats() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_SAML_FEATURE);
+
+        SAMLTestUtils.createClientWithGeneratedMetadata(process, "http://localhost:3000/callback",
+                "http://localhost:3567/recipe/saml/callback", "https://saml.example.com/entity-1",
+                "https://mocksaml.com/api/saml/sso");
+        SAMLTestUtils.createClientWithGeneratedMetadata(process, "http://localhost:3000/callback2",
+                "http://localhost:3567/recipe/saml/callback", "https://saml.example.com/entity-2",
+                "https://mocksaml.com/api/saml/sso");
+
+        JsonObject stats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats();
+        assertTrue(stats.has("saml"));
+        JsonObject samlStats = stats.get("saml").getAsJsonObject();
+
+        // regression: "tenants" used to always be an empty array because the per-tenant stat
+        // object was added to itself instead of being appended to the array
+        JsonArray tenants = samlStats.get("tenants").getAsJsonArray();
+        assertEquals(1, tenants.size());
+
+        JsonObject publicTenantStat = tenants.get(0).getAsJsonObject();
+        assertEquals("public", publicTenantStat.get("tenantId").getAsString());
+        assertEquals(2,
+                publicTenantStat.get("public").getAsJsonObject().get("numberOfSAMLClients").getAsInt());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

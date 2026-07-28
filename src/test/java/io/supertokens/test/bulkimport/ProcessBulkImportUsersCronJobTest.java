@@ -957,6 +957,28 @@ public class ProcessBulkImportUsersCronJobTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void shouldSkipProcessingWhenBulkImportQueueIsEmpty() throws Exception {
+        TestingProcess process = startCronProcess();
+        if (process == null) {
+            return;
+        }
+
+        Main main = process.getProcess();
+
+        // no users are uploaded; the cron must take the early-return path and never start workers
+        ProcessState.EventAndException skipEvent = process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.BULK_IMPORT_SKIPPED_EMPTY_QUEUE, 30000);
+        assertNotNull("expected the cron to fire BULK_IMPORT_SKIPPED_EMPTY_QUEUE on an empty queue", skipEvent);
+
+        // the skip happens before any batch is processed, so completion must never be reported
+        assertNull(ProcessState.getInstance(main).getLastEventByName(
+                ProcessState.PROCESS_STATE.BULK_IMPORT_COMPLETE));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private TestingProcess startCronProcess() throws InterruptedException, TenantOrAppNotFoundException {
         String[] args = { "../" };
 
