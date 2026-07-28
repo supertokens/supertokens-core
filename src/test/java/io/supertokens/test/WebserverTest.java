@@ -261,6 +261,30 @@ public class WebserverTest extends Mockito {
 
     }
 
+    // * - Give a cdi-version that is not in a valid version format and make sure it results in a
+    // 400 (it used to surface as a 500 from the SemVer constructor)
+    @Test
+    public void testInvalidVersionFormat() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        for (String invalidCdiVersion : new String[]{"abc", "2.x", "1..0", "2,7"}) {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/hello", null, 1000, 1000, null, invalidCdiVersion, "");
+                fail();
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertEquals("Http error. Status Code: 400. Message: cdi-version header is invalid",
+                        e.getMessage());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     // * - Give no version and makes sure it treats it as the latest
     @Test
     public void testNoVersionGiven() throws Exception {
