@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Security: the API key and IP allow/deny checks no longer fail open when a request targets an unknown tenant/app; they resolve against the app's public tenant and reject (401) otherwise, closing an unauthenticated bypass of `api_keys` via an unknown tenant path on older CDI versions
+
 ## [12.0.7]
 
 - Fix no-op account info updates
