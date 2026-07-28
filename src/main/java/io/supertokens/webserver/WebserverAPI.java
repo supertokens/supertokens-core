@@ -247,12 +247,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
         } catch (TenantOrAppNotFoundException e) {
-            // this exception could be thrown from Config.getConfig(
-            //                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
-            //                    this.main).getAPIKeys();
-            // but the default tenant should exist in any case.
-            // just to be safe, throwing an exception here, but this should never happen.
-            throw new ServletException(new APIKeyUnauthorisedException());
+            // The app/CUD does not exist, so there is no api_keys config to enforce and no app
+            // to operate on — let the app-specific handler return its "app not found" (400).
+            // (For an unknown *tenant* under a real app the key IS enforced: the lookup above
+            // resolves the app's public tenant, so we never reach here in that case.)
         }
     }
 

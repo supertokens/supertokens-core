@@ -376,9 +376,8 @@ public class CoreConfig {
     @HideFromDashboard
     @ConfigDescription(
             "The minimum CDI version that the core will accept. Requests using a CDI version lower than this are " +
-                    "rejected with a 400. Useful for refusing older CDI versions entirely (for example to require " +
-                    "the tenant-scope enforcement that applies from CDI 5.0). When set to null, all CDI versions " +
-                    "supported by the core are accepted. (Default: null)")
+                    "rejected with a 400. When set to null, all CDI versions supported by the core are accepted. " +
+                    "(Default: null)")
     private String supertokens_min_cdi_version = null;
 
     @EnvName("SUPERTOKENS_SAAS_LOAD_ONLY_CUD")
