@@ -64,8 +64,13 @@ public class SignInAPI extends WebserverAPI {
                     false);
             JsonObject credentialsData = InputParser.parseJsonObjectOrThrowError(input, "credential", false);
 
+            // From CDI 5.5 sign-in options are single-use: consumed atomically on successful sign in.
+            // Older CDI versions keep the previous behavior because their SDKs verify the same
+            // assertion twice per sign in (see supertokens-core#1195).
+            boolean consumeOptions = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_5);
+
             WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthnGeneratedOptionsId,
-                    credentialsData);
+                    credentialsData, consumeOptions);
 
             if (signInResult == null) {
                 throw new WebauthNVerificationFailedException("WebAuthN sign in failed");

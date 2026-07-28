@@ -41,6 +41,7 @@ import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
+import java.util.Map;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -376,12 +377,20 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         JsonArray mauArr = new JsonArray();
         long now = System.currentTimeMillis();
 
-        for (int i = 1; i <= 31; i++) {
-            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
-            ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
-                    this.appIdentifier.getAsPublicTenantIdentifier(), main);
-            int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);
-            mauArr.add(new JsonPrimitive(mau));
+        ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
+                this.appIdentifier.getAsPublicTenantIdentifier(), main);
+
+        // One bucketed query for the whole series instead of 31 separate COUNT(*)s, each of which
+        // scanned the app's entire user_last_active set.
+        long oldestTimestamp = now - (31L * 24 * 60 * 60 * 1000L);
+        Map<Integer, Integer> usersByDaysAgo = activeUsersStorage.countUsersActiveSinceGroupedByDay(
+                this.appIdentifier, oldestTimestamp, now);
+
+        // maus[i] == users active since (now - (i+1) days) == running total of buckets 0..i
+        int runningTotal = 0;
+        for (int day = 0; day < 31; day++) {
+            runningTotal += usersByDaysAgo.getOrDefault(day, 0);
+            mauArr.add(new JsonPrimitive(runningTotal));
         }
         return mauArr;
     }
@@ -405,8 +414,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
                 JsonObject stat = new JsonObject();
                 stat.addProperty("numberOfSAMLClients", samlStorage.countSAMLClients(tenantConfig.tenantIdentifier));
-                stat.add(tenantConfig.tenantIdentifier.getTenantId(), stat);
+                // was: stat.add(tenantId, stat) - added the object to itself (serialization recursion
+                // hazard) and tenantStat was never appended, so "tenants" was always empty.
+                tenantStat.add(tenantConfig.tenantIdentifier.getTenantId(), stat);
             }
+
+            tenantStats.add(tenantStat);
         }
 
         stats.add("tenants", tenantStats);

@@ -7,6 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.0.8]
+
+- Security improvements around api-key/ip allow list handling
+- Adds `supertokens_min_cdi_version` config to reject requests using a CDI version below a configured minimum
+- Adds CDI 5.5: webauthn sign-in options are single-use — consumed atomically on successful sign in (replay returns
+  `OPTIONS_NOT_FOUND_ERROR`); requests on CDI <= 5.4 are unaffected. Requires SDKs on CDI 5.5 to verify each assertion
+  exactly once (see supertokens-core#1195)
+- Adds `removeOptions_Transaction` to `WebAuthNSQLStorage` (plugin-interface addition; needs a plugin-interface version
+  bump at release)
+- Fixes OAuth2 response code in case of malformed/invalid input (e.g. missing `client_id` or `redirect_uri`) to be 400
+  instead of 500
+- Optimizes Bulk Import to not create a separate connection pool when there is no work to be done
+- Optimizes MAU counting query
+
 ## [12.0.7]
 
 - Fix no-op account info updates
