@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [7.0.22]
+
+- resolve api_keys and IP access config against the app's public tenant
+
 ## [7.0.21]
 
 - Fixes opentelemetry opt-in

@@ -173,7 +173,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
         // first we try the normal API key
         String[] keys = Config.getConfig(
-                new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
                 this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
@@ -207,6 +207,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throw new ServletException(new APIKeyUnauthorisedException());
         }
     }
+
 
     protected boolean shouldProtectProtectedConfig(HttpServletRequest req) throws TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
@@ -374,7 +375,18 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
-        CoreConfig config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
+        CoreConfig config = null;
+        try {
+            config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
+        } catch (TenantOrAppNotFoundException e) {
+            // Request tenant not found: fall back to the app's public-tenant IP rules so IP
+            // access control stays defined for the app rather than being skipped.
+            try {
+                config = Config.getConfig(getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main);
+            } catch (TenantOrAppNotFoundException e2) {
+                return true; // no app either, so no IP access control to apply
+            }
+        }
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
