@@ -193,9 +193,12 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             String apiKey = getApiKeyFromRequest(req);
 
-            // first we try the normal API key
+            // Resolve the API keys from the app's public tenant rather than the raw request
+            // tenant. api_keys is @NotConflictingInApp (identical across an app's tenants), so
+            // this is equivalent for a real tenant while keeping the check well-defined when the
+            // request tenant cannot be resolved.
             String[] keys = Config.getConfig(
-                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
                     this.main).getAPIKeys();
             if (keys != null) {
                 if (apiKey == null) {
@@ -229,7 +232,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
         } catch (TenantOrAppNotFoundException e) {
-            // ignore as the tenant doesn't exist, we expect API to handle this issue
+            // The app/CUD does not exist, so there is no api_keys config to enforce and no app
+            // to operate on — let the app-specific handler return its "app not found" (400).
+            // (For a request tenant under a real app the lookup above resolves the app's public
+            // tenant, so this branch is not reached in that case.)
         }
     }
 
@@ -427,7 +433,13 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
         } catch (TenantOrAppNotFoundException e) {
-            return true; // tenant not found, so no IP access control
+            // Request tenant not found: fall back to the app's public-tenant IP rules so IP
+            // access control stays defined for the app rather than being skipped.
+            try {
+                config = Config.getConfig(getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main);
+            } catch (TenantOrAppNotFoundException e2) {
+                return true; // no app either, so no IP access control to apply
+            }
         }
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
