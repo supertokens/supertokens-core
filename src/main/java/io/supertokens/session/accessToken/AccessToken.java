@@ -245,9 +245,13 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
             AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
-        // Default entry point: no validity jitter. Callers that mint fresh tokens on session creation
-        // and refresh opt into jitter via the overload below; verify-time promotion and regenerate
-        // (which preserves the original expiry) keep the configured validity as-is.
+        // Default entry point: no validity jitter. Session creation and refresh opt into jitter via
+        // the overload below; every other caller stays here. The two other re-mint callers differ and
+        // neither should be jittered: regenerate passes the original (non-null) expiryTime, so it
+        // preserves the existing absolute expiry untouched (no validity re-resolution at all);
+        // verify-time promotion (CDI <= 5.4) passes a null expiryTime, so it re-mints at the full
+        // configured validity (now + validity) but deliberately without jitter -- that legacy path is
+        // removed under CDI 5.5.
         return createNewAccessToken(tenantIdentifier, main, sessionHandle, recipeUserId, primaryUserId,
                 refreshTokenHash1, parentRefreshTokenHash1, userData, antiCsrfToken, expiryTime, version,
                 useStaticKey, false);
