@@ -94,7 +94,15 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
 
                 if (authorizationHeader != null) {
-                    String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                    String[] parsedHeader;
+                    try {
+                        parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                    } catch (RuntimeException e) {
+                        throw new ServletException(new BadRequestException("authorizationHeader is not valid base64"));
+                    }
+                    if (parsedHeader.length != 2) {
+                        throw new ServletException(new BadRequestException("authorizationHeader must contain clientId:clientSecret"));
+                    }
                     clientId = parsedHeader[0];
                     clientSecret = parsedHeader[1];
                 } else {

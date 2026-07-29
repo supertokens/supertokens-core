@@ -470,4 +470,137 @@ public class CDIVersionTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testMinCDIVersionInvalidSemanticVersion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        Utils.setValueInConfig("supertokens_min_cdi_version", "5.x");
+        process.startProcess();
+
+        ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(state);
+        assertEquals("supertokens_min_cdi_version is not a valid semantic version",
+                state.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMinCDIVersionUnsupportedVersion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        Utils.setValueInConfig("supertokens_min_cdi_version", "\"4.5\"");
+        process.startProcess();
+
+        ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(state);
+        assertEquals("supertokens_min_cdi_version is not a supported version",
+                state.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMinCDIVersionCannotBeGreaterThanMaxCDIVersion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        Utils.setValueInConfig("supertokens_max_cdi_version", "\"5.0\"");
+        Utils.setValueInConfig("supertokens_min_cdi_version", "\"5.4\"");
+        process.startProcess();
+
+        ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(state);
+        assertEquals("supertokens_min_cdi_version cannot be greater than supertokens_max_cdi_version",
+                state.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRequestBelowMinCDIVersionIsRejected() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        Utils.setValueInConfig("supertokens_min_cdi_version", "\"5.0\"");
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // versions in [3.0, 5.0) are rejected
+        for (String belowMin : new String[]{"3.0", "3.1", "4.0"}) {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, belowMin, "jwt");
+                fail("cdi-version " + belowMin + " should have been rejected as below the minimum");
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertTrue(e.getMessage().contains(
+                        "cdi-version " + belowMin + " is lower than the minimum allowed version 5.0"));
+            }
+        }
+
+        // the minimum itself and versions above it are accepted
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "5.0", "jwt");
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "5.4", "jwt");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testWithoutMinCDIVersionOldVersionsAreAccepted() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // control: no minimum configured, so an old CDI version is still accepted
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "3.0", "jwt");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMinCDIVersionBlocksGhostTenantOldCdiBypass() throws Exception {
+        // Defense in depth for the ghost-tenant bypass: setting the minimum to 5.0 refuses the
+        // vulnerable CDI window (3.0-4.0) outright, before the request reaches any handler.
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        Utils.setValueInConfig("supertokens_min_cdi_version", "\"5.0\"");
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject body = new JsonObject();
+        body.addProperty("role", "ldvr-min-cdi");
+        JsonArray permissions = new JsonArray();
+        permissions.add("read");
+        body.add("permissions", permissions);
+
+        try {
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/ghosttenant/recipe/role", body, 10000, 10000, null, "3.0", "userroles");
+            fail("ghost-tenant create on CDI 3.0 must be rejected when min_cdi_version is 5.0");
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("is lower than the minimum allowed version 5.0"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

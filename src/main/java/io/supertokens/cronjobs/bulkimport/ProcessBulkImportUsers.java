@@ -73,6 +73,22 @@ public class ProcessBulkImportUsers extends CronTask {
         int bulkMigrationBatchSize = Config.getConfig(app.getAsPublicTenantIdentifier(), main)
                 .getBulkMigrationBatchSize();
 
+        // Cheap pre-check: workers create a throwaway HikariCP pool (plus a createTablesIfNotExists
+        // pass) per user pool BEFORE they discover the queue is empty. For apps that never use bulk
+        // import - the overwhelming majority, every 5 minutes, forever - that is pure waste. Both
+        // counts below are index-backed (bulk_import_users_status_updated_at_index on
+        // (app_id, status, updated_at)).
+        // A user moving NEW->PROCESSING between the two counts may be counted twice, which only
+        // inflates the sum - the safe direction (we run the workers and they find nothing).
+        long pendingUsers = bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW)
+                + bulkImportSQLStorage.getBulkImportUsersCount(app, BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING);
+        if (pendingUsers == 0) {
+            Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                    "CronTask skipped: no bulk import users to process.");
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.BULK_IMPORT_SKIPPED_EMPTY_QUEUE, null);
+            return;
+        }
+
         Logging.debug(main, app.getAsPublicTenantIdentifier(), "CronTask starts. Instance: " + this);
         Logging.debug(main, app.getAsPublicTenantIdentifier(), "CronTask starts. Processing bulk import users with " + bulkMigrationBatchSize
                 + " batch size, one batch split into " + numberOfBatchChunks + " chunks");

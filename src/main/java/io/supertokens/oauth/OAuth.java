@@ -270,10 +270,16 @@ public class OAuth {
 
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
         if (response.statusCode >= 400) {
-            String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
+            String error = "unknown_error";
             String errorDescription = null;
-            if (response.jsonResponse.getAsJsonObject().has("error_description")) {
-                errorDescription = response.jsonResponse.getAsJsonObject().get("error_description").getAsString();
+            if (response.jsonResponse != null && response.jsonResponse.isJsonObject()) {
+                JsonObject responseObject = response.jsonResponse.getAsJsonObject();
+                if (responseObject.has("error") && responseObject.get("error").isJsonPrimitive()) {
+                    error = responseObject.get("error").getAsString();
+                }
+                if (responseObject.has("error_description") && responseObject.get("error_description").isJsonPrimitive()) {
+                    errorDescription = responseObject.get("error_description").getAsString();
+                }
             }
             throw new OAuthAPIException(error, errorDescription, response.statusCode);
         }

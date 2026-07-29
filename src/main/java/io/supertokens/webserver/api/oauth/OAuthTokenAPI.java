@@ -122,17 +122,21 @@ public class OAuthTokenAPI extends WebserverAPI {
         }
 
         Map<String, String> formFields = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
-            formFields.put(entry.getKey(), entry.getValue().getAsString());
-        }
-
         String clientId;
+        try {
+            for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+                formFields.put(entry.getKey(), entry.getValue().getAsString());
+            }
 
-        if (authorizationHeader != null) {
-            String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
-            clientId = parsedHeader[0];
-        } else {
-            clientId = formFields.get("client_id");
+            if (authorizationHeader != null) {
+                String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                clientId = parsedHeader[0];
+            } else {
+                clientId = formFields.get("client_id");
+            }
+        } catch (RuntimeException e) {
+            // non-primitive body values / malformed Basic auth header
+            throw new ServletException(new BadRequestException("malformed request body or authorization header"));
         }
 
         try {
