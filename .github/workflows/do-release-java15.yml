@@ -145,7 +145,10 @@ jobs:
               echo "::endgroup::"
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
-              git commit -m "chore: update implementationDependencies.json"
+              # --no-verify: loadModules installs the developer pre-commit hook,
+              # which lints (broken ec4j plugin on this root branch) and runs a
+              # full build — neither applies to committing a generated manifest.
+              git commit --no-verify -m "chore: update implementationDependencies.json"
               git push
               echo "Pushed updated implementationDependencies.json in $repo_dir"
             fi
