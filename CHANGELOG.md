@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [9.3.4] - 2026-07-29
+
+- resolve api_keys and IP access config against the app's public tenant
+
 ## [9.3.3]
 
 - Fixes opentelemtry opt-in
