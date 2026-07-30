@@ -388,7 +388,9 @@ jobs:
           IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
           for test in "${TESTS[@]}"; do
             test_name="${test%.java}"
-            test_name="${test_name#supertokens-root/supertokens-core/src/test/java/}"
+            # Strip "supertokens-root/<any repo>/src/test/java/" so the plugin's
+            # own test files also produce valid class filters, not just core's.
+            test_name="${test_name#supertokens-root/*/src/test/java/}"
             test_name="${test_name//\//.}"
             echo "  --tests $test_name \\" >> test.sh
           done
