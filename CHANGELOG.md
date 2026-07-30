@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [10.1.8] - 2026-07-29
+
+- resolve api_keys and IP access config against the app's public tenant
+
 ## [10.1.7]
 
 - Backport: fixes thread leak in bulk import
