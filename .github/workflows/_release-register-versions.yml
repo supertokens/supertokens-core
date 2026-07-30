@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
@@ -39,7 +39,7 @@ jobs:
             pluginInterfaceSupported.json \
             coreDriverInterfaceSupported.json
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register core version
@@ -55,10 +55,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register plugin version

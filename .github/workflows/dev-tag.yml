@@ -15,7 +15,7 @@ jobs:
       versions: ${{ steps.result.outputs.versions }}
       branches: ${{ steps.result.outputs.branches }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: supertokens/get-core-dependencies-action@main
         with:
           run-for: PR
@@ -27,9 +27,9 @@ jobs:
     needs: [dependency-versions]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Run script
@@ -52,9 +52,9 @@ jobs:
             # - mongodb
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with:
             path: ./supertokens-plugin
             repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
@@ -79,11 +79,11 @@ jobs:
     outputs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Wait for Docker build
         env:

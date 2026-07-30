@@ -64,7 +64,7 @@ jobs:
     outputs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
@@ -88,27 +88,27 @@ jobs:
       postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
@@ -116,7 +116,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
@@ -182,7 +182,7 @@ jobs:
     needs: update-deps
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
@@ -192,7 +192,7 @@ jobs:
             pluginInterfaceSupported.json \
             coreDriverInterfaceSupported.json
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register core version
@@ -208,11 +208,11 @@ jobs:
     needs: update-deps
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
         # (No data files from core are needed here; postgresql plugin provides them)
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
@@ -220,7 +220,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register plugin version
@@ -244,7 +244,7 @@ jobs:
           MAX_INDEX=$((${{ env.total-runners }}-1))
           INDEX_LIST=$(seq 0 ${MAX_INDEX})
           INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
-          echo "::set-output name=json::${INDEX_JSON}"
+          echo "json=${INDEX_JSON}" >> "$GITHUB_OUTPUT"
 
   test:
     name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
@@ -260,26 +260,26 @@ jobs:
 
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
@@ -287,7 +287,7 @@ jobs:
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
@@ -382,7 +382,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
@@ -448,33 +448,33 @@ jobs:
       dev-tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
@@ -505,19 +505,19 @@ jobs:
           echo "TAG=${{ inputs.core-version }}-dev" >> $GITHUB_OUTPUT
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push dev image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
           context: ./supertokens-root
@@ -558,13 +558,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root

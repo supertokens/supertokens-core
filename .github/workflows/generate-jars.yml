@@ -54,18 +54,18 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout workflow tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./workflow-tools
 
       - name: Set up JDK ${{ inputs.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ inputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
