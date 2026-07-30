@@ -40,6 +40,11 @@ on:
         required: true
         type: boolean
         default: true
+      push-to-ecr:
+        description: 'Push Docker images to Amazon ECR'
+        required: true
+        type: boolean
+        default: true
 
 env:
   total-runners: 6
@@ -524,43 +529,17 @@ jobs:
   # ── Tag and publish the release Docker image ──────────────────────
   release-docker:
     name: Release Docker image
-    environment: publish
     needs: [ build-docker, stress-tests, mark-as-passed ]
     if: ${{ !cancelled() && !failure() }}
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Tag and push release images
-        run: |
-          tag="${{ inputs.core-version }}"
-          major=$(echo "$tag" | cut -d. -f1)
-          minor=$(echo "$tag" | cut -d. -f1,2)
-          dev_tag="${{ needs.build-docker.outputs.dev-tag }}"
-
-          bash .github/helpers/release-docker.sh \
-            "supertokens/supertokens-dev-postgresql:$dev_tag" \
-            "supertokens/supertokens-postgresql:$tag"
-
-          bash .github/helpers/release-docker.sh \
-            "supertokens/supertokens-dev-postgresql:$dev_tag" \
-            "supertokens/supertokens-postgresql:$minor"
-
-          if [ "${{ inputs.is-latest-for-major }}" == "true" ]; then
-            bash .github/helpers/release-docker.sh \
-              "supertokens/supertokens-dev-postgresql:$dev_tag" \
-              "supertokens/supertokens-postgresql:$major"
-          fi
-
-          if [ "${{ inputs.is-latest-release }}" == "true" ]; then
-            bash .github/helpers/release-docker.sh \
-              "supertokens/supertokens-dev-postgresql:$dev_tag" \
-              "supertokens/supertokens-postgresql:latest"
-          fi
+    uses: ./.github/workflows/_release-publish-docker.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      is-canary: false
+      is-latest-release: ${{ inputs.is-latest-release }}
+      is-latest-for-major: ${{ inputs.is-latest-for-major }}
+      push-to-ecr: ${{ inputs.push-to-ecr }}
+      dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
+    secrets: inherit
 
   # ── Tag all repos with release versions ───────────────────────────
   add-release-tags:
@@ -677,3 +656,16 @@ jobs:
             --title "v${{ inputs.core-version }}" \
             --generate-notes \
             ${{ inputs.is-latest-release && '--latest' || '--latest=false' }}
+
+  # ── Build and commit the release JARs ─────────────────────────────
+  build-jars:
+    needs: [add-release-tags]
+    if: ${{ !cancelled() && !failure() }}
+    uses: ./.github/workflows/generate-jars.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      java-version: '15'
+      plugin-interface-version: ${{ inputs.plugin-interface-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      commit-to-github: true
+    secrets: inherit
