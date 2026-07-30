@@ -345,7 +345,9 @@ jobs:
             git -C supertokens-postgresql-plugin diff --exit-code implementationDependencies.json
           fi
 
-      - uses: chaosaffe/split-tests@v1-alpha.1
+      # Pinned to main: v1-alpha.1 still uses the deprecated ::set-output, and
+      # the v1 tag has a quoting bug that silently breaks exclude-glob.
+      - uses: chaosaffe/split-tests@60c0787d3abbde15fcd66c76a7b4e3d9d2baf5a3
         id: split-tests
         name: Split tests
         with:
@@ -705,7 +707,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
 
       - name: Memo failed Slack notification
         if: steps.slack-notify.outcome == 'failure'
