@@ -12,6 +12,11 @@ on:
       postgresql-sha:
         type: string
         required: true
+      fast-release:
+        description: 'Only run smoke tests (login + session tests) instead of the full suite'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   test:
@@ -105,7 +110,16 @@ jobs:
           TEST_PG_HOST: localhost
         run: |
           cd supertokens-root
-          ./gradlew test
+          if [ "${{ inputs.fast-release }}" == "true" ]; then
+            # Smoke suite: login (emailpassword) + session tests only. The root
+            # build sets failOnNoMatchingTests=false, so subprojects without
+            # matching tests (e.g. the plugin's own suite) are simply skipped.
+            ./gradlew test \
+              --tests 'io.supertokens.test.session.*' \
+              --tests 'io.supertokens.test.emailpassword.*'
+          else
+            ./gradlew test
+          fi
 
       - name: Publish test report
         uses: mikepenz/action-junit-report@v6

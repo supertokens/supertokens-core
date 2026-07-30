@@ -47,7 +47,7 @@ on:
         type: boolean
         default: true
       fast-release:
-        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite'
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
         required: true
         type: boolean
         default: false
@@ -56,10 +56,25 @@ env:
   total-runners: 6
 
 jobs:
+  # ── Validate inputs ───────────────────────────────────────────────
+  # Fail fast on invalid input combinations before anything is registered
+  # or published. Every other job depends on dependency-branches, so gating
+  # it here stops the whole release.
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check fast-release and is-latest-release are mutually exclusive
+        if: inputs.fast-release && inputs.is-latest-release
+        run: |
+          echo "::error::A fast release (smoke tests only) must not be marked as the latest release. Untick one of the two options."
+          exit 1
+
   # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
     name: Resolve dependencies
     environment: publish
+    needs: validate-inputs
     runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}

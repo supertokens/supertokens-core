@@ -1,5 +1,5 @@
 name: Release
-run-name: Release v${{ inputs.core-version }}${{ inputs.is-canary && ' [canary]' || '' }}
+run-name: Release v${{ inputs.core-version }}${{ inputs.is-canary && ' [canary]' || '' }}${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -51,9 +51,28 @@ on:
         required: true
         type: boolean
         default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
+  # Fail fast on invalid input combinations before anything is registered
+  # or published. Every other job depends on dependency-branches, so gating
+  # it here stops the whole release.
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check fast-release and is-latest-release are mutually exclusive
+        if: inputs.fast-release && inputs.is-latest-release
+        run: |
+          echo "::error::A fast release (smoke tests only) must not be marked as the latest release. Untick one of the two options."
+          exit 1
+
   dependency-branches:
+    needs: validate-inputs
     uses: ./.github/workflows/_release-resolve-deps.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -80,6 +99,7 @@ jobs:
       core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
       plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      fast-release: ${{ inputs.fast-release }}
     secrets: inherit
 
   mark-as-passed:
@@ -176,7 +196,7 @@ jobs:
               - type: "header"
                 text:
                   type: "plain_text"
-                  text: "🚀 SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' — canary' || '' }}"
+                  text: "🚀 SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' — canary' || '' }}${{ inputs.fast-release && ' — smoke tests only' || '' }}"
               - type: "section"
                 text:
                   type: "mrkdwn"
