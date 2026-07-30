@@ -151,3 +151,41 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
     secrets: inherit
+
+  # build-jars is skipped for canary releases; !failure() lets the
+  # notification still fire in that case.
+  notify-slack:
+    name: Notify Slack
+    needs: [ add-release-tags, build-jars ]
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Post release notification on Slack channel
+        id: slack-notify
+        # The release itself succeeded at this point — a failed notification
+        # must not fail the workflow. The step below leaves a memo instead.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+            text: "SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' (canary)' || '' }}"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "🚀 SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' — canary' || '' }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+
+      - name: Memo failed Slack notification
+        if: steps.slack-notify.outcome == 'failure'
+        run: |
+          echo "## ⚠️ Slack notification failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The release itself completed successfully, but the announcement could not be posted to Slack." >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the \`SLACK_BOT_TOKEN\` and \`SLACK_RELEASE_CHANNEL_ID\` secrets, and make sure the bot is invited to the channel." >> "$GITHUB_STEP_SUMMARY"
