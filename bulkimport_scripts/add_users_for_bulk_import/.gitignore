@@ -1,0 +1,3 @@
+node_modules
+./usersHavingInvalidSchema.json
+./remainingUsers.json
