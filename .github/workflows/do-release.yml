@@ -1,4 +1,5 @@
 name: Release
+run-name: Release v${{ inputs.core-version }}${{ inputs.is-canary && ' [canary]' || '' }}
 
 on:
   workflow_dispatch:

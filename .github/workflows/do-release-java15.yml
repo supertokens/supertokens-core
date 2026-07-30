@@ -1,4 +1,5 @@
 name: Release (Java 15)
+run-name: Release (Java 15) v${{ inputs.core-version }}${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -45,6 +46,11 @@ on:
         required: true
         type: boolean
         default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite'
+        required: true
+        type: boolean
+        default: false
 
 env:
   total-runners: 6
@@ -343,7 +349,9 @@ jobs:
         id: split-tests
         name: Split tests
         with:
-          glob: 'supertokens-root/*/src/test/java/**/*.java'
+          # fast-release smoke suite: login (emailpassword) + session
+          # creation/management tests only; otherwise the full suite.
+          glob: ${{ inputs.fast-release && 'supertokens-root/*/src/test/java/**/{session,emailpassword}/**/*.java' || 'supertokens-root/*/src/test/java/**/*.java' }}
           # DotStartedFileTest uses fixed ports (8081-8084) on the old version
           # branches and flakes when a leaked core still holds one of them.
           # Master fixed this with dynamic ports (startIsolatedProcess), but the
