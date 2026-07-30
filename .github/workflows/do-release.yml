@@ -42,7 +42,7 @@ on:
         type: boolean
         default: true
       is-canary:
-        description: 'Is this a canary release?'
+        description: 'Is this a canary release? Cannot be combined with "latest release"'
         required: true
         type: boolean
         default: false
@@ -69,6 +69,11 @@ jobs:
         if: inputs.fast-release && inputs.is-latest-release
         run: |
           echo "::error::A fast release (smoke tests only) must not be marked as the latest release. Untick one of the two options."
+          exit 1
+      - name: Check is-canary and is-latest-release are mutually exclusive
+        if: inputs.is-canary && inputs.is-latest-release
+        run: |
+          echo "::error::A canary release must not be marked as the latest release. Untick one of the two options."
           exit 1
 
   dependency-branches:
