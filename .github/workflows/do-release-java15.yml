@@ -339,6 +339,11 @@ jobs:
         name: Split tests
         with:
           glob: 'supertokens-root/*/src/test/java/**/*.java'
+          # DotStartedFileTest uses fixed ports (8081-8084) on the old version
+          # branches and flakes when a leaked core still holds one of them.
+          # Master fixed this with dynamic ports (startIsolatedProcess), but the
+          # Java 15 era branches don't have that fix, so skip the test here.
+          exclude-glob: 'supertokens-root/*/src/test/java/**/DotStartedFileTest.java'
           split-total: ${{ env.total-runners }}
           split-index: ${{ matrix.runner-index }}
       - run: 'echo "This runner will execute the following tests: ${{ steps.split-tests.outputs.test-suite }}"'
