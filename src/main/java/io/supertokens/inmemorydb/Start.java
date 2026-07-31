@@ -4396,8 +4396,13 @@ public class Start
     }
 
     @Override
-    public void maintainActivityLogPartitions() {
-        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table, so there
-        // is nothing to maintain.
+    public void maintainActivityLogPartitions() throws StorageQueryException {
+        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table — there
+        // are no partitions to maintain, so retention is enforced with a direct delete instead.
+        try {
+            ActivityLogQueries.deleteEntriesOlderThanRetention(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

@@ -7,6 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
+  partition maintenance hook (it previously kept entries for the lifetime of the process)
+
 ## [12.0.8]
 
 - Security improvements around api-key/ip allow list handling
