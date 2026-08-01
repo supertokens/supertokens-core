@@ -46,8 +46,20 @@ jobs:
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
       - name: Display Test Statistics
+        if: always()
         run: |
+          if [ ! -f stress-tests/stats.json ]; then
+            echo "stats.json not found — the run produced no measurements." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
           echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration | Budget | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
           jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.budgetFormatted // "-") | \(if .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Display pg_stat_statements summary
+        if: always()
+        run: |
+          if [ -f stress-tests/pg-stats-summary.md ]; then
+            cat stress-tests/pg-stats-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
