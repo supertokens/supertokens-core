@@ -96,9 +96,102 @@ export const setupLicense = async (coreUrl: string, apiKey: string) => {
   }
 };
 
+/**
+ * Per-step duration budgets in milliseconds. A step whose measured duration
+ * exceeds its budget fails the run (see StatsCollector.throwIfOverBudget).
+ *
+ * These are deliberately generous order-of-magnitude tripwires — they exist to
+ * catch a query path that has gone from milliseconds to minutes (a plan
+ * regression / missing index), NOT to gate on CI noise. The defaults below are
+ * placeholders that MUST be calibrated to ~5x a recorded baseline run once one
+ * exists (PLAN-006 rollout checklist). Steps without an explicit budget fall
+ * back to DEFAULT_BUDGET_MS.
+ *
+ * Everything here is env-overridable:
+ *   STRESS_TEST_STEP_BUDGETS_MS - JSON object merged over the defaults, e.g.
+ *       STRESS_TEST_STEP_BUDGETS_MS='{"Pagination full walk (newest first)":2400000}'
+ *   STRESS_TEST_BUDGET_MULTIPLIER - scales every budget (default 1), e.g. "2"
+ *   STRESS_TEST_ENFORCE_BUDGETS - "false" to measure + report without failing
+ */
+export const DEFAULT_BUDGET_MS = 120_000;
+
+export const DEFAULT_STEP_BUDGETS_MS: Record<string, number> = {
+  // Existing seeding steps (kept generous; seeding dominates the run).
+  'Loading users for bulk import': 1_800_000,
+  'Waiting for users to be imported': 3_600_000,
+  'Emailpassword users creation': 1_800_000,
+  'Passwordless users (with email) creation': 1_800_000,
+  'Passwordless users (with phone) creation': 1_800_000,
+  'ThirdParty users (google) creation': 1_800_000,
+  'ThirdParty users (facebook) creation': 1_800_000,
+  'Linking accounts': 1_800_000,
+  'Create user id mappings': 1_800_000,
+  'Adding roles': 1_800_000,
+  'Creating sessions': 1_800_000,
+  // Scale-sensitive read/query paths measured against the 1M-user state.
+  'Pagination first page (newest first)': 60_000,
+  'Pagination full walk (newest first)': 1_800_000,
+  'Pagination first page (oldest first)': 60_000,
+  'Pagination full walk (oldest first)': 1_800_000,
+  'User count (tenant: public)': 120_000,
+  'User count (all tenants)': 120_000,
+  'Dashboard search by email prefix': 120_000,
+  'Dashboard search by provider': 120_000,
+  'Dashboard search by email + provider': 120_000,
+  'Third-party sign-in for existing user': 60_000,
+  'Email update (linked user)': 60_000,
+  'Phone update (linked user)': 60_000,
+  'Associate linked user to tenant': 120_000,
+  'Disassociate linked user from tenant': 120_000,
+  'canLinkAccounts precheck': 60_000,
+  'Unlink account': 60_000,
+  'Delete user (full, linked)': 120_000,
+  'Active users count': 300_000,
+  'Active users count (with more-than-one-login-method window)': 300_000,
+  'Feature-flag usage stats aggregate': 600_000,
+  'List users for role (large share)': 300_000,
+  'Delete role (large share)': 300_000,
+  'TOTP verify (user with many used codes)': 60_000,
+  'Email-verification status update (mapped user)': 60_000,
+  'Delete user with userid mapping': 120_000,
+};
+
+let cachedBudgets: Record<string, number> | undefined;
+
+const resolveBudgets = (): Record<string, number> => {
+  if (cachedBudgets) return cachedBudgets;
+  let overrides: Record<string, number> = {};
+  const raw = process.env.STRESS_TEST_STEP_BUDGETS_MS;
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw);
+    } catch (e) {
+      console.warn(`    Ignoring invalid STRESS_TEST_STEP_BUDGETS_MS: ${(e as Error).message}`);
+    }
+  }
+  const multiplier = Number(process.env.STRESS_TEST_BUDGET_MULTIPLIER ?? '1') || 1;
+  const merged: Record<string, number> = {};
+  for (const [k, v] of Object.entries({ ...DEFAULT_STEP_BUDGETS_MS, ...overrides })) {
+    merged[k] = Math.round(v * multiplier);
+  }
+  cachedBudgets = merged;
+  return merged;
+};
+
+export const getStepBudgetMs = (title: string): number => {
+  const budgets = resolveBudgets();
+  return (
+    budgets[title] ??
+    Math.round(DEFAULT_BUDGET_MS * (Number(process.env.STRESS_TEST_BUDGET_MULTIPLIER ?? '1') || 1))
+  );
+};
+
+export const budgetsEnforced = (): boolean =>
+  (process.env.STRESS_TEST_ENFORCE_BUDGETS ?? 'true').toLowerCase() !== 'false';
+
 export class StatsCollector {
   private static instance: StatsCollector;
-  private measurements: { title: string; timeMs: number }[] = [];
+  private measurements: { title: string; timeMs: number; budgetMs: number }[] = [];
 
   private constructor() {}
 
@@ -110,7 +203,7 @@ export class StatsCollector {
   }
 
   public addMeasurement(title: string, timeMs: number) {
-    this.measurements.push({ title, timeMs });
+    this.measurements.push({ title, timeMs, budgetMs: getStepBudgetMs(title) });
   }
 
   public getStats() {
@@ -122,6 +215,10 @@ export class StatsCollector {
       title: measurement.title,
       ms: measurement.timeMs,
       formatted: formatTime(measurement.timeMs),
+      budgetMs: measurement.budgetMs,
+      budgetFormatted: formatTime(measurement.budgetMs),
+      overBudget: measurement.timeMs > measurement.budgetMs,
+      status: measurement.timeMs > measurement.budgetMs ? 'OVER BUDGET' : 'OK',
     }));
 
     const stats = {
@@ -129,6 +226,33 @@ export class StatsCollector {
       timestamp: new Date().toISOString(),
     };
     fs.writeFileSync('stats.json', JSON.stringify(stats, null, 2));
+  }
+
+  /**
+   * Fails the run if any measured step blew past its duration budget. Called at
+   * the very end so every step still appears in stats.json and the summary
+   * table before the run is failed. Honors STRESS_TEST_ENFORCE_BUDGETS=false,
+   * which reports over-budget steps without failing.
+   */
+  public throwIfOverBudget() {
+    const over = this.measurements.filter((m) => m.timeMs > m.budgetMs);
+    if (over.length === 0) {
+      console.log('\nAll measured steps completed within their duration budgets.');
+      return;
+    }
+    console.error('\nSteps exceeding their duration budget:');
+    for (const m of over) {
+      console.error(
+        `  ${m.title}: ${formatTime(m.timeMs)} > budget ${formatTime(m.budgetMs)} (${m.timeMs}ms > ${m.budgetMs}ms)`
+      );
+    }
+    if (!budgetsEnforced()) {
+      console.error('\nSTRESS_TEST_ENFORCE_BUDGETS=false — reporting only, not failing the run.');
+      return;
+    }
+    throw new Error(
+      `${over.length} step(s) exceeded their duration budget; likely an order-of-magnitude query regression.`
+    );
   }
 }
 
@@ -188,7 +312,9 @@ export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promi
   const result = await fn();
   const et = Date.now();
   const timeMs = et - st;
-  console.log(`    ${title} took ${formatTime(timeMs)}`);
+  const budgetMs = getStepBudgetMs(title);
+  const flag = timeMs > budgetMs ? ' [OVER BUDGET]' : '';
+  console.log(`    ${title} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`);
   StatsCollector.getInstance().addMeasurement(title, timeMs);
   return result;
 };
