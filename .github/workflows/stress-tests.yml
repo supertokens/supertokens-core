@@ -7,6 +7,12 @@ on:
         description: 'Docker image tag to use'
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
 
 jobs:
   stress-tests:
