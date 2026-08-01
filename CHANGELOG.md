@@ -18,6 +18,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   seeding finishes (then resetting) and the steady-state read/query profile at the end — renders per-phase tables (top
   statements by total execution time and every statement that spilled to temp) into `stats.json` and the workflow step
   summary, and fails the run when a read-phase statement writes more than an env-overridable number of temp blocks
+- Test-only: the 1M-user stress-test suite now runs the measured read-path steps at two dataset sizes (a ~100k-user
+  checkpoint mid-seed and the full 1M) and asserts the per-step cost ratio `time(1M)/time(100k)` against an
+  env-overridable per-class bound (O(1) steps ≤ 3×, O(n) steps ≤ 15×) — a hardware-independent check for superlinear
+  scaling that the absolute duration budgets can't catch; the small/large/ratio columns are rendered in the workflow
+  "Stress Test Results" table and the run fails when a step's ratio exceeds its bound
   (default 10k ≈ 80 MB)
 
 ## [12.0.8]

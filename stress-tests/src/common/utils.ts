@@ -119,6 +119,12 @@ export const DEFAULT_STEP_BUDGETS_MS: Record<string, number> = {
   // Existing seeding steps (kept generous; seeding dominates the run).
   'Loading users for bulk import': 1_800_000,
   'Waiting for users to be imported': 3_600_000,
+  // Two-size run: the bulk import is split into a first ~100k checkpoint tranche
+  // and the remainder to 1M (see the scaling-ratio harness in index.ts).
+  'Loading users for bulk import (100k checkpoint)': 600_000,
+  'Waiting for import (100k checkpoint)': 1_800_000,
+  'Loading users for bulk import (remaining to 1M)': 1_800_000,
+  'Waiting for import (remaining to 1M)': 3_600_000,
   'Emailpassword users creation': 1_800_000,
   'Passwordless users (with email) creation': 1_800_000,
   'Passwordless users (with phone) creation': 1_800_000,
@@ -211,15 +217,34 @@ export class StatsCollector {
   }
 
   public writeToFile(extra: Record<string, unknown> = {}) {
-    const formattedMeasurements = this.measurements.map((measurement) => ({
-      title: measurement.title,
-      ms: measurement.timeMs,
-      formatted: formatTime(measurement.timeMs),
-      budgetMs: measurement.budgetMs,
-      budgetFormatted: formatTime(measurement.budgetMs),
-      overBudget: measurement.timeMs > measurement.budgetMs,
-      status: measurement.timeMs > measurement.budgetMs ? 'OVER BUDGET' : 'OK',
-    }));
+    const ratios = RatioCollector.getInstance();
+    const formattedMeasurements = this.measurements.map((measurement) => {
+      const base = {
+        title: measurement.title,
+        ms: measurement.timeMs,
+        formatted: formatTime(measurement.timeMs),
+        budgetMs: measurement.budgetMs,
+        budgetFormatted: formatTime(measurement.budgetMs),
+        overBudget: measurement.timeMs > measurement.budgetMs,
+        status: measurement.timeMs > measurement.budgetMs ? 'OVER BUDGET' : 'OK',
+      };
+      // Merge in the two-size scaling ratio for steps measured at both sizes so
+      // the summary table can show small/large/ratio columns per step.
+      const r = ratios.resultFor(measurement.title);
+      if (!r) return base;
+      const ratio = Math.round(r.ratio * 100) / 100;
+      return {
+        ...base,
+        scaleClass: r.scaleClass,
+        smallMs: r.smallMs,
+        smallFormatted: formatTime(r.smallMs),
+        ratio,
+        ratioBound: r.bound,
+        ratioOverBound: r.overBound,
+        ratioStatus: r.overBound ? 'OVER RATIO' : 'OK',
+        ratioText: `${ratio.toFixed(1)}× (≤ ${r.bound}) ${r.overBound ? '⚠️' : '✅'}`,
+      };
+    });
 
     const stats = {
       measurements: formattedMeasurements,
@@ -253,6 +278,233 @@ export class StatsCollector {
     }
     throw new Error(
       `${over.length} step(s) exceeded their duration budget; likely an order-of-magnitude query regression.`
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Two-size scaling-ratio harness.
+//
+// Absolute duration budgets catch big regressions but can't tell a slow runner
+// apart from pathological scaling. The read-path steps are therefore measured
+// at two dataset sizes — a ~100k-user checkpoint mid-seed ("small") and the
+// full 1M ("large") — and the per-step cost ratio time(1M)/time(100k) is
+// asserted against a per-class bound. That ratio is hardware-independent: a
+// step that is meant to be O(1) in total user count but grows with it shows a
+// ratio well above 1, which is exactly the regression class this suite exists
+// to catch.
+//
+// measureTime consults the ambient checkpoint (set by runReadPaths): during the
+// small pass it records only into the RatioCollector; during the large pass it
+// records into both the StatsCollector (so the existing summary/budget table is
+// unchanged) and the RatioCollector; outside any checkpoint (seeding steps) it
+// records only into the StatsCollector, as before.
+// ---------------------------------------------------------------------------
+
+export type CheckpointSize = 'small' | 'large';
+
+let currentCheckpoint: CheckpointSize | undefined;
+
+export const setCheckpoint = (size: CheckpointSize | undefined): void => {
+  currentCheckpoint = size;
+};
+
+export const getCheckpoint = (): CheckpointSize | undefined => currentCheckpoint;
+
+export type ScaleClass = 'O(1)' | 'O(n)';
+
+/**
+ * Expected scaling class of each measured read-path step in total user count.
+ * O(1) steps (single-user lookups/writes, sign-in, first-page pagination, TOTP
+ * verify) must stay roughly flat as the dataset grows 10x; O(n) steps (counts,
+ * full pagination walk, analytics aggregates, large-share role listing) may
+ * grow with the data. Steps not listed default to the lenient O(n) bound.
+ */
+export const STEP_SCALE_CLASS: Record<string, ScaleClass> = {
+  'Pagination first page (newest first)': 'O(1)',
+  'Pagination first page (oldest first)': 'O(1)',
+  'Pagination full walk (newest first)': 'O(n)',
+  'Pagination full walk (oldest first)': 'O(n)',
+  'User count (all tenants)': 'O(n)',
+  'User count (tenant: public)': 'O(n)',
+  'Dashboard search by email prefix': 'O(n)',
+  'Dashboard search by provider': 'O(n)',
+  'Dashboard search by email + provider': 'O(n)',
+  'Third-party sign-in for existing user': 'O(1)',
+  'Email update (linked user)': 'O(1)',
+  'Phone update (linked user)': 'O(1)',
+  'Associate linked user to tenant': 'O(1)',
+  'Disassociate linked user from tenant': 'O(1)',
+  'canLinkAccounts precheck': 'O(1)',
+  'Unlink account': 'O(1)',
+  'Delete user (full, linked)': 'O(1)',
+  'Active users count': 'O(n)',
+  'Active users count (with more-than-one-login-method window)': 'O(n)',
+  'Feature-flag usage stats aggregate': 'O(n)',
+  'List users for role (large share)': 'O(n)',
+  'TOTP verify (user with many used codes)': 'O(1)',
+  'Email-verification status update (mapped user)': 'O(1)',
+  'Delete user with userid mapping': 'O(1)',
+};
+
+/**
+ * Default per-class ratio bounds. O(1) steps get ~3x headroom over a perfectly
+ * flat 1.0; O(n) steps get ~15x (10x data plus headroom). Everything is
+ * env-overridable:
+ *   STRESS_TEST_RATIO_O1_BOUND / STRESS_TEST_RATIO_ON_BOUND - per-class bounds
+ *   STRESS_TEST_RATIO_BOUNDS - JSON object of per-step overrides (by title)
+ *   STRESS_TEST_RATIO_FLOOR_MS - clamp floor before dividing (default 50ms), so
+ *       sub-noise measurements can't manufacture a false ratio
+ *   STRESS_TEST_ENFORCE_RATIOS - "false" to measure + report without failing
+ */
+export const DEFAULT_RATIO_BOUNDS: Record<ScaleClass, number> = { 'O(1)': 3, 'O(n)': 15 };
+export const DEFAULT_RATIO_FLOOR_MS = 50;
+
+const ratioFloorMs = (): number =>
+  Number(process.env.STRESS_TEST_RATIO_FLOOR_MS ?? String(DEFAULT_RATIO_FLOOR_MS)) ||
+  DEFAULT_RATIO_FLOOR_MS;
+
+const scaleClassFor = (title: string): ScaleClass => STEP_SCALE_CLASS[title] ?? 'O(n)';
+
+const classBound = (cls: ScaleClass): number => {
+  const envKey = cls === 'O(1)' ? 'STRESS_TEST_RATIO_O1_BOUND' : 'STRESS_TEST_RATIO_ON_BOUND';
+  return (
+    Number(process.env[envKey] ?? String(DEFAULT_RATIO_BOUNDS[cls])) || DEFAULT_RATIO_BOUNDS[cls]
+  );
+};
+
+let cachedRatioOverrides: Record<string, number> | undefined;
+
+const ratioOverrides = (): Record<string, number> => {
+  if (cachedRatioOverrides) return cachedRatioOverrides;
+  let overrides: Record<string, number> = {};
+  const raw = process.env.STRESS_TEST_RATIO_BOUNDS;
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw);
+    } catch (e) {
+      console.warn(`    Ignoring invalid STRESS_TEST_RATIO_BOUNDS: ${(e as Error).message}`);
+    }
+  }
+  return (cachedRatioOverrides = overrides);
+};
+
+const boundFor = (title: string): number => {
+  const override = ratioOverrides()[title];
+  if (override !== undefined) return override;
+  return classBound(scaleClassFor(title));
+};
+
+const ratiosEnforced = (): boolean =>
+  (process.env.STRESS_TEST_ENFORCE_RATIOS ?? 'true').toLowerCase() !== 'false';
+
+export interface RatioResult {
+  title: string;
+  scaleClass: ScaleClass;
+  smallMs: number;
+  largeMs: number;
+  floorMs: number;
+  ratio: number;
+  bound: number;
+  overBound: boolean;
+}
+
+export class RatioCollector {
+  private static instance: RatioCollector;
+  private data: Map<string, { small?: number; large?: number }> = new Map();
+
+  private constructor() {}
+
+  public static getInstance(): RatioCollector {
+    if (!RatioCollector.instance) {
+      RatioCollector.instance = new RatioCollector();
+    }
+    return RatioCollector.instance;
+  }
+
+  public record(title: string, size: CheckpointSize, timeMs: number) {
+    const entry = this.data.get(title) ?? {};
+    entry[size] = timeMs;
+    this.data.set(title, entry);
+  }
+
+  /** Ratio result for a single step, or undefined if it lacks both measurements. */
+  public resultFor(title: string): RatioResult | undefined {
+    const entry = this.data.get(title);
+    if (!entry || entry.small === undefined || entry.large === undefined) return undefined;
+    const floorMs = ratioFloorMs();
+    const small = Math.max(entry.small, floorMs);
+    const large = Math.max(entry.large, floorMs);
+    const bound = boundFor(title);
+    const ratio = large / small;
+    return {
+      title,
+      scaleClass: scaleClassFor(title),
+      smallMs: entry.small,
+      largeMs: entry.large,
+      floorMs,
+      ratio,
+      bound,
+      overBound: ratio > bound,
+    };
+  }
+
+  /** Every step that has both a small and a large measurement, sorted by title. */
+  public results(): RatioResult[] {
+    return [...this.data.keys()]
+      .map((title) => this.resultFor(title))
+      .filter((r): r is RatioResult => r !== undefined)
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  /** Structured payload merged into stats.json alongside the duration measurements. */
+  public toJSON() {
+    return {
+      floorMs: ratioFloorMs(),
+      bounds: {
+        'O(1)': classBound('O(1)'),
+        'O(n)': classBound('O(n)'),
+      },
+      results: this.results().map((r) => ({
+        ...r,
+        smallFormatted: formatTime(r.smallMs),
+        largeFormatted: formatTime(r.largeMs),
+        ratio: Math.round(r.ratio * 100) / 100,
+        status: r.overBound ? 'OVER RATIO' : 'OK',
+      })),
+    };
+  }
+
+  /**
+   * Fails the run if any step's large/small duration ratio exceeded its bound —
+   * i.e. its per-request cost grew with the database size beyond what its
+   * scaling class allows. Called at the very end so every step still appears in
+   * stats.json and the summary table. Honors STRESS_TEST_ENFORCE_RATIOS=false.
+   */
+  public throwIfRatioExceeded() {
+    const results = this.results();
+    if (results.length === 0) {
+      console.log('\nNo two-size measurements captured; skipping scaling-ratio check.');
+      return;
+    }
+    const over = results.filter((r) => r.overBound);
+    if (over.length === 0) {
+      console.log('\nAll measured steps scaled within their per-class ratio bounds.');
+      return;
+    }
+    console.error('\nSteps exceeding their scaling-ratio bound:');
+    for (const r of over) {
+      console.error(
+        `  ${r.title} [${r.scaleClass}]: ratio ${r.ratio.toFixed(2)} > bound ${r.bound} ` +
+          `(${formatTime(r.smallMs)} -> ${formatTime(r.largeMs)}, floor ${r.floorMs}ms)`
+      );
+    }
+    if (!ratiosEnforced()) {
+      console.error('\nSTRESS_TEST_ENFORCE_RATIOS=false — reporting only, not failing the run.');
+      return;
+    }
+    throw new Error(
+      `${over.length} step(s) exceeded their scaling-ratio bound; per-request cost is growing with database size.`
     );
   }
 }
@@ -315,7 +567,22 @@ export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promi
   const timeMs = et - st;
   const budgetMs = getStepBudgetMs(title);
   const flag = timeMs > budgetMs ? ' [OVER BUDGET]' : '';
-  console.log(`    ${title} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`);
-  StatsCollector.getInstance().addMeasurement(title, timeMs);
+  const checkpoint = getCheckpoint();
+  const checkpointTag = checkpoint ? ` [${checkpoint}]` : '';
+  console.log(
+    `    ${title}${checkpointTag} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`
+  );
+  // Small checkpoint pass: record only into the ratio harness, so the 100k
+  // measurements neither pollute the 1M summary/budget table nor trip 1M
+  // budgets. Large pass and un-checkpointed seeding steps record into the
+  // StatsCollector as before; the large pass additionally feeds the ratio.
+  if (checkpoint === 'small') {
+    RatioCollector.getInstance().record(title, 'small', timeMs);
+  } else {
+    StatsCollector.getInstance().addMeasurement(title, timeMs);
+    if (checkpoint === 'large') {
+      RatioCollector.getInstance().record(title, 'large', timeMs);
+    }
+  }
   return result;
 };

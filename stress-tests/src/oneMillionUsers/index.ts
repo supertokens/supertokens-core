@@ -4,9 +4,10 @@ import {
   setupLicense,
   StatsCollector,
   FailureTracker,
+  RatioCollector,
   measureTime,
 } from '../common/utils';
-import { measureQueryPaths } from './measureQueryPaths';
+import { runReadPaths } from './readPaths';
 import { capturePgStats, PgStatsCollector } from './pgStatStatements';
 
 import SuperTokens from 'supertokens-node';
@@ -21,7 +22,18 @@ import { doAccountLinking } from './accountLinking';
 import { createUserIdMappings } from './createUserIdMappings';
 import { addRoles } from './addRoles';
 import { createSessions } from './createSessions';
-import { importMillionUsers } from './importMillionUsers';
+import {
+  createBulkImportRoles,
+  listUserFiles,
+  postBulkImportFiles,
+  waitForBulkImport,
+} from './importMillionUsers';
+
+// How many generated user-JSON files (10k users each) make up the first "small"
+// checkpoint tranche. Default 10 files ≈ 100k users; the remainder is imported
+// to reach 1M. Env-overridable so smoke runs can shrink it. A meaningful ratio
+// needs strictly more total files than this.
+const SMALL_CHECKPOINT_FILES = Number(process.env.STRESS_TEST_SMALL_CHECKPOINT_FILES ?? '10') || 10;
 
 function stInit(connectionURI: string, apiKey: string) {
   SuperTokens.init({
@@ -69,8 +81,39 @@ async function main() {
   try {
     stInit(deployment.core_url, deployment.api_key);
     await setupLicense(deployment.core_url, deployment.api_key);
-    // 0. Import one million users
-    await importMillionUsers(deployment);
+
+    // 0. Import users in two tranches so the read-path steps can be measured at
+    // two dataset sizes (see runReadPaths / RatioCollector). First the ~100k
+    // checkpoint, then the remainder to 1M.
+    console.log('\n\n0. Importing users (two-size run)');
+    await createBulkImportRoles(deployment);
+    const allFiles = listUserFiles();
+    const smallFileCount = Math.max(1, Math.min(SMALL_CHECKPOINT_FILES, allFiles.length));
+    const smallFiles = allFiles.slice(0, smallFileCount);
+    const restFiles = allFiles.slice(smallFileCount);
+    console.log(
+      `    ${allFiles.length} file(s) total; checkpoint tranche = ${smallFiles.length}, remainder = ${restFiles.length}`
+    );
+    if (restFiles.length === 0) {
+      console.warn(
+        '    WARNING: no files left for the 1M tranche — scaling ratios will be ~1 (both passes at the same size).'
+      );
+    }
+
+    await measureTime('Loading users for bulk import (100k checkpoint)', () =>
+      postBulkImportFiles(deployment, smallFiles)
+    );
+    await measureTime('Waiting for import (100k checkpoint)', () => waitForBulkImport(deployment));
+
+    // Small read-path pass at the ~100k checkpoint (records into the ratio
+    // harness only; does not touch the 1M summary/budget table).
+    await runReadPaths(deployment, 'small');
+
+    // Grow the dataset to the full 1M.
+    await measureTime('Loading users for bulk import (remaining to 1M)', () =>
+      postBulkImportFiles(deployment, restFiles)
+    );
+    await measureTime('Waiting for import (remaining to 1M)', () => waitForBulkImport(deployment));
 
     // 1. Create one million users
     const users = await createUsers();
@@ -125,62 +168,21 @@ async function main() {
     // is measured from a clean slate.
     await capturePgStats('seed', { reset: true });
 
-    // 6. List all users — measure the first page and the full pagination walk
-    // separately, in both newest-first and oldest-first order (the paginated
-    // read path scales with total user count).
-    console.log('\n\n6. Listing all users (paginated)');
-    const getPage = (order: 'newest' | 'oldest', paginationToken?: string) =>
-      order === 'newest'
-        ? SuperTokens.getUsersNewestFirst({ tenantId: 'public', paginationToken })
-        : SuperTokens.getUsersOldestFirst({ tenantId: 'public', paginationToken });
-
-    for (const order of ['newest', 'oldest'] as const) {
-      await measureTime(`Pagination first page (${order} first)`, async () => {
-        await getPage(order);
-      });
-
-      await measureTime(`Pagination full walk (${order} first)`, async () => {
-        let lmCount = 0;
-        let userCount = 0;
-        let paginationToken: string | undefined;
-        while (true) {
-          const result = await getPage(order, paginationToken);
-          for (const user of result.users) {
-            userCount++;
-            lmCount += user.loginMethods.length;
-          }
-          paginationToken = result.nextPaginationToken;
-          if (result.nextPaginationToken === undefined) break;
-        }
-        console.log(`    (${order} first) users=${userCount}, loginMethods=${lmCount}`);
-      });
-    }
-
-    // 7. Count users — measure both the app-wide (all-tenants) and the
-    // per-tenant (public) count variants.
-    console.log('\n\n7. Counting users');
-    await measureTime('User count (all tenants)', async () => {
-      const total = await SuperTokens.getUserCount();
-      console.log(`    Users count (all tenants): ${total}`);
-    });
-    await measureTime('User count (tenant: public)', async () => {
-      const total = await SuperTokens.getUserCount(undefined, 'public');
-      console.log(`    Users count (public tenant): ${total}`);
-    });
-
-    // 8. Measure the remaining scale-sensitive query paths (dashboard search,
-    // third-party sign-in, linked-user updates, tenant assoc, unlink/delete,
-    // analytics counts, role listing/delete, TOTP verify, email verification).
-    await measureQueryPaths(deployment);
+    // Large read-path pass at the full 1M. This is the pass whose measurements
+    // feed the existing summary/budget table (steps 6, 7 and 8), and it also
+    // supplies the "large" side of every two-size scaling ratio.
+    await runReadPaths(deployment, 'large');
 
     // Snapshot the steady-state read/query query profile now that the measured
     // paths above have run against the reset counters.
     await capturePgStats('read');
 
-    // Write stats to file (duration measurements + both pg_stat_statements
-    // phase snapshots), then the human-readable pg summary for the step summary.
+    // Write stats to file (duration measurements enriched with the two-size
+    // scaling ratios + both pg_stat_statements phase snapshots), then the
+    // human-readable pg summary for the step summary.
     StatsCollector.getInstance().writeToFile({
       pgStatStatements: PgStatsCollector.getInstance().toJSON(),
+      scalingRatios: RatioCollector.getInstance().toJSON(),
     });
     PgStatsCollector.getInstance().writeSummaryFile();
     console.log('\nStats written to stats.json and pg-stats-summary.md');
@@ -198,6 +200,12 @@ async function main() {
     // Fail the run if any read-phase statement spilled more than the temp-block
     // threshold (a hardware-independent hash/sort-spill regression signal).
     PgStatsCollector.getInstance().throwIfTempSpillExceeded();
+
+    // Fail the run if any step's cost grew faster than its scaling class allows
+    // between the 100k checkpoint and the full 1M (the superlinear-growth
+    // regression this suite exists to catch). Runs last, after all stats are
+    // written, so the small/large/ratio columns are visible regardless.
+    RatioCollector.getInstance().throwIfRatioExceeded();
   } catch (error) {
     console.error('An error occurred during execution:', error);
     throw error;
