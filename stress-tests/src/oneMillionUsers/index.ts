@@ -208,10 +208,25 @@ async function main() {
     RatioCollector.getInstance().throwIfRatioExceeded();
   } catch (error) {
     console.error('An error occurred during execution:', error);
+    // Persist whatever was measured before the failure — in particular a
+    // timed-out or failed step recorded by measureTime — so the summary table
+    // shows where and why the run died instead of producing no stats at all.
+    try {
+      StatsCollector.getInstance().writeToFile({
+        pgStatStatements: PgStatsCollector.getInstance().toJSON(),
+        scalingRatios: RatioCollector.getInstance().toJSON(),
+      });
+      console.error('Partial stats written to stats.json.');
+    } catch (writeError) {
+      console.error('Also failed to write stats.json after the error:', writeError);
+    }
     throw error;
   } finally {
     await deleteStInstance(deployment.deployment_id);
   }
 }
 
-main();
+// A hard-timed-out step leaves its hung promise pending, which could otherwise
+// keep the event loop alive; exit explicitly and non-zero so the run fails
+// immediately at the budget rather than hanging until the job timeout.
+main().catch(() => process.exit(1));

@@ -56,7 +56,7 @@ jobs:
           echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|---------------|------|-----------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
 
       - name: Display pg_stat_statements summary
         if: always()

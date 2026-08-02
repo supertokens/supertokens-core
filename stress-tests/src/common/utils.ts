@@ -195,9 +195,18 @@ export const getStepBudgetMs = (title: string): number => {
 export const budgetsEnforced = (): boolean =>
   (process.env.STRESS_TEST_ENFORCE_BUDGETS ?? 'true').toLowerCase() !== 'false';
 
+interface Measurement {
+  title: string;
+  timeMs: number;
+  budgetMs: number;
+  timedOut?: boolean;
+  failed?: boolean;
+  failureReason?: string;
+}
+
 export class StatsCollector {
   private static instance: StatsCollector;
-  private measurements: { title: string; timeMs: number; budgetMs: number }[] = [];
+  private measurements: Measurement[] = [];
 
   private constructor() {}
 
@@ -212,6 +221,23 @@ export class StatsCollector {
     this.measurements.push({ title, timeMs, budgetMs: getStepBudgetMs(title) });
   }
 
+  /**
+   * Record a step that failed (threw or timed out) so it still appears in the
+   * summary table with its failure reason instead of vanishing from the run.
+   * Recorded regardless of the ambient checkpoint — a failure anywhere must be
+   * visible in the (large-run) summary table.
+   */
+  public addFailure(title: string, timeMs: number, timedOut: boolean, reason: string) {
+    this.measurements.push({
+      title,
+      timeMs,
+      budgetMs: getStepBudgetMs(title),
+      timedOut,
+      failed: true,
+      failureReason: reason,
+    });
+  }
+
   public getStats() {
     return this.measurements;
   }
@@ -219,14 +245,21 @@ export class StatsCollector {
   public writeToFile(extra: Record<string, unknown> = {}) {
     const ratios = RatioCollector.getInstance();
     const formattedMeasurements = this.measurements.map((measurement) => {
+      const timedOut = measurement.timedOut === true;
+      const failed = measurement.failed === true;
+      const overBudget = !failed && measurement.timeMs > measurement.budgetMs;
+      const status = timedOut ? 'TIMED OUT' : failed ? 'FAILED' : overBudget ? 'OVER BUDGET' : 'OK';
       const base = {
         title: measurement.title,
         ms: measurement.timeMs,
         formatted: formatTime(measurement.timeMs),
         budgetMs: measurement.budgetMs,
         budgetFormatted: formatTime(measurement.budgetMs),
-        overBudget: measurement.timeMs > measurement.budgetMs,
-        status: measurement.timeMs > measurement.budgetMs ? 'OVER BUDGET' : 'OK',
+        overBudget,
+        timedOut,
+        failed,
+        failureReason: measurement.failureReason,
+        status,
       };
       // Merge in the two-size scaling ratio for steps measured at both sizes so
       // the summary table can show small/large/ratio columns per step.
@@ -560,15 +593,75 @@ export class FailureTracker {
   }
 }
 
+/**
+ * Thrown when a measured step runs past its duration budget. The budget is no
+ * longer a post-hoc report but a hard, enforced ceiling: a step that hangs
+ * (e.g. a non-terminating pagination walk or a stuck request) is aborted at its
+ * budget instead of surviving until the 6h job timeout.
+ */
+export class StepTimeoutError extends Error {
+  constructor(
+    public readonly step: string,
+    public readonly budgetMs: number
+  ) {
+    super(
+      `Step "${step}" exceeded its hard timeout of ${formatTime(budgetMs)} (${budgetMs}ms) and was aborted.`
+    );
+    this.name = 'StepTimeoutError';
+  }
+}
+
+/**
+ * Race a step against its duration budget. Resolves with the step's result if
+ * it finishes in time, otherwise rejects with a StepTimeoutError. The losing
+ * (hung) step is left pending — the run is being failed, and the top-level
+ * handler exits the process, so it does not matter.
+ */
+const raceStepAgainstBudget = async <T>(
+  title: string,
+  budgetMs: number,
+  fn: () => Promise<T>
+): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new StepTimeoutError(title, budgetMs)), budgetMs);
+  });
+  try {
+    return await Promise.race([fn(), timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promise<T> => {
   const st = Date.now();
-  const result = await fn();
-  const et = Date.now();
-  const timeMs = et - st;
   const budgetMs = getStepBudgetMs(title);
-  const flag = timeMs > budgetMs ? ' [OVER BUDGET]' : '';
   const checkpoint = getCheckpoint();
   const checkpointTag = checkpoint ? ` [${checkpoint}]` : '';
+
+  let result: T;
+  try {
+    // When budgets are enforced (the default) the budget is a hard ceiling: race
+    // the step against it so a hung step fails the run at its budget with the
+    // step name. STRESS_TEST_ENFORCE_BUDGETS=false is the calibration escape
+    // hatch — let the step run to completion and only report over-budget later.
+    result = budgetsEnforced() ? await raceStepAgainstBudget(title, budgetMs, fn) : await fn();
+  } catch (err) {
+    const timedOut = err instanceof StepTimeoutError;
+    // A timed-out step's true duration is unknown; record it at its budget.
+    const timeMs = timedOut ? budgetMs : Date.now() - st;
+    const reason = timedOut ? `timed out after ${formatTime(budgetMs)}` : (err as Error).message;
+    console.error(
+      `    ${title}${checkpointTag} ${timedOut ? 'TIMED OUT' : 'FAILED'} after ${formatTime(timeMs)}: ${reason}`
+    );
+    // Surface the failure in the summary table (records regardless of checkpoint).
+    StatsCollector.getInstance().addFailure(title, timeMs, timedOut, reason);
+    throw err;
+  }
+
+  const et = Date.now();
+  const timeMs = et - st;
+  const flag = timeMs > budgetMs ? ' [OVER BUDGET]' : '';
   console.log(
     `    ${title}${checkpointTag} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`
   );

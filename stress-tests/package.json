@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "test:harness": "ts-node src/tests/harness.test.ts",
     "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
     "one-million-users": "ts-node src/oneMillionUsers/index.ts",
     "migration-tests": "ts-node src/migrationBehavior/index.ts",
@@ -30,7 +31,7 @@
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "pg": "^8.13.1",
-    "supertokens-node": "latest",
+    "supertokens-node": "24.0.3",
     "uuid": "^11.1.0"
   }
 }
