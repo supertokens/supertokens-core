@@ -15,9 +15,17 @@
  * into hard, immediate errors that name where and why the walk went wrong.
  */
 
+/** Minimal structural shape of a user in a paginated page. `timeJoined`/`id`
+ * are the pagination cursor fields; captured for diagnostics only. */
+export interface WalkUser {
+  loginMethods: unknown[];
+  timeJoined?: number;
+  id?: string;
+}
+
 /** Minimal structural shape of a page returned by the paginated user list. */
 export interface UserPage {
-  users: { loginMethods: unknown[] }[];
+  users: WalkUser[];
   nextPaginationToken?: string;
 }
 
@@ -49,14 +57,20 @@ export const WALK_MAX_PAGE_FACTOR = 2;
  *                current user count). The walk must visit within
  *                WALK_COMPLETENESS_TOLERANCE of this, and may not run for more
  *                than WALK_MAX_PAGE_FACTOR × the pages that many users implies.
+ * @param signal  Optional abort signal (from the step's duration budget). The
+ *                walk checks it each iteration and stops issuing page requests
+ *                once aborted, so a timed-out walk does not keep hitting the
+ *                core in the background and polluting later measurements.
  *
- * @throws if a pagination token repeats, if the page count runs away, or if the
- *         visited count is not within tolerance of `expectedUsers`.
+ * @throws if a pagination token repeats, if the page count runs away, if the
+ *         walk is aborted, or if the visited count is not within tolerance of
+ *         `expectedUsers`.
  */
 export const walkAllUsers = async (
   label: string,
   getPage: GetPage,
-  expectedUsers: number
+  expectedUsers: number,
+  signal?: AbortSignal
 ): Promise<WalkResult> => {
   let userCount = 0;
   let loginMethodCount = 0;
@@ -65,10 +79,24 @@ export const walkAllUsers = async (
   let pageSize = 0;
   let maxPages = Number.POSITIVE_INFINITY;
   const seenTokens = new Set<string>();
+  // Token used to fetch the most recent page and that page's users — retained so
+  // a completeness failure can report the cursor boundary the walk ended on.
+  let lastTokenFetched: string | undefined;
+  let lastPageUsers: WalkUser[] = [];
 
   while (true) {
+    // Cooperative cancellation: if the step lost its budget race, stop issuing
+    // further page requests instead of running on in the background.
+    if (signal?.aborted) {
+      throw new Error(
+        `Pagination full walk (${label}) aborted after ${pages} page(s) ` +
+          `(users so far ${userCount}); step exceeded its time budget.`
+      );
+    }
+    lastTokenFetched = paginationToken;
     const result = await getPage(paginationToken);
     pages++;
+    lastPageUsers = result.users;
     for (const user of result.users) {
       userCount++;
       loginMethodCount += user.loginMethods.length;
@@ -125,10 +153,24 @@ export const walkAllUsers = async (
       throw new Error(
         `Pagination full walk (${label}) visited ${userCount} users but the tenant reports ` +
           `${expectedUsers} (tolerance ±${tolerated}, ${WALK_COMPLETENESS_TOLERANCE * 100}%); ` +
-          `the walk did not cover the whole dataset.`
+          `the walk did not cover the whole dataset. ` +
+          describeTerminalPage(lastTokenFetched, lastPageUsers)
       );
     }
   }
 
   return { userCount, loginMethodCount, pages };
+};
+
+/** Describe the cursor boundary the walk ended on — the token that fetched the
+ * terminal page and that page's first/last (timeJoined, userId) — so the
+ * completeness-failure reason names exactly where the walk stopped. */
+const describeTerminalPage = (lastToken: string | undefined, users: WalkUser[]): string => {
+  const cursor = (u: WalkUser | undefined): string =>
+    u === undefined ? 'none' : `(timeJoined=${u.timeJoined ?? '?'}, userId=${u.id ?? '?'})`;
+  const tokenText = lastToken === undefined ? 'undefined (first page)' : lastToken;
+  return (
+    `Terminal page: fetched with pagination token ${tokenText}; ` +
+    `first user ${cursor(users[0])}, last user ${cursor(users[users.length - 1])}.`
+  );
 };

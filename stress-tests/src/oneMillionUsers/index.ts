@@ -192,6 +192,13 @@ async function main() {
     // measurements.
     FailureTracker.getInstance().throwIfAnyFailures();
 
+    // Fail the run if any measured read-path step failed or timed out. With
+    // collect-and-continue those failures no longer abort the pass, so this
+    // end-of-run aggregate is what turns the job red — listing every failed
+    // step at once. Runs after all stats are written so each step still appears
+    // in the summary table.
+    StatsCollector.getInstance().throwIfAnyStepFailed();
+
     // Fail the run if any measured step blew past its duration budget (an
     // order-of-magnitude query regression). Runs last so every step still
     // appears in stats.json and the summary table.

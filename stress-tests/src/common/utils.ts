@@ -202,6 +202,10 @@ interface Measurement {
   timedOut?: boolean;
   failed?: boolean;
   failureReason?: string;
+  // True if at least one earlier step had already failed/timed out when this
+  // step ran. A failed mid-way step (e.g. a destructive mutation) can taint the
+  // numbers of everything measured after it, so the summary flags those rows.
+  afterFailure?: boolean;
 }
 
 export class StatsCollector {
@@ -217,8 +221,17 @@ export class StatsCollector {
     return StatsCollector.instance;
   }
 
+  private anyPriorFailure(): boolean {
+    return this.measurements.some((m) => m.failed);
+  }
+
   public addMeasurement(title: string, timeMs: number) {
-    this.measurements.push({ title, timeMs, budgetMs: getStepBudgetMs(title) });
+    this.measurements.push({
+      title,
+      timeMs,
+      budgetMs: getStepBudgetMs(title),
+      afterFailure: this.anyPriorFailure() || undefined,
+    });
   }
 
   /**
@@ -235,6 +248,7 @@ export class StatsCollector {
       timedOut,
       failed: true,
       failureReason: reason,
+      afterFailure: this.anyPriorFailure() || undefined,
     });
   }
 
@@ -259,12 +273,21 @@ export class StatsCollector {
         timedOut,
         failed,
         failureReason: measurement.failureReason,
+        afterFailure: measurement.afterFailure === true,
         status,
       };
       // Merge in the two-size scaling ratio for steps measured at both sizes so
       // the summary table can show small/large/ratio columns per step.
       const r = ratios.resultFor(measurement.title);
-      if (!r) return base;
+      if (!r) {
+        // If a step was measured at one size but failed/timed out at the other,
+        // it has no meaningful ratio: report it as n/a rather than a pass or a
+        // fail (a failed side can't be scaled against a good one).
+        if (ratios.hasFailedSide(measurement.title)) {
+          return { ...base, ratio: null, ratioStatus: 'N/A', ratioText: 'n/a' };
+        }
+        return base;
+      }
       const ratio = Math.round(r.ratio * 100) / 100;
       return {
         ...base,
@@ -311,6 +334,32 @@ export class StatsCollector {
     }
     throw new Error(
       `${over.length} step(s) exceeded their duration budget; likely an order-of-magnitude query regression.`
+    );
+  }
+
+  /**
+   * Fails the run if any measured read-path step failed or timed out. With
+   * collect-and-continue (issue #1346) a guard violation, thrown error or budget
+   * timeout in a read-path step is caught, recorded here and the run continues —
+   * so this end-of-run aggregate is what actually turns the job red, listing
+   * every failed step at once instead of dying at the first one. Runs after all
+   * stats are written so every step still appears in the summary table.
+   * (Seeding failures are handled separately and remain immediately fatal.)
+   */
+  public throwIfAnyStepFailed() {
+    const failed = this.measurements.filter((m) => m.failed);
+    if (failed.length === 0) {
+      console.log('\nAll measured read-path steps completed without failing.');
+      return;
+    }
+    console.error('\nMeasured read-path steps that failed or timed out:');
+    for (const m of failed) {
+      console.error(
+        `  ${m.title}: ${m.timedOut ? 'TIMED OUT' : 'FAILED'} — ${m.failureReason ?? 'unknown reason'}`
+      );
+    }
+    throw new Error(
+      `${failed.length} measured read-path step(s) failed or timed out; see the Stress Test Results table.`
     );
   }
 }
@@ -445,6 +494,10 @@ export interface RatioResult {
 export class RatioCollector {
   private static instance: RatioCollector;
   private data: Map<string, { small?: number; large?: number }> = new Map();
+  // Steps whose small and/or large pass failed or timed out. Such a step has no
+  // meaningful scaling ratio — the failed side can't be scaled against a good
+  // one — so it is reported as n/a rather than pass/fail (issue #1346).
+  private failedSides: Map<string, Set<CheckpointSize>> = new Map();
 
   private constructor() {}
 
@@ -459,6 +512,18 @@ export class RatioCollector {
     const entry = this.data.get(title) ?? {};
     entry[size] = timeMs;
     this.data.set(title, entry);
+  }
+
+  /** Mark one size of a two-size step as failed, so its ratio is reported n/a. */
+  public recordFailure(title: string, size: CheckpointSize) {
+    const sides = this.failedSides.get(title) ?? new Set<CheckpointSize>();
+    sides.add(size);
+    this.failedSides.set(title, sides);
+  }
+
+  /** Whether either pass of this step failed/timed out. */
+  public hasFailedSide(title: string): boolean {
+    return this.failedSides.has(title);
   }
 
   /** Ratio result for a single step, or undefined if it lacks both measurements. */
@@ -505,6 +570,10 @@ export class RatioCollector {
         ratio: Math.round(r.ratio * 100) / 100,
         status: r.overBound ? 'OVER RATIO' : 'OK',
       })),
+      // Two-size steps that failed on at least one side — no ratio computable.
+      naSteps: [...this.failedSides.entries()]
+        .map(([title, sides]) => ({ title, failedSides: [...sides], status: 'N/A' }))
+        .sort((a, b) => a.title.localeCompare(b.title)),
     };
   }
 
@@ -613,31 +682,47 @@ export class StepTimeoutError extends Error {
 
 /**
  * Race a step against its duration budget. Resolves with the step's result if
- * it finishes in time, otherwise rejects with a StepTimeoutError. The losing
- * (hung) step is left pending — the run is being failed, and the top-level
- * handler exits the process, so it does not matter.
+ * it finishes in time, otherwise rejects with a StepTimeoutError. On timeout the
+ * step's AbortSignal is aborted so a cooperative step (one that checks the
+ * signal in its walk/poll loop) actually stops issuing work instead of running
+ * on in the background and polluting the measurements that follow it — which
+ * matters now that a timed-out step no longer ends the process (issue #1346).
  */
 const raceStepAgainstBudget = async <T>(
   title: string,
   budgetMs: number,
-  fn: () => Promise<T>
+  controller: AbortController,
+  fn: (signal: AbortSignal) => Promise<T>
 ): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new StepTimeoutError(title, budgetMs)), budgetMs);
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new StepTimeoutError(title, budgetMs));
+    }, budgetMs);
   });
   try {
-    return await Promise.race([fn(), timeout]);
+    return await Promise.race([fn(controller.signal), timeout]);
   } finally {
     if (timer) clearTimeout(timer);
   }
 };
 
-export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promise<T> => {
+/**
+ * Measure the duration of a step. `fn` receives an AbortSignal that is aborted
+ * if the step exceeds its budget; long-running loops (e.g. the pagination walk)
+ * should check it each iteration so a timed-out step stops cooperatively. Steps
+ * that do a single request can ignore the signal.
+ */
+export const measureTime = async <T>(
+  title: string,
+  fn: (signal: AbortSignal) => Promise<T>
+): Promise<T> => {
   const st = Date.now();
   const budgetMs = getStepBudgetMs(title);
   const checkpoint = getCheckpoint();
   const checkpointTag = checkpoint ? ` [${checkpoint}]` : '';
+  const controller = new AbortController();
 
   let result: T;
   try {
@@ -645,7 +730,9 @@ export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promi
     // the step against it so a hung step fails the run at its budget with the
     // step name. STRESS_TEST_ENFORCE_BUDGETS=false is the calibration escape
     // hatch — let the step run to completion and only report over-budget later.
-    result = budgetsEnforced() ? await raceStepAgainstBudget(title, budgetMs, fn) : await fn();
+    result = budgetsEnforced()
+      ? await raceStepAgainstBudget(title, budgetMs, controller, fn)
+      : await fn(controller.signal);
   } catch (err) {
     const timedOut = err instanceof StepTimeoutError;
     // A timed-out step's true duration is unknown; record it at its budget.
@@ -656,6 +743,11 @@ export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promi
     );
     // Surface the failure in the summary table (records regardless of checkpoint).
     StatsCollector.getInstance().addFailure(title, timeMs, timedOut, reason);
+    // Mark the two-size ratio side that failed so it is reported as n/a rather
+    // than pass/fail (the failed side can't be scaled against a good one).
+    if (checkpoint) {
+      RatioCollector.getInstance().recordFailure(title, checkpoint);
+    }
     throw err;
   }
 
@@ -678,4 +770,25 @@ export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promi
     }
   }
   return result;
+};
+
+/**
+ * Run one measured read-path step, isolating its failure so a single broken
+ * step does not abort the rest of the run (issue #1346, collect-and-continue).
+ * The step's own measureTime call has already recorded the failure/timeout in
+ * the summary table and (for two-size steps) marked its ratio n/a; the
+ * end-of-run StatsCollector.throwIfAnyStepFailed() aggregates them and fails
+ * the job. Any error the step throws outside measureTime (e.g. fixture setup)
+ * is caught here too so it is logged and the next step still runs.
+ *
+ * Only read-path steps are wrapped in this. Seeding steps deliberately are not:
+ * a seeding failure invalidates every downstream measurement, so it stays
+ * immediately fatal.
+ */
+export const runStep = async (fn: () => Promise<void>): Promise<void> => {
+  try {
+    await fn();
+  } catch (e) {
+    console.error(`    Step error (continuing): ${(e as Error).stack ?? (e as Error).message}`);
+  }
 };

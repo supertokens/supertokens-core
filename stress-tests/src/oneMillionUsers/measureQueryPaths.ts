@@ -6,7 +6,7 @@ import AccountLinking from 'supertokens-node/recipe/accountlinking';
 import Multitenancy from 'supertokens-node/recipe/multitenancy';
 import UserRoles from 'supertokens-node/recipe/userroles';
 
-import { measureTime, getCheckpoint } from '../common/utils';
+import { measureTime, getCheckpoint, runStep } from '../common/utils';
 import { generateBase32Secret, totpForCounter, currentCounter } from '../common/totp';
 
 // Number of used TOTP codes to seed for the dedicated TOTP user before the
@@ -79,17 +79,6 @@ const coreFetch = async (
     return JSON.parse(text);
   } catch {
     return { _status: res.status, _raw: text };
-  }
-};
-
-// Run one measured step, isolating failures so a single broken step (e.g. a
-// fixture that could not be created) does not abort the rest of the run or the
-// steps that already recorded a measurement.
-const runStep = async (fn: () => Promise<void>): Promise<void> => {
-  try {
-    await fn();
-  } catch (e) {
-    console.error(`    Step error (continuing): ${(e as Error).stack ?? (e as Error).message}`);
   }
 };
 
