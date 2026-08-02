@@ -24,6 +24,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scaling that the absolute duration budgets can't catch; the small/large/ratio columns are rendered in the workflow
   "Stress Test Results" table and the run fails when a step's ratio exceeds its bound
   (default 10k ≈ 80 MB)
+- Test-only: the 1M-user stress-test suite now enforces per-step duration budgets as hard timeouts (each measured step
+  is raced against its budget, so a hung step fails the run at its budget with the step name instead of hanging until
+  the job timeout) and guards the pagination full-walk steps against non-termination and silent truncation (aborting on
+  a repeated pagination token or a runaway page count, and asserting the walk visited the whole dataset within 1% of the
+  tenant's user count); timed-out and failed steps are recorded in `stats.json` and surfaced in the workflow "Stress
+  Test Results" table with their failure reason, and `supertokens-node` is pinned to an exact version for reproducibility
 
 ## [12.0.8]
 

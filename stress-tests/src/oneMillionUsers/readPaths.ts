@@ -2,6 +2,7 @@ import SuperTokens from 'supertokens-node';
 
 import { measureTime, setCheckpoint, CheckpointSize } from '../common/utils';
 import { measureQueryPaths } from './measureQueryPaths';
+import { walkAllUsers } from './pagination';
 
 /**
  * Run the full set of measured read-path steps against the current dataset,
@@ -29,25 +30,20 @@ export const runReadPaths = async (deployment: any, size: CheckpointSize): Promi
         ? SuperTokens.getUsersNewestFirst({ tenantId: 'public', paginationToken })
         : SuperTokens.getUsersOldestFirst({ tenantId: 'public', paginationToken });
 
+    // Population the full walk is expected to visit — the public tenant's user
+    // count. Captured outside any measureTime so it doesn't affect the measured
+    // walk durations, and reused as the completeness target for both walks (the
+    // walk and the count endpoint must agree on how many users exist).
+    const expectedUsers = await SuperTokens.getUserCount(undefined, 'public');
+    console.log(`    Expected users at ${size} checkpoint (public tenant count): ${expectedUsers}`);
+
     for (const order of ['newest', 'oldest'] as const) {
       await measureTime(`Pagination first page (${order} first)`, async () => {
         await getPage(order);
       });
 
       await measureTime(`Pagination full walk (${order} first)`, async () => {
-        let lmCount = 0;
-        let userCount = 0;
-        let paginationToken: string | undefined;
-        while (true) {
-          const result = await getPage(order, paginationToken);
-          for (const user of result.users) {
-            userCount++;
-            lmCount += user.loginMethods.length;
-          }
-          paginationToken = result.nextPaginationToken;
-          if (result.nextPaginationToken === undefined) break;
-        }
-        console.log(`    (${order} first) users=${userCount}, loginMethods=${lmCount}`);
+        await walkAllUsers(`${order} first`, (token) => getPage(order, token), expectedUsers);
       });
     }
 
