@@ -7,6 +7,7 @@ import {
   measureTime,
 } from '../common/utils';
 import { measureQueryPaths } from './measureQueryPaths';
+import { capturePgStats, PgStatsCollector } from './pgStatStatements';
 
 import SuperTokens from 'supertokens-node';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
@@ -119,6 +120,11 @@ async function main() {
     // 5. Create sessions
     await createSessions(allUsersForMapping);
 
+    // Seeding is done: snapshot the ingest query profile from
+    // pg_stat_statements, then reset the counters so the read/query phase below
+    // is measured from a clean slate.
+    await capturePgStats('seed', { reset: true });
+
     // 6. List all users — measure the first page and the full pagination walk
     // separately, in both newest-first and oldest-first order (the paginated
     // read path scales with total user count).
@@ -167,9 +173,17 @@ async function main() {
     // analytics counts, role listing/delete, TOTP verify, email verification).
     await measureQueryPaths(deployment);
 
-    // Write stats to file
-    StatsCollector.getInstance().writeToFile();
-    console.log('\nStats written to stats.json');
+    // Snapshot the steady-state read/query query profile now that the measured
+    // paths above have run against the reset counters.
+    await capturePgStats('read');
+
+    // Write stats to file (duration measurements + both pg_stat_statements
+    // phase snapshots), then the human-readable pg summary for the step summary.
+    StatsCollector.getInstance().writeToFile({
+      pgStatStatements: PgStatsCollector.getInstance().toJSON(),
+    });
+    PgStatsCollector.getInstance().writeSummaryFile();
+    console.log('\nStats written to stats.json and pg-stats-summary.md');
 
     // Fail the run if any seeding step produced non-OK results, so silently
     // errored steps don't leave the run looking green with untrustworthy
@@ -180,6 +194,10 @@ async function main() {
     // order-of-magnitude query regression). Runs last so every step still
     // appears in stats.json and the summary table.
     StatsCollector.getInstance().throwIfOverBudget();
+
+    // Fail the run if any read-phase statement spilled more than the temp-block
+    // threshold (a hardware-independent hash/sort-spill regression signal).
+    PgStatsCollector.getInstance().throwIfTempSpillExceeded();
   } catch (error) {
     console.error('An error occurred during execution:', error);
     throw error;

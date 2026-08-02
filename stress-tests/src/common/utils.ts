@@ -210,7 +210,7 @@ export class StatsCollector {
     return this.measurements;
   }
 
-  public writeToFile() {
+  public writeToFile(extra: Record<string, unknown> = {}) {
     const formattedMeasurements = this.measurements.map((measurement) => ({
       title: measurement.title,
       ms: measurement.timeMs,
@@ -224,6 +224,7 @@ export class StatsCollector {
     const stats = {
       measurements: formattedMeasurements,
       timestamp: new Date().toISOString(),
+      ...extra,
     };
     fs.writeFileSync('stats.json', JSON.stringify(stats, null, 2));
   }

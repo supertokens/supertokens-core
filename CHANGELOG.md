@@ -14,6 +14,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   link-check/unlink/delete, active-user counts, feature-flag usage stats, role listing/deletion, TOTP verification with
   many used codes, and email-verification/delete for id-mapped users) against the 1M-user state, renders them in the
   workflow "Stress Test Results" table, and fails the run when a step exceeds an env-overridable per-step duration budget
+- Test-only: the 1M-user stress-test suite now harvests `pg_stat_statements` — snapshotting the ingest profile when
+  seeding finishes (then resetting) and the steady-state read/query profile at the end — renders per-phase tables (top
+  statements by total execution time and every statement that spilled to temp) into `stats.json` and the workflow step
+  summary, and fails the run when a read-phase statement writes more than an env-overridable number of temp blocks
+  (default 10k ≈ 80 MB)
 
 ## [12.0.8]
 

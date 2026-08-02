@@ -22,12 +22,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "@types/pg": "^8.11.10",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
+    "pg": "^8.13.1",
     "supertokens-node": "latest",
     "uuid": "^11.1.0"
   }
