@@ -6,7 +6,7 @@ import AccountLinking from 'supertokens-node/recipe/accountlinking';
 import Multitenancy from 'supertokens-node/recipe/multitenancy';
 import UserRoles from 'supertokens-node/recipe/userroles';
 
-import { measureTime } from '../common/utils';
+import { measureTime, getCheckpoint } from '../common/utils';
 import { generateBase32Secret, totpForCounter, currentCounter } from '../common/totp';
 
 // Number of used TOTP codes to seed for the dedicated TOTP user before the
@@ -319,12 +319,17 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
       warnIfNotOk('getUsersThatHaveRole', res);
     })
   );
-  await runStep(() =>
-    measureTime('Delete role (large share)', async () => {
-      const res = await UserRoles.deleteRole('role2');
-      warnIfNotOk('deleteRole', res);
-    })
-  );
+  // Deleting role2 (assigned to every bulk-imported user) is globally
+  // destructive and cannot be repeated cleanly, so it runs only on the large
+  // pass (never at the 100k checkpoint). It therefore has no two-size ratio.
+  if (getCheckpoint() !== 'small') {
+    await runStep(() =>
+      measureTime('Delete role (large share)', async () => {
+        const res = await UserRoles.deleteRole('role2');
+        warnIfNotOk('deleteRole', res);
+      })
+    );
+  }
 
   // --- TOTP verify for a user with many accumulated used codes (survey TO1:
   // getAllUsedCodesDescOrder has no LIMIT). We import a device with a known
