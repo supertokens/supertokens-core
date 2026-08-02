@@ -42,6 +42,7 @@ jobs:
           npm run generate-users
       - name: Run one million users test
         id: one-million-users
+        shell: bash   # explicit shell => -o pipefail; without it `| tee` masks npm's exit code
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
