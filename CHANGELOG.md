@@ -7,6 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Test-only: the 1M-user stress-test suite now records non-OK results per seeding step and fails the run at the end if
+  any step errored, and its workflow can be triggered manually via `workflow_dispatch`
+
 ## [12.0.8]
 
 - Security improvements around api-key/ip allow list handling

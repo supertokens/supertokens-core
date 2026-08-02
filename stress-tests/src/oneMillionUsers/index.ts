@@ -3,6 +3,7 @@ import {
   deleteStInstance,
   setupLicense,
   StatsCollector,
+  FailureTracker,
 } from '../common/utils';
 
 import SuperTokens from 'supertokens-node';
@@ -147,6 +148,11 @@ async function main() {
     // Write stats to file
     StatsCollector.getInstance().writeToFile();
     console.log('\nStats written to stats.json');
+
+    // Fail the run if any seeding step produced non-OK results, so silently
+    // errored steps don't leave the run looking green with untrustworthy
+    // measurements.
+    FailureTracker.getInstance().throwIfAnyFailures();
   } catch (error) {
     console.error('An error occurred during execution:', error);
     throw error;

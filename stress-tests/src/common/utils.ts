@@ -132,6 +132,57 @@ export class StatsCollector {
   }
 }
 
+/**
+ * Tracks non-OK results produced by the seeding steps. A seeding step that
+ * silently errors would otherwise still "pass" and invalidate every
+ * measurement downstream of it, so we count the non-OK results per step and
+ * fail the run at the end if any step had failures.
+ */
+export class FailureTracker {
+  private static instance: FailureTracker;
+  private failures: Map<string, { count: number; statuses: Record<string, number> }> = new Map();
+
+  private constructor() {}
+
+  public static getInstance(): FailureTracker {
+    if (!FailureTracker.instance) {
+      FailureTracker.instance = new FailureTracker();
+    }
+    return FailureTracker.instance;
+  }
+
+  public recordFailure(step: string, status: string) {
+    const entry = this.failures.get(step) ?? { count: 0, statuses: {} };
+    entry.count++;
+    entry.statuses[status] = (entry.statuses[status] ?? 0) + 1;
+    this.failures.set(step, entry);
+  }
+
+  public hasFailures(): boolean {
+    return this.failures.size > 0;
+  }
+
+  /**
+   * Prints a per-step summary of any non-OK results and throws if there were
+   * any, so the run fails at the end without aborting the seeding mid-way.
+   */
+  public throwIfAnyFailures() {
+    if (!this.hasFailures()) {
+      console.log('\nAll seeding steps completed with no non-OK results.');
+      return;
+    }
+    console.error('\nSeeding step failures detected (non-OK results):');
+    let total = 0;
+    for (const [step, info] of this.failures) {
+      total += info.count;
+      console.error(`  ${step}: ${info.count} non-OK result(s) — ${JSON.stringify(info.statuses)}`);
+    }
+    throw new Error(
+      `${total} non-OK result(s) across ${this.failures.size} seeding step(s); measurements are not trustworthy.`
+    );
+  }
+}
+
 export const measureTime = async <T>(title: string, fn: () => Promise<T>): Promise<T> => {
   const st = Date.now();
   const result = await fn();
