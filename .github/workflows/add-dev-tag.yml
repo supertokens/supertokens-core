@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: supertokens/get-core-dependencies-action@main
+      - uses: supertokens/actions/get-core-dependencies-action@main
         id: result
         with:
           run-for: add-dev-tag
