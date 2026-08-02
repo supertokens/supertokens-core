@@ -9,6 +9,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Test-only: the 1M-user stress-test suite now records non-OK results per seeding step and fails the run at the end if
   any step errored, and its workflow can be triggered manually via `workflow_dispatch`
+- Test-only: the 1M-user stress-test suite now measures the scale-sensitive query paths (paginated listing, user
+  counts, dashboard search, third-party sign-in, linked-user email/phone updates, tenant association, account
+  link-check/unlink/delete, active-user counts, feature-flag usage stats, role listing/deletion, TOTP verification with
+  many used codes, and email-verification/delete for id-mapped users) against the 1M-user state, renders them in the
+  workflow "Stress Test Results" table, and fails the run when a step exceeds an env-overridable per-step duration budget
 
 ## [12.0.8]
 

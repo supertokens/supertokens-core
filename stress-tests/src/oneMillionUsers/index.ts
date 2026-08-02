@@ -4,7 +4,9 @@ import {
   setupLicense,
   StatsCollector,
   FailureTracker,
+  measureTime,
 } from '../common/utils';
+import { measureQueryPaths } from './measureQueryPaths';
 
 import SuperTokens from 'supertokens-node';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
@@ -117,33 +119,53 @@ async function main() {
     // 5. Create sessions
     await createSessions(allUsersForMapping);
 
-    // 6. List all users
-    console.log('\n\n6. Listing all users');
-    let lmCount = 0;
-    let userCount = 0;
-    let paginationToken: string | undefined;
-    while (true) {
-      const result = await SuperTokens.getUsersNewestFirst({
-        tenantId: 'public',
-        paginationToken,
+    // 6. List all users — measure the first page and the full pagination walk
+    // separately, in both newest-first and oldest-first order (the paginated
+    // read path scales with total user count).
+    console.log('\n\n6. Listing all users (paginated)');
+    const getPage = (order: 'newest' | 'oldest', paginationToken?: string) =>
+      order === 'newest'
+        ? SuperTokens.getUsersNewestFirst({ tenantId: 'public', paginationToken })
+        : SuperTokens.getUsersOldestFirst({ tenantId: 'public', paginationToken });
+
+    for (const order of ['newest', 'oldest'] as const) {
+      await measureTime(`Pagination first page (${order} first)`, async () => {
+        await getPage(order);
       });
 
-      for (const user of result.users) {
-        userCount++;
-        lmCount += user.loginMethods.length;
-      }
-
-      paginationToken = result.nextPaginationToken;
-
-      if (result.nextPaginationToken === undefined) break;
+      await measureTime(`Pagination full walk (${order} first)`, async () => {
+        let lmCount = 0;
+        let userCount = 0;
+        let paginationToken: string | undefined;
+        while (true) {
+          const result = await getPage(order, paginationToken);
+          for (const user of result.users) {
+            userCount++;
+            lmCount += user.loginMethods.length;
+          }
+          paginationToken = result.nextPaginationToken;
+          if (result.nextPaginationToken === undefined) break;
+        }
+        console.log(`    (${order} first) users=${userCount}, loginMethods=${lmCount}`);
+      });
     }
-    console.log(`Login methods count: ${lmCount}`);
-    console.log(`Users count: ${userCount}`);
 
-    // 7. Count users
-    console.log('\n\n7. Count users');
-    const total = await SuperTokens.getUserCount();
-    console.log(`Users count: ${total}`);
+    // 7. Count users — measure both the app-wide (all-tenants) and the
+    // per-tenant (public) count variants.
+    console.log('\n\n7. Counting users');
+    await measureTime('User count (all tenants)', async () => {
+      const total = await SuperTokens.getUserCount();
+      console.log(`    Users count (all tenants): ${total}`);
+    });
+    await measureTime('User count (tenant: public)', async () => {
+      const total = await SuperTokens.getUserCount(undefined, 'public');
+      console.log(`    Users count (public tenant): ${total}`);
+    });
+
+    // 8. Measure the remaining scale-sensitive query paths (dashboard search,
+    // third-party sign-in, linked-user updates, tenant assoc, unlink/delete,
+    // analytics counts, role listing/delete, TOTP verify, email verification).
+    await measureQueryPaths(deployment);
 
     // Write stats to file
     StatsCollector.getInstance().writeToFile();
@@ -153,6 +175,11 @@ async function main() {
     // errored steps don't leave the run looking green with untrustworthy
     // measurements.
     FailureTracker.getInstance().throwIfAnyFailures();
+
+    // Fail the run if any measured step blew past its duration budget (an
+    // order-of-magnitude query regression). Runs last so every step still
+    // appears in stats.json and the summary table.
+    StatsCollector.getInstance().throwIfOverBudget();
   } catch (error) {
     console.error('An error occurred during execution:', error);
     throw error;

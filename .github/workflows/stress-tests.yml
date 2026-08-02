@@ -48,6 +48,6 @@ jobs:
       - name: Display Test Statistics
         run: |
           echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "| Test | Duration |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
-          jq -r '.measurements[] | "| \(.title) | \(.formatted) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Duration | Budget | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.budgetFormatted // "-") | \(if .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
