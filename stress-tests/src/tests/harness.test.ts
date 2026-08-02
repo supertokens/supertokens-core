@@ -15,9 +15,16 @@ process.env.STRESS_TEST_STEP_BUDGETS_MS = JSON.stringify({
   'error-step': 60_000,
   'ok-step': 60_000,
   'enforce-off-step': 40,
+  'walk-timeout-step': 60,
 });
 
-import { measureTime, StatsCollector, StepTimeoutError, budgetsEnforced } from '../common/utils';
+import {
+  measureTime,
+  runStep,
+  StatsCollector,
+  StepTimeoutError,
+  budgetsEnforced,
+} from '../common/utils';
 import { walkAllUsers, GetPage, UserPage } from '../oneMillionUsers/pagination';
 
 const tests: { name: string; fn: () => Promise<void> }[] = [];
@@ -52,7 +59,12 @@ const makeSource = (
     servedFirstPage = true;
 
     const end = Math.min(offset + pageSize, total);
-    const users = Array.from({ length: end - offset }, () => ({ loginMethods: [{}] }));
+    // Include the pagination-cursor fields (timeJoined, id) so the completeness
+    // diagnostics that name the terminal-page boundary can be asserted.
+    const users = Array.from({ length: end - offset }, (_, i) => {
+      const idx = offset + i;
+      return { loginMethods: [{}], timeJoined: 1000 + idx, id: `user-${idx}` };
+    });
 
     if (opts.repeatToken) {
       return { users, nextPaginationToken: 'same-token' };
@@ -148,6 +160,94 @@ test('STRESS_TEST_ENFORCE_BUDGETS=false disables the hard timeout', async () => 
   } finally {
     delete process.env.STRESS_TEST_ENFORCE_BUDGETS;
   }
+});
+
+// --- richer completeness diagnostics (issue #1346) -------------------------
+
+test('completeness failure names the terminal-page cursor boundary', async () => {
+  // Truncate after 100 of 250 users at page size 50 -> terminal page is page 2,
+  // fetched with token "50", covering users 50..99.
+  await assert.rejects(
+    () => walkAllUsers('newest first', makeSource(250, 50, { truncateAfterUsers: 100 }), 250),
+    (err: unknown) => {
+      const msg = (err as Error).message;
+      return (
+        /Terminal page: fetched with pagination token 50;/.test(msg) &&
+        /first user \(timeJoined=1050, userId=user-50\)/.test(msg) &&
+        /last user \(timeJoined=1099, userId=user-99\)/.test(msg)
+      );
+    }
+  );
+});
+
+// --- cooperative cancellation of a walk (issue #1346) ----------------------
+
+test('an aborted walk stops issuing pages and throws', async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const src: GetPage = async (token) => {
+    calls++;
+    if (calls === 2) controller.abort();
+    const offset = token === undefined ? 0 : Number(token);
+    return { users: [{ loginMethods: [{}] }], nextPaginationToken: String(offset + 1) };
+  };
+  await assert.rejects(
+    () => walkAllUsers('newest first', src, 1_000_000, controller.signal),
+    /aborted after \d+ page\(s\)/
+  );
+  assert.ok(calls <= 3, `stopped issuing pages shortly after abort (calls=${calls})`);
+});
+
+test('a walk step over its budget is aborted and stops hitting the source', async () => {
+  let calls = 0;
+  const src: GetPage = async (token) => {
+    calls++;
+    await delay(10);
+    const offset = token === undefined ? 0 : Number(token);
+    return { users: [{ loginMethods: [{}] }], nextPaginationToken: String(offset + 1) };
+  };
+  await assert.rejects(
+    () =>
+      measureTime('walk-timeout-step', (signal) =>
+        walkAllUsers('newest first', src, 1e9, signal).then(() => undefined)
+      ),
+    (err: unknown) => err instanceof StepTimeoutError
+  );
+  // After the budget timeout the walk must stop issuing further page requests
+  // rather than running on in the background and polluting later measurements.
+  const callsAtTimeout = calls;
+  await delay(150);
+  assert.strictEqual(calls, callsAtTimeout, 'walk stopped hitting the source after the abort');
+});
+
+// --- runStep isolation + end-of-run aggregate (issue #1346) ----------------
+
+test('runStep swallows a thrown error so the next step still runs', async () => {
+  let ranSecond = false;
+  await runStep(async () => {
+    throw new Error('isolated');
+  });
+  await runStep(async () => {
+    ranSecond = true;
+  });
+  assert.ok(ranSecond, 'the step after a throwing one still ran');
+});
+
+test('throwIfAnyStepFailed fails the run when any measured step failed', async () => {
+  // The measureTime tests above recorded a timed-out step and a thrown step;
+  // the end-of-run aggregate must turn that into a non-zero exit.
+  const failedTitles = StatsCollector.getInstance()
+    .getStats()
+    .filter((m) => m.failed)
+    .map((m) => m.title);
+  assert.ok(
+    failedTitles.includes('timeout-step') && failedTitles.includes('error-step'),
+    'both failure kinds are recorded in the summary'
+  );
+  assert.throws(
+    () => StatsCollector.getInstance().throwIfAnyStepFailed(),
+    /measured read-path step\(s\) failed or timed out/
+  );
 });
 
 (async () => {

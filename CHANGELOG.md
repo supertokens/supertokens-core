@@ -30,6 +30,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a repeated pagination token or a runaway page count, and asserting the walk visited the whole dataset within 1% of the
   tenant's user count); timed-out and failed steps are recorded in `stats.json` and surfaced in the workflow "Stress
   Test Results" table with their failure reason, and `supertokens-node` is pinned to an exact version for reproducibility
+- Test-only: the 1M-user stress-test suite now runs the measured read-path steps collect-and-continue — a guard
+  violation, timeout or thrown error records that step as failed and the run moves on to the next step instead of
+  aborting at the first failure, so one run surfaces every read-path failure at once (seeding failures stay immediately
+  fatal). A timed-out step is now aborted cooperatively (the pagination walk checks the step's abort signal each
+  iteration and stops issuing requests) so it can't keep hitting the core and polluting later measurements; a step that
+  failed on one of the two dataset sizes reports its scaling ratio as `n/a`; steps that ran after an earlier failure are
+  flagged in the "Stress Test Results" table as possibly tainted; the pagination completeness-guard failure now reports
+  the terminal page's pagination token and first/last `(timeJoined, userId)`; and an end-of-run stage fails the job
+  listing every failed step
 
 ## [12.0.8]
 
