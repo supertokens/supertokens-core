@@ -7,6 +7,12 @@ on:
         description: 'Docker image tag to use'
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
 
 jobs:
   stress-tests:
@@ -36,20 +42,44 @@ jobs:
           npm run generate-users
       - name: Run one million users test
         id: one-million-users
+        shell: bash   # explicit shell => -o pipefail; without it `| tee` masks npm's exit code
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
-      - name: Fetch stats from previous runs
-        # Comparison is best-effort — never fail the release over it.
+      - name: Display Test Statistics
+        if: always()
+        run: |
+          if [ ! -f stress-tests/stats.json ]; then
+            echo "stats.json not found — the run produced no measurements." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
+          echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---------------|------|-----------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Display pg_stat_statements summary
+        if: always()
+        run: |
+          if [ -f stress-tests/pg-stats-summary.md ]; then
+            cat stress-tests/pg-stats-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Display comparison with previous runs
+        if: always()
+        # Comparison is best-effort — never fail the run over it.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd stress-tests
+          [ -f stats.json ] || exit 0
           mkdir -p prev-stats
           # Artifacts are listed repo-wide, newest first; the current run has not
-          # uploaded its artifact yet, so these are the previous three runs.
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats&per_page=3" \
+          # uploaded its artifact yet, so these are the previous five runs.
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats&per_page=5" \
             --jq '.artifacts[] | select(.expired == false) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' \
             > artifact-list.tsv || true
           i=0
@@ -62,14 +92,14 @@ jobs:
             echo "$created" > "prev-stats/${i}/created_at"
             echo "$branch" > "prev-stats/${i}/branch"
           done < artifact-list.tsv
-      - name: Display Test Statistics
-        run: |
-          cd stress-tests
+          [ -f prev-stats/1/stats.json ] || exit 0
           {
-            echo "## Stress Test Results"
+            echo ""
+            echo "### Comparison with previous runs"
             header="| Test | This run |"
             sep="|------|----------|"
-            for d in prev-stats/1 prev-stats/2 prev-stats/3; do
+            for n in 1 2 3 4 5; do
+              d="prev-stats/$n"
               if [ -f "$d/stats.json" ]; then
                 label="$(cut -c1-10 "$d/created_at" 2>/dev/null || echo prev)"
                 branch="$(cat "$d/branch" 2>/dev/null || true)"
@@ -85,7 +115,8 @@ jobs:
               ms=$(echo "$row" | base64 -d | jq -r .ms)
               fmt=$(echo "$row" | base64 -d | jq -r .formatted)
               line="| $title | $fmt |"
-              for d in prev-stats/1 prev-stats/2 prev-stats/3; do
+              for n in 1 2 3 4 5; do
+                d="prev-stats/$n"
                 [ -f "$d/stats.json" ] || continue
                 prev_ms=$(jq -r --arg t "$title" '[.measurements[] | select(.title == $t) | .ms] | first // empty' "$d/stats.json")
                 prev_fmt=$(jq -r --arg t "$title" '[.measurements[] | select(.title == $t) | .formatted] | first // empty' "$d/stats.json")
@@ -98,11 +129,12 @@ jobs:
               done
               echo "$line"
             done
-            if [ -d prev-stats/1 ]; then
-              echo ""
-              echo "_(±% is this run relative to that run — positive means this run was slower)_"
-            fi
+            echo ""
+            echo "_(±% is this run relative to that run — positive means this run was slower)_"
           } >> $GITHUB_STEP_SUMMARY
+
+      # No `if: always()` here on purpose: only successful runs become
+      # comparison baselines — a failed run's timings are tainted.
       - name: Upload stats for future comparisons
         uses: actions/upload-artifact@v6
         with:
