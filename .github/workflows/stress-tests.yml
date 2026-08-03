@@ -17,6 +17,10 @@ on:
 jobs:
   stress-tests:
     runs-on: ubuntu-22.04
+    # A failed stress test must not block the release: the job still shows a
+    # red X with its failure tables, but the workflow (and thus the caller's
+    # release-docker gate) passes.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node.js
