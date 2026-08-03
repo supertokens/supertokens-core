@@ -9,6 +9,7 @@ import {
 } from '../common/utils';
 import { runReadPaths } from './readPaths';
 import { capturePgStats, PgStatsCollector } from './pgStatStatements';
+import { resolveMigrationMode, assertCoreMigrationMode } from '../common/migrationMode';
 
 import SuperTokens from 'supertokens-node';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
@@ -76,11 +77,23 @@ function stInit(connectionURI: string, apiKey: string) {
 }
 
 async function main() {
+  // Which migration mode this run's core was deployed in (LEGACY by default).
+  // The stress-tests workflow runs one matrix leg per mode and passes the leg
+  // via STRESS_TEST_MIGRATION_MODE; everything measured below is tagged with it
+  // so the two legs' stats.json / summaries / comparison baselines stay apart.
+  const migrationMode = resolveMigrationMode();
+  console.log(`Migration mode for this run: ${migrationMode}`);
+
   const deployment = await createStInstanceForTest();
   console.log(`Deployment created: ${deployment.core_url}`);
   try {
     stInit(deployment.core_url, deployment.api_key);
     await setupLicense(deployment.core_url, deployment.api_key);
+
+    // Confirm the core is really in the expected mode before measuring — a leg
+    // whose SUPERTOKENS_MIGRATION_MODE never took effect would otherwise
+    // silently re-measure the LEGACY paths under the MIGRATED label.
+    await assertCoreMigrationMode(deployment.core_url, deployment.api_key, migrationMode);
 
     // 0. Import users in two tranches so the read-path steps can be measured at
     // two dataset sizes (see runReadPaths / RatioCollector). First the ~100k
@@ -181,6 +194,7 @@ async function main() {
     // scaling ratios + both pg_stat_statements phase snapshots), then the
     // human-readable pg summary for the step summary.
     StatsCollector.getInstance().writeToFile({
+      migrationMode,
       pgStatStatements: PgStatsCollector.getInstance().toJSON(),
       scalingRatios: RatioCollector.getInstance().toJSON(),
     });
@@ -220,6 +234,7 @@ async function main() {
     // shows where and why the run died instead of producing no stats at all.
     try {
       StatsCollector.getInstance().writeToFile({
+        migrationMode,
         pgStatStatements: PgStatsCollector.getInstance().toJSON(),
         scalingRatios: RatioCollector.getInstance().toJSON(),
       });

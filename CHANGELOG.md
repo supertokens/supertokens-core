@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Test-only: the 1M-user stress-test suite now runs one matrix leg per migration mode (LEGACY and MIGRATED) as parallel
+  jobs. The MIGRATED leg deploys a fresh core directly in MIGRATED mode via `SUPERTOKENS_MIGRATION_MODE` (no backfill
+  needed on an empty DB) so the migrated-schema read paths (`app_id_to_user_id` / `recipe_user_tenants`) are exercised
+  at scale, and the suite asserts the core actually came up in the expected mode before measuring. `stats.json`, the
+  workflow "Stress Test Results" summary and the previous-run comparison baseline (per-mode artifact) are tagged by
+  mode so the two legs never cross-compare
+
 ## [12.0.9]
 
 - Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
