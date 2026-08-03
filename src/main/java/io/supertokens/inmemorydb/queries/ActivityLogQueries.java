@@ -23,10 +23,17 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class ActivityLogQueries {
+
+    /** Same retention window as the PostgreSQL implementation. */
+    private static final int RETENTION_DAYS = 31;
+
+    private static final long MILLIS_PER_DAY = 24L * 60 * 60 * 1000;
 
     static String getQueryToCreateActivityLogTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getActivityLogTable() + " ("
@@ -68,5 +75,15 @@ public class ActivityLogQueries {
             pst.setLong(9, event.createdAt);
             pst.setString(10, event.payload);
         });
+    }
+
+    /**
+     * The unpartitioned table has no partitions to drop, so retention is enforced with a direct
+     * delete — same cutoff semantics as the PostgreSQL implementation's DEFAULT-partition purge.
+     */
+    public static void deleteEntriesOlderThanRetention(Start start) throws SQLException, StorageQueryException {
+        long cutoffMillis = LocalDate.now(ZoneOffset.UTC).minusDays(RETENTION_DAYS).toEpochDay() * MILLIS_PER_DAY;
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getActivityLogTable() + " WHERE created_at < ?";
+        update(start, QUERY, pst -> pst.setLong(1, cutoffMillis));
     }
 }

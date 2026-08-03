@@ -7,12 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
+  partition maintenance hook (it previously kept entries for the lifetime of the process)
 - Fixes user pagination truncating (newest-first) or never terminating (oldest-first) after bulk-importing linked
   users whose per-method `time_joined` values diverge. Bulk import now normalizes each linked group's
   `primary_or_recipe_user_time_joined` to the group's `MIN(time_joined)` after all login methods are inserted,
   restoring the keyset-pagination invariant (see supertokens-core#1347)
-- Adds `updateTimeJoinedForPrimaryUsers_Transaction` to `AuthRecipeSQLStorage` (plugin-interface addition; needs a
-  plugin-interface version bump and implementations in each SQL storage plugin at release)
+- Adds `updateTimeJoinedForPrimaryUsers_Transaction` to `AuthRecipeSQLStorage` 
 
 ## [12.0.8]
 
