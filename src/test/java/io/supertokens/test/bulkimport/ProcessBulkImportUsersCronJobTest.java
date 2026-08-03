@@ -27,10 +27,12 @@ import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
@@ -116,6 +118,45 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, publicTenant, storage,
                 bulkImportUser,
                 container.users[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailBulkImportUserWhenExternalUserIdMappingAlreadyExists() throws Exception {
+        TestingProcess process = startCronProcess();
+        if (process == null) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        AuthRecipeUserInfo existingUser = EmailPassword.signUp(main, "existing@example.com", "password");
+        String externalUserId = "existing-external-user-id";
+        UserIdMapping.createUserIdMapping(main, existingUser.getSupertokensUserId(), externalUserId, null, false);
+
+        String importedUserId = io.supertokens.utils.Utils.getUUID();
+        BulkImportUser.LoginMethod thirdPartyLoginMethod = new BulkImportUser.LoginMethod(List.of("public"),
+                "thirdparty", true, true, System.currentTimeMillis(), "imported@example.com", null, null, null,
+                "google", "third-party-user-id", null, importedUserId);
+        BulkImportUser userToImport = new BulkImportUser(importedUserId, externalUserId, null, null, null,
+                List.of(thirdPartyLoginMethod));
+        BulkImport.addUsers(appIdentifier, storage, List.of(userToImport));
+
+        waitForProcessingWithTimeout(appIdentifier, storage, 30);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+        assertEquals(1, usersAfterProcessing.size());
+        assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
+        assertEquals("E031: A user with externalId existing-external-user-id already exists",
+                usersAfterProcessing.get(0).errorMessage);
+
+        UserPaginationContainer users = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
+        assertEquals(1, users.users.length);
+        assertEquals(existingUser.getSupertokensUserId(), users.users[0].getSupertokensUserId());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
