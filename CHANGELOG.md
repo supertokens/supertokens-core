@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Fixes user pagination truncating (newest-first) or never terminating (oldest-first) after bulk-importing linked
+  users whose per-method `time_joined` values diverge. Bulk import now normalizes each linked group's
+  `primary_or_recipe_user_time_joined` to the group's `MIN(time_joined)` after all login methods are inserted,
+  restoring the keyset-pagination invariant (see supertokens-core#1347)
+- Adds `updateTimeJoinedForPrimaryUsers_Transaction` to `AuthRecipeSQLStorage` (plugin-interface addition; needs a
+  plugin-interface version bump and implementations in each SQL storage plugin at release)
+
 ## [12.0.8]
 
 - Security improvements around api-key/ip allow list handling

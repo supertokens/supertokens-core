@@ -184,6 +184,25 @@ public class AuthRecipe {
         });
     }
 
+    // Restores the pagination invariant for a set of bulk-imported primary users: for each primary user
+    // id, sets primary_or_recipe_user_time_joined = MIN(time_joined over the linked group). The bulk-import
+    // path inserts every login-method row with its own time_joined, so a linked group whose members have
+    // divergent per-method time_joined ends up with several distinct primary_or_recipe_user_time_joined
+    // values, which breaks the keyset pagination cursor (see AuthRecipe.getUsers / UserPaginationToken).
+    // This normalization must run once, after all recipes' login methods have been inserted, since a group
+    // can span recipes.
+    public static void updateTimeJoinedForBulkImportedPrimaryUsers(Storage storage, AppIdentifier appIdentifier,
+            List<String> primaryUserIds) throws StorageQueryException, StorageTransactionLogicException {
+        if (primaryUserIds == null || primaryUserIds.isEmpty()) {
+            return;
+        }
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        authRecipeStorage.startTransaction(con -> {
+            authRecipeStorage.updateTimeJoinedForPrimaryUsers_Transaction(appIdentifier, con, primaryUserIds);
+            return null;
+        });
+    }
+
     public static class CreatePrimaryUserResult {
         public AuthRecipeUserInfo user;
         public boolean wasAlreadyAPrimaryUser;
