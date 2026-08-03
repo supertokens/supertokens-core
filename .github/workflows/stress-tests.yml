@@ -18,9 +18,9 @@ jobs:
   stress-tests:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
       - name: Install dependencies
@@ -66,3 +66,77 @@ jobs:
           if [ -f stress-tests/pg-stats-summary.md ]; then
             cat stress-tests/pg-stats-summary.md >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Display comparison with previous runs
+        if: always()
+        # Comparison is best-effort — never fail the run over it.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd stress-tests
+          [ -f stats.json ] || exit 0
+          mkdir -p prev-stats
+          # Artifacts are listed repo-wide, newest first; the current run has not
+          # uploaded its artifact yet, so these are the previous five runs.
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats&per_page=5" \
+            --jq '.artifacts[] | select(.expired == false) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' \
+            > artifact-list.tsv || true
+          i=0
+          while IFS=$'\t' read -r id created branch; do
+            [ -z "$id" ] && continue
+            i=$((i+1))
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "prev-${i}.zip" || continue
+            mkdir -p "prev-stats/${i}"
+            unzip -o -d "prev-stats/${i}" "prev-${i}.zip" > /dev/null || continue
+            echo "$created" > "prev-stats/${i}/created_at"
+            echo "$branch" > "prev-stats/${i}/branch"
+          done < artifact-list.tsv
+          [ -f prev-stats/1/stats.json ] || exit 0
+          {
+            echo ""
+            echo "### Comparison with previous runs"
+            header="| Test | This run |"
+            sep="|------|----------|"
+            for n in 1 2 3 4 5; do
+              d="prev-stats/$n"
+              if [ -f "$d/stats.json" ]; then
+                label="$(cut -c1-10 "$d/created_at" 2>/dev/null || echo prev)"
+                branch="$(cat "$d/branch" 2>/dev/null || true)"
+                [ -n "$branch" ] && label="$label ($branch)"
+                header="$header $label |"
+                sep="$sep------|"
+              fi
+            done
+            echo "$header"
+            echo "$sep"
+            jq -r '.measurements[] | @base64' stats.json | while read -r row; do
+              title=$(echo "$row" | base64 -d | jq -r .title)
+              ms=$(echo "$row" | base64 -d | jq -r .ms)
+              fmt=$(echo "$row" | base64 -d | jq -r .formatted)
+              line="| $title | $fmt |"
+              for n in 1 2 3 4 5; do
+                d="prev-stats/$n"
+                [ -f "$d/stats.json" ] || continue
+                prev_ms=$(jq -r --arg t "$title" '[.measurements[] | select(.title == $t) | .ms] | first // empty' "$d/stats.json")
+                prev_fmt=$(jq -r --arg t "$title" '[.measurements[] | select(.title == $t) | .formatted] | first // empty' "$d/stats.json")
+                if [ -n "$prev_ms" ]; then
+                  delta=$(awk -v c="$ms" -v p="$prev_ms" 'BEGIN { printf "%+.1f%%", (c - p) / p * 100 }')
+                  line="$line $prev_fmt ($delta) |"
+                else
+                  line="$line — |"
+                fi
+              done
+              echo "$line"
+            done
+            echo ""
+            echo "_(±% is this run relative to that run — positive means this run was slower)_"
+          } >> $GITHUB_STEP_SUMMARY
+
+      # No `if: always()` here on purpose: only successful runs become
+      # comparison baselines — a failed run's timings are tainted.
+      - name: Upload stats for future comparisons
+        uses: actions/upload-artifact@v6
+        with:
+          name: stress-test-stats
+          path: stress-tests/stats.json
