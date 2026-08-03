@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `primary_or_recipe_user_time_joined` to the group's `MIN(time_joined)` after all login methods are inserted,
   restoring the keyset-pagination invariant (see supertokens-core#1347)
 - Adds `updateTimeJoinedForPrimaryUsers_Transaction` to `AuthRecipeSQLStorage`
+- Fixes bulk import endlessly retrying users whose external user ID is already mapped; such imports now fail with `E031`
 - Test-only: the 1M-user stress-test suite now records non-OK results per seeding step and fails the run at the end if
   any step errored, and its workflow can be triggered manually via `workflow_dispatch`
 - Test-only: the 1M-user stress-test suite now measures the scale-sensitive query paths (paginated listing, user
