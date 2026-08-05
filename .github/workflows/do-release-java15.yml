@@ -1,4 +1,5 @@
 name: Release (Java 15)
+run-name: Release (Java 15) v${{ inputs.core-version }}${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -40,23 +41,45 @@ on:
         required: true
         type: boolean
         default: true
+      push-to-ecr:
+        description: 'Push Docker images to Amazon ECR'
+        required: true
+        type: boolean
+        default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
+        required: true
+        type: boolean
+        default: false
 
 env:
   total-runners: 6
 
 jobs:
+  # ── Validate inputs ───────────────────────────────────────────────
+  # Fail fast on invalid input combinations before anything is registered
+  # or published. Every other job depends on dependency-branches, so gating
+  # it here stops the whole release.
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check fast-release and is-latest-release are mutually exclusive
+        if: inputs.fast-release && inputs.is-latest-release
+        run: |
+          echo "::error::A fast release (smoke tests only) must not be marked as the latest release. Untick one of the two options."
+          exit 1
+
   # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
     name: Resolve dependencies
     environment: publish
+    needs: validate-inputs
     runs-on: ubuntu-22.04
     outputs:
       branches: ${{ steps.result.outputs.branches }}
-      core-sha: ${{ steps.shas.outputs.core }}
-      plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
-      postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
@@ -64,43 +87,127 @@ jobs:
           core-version: ${{ inputs.core-version }}
           plugin-interface-version: ${{ inputs.plugin-interface-version }}
           postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+
+  # ── Update dependency manifests if needed ─────────────────────────
+  # Mirrors the update-deps job in release-tests.yml. This workflow is
+  # dispatch-triggered, so instead of skipping and waiting for a re-trigger
+  # push, it resolves the post-update SHAs that all downstream jobs consume.
+  update-deps:
+    name: Update dependency manifests
+    environment: publish
+    needs: dependency-branches
+    runs-on: ubuntu-22.04
+    outputs:
+      core-sha: ${{ steps.shas.outputs.core }}
+      plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
+      postgresql-sha: ${{ steps.shas.outputs.postgresql }}
+    steps:
+      - name: Set up JDK 15
+        uses: actions/setup-java@v5
+        with:
+          java-version: 15
+          distribution: zulu
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-root
+          path: supertokens-root
+          ref: for_jdk_15_releases
+
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v5
+        with:
+          path: supertokens-root/supertokens-core
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Checkout supertokens-plugin-interface
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: supertokens-root/supertokens-plugin-interface
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          path: supertokens-root/supertokens-postgresql-plugin
+          ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Load modules
+        run: |
+          cd supertokens-root
+          cat > modules.txt <<'EOF'
+          core,master
+          plugin-interface,master
+          postgresql-plugin,master
+          EOF
+          ./loadModules
+
+      - name: Generate dependency manifests
+        run: |
+          cd supertokens-root
+          ./gradlew generateDependenciesJson
+
+      - name: Check for changes and push
+        run: |
+          for repo_dir in supertokens-root/supertokens-core supertokens-root/supertokens-plugin-interface supertokens-root/supertokens-postgresql-plugin; do
+            if [ ! -d "$repo_dir/.git" ]; then
+              continue
+            fi
+
+            pushd "$repo_dir" > /dev/null
+
+            # Stage any changed implementationDependencies.json files
+            find . -name 'implementationDependencies.json' -not -path './.git/*' -exec git add {} +
+
+            if ! git diff --cached --quiet; then
+              echo "::group::implementationDependencies.json diff in $repo_dir"
+              git diff --cached
+              echo "::endgroup::"
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              # --no-verify: loadModules installs the developer pre-commit hook,
+              # which lints (broken ec4j plugin on this root branch) and runs a
+              # full build — neither applies to committing a generated manifest.
+              git commit --no-verify -m "chore: update implementationDependencies.json"
+              git push
+              echo "Pushed updated implementationDependencies.json in $repo_dir"
+            fi
+
+            popd > /dev/null
+          done
+
       - name: Resolve commit SHAs
         id: shas
-        env:
-          BRANCHES: ${{ steps.result.outputs.branches }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          core_branch=$(echo "$BRANCHES" | jq -r '.core')
-          pi_branch=$(echo "$BRANCHES" | jq -r '.["plugin-interface"]')
-          pg_branch=$(echo "$BRANCHES" | jq -r '.postgresql')
-
-          core_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-core.git" "refs/heads/$core_branch" | cut -f1)
-          pi_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-plugin-interface.git" "refs/heads/$pi_branch" | cut -f1)
-          pg_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/supertokens/supertokens-postgresql-plugin.git" "refs/heads/$pg_branch" | cut -f1)
-
-          echo "core=$core_sha" >> $GITHUB_OUTPUT
-          echo "plugin-interface=$pi_sha" >> $GITHUB_OUTPUT
-          echo "postgresql=$pg_sha" >> $GITHUB_OUTPUT
+          echo "core=$(git -C supertokens-root/supertokens-core rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "plugin-interface=$(git -C supertokens-root/supertokens-plugin-interface rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "postgresql=$(git -C supertokens-root/supertokens-postgresql-plugin rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── Register new versions with the SuperTokens API ────────────────
   register-core-version:
     name: Register core version
     environment: publish
     runs-on: ubuntu-22.04
-    needs: dependency-branches
+    needs: update-deps
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
-          git fetch origin ${{ needs.dependency-branches.outputs.core-sha }}
-          git checkout ${{ needs.dependency-branches.outputs.core-sha }} -- \
+          git fetch origin ${{ needs.update-deps.outputs.core-sha }}
+          git checkout ${{ needs.update-deps.outputs.core-sha }} -- \
             build.gradle \
             pluginInterfaceSupported.json \
             coreDriverInterfaceSupported.json
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register core version
@@ -113,22 +220,22 @@ jobs:
     if: inputs.release-postgresql-plugin
     environment: publish
     runs-on: ubuntu-22.04
-    needs: dependency-branches
+    needs: update-deps
     steps:
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
         # (No data files from core are needed here; postgresql plugin provides them)
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
-          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
           fetch-depth: 0
           fetch-tags: true
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Register plugin version
@@ -152,11 +259,11 @@ jobs:
           MAX_INDEX=$((${{ env.total-runners }}-1))
           INDEX_LIST=$(seq 0 ${MAX_INDEX})
           INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
-          echo "::set-output name=json::${INDEX_JSON}"
+          echo "json=${INDEX_JSON}" >> "$GITHUB_OUTPUT"
 
   test:
     name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
-    needs: [ dependency-branches, register-core-version, runner-indexes ]
+    needs: [ update-deps, register-core-version, runner-indexes ]
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -168,38 +275,38 @@ jobs:
 
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
-          ref: ${{ needs.dependency-branches.outputs.core-sha }}
+          ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
-          ref: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
+          ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
-          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
 
       - name: Load modules
         run: |
@@ -253,11 +360,20 @@ jobs:
             git -C supertokens-postgresql-plugin diff --exit-code implementationDependencies.json
           fi
 
-      - uses: chaosaffe/split-tests@v1-alpha.1
+      # Pinned to main: v1-alpha.1 still uses the deprecated ::set-output, and
+      # the v1 tag has a quoting bug that silently breaks exclude-glob.
+      - uses: chaosaffe/split-tests@60c0787d3abbde15fcd66c76a7b4e3d9d2baf5a3
         id: split-tests
         name: Split tests
         with:
-          glob: 'supertokens-root/*/src/test/java/**/*.java'
+          # fast-release smoke suite: login (emailpassword) + session
+          # creation/management tests only; otherwise the full suite.
+          glob: ${{ inputs.fast-release && 'supertokens-root/*/src/test/java/**/{session,emailpassword}/**/*.java' || 'supertokens-root/*/src/test/java/**/*.java' }}
+          # DotStartedFileTest uses fixed ports (8081-8084) on the old version
+          # branches and flakes when a leaked core still holds one of them.
+          # Master fixed this with dynamic ports (startIsolatedProcess), but the
+          # Java 15 era branches don't have that fix, so skip the test here.
+          exclude-glob: 'supertokens-root/*/src/test/java/**/DotStartedFileTest.java'
           split-total: ${{ env.total-runners }}
           split-index: ${{ matrix.runner-index }}
       - run: 'echo "This runner will execute the following tests: ${{ steps.split-tests.outputs.test-suite }}"'
@@ -272,7 +388,9 @@ jobs:
           IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
           for test in "${TESTS[@]}"; do
             test_name="${test%.java}"
-            test_name="${test_name#supertokens-root/supertokens-core/src/test/java/}"
+            # Strip "supertokens-root/<any repo>/src/test/java/" so the plugin's
+            # own test files also produce valid class filters, not just core's.
+            test_name="${test_name#supertokens-root/*/src/test/java/}"
             test_name="${test_name//\//.}"
             echo "  --tests $test_name \\" >> test.sh
           done
@@ -283,7 +401,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
@@ -343,43 +461,43 @@ jobs:
   # ── Build and publish the dev Docker image ────────────────────────
   build-docker:
     name: Build Docker image
-    needs: [ dependency-branches ]
+    needs: [ update-deps ]
     runs-on: ubuntu-22.04
     outputs:
       dev-tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
-          ref: ${{ needs.dependency-branches.outputs.core-sha }}
+          ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
-          ref: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
+          ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
-          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
 
       - name: Load modules
         run: |
@@ -406,19 +524,19 @@ jobs:
           echo "TAG=${{ inputs.core-version }}-dev" >> $GITHUB_OUTPUT
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push dev image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
           context: ./supertokens-root
@@ -438,60 +556,34 @@ jobs:
   # ── Tag and publish the release Docker image ──────────────────────
   release-docker:
     name: Release Docker image
-    environment: publish
     needs: [ build-docker, stress-tests, mark-as-passed ]
     if: ${{ !cancelled() && !failure() }}
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Tag and push release images
-        run: |
-          tag="${{ inputs.core-version }}"
-          major=$(echo "$tag" | cut -d. -f1)
-          minor=$(echo "$tag" | cut -d. -f1,2)
-          dev_tag="${{ needs.build-docker.outputs.dev-tag }}"
-
-          bash .github/helpers/release-docker.sh \
-            "supertokens/supertokens-dev-postgresql:$dev_tag" \
-            "supertokens/supertokens-postgresql:$tag"
-
-          bash .github/helpers/release-docker.sh \
-            "supertokens/supertokens-dev-postgresql:$dev_tag" \
-            "supertokens/supertokens-postgresql:$minor"
-
-          if [ "${{ inputs.is-latest-for-major }}" == "true" ]; then
-            bash .github/helpers/release-docker.sh \
-              "supertokens/supertokens-dev-postgresql:$dev_tag" \
-              "supertokens/supertokens-postgresql:$major"
-          fi
-
-          if [ "${{ inputs.is-latest-release }}" == "true" ]; then
-            bash .github/helpers/release-docker.sh \
-              "supertokens/supertokens-dev-postgresql:$dev_tag" \
-              "supertokens/supertokens-postgresql:latest"
-          fi
+    uses: ./.github/workflows/_release-publish-docker.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      is-canary: false
+      is-latest-release: ${{ inputs.is-latest-release }}
+      is-latest-for-major: ${{ inputs.is-latest-for-major }}
+      push-to-ecr: ${{ inputs.push-to-ecr }}
+      dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
+    secrets: inherit
 
   # ── Tag all repos with release versions ───────────────────────────
   add-release-tags:
     name: Add release tags
     environment: publish
-    needs: [dependency-branches, release-docker]
+    needs: [update-deps, release-docker]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 15
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 15
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
@@ -501,19 +593,19 @@ jobs:
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-core.git
-          git -C supertokens-core checkout ${{ needs.dependency-branches.outputs.core-sha }}
+          git -C supertokens-core checkout ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-plugin-interface.git
-          git -C supertokens-plugin-interface checkout ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
+          git -C supertokens-plugin-interface checkout ${{ needs.update-deps.outputs.plugin-interface-sha }}
 
       - name: Checkout supertokens-postgresql-plugin
         run: |
           cd supertokens-root
           git clone https://${{ secrets.GH_TOKEN }}@github.com/supertokens/supertokens-postgresql-plugin.git
-          git -C supertokens-postgresql-plugin checkout ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          git -C supertokens-postgresql-plugin checkout ${{ needs.update-deps.outputs.postgresql-sha }}
 
       - name: Write release password
         run: |
@@ -591,3 +683,53 @@ jobs:
             --title "v${{ inputs.core-version }}" \
             --generate-notes \
             ${{ inputs.is-latest-release && '--latest' || '--latest=false' }}
+
+  # ── Build and commit the release JARs ─────────────────────────────
+  build-jars:
+    needs: [add-release-tags]
+    if: ${{ !cancelled() && !failure() }}
+    uses: ./.github/workflows/generate-jars.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      java-version: '15'
+      plugin-interface-version: ${{ inputs.plugin-interface-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      commit-to-github: true
+    secrets: inherit
+
+  # ── Notify Slack about the successful release ─────────────────────
+  notify-slack:
+    name: Notify Slack
+    needs: [ build-jars ]
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Post release notification on Slack channel
+        id: slack-notify
+        # The release itself succeeded at this point — a failed notification
+        # must not fail the workflow. The step below leaves a memo instead.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+            text: "SuperTokens core v${{ inputs.core-version }} released (Java 15)"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "🚀 SuperTokens core v${{ inputs.core-version }} released (Java 15)${{ inputs.fast-release && ' — smoke tests only' || '' }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
+
+      - name: Memo failed Slack notification
+        if: steps.slack-notify.outcome == 'failure'
+        run: |
+          echo "## ⚠️ Slack notification failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The release itself completed successfully, but the announcement could not be posted to Slack." >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the \`SLACK_BOT_TOKEN\` and \`SLACK_RELEASE_CHANNEL_ID\` secrets, and make sure the bot is invited to the channel." >> "$GITHUB_STEP_SUMMARY"

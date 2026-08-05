@@ -3360,6 +3360,17 @@ public class Start
     }
 
     @Override
+    public void updateTimeJoinedForPrimaryUsers_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                            List<String> primaryUserIds) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            GeneralQueries.updateTimeJoinedForPrimaryUsers_Transaction(this, sqlCon, appIdentifier, primaryUserIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public boolean checkIfUsesAccountLinking(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
             return GeneralQueries.checkIfUsesAccountLinking(this, appIdentifier);
@@ -4396,8 +4407,13 @@ public class Start
     }
 
     @Override
-    public void maintainActivityLogPartitions() {
-        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table, so there
-        // is nothing to maintain.
+    public void maintainActivityLogPartitions() throws StorageQueryException {
+        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table — there
+        // are no partitions to maintain, so retention is enforced with a direct delete instead.
+        try {
+            ActivityLogQueries.deleteEntriesOlderThanRetention(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
