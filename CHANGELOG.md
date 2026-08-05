@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.3.7] - 2026-08-05
+
+- hardening signature validation
+
 ## [11.3.6] - 2026-07-29
 
 - resolve api_keys and IP access config against the app's public tenant
