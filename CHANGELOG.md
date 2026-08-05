@@ -32,11 +32,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   request behaviour is otherwise unchanged. The in-memory SQLite storage gains the two nullable
   `session_info` columns.
 
-- Test-only: pin the token-regeneration contract as invariants - regenerate re-issues in place (original
-  absolute expiry preserved, no `access_token_validity_jitter` re-roll, refresh-token lineage carried over
-  unchanged), performs a DB-only payload update returning no token for an expired input, and never reads or
-  writes the CDI >= 5.5 rotation state (`refresh_token_hash_2` / `prev_refresh_token_hash_2` /
-  `refresh_token_rotated_at`).
+- Test-only: pin the token-regeneration invariants - in-place re-issue (original expiry, no jitter re-roll,
+  lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.5
+  rotation-state access.
 
 ## [12.0.7]
 
