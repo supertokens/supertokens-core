@@ -7,14 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Test-only: the 1M-user stress-test suite now seeds OAuth data (a few hundred clients via the SDK, plus bulk M2M-token
-  stats and `oauth_sessions` volume via direct SQL) and measures the OAuth-dependent paths — M2M client-credentials
-  issuance, token introspection, revoke by session handle and by client id, the cleanup-cron sweep, and a
-  burst-accuracy assertion that issues N tokens in one second and requires the feature-flag created-since counter to
-  rise by exactly N (which pins supertokens-postgresql-plugin#357). The OAuth stress compose now brings up the OAuth
-  provider (`oauth2-test`) and points the core at it. The bulk M2M seed targets whichever stats table the image under
-  test uses (the #357 bucketed rollup or the legacy per-token table), so a run against a pre-#357 image is
-  informative-red on exactly the burst/O(1) steps rather than failing to seed
+- Test-only: the 1M-user stress-test suite now seeds OAuth data (clients via the SDK, bulk M2M-token stats and
+  `oauth_sessions` volume via direct SQL) and measures the OAuth-dependent paths — M2M issuance, introspection, revoke,
+  the cleanup-cron sweep, and a burst-accuracy assertion that pins supertokens-postgresql-plugin#357
 - Test-only: the 1M-user stress-test suite now runs one matrix leg per migration mode (LEGACY and MIGRATED) as parallel
   jobs. The MIGRATED leg deploys a fresh core directly in MIGRATED mode via `SUPERTOKENS_MIGRATION_MODE` (no backfill
   needed on an empty DB) so the migrated-schema read paths (`app_id_to_user_id` / `recipe_user_tenants`) are exercised
