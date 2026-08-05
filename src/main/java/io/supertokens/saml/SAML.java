@@ -59,6 +59,7 @@ import org.opensaml.saml.saml2.core.Subject;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
+import org.opensaml.saml.security.impl.SAMLSignatureProfileValidator;
 import org.opensaml.security.credential.Credential;
 import org.opensaml.security.credential.CredentialSupport;
 import org.opensaml.xmlsec.signature.KeyInfo;
@@ -373,8 +374,7 @@ public class SAML {
             throws SignatureException {
         Signature responseSignature = samlResponse.getSignature();
         if (responseSignature != null) {
-            Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
-            SignatureValidator.validate(responseSignature, credential);
+            validateSignature(responseSignature, idpCertificate);
             return;
         }
 
@@ -391,14 +391,35 @@ public class SAML {
                         "Unsigned assertion found in a response using assertion-level signing; " +
                         "all assertions must be individually signed to prevent XML Signature Wrapping");
             }
-            Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
-            SignatureValidator.validate(assertionSignature, credential);
+            validateSignature(assertionSignature, idpCertificate);
             foundSignedAssertion = true;
         }
 
         if (!foundSignedAssertion) {
             throw new RuntimeException("Neither SAML Response nor any Assertion is signed");
         }
+    }
+
+    /**
+     * Validates a single SAML signature in two mandatory steps.
+     *
+     * SAMLSignatureProfileValidator enforces the SAML signature profile *before* the
+     * cryptographic check: the signature must be enveloped in the object it signs, carry
+     * exactly one Reference, that Reference must resolve to the signed object's own ID, and
+     * only the enveloped-signature and canonicalisation transforms are permitted. Without
+     * it, SignatureValidator.validate() confirms only that *some* element in the document is
+     * correctly signed — not that the signature covers the Response/Assertion we go on to
+     * read. That gap is XML Signature Wrapping: an attacker reparents a signature the IdP
+     * produced for their own account onto a forged Response/Assertion and parks the genuinely
+     * signed element elsewhere in the document (e.g. samlp:Extensions or saml:Advice), where
+     * the Reference URI still resolves. Running the profile validator first rejects such a
+     * document because the Reference no longer names the enclosing object's ID.
+     */
+    private static void validateSignature(Signature signature, X509Certificate idpCertificate)
+            throws SignatureException {
+        new SAMLSignatureProfileValidator().validate(signature);
+        Credential credential = CredentialSupport.getSimpleCredential(idpCertificate, null);
+        SignatureValidator.validate(signature, credential);
     }
 
     private static void validateSamlResponseTimestamps(Response samlResponse) throws SAMLResponseVerificationFailedException {
