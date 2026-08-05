@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.0.10]
+
+- fixes a SAML XML Signature Wrapping authentication bypass
+
 ## [12.0.9]
 
 - Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
