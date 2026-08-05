@@ -138,4 +138,105 @@ public class SAMLXSWTest5_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    /**
+     * Response-level signature wrapping (advisory variant A).
+     *
+     * The attacker holds a Response the IdP signed for their own account. Its ds:Signature is
+     * reparented onto a forged Response whose assertion names the victim, and the original signed
+     * Response is parked under samlp:Extensions so the signature's Reference URI still resolves.
+     * The relocated signature is cryptographically valid, so SignatureValidator.validate() passes;
+     * only SAMLSignatureProfileValidator (Reference must name the enclosing Response's own ID)
+     * rejects it.
+     *
+     * Without the fix the callback returns OK and authenticates the victim — FAIL.
+     * With the fix the callback returns SAML_RESPONSE_VERIFICATION_FAILED_ERROR — PASS.
+     */
+    @Test
+    public void xswAttack_responseLevelRelocatedSignatureMustBeRejected() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.SAML});
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process, DEFAULT_REDIRECT_URI, ACS_URL, IDP_ENTITY_ID, IDP_SSO_URL);
+
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process, clientInfo.clientId, clientInfo.defaultRedirectURI,
+                clientInfo.acsURL, "test-state");
+
+        String xswResponseBase64 = MockSAML.generateResponseLevelXSWWrappedSAMLResponseBase64(
+                clientInfo.idpEntityId, SP_ENTITY_ID, clientInfo.acsURL,
+                ATTACKER_EMAIL, VICTIM_EMAIL, relayState, clientInfo.keyMaterial, 300);
+
+        JsonObject callbackBody = new JsonObject();
+        callbackBody.addProperty("samlResponse", xswResponseBase64);
+        callbackBody.addProperty("relayState", relayState);
+
+        JsonObject callbackResp = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/callback",
+                callbackBody, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals(
+                "Response-level XSW was not rejected: a relocated signature whose Reference URI " +
+                "does not cover the enclosing Response must be refused",
+                "SAML_RESPONSE_VERIFICATION_FAILED_ERROR", callbackResp.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Assertion-level signature wrapping (advisory variant B).
+     *
+     * The attacker holds an assertion the IdP signed for their own account. Its ds:Signature is
+     * reparented onto a forged assertion naming the victim, and the original signed assertion is
+     * parked inside the forged assertion's saml:Advice so the Reference URI still resolves. This
+     * defeats the "every assertion must carry a valid signature" loop, because the forged
+     * assertion does carry one; only SAMLSignatureProfileValidator rejects it.
+     *
+     * Without the fix the callback returns OK and authenticates the victim — FAIL.
+     * With the fix the callback returns SAML_RESPONSE_VERIFICATION_FAILED_ERROR — PASS.
+     */
+    @Test
+    public void xswAttack_assertionLevelRelocatedSignatureMustBeRejected() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.SAML});
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process, DEFAULT_REDIRECT_URI, ACS_URL, IDP_ENTITY_ID, IDP_SSO_URL);
+
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process, clientInfo.clientId, clientInfo.defaultRedirectURI,
+                clientInfo.acsURL, "test-state");
+
+        String xswResponseBase64 = MockSAML.generateAssertionLevelXSWWrappedSAMLResponseBase64(
+                clientInfo.idpEntityId, SP_ENTITY_ID, clientInfo.acsURL,
+                ATTACKER_EMAIL, VICTIM_EMAIL, relayState, clientInfo.keyMaterial, 300);
+
+        JsonObject callbackBody = new JsonObject();
+        callbackBody.addProperty("samlResponse", xswResponseBase64);
+        callbackBody.addProperty("relayState", relayState);
+
+        JsonObject callbackResp = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/callback",
+                callbackBody, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals(
+                "Assertion-level XSW was not rejected: a relocated signature whose Reference URI " +
+                "does not cover the enclosing assertion must be refused",
+                "SAML_RESPONSE_VERIFICATION_FAILED_ERROR", callbackResp.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
