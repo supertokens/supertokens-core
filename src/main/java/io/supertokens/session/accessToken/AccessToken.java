@@ -235,7 +235,7 @@ public class AccessToken {
     }
 
     // accessTokenValidityOverride (ms): the per-mint access token validity override (PLAN-002 decision 11, the
-    // optional accessTokenValidity parameter on session create / refresh, CDI >= 5.5). Only consulted for a fresh
+    // optional accessTokenValidity parameter on session create / refresh, CDI >= 5.6). Only consulted for a fresh
     // mint (expiryTime == null); when a caller pins an absolute expiryTime (verify-promote, regenerate) the override
     // is irrelevant and ignored. The override is applied against this method's single `now` - never precomputed at a
     // call site - so it composes with jitter and does not straddle the whole-second truncation in AccessTokenInfo.

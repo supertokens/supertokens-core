@@ -20,7 +20,7 @@ public class UnauthorisedException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    // Non-null only when this Unauthorised is a CDI >= 5.5 recent-refresh-token-reuse (RECENT_PREV /
+    // Non-null only when this Unauthorised is a CDI >= 5.6 recent-refresh-token-reuse (RECENT_PREV /
     // ORPHANED_BRANCH) reported under recent_token_reuse_behaviour = UNAUTHORISED. The session is still
     // revoked in that case; this field lets the refresh path tell reuse-Unauthorised apart from ordinary
     // Unauthorised (session missing / expired) so it revokes only for the former.

@@ -39,14 +39,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * Exercises the optional per-mint access token validity override (PLAN-002 decision 11, the CDI >= 5.5
+ * Exercises the optional per-mint access token validity override (PLAN-002 decision 11, the CDI >= 5.6
  * {@code accessTokenValidity} parameter on session create and refresh): the issued access token uses
  * {@code param ?? configured validity}, shorten-only (0 < param <= configured, out-of-range is a hard
  * rejection not a clamp), nothing is persisted, and the refresh token validity is unaffected.
  *
  * The refresh-side override is driven through the direct
  * {@link Session#refreshSession(Main, String, String, boolean, AccessToken.VERSION, SemVer, Long)} test overload
- * because core does not yet advertise CDI 5.5 over HTTP (see the PR description); this branch carries no expiry
+ * because core does not yet advertise CDI 5.6 over HTTP (see the PR description); this branch carries no expiry
  * jitter (that is a sibling unit), so mint lifetimes are asserted exactly.
  */
 public class AccessTokenValidityParamTest {
@@ -175,7 +175,7 @@ public class AccessTokenValidityParamTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // CDI >= 5.5 refresh honours the override on the rotation mint; the refresh token expiry is not overridable.
+    // CDI >= 5.6 refresh honours the override on the rotation mint; the refresh token expiry is not overridable.
     @Test
     public void refreshWithOverrideShortensAccessTokenExpiry() throws Exception {
         String[] args = {"../"};
@@ -189,7 +189,7 @@ public class AccessTokenValidityParamTest {
 
         SessionInformationHolder s = createSession(main, null);
         SessionInformationHolder refreshed = Session.refreshSession(main, s.refreshToken.token, s.antiCsrfToken,
-                false, AccessToken.getLatestVersion(), SemVer.v5_5, override);
+                false, AccessToken.getLatestVersion(), SemVer.v5_6, override);
 
         assertNotNull(refreshed.accessToken);
         assertEquals(override, accessTokenLifetime(refreshed));
@@ -213,7 +213,7 @@ public class AccessTokenValidityParamTest {
         SessionInformationHolder s = createSession(main, null);
         try {
             Session.refreshSession(main, s.refreshToken.token, s.antiCsrfToken, false,
-                    AccessToken.getLatestVersion(), SemVer.v5_5, configured + 1000L);
+                    AccessToken.getLatestVersion(), SemVer.v5_6, configured + 1000L);
             fail("expected AccessTokenValidityOutOfRangeException");
         } catch (AccessTokenValidityOutOfRangeException expected) {
             // ok
@@ -223,10 +223,11 @@ public class AccessTokenValidityParamTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Below CDI 5.5 the override is not applied: the legacy refresh mint uses the configured validity. (The
-    // webserver only forwards the parameter at CDI >= 5.5; this asserts the mint path itself never honours it.)
+    // Below CDI 5.6 the override is not applied: the legacy refresh mint uses the configured validity. Asserted
+    // at CDI 5.4 (a legacy version below the gate): the webserver only forwards the parameter at CDI >= 5.6, and
+    // this shows the mint path itself never honours it below the gate.
     @Test
-    public void refreshOverrideIgnoredBelowCdi5_5() throws Exception {
+    public void refreshOverrideIgnoredBelowCdi5_6() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -73,9 +73,9 @@ public class RefreshSessionAPI extends WebserverAPI {
         Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v3_0)
                 ? InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", version.lesserThan(SemVer.v5_0))
                 : null;
-        // Optional per-mint access token validity override (ms), CDI >= 5.5 only (PLAN-002 decision 11).
+        // Optional per-mint access token validity override (ms), CDI >= 5.6 only (PLAN-002 decision 11).
         // Shorten-only; validated against the configured access_token_validity in Session.refreshSession.
-        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_5)
+        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_6)
                 ? InputParser.parseLongOrThrowError(input, "accessTokenValidity", true)
                 : null;
 
@@ -151,7 +151,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
-            // CDI >= 5.5: a recent refresh-token reuse reported as UNAUTHORISED carries its subtype so
+            // CDI >= 5.6: a recent refresh-token reuse reported as UNAUTHORISED carries its subtype so
             // consumers can route recent-reuse vs ordinary unauthorised. Null on every other unauthorised.
             if (e instanceof UnauthorisedException && ((UnauthorisedException) e).reuseSubtype != null) {
                 reply.addProperty("recentTokenReuseSubtype", ((UnauthorisedException) e).reuseSubtype.name());
@@ -168,7 +168,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             session.addProperty("userId", e.primaryUserId);
             session.addProperty("recipeUserId", e.recipeUserId);
             reply.add("session", session);
-            // CDI >= 5.5 refresh-time detection carries the reuse subtype (RECENT_PREV / ORPHANED_BRANCH /
+            // CDI >= 5.6 refresh-time detection carries the reuse subtype (RECENT_PREV / ORPHANED_BRANCH /
             // STALE_LINEAGE); null on legacy (CDI <= 5.4) theft so those responses stay byte-identical.
             if (e.reuseSubtype != null) {
                 reply.addProperty("recentTokenReuseSubtype", e.reuseSubtype.name());

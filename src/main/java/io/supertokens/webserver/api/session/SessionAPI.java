@@ -84,9 +84,9 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInJWT != null;
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
-        // Optional per-mint access token validity override (ms), CDI >= 5.5 only (PLAN-002 decision 11).
+        // Optional per-mint access token validity override (ms), CDI >= 5.6 only (PLAN-002 decision 11).
         // Shorten-only; validated against the configured access_token_validity in Session.createNewSession.
-        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_5)
+        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_6)
                 ? InputParser.parseLongOrThrowError(input, "accessTokenValidity", true)
                 : null;
 

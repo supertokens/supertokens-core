@@ -16,14 +16,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     subtractive randomization of access token validity at issuance; 0 disables it.
   - `recent_token_reuse_behaviour` (`TOKEN_THEFT` (default) | `UNAUTHORISED`, config.yaml only) - how the reuse of a
     recently rotated-out refresh token is reported. The session is revoked regardless of this setting.
-- On CDI >= 5.5, refresh advances rotation state inside the refresh transaction (rather than deferring it to the
-  first verify): the retired refresh token hash and rotation time are recorded as `prev` / `rotated_at`, a
-  re-rotating grace window (`refresh_token_rotation_grace_period`) lets in-window retries of the window root
-  recover after a lost response, and out-of-window reuse is classified (`RECENT_PREV` / `ORPHANED_BRANCH` /
-  `STALE_LINEAGE`), revokes the session, and is reported per `recent_token_reuse_behaviour` (`STALE_LINEAGE` is
-  always token theft). The reuse subtype is added to the theft/unauthorised refresh responses. Grace hits and
-  reuse emit telemetry (`REFRESH_TOKEN_GRACE_PERIOD_HIT`, `REFRESH_TOKEN_REUSE_DETECTED`).
-- On CDI >= 5.5, `POST /recipe/session` and `POST /recipe/session/refresh` accept an optional `accessTokenValidity`
+- On CDI >= 5.6, refresh rotates the token inside the refresh transaction: it records the retired hash and rotation
+  time (`prev` / `rotated_at`), honours a re-rotating grace window (`refresh_token_rotation_grace_period`), and
+  revokes the session on out-of-window reuse (reported per `recent_token_reuse_behaviour`). CDI <= 5.5 behaviour is
+  unchanged.
+- On CDI >= 5.6, `POST /recipe/session` and `POST /recipe/session/refresh` accept an optional `accessTokenValidity`
   (in milliseconds) that overrides the configured `access_token_validity` for the access token minted by that call
   only. It is shorten-only - validated `0 < accessTokenValidity <= configured access_token_validity`, with
   out-of-range values rejected as a 400 rather than clamped - nothing about it is persisted, and the refresh token
@@ -31,11 +28,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Adopts plugin interface 9.0: every write of `refresh_token_hash_2` on any code path (new CDI >= 5.5 rotation,
-  legacy verify-time promotion, legacy refresh promotion) also records `prev_refresh_token_hash_2` and
-  `refresh_token_rotated_at`, so sessions migrate safely across CDI versions in both directions. CDI <= 5.4
-  request behaviour is otherwise unchanged. The in-memory SQLite storage gains the two nullable
-  `session_info` columns.
+- Adopts plugin interface 9.0: refresh-token-hash writes now also record `prev_refresh_token_hash_2` and
+  `refresh_token_rotated_at` (added as nullable `session_info` columns to the in-memory SQLite storage).
 
 ## [12.0.7]
 

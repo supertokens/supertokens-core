@@ -17,7 +17,7 @@
 package io.supertokens.exceptions;
 
 // Thrown when a per-mint access token validity override (the optional accessTokenValidity parameter on
-// session create / refresh, CDI >= 5.5) is outside the allowed shorten-only range
+// session create / refresh, CDI >= 5.6) is outside the allowed shorten-only range
 // (0 < param <= effective configured access_token_validity). The webserver maps it to a 400, never a clamp.
 public class AccessTokenValidityOutOfRangeException extends Exception {
 

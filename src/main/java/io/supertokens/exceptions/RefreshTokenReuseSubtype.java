@@ -17,7 +17,7 @@
 package io.supertokens.exceptions;
 
 /**
- * Classifies a refresh-token reuse detected on the CDI >= 5.5 refresh path (PLAN-002 decision 4).
+ * Classifies a refresh-token reuse detected on the CDI >= 5.6 refresh path (PLAN-002 decision 4).
  *
  * <ul>
  *   <li>{@link #RECENT_PREV}: the presented token equals {@code prev} but the grace window has
