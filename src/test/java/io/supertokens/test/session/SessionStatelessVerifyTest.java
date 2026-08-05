@@ -42,15 +42,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * Exercises the CDI >= 5.5 stateless session verification (PLAN-002 unit 6, decisions 5-6): verify performs no
+ * Exercises the CDI >= 5.6 stateless session verification (PLAN-002 unit 6, decisions 5-6): verify performs no
  * DB write and mints no replacement token on any path, the {@code parentRefreshTokenHash1 == null} precondition
  * on the stateless early-return is dropped, {@code checkDatabase} verifies reject rotated-out token branches with
  * Unauthorised (option J) and surface payload staleness via a read-only {@code payloadUpdateAvailable} flag
  * instead of swapping tokens. CDI <= 5.4 verify behaviour is asserted byte-identical (still promotes and mints).
  *
- * The new behaviour is driven by passing {@link SemVer#v5_5} directly to
+ * The new behaviour is driven by passing {@link SemVer#v5_6} directly to
  * {@link Session#getSession(Main, String, String, boolean, Boolean, boolean, SemVer)} - core does not yet
- * advertise CDI 5.5 over HTTP, so it is reached only through direct calls here.
+ * advertise CDI 5.6 over HTTP, so it is reached only through direct calls here.
  */
 public class SessionStatelessVerifyTest {
 
@@ -84,9 +84,9 @@ public class SessionStatelessVerifyTest {
                 AccessToken.getLatestVersion());
     }
 
-    private static SessionInformationHolder refresh5_5(Main main, SessionInformationHolder from) throws Exception {
+    private static SessionInformationHolder refresh5_6(Main main, SessionInformationHolder from) throws Exception {
         return Session.refreshSession(main, from.refreshToken.token, from.antiCsrfToken, false,
-                AccessToken.getLatestVersion(), SemVer.v5_5);
+                AccessToken.getLatestVersion(), SemVer.v5_6);
     }
 
     private static SessionInformationHolder verify(Main main, String accessToken, boolean checkDatabase,
@@ -94,7 +94,7 @@ public class SessionStatelessVerifyTest {
         return Session.getSession(main, accessToken, null, false, false, checkDatabase, cdiVersion);
     }
 
-    // A CDI 5.5 verify of an un-promoted child (an access token that under CDI <= 5.4 would promote and mint a
+    // A CDI 5.6 verify of an un-promoted child (an access token that under CDI <= 5.4 would promote and mint a
     // replacement) neither writes the DB nor returns a new token.
     @Test
     public void verifyMakesNoWriteAndMintsNoTokenForUnpromotedChild() throws Exception {
@@ -115,7 +115,7 @@ public class SessionStatelessVerifyTest {
         AccessToken.AccessTokenInfo at = AccessToken.getInfoFromAccessTokenWithoutVerifying(r.accessToken.token);
         assertNotNull(at.parentRefreshTokenHash1);
 
-        SessionInformationHolder verified = verify(main, r.accessToken.token, true, SemVer.v5_5);
+        SessionInformationHolder verified = verify(main, r.accessToken.token, true, SemVer.v5_6);
 
         // No replacement token minted...
         assertNull(verified.accessToken);
@@ -145,7 +145,7 @@ public class SessionStatelessVerifyTest {
         SessionInformationHolder r = refresh5_4(main, s); // un-promoted child, parentRefreshTokenHash1 != null
         assertNotNull(AccessToken.getInfoFromAccessTokenWithoutVerifying(r.accessToken.token).parentRefreshTokenHash1);
 
-        SessionInformationHolder verified = verify(main, r.accessToken.token, false, SemVer.v5_5);
+        SessionInformationHolder verified = verify(main, r.accessToken.token, false, SemVer.v5_6);
         assertNull(verified.accessToken);
         assertEquals(s.session.handle, verified.session.handle);
         // checkDatabase=false performs no read, so no payload flag is computed.
@@ -171,7 +171,7 @@ public class SessionStatelessVerifyTest {
         newJwt.addProperty("k", "v2");
         Session.updateSession(main, handle, null, newJwt, AccessToken.getLatestVersion());
 
-        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_5);
+        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_6);
 
         assertNull(verified.accessToken); // no implicit token swap
         assertEquals(Boolean.TRUE, verified.payloadUpdateAvailable);
@@ -196,7 +196,7 @@ public class SessionStatelessVerifyTest {
 
         SessionInformationHolder s = createSession(main);
 
-        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_5);
+        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_6);
         assertNull(verified.accessToken);
         assertEquals(Boolean.FALSE, verified.payloadUpdateAvailable);
 
@@ -214,19 +214,19 @@ public class SessionStatelessVerifyTest {
         Main main = process.getProcess();
 
         SessionInformationHolder s = createSession(main);
-        SessionInformationHolder r1 = refresh5_5(main, s); // current = r1, prev = s
-        refresh5_5(main, r1);                              // current = r2, prev = r1 -> s is now two generations old
+        SessionInformationHolder r1 = refresh5_6(main, s); // current = r1, prev = s
+        refresh5_6(main, r1);                              // current = r2, prev = r1 -> s is now two generations old
 
         // s's access token lineage is neither current nor prev, and it has no parent hash -> Unauthorised.
         try {
-            verify(main, s.accessToken.token, true, SemVer.v5_5);
+            verify(main, s.accessToken.token, true, SemVer.v5_6);
             fail("expected Unauthorised for rotated-out branch");
         } catch (UnauthorisedException e) {
             assertNull(e.reuseSubtype); // not a theft classification; just forces a refresh
         }
 
         // Without checkDatabase there is no fork check: the stateless early-return accepts it and mints nothing.
-        SessionInformationHolder stateless = verify(main, s.accessToken.token, false, SemVer.v5_5);
+        SessionInformationHolder stateless = verify(main, s.accessToken.token, false, SemVer.v5_6);
         assertNull(stateless.accessToken);
         assertEquals(s.session.handle, stateless.session.handle);
 
@@ -244,9 +244,9 @@ public class SessionStatelessVerifyTest {
         Main main = process.getProcess();
 
         SessionInformationHolder s = createSession(main);
-        refresh5_5(main, s); // current = r1, prev = s -> s's access token lineage == prev
+        refresh5_6(main, s); // current = r1, prev = s -> s's access token lineage == prev
 
-        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_5);
+        SessionInformationHolder verified = verify(main, s.accessToken.token, true, SemVer.v5_6);
         assertNull(verified.accessToken);
         assertEquals(Boolean.FALSE, verified.payloadUpdateAvailable);
 

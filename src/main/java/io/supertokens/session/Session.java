@@ -393,8 +393,8 @@ public class Session {
             }
         }
 
-        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_5)) {
-            // ===== CDI >= 5.5: stateless verification (PLAN-002 unit 6, decisions 5-6). No DB write and no
+        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_6)) {
+            // ===== CDI >= 5.6: stateless verification (PLAN-002 unit 6, decisions 5-6). No DB write and no
             // token mint on any path; rotation now happens exclusively at refresh (unit 5). The
             // parentRefreshTokenHash1 == null precondition on the legacy early-return is dropped: any validly
             // signed, unexpired token short-circuits here. =====

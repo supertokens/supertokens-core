@@ -41,7 +41,7 @@ public class SessionInformationHolder {
     @Nullable
     public final String antiCsrfToken;
 
-    // CDI >= 5.5 stateless verify (PLAN-002 unit 6): a read-only flag set on a checkDatabase verify when the
+    // CDI >= 5.6 stateless verify (PLAN-002 unit 6): a read-only flag set on a checkDatabase verify when the
     // stored session payload differs from the token's, so SDKs can background-refresh. null on every other path
     // (including all CDI <= 5.4 responses), so Gson omits it and those responses stay byte-identical.
     @Nullable
