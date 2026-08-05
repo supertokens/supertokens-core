@@ -7,6 +7,7 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import org.jetbrains.annotations.TestOnly;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -116,6 +117,22 @@ public class ActiveUsersQueries {
             pst.setString(2, userId);
             pst.setLong(3, now);
             pst.setLong(4, now);
+        });
+    }
+
+    @TestOnly
+    public static int updateUserLastActive(Start start, AppIdentifier appIdentifier, String userId, long timestamp)
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getUserLastActiveTable()
+                +
+                "(app_id, user_id, last_active_time) VALUES(?, ?, ?) ON CONFLICT(app_id, user_id) DO UPDATE SET " +
+                "last_active_time = ?";
+
+        return update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+            pst.setLong(3, timestamp);
+            pst.setLong(4, timestamp);
         });
     }
 

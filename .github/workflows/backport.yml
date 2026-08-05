@@ -1,0 +1,232 @@
+# Backports one or more commits onto older release branches by cherry-pick and
+# opens a PR per target branch.
+#
+# Release lines in this repo are `major.minor` branches (e.g. 12.0, 11.4, ... 3.0);
+# `master` is the tip. Backporting = cherry-picking a landed commit onto those older
+# branches. This workflow is manual (workflow_dispatch) on purpose: the operator picks
+# the exact commits and targets, and nothing about the source PR signals that a
+# (possibly embargoed) backport is in flight.
+#
+# Notes on the two required PR checks (see pr-checks.yml):
+#   - semantic-pull-request: the PR title must be a conventional-commit string. We take
+#     it from the source commit's subject, which is already semantic, so this passes.
+#   - changelog-enforcer: the backport adds a real `[X.Y.Z]` CHANGELOG section in a
+#     separate release commit, so the enforcer passes on its own. The `skip_changelog`
+#     input stays only as an escape hatch (default off).
+#
+# Per target branch the result is TWO stacked commits: the cherry-pick(s), then a single
+# `chore` release commit that bumps build.gradle and inserts the changelog entry. Only
+# patches are backported, so the version bump is always a patch increment of that line.
+#
+# Auth: uses secrets.GH_TOKEN (a PAT). GITHUB_TOKEN-created PRs do NOT trigger further
+# workflows, so backport PRs would open with no CI — the PAT avoids that.
+
+name: Backport
+
+on:
+  workflow_dispatch:
+    inputs:
+      commits:
+        description: "Commit SHA(s) to cherry-pick, in order (space- or comma-separated). Leave blank to use 'pr'."
+        required: false
+        type: string
+      pr:
+        description: "PR number to backport (resolves to its merge/squash commit). Ignored when 'commits' is set."
+        required: false
+        type: string
+      target_branches:
+        description: "Target release branches, comma-separated. e.g. 11.4,11.3,11.2"
+        required: true
+        type: string
+      draft:
+        description: "Open the backport PRs as drafts."
+        type: boolean
+        default: false
+      skip_changelog:
+        description: "Also attach the Skip-Changelog label (normally unneeded — the backport writes a real CHANGELOG entry)."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.parse.outputs.targets }}
+      commits: ${{ steps.resolve.outputs.commits }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - id: parse
+        name: Parse target branches into a JSON matrix
+        run: |
+          set -euo pipefail
+          raw='${{ inputs.target_branches }}'
+          json=$(printf '%s' "$raw" | tr ', ' '\n' | grep -v '^$' | jq -R . | jq -s -c .)
+          if [ "$json" = "[]" ]; then
+            echo "::error::No target branches provided."; exit 1
+          fi
+          echo "targets=$json" >> "$GITHUB_OUTPUT"
+          echo "Targets: $json"
+
+      - id: resolve
+        name: Resolve commits (explicit 'commits' or from 'pr')
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n '${{ inputs.commits }}' ]; then
+            commits=$(printf '%s' '${{ inputs.commits }}' | tr ',' ' ' | xargs)
+          elif [ -n '${{ inputs.pr }}' ]; then
+            # Prefer the squash/merge commit; fall back to the PR's individual commits.
+            merge=$(gh pr view '${{ inputs.pr }}' --json mergeCommit -q '.mergeCommit.oid' 2>/dev/null || true)
+            if [ -n "$merge" ] && [ "$merge" != "null" ]; then
+              commits="$merge"
+            else
+              commits=$(gh pr view '${{ inputs.pr }}' --json commits -q '.commits[].oid' | xargs)
+            fi
+          else
+            echo "::error::Provide either 'commits' or 'pr'."; exit 1
+          fi
+          if [ -z "$commits" ]; then echo "::error::Could not resolve any commits."; exit 1; fi
+          echo "commits=$commits" >> "$GITHUB_OUTPUT"
+          echo "Commits to cherry-pick (in order): $commits"
+
+  backport:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      # One conflicting target must not abort the others.
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.prepare.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "supertokens-backport-bot"
+          git config user.email "backport-bot@supertokens.io"
+
+      - name: Cherry-pick onto ${{ matrix.target }}, bump patch version, open a PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          TARGET: ${{ matrix.target }}
+          COMMITS: ${{ needs.prepare.outputs.commits }}
+          DRAFT: ${{ inputs.draft }}
+          SKIP_CHANGELOG: ${{ inputs.skip_changelog }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # 1. The target branch must actually exist upstream.
+          if ! git ls-remote --exit-code --heads origin "$TARGET" >/dev/null 2>&1; then
+            echo "::error::Target branch '$TARGET' does not exist on origin."
+            echo "### ❌ \`$TARGET\`: no such release branch" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          git fetch --no-tags origin "$TARGET"
+
+          # 2. Fresh backport branch off the target tip (deterministic name -> re-runnable).
+          first_sha=$(printf '%s' "$COMMITS" | awk '{print $1}')
+          short=$(git rev-parse --short "$first_sha")
+          bp_branch="backport/$TARGET/$short"
+          git checkout -B "$bp_branch" "origin/$TARGET"
+
+          # 3. Cherry-pick the backported commit(s). -x records the source SHA.
+          if ! git cherry-pick -x $COMMITS; then
+            git cherry-pick --abort || true
+            {
+              echo "### ⚠️ Backport to \`$TARGET\` hit conflicts — resolve manually"
+              echo ""
+              echo '```bash'
+              echo "git fetch origin $TARGET && git checkout -b $bp_branch origin/$TARGET"
+              echo "git cherry-pick -x $COMMITS"
+              echo "# resolve conflicts, bump the patch version + changelog by hand, then:"
+              echo "git push origin $bp_branch"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Cherry-pick onto $TARGET conflicted; see the job summary."
+            exit 1
+          fi
+
+          # 4. Compute the next PATCH version from the target line's build.gradle.
+          #    Only patches are backported, so a patch increment is always correct.
+          cur=$(grep -m1 -E '^version[[:space:]]*=' build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
+          base=${cur%%-*}                       # drop any -canary / pre-release suffix
+          IFS='.' read -r MA MI PA <<< "$base"
+          if [ "$MA.$MI" != "$TARGET" ]; then
+            echo "::error::build.gradle version ($cur) is not on the $TARGET line; refusing to guess a version."
+            exit 1
+          fi
+          new_ver="$MA.$MI.$((PA + 1))"
+          today=$(date -u +%Y-%m-%d)
+          echo "Next patch on $TARGET: $cur -> $new_ver"
+
+          # 5. Bump the first top-level `version = "..."` line in build.gradle.
+          sed -i -E "0,/^version[[:space:]]*=.*/s//version = \"$new_ver\"/" build.gradle
+
+          # 6. Insert a CHANGELOG section above the newest existing versioned entry.
+          #    Bullets = backported commit subjects, minus the conventional-commit prefix.
+          {
+            echo "## [$new_ver] - $today"
+            echo ""
+            for sha in $COMMITS; do
+              git log -1 --format=%s "$sha" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//; s/^/- /'
+            done
+            echo ""
+          } > /tmp/entry.md
+          awk '
+            !ins && /^## \[[0-9]/ { while ((getline l < "/tmp/entry.md") > 0) print l; close("/tmp/entry.md"); ins=1 }
+            { print }
+            END { if (!ins) { while ((getline l < "/tmp/entry.md") > 0) print l } }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+          # 7. The version bump + changelog is a SEPARATE commit, stacked on the backport.
+          git add build.gradle CHANGELOG.md
+          git commit -m "chore: bump version to $new_ver and update changelog"
+
+          # 8. Push (backport commit[s] + the release commit).
+          git push --force-with-lease origin "$bp_branch"
+
+          # 9. Open the PR. Title comes from the source subject (already semantic).
+          subject=$(git log -1 --format=%s "$first_sha")
+          labels="backport"
+          [ "$SKIP_CHANGELOG" = "true" ] && labels="$labels,Skip-Changelog"
+          # Best-effort: make sure the labels exist (ignore failures / insufficient perms).
+          for l in $(printf '%s' "$labels" | tr ',' ' '); do
+            gh label create "$l" >/dev/null 2>&1 || true
+          done
+
+          cat > /tmp/backport-body.md <<EOF
+          Automated backport of \`$COMMITS\` onto \`$TARGET\`, released as **$new_ver**.
+
+          - Cherry-picked with \`-x\` — each commit message carries its source SHA.
+          - A separate \`chore\` commit bumps \`build.gradle\` to \`$new_ver\` and adds the \`[$new_ver]\` CHANGELOG section.
+
+          Triggered from **${{ github.workflow }}** by @$ACTOR.
+
+          > Reviewer: confirm the generated CHANGELOG bullets read well for the \`$TARGET\` line.
+          EOF
+
+          draft_flag=""
+          [ "$DRAFT" = "true" ] && draft_flag="--draft"
+
+          gh pr create \
+            --base "$TARGET" \
+            --head "$bp_branch" \
+            --title "$subject (backport to $TARGET)" \
+            --body-file /tmp/backport-body.md \
+            --label "$labels" \
+            $draft_flag
+
+          echo "### ✅ \`$TARGET\`: backport PR opened as $new_ver (\`$bp_branch\`)" >> "$GITHUB_STEP_SUMMARY"

@@ -32,7 +32,7 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
@@ -46,11 +46,11 @@ jobs:
     needs: dependency-branches
     steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
           java-version: 21.0.7
           distribution: zulu
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root

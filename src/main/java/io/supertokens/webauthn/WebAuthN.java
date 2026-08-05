@@ -383,7 +383,8 @@ public class WebAuthN {
     }
 
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
-                                              String webauthnGeneratedOptionsId, JsonObject credentialsData)
+                                              String webauthnGeneratedOptionsId, JsonObject credentialsData,
+                                              boolean consumeOptions)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException, StorageQueryException, WebauthNOptionsNotExistsException,
             WebauthNCredentialNotExistsException, UnknownUserIdException {
@@ -412,6 +413,13 @@ public class WebAuthN {
 
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
                     webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
+
+                    if (consumeOptions) {
+                        // challenges are single-use (WebAuthn L3 §13.4.3): consume the options atomically with
+                        // the successful verification so the same assertion cannot be replayed. Only done for
+                        // CDI >= 5.5 requests — older SDKs verify the same assertion twice per sign in.
+                        webAuthNStorage.removeOptions_Transaction(tenantIdentifier, con, webauthnGeneratedOptionsId);
+                    }
 
                     AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId_Transaction(tenantIdentifier, con, credentialId);
                     if(fullyLoadedUserInfo == null) {

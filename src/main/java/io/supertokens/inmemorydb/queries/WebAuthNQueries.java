@@ -722,6 +722,18 @@ public class WebAuthNQueries {
         });
     }
 
+    public static void removeOptions_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier,
+                                                 String optionsId) throws SQLException, StorageQueryException {
+        String UPDATE = "DELETE FROM " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
+                + " WHERE app_id = ? AND tenant_id = ? AND id = ?";
+
+        update(sqlCon, UPDATE, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, optionsId);
+        });
+    }
+
     public static List<WebAuthNStoredCredential> listCredentials(Start start, TenantIdentifier tenantIdentifier,
                                                           String recipeUserId) throws SQLException, StorageQueryException {
         String LIST_QUERY =  "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable() +

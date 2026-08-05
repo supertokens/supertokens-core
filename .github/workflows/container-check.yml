@@ -27,7 +27,7 @@ jobs:
 
       - name: Upload scan results
         id: upload-scan-results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: container-scan-results
           path: trivy-results.json
@@ -107,7 +107,7 @@ jobs:
 
       - name: Post notification on Slack channel
         id: deployment_message
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@v3
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

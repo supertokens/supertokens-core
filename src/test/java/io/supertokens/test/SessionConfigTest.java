@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2024, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2026, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -153,6 +153,24 @@ public class SessionConfigTest {
         assertEquals("'refresh_token_rotation_grace_period' must be between 0 and 300 seconds inclusive. The config"
                 + " file can be found here: " + getConfigFileLocation(process.getProcess()),
                 e.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGracePeriodOutOfRangeIsAcceptedWhenTestingGateOff() throws Exception {
+        String[] args = {"../"};
+
+        // The grace-period range check is gated (like the other session validity checks) so that
+        // behaviour units can drive windows past the normal bounds under test. With VALIDITY_TESTING
+        // off, an out-of-range value must be accepted (the gate is skipped) rather than rejected.
+        Utils.setValueInConfig("refresh_token_rotation_grace_period", "301");
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        CoreConfig config = Config.getConfig(process.getProcess());
+        assertEquals(301, config.getRefreshTokenRotationGracePeriodInSeconds());
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

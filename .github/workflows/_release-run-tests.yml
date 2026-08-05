@@ -12,39 +12,62 @@ on:
       postgresql-sha:
         type: string
         required: true
+      fast-release:
+        description: 'Only run smoke tests (login + session tests) instead of the full suite'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  total-runners: 6
 
 jobs:
+  runner-indexes:
+    name: Generate runner indexes
+    runs-on: ubuntu-22.04
+    outputs:
+      json: ${{ steps.generate-index-list.outputs.json }}
+    steps:
+      - id: generate-index-list
+        run: |
+          MAX_INDEX=$((${{ env.total-runners }}-1))
+          INDEX_LIST=$(seq 0 ${MAX_INDEX})
+          INDEX_JSON=$(jq --null-input --compact-output '. |= [inputs]' <<< ${INDEX_LIST})
+          echo "json=${INDEX_JSON}" >> "$GITHUB_OUTPUT"
+
   test:
-    name: Tests (${{ matrix.plugin }})
+    name: "Tests (${{ matrix.plugin }}), runner #${{ matrix.runner-index }}"
+    needs: runner-indexes
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
+        runner-index: ${{ fromjson(needs.runner-indexes.outputs.json) }}
         plugin:
           - sqlite
           - postgresql
     steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 21.0.7
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
           ref: ${{ inputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
@@ -52,7 +75,7 @@ jobs:
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
@@ -87,6 +110,7 @@ jobs:
         run: cd supertokens-root && ./utils/setupTestEnv --local
 
       - name: Check implementationDependencies.json is up to date
+        if: matrix.runner-index == 0
         run: |
           cd supertokens-root
           ./gradlew generateDependenciesJson
@@ -98,6 +122,18 @@ jobs:
             git -C supertokens-postgresql-plugin diff --exit-code implementationDependencies.json
           fi
 
+      # Pinned to main: v1-alpha.1 still uses the deprecated ::set-output, and
+      # the v1 tag has a quoting bug that silently breaks exclude-glob.
+      - uses: chaosaffe/split-tests@60c0787d3abbde15fcd66c76a7b4e3d9d2baf5a3
+        id: split-tests
+        name: Split tests
+        with:
+          # fast-release smoke suite: login (emailpassword) + session
+          # creation/management tests only; otherwise the full suite.
+          glob: ${{ inputs.fast-release && 'supertokens-root/*/src/test/java/**/{session,emailpassword}/**/*.java' || 'supertokens-root/*/src/test/java/**/*.java' }}
+          split-total: ${{ env.total-runners }}
+          split-index: ${{ matrix.runner-index }}
+
       - name: Run tests
         env:
           ST_PLUGIN_NAME: ${{ matrix.plugin }}
@@ -105,10 +141,25 @@ jobs:
           TEST_PG_HOST: localhost
         run: |
           cd supertokens-root
-          ./gradlew test
+          echo "./gradlew test \\" > test.sh
+          chmod +x test.sh
+          IFS=' ' read -ra TESTS <<< "${{ steps.split-tests.outputs.test-suite }}"
+          for test in "${TESTS[@]}"; do
+            test_name="${test%.java}"
+            # Strip "supertokens-root/<any repo>/src/test/java/" so the plugin's
+            # own test files also produce valid class filters, not just core's.
+            test_name="${test_name#supertokens-root/*/src/test/java/}"
+            test_name="${test_name//\//.}"
+            echo "  --tests $test_name \\" >> test.sh
+          done
+          echo "" >> test.sh
+          echo "this is the test command:"
+          cat test.sh
+          echo "--------------------------------"
+          ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

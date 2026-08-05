@@ -1,4 +1,5 @@
 name: Release
+run-name: Release v${{ inputs.core-version }}${{ inputs.is-canary && ' [canary]' || '' }}${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -41,7 +42,7 @@ on:
         type: boolean
         default: true
       is-canary:
-        description: 'Is this a canary release?'
+        description: 'Is this a canary release? Cannot be combined with "latest release"'
         required: true
         type: boolean
         default: false
@@ -50,9 +51,33 @@ on:
         required: true
         type: boolean
         default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
+  # Fail fast on invalid input combinations before anything is registered
+  # or published. Every other job depends on dependency-branches, so gating
+  # it here stops the whole release.
+  validate-inputs:
+    name: Validate inputs
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check fast-release and is-latest-release are mutually exclusive
+        if: inputs.fast-release && inputs.is-latest-release
+        run: |
+          echo "::error::A fast release (smoke tests only) must not be marked as the latest release. Untick one of the two options."
+          exit 1
+      - name: Check is-canary and is-latest-release are mutually exclusive
+        if: inputs.is-canary && inputs.is-latest-release
+        run: |
+          echo "::error::A canary release must not be marked as the latest release. Untick one of the two options."
+          exit 1
+
   dependency-branches:
+    needs: validate-inputs
     uses: ./.github/workflows/_release-resolve-deps.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -79,6 +104,7 @@ jobs:
       core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
       plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      fast-release: ${{ inputs.fast-release }}
     secrets: inherit
 
   mark-as-passed:
@@ -150,3 +176,41 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
     secrets: inherit
+
+  # build-jars is skipped for canary releases; !failure() lets the
+  # notification still fire in that case.
+  notify-slack:
+    name: Notify Slack
+    needs: [ add-release-tags, build-jars ]
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Post release notification on Slack channel
+        id: slack-notify
+        # The release itself succeeded at this point — a failed notification
+        # must not fail the workflow. The step below leaves a memo instead.
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+            text: "SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' (canary)' || '' }}"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "🚀 SuperTokens core v${{ inputs.core-version }} released${{ inputs.is-canary && ' — canary' || '' }}${{ inputs.fast-release && ' — smoke tests only' || '' }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}${{ inputs.is-canary && '-canary' || '' }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
+
+      - name: Memo failed Slack notification
+        if: steps.slack-notify.outcome == 'failure'
+        run: |
+          echo "## ⚠️ Slack notification failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The release itself completed successfully, but the announcement could not be posted to Slack." >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the \`SLACK_BOT_TOKEN\` and \`SLACK_RELEASE_CHANNEL_ID\` secrets, and make sure the bot is invited to the channel." >> "$GITHUB_STEP_SUMMARY"

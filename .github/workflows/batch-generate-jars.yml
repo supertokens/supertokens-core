@@ -27,7 +27,7 @@ jobs:
       matrix: ${{ steps.parse.outputs.matrix }}
     steps:
       - name: Checkout workflow tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Parse versions into matrix
         id: parse

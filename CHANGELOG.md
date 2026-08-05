@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Test-only: the 1M-user stress-test suite now runs one matrix leg per migration mode (LEGACY and MIGRATED) as parallel
+  jobs. The MIGRATED leg deploys a fresh core directly in MIGRATED mode via `SUPERTOKENS_MIGRATION_MODE` (no backfill
+  needed on an empty DB) so the migrated-schema read paths (`app_id_to_user_id` / `recipe_user_tenants`) are exercised
+  at scale, and the suite asserts the core actually came up in the expected mode before measuring. `stats.json`, the
+  workflow "Stress Test Results" summary and the previous-run comparison baseline (per-mode artifact) are tagged by
+  mode so the two legs never cross-compare
+
 ### Added
 
 - Three session-related config options (parsing and validation only; behaviour is wired up in later changes):
@@ -23,6 +30,86 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `exp = now + validity * (1 - U[0, jitter])`. The jitter is subtract-only, so an access token is never valid for
   longer than the configured `access_token_validity`; set the config to 0 to disable. Token regeneration is exempt
   (it preserves the original token's absolute expiry) and access token verification does not re-roll the jitter.
+
+## [12.0.9]
+
+- Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
+  partition maintenance hook (it previously kept entries for the lifetime of the process)
+- Fixes user pagination truncating (newest-first) or never terminating (oldest-first) after bulk-importing linked
+  users whose per-method `time_joined` values diverge. Bulk import now normalizes each linked group's
+  `primary_or_recipe_user_time_joined` to the group's `MIN(time_joined)` after all login methods are inserted,
+  restoring the keyset-pagination invariant (see supertokens-core#1347)
+- Adds `updateTimeJoinedForPrimaryUsers_Transaction` to `AuthRecipeSQLStorage`
+- Fixes bulk import endlessly retrying users whose external user ID is already mapped; such imports now fail with `E031`
+- Test-only: the 1M-user stress-test suite now records non-OK results per seeding step and fails the run at the end if
+  any step errored, and its workflow can be triggered manually via `workflow_dispatch`
+- Test-only: the 1M-user stress-test suite now measures the scale-sensitive query paths (paginated listing, user
+  counts, dashboard search, third-party sign-in, linked-user email/phone updates, tenant association, account
+  link-check/unlink/delete, active-user counts, feature-flag usage stats, role listing/deletion, TOTP verification with
+  many used codes, and email-verification/delete for id-mapped users) against the 1M-user state, renders them in the
+  workflow "Stress Test Results" table, and fails the run when a step exceeds an env-overridable per-step duration
+  budget
+- Test-only: the 1M-user stress-test suite now harvests `pg_stat_statements` — snapshotting the ingest profile when
+  seeding finishes (then resetting) and the steady-state read/query profile at the end — renders per-phase tables (top
+  statements by total execution time and every statement that spilled to temp) into `stats.json` and the workflow step
+  summary, and fails the run when a read-phase statement writes more than an env-overridable number of temp blocks
+- Test-only: the 1M-user stress-test suite now runs the measured read-path steps at two dataset sizes (a ~100k-user
+  checkpoint mid-seed and the full 1M) and asserts the per-step cost ratio `time(1M)/time(100k)` against an
+  env-overridable per-class bound (O(1) steps ≤ 3×, O(n) steps ≤ 15×) — a hardware-independent check for superlinear
+  scaling that the absolute duration budgets can't catch; the small/large/ratio columns are rendered in the workflow
+  "Stress Test Results" table and the run fails when a step's ratio exceeds its bound
+  (default 10k ≈ 80 MB)
+- Test-only: the 1M-user stress-test suite now enforces per-step duration budgets as hard timeouts (each measured step
+  is raced against its budget, so a hung step fails the run at its budget with the step name instead of hanging until
+  the job timeout) and guards the pagination full-walk steps against non-termination and silent truncation (aborting on
+  a repeated pagination token or a runaway page count, and asserting the walk visited the whole dataset within 1% of the
+  tenant's user count); timed-out and failed steps are recorded in `stats.json` and surfaced in the workflow "Stress
+  Test Results" table with their failure reason, and `supertokens-node` is pinned to an exact version for
+  reproducibility
+- Test-only: the 1M-user stress-test suite now runs the measured read-path steps collect-and-continue — a guard
+  violation, timeout or thrown error records that step as failed and the run moves on to the next step instead of
+  aborting at the first failure, so one run surfaces every read-path failure at once (seeding failures stay immediately
+  fatal). A timed-out step is now aborted cooperatively (the pagination walk checks the step's abort signal each
+  iteration and stops issuing requests) so it can't keep hitting the core and polluting later measurements; a step that
+  failed on one of the two dataset sizes reports its scaling ratio as `n/a`; steps that ran after an earlier failure are
+  flagged in the "Stress Test Results" table as possibly tainted; the pagination completeness-guard failure now reports
+  the terminal page's pagination token and first/last `(timeJoined, userId)`; and an end-of-run stage fails the job
+  listing every failed step
+
+### Migration
+
+Adds three additive indexes, created on fresh databases and backfilled on existing ones at startup via
+
+``` sql
+
+CREATE INDEX IF NOT EXISTS idx_recipe_user_tenants_tenant_recipe_user on recipe_user_tenants (app_id, tenant_id, 
+recipe_user_id);
+
+CREATE INDEX IF NOT EXISTS app_id_to_user_id_linked_flag_index on app_id_to_user_id (app_id, user_id, 
+is_linked_or_is_a_primary_user);
+
+CREATE INDEX IF NOT EXISTS idx_primary_user_tenants_tenant_primary on primary_user_tenants (app_id, tenant_id, 
+primary_user_id);
+
+```
+
+No table or column changes. **Operators of very large deployments should pre-create these three indexes with
+`CREATE INDEX CONCURRENTLY` before upgrading**, so the startup DDL is a no-op and does not hold a table lock
+during a long index build.
+
+## [12.0.8]
+
+- Security improvements around api-key/ip allow list handling
+- Adds `supertokens_min_cdi_version` config to reject requests using a CDI version below a configured minimum
+- Adds CDI 5.5: webauthn sign-in options are single-use — consumed atomically on successful sign in (replay returns
+  `OPTIONS_NOT_FOUND_ERROR`); requests on CDI <= 5.4 are unaffected. Requires SDKs on CDI 5.5 to verify each assertion
+  exactly once (see supertokens-core#1195)
+- Adds `removeOptions_Transaction` to `WebAuthNSQLStorage` (plugin-interface addition; needs a plugin-interface version
+  bump at release)
+- Fixes OAuth2 response code in case of malformed/invalid input (e.g. missing `client_id` or `redirect_uri`) to be 400
+  instead of 500
+- Optimizes Bulk Import to not create a separate connection pool when there is no work to be done
+- Optimizes MAU counting query
 
 ## [12.0.7]
 

@@ -38,6 +38,12 @@ services:
       API_KEYS: "qwertyuiopasdfghjklzxcvbnm"
       BULK_MIGRATION_PARALLELISM: "4"
       BULK_MIGRATION_BATCH_SIZE: "500"
+      # migration_mode for the all_auth_recipe_users deprecation. A fresh install
+      # on an empty DB can start directly in any mode (no backfill needed), so the
+      # stress-tests workflow runs one matrix leg per mode by exporting
+      # SUPERTOKENS_MIGRATION_MODE before `docker compose up`. Defaults to LEGACY,
+      # which is the core's own default and the suite's historical behavior.
+      SUPERTOKENS_MIGRATION_MODE: "${SUPERTOKENS_MIGRATION_MODE:-LEGACY}"
 
     networks:
       - app_network

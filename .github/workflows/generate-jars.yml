@@ -54,18 +54,18 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout workflow tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./workflow-tools
 
       - name: Set up JDK ${{ inputs.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ inputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: ./supertokens-root
@@ -157,6 +157,9 @@ jobs:
             if git diff --cached --quiet 2>/dev/null; then
               echo "plugin-interface JARs unchanged — no GitHub commit needed"
             elif git commit -m "build for release v${PI_VER}"; then
+              # Remember whether this release holds the "Latest" badge: re-publishing
+              # after the tag move would otherwise steal it for backport releases.
+              was_latest=$(gh release view "v${PI_VER}" --repo supertokens/supertokens-plugin-interface --json isLatest -q .isLatest 2>/dev/null || echo false)
               git push --delete origin "v${PI_VER}" 2>/dev/null || true
               git tag --delete "v${PI_VER}" 2>/dev/null || true
               git tag "v${PI_VER}" HEAD
@@ -164,10 +167,11 @@ jobs:
                 PI_MINOR=$(echo "${PI_VER}" | cut -d. -f1,2)
                 git push origin "HEAD:refs/heads/${PI_MINOR}" || \
                   echo "::warning::Branch ${PI_MINOR} is ahead of v${PI_VER} — commit reachable only via tag"
-                # Deleting the tag drafts the GitHub release — re-publish it
+                # Deleting the tag drafts the GitHub release — re-publish it,
+                # restoring its previous "latest" state
                 gh release edit "v${PI_VER}" \
                   --repo supertokens/supertokens-plugin-interface \
-                  --draft=false || \
+                  --draft=false --latest=${was_latest} || \
                   echo "::warning::Could not re-publish GitHub release v${PI_VER} for plugin-interface — publish manually"
                 echo "✓ Committed plugin-interface JARs to GitHub and updated tag v${PI_VER}"
               else
@@ -219,6 +223,9 @@ jobs:
             if git diff --cached --quiet 2>/dev/null; then
               echo "postgresql-plugin JARs unchanged — no GitHub commit needed"
             elif git commit -m "build for release v${PG_VER}"; then
+              # Remember whether this release holds the "Latest" badge: re-publishing
+              # after the tag move would otherwise steal it for backport releases.
+              was_latest=$(gh release view "v${PG_VER}" --repo supertokens/supertokens-postgresql-plugin --json isLatest -q .isLatest 2>/dev/null || echo false)
               git push --delete origin "v${PG_VER}" 2>/dev/null || true
               git tag --delete "v${PG_VER}" 2>/dev/null || true
               git tag "v${PG_VER}" HEAD
@@ -226,10 +233,11 @@ jobs:
                 PG_MINOR=$(echo "${PG_VER}" | cut -d. -f1,2)
                 git push origin "HEAD:refs/heads/${PG_MINOR}" || \
                   echo "::warning::Branch ${PG_MINOR} is ahead of v${PG_VER} — commit reachable only via tag"
-                # Deleting the tag drafts the GitHub release — re-publish it
+                # Deleting the tag drafts the GitHub release — re-publish it,
+                # restoring its previous "latest" state
                 gh release edit "v${PG_VER}" \
                   --repo supertokens/supertokens-postgresql-plugin \
-                  --draft=false || \
+                  --draft=false --latest=${was_latest} || \
                   echo "::warning::Could not re-publish GitHub release v${PG_VER} for postgresql-plugin — publish manually"
                 echo "✓ Committed postgresql-plugin JARs to GitHub and updated tag v${PG_VER}"
               else
@@ -288,6 +296,9 @@ jobs:
             if git diff --cached --quiet 2>/dev/null; then
               echo "core JARs unchanged — no GitHub commit needed"
             elif git commit -m "build for release v${CORE_VER}"; then
+              # Remember whether this release holds the "Latest" badge: re-publishing
+              # after the tag move would otherwise steal it for backport releases.
+              was_latest=$(gh release view "v${CORE_VER}" --repo supertokens/supertokens-core --json isLatest -q .isLatest 2>/dev/null || echo false)
               git push --delete origin "v${CORE_VER}" 2>/dev/null || true
               git tag --delete "v${CORE_VER}" 2>/dev/null || true
               git tag "v${CORE_VER}" HEAD
@@ -295,10 +306,11 @@ jobs:
                 CORE_MINOR=$(echo "${CORE_VER}" | cut -d. -f1,2)
                 git push origin "HEAD:refs/heads/${CORE_MINOR}" || \
                   echo "::warning::Branch ${CORE_MINOR} is ahead of v${CORE_VER} — commit reachable only via tag"
-                # Deleting the tag drafts the GitHub release — re-publish it
+                # Deleting the tag drafts the GitHub release — re-publish it,
+                # restoring its previous "latest" state
                 gh release edit "v${CORE_VER}" \
                   --repo supertokens/supertokens-core \
-                  --draft=false || \
+                  --draft=false --latest=${was_latest} || \
                   echo "::warning::Could not re-publish GitHub release v${CORE_VER} for core — publish manually"
                 echo "✓ Committed core JARs to GitHub and updated tag v${CORE_VER}"
               else
