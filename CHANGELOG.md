@@ -7,6 +7,34 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.0.10]
+
+- fixes a SAML XML Signature Wrapping authentication bypass
+- adds additive indexes and smaller DB optimizations to speed up user listing, counting and other oauth session revocation. **Operators of large deployments should pre-create these indexes with
+`CREATE INDEX CONCURRENTLY` before upgrading** 
+
+### Migration
+
+Adds additive indexes, created on fresh databases and backfilled on
+existing ones at startup via
+
+``` sql
+
+CREATE INDEX IF NOT EXISTS idx_recipe_user_account_infos_app_primary_user ON recipe_user_account_infos 
+(app_id, primary_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_recipe_user_account_infos_account_info ON recipe_user_account_infos 
+(app_id, account_info_type, account_info_value);
+
+CREATE INDEX IF NOT EXISTS oauth_session_client_id_index on oauth_sessions (app_id, client_id);
+
+CREATE INDEX IF NOT EXISTS oauth_session_session_handle_index on oauth_sessions (app_id, session_handle);
+```
+
+No table or column changes. **Operators of large deployments should pre-create these indexes with
+`CREATE INDEX CONCURRENTLY` before upgrading**, so the startup DDL is a no-op and does not hold a table lock
+during a long index build.
+
 ## [12.0.9]
 
 - Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the
