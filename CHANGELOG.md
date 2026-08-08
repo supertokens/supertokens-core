@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Adds an opt-in `allowApproximate=true` query param to `GET /users/count` (CDI 5.6) that serves a cached
+  per-tenant anchor plus a live joined-since delta instead of counting at request time, with new
+  `approximate` and `asOf` response fields. Default (param-absent) behavior is unchanged. Requires the
+  `countTenantUsersJoinedSince`/`computeTenantUserCountAnchor` storage contract (plugin-interface 8.7,
+  implemented for PostgreSQL 9.6 and the in-memory store).
+
 ## [12.0.10]
 
 - fixes a SAML XML Signature Wrapping authentication bypass
