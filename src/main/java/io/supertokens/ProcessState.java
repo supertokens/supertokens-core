@@ -102,6 +102,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         BULK_IMPORT_COMPLETE,
         BULK_IMPORT_SKIPPED_EMPTY_QUEUE,
         BACKFILL_COMPLETE,
+        APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
         APPROXIMATE_USER_COUNT_REFRESH_FAILED
     }
 

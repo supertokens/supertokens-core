@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -185,6 +186,58 @@ public class ApproximateUserCountTest {
         assertEquals(1, response.get("count").getAsLong());
         assertFalse(response.has("approximate"));
         assertFalse(response.has("asOf"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A stale cache entry triggers a background anchor refresh (stale-while-revalidate): the request keeps
+    // serving the correct count, the refresh fires the COMPLETED process state, and the rebased anchor
+    // advances asOf. Staleness is forced via the test-only seam so we don't wait out the real 10-min TTL.
+    @Test
+    public void staleEntryTriggersBackgroundRefresh() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        // Prime the cache (synchronous first request) and capture the initial anchor boundary.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(3, primed.get("count").getAsLong());
+        long asOfBefore = primed.get("asOf").getAsLong();
+
+        // Two more sign-ups land in the live delta, and age the cached anchor so the next request sees it stale.
+        EmailPassword.signUp(process.getProcess(), "extra0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "extra1@example.com", "password1");
+        Thread.sleep(5);
+        ApproximateUserCount.getInstance(process.getProcess(), process.getAppForTesting().toAppIdentifier())
+                .expireEntryForTesting(process.getAppForTesting());
+
+        // The stale request still serves the correct count (anchor + delta) and kicks off the background refresh.
+        JsonObject stale = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(5, stale.get("count").getAsLong());
+
+        // The background refresh completes and re-dates the anchor.
+        assertNotNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED));
+
+        // A subsequent request still returns the exact count and now serves off the refreshed (later) anchor.
+        JsonObject refreshed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(5, refreshed.get("count").getAsLong());
+        assertTrue(refreshed.get("asOf").getAsLong() > asOfBefore);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -105,7 +105,7 @@ public class UsersCountAPI extends WebserverAPI {
                 // The anchor + delta contract counts every user in the tenant; a recipe-id filter has no
                 // approximate equivalent, so fall back to exact in that case.
                 if (paramSet && recipeIdsEnum.length == 0) {
-                    ApproximateUserCount.Result approxResult = ApproximateUserCount
+                    ApproximateUserCount.ApproximateCountResult approxResult = ApproximateUserCount
                             .getInstance(main, getAppIdentifier(req)).serve(main, tenantIdentifier, storage);
                     count = approxResult.count;
                     approximate = approxResult.approximate;

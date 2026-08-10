@@ -67,7 +67,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     });
 
     // Cache keyed by tenant id within this per-app resource.
-    private final ConcurrentHashMap<String, Entry> entries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachedAnchor> entries = new ConcurrentHashMap<>();
 
     // Tenant ids with an in-flight background refresh - the single-flight guard.
     private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
@@ -98,26 +98,26 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * is served plus a live joined-since delta, and a stale entry triggers a background refresh while still
      * being served.
      */
-    public Result serve(Main main, TenantIdentifier tenantIdentifier, Storage storage)
+    public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         String tenantId = tenantIdentifier.getTenantId();
         long now = System.currentTimeMillis();
 
-        Entry entry = entries.get(tenantId);
-        if (entry == null) {
+        CachedAnchor cachedAnchor = entries.get(tenantId);
+        if (cachedAnchor == null) {
             // First request for this tenant: compute the anchor synchronously so subsequent requests are fast.
             long sinceMs = now - SKEW_MARGIN_MS;
             long anchor = authRecipeStorage.computeTenantUserCountAnchor(tenantIdentifier, sinceMs);
-            entry = new Entry(anchor, sinceMs, now);
-            entries.put(tenantId, entry);
-        } else if (now - entry.computedAt >= REFRESH_TTL_MS) {
+            cachedAnchor = new CachedAnchor(anchor, sinceMs, now);
+            entries.put(tenantId, cachedAnchor);
+        } else if (now - cachedAnchor.computedAt >= REFRESH_TTL_MS) {
             // Stale: refresh in the background (single-flight) and keep serving the current entry.
             triggerRefresh(main, tenantIdentifier, storage);
         }
 
-        long delta = authRecipeStorage.countTenantUsersJoinedSince(tenantIdentifier, entry.sinceMs);
-        return new Result(entry.anchor + delta, true, entry.sinceMs);
+        long delta = authRecipeStorage.countTenantUsersJoinedSince(tenantIdentifier, cachedAnchor.sinceMs);
+        return new ApproximateCountResult(cachedAnchor.anchor + delta, true, cachedAnchor.sinceMs);
     }
 
     private void triggerRefresh(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
@@ -131,7 +131,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 try {
                     long sinceMs = System.currentTimeMillis() - SKEW_MARGIN_MS;
                     long anchor = authRecipeStorage.computeTenantUserCountAnchor(tenantIdentifier, sinceMs);
-                    entries.put(tenantId, new Entry(anchor, sinceMs, System.currentTimeMillis()));
+                    entries.put(tenantId, new CachedAnchor(anchor, sinceMs, System.currentTimeMillis()));
+                    ProcessState.getInstance(main).addState(
+                            ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
                 } catch (Exception e) {
                     // Keep serving the existing (stale) entry; the next request retries the refresh.
                     ProcessState.getInstance(main).addState(
@@ -146,19 +148,21 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
     }
 
-    private static class Entry {
+    // One cached anchor snapshot for a tenant: the anchor count, the boundary it was rebased onto, and when
+    // it was computed (used to decide staleness).
+    private static class CachedAnchor {
         final long anchor;
         final long sinceMs; // X: the epoch-ms boundary the anchor was rebased onto
         final long computedAt;
 
-        Entry(long anchor, long sinceMs, long computedAt) {
+        CachedAnchor(long anchor, long sinceMs, long computedAt) {
             this.anchor = anchor;
             this.sinceMs = sinceMs;
             this.computedAt = computedAt;
         }
     }
 
-    public static class Result {
+    public static class ApproximateCountResult {
         // The served count: anchor + live joined-since delta.
         public final long count;
         // Whether a cached snapshot was used (always true here; the caller reports false when it serves exact).
@@ -166,10 +170,18 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         // The anchor boundary X (epoch ms) the served value is "as of".
         public final long asOf;
 
-        public Result(long count, boolean approximate, long asOf) {
+        public ApproximateCountResult(long count, boolean approximate, long asOf) {
             this.count = count;
             this.approximate = approximate;
             this.asOf = asOf;
         }
+    }
+
+    // Test-only seam: ages the cached anchor for a tenant so the next serve() sees it as stale and triggers a
+    // background refresh. Does not exist as a runtime knob - the refresh TTL stays a constant per the design;
+    // this only lets tests exercise the stale-while-revalidate path without waiting out the real TTL.
+    public void expireEntryForTesting(TenantIdentifier tenantIdentifier) {
+        entries.computeIfPresent(tenantIdentifier.getTenantId(),
+                (k, e) -> new CachedAnchor(e.anchor, e.sinceMs, 0));
     }
 }
