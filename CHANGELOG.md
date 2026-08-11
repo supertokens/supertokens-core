@@ -44,7 +44,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `refresh_token_rotated_at` (added as nullable `session_info` columns to the in-memory SQLite storage).
 
 - Test-only: pin the token-regeneration invariants - in-place re-issue (original expiry, no jitter re-roll,
-  lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.5
+  lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.6
   rotation-state access.
 
 ## [12.0.9]
