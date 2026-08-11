@@ -25,11 +25,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   only. It is shorten-only - validated `0 < accessTokenValidity <= configured access_token_validity`, with
   out-of-range values rejected as a 400 rather than clamped - nothing about it is persisted, and the refresh token
   validity is not overridable.
+- On CDI >= 5.6, session verification is stateless: `/recipe/session/verify` never writes to the database or
+  returns a replacement access token (rotation happens only at refresh). With `checkDatabase = true` it sets
+  `payloadUpdateAvailable` when the stored payload differs from the token's, and returns `UNAUTHORISED` when the
+  token's refresh-token lineage is neither the current nor the previous refresh token. From CDI >= 5.6 this
+  app-specific API may only be called from the public tenant.
 
 ### Changed
 
 - Adopts plugin interface 9.0: refresh-token-hash writes now also record `prev_refresh_token_hash_2` and
   `refresh_token_rotated_at` (added as nullable `session_info` columns to the in-memory SQLite storage).
+
+- Test-only: pin the token-regeneration invariants - in-place re-issue (original expiry, no jitter re-roll,
+  lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.5
+  rotation-state access.
 
 ## [12.0.7]
 
