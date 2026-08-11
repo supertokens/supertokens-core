@@ -27,7 +27,7 @@ java {
     }
 }
 
-version = "12.0.9"
+version = "12.0.10"
 
 repositories {
     mavenCentral()

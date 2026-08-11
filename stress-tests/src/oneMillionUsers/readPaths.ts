@@ -2,6 +2,7 @@ import SuperTokens from 'supertokens-node';
 
 import { measureTime, runStep, setCheckpoint, CheckpointSize } from '../common/utils';
 import { measureQueryPaths } from './measureQueryPaths';
+import { measureOAuthPaths, OAuthStore } from './oauthPaths';
 import { walkAllUsers } from './pagination';
 
 /**
@@ -22,7 +23,11 @@ import { walkAllUsers } from './pagination';
  * step instead of aborting the whole run (issue #1346, collect-and-continue).
  * The end-of-run throwIf* stages then fail the job listing every failed step.
  */
-export const runReadPaths = async (deployment: any, size: CheckpointSize): Promise<void> => {
+export const runReadPaths = async (
+  deployment: any,
+  size: CheckpointSize,
+  oauthStore?: OAuthStore
+): Promise<void> => {
   console.log(`\n\n===== Read-path measurement pass: ${size} =====`);
   setCheckpoint(size);
   try {
@@ -88,6 +93,13 @@ export const runReadPaths = async (deployment: any, size: CheckpointSize): Promi
     // third-party sign-in, linked-user updates, tenant assoc, unlink/delete,
     // analytics counts, role listing/delete, TOTP verify, email verification).
     await measureQueryPaths(deployment);
+
+    // 9. Measure the OAuth-dependent paths (M2M issuance, introspection, revoke
+    // by handle / client, plus the large-pass-only burst-accuracy assertion and
+    // cleanup sweep) against the seeded OAuth data.
+    if (oauthStore) {
+      await measureOAuthPaths(deployment, oauthStore);
+    }
   } finally {
     // Always clear the checkpoint so any measurement outside a pass (or a later
     // pass) is routed correctly.

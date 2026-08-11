@@ -105,7 +105,9 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         // CDI >= 5.6 refresh-time rotation (PLAN-002): a grace-window re-rotation was served, and a
         // refresh-token reuse was detected and the session revoked, respectively.
         REFRESH_TOKEN_GRACE_PERIOD_HIT,
-        REFRESH_TOKEN_REUSE_DETECTED
+        REFRESH_TOKEN_REUSE_DETECTED,
+        APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
+        APPROXIMATE_USER_COUNT_REFRESH_FAILED
     }
 
     public static class EventAndException {

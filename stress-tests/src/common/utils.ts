@@ -160,6 +160,16 @@ export const DEFAULT_STEP_BUDGETS_MS: Record<string, number> = {
   'TOTP verify (user with many used codes)': 60_000,
   'Email-verification status update (mapped user)': 60_000,
   'Delete user with userid mapping': 120_000,
+  // OAuth phase: seeding (clients via the provider + bulk M2M-stat/session SQL)
+  // and the measured OAuth-dependent read paths.
+  'Seeding OAuth data (100k checkpoint)': 1_800_000,
+  'Seeding OAuth data (remaining to full)': 1_800_000,
+  'OAuth M2M token issuance (client_credentials)': 60_000,
+  'OAuth token introspection': 60_000,
+  'OAuth revoke by session handle': 60_000,
+  'OAuth revoke by client id': 120_000,
+  'OAuth M2M created-since burst accuracy': 600_000,
+  'OAuth cleanup cron sweep': 300_000,
 };
 
 let cachedBudgets: Record<string, number> | undefined;
@@ -427,6 +437,15 @@ export const STEP_SCALE_CLASS: Record<string, ScaleClass> = {
   'TOTP verify (user with many used codes)': 'O(1)',
   'Email-verification status update (mapped user)': 'O(1)',
   'Delete user with userid mapping': 'O(1)',
+  // OAuth read paths. Issuance / introspection / revoke-by-handle are single-key
+  // ops that must stay flat as the M2M-stats and oauth_sessions volume grows
+  // (O(1)-class once plugin #357 + the revoke index land). Revoke-by-client
+  // touches all of a client's sessions, whose count grows with the seed, so it
+  // is left on the lenient O(n) bound.
+  'OAuth M2M token issuance (client_credentials)': 'O(1)',
+  'OAuth token introspection': 'O(1)',
+  'OAuth revoke by session handle': 'O(1)',
+  'OAuth revoke by client id': 'O(n)',
 };
 
 /**

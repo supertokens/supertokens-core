@@ -17,6 +17,9 @@ import Passwordless from 'supertokens-node/recipe/passwordless';
 import ThirdParty from 'supertokens-node/recipe/thirdparty';
 import UserRoles from 'supertokens-node/recipe/userroles';
 import Session from 'supertokens-node/recipe/session';
+import OAuth2Provider from 'supertokens-node/recipe/oauth2provider';
+
+import { seedOAuthData, newOAuthStore, OAuthStore } from './oauthPaths';
 
 import { createUsers } from './createUsers';
 import { doAccountLinking } from './accountLinking';
@@ -72,6 +75,11 @@ function stInit(connectionURI: string, apiKey: string) {
       }),
       UserRoles.init(),
       Session.init(),
+      // Needed for the OAuth phase: client management + M2M client-credentials
+      // token issuance + introspection + revoke, all used to seed and measure
+      // the OAuth-dependent paths. Requires the core to be pointed at the OAuth
+      // provider (see docker-compose.yml) and the OAUTH feature to be licensed.
+      OAuth2Provider.init(),
     ],
   });
 }
@@ -118,9 +126,19 @@ async function main() {
     );
     await measureTime('Waiting for import (100k checkpoint)', () => waitForBulkImport(deployment));
 
+    // Seed the OAuth dataset to its small tranche (clients + a fraction of the
+    // M2M-stat / oauth_sessions volume) before the small pass, so the OAuth half
+    // of the feature-flag stats and the OAuth read paths are measured at the
+    // ~100k checkpoint too. The store carries the seeded clients / sample handle
+    // through to the read-path measurement, and grows for the large tranche.
+    const oauthStore: OAuthStore = newOAuthStore();
+    await measureTime('Seeding OAuth data (100k checkpoint)', () =>
+      seedOAuthData(deployment, oauthStore, 'small')
+    );
+
     // Small read-path pass at the ~100k checkpoint (records into the ratio
     // harness only; does not touch the 1M summary/budget table).
-    await runReadPaths(deployment, 'small');
+    await runReadPaths(deployment, 'small', oauthStore);
 
     // Grow the dataset to the full 1M.
     await measureTime('Loading users for bulk import (remaining to 1M)', () =>
@@ -176,6 +194,14 @@ async function main() {
     // 5. Create sessions
     await createSessions(allUsersForMapping);
 
+    // Grow the OAuth dataset to its full target before the large pass (the M2M
+    // stats + oauth_sessions volume grows from the small tranche to 100%), so
+    // the OAuth read paths get their "large" side and the feature-flag OAuth
+    // counts run against the realistic window.
+    await measureTime('Seeding OAuth data (remaining to full)', () =>
+      seedOAuthData(deployment, oauthStore, 'large')
+    );
+
     // Seeding is done: snapshot the ingest query profile from
     // pg_stat_statements, then reset the counters so the read/query phase below
     // is measured from a clean slate.
@@ -184,7 +210,7 @@ async function main() {
     // Large read-path pass at the full 1M. This is the pass whose measurements
     // feed the existing summary/budget table (steps 6, 7 and 8), and it also
     // supplies the "large" side of every two-size scaling ratio.
-    await runReadPaths(deployment, 'large');
+    await runReadPaths(deployment, 'large', oauthStore);
 
     // Snapshot the steady-state read/query query profile now that the measured
     // paths above have run against the reset counters.
