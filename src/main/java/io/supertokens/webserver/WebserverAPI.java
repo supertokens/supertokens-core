@@ -427,6 +427,16 @@ public abstract class WebserverAPI extends HttpServlet {
         return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
     }
 
+    // Rejects a call made on a non-public tenant, but only from `sinceVersion` onwards. Used by app-specific
+    // APIs that historically accepted a tenant in the path and are being restricted to the public tenant from a
+    // specific CDI version, so older clients keep their existing (looser) behaviour.
+    protected void enforcePublicTenantFromVersion(HttpServletRequest req, SemVer sinceVersion)
+            throws BadPermissionException, ServletException {
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(sinceVersion) && getTenantId(req) != null) {
+            throw new BadPermissionException("Only public tenantId can call this app specific API");
+        }
+    }
+
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
