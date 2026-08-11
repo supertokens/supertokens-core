@@ -343,6 +343,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+        Utils.setValueInConfig("access_token_validity_jitter", "0"); // pin off so lifetimes are exact
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -364,6 +365,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+        Utils.setValueInConfig("access_token_validity_jitter", "0"); // pin off so lifetimes are exact
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -395,6 +397,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+        Utils.setValueInConfig("access_token_validity_jitter", "0"); // pin off so lifetimes are exact
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
