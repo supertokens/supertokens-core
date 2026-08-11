@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Adds an opt-in `allowApproximate=true` query param to `GET /users/count` (CDI 5.6) serving a cached
+  per-tenant anchor plus a live delta, with new `approximate`/`asOf` response fields. Default behavior is
+  unchanged.
+
 - Test-only: the 1M-user stress-test suite now seeds OAuth data (clients via the SDK, bulk M2M-token stats and
   `oauth_sessions` volume via direct SQL) and measures the OAuth-dependent paths — M2M issuance, introspection, revoke,
   the cleanup-cron sweep, and a burst-accuracy assertion that pins supertokens-postgresql-plugin#357

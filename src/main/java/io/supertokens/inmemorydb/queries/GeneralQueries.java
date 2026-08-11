@@ -804,6 +804,106 @@ public class GeneralQueries {
         });
     }
 
+    // In-memory mirror of the PostgreSQL approximate tenant user-count contract (PLAN-009). Semantics
+    // match the postgresql-plugin implementation; only the SQL flavour differs (no server-side isolation
+    // hints - a single SQLite connection transaction already gives a consistent read snapshot).
+    public static long countTenantUsersJoinedSince(Start start, TenantIdentifier tenantIdentifier, long sinceMs)
+            throws SQLException, StorageQueryException {
+        boolean readsFromNewTables = Config.getConfig(start).getMigrationMode().readsFromNewTables();
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            return countTenantUsersJoinedSince(start, con, tenantIdentifier, sinceMs, readsFromNewTables);
+        }
+    }
+
+    // Delta evaluated on the supplied connection, so the anchor can compute it inside the same snapshot as
+    // its exact count. Counts distinct primary users in the tenant whose group-minimum join time is strictly
+    // after sinceMs. Because that time is the MIN over the group's members (invariant I6, maintained by
+    // updateTimeJoinedForPrimaryUsers_Transaction), a user linked into a pre-existing group inherits a time
+    // <= sinceMs and correctly drops out of this window - the group was already counted in the anchor.
+    private static long countTenantUsersJoinedSince(Start start, Connection con,
+            TenantIdentifier tenantIdentifier, long sinceMs, boolean readsFromNewTables)
+            throws SQLException, StorageQueryException {
+        String QUERY;
+        if (readsFromNewTables) {
+            // Only rows joined after the bound are scanned, and the tenant-membership EXISTS probes just
+            // those rows. Distinct (id, time) pairs collapse to distinct primaries by I6.
+            QUERY = "SELECT COUNT(*) FROM ("
+                    + "SELECT DISTINCT auid.primary_or_recipe_user_id, auid.primary_or_recipe_user_time_joined"
+                    + " FROM " + getConfig(start).getAppIdToUserIdTable() + " auid"
+                    + " WHERE auid.app_id = ? AND auid.primary_or_recipe_user_time_joined > ?"
+                    + " AND EXISTS (SELECT 1 FROM " + getConfig(start).getRecipeUserTenantsTable() + " rut"
+                    + " WHERE rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                    + " AND rut.tenant_id = ?)) u";
+        } else {
+            // Legacy read path: the same distinct-primary count restricted to the joined-since window, over
+            // all_auth_recipe_users (the table getUsersCount_legacy counts), so anchor + delta stays
+            // consistent with the exact count in this mode too.
+            QUERY = "SELECT COUNT(*) FROM ("
+                    + "SELECT DISTINCT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
+                    + " WHERE app_id = ? AND primary_or_recipe_user_time_joined > ? AND tenant_id = ?) u";
+        }
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setLong(2, sinceMs);
+            pst.setString(3, tenantIdentifier.getTenantId());
+        }, result -> {
+            if (result.next()) {
+                return result.getLong(1);
+            }
+            return 0L;
+        });
+    }
+
+    public static long computeTenantUserCountAnchor(Start start, TenantIdentifier tenantIdentifier, long sinceMs)
+            throws SQLException, StorageQueryException {
+        boolean readsFromNewTables = Config.getConfig(start).getMigrationMode().readsFromNewTables();
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            boolean prevAutoCommit = con.getAutoCommit();
+            con.setAutoCommit(false);
+            try {
+                // A single SQLite connection transaction reads both the exact count and the delta from one
+                // consistent snapshot. Taking them together is what makes C - d0 a timestamp-relative anchor:
+                // every user partitions on group-minimum join time <= sinceMs (anchor) vs > sinceMs (delta)
+                // with no dependence on commit-vs-snapshot ordering.
+                long exactCount = runTenantExactCount(start, con, tenantIdentifier, readsFromNewTables);
+                long delta = countTenantUsersJoinedSince(start, con, tenantIdentifier, sinceMs, readsFromNewTables);
+                con.commit();
+                return exactCount - delta;
+            } catch (SQLException | StorageQueryException | RuntimeException e) {
+                con.rollback();
+                throw e;
+            } finally {
+                con.setAutoCommit(prevAutoCommit);
+            }
+        }
+    }
+
+    // Exact per-tenant user count matching getUsersCount (with includeRecipeIds == null), evaluated on the
+    // supplied connection for the anchor's single-snapshot computation.
+    private static long runTenantExactCount(Start start, Connection con, TenantIdentifier tenantIdentifier,
+            boolean readsFromNewTables) throws SQLException, StorageQueryException {
+        String QUERY;
+        if (readsFromNewTables) {
+            QUERY = "SELECT COUNT(DISTINCT auid.primary_or_recipe_user_id) AS total FROM "
+                    + getConfig(start).getRecipeUserTenantsTable() + " rut"
+                    + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " auid"
+                    + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                    + " WHERE rut.app_id = ? AND rut.tenant_id = ?";
+        } else {
+            QUERY = "SELECT COUNT(DISTINCT primary_or_recipe_user_id) AS total FROM "
+                    + getConfig(start).getUsersTable() + " WHERE app_id = ? AND tenant_id = ?";
+        }
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+        }, result -> {
+            if (result.next()) {
+                return result.getLong("total");
+            }
+            return 0L;
+        });
+    }
+
     public static boolean doesUserIdExist(Start start, AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {
         // We query both tables cause there is a case where a primary user ID exists, but its associated

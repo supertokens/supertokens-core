@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -26,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -74,26 +76,51 @@ public class UsersCountAPI extends WebserverAPI {
             includeAllTenants = false;
         }
 
+        // Opt-in approximate mode: additive, backward-compatible. Only honoured from the CDI version that
+        // introduces it, so older clients see byte-for-byte unchanged behaviour and never the new fields.
+        String allowApproximateStr = InputParser.getQueryParamOrThrowError(req, "allowApproximate", true);
+        boolean paramSet = allowApproximateStr != null && allowApproximateStr.equalsIgnoreCase("true")
+                && getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_6);
+
+        RECIPE_ID[] recipeIdsEnum = recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new);
+
         try {
             long count;
+            // Whether the served value came from a cached snapshot. Stays false when we compute exact - which
+            // the approximate path only ever falls back to for the shapes it does not cover (all-tenants, or a
+            // recipe-filtered count), so the client still learns it got an exact number.
+            boolean approximate = false;
+            long asOf = System.currentTimeMillis();
 
             if (includeAllTenants) {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
 
-                count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifier, storages,
-                        recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifier, storages, recipeIdsEnum);
 
             } else {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                 Storage storage = getTenantStorage(req);
 
-                count = AuthRecipe.getUsersCountForTenant(tenantIdentifier, storage,
-                        recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                // The anchor + delta contract counts every user in the tenant; a recipe-id filter has no
+                // approximate equivalent, so fall back to exact in that case.
+                if (paramSet && recipeIdsEnum.length == 0) {
+                    ApproximateUserCount.ApproximateCountResult approxResult = ApproximateUserCount
+                            .getInstance(main, getAppIdentifier(req)).serve(main, tenantIdentifier, storage);
+                    count = approxResult.count;
+                    approximate = approxResult.approximate;
+                    asOf = approxResult.asOf;
+                } else {
+                    count = AuthRecipe.getUsersCountForTenant(tenantIdentifier, storage, recipeIdsEnum);
+                }
             }
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
+            if (paramSet) {
+                result.addProperty("approximate", approximate);
+                result.addProperty("asOf", asOf);
+            }
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

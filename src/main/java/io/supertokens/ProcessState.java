@@ -101,7 +101,9 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB,
         BULK_IMPORT_COMPLETE,
         BULK_IMPORT_SKIPPED_EMPTY_QUEUE,
-        BACKFILL_COMPLETE
+        BACKFILL_COMPLETE,
+        APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
+        APPROXIMATE_USER_COUNT_REFRESH_FAILED
     }
 
     public static class EventAndException {

@@ -1410,6 +1410,26 @@ public class Start
     }
 
     @Override
+    public long countTenantUsersJoinedSince(TenantIdentifier tenantIdentifier, long sinceMs)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.countTenantUsersJoinedSince(this, tenantIdentifier, sinceMs);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public long computeTenantUserCountAnchor(TenantIdentifier tenantIdentifier, long sinceMs)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.computeTenantUserCountAnchor(this, tenantIdentifier, sinceMs);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo[] getUsers(TenantIdentifier tenantIdentifier, @NotNull Integer limit,
                                          @NotNull String timeJoinedOrder,
                                          @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
