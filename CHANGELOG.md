@@ -82,8 +82,6 @@ during a long index build.
   lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.6
   rotation-state access.
 
-### Changed
-
 - `access_token_validity_jitter` is now applied when a fresh access token is minted on session creation and refresh:
   `exp = now + validity * (1 - U[0, jitter])`. The jitter is subtract-only, so an access token is never valid for
   longer than the configured `access_token_validity`; set the config to 0 to disable. Token regeneration is exempt

@@ -384,15 +384,18 @@ public class MultitenantAPITest {
         }
     }
 
-    // Guardrail for the CDI 5.6 public-tenant restriction on /recipe/session/verify: at the latest advertised
-    // CDI version (< 5.6) a non-public tenant must still be able to verify, so the new gate does not regress
-    // currently-reachable clients. (The 5.6-and-above rejection is not reachable over HTTP until core advertises
-    // 5.6, mirroring the rest of this feature.)
+    // Guardrail for the CDI 5.6 public-tenant restriction on /recipe/session/verify, now that core advertises
+    // 5.6 (so both legs are reachable over HTTP): at CDI >= 5.6 a non-public tenant is rejected (the gate), while
+    // at CDI 5.5 - below the gate - the same non-public tenant still verifies, so the gate does not regress
+    // pre-5.6 clients.
     @Test
-    public void testVerifySessionStillWorksFromNonPublicTenantAtLatestAdvertisedCDIVersion() throws Exception {
+    public void testVerifySessionFromNonPublicTenantIsGatedAtCdi5_6ButAllowedBelow() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        // The latest advertised version must be at/above the gate for the rejection leg to be reachable over HTTP.
+        assertTrue(WebserverAPI.getLatestCDIVersion().greaterThanOrEqualTo(SemVer.v5_6));
 
         // t2 and t3 are non-public tenants (t1 is the public tenant of app a1).
         for (TenantIdentifier tenant : new TenantIdentifier[]{t2, t3}) {
@@ -402,11 +405,19 @@ public class MultitenantAPITest {
             userDataInDb.addProperty("bar", "val1");
 
             JsonObject session = createSession(tenant, "userid", userDataInJWT, userDataInDb);
-            JsonObject sessionResponse = verifySession(tenant,
-                    session.get("accessToken").getAsJsonObject().get("token").getAsString(),
-                    WebserverAPI.getLatestCDIVersion());
-            // The gate is scoped to CDI >= 5.6, so a non-public tenant is not rejected at the latest advertised
-            // version: the same session verifies successfully.
+            String accessToken = session.get("accessToken").getAsJsonObject().get("token").getAsString();
+
+            // CDI >= 5.6: the gate rejects a non-public tenant with a 403.
+            try {
+                verifySession(tenant, accessToken, WebserverAPI.getLatestCDIVersion());
+                fail("expected a 403 for a non-public tenant at CDI >= 5.6");
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+                assertTrue(e.getMessage().contains("Only public tenantId can call this app specific API"));
+            }
+
+            // CDI 5.5 (below the gate): the same non-public tenant still verifies successfully.
+            JsonObject sessionResponse = verifySession(tenant, accessToken, SemVer.v5_5);
             assertEquals("OK", sessionResponse.get("status").getAsString());
             assertEquals(session.get("session").getAsJsonObject().get("handle").getAsString(),
                     sessionResponse.get("session").getAsJsonObject().get("handle").getAsString());

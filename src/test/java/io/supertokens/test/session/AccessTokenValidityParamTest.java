@@ -46,8 +46,10 @@ import static org.junit.Assert.fail;
  *
  * The refresh-side override is driven through the direct
  * {@link Session#refreshSession(Main, String, String, boolean, AccessToken.VERSION, SemVer, Long)} test overload
- * because core does not yet advertise CDI 5.6 over HTTP (see the PR description); this branch carries no expiry
- * jitter (that is a sibling unit), so mint lifetimes are asserted exactly.
+ * because core does not yet advertise CDI 5.6 over HTTP (see the PR description). An honoured override mints the
+ * access token at exactly {@code now + param} and is never jittered; only the configured-validity fallback is
+ * subject to {@code access_token_validity_jitter}. The two cases that assert against the configured validity pin
+ * the jitter off so the lifetime is exact.
  */
 public class AccessTokenValidityParamTest {
 
@@ -122,6 +124,7 @@ public class AccessTokenValidityParamTest {
     @Test
     public void createSessionNullOverrideUsesConfiguredValidity() throws Exception {
         String[] args = {"../"};
+        Utils.setValueInConfig("access_token_validity_jitter", "0"); // pin off so the configured lifetime is exact
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         Main main = process.getProcess();
@@ -229,6 +232,7 @@ public class AccessTokenValidityParamTest {
     @Test
     public void refreshOverrideIgnoredBelowCdi5_6() throws Exception {
         String[] args = {"../"};
+        Utils.setValueInConfig("access_token_validity_jitter", "0"); // pin off so the configured lifetime is exact
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         Main main = process.getProcess();
