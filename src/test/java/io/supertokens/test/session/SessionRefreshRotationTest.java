@@ -44,13 +44,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * Exercises the CDI >= 5.5 refresh-time token rotation state machine (PLAN-002 unit 5, decisions 1-4):
+ * Exercises the CDI >= 5.6 refresh-time token rotation state machine (PLAN-002 unit 5, decisions 1-4):
  * immediate rotation with prev/rotated_at recording, the re-rotating grace window, and out-of-window
  * reuse classification (RECENT_PREV / ORPHANED_BRANCH / STALE_LINEAGE) with server-side revocation.
  *
- * The new behaviour is driven by passing {@link SemVer#v5_5} directly to
+ * The new behaviour is driven by passing {@link SemVer#v5_6} directly to
  * {@link Session#refreshSession(Main, String, String, boolean, AccessToken.VERSION, SemVer)} - core does not
- * yet advertise CDI 5.5 over HTTP (see the PR description), so it is reached only through direct calls here.
+ * yet advertise CDI 5.6 over HTTP (see the PR description), so it is reached only through direct calls here.
  */
 public class SessionRefreshRotationTest {
 
@@ -81,7 +81,7 @@ public class SessionRefreshRotationTest {
 
     private static SessionInformationHolder refresh(Main main, SessionInformationHolder from) throws Exception {
         return Session.refreshSession(main, from.refreshToken.token, from.antiCsrfToken, false,
-                AccessToken.getLatestVersion(), SemVer.v5_5);
+                AccessToken.getLatestVersion(), SemVer.v5_6);
     }
 
     // Case 1: a normal rotation records prev := retired hash and rotated_at, advances current, and the minted

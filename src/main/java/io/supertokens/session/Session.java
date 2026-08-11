@@ -667,7 +667,7 @@ public class Session {
     }
 
     // True when the presented refresh token is a child (via its token-internal parent hash) of the refresh
-    // token whose double-hash is parentHash2. Mirrors the legacy Case B lineage test; used by the CDI >= 5.5
+    // token whose double-hash is parentHash2. Mirrors the legacy Case B lineage test; used by the CDI >= 5.6
     // flow for case 2 (child of current -> promote+rotate) and ORPHANED_BRANCH classification (child of prev).
     private static boolean refreshTokenChildMatches(RefreshToken.RefreshTokenInfo info, String parentHash2)
             throws NoSuchAlgorithmException {
@@ -677,9 +677,9 @@ public class Session {
                 && Utils.hashSHA256(info.parentRefreshTokenHash1).equals(parentHash2));
     }
 
-    // Builds the refresh response for a CDI >= 5.5 rotation (cases 1/2/3): a fresh access token whose
+    // Builds the refresh response for a CDI >= 5.6 rotation (cases 1/2/3): a fresh access token whose
     // parentRefreshTokenHash1 is null (there is exactly one live token and no lineage-acceptance rule on
-    // CDI 5.5 - decision 3), alongside the just-minted refresh token.
+    // CDI 5.6 - decision 3), alongside the just-minted refresh token.
     private static SessionInformationHolder buildRefreshedSession(TenantIdentifier tenantIdentifier, Main main,
             String sessionHandle, io.supertokens.pluginInterface.session.SessionInfo sessionInfo,
             TokenInfo newRefreshToken, String antiCsrfToken, AccessToken.VERSION accessTokenVersion,
@@ -729,8 +729,8 @@ public class Session {
                         boolean useStaticKey =
                                 shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
 
-                        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_5)) {
-                            // ===== CDI >= 5.5: refresh-time rotation with grace window (PLAN-002 cases 1-4) =====
+                        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_6)) {
+                            // ===== CDI >= 5.6: refresh-time rotation with grace window (PLAN-002 cases 1-4) =====
                             long now = System.currentTimeMillis();
                             String presentedHash2 = Utils.hashSHA256(Utils.hashSHA256(refreshToken));
                             String currentHash = sessionInfo.refreshTokenHash2;
@@ -881,7 +881,7 @@ public class Session {
                 if (e.actualException instanceof UnauthorisedException) {
                     UnauthorisedException ue = (UnauthorisedException) e.actualException;
                     if (ue.reuseSubtype != null) {
-                        // CDI >= 5.5 recent-reuse reported as Unauthorised: the session is still revoked
+                        // CDI >= 5.6 recent-reuse reported as Unauthorised: the session is still revoked
                         // (decision 4 - the config alters reporting only, never enforcement).
                         revokeSessionUsingSessionHandles(tenantIdentifier, storage,
                                 new String[]{refreshTokenInfo.sessionHandle});
@@ -890,7 +890,7 @@ public class Session {
                 } else if (e.actualException instanceof TokenTheftDetectedException) {
                     TokenTheftDetectedException te = (TokenTheftDetectedException) e.actualException;
                     if (te.reuseSubtype != null) {
-                        // CDI >= 5.5 reuse: revoke server-side so revocation no longer depends on the SDK acting
+                        // CDI >= 5.6 reuse: revoke server-side so revocation no longer depends on the SDK acting
                         // on the theft response. Legacy (CDI <= 5.4) theft has a null subtype and is untouched.
                         revokeSessionUsingSessionHandles(tenantIdentifier, storage,
                                 new String[]{refreshTokenInfo.sessionHandle});

@@ -101,7 +101,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB,
         BULK_IMPORT_COMPLETE,
         BACKFILL_COMPLETE,
-        // CDI >= 5.5 refresh-time rotation (PLAN-002): a grace-window re-rotation was served, and a
+        // CDI >= 5.6 refresh-time rotation (PLAN-002): a grace-window re-rotation was served, and a
         // refresh-token reuse was detected and the session revoked, respectively.
         REFRESH_TOKEN_GRACE_PERIOD_HIT,
         REFRESH_TOKEN_REUSE_DETECTED
