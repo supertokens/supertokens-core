@@ -26,6 +26,7 @@ import {
   budgetsEnforced,
 } from '../common/utils';
 import { walkAllUsers, GetPage, UserPage } from '../oneMillionUsers/pagination';
+import { resolveMigrationMode, DEFAULT_MIGRATION_MODE } from '../common/migrationMode';
 
 const tests: { name: string; fn: () => Promise<void> }[] = [];
 const test = (name: string, fn: () => Promise<void>) => tests.push({ name, fn });
@@ -248,6 +249,28 @@ test('throwIfAnyStepFailed fails the run when any measured step failed', async (
     () => StatsCollector.getInstance().throwIfAnyStepFailed(),
     /measured read-path step\(s\) failed or timed out/
   );
+});
+
+// --- migration-mode label resolution (issue #1351) -------------------------
+
+test('resolveMigrationMode defaults to LEGACY when unset or blank', async () => {
+  assert.strictEqual(resolveMigrationMode(undefined), 'LEGACY');
+  assert.strictEqual(resolveMigrationMode(''), 'LEGACY');
+  assert.strictEqual(resolveMigrationMode('   '), 'LEGACY');
+  assert.strictEqual(DEFAULT_MIGRATION_MODE, 'LEGACY');
+});
+
+test('resolveMigrationMode accepts each valid mode, case-insensitively', async () => {
+  assert.strictEqual(resolveMigrationMode('MIGRATED'), 'MIGRATED');
+  assert.strictEqual(resolveMigrationMode('migrated'), 'MIGRATED');
+  assert.strictEqual(resolveMigrationMode('  Legacy '), 'LEGACY');
+  assert.strictEqual(resolveMigrationMode('dual_write_read_old'), 'DUAL_WRITE_READ_OLD');
+  assert.strictEqual(resolveMigrationMode('DUAL_WRITE_READ_NEW'), 'DUAL_WRITE_READ_NEW');
+});
+
+test('resolveMigrationMode falls back to LEGACY for an unrecognized value', async () => {
+  assert.strictEqual(resolveMigrationMode('MIGRATEDD'), 'LEGACY');
+  assert.strictEqual(resolveMigrationMode('nonsense'), 'LEGACY');
 });
 
 (async () => {

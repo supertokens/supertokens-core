@@ -21,6 +21,18 @@ jobs:
     # red X with its failure tables, but the workflow (and thus the caller's
     # release-docker gate) passes.
     continue-on-error: true
+    # One leg per migration mode. The suite has always run the core in its
+    # default LEGACY mode; the MIGRATED leg deploys a fresh core directly in
+    # MIGRATED (no backfill needed on an empty DB) so the migrated-schema read
+    # paths (app_id_to_user_id / recipe_user_tenants) are exercised at scale
+    # too. The legs run as independent parallel jobs — each on its own runner,
+    # within the current single-run envelope — and fail-fast is off so a red
+    # (e.g. expected-to-time-out) MIGRATED leg never cancels the LEGACY one.
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [LEGACY, MIGRATED]
+    name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node.js
@@ -37,6 +49,11 @@ jobs:
           sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ inputs.tag }}|' docker-compose.yml
           cat docker-compose.yml
       - name: Bring up the services
+        # Compose interpolates SUPERTOKENS_MIGRATION_MODE into the supertokens
+        # service env (see docker-compose.yml), so the core boots directly in
+        # this leg's mode.
+        env:
+          SUPERTOKENS_MIGRATION_MODE: ${{ matrix.mode }}
         run: |
           cd stress-tests
           docker compose up -d
@@ -47,6 +64,10 @@ jobs:
       - name: Run one million users test
         id: one-million-users
         shell: bash   # explicit shell => -o pipefail; without it `| tee` masks npm's exit code
+        # STRESS_TEST_MIGRATION_MODE tags stats.json / the summary with the leg's
+        # mode; the suite also asserts the core actually came up in this mode.
+        env:
+          STRESS_TEST_MIGRATION_MODE: ${{ matrix.mode }}
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
@@ -57,7 +78,7 @@ jobs:
             echo "stats.json not found — the run produced no measurements." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
-          echo "## Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Stress Test Results — ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
           echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
           echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
@@ -82,8 +103,10 @@ jobs:
           [ -f stats.json ] || exit 0
           mkdir -p prev-stats
           # Artifacts are listed repo-wide, newest first; the current run has not
-          # uploaded its artifact yet, so these are the previous five runs.
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats&per_page=5" \
+          # uploaded its artifact yet, so these are the previous five runs. The
+          # name is mode-specific so a leg only ever compares against prior runs
+          # of the same migration mode (the two legs must never cross-compare).
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats-${{ matrix.mode }}&per_page=5" \
             --jq '.artifacts[] | select(.expired == false) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' \
             > artifact-list.tsv || true
           i=0
@@ -99,7 +122,7 @@ jobs:
           [ -f prev-stats/1/stats.json ] || exit 0
           {
             echo ""
-            echo "### Comparison with previous runs"
+            echo "### Comparison with previous runs (${{ matrix.mode }} mode)"
             header="| Test | This run |"
             sep="|------|----------|"
             for n in 1 2 3 4 5; do
@@ -142,5 +165,8 @@ jobs:
       - name: Upload stats for future comparisons
         uses: actions/upload-artifact@v6
         with:
-          name: stress-test-stats
+          # Per-mode name: keeps the two legs' baselines separate (the
+          # comparison step only pulls same-mode artifacts) and keeps the two
+          # matrix legs from clashing on a single artifact name within a run.
+          name: stress-test-stats-${{ matrix.mode }}
           path: stress-tests/stats.json

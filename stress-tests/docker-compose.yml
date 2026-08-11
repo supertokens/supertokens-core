@@ -26,6 +26,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # The OAuth provider (Hydra, via the supertokens oauth2-test image) must be
+      # up before the core so OAuth client/token calls in the suite's OAuth phase
+      # can be proxied to it. It has no /hello-style healthcheck, so we only wait
+      # for the container to start; the OAuth phase retries client creation.
+      oauth:
+        condition: service_started
     ports:
       - 3567:3567
     environment:
@@ -38,6 +44,20 @@ services:
       API_KEYS: "qwertyuiopasdfghjklzxcvbnm"
       BULK_MIGRATION_PARALLELISM: "4"
       BULK_MIGRATION_BATCH_SIZE: "500"
+      # Point the core at the OAuth provider so the OAuth phase (client creation,
+      # M2M client-credentials tokens, introspection, revoke) works. Mirrors the
+      # per-SDK compose files. OAUTH_PROVIDER_URL_CONFIGURED_IN_OAUTH_PROVIDER
+      # defaults to the public service URL, so it is not set here.
+      OAUTH_PROVIDER_PUBLIC_SERVICE_URL: "http://oauth:4444"
+      OAUTH_PROVIDER_ADMIN_SERVICE_URL: "http://oauth:4445"
+      OAUTH_PROVIDER_CONSENT_LOGIN_BASE_URL: "http://localhost:3001/auth"
+      OAUTH_CLIENT_SECRET_ENCRYPTION_KEY: "asdfasdfasdfasdfasdf"
+      # migration_mode for the all_auth_recipe_users deprecation. A fresh install
+      # on an empty DB can start directly in any mode (no backfill needed), so the
+      # stress-tests workflow runs one matrix leg per mode by exporting
+      # SUPERTOKENS_MIGRATION_MODE before `docker compose up`. Defaults to LEGACY,
+      # which is the core's own default and the suite's historical behavior.
+      SUPERTOKENS_MIGRATION_MODE: "${SUPERTOKENS_MIGRATION_MODE:-LEGACY}"
 
     networks:
       - app_network
@@ -48,6 +68,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  oauth:
+    # SuperTokens' bundled Ory Hydra test image (public :4444 / admin :4445),
+    # the same one the per-SDK compose files use. Backs the OAuth phase's client
+    # creation and M2M token issuance so the OAuth-dependent stats/revoke paths
+    # can be measured against real data.
+    image: supertokens/oauth2-test:latest
+    platform: linux/amd64
+    networks:
+      - app_network
+    restart: unless-stopped
 
   pghero:
     image: ankane/pghero
