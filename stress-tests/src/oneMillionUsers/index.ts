@@ -9,6 +9,7 @@ import {
 } from '../common/utils';
 import { runReadPaths } from './readPaths';
 import { capturePgStats, PgStatsCollector } from './pgStatStatements';
+import { resolveMigrationMode, assertCoreMigrationMode } from '../common/migrationMode';
 
 import SuperTokens from 'supertokens-node';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
@@ -16,6 +17,9 @@ import Passwordless from 'supertokens-node/recipe/passwordless';
 import ThirdParty from 'supertokens-node/recipe/thirdparty';
 import UserRoles from 'supertokens-node/recipe/userroles';
 import Session from 'supertokens-node/recipe/session';
+import OAuth2Provider from 'supertokens-node/recipe/oauth2provider';
+
+import { seedOAuthData, newOAuthStore, OAuthStore } from './oauthPaths';
 
 import { createUsers } from './createUsers';
 import { doAccountLinking } from './accountLinking';
@@ -71,16 +75,33 @@ function stInit(connectionURI: string, apiKey: string) {
       }),
       UserRoles.init(),
       Session.init(),
+      // Needed for the OAuth phase: client management + M2M client-credentials
+      // token issuance + introspection + revoke, all used to seed and measure
+      // the OAuth-dependent paths. Requires the core to be pointed at the OAuth
+      // provider (see docker-compose.yml) and the OAUTH feature to be licensed.
+      OAuth2Provider.init(),
     ],
   });
 }
 
 async function main() {
+  // Which migration mode this run's core was deployed in (LEGACY by default).
+  // The stress-tests workflow runs one matrix leg per mode and passes the leg
+  // via STRESS_TEST_MIGRATION_MODE; everything measured below is tagged with it
+  // so the two legs' stats.json / summaries / comparison baselines stay apart.
+  const migrationMode = resolveMigrationMode();
+  console.log(`Migration mode for this run: ${migrationMode}`);
+
   const deployment = await createStInstanceForTest();
   console.log(`Deployment created: ${deployment.core_url}`);
   try {
     stInit(deployment.core_url, deployment.api_key);
     await setupLicense(deployment.core_url, deployment.api_key);
+
+    // Confirm the core is really in the expected mode before measuring — a leg
+    // whose SUPERTOKENS_MIGRATION_MODE never took effect would otherwise
+    // silently re-measure the LEGACY paths under the MIGRATED label.
+    await assertCoreMigrationMode(deployment.core_url, deployment.api_key, migrationMode);
 
     // 0. Import users in two tranches so the read-path steps can be measured at
     // two dataset sizes (see runReadPaths / RatioCollector). First the ~100k
@@ -105,9 +126,19 @@ async function main() {
     );
     await measureTime('Waiting for import (100k checkpoint)', () => waitForBulkImport(deployment));
 
+    // Seed the OAuth dataset to its small tranche (clients + a fraction of the
+    // M2M-stat / oauth_sessions volume) before the small pass, so the OAuth half
+    // of the feature-flag stats and the OAuth read paths are measured at the
+    // ~100k checkpoint too. The store carries the seeded clients / sample handle
+    // through to the read-path measurement, and grows for the large tranche.
+    const oauthStore: OAuthStore = newOAuthStore();
+    await measureTime('Seeding OAuth data (100k checkpoint)', () =>
+      seedOAuthData(deployment, oauthStore, 'small')
+    );
+
     // Small read-path pass at the ~100k checkpoint (records into the ratio
     // harness only; does not touch the 1M summary/budget table).
-    await runReadPaths(deployment, 'small');
+    await runReadPaths(deployment, 'small', oauthStore);
 
     // Grow the dataset to the full 1M.
     await measureTime('Loading users for bulk import (remaining to 1M)', () =>
@@ -163,6 +194,14 @@ async function main() {
     // 5. Create sessions
     await createSessions(allUsersForMapping);
 
+    // Grow the OAuth dataset to its full target before the large pass (the M2M
+    // stats + oauth_sessions volume grows from the small tranche to 100%), so
+    // the OAuth read paths get their "large" side and the feature-flag OAuth
+    // counts run against the realistic window.
+    await measureTime('Seeding OAuth data (remaining to full)', () =>
+      seedOAuthData(deployment, oauthStore, 'large')
+    );
+
     // Seeding is done: snapshot the ingest query profile from
     // pg_stat_statements, then reset the counters so the read/query phase below
     // is measured from a clean slate.
@@ -171,7 +210,7 @@ async function main() {
     // Large read-path pass at the full 1M. This is the pass whose measurements
     // feed the existing summary/budget table (steps 6, 7 and 8), and it also
     // supplies the "large" side of every two-size scaling ratio.
-    await runReadPaths(deployment, 'large');
+    await runReadPaths(deployment, 'large', oauthStore);
 
     // Snapshot the steady-state read/query query profile now that the measured
     // paths above have run against the reset counters.
@@ -181,6 +220,7 @@ async function main() {
     // scaling ratios + both pg_stat_statements phase snapshots), then the
     // human-readable pg summary for the step summary.
     StatsCollector.getInstance().writeToFile({
+      migrationMode,
       pgStatStatements: PgStatsCollector.getInstance().toJSON(),
       scalingRatios: RatioCollector.getInstance().toJSON(),
     });
@@ -220,6 +260,7 @@ async function main() {
     // shows where and why the run died instead of producing no stats at all.
     try {
       StatsCollector.getInstance().writeToFile({
+        migrationMode,
         pgStatStatements: PgStatsCollector.getInstance().toJSON(),
         scalingRatios: RatioCollector.getInstance().toJSON(),
       });
