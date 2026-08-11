@@ -20,6 +20,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   time (`prev` / `rotated_at`), honours a re-rotating grace window (`refresh_token_rotation_grace_period`), and
   revokes the session on out-of-window reuse (reported per `recent_token_reuse_behaviour`). CDI <= 5.5 behaviour is
   unchanged.
+- On CDI >= 5.6, `POST /recipe/session` and `POST /recipe/session/refresh` accept an optional `accessTokenValidity`
+  (in milliseconds) that overrides the configured `access_token_validity` for the access token minted by that call
+  only. It is shorten-only - validated `0 < accessTokenValidity <= configured access_token_validity`, with
+  out-of-range values rejected as a 400 rather than clamped - nothing about it is persisted, and the refresh token
+  validity is not overridable.
 - On CDI >= 5.6, session verification is stateless: `/recipe/session/verify` never writes to the database or
   returns a replacement access token (rotation happens only at refresh). With `checkDatabase = true` it sets
   `payloadUpdateAvailable` when the stored payload differs from the token's, and returns `UNAUTHORISED` when the
