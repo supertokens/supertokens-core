@@ -245,18 +245,24 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
             AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
-        // Default entry point: no validity jitter. Session creation and refresh opt into jitter via
-        // the overload below; every other caller stays here. The two other re-mint callers differ and
-        // neither should be jittered: regenerate passes the original (non-null) expiryTime, so it
+        // Default entry point: no validity jitter and no per-mint validity override. Session creation and
+        // refresh opt into jitter via the overload below; the CDI >= 5.6 per-mint validity override is likewise
+        // only threaded through that overload. Every other caller stays here. The two other re-mint callers
+        // differ and neither should be jittered: regenerate passes the original (non-null) expiryTime, so it
         // preserves the existing absolute expiry untouched (no validity re-resolution at all);
         // verify-time promotion (CDI <= 5.4) passes a null expiryTime, so it re-mints at the full
         // configured validity (now + validity) but deliberately without jitter -- that legacy path is
         // removed under CDI 5.5.
         return createNewAccessToken(tenantIdentifier, main, sessionHandle, recipeUserId, primaryUserId,
                 refreshTokenHash1, parentRefreshTokenHash1, userData, antiCsrfToken, expiryTime, version,
-                useStaticKey, false);
+                useStaticKey, false, null);
     }
 
+    // accessTokenValidityOverride (ms): the per-mint access token validity override (PLAN-002 decision 11, the
+    // optional accessTokenValidity parameter on session create / refresh, CDI >= 5.6). Only consulted for a fresh
+    // mint (expiryTime == null); when a caller pins an absolute expiryTime (verify-promote, regenerate) the override
+    // is irrelevant and ignored. The override is applied against this method's single `now` - never precomputed at a
+    // call site - so it composes with jitter and does not straddle the whole-second truncation in AccessTokenInfo.
     public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                  @Nonnull String sessionHandle,
                                                  @Nonnull String recipeUserId, @Nonnull String primaryUserId,
@@ -264,7 +270,8 @@ public class AccessToken {
                                                  @Nullable String parentRefreshTokenHash1,
                                                  @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
                                                  @Nullable Long expiryTime, VERSION version, boolean useStaticKey,
-                                                 boolean applyValidityJitter)
+                                                 boolean applyValidityJitter,
+                                                 @Nullable Long accessTokenValidityOverride)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, SignatureException,
             AccessTokenPayloadError, UnsupportedJWTSigningAlgorithmException {
@@ -275,6 +282,8 @@ public class AccessToken {
         long expires;
         if (expiryTime != null) {
             expires = expiryTime;
+        } else if (accessTokenValidityOverride != null) {
+            expires = now + accessTokenValidityOverride;
         } else {
             CoreConfig config = Config.getConfig(tenantIdentifier, main);
             long validity = config.getAccessTokenValidityInMillis();

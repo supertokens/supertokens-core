@@ -23,10 +23,19 @@ public class TokenTheftDetectedException extends Exception {
     public final String sessionHandle;
     public final String recipeUserId;
     public final String primaryUserId;
+    // Reuse classification for CDI >= 5.6 refresh-time detection (PLAN-002 decision 4). null for legacy
+    // (CDI <= 5.4) theft, which has no subtype - keeping old behaviour byte-identical.
+    public final RefreshTokenReuseSubtype reuseSubtype;
 
     public TokenTheftDetectedException(String sessionHandle, String recipeUserId, String primaryUserId) {
+        this(sessionHandle, recipeUserId, primaryUserId, null);
+    }
+
+    public TokenTheftDetectedException(String sessionHandle, String recipeUserId, String primaryUserId,
+                                       RefreshTokenReuseSubtype reuseSubtype) {
         this.sessionHandle = sessionHandle;
         this.recipeUserId = recipeUserId;
         this.primaryUserId = primaryUserId;
+        this.reuseSubtype = reuseSubtype;
     }
 }

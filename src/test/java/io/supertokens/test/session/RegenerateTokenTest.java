@@ -19,9 +19,12 @@ package io.supertokens.test.session;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -591,6 +594,159 @@ public class RegenerateTokenTest {
         // check payload is same & expiry time is same.
         assertEquals(accessTokenInfoAfterVerify.userData, userDataInJWT);
         assertNotEquals(accessTokenInfoAfterVerify.expiryTime, accessTokenInfoAfterRefresh.expiryTime);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // PLAN-002 unit 8 (decision 7) — regenerate re-issues strictly in place: the returned access token keeps the
+    // original absolute expiry (no validity re-resolution and no re-roll of access_token_validity_jitter) and
+    // carries the refresh-token lineage fields over unchanged. Jitter is set to its maximum and wall-clock is
+    // advanced between mint and regenerate so that any re-resolution (now + validity * (1 - jitter)) would land on a
+    // different expiry than the original, making the exact-equality assertion meaningful.
+    @Test
+    public void testRegenerateReIssuesInPlaceWithoutReRollingJitterOrLineage() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_validity_jitter", "0.25");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        // advance wall-clock so a re-resolved validity would differ from the original expiry
+        Thread.sleep(1500);
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
+                sessionInfo.accessToken.token, newUserDataInJWT);
+
+        assert newSessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                newSessionInfo.accessToken.token, false);
+
+        // payload was updated, but the absolute expiry is byte-identical (no jitter re-roll, no validity
+        // re-resolution)
+        assertEquals(accessTokenInfoAfter.userData, newUserDataInJWT);
+        assertEquals(accessTokenInfoBefore.expiryTime, accessTokenInfoAfter.expiryTime);
+
+        // lineage fields are carried over unchanged
+        assertEquals(accessTokenInfoBefore.refreshTokenHash1, accessTokenInfoAfter.refreshTokenHash1);
+        assertEquals(accessTokenInfoBefore.parentRefreshTokenHash1, accessTokenInfoAfter.parentRefreshTokenHash1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // PLAN-002 unit 8 (decision 7) — regenerate never reads or writes the CDI 5.5 rotation state
+    // (refresh_token_hash_2 / prev_refresh_token_hash_2 / refresh_token_rotated_at). Regenerating a live token
+    // leaves the current refresh-token hash intact and the grace-window columns null.
+    @Test
+    public void testRegenerateLiveTokenDoesNotTouchRotationState() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+        String handle = sessionInfo.session.handle;
+
+        SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        SessionInfo before = storage.getSession(process.getAppForTesting(), handle);
+        assertNull(before.prevRefreshTokenHash2);
+        assertNull(before.refreshTokenRotatedAt);
+        String refreshTokenHash2Before = before.refreshTokenHash2;
+        assertNotNull(refreshTokenHash2Before);
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        assert sessionInfo.accessToken != null;
+        SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
+                sessionInfo.accessToken.token, newUserDataInJWT);
+        assert newSessionInfo.accessToken != null;
+
+        SessionInfo after = storage.getSession(process.getAppForTesting(), handle);
+        // rotation state is completely untouched: current hash unchanged, grace-window columns still null
+        assertEquals(refreshTokenHash2Before, after.refreshTokenHash2);
+        assertNull(after.prevRefreshTokenHash2);
+        assertNull(after.refreshTokenRotatedAt);
+        // the payload update did land
+        assertEquals(newUserDataInJWT, after.userDataInJWT);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // PLAN-002 unit 8 (decision 7) — for an expired input token, regenerate performs a DB-only payload update and
+    // returns no access token, and still touches no rotation state.
+    @Test
+    public void testRegenerateExpiredTokenIsDbOnlyAndDoesNotTouchRotationState() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_validity", "2"); // 2 second validity
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+        String handle = sessionInfo.session.handle;
+
+        SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getStorage(process.getProcess());
+        SessionInfo before = storage.getSession(process.getAppForTesting(), handle);
+        String refreshTokenHash2Before = before.refreshTokenHash2;
+        assertNull(before.prevRefreshTokenHash2);
+        assertNull(before.refreshTokenRotatedAt);
+
+        // let the access token expire
+        Thread.sleep(2500);
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        assert sessionInfo.accessToken != null;
+        SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
+                sessionInfo.accessToken.token, newUserDataInJWT);
+
+        // no access token returned for an expired input; the client must refresh to obtain a new one
+        assertNull(newSessionInfo.accessToken);
+
+        SessionInfo after = storage.getSession(process.getAppForTesting(), handle);
+        // DB-only payload update landed
+        assertEquals(newUserDataInJWT, after.userDataInJWT);
+        // rotation state untouched
+        assertEquals(refreshTokenHash2Before, after.refreshTokenHash2);
+        assertNull(after.prevRefreshTokenHash2);
+        assertNull(after.refreshTokenRotatedAt);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
