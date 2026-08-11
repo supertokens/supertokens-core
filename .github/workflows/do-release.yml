@@ -205,7 +205,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ inputs.release-plugin-interface && '' || ' (not re-released)' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ inputs.release-postgresql-plugin && '' || ' (not re-released)' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}${{ inputs.is-canary && '-canary' || '' }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ !inputs.release-plugin-interface && ' (not released in this run)' || '' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ !inputs.release-postgresql-plugin && ' (not released in this run)' || '' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}${{ inputs.is-canary && '-canary' || '' }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
 
       - name: Memo failed Slack notification
         if: steps.slack-notify.outcome == 'failure'
