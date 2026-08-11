@@ -22,6 +22,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.UserPaginationContainer;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
@@ -48,8 +51,10 @@ import org.junit.rules.TestRule;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -152,6 +157,91 @@ public class BulkImportFlowTest {
 
     }
 
+
+    // Regression test for issue #1347: bulk-imported linked users whose per-method time_joined values
+    // diverge widely must not break the /users pagination walk. Before the group-MIN normalization step
+    // in BulkImport.processUsersImportSteps, the newest-first walk truncated early and the oldest-first
+    // walk cycled forever. Requires a real SQL storage (the bulk-import proxy path is unsupported on the
+    // in-memory db), so it is exercised on Postgres/MySQL CI; the storage-agnostic mechanism is covered
+    // by BulkImportPaginationTimeJoinedTest which runs on the in-memory db too.
+    @Test
+    public void testPaginationWalksFullyAfterLinkedImportWithDivergentTimes() throws Exception {
+        Main main = startCronProcess("14");
+
+        int NUMBER_OF_USERS_TO_UPLOAD = 1000;
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        // upload linked users whose per-method time_joined values diverge widely (spanning ~1973 -> now),
+        // matching the stress dataset that triggered the issue
+        {
+            for (int i = 0; i < (NUMBER_OF_USERS_TO_UPLOAD / 1000); i++) {
+                JsonObject request = generateLinkedUsersJsonWithDivergentTimes(1000, i * 1000);
+                JsonObject response = uploadBulkImportUsersJson(main, request);
+                assertEquals("OK", response.get("status").getAsString());
+            }
+        }
+
+        // wait for the cron job to process them all
+        {
+            long processingStarted = System.currentTimeMillis();
+            long pollTimeoutMs = 300_000; // 5 minutes
+            while (true) {
+                int newUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                        BulkImportStorage.BULK_IMPORT_USER_STATUS.NEW).get("count").getAsInt();
+                int processingUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                        BulkImportStorage.BULK_IMPORT_USER_STATUS.PROCESSING).get("count").getAsInt();
+                if (newUsersNumber + processingUsersNumber == 0) {
+                    break;
+                }
+                if (System.currentTimeMillis() - processingStarted > pollTimeoutMs) {
+                    fail("Bulk import processing timed out after " + (pollTimeoutMs / 1000) + "s");
+                }
+                Thread.sleep(1000);
+            }
+        }
+
+        {
+            int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main,
+                    BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
+            assertEquals(0, failedImportedUsersNumber);
+            int usersInCore = loadUsersCount(main).get("count").getAsInt();
+            assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore);
+        }
+
+        // Walk the pagination token chain to completion in both directions. Without the group-MIN
+        // normalization the DESC walk truncates (misses users) and the ASC walk cycles; with it, every
+        // primary user is visited exactly once.
+        for (String order : new String[]{"DESC", "ASC"}) {
+            Set<String> visited = new HashSet<>();
+            Set<String> seenTokens = new HashSet<>();
+            String token = null;
+            int pages = 0;
+            while (true) {
+                UserPaginationContainer page = AuthRecipe.getUsers(main, 100, order, token, null, null);
+                for (AuthRecipeUserInfo u : page.users) {
+                    assertTrue("user visited more than once during the " + order + " walk: "
+                            + u.getSupertokensUserId(), visited.add(u.getSupertokensUserId()));
+                }
+                token = page.nextPaginationToken;
+                if (token == null) {
+                    break;
+                }
+                assertTrue("pagination token cycle detected during the " + order + " walk",
+                        seenTokens.add(token));
+                assertTrue("too many pages during the " + order + " walk", ++pages < 100000);
+            }
+            assertEquals("the " + order + " walk did not visit every user", NUMBER_OF_USERS_TO_UPLOAD,
+                    visited.size());
+        }
+    }
 
     @Test
     public void testCoreRestartMidImportShouldResultInSuccessfulImport() throws Exception {
@@ -903,6 +993,56 @@ public class BulkImportFlowTest {
         loginMethod.addProperty("isPrimary", true);
         loginMethod.addProperty("timeJoinedInMSSinceEpoch", 0);
         return loginMethod;
+    }
+
+    // Builds linked users (email primary + thirdparty + passwordless) whose per-method
+    // timeJoinedInMSSinceEpoch values are independent and spread across ~1973 -> now, so that within each
+    // linked group the members' times diverge widely and page boundaries fall inside groups. This is the
+    // shape stress-tests/src/oneMillionUsers/generateUsers.ts produces and is what triggers issue #1347.
+    private static JsonObject generateLinkedUsersJsonWithDivergentTimes(int numberOfUsers, int startIndex) {
+        JsonObject userJsonObject = new JsonObject();
+        JsonParser parser = new JsonParser();
+        JsonArray usersArray = new JsonArray();
+
+        // deterministic randomness so the triggering interleaving is reproducible across runs
+        Random random = new Random(42L + startIndex);
+        long now = System.currentTimeMillis();
+        long earliest = 100_000_000_000L; // ~1973
+
+        for (int i = 0; i < numberOfUsers; i++) {
+            JsonObject user = new JsonObject();
+            user.addProperty("externalUserId", "external_" + UUID.randomUUID().toString());
+            user.add("userRoles", parser.parse(
+                    "[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
+
+            JsonArray tenantIds = parser.parse("[\"public\"]").getAsJsonArray();
+            String email = "divergent+" + (i + startIndex) + "@gmail.com";
+            String phone = "+91999" + (startIndex + i);
+
+            JsonArray loginMethodsArray = new JsonArray();
+            JsonObject emailMethod = createEmailLoginMethod(email, tenantIds);
+            emailMethod.addProperty("timeJoinedInMSSinceEpoch", randomTime(random, earliest, now));
+            loginMethodsArray.add(emailMethod);
+
+            JsonObject tpMethod = createThirdPartyLoginMethod(email, tenantIds);
+            tpMethod.addProperty("thirdPartyUserId", "tp_" + (startIndex + i));
+            tpMethod.addProperty("timeJoinedInMSSinceEpoch", randomTime(random, earliest, now));
+            loginMethodsArray.add(tpMethod);
+
+            JsonObject pwlessMethod = createPasswordlessLoginMethod(email, tenantIds, phone);
+            pwlessMethod.addProperty("timeJoinedInMSSinceEpoch", randomTime(random, earliest, now));
+            loginMethodsArray.add(pwlessMethod);
+
+            user.add("loginMethods", loginMethodsArray);
+            usersArray.add(user);
+        }
+
+        userJsonObject.add("users", usersArray);
+        return userJsonObject;
+    }
+
+    private static long randomTime(Random random, long earliest, long latest) {
+        return earliest + (long) (random.nextDouble() * (latest - earliest));
     }
 
     private static JsonObject createThirdPartyLoginMethod(String email, JsonArray tenantIds) {

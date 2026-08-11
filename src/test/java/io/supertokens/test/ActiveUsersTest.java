@@ -1,12 +1,18 @@
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -19,8 +25,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
@@ -224,6 +233,74 @@ public class ActiveUsersTest {
 
         assert res.get("status").getAsString().equals("OK");
         assert res.get("count").getAsInt() == 2;
+    }
+
+    @Test
+    public void testMauSeriesWithActivityAcrossDayBuckets() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        final long day = 24 * 60 * 60 * 1000L;
+        final long halfDay = 12 * 60 * 60 * 1000L;
+        long now = System.currentTimeMillis();
+
+        AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(main);
+
+        // Both the in-memory storage and the postgresql plugin expose a @TestOnly
+        // updateLastActive(AppIdentifier, String, long) overload for backdating. The plugin class
+        // is not on the compile-time classpath, so look the method up reflectively.
+        Method backdate = storage.getClass().getMethod("updateLastActive", AppIdentifier.class, String.class,
+                long.class);
+
+        // existing MAU tests only create activity at "now" (bucket 0), so the summation across
+        // buckets was never exercised. Backdate activity into several distinct day buckets,
+        // leave a middle bucket empty, and add activity beyond the 31 day window.
+        backdate.invoke(storage, appIdentifier, "bucket0-user", now - halfDay);
+        backdate.invoke(storage, appIdentifier, "bucket1-user-a", now - day - halfDay);
+        backdate.invoke(storage, appIdentifier, "bucket1-user-b", now - day - halfDay);
+        // bucket 2 is intentionally left empty
+        backdate.invoke(storage, appIdentifier, "bucket3-user", now - 3 * day - halfDay);
+        backdate.invoke(storage, appIdentifier, "bucket30-user", now - 30 * day - halfDay);
+        backdate.invoke(storage, appIdentifier, "outside-window-user", now - 32 * day);
+
+        Map<Integer, Integer> buckets = ((ActiveUsersStorage) storage)
+                .countUsersActiveSinceGroupedByDay(appIdentifier, now - 31 * day, now);
+
+        assertEquals(1, buckets.getOrDefault(0, 0).intValue());
+        assertEquals(2, buckets.getOrDefault(1, 0).intValue());
+        assertEquals(0, buckets.getOrDefault(2, 0).intValue());
+        assertEquals(1, buckets.getOrDefault(3, 0).intValue());
+        assertEquals(1, buckets.getOrDefault(30, 0).intValue());
+
+        // the running total of buckets 0..i must equal the cumulative count for the same threshold
+        int runningTotal = 0;
+        for (int i = 0; i <= 30; i++) {
+            runningTotal += buckets.getOrDefault(i, 0);
+            assertEquals("running total of buckets 0.." + i + " should match countUsersActiveSince",
+                    ActiveUsers.countUsersActiveSince(main, now - (i + 1) * day), runningTotal);
+        }
+        assertEquals(5, runningTotal); // outside-window-user is not part of the series
+
+        // the maus series is built from the bucketed query and must reflect the same numbers
+        JsonArray maus = FeatureFlag.getInstance(main).getPaidFeatureStats().get("maus").getAsJsonArray();
+        assertEquals(31, maus.size());
+        assertEquals(1, maus.get(0).getAsInt());
+        assertEquals(3, maus.get(1).getAsInt());
+        assertEquals(3, maus.get(2).getAsInt()); // empty bucket keeps the previous total
+        assertEquals(4, maus.get(3).getAsInt());
+        assertEquals(4, maus.get(29).getAsInt());
+        assertEquals(5, maus.get(30).getAsInt()); // bucket 30 only shows up in the last value
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test

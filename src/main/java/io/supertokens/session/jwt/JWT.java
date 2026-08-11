@@ -79,9 +79,15 @@ public class JWT {
             return new JWTPreParseInfo(splittedInput, AccessToken.VERSION.V2, null);
         }
 
-        JsonObject parsedHeader = new JsonParser().parse(Utils.convertFromBase64(splittedInput[0])).getAsJsonObject();
+        JsonObject parsedHeader;
+        try {
+            parsedHeader = new JsonParser().parse(Utils.convertFromBase64(splittedInput[0])).getAsJsonObject();
+        } catch (RuntimeException e) {
+            // malformed base64 / JSON / non-object header is invalid input, not a server error
+            throw new JWTException("Invalid JWT");
+        }
 
-        if (parsedHeader.get("typ") == null) {
+        if (parsedHeader.get("typ") == null || !parsedHeader.get("typ").isJsonPrimitive()) {
             throw new JWTException("JWT header missing - typ");
         }
         JsonPrimitive typ = parsedHeader.get("typ").getAsJsonPrimitive();
@@ -89,7 +95,7 @@ public class JWT {
             throw new JWTException("JWT header mismatch - typ");
         }
 
-        if (parsedHeader.get("alg") == null) {
+        if (parsedHeader.get("alg") == null || !parsedHeader.get("alg").isJsonPrimitive()) {
             throw new JWTException("JWT header missing - alg");
         }
         JsonPrimitive alg = parsedHeader.get("alg").getAsJsonPrimitive();
@@ -102,6 +108,9 @@ public class JWT {
         String versionString = AccessToken.getVersionStringFromAccessTokenVersion(AccessToken.getLatestVersion());
 
         if (versionElement != null) {
+            if (!versionElement.isJsonPrimitive()) {
+                throw new JWTException("JWT header mismatch - version");
+            }
             JsonPrimitive version = versionElement.getAsJsonPrimitive();
             if (!version.isString() || version.getAsString().equals("1") || version.getAsString().equals("2")) {
                 throw new JWTException("JWT header mismatch - version");
@@ -110,14 +119,18 @@ public class JWT {
             versionString = version.getAsString();
         }
 
-        JsonPrimitive kid = parsedHeader.get("kid").getAsJsonPrimitive();
-        if (parsedHeader.get("kid") == null) {
+        if (parsedHeader.get("kid") == null || !parsedHeader.get("kid").isJsonPrimitive()) {
             throw new JWTException("JWT header missing - kid");
         }
+        JsonPrimitive kid = parsedHeader.get("kid").getAsJsonPrimitive();
         if (!kid.isString()) {
             throw new JWTException("JWT header mismatch - kid");
         }
-        return new JWTPreParseInfo(splittedInput, AccessToken.getVersionFromString(versionString), kid.getAsString());
+        try {
+            return new JWTPreParseInfo(splittedInput, AccessToken.getVersionFromString(versionString), kid.getAsString());
+        } catch (RuntimeException e) {
+            throw new JWTException("JWT header mismatch - version");
+        }
     }
 
     public static JWTInfo verifyJWTAndGetPayload(JWTPreParseInfo jwt, String publicSigningKey)

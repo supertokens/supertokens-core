@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "test:harness": "ts-node src/tests/harness.test.ts",
     "generate-users": "rm -rf users && mkdir -p users && ts-node src/oneMillionUsers/generateUsers.ts",
     "one-million-users": "ts-node src/oneMillionUsers/index.ts",
     "migration-tests": "ts-node src/migrationBehavior/index.ts",
@@ -22,13 +23,15 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "@types/pg": "^8.11.10",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
-    "supertokens-node": "latest",
+    "pg": "^8.13.1",
+    "supertokens-node": "24.0.3",
     "uuid": "^11.1.0"
   }
 }

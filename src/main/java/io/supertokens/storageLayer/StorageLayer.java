@@ -691,15 +691,23 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
         if (userIdType != UserIdType.ANY) {
             for (Storage storage : storages) {
-                List<String> existingIdsInStorage = ((AuthRecipeStorage)storage).findExistingUserIds(appIdentifier, userIds);
                 List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(
                         appIdentifier, storage,
                         userIds, userIdType);
 
+                if (userIdType == UserIdType.EXTERNAL) {
+                    for (UserIdMapping mapping : mappingsFromThisStorage) {
+                        allMappingsFromAllStorages.add(new StorageAndUserIdMappingForBulkImport(storage, mapping,
+                                mapping.externalUserId));
+                    }
+                    continue;
+                }
+
+                List<String> existingIdsInStorage = ((AuthRecipeStorage) storage).findExistingUserIds(appIdentifier,
+                        userIds);
                 for(String existingId : existingIdsInStorage) {
                     UserIdMapping mappingForId = mappingsFromThisStorage.stream()
-                                .filter(userIdMapping -> (userIdType == UserIdType.SUPERTOKENS && userIdMapping.superTokensUserId.equals(existingId))
-                                        || (userIdType == UserIdType.EXTERNAL && userIdMapping.externalUserId.equals(existingId)) )
+                                .filter(userIdMapping -> userIdMapping.superTokensUserId.equals(existingId))
                                 .findFirst().orElse(null);
                     allMappingsFromAllStorages.add(new StorageAndUserIdMappingForBulkImport(storage, mappingForId, existingId));
                 }

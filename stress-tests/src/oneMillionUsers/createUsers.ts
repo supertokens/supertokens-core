@@ -2,7 +2,7 @@ import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Passwordless from 'supertokens-node/recipe/passwordless';
 import ThirdParty from 'supertokens-node/recipe/thirdparty';
 
-import { workInBatches, measureTime } from '../common/utils';
+import { workInBatches, measureTime, FailureTracker } from '../common/utils';
 
 const TOTAL_USERS = 10000;
 
@@ -16,13 +16,13 @@ const createEmailPasswordUsers = async () => {
         .map(() => String.fromCharCode(97 + Math.floor(Math.random() * 26)))
         .join('') + '@example.com';
     const createdUser = await EmailPassword.signUp('public', email, 'password');
-    // expect(createdUser.status).toBe("OK");
     if (createdUser.status === 'OK') {
       return {
         recipeUserId: createdUser.recipeUserId.getAsString(),
         email: email,
       };
     }
+    FailureTracker.getInstance().recordFailure('EmailPassword users creation', createdUser.status);
   });
 };
 
@@ -38,13 +38,16 @@ const createPasswordlessUsersWithEmail = async () => {
       tenantId: 'public',
       email,
     });
-    // expect(createdUser.status).toBe("OK");
     if (createdUser.status === 'OK') {
       return {
         recipeUserId: createdUser.recipeUserId.getAsString(),
         email,
       };
     }
+    FailureTracker.getInstance().recordFailure(
+      'Passwordless users (with email) creation',
+      createdUser.status
+    );
   });
 };
 
@@ -56,13 +59,16 @@ const createPasswordlessUsersWithPhone = async () => {
       tenantId: 'public',
       phoneNumber,
     });
-    // expect(createdUser.status).toBe("OK");
     if (createdUser.status === 'OK') {
       return {
         recipeUserId: createdUser.recipeUserId.getAsString(),
         phoneNumber,
       };
     }
+    FailureTracker.getInstance().recordFailure(
+      'Passwordless users (with phone) creation',
+      createdUser.status
+    );
   });
 };
 
@@ -85,13 +91,16 @@ const createThirdPartyUsers = async (thirdPartyId: string) => {
       email,
       true
     );
-    // expect(createdUser.status).toBe("OK");
     if (createdUser.status === 'OK') {
       return {
         recipeUserId: createdUser.recipeUserId.getAsString(),
         email,
       };
     }
+    FailureTracker.getInstance().recordFailure(
+      `ThirdParty users (${thirdPartyId}) creation`,
+      createdUser.status
+    );
   });
 };
 

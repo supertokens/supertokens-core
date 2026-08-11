@@ -41,13 +41,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 21.0.7
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root

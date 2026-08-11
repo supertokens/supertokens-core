@@ -221,6 +221,14 @@ public class BulkImport {
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods..");
             processUsersLoginMethods(main, appIdentifier, bulkImportProxyStorage, users);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Processing login methods DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Normalizing time joined for primary users..");
+            // The per-recipe imports above insert each login-method row with its own time_joined into
+            // primary_or_recipe_user_time_joined. For linked groups whose members have divergent
+            // per-method time_joined this breaks the pagination cursor invariant (every row in a group
+            // must carry the group's MIN(time_joined)). Restore it now that all recipes' login methods
+            // are in — a linked group can span recipes, so this runs once, after processUsersLoginMethods.
+            normalizeTimeJoinedForPrimaryUsers(appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Normalizing time joined for primary users DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings..");
             createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings DONE");
@@ -241,6 +249,16 @@ public class BulkImport {
                   TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(e);
         }
+    }
+
+    private static void normalizeTimeJoinedForPrimaryUsers(AppIdentifier appIdentifier, Storage storage,
+            List<BulkImportUser> users) throws StorageQueryException, StorageTransactionLogicException {
+        List<String> primaryUserIds = new ArrayList<>();
+        for (BulkImportUser user : users) {
+            user.loginMethods.stream().filter(lM -> lM.isPrimary).findFirst()
+                    .ifPresent(lM -> primaryUserIds.add(lM.superTokensUserId));
+        }
+        AuthRecipe.updateTimeJoinedForBulkImportedPrimaryUsers(storage, appIdentifier, primaryUserIds);
     }
 
     public static void processUsersLoginMethods(Main main, AppIdentifier appIdentifier, Storage storage,
