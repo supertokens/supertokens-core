@@ -333,19 +333,44 @@ public class Session {
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
+        // No CDI version supplied -> legacy (CDI <= 5.4) verify semantics, byte-identical to before the
+        // stateless-verification work. Existing tests keep exercising the old behaviour through this overload.
+        return getSession(main, token, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck, checkDatabase, SemVer.v5_4);
+    }
+
+    @TestOnly
+    public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
+                                                      boolean enableAntiCsrf, Boolean doAntiCsrfCheck,
+                                                      boolean checkDatabase, SemVer cdiVersion)
+            throws StorageQueryException,
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return getSession(ResourceDistributor.getAppForTesting().toAppIdentifier(), main, token, antiCsrfToken, enableAntiCsrf,
-                    doAntiCsrfCheck, checkDatabase);
+                    doAntiCsrfCheck, checkDatabase, cdiVersion);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    // Legacy overload without an explicit CDI version -> CDI <= 5.4 verify semantics. Retained so callers and
+    // tests that predate stateless verification keep compiling and behaving identically.
+    public static SessionInformationHolder getSession(AppIdentifier appIdentifier, Main main, @Nonnull String token,
+                                                      @Nullable String antiCsrfToken,
+                                                      boolean enableAntiCsrf, Boolean doAntiCsrfCheck,
+                                                      boolean checkDatabase) throws StorageQueryException,
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
+        return getSession(appIdentifier, main, token, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck, checkDatabase,
+                SemVer.v5_4);
     }
 
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(AppIdentifier appIdentifier, Main main, @Nonnull String token,
                                                       @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck,
-                                                      boolean checkDatabase) throws StorageQueryException,
+                                                      boolean checkDatabase, SemVer cdiVersion)
+            throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
 
@@ -366,6 +391,45 @@ public class Session {
             if (sessionInfoForBlacklisting == null) {
                 throw new UnauthorisedException("Either the session has ended or has been blacklisted");
             }
+        }
+
+        if (cdiVersion.greaterThanOrEqualTo(SemVer.v5_6)) {
+            // ===== CDI >= 5.6: stateless verification (PLAN-002 unit 6, decisions 5-6). No DB write and no
+            // token mint on any path; rotation now happens exclusively at refresh (unit 5). The
+            // parentRefreshTokenHash1 == null precondition on the legacy early-return is dropped: any validly
+            // signed, unexpired token short-circuits here. =====
+            Boolean payloadUpdateAvailable = null;
+            if (checkDatabase) {
+                // sessionInfoForBlacklisting is non-null (existence checked above).
+                // Fork rejection (decision 5 / option J): the access token's refresh lineage must still match
+                // current or prev; otherwise its branch was rotated out -> force a refresh, where the real reuse
+                // checks live. Not TOKEN_THEFT: a >= 2-generation-old still-unexpired in-flight token is a benign
+                // false positive, so Unauthorised makes it cost one refresh round-trip and nothing more.
+                String currentHash = sessionInfoForBlacklisting.refreshTokenHash2;
+                String prevHash = sessionInfoForBlacklisting.prevRefreshTokenHash2;
+                boolean lineageOk;
+                try {
+                    String tokenHash2 = Utils.hashSHA256(accessToken.refreshTokenHash1);
+                    lineageOk = tokenHash2.equals(currentHash) || tokenHash2.equals(prevHash);
+                    if (!lineageOk && accessToken.parentRefreshTokenHash1 != null) {
+                        // Covers un-promoted-child tokens minted by old-CDI refreshes (parent still current/prev).
+                        String parentHash2 = Utils.hashSHA256(accessToken.parentRefreshTokenHash1);
+                        lineageOk = parentHash2.equals(currentHash) || parentHash2.equals(prevHash);
+                    }
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IllegalStateException(e);
+                }
+                if (!lineageOk) {
+                    throw new UnauthorisedException("rotated-out token branch; refresh required");
+                }
+                // H3: report payload staleness as a read-only flag (computed from data already fetched); the
+                // implicit verify-time token swap is gone. No token is minted here.
+                payloadUpdateAvailable = !accessToken.userData.equals(sessionInfoForBlacklisting.userDataInJWT);
+            }
+            return new SessionInformationHolder(
+                    new SessionInfo(accessToken.sessionHandle, accessToken.primaryUserId, accessToken.recipeUserId,
+                            accessToken.userData, tenantIdentifier.getTenantId()),
+                    null, null, null, null, payloadUpdateAvailable);
         }
 
         boolean JWTPayloadNeedsUpdating = sessionInfoForBlacklisting != null

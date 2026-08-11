@@ -20,6 +20,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   time (`prev` / `rotated_at`), honours a re-rotating grace window (`refresh_token_rotation_grace_period`), and
   revokes the session on out-of-window reuse (reported per `recent_token_reuse_behaviour`). CDI <= 5.5 behaviour is
   unchanged.
+- On CDI >= 5.6, session verification is stateless: `/recipe/session/verify` never writes to the database or
+  returns a replacement access token (rotation happens only at refresh). With `checkDatabase = true` it sets
+  `payloadUpdateAvailable` when the stored payload differs from the token's, and returns `UNAUTHORISED` when the
+  token's refresh-token lineage is neither the current nor the previous refresh token. From CDI >= 5.6 this
+  app-specific API may only be called from the public tenant.
 
 ### Changed
 

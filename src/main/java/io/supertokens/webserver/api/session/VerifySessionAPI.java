@@ -23,6 +23,7 @@ import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -57,7 +58,9 @@ public class VerifySessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific, but the session is fetched based on tenantId obtained from the accessToken
+        // API is app specific, but the session is fetched based on tenantId obtained from the accessToken. From
+        // CDI 5.6 onwards it may only be called from the public tenant (older versions keep accepting a tenant in
+        // the path for backwards compatibility).
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
         assert accessToken != null;
@@ -76,6 +79,9 @@ public class VerifySessionAPI extends WebserverAPI {
 
         try {
 
+            // From CDI 5.6 this app-specific API is restricted to the public tenant.
+            enforcePublicTenantFromVersion(req, SemVer.v5_6);
+
             boolean checkDatabase = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                     .getAccessTokenBlacklisting();
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
@@ -86,7 +92,7 @@ public class VerifySessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.getSession(appIdentifier,
                     main, accessToken,
                     antiCsrfToken, enableAntiCsrf,
-                    doAntiCsrfCheck, checkDatabase);
+                    doAntiCsrfCheck, checkDatabase, super.getVersionFromRequest(req));
 
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
@@ -111,7 +117,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
-                 UnsupportedJWTSigningAlgorithmException e) {
+                 UnsupportedJWTSigningAlgorithmException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));

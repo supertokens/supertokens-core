@@ -38,6 +38,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -221,6 +222,11 @@ public class MultitenantAPITest {
 
     private JsonObject verifySession(TenantIdentifier tenantIdentifier, String accessToken)
             throws HttpResponseException, IOException {
+        return verifySession(tenantIdentifier, accessToken, SemVer.v3_0);
+    }
+
+    private JsonObject verifySession(TenantIdentifier tenantIdentifier, String accessToken, SemVer cdiVersion)
+            throws HttpResponseException, IOException {
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", accessToken);
         request.addProperty("doAntiCsrfCheck", true);
@@ -229,7 +235,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/verify"), request,
                 1000, 1000, null,
-                SemVer.v3_0.get(), "session");
+                cdiVersion.get(), "session");
         return response;
     }
 
@@ -375,6 +381,35 @@ public class MultitenantAPITest {
                         session.get("accessToken").getAsJsonObject().get("token").getAsString());
                 assertEquals(session.get("session"), sessionResponse.get("session"));
             }
+        }
+    }
+
+    // Guardrail for the CDI 5.6 public-tenant restriction on /recipe/session/verify: at the latest advertised
+    // CDI version (< 5.6) a non-public tenant must still be able to verify, so the new gate does not regress
+    // currently-reachable clients. (The 5.6-and-above rejection is not reachable over HTTP until core advertises
+    // 5.6, mirroring the rest of this feature.)
+    @Test
+    public void testVerifySessionStillWorksFromNonPublicTenantAtLatestAdvertisedCDIVersion() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // t2 and t3 are non-public tenants (t1 is the public tenant of app a1).
+        for (TenantIdentifier tenant : new TenantIdentifier[]{t2, t3}) {
+            JsonObject userDataInJWT = new JsonObject();
+            userDataInJWT.addProperty("foo", "val1");
+            JsonObject userDataInDb = new JsonObject();
+            userDataInDb.addProperty("bar", "val1");
+
+            JsonObject session = createSession(tenant, "userid", userDataInJWT, userDataInDb);
+            JsonObject sessionResponse = verifySession(tenant,
+                    session.get("accessToken").getAsJsonObject().get("token").getAsString(),
+                    WebserverAPI.getLatestCDIVersion());
+            // The gate is scoped to CDI >= 5.6, so a non-public tenant is not rejected at the latest advertised
+            // version: the same session verifies successfully.
+            assertEquals("OK", sessionResponse.get("status").getAsString());
+            assertEquals(session.get("session").getAsJsonObject().get("handle").getAsString(),
+                    sessionResponse.get("session").getAsJsonObject().get("handle").getAsString());
         }
     }
 
