@@ -251,6 +251,8 @@ public class BulkImportFlowTest {
         Utils.setValueInConfig("bulk_migration_parallelism", "8");
         Utils.setValueInConfig("bulk_migration_batch_size", "1000");
         Utils.setValueInConfig("log_level", "DEBUG");
+        // Pool must exceed parallelism so polling API calls aren't starved by the worker threads
+        Utils.setValueInConfig("postgresql_connection_pool_size", "12");
 
         // Start with startProcess=false to avoid race condition with feature flag setup
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
@@ -297,6 +299,8 @@ public class BulkImportFlowTest {
         process.kill(false);
         Utils.setValueInConfig("bulk_migration_parallelism", "14");
         Utils.setValueInConfig("bulk_migration_batch_size", "4000");
+        // Pool must exceed parallelism so polling API calls aren't starved by the worker threads
+        Utils.setValueInConfig("postgresql_connection_pool_size", "18");
         process = TestingProcessManager.startIsolatedProcess(args, false);
         main = process.getProcess();
         setFeatureFlags(main, new EE_FEATURES[] {
