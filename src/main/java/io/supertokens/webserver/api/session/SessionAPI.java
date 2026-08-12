@@ -22,6 +22,7 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
+import io.supertokens.exceptions.AccessTokenValidityOutOfRangeException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
@@ -83,6 +84,11 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInJWT != null;
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
+        // Optional per-mint access token validity override (ms), CDI >= 5.6 only (PLAN-002 decision 11).
+        // Shorten-only; validated against the configured access_token_validity in Session.createNewSession.
+        Long accessTokenValidity = version.greaterThanOrEqualTo(SemVer.v5_6)
+                ? InputParser.parseLongOrThrowError(input, "accessTokenValidity", true)
+                : null;
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
@@ -103,7 +109,7 @@ public class SessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.createNewSession(
                     tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
-                    useStaticSigningKey);
+                    useStaticSigningKey, accessTokenValidity);
 
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -141,7 +147,7 @@ public class SessionAPI extends WebserverAPI {
             }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (AccessTokenPayloadError e) {
+        } catch (AccessTokenPayloadError | AccessTokenValidityOutOfRangeException e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
                  StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |

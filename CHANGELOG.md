@@ -49,6 +49,44 @@ No table or column changes. **Operators of large deployments should pre-create t
 `CREATE INDEX CONCURRENTLY` before upgrading**, so the startup DDL is a no-op and does not hold a table lock
 during a long index build.
 
+### Added
+
+- Three session-related config options (parsing and validation only; behaviour is wired up in later changes):
+  - `refresh_token_rotation_grace_period` (seconds, default 30, range 0-300, cannot differ across an app's tenants) -
+    how long a previously active refresh token remains accepted after a rotation.
+  - `access_token_validity_jitter` (fraction, default 0.05, range 0-0.25, cannot differ across an app's tenants) -
+    subtractive randomization of access token validity at issuance; 0 disables it.
+  - `recent_token_reuse_behaviour` (`TOKEN_THEFT` (default) | `UNAUTHORISED`, config.yaml only) - how the reuse of a
+    recently rotated-out refresh token is reported. The session is revoked regardless of this setting.
+- On CDI >= 5.6, refresh rotates the token inside the refresh transaction: it records the retired hash and rotation
+  time (`prev` / `rotated_at`), honours a re-rotating grace window (`refresh_token_rotation_grace_period`), and
+  revokes the session on out-of-window reuse (reported per `recent_token_reuse_behaviour`). CDI <= 5.5 behaviour is
+  unchanged.
+- On CDI >= 5.6, `POST /recipe/session` and `POST /recipe/session/refresh` accept an optional `accessTokenValidity`
+  (in milliseconds) that overrides the configured `access_token_validity` for the access token minted by that call
+  only. It is shorten-only - validated `0 < accessTokenValidity <= configured access_token_validity`, with
+  out-of-range values rejected as a 400 rather than clamped - nothing about it is persisted, and the refresh token
+  validity is not overridable.
+- On CDI >= 5.6, session verification is stateless: `/recipe/session/verify` never writes to the database or
+  returns a replacement access token (rotation happens only at refresh). With `checkDatabase = true` it sets
+  `payloadUpdateAvailable` when the stored payload differs from the token's, and returns `UNAUTHORISED` when the
+  token's refresh-token lineage is neither the current nor the previous refresh token. From CDI >= 5.6 this
+  app-specific API may only be called from the public tenant.
+
+### Changed
+
+- Adopts plugin interface 9.0: refresh-token-hash writes now also record `prev_refresh_token_hash_2` and
+  `refresh_token_rotated_at` (added as nullable `session_info` columns to the in-memory SQLite storage).
+
+- Test-only: pin the token-regeneration invariants - in-place re-issue (original expiry, no jitter re-roll,
+  lineage preserved), DB-only payload update returning no token for expired input, and no CDI >= 5.6
+  rotation-state access.
+
+- `access_token_validity_jitter` is now applied when a fresh access token is minted on session creation and refresh:
+  `exp = now + validity * (1 - U[0, jitter])`. The jitter is subtract-only, so an access token is never valid for
+  longer than the configured `access_token_validity`; set the config to 0 to disable. Token regeneration is exempt
+  (it preserves the original token's absolute expiry) and access token verification does not re-roll the jitter.
+
 ## [12.0.9]
 
 - Enforces the 31-day activity log retention on the in-memory (SQLite) store via a direct delete in the

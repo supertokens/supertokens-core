@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +55,8 @@ public class SessionQueries {
                 + "created_at_time BIGINT UNSIGNED NOT NULL,"
                 + "jwt_user_payload TEXT,"
                 + "use_static_key BOOLEAN NOT NULL,"
+                + "prev_refresh_token_hash_2 VARCHAR(128),"
+                + "refresh_token_rotated_at BIGINT,"
                 + "PRIMARY KEY (app_id, tenant_id, session_handle),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + Config.getConfig(start).getTenantsTable()
                 + " (app_id, tenant_id) ON DELETE CASCADE"
@@ -127,7 +130,8 @@ public class SessionQueries {
         // support left join with for update if the right table returns null.
         String QUERY =
                 "SELECT session_handle, user_id, refresh_token_hash_2, session_data, " +
-                        "expires_at, created_at_time, jwt_user_payload, use_static_key FROM " +
+                        "expires_at, created_at_time, jwt_user_payload, use_static_key, " +
+                        "prev_refresh_token_hash_2, refresh_token_rotated_at FROM " +
                         getConfig(start).getSessionInfoTable()
                         + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
         SessionInfo sessionInfo = execute(con, QUERY, pst -> {
@@ -203,19 +207,27 @@ public class SessionQueries {
 
     public static void updateSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                      String sessionHandle,
-                                                     String refreshTokenHash2, long expiry, boolean useStaticKey)
+                                                     String refreshTokenHash2, String prevRefreshTokenHash2,
+                                                     Long refreshTokenRotatedAt, long expiry, boolean useStaticKey)
             throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + getConfig(start).getSessionInfoTable()
-                + " SET refresh_token_hash_2 = ?, expires_at = ?, use_static_key= ?"
+                + " SET refresh_token_hash_2 = ?, prev_refresh_token_hash_2 = ?, refresh_token_rotated_at = ?,"
+                + " expires_at = ?, use_static_key= ?"
                 + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
 
         update(con, QUERY, pst -> {
             pst.setString(1, refreshTokenHash2);
-            pst.setLong(2, expiry);
-            pst.setBoolean(3, useStaticKey);
-            pst.setString(4, tenantIdentifier.getAppId());
-            pst.setString(5, tenantIdentifier.getTenantId());
-            pst.setString(6, sessionHandle);
+            pst.setString(2, prevRefreshTokenHash2);
+            if (refreshTokenRotatedAt == null) {
+                pst.setNull(3, Types.BIGINT);
+            } else {
+                pst.setLong(3, refreshTokenRotatedAt);
+            }
+            pst.setLong(4, expiry);
+            pst.setBoolean(5, useStaticKey);
+            pst.setString(6, tenantIdentifier.getAppId());
+            pst.setString(7, tenantIdentifier.getTenantId());
+            pst.setString(8, sessionHandle);
         });
     }
 
@@ -398,7 +410,8 @@ public class SessionQueries {
                 "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
                         ".expires_at, "
                         +
-                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, " +
+                        "sess.prev_refresh_token_hash_2, sess.refresh_token_rotated_at, users" +
                         ".primary_or_recipe_user_id FROM " +
                         getConfig(start).getSessionInfoTable()
                         + " AS sess LEFT JOIN " + getConfig(start).getUsersTable() +
@@ -423,7 +436,8 @@ public class SessionQueries {
                 "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
                         ".expires_at, "
                         +
-                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, " +
+                        "sess.prev_refresh_token_hash_2, sess.refresh_token_rotated_at, users" +
                         ".primary_or_recipe_user_id FROM " +
                         getConfig(start).getSessionInfoTable()
                         + " AS sess LEFT JOIN " + getConfig(start).getAppIdToUserIdTable() +
@@ -506,11 +520,18 @@ public class SessionQueries {
             // if result.getString("primary_or_recipe_user_id") is null, it will be handled by SessionInfo
             // constructor
             try {
+                // Rotation state is nullable: a BIGINT NULL reads back as 0, so distinguish it via wasNull().
+                Long refreshTokenRotatedAt = result.getLong("refresh_token_rotated_at");
+                if (result.wasNull()) {
+                    refreshTokenRotatedAt = null;
+                }
                 return new SessionInfo(result.getString("session_handle"),
                         hasPrimaryOrRecipeUserId ? result.getString("primary_or_recipe_user_id") :
                                 result.getString("user_id"),
                         result.getString("user_id"),
                         result.getString("refresh_token_hash_2"),
+                        result.getString("prev_refresh_token_hash_2"),
+                        refreshTokenRotatedAt,
                         jp.parse(result.getString("session_data")).getAsJsonObject(),
                         result.getLong("expires_at"),
                         jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),

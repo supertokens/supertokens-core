@@ -97,6 +97,31 @@ public class CoreConfig {
     @ConfigDescription("Time in mins for how long a refresh token is valid for. [Default: 60 * 2400 (100 days)]")
     private double refresh_token_validity = 60 * 2400; // in mins
 
+    @EnvName("REFRESH_TOKEN_ROTATION_GRACE_PERIOD")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription(
+            "Time in seconds for how long the previously active refresh token remains accepted after a rotation. "
+                    + "[Default: 30]")
+    private int refresh_token_rotation_grace_period = 30; // in seconds
+
+    @EnvName("ACCESS_TOKEN_VALIDITY_JITTER")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription(
+            "Fraction between 0 and 0.25 by which access token validity is randomly shortened at issuance. Applied "
+                    + "subtractively so the token expiry is never lengthened. Set to 0 to disable. [Default: 0.05]")
+    private double access_token_validity_jitter = 0.05;
+
+    @EnvName("RECENT_TOKEN_REUSE_BEHAVIOUR")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How the reuse of a recently rotated-out refresh token is reported. Values are \"TOKEN_THEFT\" | "
+                    + "\"UNAUTHORISED\". The session is revoked regardless of this setting. (Default: TOKEN_THEFT)")
+    @EnumProperty({"TOKEN_THEFT", "UNAUTHORISED"})
+    private String recent_token_reuse_behaviour = "TOKEN_THEFT";
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -627,6 +652,22 @@ public class CoreConfig {
         return (long) (refresh_token_validity * 60 * 1000);
     }
 
+    public int getRefreshTokenRotationGracePeriodInSeconds() {
+        return refresh_token_rotation_grace_period;
+    }
+
+    public long getRefreshTokenRotationGracePeriodInMillis() {
+        return refresh_token_rotation_grace_period * 1000L;
+    }
+
+    public double getAccessTokenValidityJitter() {
+        return access_token_validity_jitter;
+    }
+
+    public String getRecentTokenReuseBehaviour() {
+        return recent_token_reuse_behaviour;
+    }
+
     public long getPasswordResetTokenLifetime() {
         return password_reset_token_lifetime;
     }
@@ -824,6 +865,22 @@ public class CoreConfig {
                                 (includeConfigFilePath ? " The config file can be"
                                         + " found here: " + getConfigFileLocation(main) : ""));
             }
+        }
+
+        if (!Main.isTesting || validityTesting) { // testing may set windows outside the normal bounds
+            if (refresh_token_rotation_grace_period < 0 || refresh_token_rotation_grace_period > 300) {
+                throw new InvalidConfigException(
+                        "'refresh_token_rotation_grace_period' must be between 0 and 300 seconds inclusive." +
+                                (includeConfigFilePath ? " The config file can be"
+                                        + " found here: " + getConfigFileLocation(main) : ""));
+            }
+        }
+
+        if (access_token_validity_jitter < 0 || access_token_validity_jitter > 0.25) {
+            throw new InvalidConfigException(
+                    "'access_token_validity_jitter' must be between 0 and 0.25 inclusive." +
+                            (includeConfigFilePath ? " The config file can be"
+                                    + " found here: " + getConfigFileLocation(main) : ""));
         }
 
         if (password_reset_token_lifetime <= 0) {
@@ -1045,6 +1102,10 @@ public class CoreConfig {
 
         if (log_level != null) {
             log_level = log_level.trim().toUpperCase();
+        }
+
+        if (recent_token_reuse_behaviour != null) {
+            recent_token_reuse_behaviour = recent_token_reuse_behaviour.trim().toUpperCase();
         }
 
         { // info_log_path

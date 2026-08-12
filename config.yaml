@@ -43,6 +43,22 @@ core_config_version: 0
 # refresh_token_validity:
 
 
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 30) integer value. Time in seconds for how long the previously active
+# refresh token remains accepted after a rotation.
+# refresh_token_rotation_grace_period:
+
+
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 0.05) double value. Fraction between 0 and 0.25 by which access token
+# validity is randomly shortened at issuance. Applied subtractively so the token expiry is never lengthened. Set to 0
+# to disable.
+# access_token_validity_jitter:
+
+
+# (OPTIONAL | Default: "TOKEN_THEFT"). How the reuse of a recently rotated-out refresh token is reported. Values are
+# "TOKEN_THEFT" | "UNAUTHORISED". The session is revoked regardless of this setting.
+# recent_token_reuse_behaviour:
+
+
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
 # reset token / link is valid for.
 # password_reset_token_lifetime:
