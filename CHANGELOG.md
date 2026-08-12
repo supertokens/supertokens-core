@@ -7,6 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's
+  sargable prefix arms: the email/phone value arms match a case-appropriate prefix, and the email arm's
+  second clause matches the domain prefix (`substr(account_info_value, instr(...'@')+1)`) instead of the
+  old `%@term%` contains match — result-identical on normalized data, keeping the two storages in
+  lockstep. Adds mirrored partial expression indexes on `recipe_user_tenants` for schema parity.
+
 ## [12.1.0]
 
 - Support for CDI version `5.6`

@@ -121,10 +121,40 @@ public class AccountInfoQueries {
                 + Config.getConfig(start).getRecipeUserAccountInfosTable() + "(app_id, recipe_user_id);";
     }
 
+    // Backs both the account-info equality lookups on recipe_user_tenants and the dashboard user
+    // search's email/phone prefix arms (GeneralQueries.getUsers_new). The postgresql plugin swaps its
+    // equivalent index to text_pattern_ops (idx_recipe_user_tenants_account_info_pattern) so a
+    // C-collation prefix bound becomes a B-tree range scan; SQLite needs no such swap — its default
+    // BINARY collation is already byte-ordered, so this plain index serves both the equality consumers
+    // and prefix range scans. Kept under the original name (no _pattern rename) precisely because there
+    // is no opclass to swap: documenting the parity gap here rather than leaving it looking like one.
     static String getQueryToCreateAccountInfoIndexForRecipeUserTenantsTable(Start start) {
         return "CREATE INDEX IF NOT EXISTS idx_recipe_user_tenants_account_info ON "
                 + Config.getConfig(start).getRecipeUserTenantsTable()
                 + "(app_id, tenant_id, account_info_type, account_info_value);";
+    }
+
+    // Mirrors the plugin's idx_recipe_user_tenants_search_domain: backs the email-domain arm of the
+    // dashboard search (lower(substr(account_info_value, instr(account_info_value, '@') + 1))). SQLite
+    // supports partial expression indexes, so this is a faithful schema-parity mirror of the plugin's
+    // partial expression index on split_part(account_info_value, '@', 2). Performance is irrelevant
+    // in-memory; the index exists for schema-parity hygiene with the postgresql storage.
+    static String getQueryToCreateSearchDomainIndexForRecipeUserTenantsTable(Start start) {
+        return "CREATE INDEX IF NOT EXISTS idx_recipe_user_tenants_search_domain ON "
+                + Config.getConfig(start).getRecipeUserTenantsTable()
+                + "(app_id, tenant_id, lower(substr(account_info_value, instr(account_info_value, '@') + 1)))"
+                + " WHERE account_info_type = 'email';";
+    }
+
+    // Mirrors the plugin's idx_recipe_user_tenants_search_tparty: backs the case-insensitive provider
+    // arm of the dashboard search (lower(account_info_value)), which — unlike email/phone — is not
+    // lower-normalized at write time and so keeps lower(). Partial on account_info_type = 'tparty'
+    // because the provider arm always pins that type. Schema-parity hygiene only (see above).
+    static String getQueryToCreateSearchTpartyIndexForRecipeUserTenantsTable(Start start) {
+        return "CREATE INDEX IF NOT EXISTS idx_recipe_user_tenants_search_tparty ON "
+                + Config.getConfig(start).getRecipeUserTenantsTable()
+                + "(app_id, tenant_id, lower(account_info_value))"
+                + " WHERE account_info_type = 'tparty';";
     }
 
     static String getQueryToCreatePrimaryUserIndexForPrimaryUserTenantsTable(Start start) {
