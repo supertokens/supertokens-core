@@ -143,7 +143,11 @@ public class TestAppData {
                 "recipe_user_tenants", "recipe_user_account_infos", "primary_user_tenants",
                 // Legacy tables that are not populated in MIGRATED mode.
                 "all_auth_recipe_users", "emailpassword_user_to_tenant", "thirdparty_user_to_tenant",
-                "passwordless_user_to_tenant", "webauthn_user_to_tenant"};
+                "passwordless_user_to_tenant", "webauthn_user_to_tenant",
+                // Legacy table: m2m stats now go to the oauth_m2m_token_stats rollup, so this is
+                // created (to drain pre-rollup rows) but never written. The rollup itself has no
+                // app_id FK on purpose — stats survive app deletion — so it is ignored too.
+                "oauth_m2m_tokens", "oauth_m2m_token_stats"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 

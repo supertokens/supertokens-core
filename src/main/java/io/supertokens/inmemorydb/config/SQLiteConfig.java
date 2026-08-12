@@ -191,6 +191,10 @@ public class SQLiteConfig {
         return "oauth_m2m_tokens";
     }
 
+    public String getOAuthM2MTokenStatsTable() {
+        return "oauth_m2m_token_stats";
+    }
+
     public String getOAuthSessionsTable() {
         return "oauth_sessions";
     }
