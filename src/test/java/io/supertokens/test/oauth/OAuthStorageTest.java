@@ -234,15 +234,22 @@ public class OAuthStorageTest {
 
         storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", true, false);
 
-        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 - 2, now + 2);
-        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 24 - 2, now + 2);
-        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 48 - 2, now + 2);
+        // The stats are hourly-bucketed rollup counters: "alive" counts tokens whose exp falls in
+        // an hour bucket strictly after the current one, and "created since" counts iat buckets at
+        // or after the since bucket. All offsets below are whole hours so the assertions are
+        // deterministic wherever `now` falls within its hour.
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now, now + 3600 * 2);
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 24, now + 3600 * 2);
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 48, now + 3600 * 2);
+        // same buckets as the first token: increments the counter instead of deduping (the old
+        // per-token PK recorded at most one token per client per second)
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now, now + 3600 * 2);
+        // already expired: its exp bucket is in the past, so it never counts as alive
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 48, now - 3600 * 24);
 
-        assertEquals(3, storage.countTotalNumberOfOAuthM2MTokensAlive(appIdentifier));
-        assertEquals(2, storage.countTotalNumberOfOAuthM2MTokensCreatedSince(appIdentifier, 1000 * (now - 3600 * 24 - 3)));
-
-        Thread.sleep(3000);
-        assertEquals(0, storage.countTotalNumberOfOAuthM2MTokensAlive(appIdentifier));
+        assertEquals(4, storage.countTotalNumberOfOAuthM2MTokensAlive(appIdentifier));
+        // since = exactly 24h ago: counts the two `now` tokens and the 24h-old one, not the 48h ones
+        assertEquals(3, storage.countTotalNumberOfOAuthM2MTokensCreatedSince(appIdentifier, 1000 * (now - 3600 * 24)));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -306,18 +313,11 @@ public class OAuthStorageTest {
         } catch (OAuthClientNotFoundException e) {
             // ignore
         }
-        try {
-            storage.addOAuthM2MTokenForStats(appIdentifier2, "clientid", 0, 0);
-            fail();
-        } catch (OAuthClientNotFoundException e) {
-            // expected
-        }
-        try {
-            storage.addOAuthM2MTokenForStats(appIdentifier, "clientidx", 0, 0);
-            fail();
-        } catch (OAuthClientNotFoundException e) {
-            // expected
-        }
+        // The m2m stats rollup table has no client_id column and deliberately no app_id FK
+        // (stats survive app deletion), so neither an unknown client nor an unknown app is an
+        // error.
+        storage.addOAuthM2MTokenForStats(appIdentifier2, "clientid", 0, 0); // should not throw
+        storage.addOAuthM2MTokenForStats(appIdentifier, "clientidx", 0, 0); // should not throw
 
         try {
             storage.createOrUpdateOAuthSession(appIdentifier2, "abcd", "clientid", null, null, null, "asdasd",

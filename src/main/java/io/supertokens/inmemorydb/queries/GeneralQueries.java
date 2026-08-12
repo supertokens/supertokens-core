@@ -475,6 +475,14 @@ public class GeneralQueries {
             update(start, OAuthQueries.getQueryToCreateOAuthM2MTokenExpIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthM2MTokenStatsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, OAuthQueries.getQueryToCreateOAuthM2MTokenStatsTable(start), NO_OP_SETTER);
+            update(start, OAuthQueries.getQueryToCreateOAuthM2MTokenStatsExpBucketIndex(start), NO_OP_SETTER);
+            // No legacy backfill here (unlike the postgresql plugin): the in-memory db is always
+            // created fresh, so the legacy oauth_m2m_tokens table is empty at this point.
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getOAuthLogoutChallengesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, OAuthQueries.getQueryToCreateOAuthLogoutChallengesTable(start), NO_OP_SETTER);
