@@ -570,6 +570,12 @@ public class GeneralQueries {
             update(start, AccountInfoQueries.getQueryToCreateRecipeUserIdIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
             update(start, AccountInfoQueries.getQueryToCreateRecipeUserIdIndexForRecipeUserAccountInfoTable(start), NO_OP_SETTER);
             update(start, AccountInfoQueries.getQueryToCreateAccountInfoIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+            // Sargable dashboard user search: the email/phone value arms ride the account-info index
+            // above (SQLite BINARY collation is already byte-ordered, no opclass swap needed), while
+            // the email-domain and provider arms get their own partial expression indexes. Mirrors the
+            // postgresql plugin's search indexes for schema parity (performance is irrelevant in-memory).
+            update(start, AccountInfoQueries.getQueryToCreateSearchDomainIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
+            update(start, AccountInfoQueries.getQueryToCreateSearchTpartyIndexForRecipeUserTenantsTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPrimaryUserTenantsTable())) {
@@ -1325,6 +1331,50 @@ public class GeneralQueries {
         return finalResult;
     }
 
+    // Dashboard user-search prefix-match helpers, mirroring the postgresql plugin's GeneralQueries
+    // arms 1:1 so both storages return identical result sets for the same DashboardSearchTags (the
+    // sqlite CI legs validate dashboard-search behaviour against postgres). Each helper binds the RAW
+    // search term and appends the '%' wildcard in SQL, exactly as the plugin does, so both storages
+    // receive identical bind values (term normalization stays in shared core code, not per-storage).
+    // NB SQLite's LIKE is ASCII-case-insensitive by default; the lower() placement below is chosen to
+    // match the plugin's per-arm case semantics, not to rely on that default: for the bare-column arms
+    // the data is already lower-cased at write time so a case-insensitive match is result-identical to
+    // postgres' case-sensitive one, and the provider arm lower()s both sides so the default is a no-op.
+
+    // Email/phone value arm: emails and phone numbers are lower-cased at write time (core
+    // Utils.normaliseEmail, applied on every write incl. bulk import), so this matches the bare column
+    // with no lower() — result-identical to the plugin's bare-column pattern-index arm on normalized data.
+    private static void appendNormalizedPrefixMatch(StringBuilder query, ArrayList<String> queryParams,
+                                                    String alias, String term) {
+        query.append(" ").append(alias).append(".account_info_value LIKE lower(?) || '%'");
+        queryParams.add(term);
+    }
+
+    // Provider (tparty) arm: third-party account values are NOT normalized to lower case at write time,
+    // so lower() is kept on both sides to preserve the previous ILIKE case-insensitivity, mirroring the
+    // plugin's provider arm exactly.
+    private static void appendProviderPrefixMatch(StringBuilder query, ArrayList<String> queryParams,
+                                                  String alias, String term) {
+        query.append(" lower(").append(alias).append(".account_info_value) LIKE lower(?) || '%'");
+        queryParams.add(term);
+    }
+
+    // Email search arm: an index-sargable prefix match on the whole value (local-part + domain) OR a
+    // prefix match on the domain. Emails are lower-cased at write time so the value arm matches the bare
+    // column. SQLite has no split_part(); the domain is everything after the first '@' via
+    // substr(value, instr(value, '@') + 1), which — for values with exactly one '@' (guaranteed by email
+    // normalization at write time) — is identical to the plugin's split_part(value, '@', 2). This
+    // "domain starts with term" replaces the old non-sargable '%@term%' contains match; the two are
+    // equivalent for single-'@' values, so it stays result-identical to the plugin on normalized data.
+    private static void appendEmailPrefixMatch(StringBuilder query, ArrayList<String> queryParams,
+                                               String alias, String term) {
+        query.append(" ").append(alias).append(".account_info_value LIKE lower(?) || '%'")
+                .append(" OR lower(substr(").append(alias).append(".account_info_value, instr(")
+                .append(alias).append(".account_info_value, '@') + 1)) LIKE lower(?) || '%'");
+        queryParams.add(term);
+        queryParams.add(term);
+    }
+
     private static AuthRecipeUserInfo[] getUsers_new(Start start, TenantIdentifier tenantIdentifier,
                                                       @NotNull Integer limit,
                                                       @NotNull String timeJoinedOrder,
@@ -1372,21 +1422,19 @@ public class GeneralQueries {
                 queryParams.add(tenantIdentifier.getTenantId());
 
                 if (hasEmails && hasPhones) {
-                    // Email condition on rut (SQLite LIKE is case-insensitive for ASCII)
+                    // Email condition on rut
                     query.append(" AND rut.account_info_type = 'email' AND (");
                     for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
-                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                        appendEmailPrefixMatch(query, queryParams, "rut", dashboardSearchTags.emails.get(i));
                     }
                     query.append(")");
                     // Phone condition on rut_phone
                     query.append(" AND rut_phone.account_info_type = 'phone' AND (");
                     for (int i = 0; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut_phone.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                        appendNormalizedPrefixMatch(query, queryParams, "rut_phone",
+                                dashboardSearchTags.phoneNumbers.get(i));
                     }
                     query.append(")");
                     // Provider filter (if also present) - uses rut_tp join (different row from email)
@@ -1394,8 +1442,8 @@ public class GeneralQueries {
                         query.append(" AND rut_tp.account_info_type = 'tparty' AND (");
                         for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
                             if (i > 0) query.append(" OR");
-                            query.append(" rut_tp.account_info_value LIKE ?");
-                            queryParams.add(dashboardSearchTags.providers.get(i) + "%");
+                            appendProviderPrefixMatch(query, queryParams, "rut_tp",
+                                    dashboardSearchTags.providers.get(i));
                         }
                         query.append(")");
                     }
@@ -1405,15 +1453,13 @@ public class GeneralQueries {
                     query.append(" AND rut.account_info_type = 'email' AND (");
                     for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
-                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                        appendEmailPrefixMatch(query, queryParams, "rut", dashboardSearchTags.emails.get(i));
                     }
                     query.append(") AND rut_tp.account_info_type = 'tparty' AND (");
                     for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut_tp.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.providers.get(i) + "%");
+                        appendProviderPrefixMatch(query, queryParams, "rut_tp",
+                                dashboardSearchTags.providers.get(i));
                     }
                     query.append(")");
 
@@ -1422,14 +1468,14 @@ public class GeneralQueries {
                     query.append(" AND rut.account_info_type = 'phone' AND (");
                     for (int i = 0; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                        appendNormalizedPrefixMatch(query, queryParams, "rut",
+                                dashboardSearchTags.phoneNumbers.get(i));
                     }
                     query.append(") AND rut_tp.account_info_type = 'tparty' AND (");
                     for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut_tp.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.providers.get(i) + "%");
+                        appendProviderPrefixMatch(query, queryParams, "rut_tp",
+                                dashboardSearchTags.providers.get(i));
                     }
                     query.append(")");
 
@@ -1437,9 +1483,7 @@ public class GeneralQueries {
                     query.append(" AND rut.account_info_type = 'email' AND (");
                     for (int i = 0; i < dashboardSearchTags.emails.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ? OR rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.emails.get(i) + "%");
-                        queryParams.add("%@" + dashboardSearchTags.emails.get(i) + "%");
+                        appendEmailPrefixMatch(query, queryParams, "rut", dashboardSearchTags.emails.get(i));
                     }
                     query.append(")");
 
@@ -1447,8 +1491,8 @@ public class GeneralQueries {
                     query.append(" AND rut.account_info_type = 'phone' AND (");
                     for (int i = 0; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                        appendNormalizedPrefixMatch(query, queryParams, "rut",
+                                dashboardSearchTags.phoneNumbers.get(i));
                     }
                     query.append(")");
 
@@ -1456,8 +1500,8 @@ public class GeneralQueries {
                     query.append(" AND rut.account_info_type = 'tparty' AND (");
                     for (int i = 0; i < dashboardSearchTags.providers.size(); i++) {
                         if (i > 0) query.append(" OR");
-                        query.append(" rut.account_info_value LIKE ?");
-                        queryParams.add(dashboardSearchTags.providers.get(i) + "%");
+                        appendProviderPrefixMatch(query, queryParams, "rut",
+                                dashboardSearchTags.providers.get(i));
                     }
                     query.append(")");
                 }

@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.1.1]
+
+- In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
+
 ## [12.1.0]
 
 - Support for CDI version `5.6`
