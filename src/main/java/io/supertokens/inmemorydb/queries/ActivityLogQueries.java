@@ -16,24 +16,20 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
+import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class ActivityLogQueries {
-
-    /** Same retention window as the PostgreSQL implementation. */
-    private static final int RETENTION_DAYS = 31;
-
-    private static final long MILLIS_PER_DAY = 24L * 60 * 60 * 1000;
 
     static String getQueryToCreateActivityLogTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getActivityLogTable() + " ("
@@ -56,14 +52,16 @@ public class ActivityLogQueries {
                 + Config.getConfig(start).getActivityLogTable() + "(created_at);";
     }
 
-    public static void createActivityLogEntry(Start start, TenantIdentifier tenantIdentifier, AuditLogEvent event)
-            throws SQLException, StorageQueryException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getActivityLogTable()
+    private static String getQueryToInsertActivityLogEntry(Start start) {
+        return "INSERT INTO " + Config.getConfig(start).getActivityLogTable()
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status,"
                 + " auth_principal, identifier, created_at, payload)"
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    }
 
-        update(start, QUERY, pst -> {
+    private static PreparedStatementValueSetter activityLogEntrySetter(TenantIdentifier tenantIdentifier,
+                                                                       AuditLogEvent event) {
+        return pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, event.recipeUserId);
@@ -74,16 +72,39 @@ public class ActivityLogQueries {
             pst.setString(8, event.identifier);
             pst.setLong(9, event.createdAt);
             pst.setString(10, event.payload);
-        });
+        };
+    }
+
+    public static void createActivityLogEntry(Start start, TenantIdentifier tenantIdentifier, AuditLogEvent event)
+            throws SQLException, StorageQueryException {
+        update(start, getQueryToInsertActivityLogEntry(start), activityLogEntrySetter(tenantIdentifier, event));
     }
 
     /**
-     * The unpartitioned table has no partitions to drop, so retention is enforced with a direct
-     * delete — same cutoff semantics as the PostgreSQL implementation's DEFAULT-partition purge.
+     * Same insert as {@link #createActivityLogEntry}, but on the caller's transaction connection, so the
+     * entry commits or rolls back atomically with the surrounding mutation.
      */
-    public static void deleteEntriesOlderThanRetention(Start start) throws SQLException, StorageQueryException {
-        long cutoffMillis = LocalDate.now(ZoneOffset.UTC).minusDays(RETENTION_DAYS).toEpochDay() * MILLIS_PER_DAY;
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getActivityLogTable() + " WHERE created_at < ?";
-        update(start, QUERY, pst -> pst.setLong(1, cutoffMillis));
+    public static void createActivityLogEntry_Transaction(Connection con, Start start,
+                                                          TenantIdentifier tenantIdentifier, AuditLogEvent event)
+            throws SQLException, StorageQueryException {
+        update(con, getQueryToInsertActivityLogEntry(start), activityLogEntrySetter(tenantIdentifier, event));
+    }
+
+    /**
+     * Cheap existence check for rollup-relevant activity newer than {@code sinceMillis} — the rows the
+     * last-active rollup would fold ({@code user_last_active}) or reconcile ({@code account_linking}).
+     * Storage-wide, no app predicate; lets the rollup cron skip work when there is nothing new.
+     */
+    public static boolean hasUnfoldedActivitySince(Start start, long sinceMillis)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT EXISTS (SELECT 1 FROM " + Config.getConfig(start).getActivityLogTable()
+                + " WHERE event_type IN ('user_last_active', 'account_linking') AND created_at > ?)"
+                + " AS has_activity";
+        return execute(start, QUERY, pst -> pst.setLong(1, sinceMillis), result -> {
+            if (result.next()) {
+                return result.getBoolean("has_activity");
+            }
+            return false;
+        });
     }
 }
