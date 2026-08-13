@@ -62,6 +62,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -78,6 +79,7 @@ public class AuthRecipe {
 
     // returns true if the input user ID was deleted - which can happens if it was a primary user id and
     // there were other accounts linked to it as well.
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static boolean unlinkAccounts(Main main, AppIdentifier appIdentifier,
                                          Storage storage, String recipeUserId)
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
@@ -168,6 +170,7 @@ public class AuthRecipe {
         return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void reservePrimaryUserAccountInfos(Main main, Storage storage, AppIdentifier appIdentifier, List<PrimaryUser> primaryUsers)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
@@ -191,6 +194,7 @@ public class AuthRecipe {
     // values, which breaks the keyset pagination cursor (see AuthRecipe.getUsers / UserPaginationToken).
     // This normalization must run once, after all recipes' login methods have been inserted, since a group
     // can span recipes.
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateTimeJoinedForBulkImportedPrimaryUsers(Storage storage, AppIdentifier appIdentifier,
             List<String> primaryUserIds) throws StorageQueryException, StorageTransactionLogicException {
         if (primaryUserIds == null || primaryUserIds.isEmpty()) {
@@ -274,6 +278,7 @@ public class AuthRecipe {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static LinkAccountsResult linkAccounts(Main main, AppIdentifier appIdentifier,
                                                   Storage storage, String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
@@ -373,6 +378,7 @@ public class AuthRecipe {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static CreatePrimaryUserResult createPrimaryUser(Main main,
                                                             AppIdentifier appIdentifier,
                                                             Storage storage,
@@ -614,6 +620,7 @@ public class AuthRecipe {
         deleteUser(appIdentifier, storage, userId, true, userIdMapping);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void deleteUser(AppIdentifier appIdentifier, Storage storage, String userId,
                                   boolean removeAllLinkedAccounts,
                                   UserIdMapping userIdMapping)

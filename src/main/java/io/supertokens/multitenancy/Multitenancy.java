@@ -76,6 +76,7 @@ import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingExcept
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
@@ -452,6 +453,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return didExist;
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static boolean addUserIdToTenant(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                             String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,

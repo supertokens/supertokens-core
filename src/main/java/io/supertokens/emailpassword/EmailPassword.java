@@ -66,6 +66,7 @@ import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingExcept
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class EmailPassword {
 
@@ -105,6 +106,7 @@ public class EmailPassword {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
@@ -177,6 +179,7 @@ public class EmailPassword {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static ImportUserResponse importUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
                                                                 Main main, @Nonnull String email,
                                                                 @Nonnull String passwordHash, @Nullable
@@ -226,6 +229,7 @@ public class EmailPassword {
         return response;
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
             @Nonnull String email,
             @Nonnull String passwordHash, long timeJoined)
@@ -271,6 +275,7 @@ public class EmailPassword {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void createMultipleUsersWithPasswordHash(Storage storage,
                                                            List<EmailPasswordImportUser> usersToImport)
             throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
@@ -482,6 +487,7 @@ public class EmailPassword {
     }
 
     @Deprecated
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static String resetPassword(TenantIdentifier tenantIdentifier, Storage storage, Main main, String token,
                                        String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
@@ -565,6 +571,7 @@ public class EmailPassword {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static ConsumeResetPasswordTokenResult consumeResetPasswordToken(
             TenantIdentifier tenantIdentifier, Storage storage, String token)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
@@ -653,6 +660,7 @@ public class EmailPassword {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateUsersEmailOrPassword(AppIdentifier appIdentifier, Storage storage, Main main,
                                                   @Nonnull String userId, @Nullable String email,
                                                   @Nullable String password)
