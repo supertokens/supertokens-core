@@ -11,6 +11,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
 
+### Migration
+
+Created/swapped automatically at startup; on large `recipe_user_tenants` tables pre-create them with
+`CREATE INDEX CONCURRENTLY` before upgrading to avoid a lock (note the transient two-index window on the account-info
+family):
+
+```sql
+-- opclass swap of the account-info index (create the successor concurrently, then drop the predecessor)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_account_info_pattern ON recipe_user_tenants
+  (app_id, tenant_id, account_info_type, account_info_value text_pattern_ops);
+DROP INDEX CONCURRENTLY IF EXISTS idx_recipe_user_tenants_account_info;
+-- partial indexes for the email-domain and case-insensitive provider arms
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_search_domain ON recipe_user_tenants
+  (app_id, tenant_id, lower(split_part(account_info_value, '@', 2)) text_pattern_ops)
+  WHERE account_info_type = 'email';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_search_tparty ON recipe_user_tenants
+  (app_id, tenant_id, lower(account_info_value) text_pattern_ops)
+  WHERE account_info_type = 'tparty';
+```
+
 ## [12.1.0]
 
 - Support for CDI version `5.6`
