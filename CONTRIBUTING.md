@@ -86,6 +86,19 @@ We're happy to help!:raised_hands:
 1. Open `supetokens-root` in your IDE
 2. After gradle has imported all the dependencies you can start modifying the code
 
+## Database schema changes
+
+If your change touches the DB schema, the migration must ship with the
+corresponding `supertokens-postgresql-plugin` PR: a migration script plus a
+`migration-scripts/manifest.json` entry, both enforced and verified by that
+repo's CI. The release workflow (`do-release.yml`) then derives its
+`has-db-migration` flag from that manifest and drives the SaaS rollout
+handling from it — nothing about migrations is typed by hand at release time.
+
+The full pipeline (plugin PR → core release → SaaS rollout, including what
+happens when the SaaS backend does not yet know a migration) is documented in
+[supertokens-postgresql-plugin/migration-scripts/README.md](https://github.com/supertokens/supertokens-postgresql-plugin/blob/master/migration-scripts/README.md).
+
 ## Testing
 
 ### On your local machine

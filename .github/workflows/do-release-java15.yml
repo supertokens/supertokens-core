@@ -190,6 +190,39 @@ jobs:
           echo "postgresql=$(git -C supertokens-root/supertokens-postgresql-plugin rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── Register new versions with the SuperTokens API ────────────────
+  # has-db-migration is derived, not human-supplied: the postgresql plugin's
+  # migration-scripts/manifest.json is the source of truth for "this release
+  # ships DB schema changes". The manifest is keyed by PLUGIN X.Y (the version
+  # a plugin PR actually knows; the core pairing is only decided by this
+  # release's inputs), read at the plugin SHA paired with this release; false
+  # when the manifest predates this convention.
+  derive-db-migration-flag:
+    name: Derive has-db-migration from migration manifest
+    needs: update-deps
+    runs-on: ubuntu-22.04
+    outputs:
+      has-db-migration: ${{ steps.derive.outputs.has-db-migration }}
+    steps:
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
+          token: ${{ secrets.GH_TOKEN }}
+      - name: Derive has-db-migration
+        id: derive
+        run: |
+          manifest="migration-scripts/manifest.json"
+          pluginXY=$(echo "${{ inputs.postgresql-plugin-version }}" | cut -d. -f1,2)
+          if [ -f "$manifest" ]; then
+            hasMigration=$(jq --arg v "$pluginXY" '[.migrations[].pluginVersion] | index($v) != null' "$manifest")
+          else
+            echo "::notice::$manifest not present at this postgresql-plugin SHA - assuming no DB migration."
+            hasMigration=false
+          fi
+          echo "Plugin $pluginXY has-db-migration=$hasMigration"
+          echo "has-db-migration=$hasMigration" >> "$GITHUB_OUTPUT"
+
   register-core-version:
     name: Register core version
     environment: publish
@@ -413,7 +446,7 @@ jobs:
   mark-as-passed:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
-    needs: [ dependency-branches, register-plugin-version, test ]
+    needs: [ dependency-branches, register-plugin-version, test, derive-db-migration-flag ]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     strategy:
@@ -448,7 +481,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X PATCH \
             -H "Content-Type: application/json" \
             -H "api-version: 0" \
-            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true}" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"hasDBMigration\":${{ needs.derive-db-migration-flag.outputs.has-db-migration }}}" \
             https://api.supertokens.io/0/core)
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
@@ -572,7 +605,7 @@ jobs:
   add-release-tags:
     name: Add release tags
     environment: publish
-    needs: [update-deps, release-docker]
+    needs: [update-deps, release-docker, derive-db-migration-flag]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
@@ -669,6 +702,8 @@ jobs:
 
       - name: Tag core
         id: tag-core
+        env:
+          HAS_DB_MIGRATION: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
         run: |
           cd supertokens-root/supertokens-core
           ./addReleaseTag
