@@ -45,6 +45,7 @@ public class LifecycleEventPayloadTest {
         assertEquals(payload.type, parsed.type);
         assertEquals(json, parsed.toJson());
         assertTrue(LifecycleEventPayload.isValid(json));
+        LifecycleEventPayload.validate(json); // must not throw for a well-formed payload
         return parsed;
     }
 
@@ -86,7 +87,7 @@ public class LifecycleEventPayloadTest {
         assertEquals(2, parsed.groupsBefore.size());
         assertEquals(group("u1", "public", "t2"), parsed.groupsBefore.get(0));
         assertEquals(group("u2", "public"), parsed.groupsBefore.get(1));
-        assertEquals("{\"v\":1,\"type\":\"account_linking\",\"groupsBefore\":["
+        assertEquals("{\"schemaVersion\":1,\"type\":\"account_linking\",\"groupsBefore\":["
                 + "{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[\"public\",\"t2\"]},"
                 + "{\"primaryOrRecipeUserId\":\"u2\",\"tenantIds\":[\"public\"]}]}", p.toJson());
     }
@@ -139,7 +140,7 @@ public class LifecycleEventPayloadTest {
         LifecycleEventPayload parsed = roundTrip(p);
         assertEquals("public", parsed.tenantId);
         assertNull(parsed.groupBefore);
-        assertEquals("{\"v\":1,\"type\":\"user_creation\",\"tenantId\":\"public\"}", p.toJson());
+        assertEquals("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":\"public\"}", p.toJson());
     }
 
     @Test
@@ -176,64 +177,66 @@ public class LifecycleEventPayloadTest {
         assertInvalid("not json");
         assertInvalid("[]"); // not an object
         assertInvalid("\"a string\"");
-        assertInvalid("{}"); // missing v/type
-        assertInvalid("{\"v\":2,\"type\":\"user_creation\",\"tenantId\":\"public\"}"); // wrong version
-        assertInvalid("{\"v\":\"1\",\"type\":\"user_creation\",\"tenantId\":\"public\"}"); // v not a number
-        assertInvalid("{\"v\":1,\"type\":123,\"tenantId\":\"public\"}"); // type not a string
-        assertInvalid("{\"v\":1,\"type\":\"user_last_active\",\"tenantId\":\"public\"}"); // not a lifecycle type
-        assertInvalid("{\"v\":1,\"type\":\"nonsense\",\"tenantId\":\"public\"}"); // unknown type
+        assertInvalid("{}"); // missing schemaVersion/type
+        assertInvalid("{\"schemaVersion\":2,\"type\":\"user_creation\",\"tenantId\":\"public\"}"); // wrong version
+        // schemaVersion not a number
+        assertInvalid("{\"schemaVersion\":\"1\",\"type\":\"user_creation\",\"tenantId\":\"public\"}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":123,\"tenantId\":\"public\"}"); // type not a string
+        // not a lifecycle type
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_last_active\",\"tenantId\":\"public\"}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"nonsense\",\"tenantId\":\"public\"}"); // unknown type
     }
 
     @Test
     public void testRejectsMissingAndUnexpectedKeys() {
         // missing the required groupBefore
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\"}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\"}");
         // unexpected extra key alongside a complete, otherwise-valid payload
-        assertInvalid("{\"v\":1,\"type\":\"user_creation\",\"tenantId\":\"public\",\"extra\":true}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":\"public\",\"extra\":true}");
         // user_creation must not carry a group
-        assertInvalid("{\"v\":1,\"type\":\"user_creation\",\"tenantId\":\"public\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":\"public\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[]}}");
     }
 
     @Test
     public void testRejectsBadGroupShape() {
         // groupBefore not an object
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\",\"groupBefore\":\"u1\"}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\",\"groupBefore\":\"u1\"}");
         // missing tenantIds inside the group
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"u1\"}}");
         // tenantIds not an array
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":\"public\"}}");
         // empty userId
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"\",\"tenantIds\":[]}}");
         // a non-string tenant element
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[1]}}");
         // an extra key inside the group object
-        assertInvalid("{\"v\":1,\"type\":\"user_group_deletion\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_group_deletion\","
                 + "\"groupBefore\":{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[],\"x\":1}}");
     }
 
     @Test
     public void testRejectsWrongAccountLinkingArity() {
         // account_linking must carry exactly two groups
-        assertInvalid("{\"v\":1,\"type\":\"account_linking\",\"groupsBefore\":["
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"account_linking\",\"groupsBefore\":["
                 + "{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[]}]}");
-        assertInvalid("{\"v\":1,\"type\":\"account_linking\",\"groupsBefore\":["
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"account_linking\",\"groupsBefore\":["
                 + "{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[]},"
                 + "{\"primaryOrRecipeUserId\":\"u2\",\"tenantIds\":[]},"
                 + "{\"primaryOrRecipeUserId\":\"u3\",\"tenantIds\":[]}]}");
         // groupsBefore not an array
-        assertInvalid("{\"v\":1,\"type\":\"account_linking\","
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"account_linking\","
                 + "\"groupsBefore\":{\"primaryOrRecipeUserId\":\"u1\",\"tenantIds\":[]}}");
     }
 
     @Test
     public void testRejectsEmptyTenantIdScalar() {
-        assertInvalid("{\"v\":1,\"type\":\"user_creation\",\"tenantId\":\"\"}");
-        assertInvalid("{\"v\":1,\"type\":\"user_creation\",\"tenantId\":5}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":\"\"}");
+        assertInvalid("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":5}");
     }
 
     // ---------------------------------------------------------------- helpers
@@ -258,6 +261,12 @@ public class LifecycleEventPayloadTest {
         try {
             LifecycleEventPayload.fromJson(payload);
             fail("expected InvalidLifecycleEventPayloadException for: " + payload);
+        } catch (InvalidLifecycleEventPayloadException expected) {
+            // ok
+        }
+        try {
+            LifecycleEventPayload.validate(payload);
+            fail("expected validate() to reject: " + payload);
         } catch (InvalidLifecycleEventPayloadException expected) {
             // ok
         }

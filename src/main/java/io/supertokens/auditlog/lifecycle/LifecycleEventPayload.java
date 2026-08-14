@@ -54,10 +54,10 @@ import java.util.Set;
  */
 public class LifecycleEventPayload {
 
-    /** Schema version, stored under {@code "v"} so the payload shape can evolve. */
+    /** Schema version, stored under {@code "schemaVersion"} so the payload shape can evolve. */
     public static final int SCHEMA_VERSION = 1;
 
-    private static final String V_KEY = "v";
+    private static final String VERSION_KEY = "schemaVersion";
     private static final String TYPE_KEY = "type";
     private static final String GROUPS_BEFORE_KEY = "groupsBefore";
     private static final String REMAINING_GROUP_AFTER_KEY = "remainingGroupAfter";
@@ -149,7 +149,7 @@ public class LifecycleEventPayload {
     /** @return the JSON string to store in the {@code activity_log.payload} column. */
     public String toJson() {
         JsonObject json = new JsonObject();
-        json.addProperty(V_KEY, SCHEMA_VERSION);
+        json.addProperty(VERSION_KEY, SCHEMA_VERSION);
         json.addProperty(TYPE_KEY, type.getValue());
         switch (type) {
             case ACCOUNT_LINKING: {
@@ -184,13 +184,41 @@ public class LifecycleEventPayload {
     }
 
     /**
-     * Parses and validates a stored payload against the schema for its declared type.
+     * Reads a stored payload back into a typed {@link LifecycleEventPayload}, validating it against the
+     * schema for its declared type along the way. Parsing (string → JSON object) and schema interpretation
+     * (JSON object → typed payload) are kept as two separate steps.
      *
      * @throws InvalidLifecycleEventPayloadException if the JSON is malformed, the schema version is
      *                                               unrecognised, the type is not a lifecycle event, or a
      *                                               field is missing / unexpected / of the wrong type.
      */
     public static LifecycleEventPayload fromJson(String payload) throws InvalidLifecycleEventPayloadException {
+        return fromJsonObject(parseObject(payload));
+    }
+
+    /**
+     * Validates a stored payload against the schema for its declared type, throwing if it does not conform.
+     * A payload is valid exactly when {@link #fromJson(String)} can reconstruct it, so validation is defined
+     * in terms of that single interpretation rather than a duplicated second pass over the schema.
+     *
+     * @throws InvalidLifecycleEventPayloadException with a message describing the first violation found.
+     */
+    public static void validate(String payload) throws InvalidLifecycleEventPayloadException {
+        fromJson(payload);
+    }
+
+    /** @return whether {@code payload} is a schema-valid lifecycle-event payload. */
+    public static boolean isValid(String payload) {
+        try {
+            validate(payload);
+            return true;
+        } catch (InvalidLifecycleEventPayloadException e) {
+            return false;
+        }
+    }
+
+    /** Parses {@code payload} into a JSON object, rejecting null, malformed, and non-object input. */
+    private static JsonObject parseObject(String payload) throws InvalidLifecycleEventPayloadException {
         if (payload == null) {
             throw new InvalidLifecycleEventPayloadException("payload must not be null");
         }
@@ -203,13 +231,20 @@ public class LifecycleEventPayload {
         if (parsed == null || !parsed.isJsonObject()) {
             throw new InvalidLifecycleEventPayloadException("payload must be a JSON object");
         }
-        JsonObject json = parsed.getAsJsonObject();
+        return parsed.getAsJsonObject();
+    }
 
-        JsonElement version = json.get(V_KEY);
+    /**
+     * Interprets an already-parsed payload object against the schema for its declared type, returning the
+     * typed payload it describes and throwing if any field is missing, unexpected, or of the wrong type.
+     */
+    private static LifecycleEventPayload fromJsonObject(JsonObject json)
+            throws InvalidLifecycleEventPayloadException {
+        JsonElement version = json.get(VERSION_KEY);
         if (version == null || !version.isJsonPrimitive() || !version.getAsJsonPrimitive().isNumber()
                 || version.getAsInt() != SCHEMA_VERSION) {
             throw new InvalidLifecycleEventPayloadException(
-                    "payload \"" + V_KEY + "\" must be " + SCHEMA_VERSION);
+                    "payload \"" + VERSION_KEY + "\" must be " + SCHEMA_VERSION);
         }
 
         JsonElement typeElement = json.get(TYPE_KEY);
@@ -224,7 +259,7 @@ public class LifecycleEventPayload {
 
         switch (type) {
             case ACCOUNT_LINKING: {
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, GROUPS_BEFORE_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUPS_BEFORE_KEY);
                 JsonElement groups = json.get(GROUPS_BEFORE_KEY);
                 if (!groups.isJsonArray() || groups.getAsJsonArray().size() != 2) {
                     throw new InvalidLifecycleEventPayloadException(
@@ -239,41 +274,31 @@ public class LifecycleEventPayload {
                 return forAccountLinking(groupsBefore.get(0), groupsBefore.get(1));
             }
             case ACCOUNT_UNLINKING:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, REMAINING_GROUP_AFTER_KEY, FREED_MEMBER_AFTER_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, REMAINING_GROUP_AFTER_KEY, FREED_MEMBER_AFTER_KEY);
                 return forAccountUnlinking(
                         parseGroup(json.get(REMAINING_GROUP_AFTER_KEY), REMAINING_GROUP_AFTER_KEY),
                         parseGroup(json.get(FREED_MEMBER_AFTER_KEY), FREED_MEMBER_AFTER_KEY));
             case USER_DELETION:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, GROUP_BEFORE_KEY, GROUP_AFTER_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY, GROUP_AFTER_KEY);
                 return forUserDeletion(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY),
                         parseGroup(json.get(GROUP_AFTER_KEY), GROUP_AFTER_KEY));
             case USER_GROUP_DELETION:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, GROUP_BEFORE_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY);
                 return forUserGroupDeletion(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY));
             case TENANT_ASSOCIATION:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, GROUP_BEFORE_KEY, TENANT_ID_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY, TENANT_ID_KEY);
                 return forTenantAssociation(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY),
                         parseTenantId(json));
             case TENANT_DISASSOCIATION:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, GROUP_BEFORE_KEY, TENANT_ID_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY, TENANT_ID_KEY);
                 return forTenantDisassociation(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY),
                         parseTenantId(json));
             case USER_CREATION:
-                requireKeys(json, "payload", V_KEY, TYPE_KEY, TENANT_ID_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, TENANT_ID_KEY);
                 return forUserCreation(parseTenantId(json));
             default:
                 // Unreachable: every LifecycleEventType is handled above.
                 throw new InvalidLifecycleEventPayloadException("unhandled lifecycle event type: " + type);
-        }
-    }
-
-    /** @return whether {@code payload} is a schema-valid lifecycle-event payload. */
-    public static boolean isValid(String payload) {
-        try {
-            fromJson(payload);
-            return true;
-        } catch (InvalidLifecycleEventPayloadException e) {
-            return false;
         }
     }
 
