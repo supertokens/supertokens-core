@@ -192,16 +192,19 @@ jobs:
   # ── Register new versions with the SuperTokens API ────────────────
   # has-db-migration is derived, not human-supplied: the postgresql plugin's
   # migration-scripts/manifest.json is the source of truth for "this release
-  # ships DB schema changes". The manifest is keyed by PLUGIN X.Y (the version
-  # a plugin PR actually knows; the core pairing is only decided by this
-  # release's inputs), read at the plugin SHA paired with this release; false
-  # when the manifest predates this convention.
+  # ships DB schema changes". The manifest is keyed by the full PLUGIN
+  # version X.Y.Z (the version a plugin PR actually knows; the core pairing is
+  # only decided by this release's inputs) - minor and patch releases alike -
+  # read at the plugin SHA paired with this release; false when the manifest
+  # predates this convention. When true, the core's own CHANGELOG.md must
+  # document the migration (checked here, fails early).
   derive-db-migration-flag:
     name: Derive has-db-migration from migration manifest
     needs: update-deps
     runs-on: ubuntu-22.04
     outputs:
       has-db-migration: ${{ steps.derive.outputs.has-db-migration }}
+      sql-file: ${{ steps.derive.outputs.sql-file }}
     steps:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
@@ -209,25 +212,50 @@ jobs:
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
           token: ${{ secrets.GH_TOKEN }}
+          path: plugin
+      - name: Checkout supertokens-core (for CHANGELOG.md)
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.update-deps.outputs.core-sha }}
+          path: core
       - name: Derive has-db-migration
         id: derive
         run: |
-          manifest="migration-scripts/manifest.json"
-          pluginXY=$(echo "${{ inputs.postgresql-plugin-version }}" | cut -d. -f1,2)
+          manifest="plugin/migration-scripts/manifest.json"
+          pluginVersion="${{ inputs.postgresql-plugin-version }}"
           if [ -f "$manifest" ]; then
-            hasMigration=$(jq --arg v "$pluginXY" '[.migrations[].pluginVersion] | index($v) != null' "$manifest")
+            entry=$(jq -c --arg v "$pluginVersion" '.migrations[] | select(.pluginVersion == $v)' "$manifest")
           else
             echo "::notice::$manifest not present at this postgresql-plugin SHA - assuming no DB migration."
+            entry=""
+          fi
+          if [ -n "$entry" ]; then
+            hasMigration=true
+            sqlfile=$(echo "$entry" | jq -r '.sql')
+            echo "sql-file=$sqlfile" >> "$GITHUB_OUTPUT"
+            echo "Plugin $pluginVersion ships a DB migration ($sqlfile): $(echo "$entry" | jq -r '.notes // ""')"
+            # The core's own release notes must document the migration too:
+            # same rule and same checker as the plugin's PR-time check. Fails
+            # here, before anything is registered or published - fixing it is
+            # a one-line changelog edit and a re-run.
+            helper=plugin/.github/helpers/schema-migration-check.py
+            if grep -q "check-changelog" "$helper" 2>/dev/null; then
+              python3 "$helper" check-changelog core/CHANGELOG.md "${{ inputs.core-version }}" "$sqlfile" \
+                || { echo "::error::supertokens-core CHANGELOG.md must document this release's DB migration: add a '### Migration' subsection under '## [${{ inputs.core-version }}]' referencing supertokens-postgresql-plugin's migration-scripts/$sqlfile."; exit 1; }
+            else
+              echo "::notice::plugin helper at this SHA predates check-changelog - skipping the core CHANGELOG migration check."
+            fi
+          else
             hasMigration=false
           fi
-          echo "Plugin $pluginXY has-db-migration=$hasMigration"
+          echo "Plugin $pluginVersion has-db-migration=$hasMigration"
           echo "has-db-migration=$hasMigration" >> "$GITHUB_OUTPUT"
 
   register-core-version:
     name: Register core version
     environment: publish
     runs-on: ubuntu-22.04
-    needs: update-deps
+    needs: [ update-deps, derive-db-migration-flag ]
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5

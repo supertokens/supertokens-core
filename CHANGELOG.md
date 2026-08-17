@@ -15,7 +15,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Created/swapped automatically at startup; on large `recipe_user_tenants` tables pre-create them with
 `CREATE INDEX CONCURRENTLY` before upgrading to avoid a lock (note the transient two-index window on the account-info
-family):
+family). Canonical script: supertokens-postgresql-plugin
+[`migration-scripts/v9.7.1.sql`](https://github.com/supertokens/supertokens-postgresql-plugin/blob/master/migration-scripts/v9.7.1.sql)
+(run with psql autocommit, not in one transaction).
 
 ```sql
 -- opclass swap of the account-info index (create the successor concurrently, then drop the predecessor)

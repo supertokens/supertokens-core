@@ -90,10 +90,20 @@ We're happy to help!:raised_hands:
 
 If your change touches the DB schema, the migration must ship with the
 corresponding `supertokens-postgresql-plugin` PR: a migration script plus a
-`migration-scripts/manifest.json` entry, both enforced and verified by that
-repo's CI. The release workflow (`do-release.yml`) then derives its
-`has-db-migration` flag from that manifest and drives the SaaS rollout
-handling from it — nothing about migrations is typed by hand at release time.
+`migration-scripts/manifest.json` entry keyed by the plugin's full X.Y.Z
+version, both enforced and verified by that repo's CI. This applies to patch
+releases too, with one constraint: a patch may only **add or drop indexes** —
+with `CREATE/DROP INDEX CONCURRENTLY` in the script and also done by the core
+at startup (the backfill list in `createTablesIfNotExists`) — because the
+SaaS rolls patches out in place; anything else needs a minor version bump. The release workflow
+(`do-release.yml`) then derives its `has-db-migration` flag from that
+manifest and drives the SaaS rollout handling from it — nothing about
+migrations is typed by hand at release time.
+
+The core's own `CHANGELOG.md` must document the migration as well: under the
+release's `## [X.Y.Z]` heading add a `### Migration` subsection that references
+the plugin's script (`migration-scripts/vX.Y.Z.sql`). The release workflow
+checks this and fails early (before anything is registered) if it is missing.
 
 The full pipeline (plugin PR → core release → SaaS rollout, including what
 happens when the SaaS backend does not yet know a migration) is documented in
