@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Lifecycle event vocabulary and JSON payload schema for the activity log (`io.supertokens.auditlog.lifecycle`): event-type constants for the seven count-affecting mutations plus a payload builder and schema validator carrying before/after group-presence tenant lists. Contract only — no emit sites yet.
+- Added lifecycle event vocabulary and JSON payload schema for the activity log (`io.supertokens.auditlog.lifecycle`).
 
 ## [12.1.1]
 
