@@ -53,7 +53,7 @@ import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.inmemorydb.queries.ActivityLogQueries;
-import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.migration.MigrationBackfillStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -127,7 +127,7 @@ public class Start
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
         ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage, OAuthSQLStorage, WebAuthNSQLStorage,
-        SAMLStorage, UserLockingStorage, AccountInfoStorage, MigrationBackfillStorage, ActivityLogStorage {
+        SAMLStorage, UserLockingStorage, AccountInfoStorage, MigrationBackfillStorage, ActivityLogSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -1558,6 +1558,17 @@ public class Start
         try {
             Connection sqlCon = (Connection) con.getConnection();
             ActiveUsersQueries.deleteUserActive_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void rollupLastActiveFromActivityLog_Transaction(TransactionConnection con, long windowStartMillis)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            ActiveUsersQueries.rollupLastActiveFromActivityLog_Transaction(this, sqlCon, windowStartMillis);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -4406,7 +4417,7 @@ public class Start
         }
     }
 
-    // ActivityLogStorage implementation
+    // ActivityLogSQLStorage implementation
 
     @Override
     public void createActivityLogEntry(TenantIdentifier tenantIdentifier, AuditLogEvent event)
@@ -4419,13 +4430,28 @@ public class Start
     }
 
     @Override
-    public void maintainActivityLogPartitions() throws StorageQueryException {
-        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table — there
-        // are no partitions to maintain, so retention is enforced with a direct delete instead.
+    public void createActivityLogEntry_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                                   AuditLogEvent event) throws StorageQueryException {
         try {
-            ActivityLogQueries.deleteEntriesOlderThanRetention(this);
+            Connection sqlCon = (Connection) con.getConnection();
+            ActivityLogQueries.createActivityLogEntry_Transaction(sqlCon, this, tenantIdentifier, event);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public boolean hasUnfoldedActivitySince(long sinceMillis) throws StorageQueryException {
+        try {
+            return ActivityLogQueries.hasUnfoldedActivitySince(this, sinceMillis);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void maintainActivityLogPartitions(int retentionDays) throws StorageQueryException {
+        // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table — there are
+        // no partitions to pre-create or drop, so this is a no-op (per the ActivityLogStorage contract).
     }
 }
