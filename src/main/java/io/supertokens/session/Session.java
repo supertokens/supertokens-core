@@ -74,6 +74,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Session {
 
@@ -434,6 +435,7 @@ public class Session {
     }
 
     // pass antiCsrfToken to disable csrf check for this request
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static SessionInformationHolder getSession(AppIdentifier appIdentifier, Main main, @Nonnull String token,
                                                       @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck,
@@ -812,6 +814,7 @@ public class Session {
                 newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private static SessionInformationHolder refreshSessionHelper(
             TenantIdentifier tenantIdentifier, Storage storage, Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo,

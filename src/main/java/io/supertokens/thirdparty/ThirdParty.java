@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class ThirdParty {
 
@@ -72,6 +73,7 @@ public class ThirdParty {
     // as seen below. But then, in newer versions, we stopped doing that cause of
     // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
     @Deprecated
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static SignInUpResponse signInUp2_7(TenantIdentifier tenantIdentifier, Storage storage,
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified)
@@ -164,6 +166,7 @@ public class ThirdParty {
         return signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email, false);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             String thirdPartyId,
                                             String thirdPartyUserId, String email, boolean isEmailVerified)
@@ -216,6 +219,7 @@ public class ThirdParty {
         return response;
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private static SignInUpResponse signInUpHelper(TenantIdentifier tenantIdentifier, Storage storage,
                                                    String thirdPartyId, String thirdPartyUserId,
                                                    String email) throws StorageQueryException,
@@ -365,6 +369,7 @@ public class ThirdParty {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void createMultipleThirdPartyUsers(Storage storage,
                                                      List<ThirdPartyImportUser> usersToImport)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
