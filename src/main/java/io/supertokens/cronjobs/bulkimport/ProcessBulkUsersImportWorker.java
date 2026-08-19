@@ -16,236 +16,232 @@
 
 package io.supertokens.cronjobs.bulkimport;
 
-import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.bulkimport.BulkImportProxyStoragePools;
 import io.supertokens.bulkimport.BulkImportUserUtils;
+import io.supertokens.bulkimport.BulkImportWorkerStorages;
 import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
-import io.supertokens.config.Config;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportTransactionRolledBackException;
-import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
-import io.supertokens.pluginInterface.exceptions.DbInitException;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportProxySQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
-import io.supertokens.storageLayer.StorageLayer;
 
-import java.io.IOException;
+import java.sql.Savepoint;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+/**
+ * One bulk import worker. Each invocation claims a chunk of {@code bulk_import_users} rows with
+ * {@code SELECT ... FOR UPDATE SKIP LOCKED}, imports the users, and deletes (or error-marks) the claimed rows
+ * — all on a single connection from the app's dedicated bulk import pool, inside one transaction:
+ *
+ * <pre>
+ *   BEGIN
+ *     claim rows (locked, status = PROCESSING)
+ *     for each storage partition:
+ *       SAVEPOINT
+ *       import users; delete their rows            -- or: ROLLBACK TO SAVEPOINT; mark rows ERROR
+ *   COMMIT                                          -- locks released only now
+ * </pre>
+ *
+ * <p>The row locks are therefore held from claim until the rows are in a terminal state, so several core
+ * instances can drain the same queue without ever importing a user twice, and a failed import can be undone
+ * without surrendering the claim. The live connection pool serving API traffic is not touched.
+ *
+ * @return true if a chunk was claimed, false if the queue was empty
+ */
 public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
 
-    private final Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();
+    /**
+     * How many times a partition is re-imported straight away after the database rolled it back (deadlock,
+     * serialization failure). Beyond that the rows are left {@code PROCESSING} for a later round.
+     */
+    static final int MAX_IMMEDIATE_RETRIES = 5;
+
     private final Main main;
     private final AppIdentifier app;
-    private final BulkImportSQLStorage bulkImportSQLStorage;
-    private final String[] allUserRoles;
     private final int chunkSize;
+    private final BulkImportProxyStoragePools pools;
+    private final String[] allUserRoles;
 
-    ProcessBulkUsersImportWorker(Main main, AppIdentifier app, int chunkSize,
-                                 BulkImportSQLStorage bulkImportSQLStorage,
+    ProcessBulkUsersImportWorker(Main main, AppIdentifier app, int chunkSize, BulkImportProxyStoragePools pools,
                                  String[] allUserRoles) {
         this.main = main;
         this.app = app;
         this.chunkSize = chunkSize;
-        this.bulkImportSQLStorage = bulkImportSQLStorage;
+        this.pools = pools;
         this.allUserRoles = allUserRoles;
     }
 
-    /**
-     * Claims a chunk of users with FOR UPDATE inside a baseTenantStorage transaction, processes them,
-     * then deletes (or marks as error) within the same transaction — so the row-level locks are held
-     * from claim through final status update.
-     *
-     * @return true if any users were found and processed, false if the queue was empty
-     */
     @Override
     public Boolean call() {
         // Fresh instance per invocation: allExternalUserIds must not bleed across retry rounds.
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
 
-        // Pre-initialize proxy storages BEFORE acquiring the outer transaction connection.
-        // getAllProxyStoragesForApp calls Multitenancy.getAllTenantsForApp, which needs a
-        // base-pool connection. If done inside startTransaction, workers deadlock: the outer
-        // transaction already holds one connection, and with parallelism > pool-size all
-        // workers block each other waiting for a second connection from the exhausted pool.
-        Storage[] allStoragesForApp;
-        try {
-            allStoragesForApp = getAllProxyStoragesForApp(main, app);
-        } catch (StorageTransactionLogicException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            return bulkImportSQLStorage.startTransaction(baseCon -> {
+        try (BulkImportWorkerStorages storages = pools.createStoragesForWorker()) {
+            BulkImportProxySQLStorage claimStorage = storages.forPublicTenant();
+            return claimStorage.startTransaction(con -> {
                 try {
-                    List<BulkImportUser> users = bulkImportSQLStorage
-                            .getBulkImportUsersAndChangeStatusToProcessing_Transaction(app, chunkSize, baseCon);
+                    List<BulkImportUser> users = claimStorage
+                            .getBulkImportUsersAndChangeStatusToProcessing_Transaction(app, chunkSize, con);
                     if (users == null || users.isEmpty()) {
+                        claimStorage.commitTransactionForBulkImportProxyStorage();
                         return false;
                     }
-                    processMultipleUsers(app, users, bulkImportUserUtils, allStoragesForApp,
-                            bulkImportSQLStorage, baseCon);
+                    processClaimedUsers(users, bulkImportUserUtils, storages, claimStorage, con);
+                    claimStorage.commitTransactionForBulkImportProxyStorage();
                     return true;
-                } catch (TenantOrAppNotFoundException | DbInitException | IOException | StorageQueryException e) {
+                } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+                    // the transaction is rolled back when the storages are closed below
                     throw new StorageTransactionLogicException(e);
                 }
             });
         } catch (StorageTransactionLogicException | StorageQueryException e) {
             throw new RuntimeException(e);
-        } finally {
+        }
+    }
+
+    private void processClaimedUsers(List<BulkImportUser> users, BulkImportUserUtils bulkImportUserUtils,
+                                     BulkImportWorkerStorages storages, BulkImportProxySQLStorage claimStorage,
+                                     TransactionConnection claimCon)
+            throws TenantOrAppNotFoundException, StorageQueryException {
+        Logging.debug(main, app.getAsPublicTenantIdentifier(), "Processing bulk import users: " + users.size());
+
+        List<BulkImportUser> validUsers = new ArrayList<>();
+        Map<String, Exception> validationErrors = new HashMap<>();
+        for (BulkImportUser user : users) {
+            if (Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) {
+                validUsers.add(user);
+                continue;
+            }
             try {
-                closeAllProxyStorages();
-            } catch (StorageQueryException ignored) {
+                validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, app, user.toJsonObject(),
+                        BulkImportUserUtils.IDMode.READ_STORED));
+            } catch (InvalidBulkImportDataException e) {
+                validationErrors.put(user.id, new Exception(String.valueOf(e.errors)));
+            }
+        }
+        if (!validationErrors.isEmpty()) {
+            // Only the invalid rows are marked; valid ones stay PROCESSING and are re-claimed by a later round.
+            markFailed(users, new BulkImportBatchInsertException("Invalid input data", validationErrors),
+                    claimStorage, claimCon);
+            return;
+        }
+
+        // Since all the tenants of a user must share the storage, partition by the storage of the first
+        // tenantId of the first loginMethod.
+        Map<BulkImportProxySQLStorage, List<BulkImportUser>> partitions = partitionUsersByStorage(storages, validUsers);
+        for (Map.Entry<BulkImportProxySQLStorage, List<BulkImportUser>> partition : partitions.entrySet()) {
+            importPartition(partition.getKey(), partition.getValue(), storages, claimStorage, claimCon);
+        }
+    }
+
+    /**
+     * Imports one storage's share of the chunk and deletes the corresponding claimed rows. On failure the
+     * import is undone — via ROLLBACK TO SAVEPOINT when it ran on the claim connection, so the claim itself
+     * survives — and the rows are either retried immediately (database rollback) or marked as errored.
+     */
+    private void importPartition(BulkImportProxySQLStorage storage, List<BulkImportUser> partitionUsers,
+                                 BulkImportWorkerStorages storages, BulkImportProxySQLStorage claimStorage,
+                                 TransactionConnection claimCon) throws StorageQueryException {
+        for (int attempt = 1; ; attempt++) {
+            Savepoint beforeImport = claimStorage.createSavepointForBulkImportProxyStorage();
+            try {
+                BulkImport.processUsersImportSteps(main, app, storage, partitionUsers, storages.all());
+                if (storage != claimStorage) {
+                    // A different database: its import commits on its own connection; the queue rows are
+                    // deleted below on the claim connection, still under the claim's row locks.
+                    storage.commitTransactionForBulkImportProxyStorage();
+                }
+                claimStorage.deleteBulkImportUsers_Transaction(app, idsOf(partitionUsers), claimCon);
+                claimStorage.releaseSavepointForBulkImportProxyStorage(beforeImport);
+                return;
+            } catch (StorageTransactionLogicException | StorageQueryException e) {
+                undoImport(storage, claimStorage, beforeImport);
+                if (isBulkImportTransactionRolledBackTheRealCause(e) && attempt < MAX_IMMEDIATE_RETRIES) {
+                    Logging.debug(main, app.getAsPublicTenantIdentifier(),
+                            "Bulk import partition rolled back by the database, retrying (attempt " + attempt + ")");
+                    continue;
+                }
+                markFailed(partitionUsers, e, claimStorage, claimCon);
+                return;
             }
         }
     }
 
-    private void processMultipleUsers(AppIdentifier appIdentifier, List<BulkImportUser> users,
-                                      BulkImportUserUtils bulkImportUserUtils,
-                                      Storage[] allStoragesForApp,
-                                      BulkImportSQLStorage baseTenantStorage,
-                                      TransactionConnection baseCon)
-            throws TenantOrAppNotFoundException, StorageQueryException, IOException, DbInitException {
-        try {
-            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
-                    "Processing bulk import users: " + users.size());
-            int userIndexPointer = 0;
-            List<BulkImportUser> validUsers = new ArrayList<>();
-            Map<String, Exception> validationErrorsBeforeActualProcessing = new HashMap<>();
-            while (userIndexPointer < users.size()) {
-                BulkImportUser user = users.get(userIndexPointer);
-                if (Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) {
-                    validUsers.add(user);
-                } else {
-                    try {
-                        validUsers.add(bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier,
-                                user.toJsonObject(), BulkImportUserUtils.IDMode.READ_STORED));
-                    } catch (InvalidBulkImportDataException exception) {
-                        validationErrorsBeforeActualProcessing.put(user.id, new Exception(
-                                String.valueOf(exception.errors)));
-                    }
-                }
-                userIndexPointer += 1;
-            }
-
-            if (!validationErrorsBeforeActualProcessing.isEmpty()) {
-                throw new BulkImportBatchInsertException("Invalid input data", validationErrorsBeforeActualProcessing);
-            }
-
-            Map<SQLStorage, List<BulkImportUser>> partitionedUsers = partitionUsersByStorage(appIdentifier, validUsers);
-
-            for (SQLStorage bulkImportProxyStorage : partitionedUsers.keySet()) {
-                boolean shouldRetryImmediately = true;
-                while (shouldRetryImmediately) {
-                    shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
-                        try {
-                            BulkImport.processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage,
-                                    partitionedUsers.get(bulkImportProxyStorage),
-                                    allStoragesForApp);
-
-                            bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
-
-                            // Delete within the outer baseTenantStorage transaction — the FOR UPDATE lock
-                            // is held on baseCon until it commits, preventing concurrent re-claiming.
-                            String[] toDelete = new String[validUsers.size()];
-                            for (int i = 0; i < validUsers.size(); i++) {
-                                toDelete[i] = validUsers.get(i).id;
-                            }
-                            baseTenantStorage.deleteBulkImportUsers_Transaction(appIdentifier, toDelete, baseCon);
-                        } catch (StorageTransactionLogicException | StorageQueryException e) {
-                            bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
-                            if (isBulkImportTransactionRolledBackIsTheRealCause(e)) {
-                                return true;
-                            }
-                            handleProcessUserExceptions(app, validUsers, e, baseTenantStorage, baseCon);
-                        }
-                        return false;
-                    });
-                }
-            }
-        } catch (StorageTransactionLogicException | InvalidConfigException e) {
-            Logging.error(main, app.getAsPublicTenantIdentifier(),
-                    "Error while processing bulk import users: " + e.getMessage(), true, e);
-            throw new RuntimeException(e);
-        } catch (BulkImportBatchInsertException insertException) {
-            handleProcessUserExceptions(app, users, insertException, baseTenantStorage, baseCon);
-        } catch (Exception e) {
-            Logging.error(main, app.getAsPublicTenantIdentifier(),
-                    "Error while processing bulk import users: " + e.getMessage(), true, e);
-            throw e;
+    private static void undoImport(BulkImportProxySQLStorage storage, BulkImportProxySQLStorage claimStorage,
+                                   Savepoint beforeImport) throws StorageQueryException {
+        if (storage != claimStorage) {
+            storage.rollbackTransactionForBulkImportProxyStorage();
         }
+        // Always rewind the claim connection too: it may hold a partial import (same storage) or already
+        // deleted rows (different storage) from this attempt. The claim's locks and PROCESSING status survive.
+        claimStorage.rollbackToSavepointForBulkImportProxyStorage(beforeImport);
     }
 
-    private boolean isBulkImportTransactionRolledBackIsTheRealCause(Throwable exception) {
+    private static String[] idsOf(List<BulkImportUser> users) {
+        String[] ids = new String[users.size()];
+        for (int i = 0; i < users.size(); i++) {
+            ids[i] = users.get(i).id;
+        }
+        return ids;
+    }
+
+    private static boolean isBulkImportTransactionRolledBackTheRealCause(Throwable exception) {
         if (exception instanceof BulkImportTransactionRolledBackException) {
             return true;
         } else if (exception.getCause() != null) {
-            return isBulkImportTransactionRolledBackIsTheRealCause(exception.getCause());
+            return isBulkImportTransactionRolledBackTheRealCause(exception.getCause());
         }
         return false;
     }
 
-    private void handleProcessUserExceptions(AppIdentifier appIdentifier, List<BulkImportUser> usersBatch,
-                                             Exception e, BulkImportSQLStorage baseTenantStorage,
-                                             TransactionConnection baseCon)
-            throws StorageQueryException {
-        String[] errorMessage = { e.getMessage() };
+    /**
+     * Writes the ERROR status (and message) for the rows that failed, on the claim connection, so it is
+     * committed together with the rest of the chunk while the rows are still locked. Transient storage
+     * failures are not marked: those rows stay PROCESSING and are retried by a later round.
+     */
+    private void markFailed(List<BulkImportUser> usersBatch, Exception e, BulkImportProxySQLStorage claimStorage,
+                            TransactionConnection claimCon) throws StorageQueryException {
         Map<String, String> bulkImportUserIdToErrorMessage = new HashMap<>();
 
-        switch (e) {
-            case StorageTransactionLogicException exception -> {
-                if (exception.actualException instanceof StorageQueryException) {
-                    Logging.error(main, null,
-                            "We got an StorageQueryException while processing a bulk import user entry. It will be " +
-                                    "retried again. Error Message: " + e.getMessage(), true);
-                    return;
-                }
-                if (exception.actualException instanceof BulkImportBatchInsertException) {
-                    handleBulkImportException(usersBatch,
-                            (BulkImportBatchInsertException) exception.actualException,
-                            bulkImportUserIdToErrorMessage);
-                } else {
-                    errorMessage[0] = exception.actualException.getMessage();
-                    for (BulkImportUser user : usersBatch) {
-                        bulkImportUserIdToErrorMessage.put(user.id, errorMessage[0]);
-                    }
-                }
-            }
-            case InvalidBulkImportDataException invalidBulkImportDataException ->
-                    errorMessage[0] = invalidBulkImportDataException.errors.toString();
-            case InvalidConfigException invalidConfigException -> errorMessage[0] = e.getMessage();
-            case BulkImportBatchInsertException bulkImportBatchInsertException ->
-                    handleBulkImportException(usersBatch, bulkImportBatchInsertException,
-                            bulkImportUserIdToErrorMessage);
-            default -> {
+        if (e instanceof BulkImportBatchInsertException batchException) {
+            mapPerUserErrors(usersBatch, batchException, bulkImportUserIdToErrorMessage);
+        } else if (e instanceof StorageTransactionLogicException exception) {
+            if (exception.actualException instanceof StorageQueryException) {
                 Logging.error(main, null,
-                        "We got an error while processing a bulk import user entry. It will be " +
+                        "We got an StorageQueryException while processing a bulk import user entry. It will be " +
                                 "retried again. Error Message: " + e.getMessage(), true);
+                return;
             }
+            if (exception.actualException instanceof BulkImportBatchInsertException batchException) {
+                mapPerUserErrors(usersBatch, batchException, bulkImportUserIdToErrorMessage);
+            } else {
+                for (BulkImportUser user : usersBatch) {
+                    bulkImportUserIdToErrorMessage.put(user.id, exception.actualException.getMessage());
+                }
+            }
+        } else {
+            Logging.error(main, null,
+                    "We got an error while processing a bulk import user entry. It will be " +
+                            "retried again. Error Message: " + e.getMessage(), true);
+            return;
         }
 
-        // Update error status within the outer baseTenantStorage transaction — no nested startTransaction needed.
-        baseTenantStorage.updateMultipleBulkImportUsersStatusToError_Transaction(appIdentifier, baseCon,
+        claimStorage.updateMultipleBulkImportUsersStatusToError_Transaction(app, claimCon,
                 bulkImportUserIdToErrorMessage);
     }
 
-    private static void handleBulkImportException(List<BulkImportUser> usersBatch,
-                                                  BulkImportBatchInsertException exception,
-                                                  Map<String, String> bulkImportUserIdToErrorMessage) {
+    private static void mapPerUserErrors(List<BulkImportUser> usersBatch, BulkImportBatchInsertException exception,
+                                         Map<String, String> bulkImportUserIdToErrorMessage) {
         Map<String, Exception> userIndexToError = exception.exceptionByUserId;
         for (String userid : userIndexToError.keySet()) {
             Optional<BulkImportUser> userWithId = usersBatch.stream()
@@ -272,72 +268,13 @@ public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
         }
     }
 
-    private synchronized Storage getBulkImportProxyStorage(TenantIdentifier tenantIdentifier)
-            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException {
-        String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
-        if (userPoolToStorageMap.containsKey(userPoolId)) {
-            return userPoolToStorageMap.get(userPoolId);
-        }
-
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(main);
-
-        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
-                allTenants,
-                Config.getBaseConfigAsJsonObject(main));
-
-        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-            if (key.getTenantIdentifier().equals(tenantIdentifier)) {
-                SQLStorage bulkImportProxyStorage = (SQLStorage) StorageLayer.getNewBulkImportProxyStorageInstance(main,
-                        normalisedConfigs.get(key), tenantIdentifier, true);
-
-                userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-                bulkImportProxyStorage.initStorage(false, new ArrayList<>());
-                return bulkImportProxyStorage;
-            }
-        }
-        throw new TenantOrAppNotFoundException(tenantIdentifier);
-    }
-
-    private synchronized Storage[] getAllProxyStoragesForApp(Main main, AppIdentifier appIdentifier)
-            throws StorageTransactionLogicException {
-        try {
-            List<Storage> allProxyStorages = new ArrayList<>();
-            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
-            for (TenantConfig tenantConfig : tenantConfigs) {
-                allProxyStorages.add(getBulkImportProxyStorage(tenantConfig.tenantIdentifier));
-            }
-            return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new StorageTransactionLogicException(new Exception("E043: " + e.getMessage()));
-        } catch (InvalidConfigException e) {
-            throw new StorageTransactionLogicException(new InvalidConfigException("E044: " + e.getMessage()));
-        } catch (DbInitException e) {
-            throw new StorageTransactionLogicException(new DbInitException("E045: " + e.getMessage()));
-        } catch (IOException e) {
-            throw new StorageTransactionLogicException(new IOException("E046: " + e.getMessage()));
-        }
-    }
-
-    private void closeAllProxyStorages() throws StorageQueryException {
-        for (SQLStorage storage : userPoolToStorageMap.values()) {
-            storage.closeConnectionForBulkImportProxyStorage();
-        }
-        userPoolToStorageMap.clear();
-    }
-
-    private Map<SQLStorage, List<BulkImportUser>> partitionUsersByStorage(AppIdentifier appIdentifier,
-                                                                           List<BulkImportUser> users)
-            throws DbInitException, TenantOrAppNotFoundException, InvalidConfigException, IOException {
-        Map<SQLStorage, List<BulkImportUser>> result = new HashMap<>();
+    private Map<BulkImportProxySQLStorage, List<BulkImportUser>> partitionUsersByStorage(
+            BulkImportWorkerStorages storages, List<BulkImportUser> users) throws TenantOrAppNotFoundException {
+        Map<BulkImportProxySQLStorage, List<BulkImportUser>> result = new LinkedHashMap<>();
         for (BulkImportUser user : users) {
-            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), user.loginMethods.getFirst().tenantIds.getFirst());
-            
-            SQLStorage bulkImportProxyStorage = (SQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
-            if (!result.containsKey(bulkImportProxyStorage)) {
-                result.put(bulkImportProxyStorage, new ArrayList<>());
-            }
-            result.get(bulkImportProxyStorage).add(user);
+            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(app.getConnectionUriDomain(),
+                    app.getAppId(), user.loginMethods.getFirst().tenantIds.getFirst());
+            result.computeIfAbsent(storages.forTenant(firstTenantIdentifier), k -> new ArrayList<>()).add(user);
         }
         return result;
     }
