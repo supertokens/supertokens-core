@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.1.2]
+
+- Bulk import no longer borrows from the live connection pool: each worker claims, imports and finalises its chunk on one connection from a dedicated pool sized to `bulk_migration_parallelism`
+- Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
+- Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
+- `BulkImport.importUser` (the single-user import API) uses the same dedicated-pool mechanism instead of a throwaway pool per call
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.

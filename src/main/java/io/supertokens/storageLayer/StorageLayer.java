@@ -66,11 +66,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
-        return getNewInstance(main, config, tenantIdentifier, doNotLog, false);
-    }
-
-    public static Storage getNewBulkImportProxyStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
-        return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
+        return getNewInstance(main, config, tenantIdentifier, doNotLog);
     }
 
     public static void updateConfigJsonFromEnv(Main main, JsonObject configJson) {
@@ -105,7 +101,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     @WithinOtelSpan
-    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
+    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -125,15 +121,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
                     && (storageLayer. canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-                if (isBulkImportProxy) {
-                    result = storageLayer.createBulkImportProxyStorageInstance();
-                } else {
-                    result = storageLayer;
-                }
+                result = storageLayer;
             } else {
-                if (isBulkImportProxy) {
-                    throw new QuitProgramException("Creating a bulk import proxy storage instance with in-memory DB is not supported.");
-                }
                 result = new Start(main);
             }
         }
