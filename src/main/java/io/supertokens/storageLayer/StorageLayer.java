@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
@@ -751,6 +752,21 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         storage.initFileLogging(infoLogPath, errorLogPath, telemetry);
                     } catch (DbInitException e) {
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                        return;
+                    }
+                    // Schema verification runs once per storage (the plugin caches a success), so this is a
+                    // no-op for already-verified pools on refresh. A mismatch must not take the whole core
+                    // down for one tenant's database: log loudly and leave that storage refusing queries.
+                    try {
+                        storage.verifySchema();
+                    } catch (SchemaMismatchException e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT,
+                                "Schema verification failed for storage of tenants " + tenants + ": "
+                                        + e.getMessage(), true, e);
+                        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
+                    } catch (StorageQueryException e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT,
+                                "Could not verify schema for storage of tenants " + tenants, false, e);
                     }
                 }, executor));
             }

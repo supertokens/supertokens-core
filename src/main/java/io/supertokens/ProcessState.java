@@ -99,6 +99,8 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
         INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG,
         LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB,
+        // Storage.verifySchema() failed for a non-base tenant storage (base storage failures abort startup)
+        SCHEMA_MISMATCH,
         BULK_IMPORT_COMPLETE,
         BULK_IMPORT_SKIPPED_EMPTY_QUEUE,
         BACKFILL_COMPLETE,

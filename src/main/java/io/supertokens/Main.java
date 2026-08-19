@@ -44,6 +44,7 @@ import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -205,6 +206,17 @@ public class Main {
         try {
             StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
+            throw new QuitProgramException(e);
+        }
+
+        // Verify once, at startup, that the base database has every table/column this version needs. This is
+        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation): a database
+        // whose manual "### Migration" step was skipped must refuse to start, not fail per request.
+        try {
+            StorageLayer.getBaseStorage(this).verifySchema();
+        } catch (SchemaMismatchException e) {
+            throw new QuitProgramException(e.getMessage());
+        } catch (StorageQueryException e) {
             throw new QuitProgramException(e);
         }
 
