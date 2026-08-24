@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- In-memory (SQLite) parity for the activity-log/rollup storage contract: transactional audit insert, the last-active fold+reconcile rollup, and an unfolded-activity existence check; partition maintenance takes a retention argument and stays a no-op.
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
