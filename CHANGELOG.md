@@ -13,9 +13,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
 - `BulkImport.importUser` (the single-user import API) uses the same dedicated-pool mechanism instead of a throwaway pool per call
-- Verifies the database schema at startup: if the base database is missing any table or column this version needs,
-  the core refuses to start and prints the missing columns plus the SQL to add them (instead of failing per request);
-  a tenant database with a mismatch is logged at ERROR and refuses queries until fixed
+- Verifies the database schema at startup: if a database (base or tenant) is missing any table or column this
+  version needs, an ERROR is logged with the missing columns plus the SQL to add them; the core still boots and
+  keeps serving everything else, and only the queries touching the missing schema fail - with a
+  "Schema mismatch ... check the core error logs" message instead of a raw SQL error
 - Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
 
 ## [12.1.1]
@@ -72,8 +73,9 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_search_tparty ON
 
 **Manual step required — NOT applied automatically.** The core only creates tables that do not exist yet
 (`CREATE TABLE IF NOT EXISTS`); it never adds columns to an existing table. On any database created by a core older
-than 12.1.0, run the following **before** starting the new core (from 12.1.2 the core refuses to start until these
-columns exist; 12.1.0/12.1.1 start but fail every session API with `column prev_refresh_token_hash_2 does not exist`):
+than 12.1.0, run the following **before** starting the new core (from 12.1.2 the core reports the missing
+columns at startup and session APIs fail with a schema-mismatch message pointing at the logs; 12.1.0/12.1.1 start
+silently and fail every session API with `column prev_refresh_token_hash_2 does not exist`):
 
 ```sql
 ALTER TABLE session_info ADD COLUMN IF NOT EXISTS prev_refresh_token_hash_2 VARCHAR(128);

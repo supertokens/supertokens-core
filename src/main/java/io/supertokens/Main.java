@@ -210,14 +210,18 @@ public class Main {
         }
 
         // Verify once, at startup, that the base database has every table/column this version needs. This is
-        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation): a database
-        // whose manual "### Migration" step was skipped must refuse to start, not fail per request.
+        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation). A mismatch
+        // (a skipped manual "### Migration" step) is reported loudly here but does NOT prevent booting: the
+        // core keeps serving everything that does not touch the missing schema, and only the affected queries
+        // fail - with a schema-mismatch hint pointing at these logs instead of a raw SQL error.
         try {
             StorageLayer.getBaseStorage(this).verifySchema();
         } catch (SchemaMismatchException e) {
-            throw new QuitProgramException(e.getMessage());
+            Logging.error(this, TenantIdentifier.BASE_TENANT, e.getMessage(), true, e);
+            ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
         } catch (StorageQueryException e) {
-            throw new QuitProgramException(e);
+            Logging.error(this, TenantIdentifier.BASE_TENANT,
+                    "Could not verify the database schema at startup", false, e);
         }
 
         // enable ee features if license key is provided.

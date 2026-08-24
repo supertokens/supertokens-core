@@ -755,8 +755,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         return;
                     }
                     // Schema verification runs once per storage (the plugin caches a success), so this is a
-                    // no-op for already-verified pools on refresh. A mismatch must not take the whole core
-                    // down for one tenant's database: log loudly and leave that storage refusing queries.
+                    // no-op for already-verified pools on refresh. A mismatch is only reported: the core keeps
+                    // serving this storage, and only queries that touch the missing schema fail (with a
+                    // schema-mismatch hint pointing at these logs).
                     try {
                         storage.verifySchema();
                     } catch (SchemaMismatchException e) {
