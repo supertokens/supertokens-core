@@ -33,6 +33,7 @@ import org.jetbrains.annotations.TestOnly;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Map;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class UserMetadata {
 
@@ -50,6 +51,7 @@ public class UserMetadata {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static JsonObject updateUserMetadata(AppIdentifier appIdentifier, Storage storage,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
@@ -79,6 +81,7 @@ public class UserMetadata {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateMultipleUsersMetadata(AppIdentifier appIdentifier, Storage storage,
                                                 @Nonnull Map<String, JsonObject> metadataToUpdateByUserId)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
@@ -140,6 +143,7 @@ public class UserMetadata {
      * Returns a map of userId to their metadata.
      * Users without metadata will have null as their value.
      */
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static Map<String, JsonObject> getBulkUserMetadata(AppIdentifier appIdentifier, Storage storage,
                                                               @Nonnull java.util.List<String> userIds)
             throws StorageQueryException {

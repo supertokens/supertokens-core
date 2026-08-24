@@ -87,6 +87,7 @@ import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.Utils;
 import jakarta.servlet.ServletException;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
 // Current range: E001 to E046.
@@ -167,6 +168,7 @@ public class BulkImport {
         return StorageUtils.getBulkImportStorage(storage).getBulkImportUsersCount(appIdentifier, status);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static synchronized AuthRecipeUserInfo importUser(Main main, AppIdentifier appIdentifier,
             BulkImportUser user)
             throws StorageQueryException, InvalidConfigException, IOException, TenantOrAppNotFoundException,
@@ -694,6 +696,7 @@ public class BulkImport {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private static void verifyCollectedEmailAddressesForUsers(AppIdentifier appIdentifier, Storage storage,
                                                               Map<String, String> emailToUserId)
             throws StorageQueryException, StorageTransactionLogicException {

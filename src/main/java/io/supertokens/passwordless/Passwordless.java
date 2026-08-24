@@ -65,6 +65,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Passwordless {
     private static final String USER_INPUT_CODE_NUM_CHARS = "0123456789";
@@ -292,6 +293,7 @@ public class Passwordless {
                 false);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage,
                                                               Main main,
                                                               String deviceId, String deviceIdHashFromUser,
@@ -416,6 +418,7 @@ public class Passwordless {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                                   String deviceId, String deviceIdHashFromUser,
                                                   String userInputCode, String linkCode, boolean setEmailVerified)
@@ -571,6 +574,7 @@ public class Passwordless {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void createPasswordlessUsers(Storage storage,
                                                List<PasswordlessImportUser> importUsers)
             throws TenantOrAppNotFoundException, StorageQueryException,
@@ -592,6 +596,7 @@ public class Passwordless {
                 codeId);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void removeCode(TenantIdentifier tenantIdentifier, Storage storage, String codeId)
             throws StorageQueryException, StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -626,6 +631,7 @@ public class Passwordless {
         });
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void removeDevice(TenantIdentifier tenantIdentifier, Storage storage,
                                     String deviceIdHash)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -646,6 +652,7 @@ public class Passwordless {
                 ResourceDistributor.getAppForTesting(), storage, email);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void removeCodesByEmail(TenantIdentifier tenantIdentifier, Storage storage, String email)
             throws StorageQueryException, StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -667,6 +674,7 @@ public class Passwordless {
                 phoneNumber);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void removeCodesByPhoneNumber(TenantIdentifier tenantIdentifier, Storage storage,
                                                 String phoneNumber)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -765,6 +773,7 @@ public class Passwordless {
                 userId, emailUpdate, phoneNumberUpdate);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateUser(AppIdentifier appIdentifier, Storage storage, String recipeUserId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,

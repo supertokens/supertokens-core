@@ -45,6 +45,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
 
@@ -73,6 +74,7 @@ public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
      * @return true if any users were found and processed, false if the queue was empty
      */
     @Override
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public Boolean call() {
         // Fresh instance per invocation: allExternalUserIds must not bleed across retry rounds.
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
@@ -114,6 +116,7 @@ public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private void processMultipleUsers(AppIdentifier appIdentifier, List<BulkImportUser> users,
                                       BulkImportUserUtils bulkImportUserUtils,
                                       Storage[] allStoragesForApp,
