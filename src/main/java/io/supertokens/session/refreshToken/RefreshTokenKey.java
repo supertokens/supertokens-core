@@ -40,6 +40,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
@@ -109,6 +110,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         return this.key;
     }
 
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     private String maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         SessionStorage storage = (SessionStorage) StorageLayer.getStorage(

@@ -14,6 +14,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.concurrent.ConcurrentHashMap;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class ActiveUsers {
 
@@ -122,6 +123,7 @@ public class ActiveUsers {
         return StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateLastActiveAfterLinking(Main main, AppIdentifier appIdentifier, String primaryUserId,
                                                     String recipeUserId)
             throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {

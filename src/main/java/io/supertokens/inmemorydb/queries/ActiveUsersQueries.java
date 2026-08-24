@@ -148,6 +148,43 @@ public class ActiveUsersQueries {
         });
     }
 
+    /**
+     * Derives {@code user_last_active} from the activity log over {@code [windowStartMillis, now]}, on the
+     * caller's transaction connection. Mirrors the PostgreSQL implementation with two idempotent statements:
+     * <ol>
+     *   <li><b>Fold</b> — upsert each user's most recent {@code user_last_active} activity into the
+     *       projection, monotonically ({@code MAX(stored, new)} never lowers a stored timestamp).</li>
+     *   <li><b>Reconcile</b> — delete projection rows for users linked away within the same window
+     *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}).</li>
+     * </ol>
+     * No advisory lock — the in-memory store is single-instance, so there is no concurrent pass to
+     * deduplicate. SQLite lacks the {@code DELETE ... USING} join, so the reconcile is expressed as a
+     * correlated {@code EXISTS} sub-select (result-identical).
+     */
+    public static void rollupLastActiveFromActivityLog_Transaction(Start start, Connection con,
+                                                                   long windowStartMillis)
+            throws StorageQueryException, SQLException {
+        String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
+        String activityLogTable = Config.getConfig(start).getActivityLogTable();
+
+        // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
+        String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
+                + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable
+                + " WHERE event_type = 'user_last_active' AND created_at >= ?"
+                + " GROUP BY app_id, primary_or_recipe_user_id"
+                + " ON CONFLICT (app_id, user_id) DO UPDATE"
+                + " SET last_active_time = MAX(" + userLastActiveTable + ".last_active_time,"
+                + " excluded.last_active_time)";
+        update(con, FOLD_QUERY, pst -> pst.setLong(1, windowStartMillis));
+
+        String RECONCILE_QUERY = "DELETE FROM " + userLastActiveTable
+                + " WHERE EXISTS (SELECT 1 FROM " + activityLogTable + " al"
+                + " WHERE al.event_type = 'account_linking' AND al.created_at >= ?"
+                + " AND al.app_id = " + userLastActiveTable + ".app_id"
+                + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id)";
+        update(con, RECONCILE_QUERY, pst -> pst.setLong(1, windowStartMillis));
+    }
+
     public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start,
                                                                                           AppIdentifier appIdentifier,
                                                                                           long sinceTime)

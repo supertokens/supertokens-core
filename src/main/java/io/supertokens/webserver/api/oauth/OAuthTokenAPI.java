@@ -67,6 +67,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class OAuthTokenAPI extends WebserverAPI {
 
@@ -380,6 +381,7 @@ public class OAuthTokenAPI extends WebserverAPI {
      * SQL path: DB transaction with {@code SELECT … FOR UPDATE} covering the full Hydra
      * round-trip. The caller must already hold the JVM lock for this token.
      */
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private void handleNonRotatingRefresh(
             HttpServletRequest req, HttpServletResponse resp,
             AppIdentifier appIdentifier, OAuthSQLStorage sqlStorage, OAuthClient oauthClient,

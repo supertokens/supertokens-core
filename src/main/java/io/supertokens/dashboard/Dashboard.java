@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Dashboard {
     public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 3;
@@ -231,6 +232,7 @@ public class Dashboard {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static DashboardUser updateUsersCredentialsWithUserId(AppIdentifier appIdentifier, Storage storage,
                                                                  Main main, String userId,
                                                                  String newEmail,
