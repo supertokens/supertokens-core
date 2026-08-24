@@ -210,16 +210,23 @@ public class Main {
         }
 
         // Verify once, at startup, that the base database has every table/column this version needs. This is
-        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation). A mismatch
-        // (a skipped manual "### Migration" step) is reported loudly here but does NOT prevent booting: the
-        // core keeps serving everything that does not touch the missing schema, and only the affected queries
-        // fail - with a schema-mismatch hint pointing at these logs instead of a raw SQL error.
+        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation). How a
+        // mismatch (a skipped manual "### Migration" step) is handled depends on schema_check_strict_mode:
+        // strict (the default) refuses to start; non-strict logs it and boots, with only the queries touching
+        // the missing schema failing (they carry a schema-mismatch hint pointing at these logs).
+        boolean schemaCheckStrictMode = Config.getBaseConfig(this).getSchemaCheckStrictMode();
         try {
-            StorageLayer.getBaseStorage(this).verifySchema();
+            StorageLayer.getBaseStorage(this).verifySchema(schemaCheckStrictMode);
         } catch (SchemaMismatchException e) {
+            if (schemaCheckStrictMode) {
+                throw new QuitProgramException(e.getMessage());
+            }
             Logging.error(this, TenantIdentifier.BASE_TENANT, e.getMessage(), true, e);
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
         } catch (StorageQueryException e) {
+            if (schemaCheckStrictMode) {
+                throw new QuitProgramException(e);
+            }
             Logging.error(this, TenantIdentifier.BASE_TENANT,
                     "Could not verify the database schema at startup", false, e);
         }

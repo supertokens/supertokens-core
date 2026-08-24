@@ -755,11 +755,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         return;
                     }
                     // Schema verification runs once per storage (the plugin caches a success), so this is a
-                    // no-op for already-verified pools on refresh. A mismatch is only reported: the core keeps
-                    // serving this storage, and only queries that touch the missing schema fail (with a
-                    // schema-mismatch hint pointing at these logs).
+                    // no-op for already-verified pools on refresh. A tenant mismatch never takes the core down:
+                    // in strict mode (schema_check_strict_mode, the default) the storage refuses all queries
+                    // until re-verified after the migration is applied; in non-strict mode it stays fully in
+                    // use and only queries touching the missing schema fail (with a schema-mismatch hint).
                     try {
-                        storage.verifySchema();
+                        storage.verifySchema(Config.getBaseConfig(main).getSchemaCheckStrictMode());
                     } catch (SchemaMismatchException e) {
                         Logging.error(main, TenantIdentifier.BASE_TENANT,
                                 "Schema verification failed for storage of tenants " + tenants + ": "

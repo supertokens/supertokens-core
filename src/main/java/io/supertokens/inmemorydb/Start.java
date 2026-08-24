@@ -236,7 +236,7 @@ public class Start
     }
 
     @Override
-    public void verifySchema() {
+    public void verifySchema(boolean strictMode) {
         // The in-memory database is created fresh by this process, so it always matches this version's schema.
     }
 

@@ -13,10 +13,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
 - `BulkImport.importUser` (the single-user import API) uses the same dedicated-pool mechanism instead of a throwaway pool per call
-- Verifies the database schema at startup: if a database (base or tenant) is missing any table or column this
-  version needs, an ERROR is logged with the missing columns plus the SQL to add them; the core still boots and
-  keeps serving everything else, and only the queries touching the missing schema fail - with a
-  "Schema mismatch ... check the core error logs" message instead of a raw SQL error
+- Verifies the database schema at startup: any database (base or tenant) missing a table or column this version
+  needs is reported with the missing columns plus the SQL to add them
+- **New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only). In strict mode the
+  core REFUSES TO START when the base database schema is out of date (a skipped manual migration), and tenant
+  databases with a mismatched schema are not served until the migration is applied. If your database schema is
+  behind (see the Migration sections below), upgrading to this version will stop the core from booting until you
+  either run the migration SQL or set `schema_check_strict_mode: false`.** With strict mode off, mismatches are
+  only logged: the core boots, everything else keeps working, and just the queries touching the missing schema
+  fail - with a "Schema mismatch ... check the core error logs" message instead of a raw SQL error
 - Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
 
 ## [12.1.1]
@@ -73,9 +78,10 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_search_tparty ON
 
 **Manual step required — NOT applied automatically.** The core only creates tables that do not exist yet
 (`CREATE TABLE IF NOT EXISTS`); it never adds columns to an existing table. On any database created by a core older
-than 12.1.0, run the following **before** starting the new core (from 12.1.2 the core reports the missing
-columns at startup and session APIs fail with a schema-mismatch message pointing at the logs; 12.1.0/12.1.1 start
-silently and fail every session API with `column prev_refresh_token_hash_2 does not exist`):
+than 12.1.0, run the following **before** starting the new core (from 12.1.2 the core detects the missing
+columns at startup: with the default `schema_check_strict_mode: true` it **refuses to start** until they exist,
+with `false` it logs them and session APIs fail with a schema-mismatch message pointing at the logs;
+12.1.0/12.1.1 start silently and fail every session API with `column prev_refresh_token_hash_2 does not exist`):
 
 ```sql
 ALTER TABLE session_info ADD COLUMN IF NOT EXISTS prev_refresh_token_hash_2 VARCHAR(128);
