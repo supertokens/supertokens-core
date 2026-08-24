@@ -48,7 +48,9 @@ public class CleanupActivityLogPartitions extends CronTask {
     @Override
     protected void doTaskPerStorage(Storage storage) throws Exception {
         if (storage instanceof ActivityLogStorage) {
-            ((ActivityLogStorage) storage).maintainActivityLogPartitions();
+            // Retention is fixed at 31 days for now; a configurable per-storage retention is threaded
+            // through here in follow-up work.
+            ((ActivityLogStorage) storage).maintainActivityLogPartitions(31);
         }
     }
 

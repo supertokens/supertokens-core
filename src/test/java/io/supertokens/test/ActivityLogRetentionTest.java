@@ -56,13 +56,13 @@ public class ActivityLogRetentionTest {
     }
 
     /**
-     * The in-memory (SQLite) store has no partitions to drop, so its activity log retention is a
-     * direct delete run by the same maintenance hook the cron calls: entries older than the 31-day
-     * window must be removed, recent ones kept. (The PostgreSQL retention behaviour is covered by
-     * the plugin's own ActivityLogPartitionTest.)
+     * The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table, so it has no
+     * partitions to pre-create or drop: partition maintenance is a no-op that leaves every row in place,
+     * regardless of age. (The PostgreSQL partition/retention behaviour is covered by the plugin's own
+     * ActivityLogPartitionTest.)
      */
     @Test
-    public void inMemoryActivityLogRetentionDeletesOldEntries() throws Exception {
+    public void inMemoryActivityLogPartitionMaintenanceIsANoOp() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
@@ -80,13 +80,13 @@ public class ActivityLogRetentionTest {
                 makeEvent("expired_event", now - 40 * MILLIS_PER_DAY));
         assertEquals(2, countActivityLogRows(storage));
 
-        activityLog.maintainActivityLogPartitions();
+        // No partitions to maintain — even a row far older than the retention window is untouched.
+        activityLog.maintainActivityLogPartitions(31);
+        assertEquals(2, countActivityLogRows(storage));
 
-        assertEquals(1, countActivityLogRows(storage));
-
-        // Idempotent: nothing further to delete.
-        activityLog.maintainActivityLogPartitions();
-        assertEquals(1, countActivityLogRows(storage));
+        // Idempotent, and independent of the retention argument.
+        activityLog.maintainActivityLogPartitions(7);
+        assertEquals(2, countActivityLogRows(storage));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
