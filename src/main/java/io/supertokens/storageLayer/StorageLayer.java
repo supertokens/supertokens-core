@@ -757,8 +757,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     // Schema verification runs once per storage (the plugin caches a success), so this is a
                     // no-op for already-verified pools on refresh. A tenant mismatch never takes the core down:
                     // in strict mode (schema_check_strict_mode, the default) the storage refuses all queries
-                    // until re-verified after the migration is applied; in non-strict mode it stays fully in
-                    // use and only queries touching the missing schema fail (with a schema-mismatch hint).
+                    // until a re-verification passes (retrySchemaVerification runs one every minute, so the
+                    // storage resumes within a minute of the migration being applied); in non-strict mode it
+                    // stays fully in use and only queries touching the missing schema fail (with a hint).
                     try {
                         storage.verifySchema(Config.getBaseConfig(main).getSchemaCheckStrictMode());
                     } catch (SchemaMismatchException e) {
@@ -773,6 +774,35 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }, executor));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        }
+    }
+
+    /**
+     * Gives every loaded storage whose schema verification has not yet passed another chance to pass. Called
+     * from {@link io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb} every minute, so a tenant
+     * storage that is refusing queries in strict mode (schema_check_strict_mode) resumes within a minute of
+     * the operator applying the migration SQL - no restart or tenant change needed. A storage that already
+     * verified returns from {@link Storage#verifySchema} without touching the database, so this is free in the
+     * steady state; a still-mismatched storage costs one schema-inspection query per run and stays quiet here,
+     * because the startup ERROR log already carries the full report.
+     */
+    public static void retrySchemaVerification(Main main) {
+        Set<Storage> storages = new HashSet<>();
+        for (ResourceDistributor.SingletonResource resource : main.getResourceDistributor()
+                .getAllResourcesWithResourceKey(RESOURCE_KEY).values()) {
+            storages.add(((StorageLayer) resource).storage);
+        }
+        boolean strictMode = Config.getBaseConfig(main).getSchemaCheckStrictMode();
+        for (Storage storage : storages) {
+            try {
+                storage.verifySchema(strictMode);
+            } catch (SchemaMismatchException e) {
+                // still mismatched: the startup ERROR already reported the details, and affected queries
+                // carry a hint pointing at it - do not repeat the report every minute
+            } catch (StorageQueryException e) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT,
+                        "Could not re-verify the database schema: " + e.getMessage());
+            }
         }
     }
 
