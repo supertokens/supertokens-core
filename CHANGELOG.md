@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Adds a regression test for the duplicate dynamic access token signing key race: three cores rotating the
+  key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
+  The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
+  per app, which postgresql-plugin 9.7.2 does with a per-app advisory lock.
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
