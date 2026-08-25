@@ -7,22 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.2.0]
+
+- **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
+- Verifies the database schema at startup: any database (base or tenant) missing a table or column this version needs is reported with the missing columns plus the SQL to add them
+- New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only): in strict mode a mismatched tenant database refuses all queries until the migration is applied — re-checked every minute, so it resumes within a minute of the migration, no restart needed; the core still boots and serves all other tenants
+- With `schema_check_strict_mode: false`, mismatches are only logged: everything keeps working and just the queries touching the missing schema fail, with a "Schema mismatch ... check the core error logs" hint instead of a raw SQL error
+- Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
+
 ## [12.1.2]
 
 - Bulk import no longer borrows from the live connection pool: each worker claims, imports and finalises its chunk on one connection from a dedicated pool sized to `bulk_migration_parallelism`
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
 - `BulkImport.importUser` (the single-user import API) now runs on the same bounded dedicated pool, opened for the duration of the call (one connection per user pool, previously a full-size proxy pool per user pool)
-- Verifies the database schema at startup: any database (base or tenant) missing a table or column this version
-  needs is reported with the missing columns plus the SQL to add them
-- **New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only). In strict mode the
-  core REFUSES TO START when the base database schema is out of date (a skipped manual migration), and tenant
-  databases with a mismatched schema are not served until the migration is applied. If your database schema is
-  behind (see the Migration sections below), upgrading to this version will stop the core from booting until you
-  either run the migration SQL or set `schema_check_strict_mode: false`.** With strict mode off, mismatches are
-  only logged: the core boots, everything else keeps working, and just the queries touching the missing schema
-  fail - with a "Schema mismatch ... check the core error logs" message instead of a raw SQL error
-- Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
 
 ## [12.1.1]
 
