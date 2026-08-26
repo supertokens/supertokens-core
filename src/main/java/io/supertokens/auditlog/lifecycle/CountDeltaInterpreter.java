@@ -16,7 +16,6 @@
 
 package io.supertokens.auditlog.lifecycle;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -253,10 +252,6 @@ public final class CountDeltaInterpreter {
                 throw new IllegalArgumentException("tenantId must not be null");
             }
             return deltaByTenant.getOrDefault(tenantId, 0L);
-        }
-
-        List<String> affectedTenants() {
-            return new ArrayList<>(deltaByTenant.keySet());
         }
     }
 }
