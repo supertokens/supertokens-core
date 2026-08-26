@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
+import io.supertokens.useridmapping.UserIdMapping;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -235,6 +236,87 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
 
         assertEquals(0, readEvents(storage, LifecycleEventType.USER_GROUP_DELETION.getValue()).size());
         assertEquals(0, readEvents(storage, LifecycleEventType.USER_DELETION.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    // ---- user id mapping (the emitted event carries the SuperTokens recipe id, not the external id) ----
+
+    /**
+     * Deleting a standalone user through its external (mapped) id still records a {@code user_group_deletion}
+     * event, and the row's {@code recipe_user_id} / {@code primary_or_recipe_user_id} are the SuperTokens id, not
+     * the external id. This exercises the mapped-id resolution the delete emit path performs before capturing the
+     * group snapshot; without it a mapped deletion would be silently dropped from the ledger.
+     */
+    @Test
+    public void deletingMappedStandaloneUserEmitsGroupDeletionWithSuperTokensId() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "u@example.com", "password");
+        String externalId = "ext-standalone";
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), externalId, null,
+                false);
+
+        // Delete through the external id — the mapping is resolved to the SuperTokens id internally.
+        AuthRecipe.deleteUser(process.getProcess(), externalId, false);
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_GROUP_DELETION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_GROUP_DELETION, payload.type);
+        assertEquals(user.getSupertokensUserId(), payload.groupBefore.primaryOrRecipeUserId);
+        assertTrue(payload.groupBefore.tenantIds.contains("public"));
+
+        stopProcess(process);
+    }
+
+    /**
+     * Deleting one linked member through its external (mapped) id emits a {@code user_deletion} event whose
+     * {@code recipe_user_id} is the freed member's SuperTokens id (from {@code userIdMapping.superTokensUserId}),
+     * not the external id, while {@code primary_or_recipe_user_id} stays the surviving group's primary id.
+     */
+    @Test
+    public void deletingMappedMemberEmitsUserDeletionWithSuperTokensRecipeId() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
+        AuthRecipeUserInfo member = EmailPassword.signUp(process.getProcess(), "m@example.com", "password");
+        String memberExternalId = "ext-member";
+        UserIdMapping.createUserIdMapping(process.getProcess(), member.getSupertokensUserId(), memberExternalId,
+                null, false);
+        AuthRecipe.createPrimaryUser(process.getProcess(), primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), member.getSupertokensUserId(),
+                primary.getSupertokensUserId());
+
+        // Delete just the mapped member through its external id; the group (the primary) survives.
+        AuthRecipe.deleteUser(process.getProcess(), memberExternalId, false);
+
+        AuthRecipeUserInfo survivor = AuthRecipe.getUserById(process.getProcess(), primary.getSupertokensUserId());
+        assertNotNull(survivor);
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_DELETION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        // The emitted recipe id is the member's SuperTokens id, never the external id.
+        assertEquals(member.getSupertokensUserId(), event.recipeUserId);
+        assertFalse(memberExternalId.equals(event.recipeUserId));
+        assertEquals(primary.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_DELETION, payload.type);
+        assertEquals(primary.getSupertokensUserId(), payload.groupBefore.primaryOrRecipeUserId);
+        assertEquals(primary.getSupertokensUserId(), payload.groupAfter.primaryOrRecipeUserId);
+        assertEquals(0, readEvents(storage, LifecycleEventType.USER_GROUP_DELETION.getValue()).size());
 
         stopProcess(process);
     }
