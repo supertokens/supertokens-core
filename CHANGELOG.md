@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.1.2]
+
+- Signing key cache refresh is single-flight: during a rotation window readers keep serving the still-valid cached keys instead of queueing behind the one refreshing thread; only cold starts and unknown-`kid` verification wait for the refresh result
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.

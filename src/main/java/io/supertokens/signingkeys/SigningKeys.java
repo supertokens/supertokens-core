@@ -50,8 +50,17 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     private final Main main;
     private final AppIdentifier appIdentifier;
 
-    private List<KeyInfo> dynamicKeys;
-    private List<JWTSigningKeyInfo> staticKeys;
+    // Both caches are immutable snapshots swapped whole: readers use the volatile reference lock-free, and
+    // refreshLock guards only the right to refresh - never the reads. During a rotation window every request
+    // thread notices "refresh due" at once; exactly one wins tryLock and goes to the DB, everyone else keeps
+    // serving the cached keys, which stay valid throughout the window (that is what
+    // access_token_dynamic_signing_key_overlap provides). Only callers that cannot answer from a stale cache
+    // wait: a cold start (nothing cached) and the unknown-kid verification path (AccessToken), which need the
+    // refresh RESULT and block on refreshLock for the one in-flight refresh instead of each redoing it.
+    private volatile List<KeyInfo> dynamicKeys;
+    private volatile List<JWTSigningKeyInfo> staticKeys;
+    private final java.util.concurrent.locks.ReentrantLock refreshLock =
+            new java.util.concurrent.locks.ReentrantLock();
 
 
     public static SigningKeys getInstance(AppIdentifier appIdentifier, Main main)
@@ -123,8 +132,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         CoreConfig config = Config.getConfig(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (this.dynamicKeys == null) {
-            this.dynamicKeys = AccessTokenSigningKey.getInstance(this.appIdentifier, main)
-                    .getOrCreateAndGetSigningKeys();
+            // cold start: nothing to serve stale, so wait for the (single) in-flight refresh
+            updateKeyCacheIfNotChanged(Collections.emptyList());
         }
 
         // This filters the list down to keys that can be used to verify tokens
@@ -132,15 +141,24 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                 .collect(Collectors.toList());
 
         // if we don't have any available keys
-        if (res.size() == 0 ||
-                // or if we should generate a key we can use after dynamicSigningKeyOverlapMS
-                System.currentTimeMillis() +
-                        AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS() >
-                        res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
-        ) {
+        if (res.size() == 0) {
+            // nothing valid to serve, so wait for the refresh result
             updateKeyCacheIfNotChanged(
                     res.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo).collect(Collectors.toList()));
             return getDynamicKeys();
+        }
+
+        // if we should generate a key we can use after dynamicSigningKeyOverlapMS
+        if (System.currentTimeMillis() +
+                AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS() >
+                res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
+        ) {
+            if (tryUpdateKeyCacheIfNotChanged(
+                    res.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo).collect(Collectors.toList()))) {
+                return getDynamicKeys();
+            }
+            // another thread is already refreshing; the current key stays usable throughout the overlap
+            // window, so serve it instead of queueing behind the refresh
         }
 
         return res;
@@ -150,7 +168,14 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
         if (this.staticKeys == null) {
-            this.staticKeys = JWTSigningKey.getInstance(appIdentifier, main).getAllSigningKeys();
+            refreshLock.lock();
+            try {
+                if (this.staticKeys == null) {
+                    this.staticKeys = JWTSigningKey.getInstance(appIdentifier, main).getAllSigningKeys();
+                }
+            } finally {
+                refreshLock.unlock();
+            }
         }
 
         return this.staticKeys;
@@ -218,18 +243,46 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                 .getAccessTokenDynamicSigningKeyUpdateIntervalInMillis();
     }
 
-    // This function is synchronized because we only want a single function to clear (and refresh) the key cache.
-    // If multiple threads try to refresh it at the same time, we can avoid multiple trips to the DB by checking if
-    // their info is
-    // up-to-date, i.e.: if all currently cached keys were known to them.
-    public synchronized void updateKeyCacheIfNotChanged(List<JWTSigningKeyInfo> oldKeyInfo)
+    // Blocking single-flight refresh: waits for refreshLock, so use it only from callers that NEED the
+    // refresh result - a cold start (nothing cached) or the unknown-kid verification path (AccessToken).
+    // Once the lock is acquired, the all-known check below skips the DB trip if another thread already
+    // refreshed while we waited.
+    public void updateKeyCacheIfNotChanged(List<JWTSigningKeyInfo> oldKeyInfo)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
-        // we cannot use read write locks for keyInfo because in getKey, we would
-        // have to upgrade from the readLock to a
-        // writeLock - which is not possible:
-        // https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/ReentrantReadWriteLock.html
+        refreshLock.lock();
+        try {
+            updateKeyCacheIfNotChangedLocked(oldKeyInfo);
+        } finally {
+            refreshLock.unlock();
+        }
+    }
 
+    // Non-blocking single-flight refresh for callers that can serve the stale cache (the rotation-window
+    // path in getDynamicKeys): refresh only if no other thread is already at it. Returns whether this thread
+    // performed (or at least got to skip-check) the refresh; false means one is in flight elsewhere.
+    private boolean tryUpdateKeyCacheIfNotChanged(List<JWTSigningKeyInfo> oldKeyInfo)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        if (!refreshLock.tryLock()) {
+            return false;
+        }
+        try {
+            updateKeyCacheIfNotChangedLocked(oldKeyInfo);
+        } finally {
+            refreshLock.unlock();
+        }
+        return true;
+    }
+
+    // Only one thread refreshes the cache at a time; if multiple threads try at the same time, we avoid
+    // multiple trips to the DB by checking if their info is up-to-date, i.e.: if all currently cached keys
+    // were known to them. (Read-write locks would not help here: getDynamicKeys would have to upgrade from
+    // the read lock to the write lock, which ReentrantReadWriteLock cannot do - and the point is that readers
+    // never wait at all.)
+    private void updateKeyCacheIfNotChangedLocked(List<JWTSigningKeyInfo> oldKeyInfo)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
         if (this.dynamicKeys == null ||
                 // First we disregard expired keys - it doesn't matter if they were known or not
                 this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())
