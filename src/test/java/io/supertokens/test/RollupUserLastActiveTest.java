@@ -39,6 +39,8 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Behavioural tests for the {@link RollupUserLastActive} cron on the in-memory (SQLite) storage: the
@@ -206,6 +208,35 @@ public class RollupUserLastActiveTest {
         stopFixture(f);
     }
 
+    /**
+     * When the fold transaction throws, the dirty flag — consumed at the top of the pass — must be re-armed
+     * so the next tick retries the storage instead of silently dropping the pending activity. Forces the
+     * failure by removing the projection table the fold writes into.
+     */
+    @Test
+    public void aFailedFoldReArmsTheDirtyFlagForRetry() throws Exception {
+        TestFixture f = startFixture();
+
+        long base = System.currentTimeMillis();
+        insertUserLastActiveEvent(f.storage, "rollup-cron-fail", base + 1000);
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+
+        // Make the fold's INSERT fail: drop the table it writes into.
+        dropUserLastActiveTable(f.storage);
+
+        try {
+            f.cron.runOncePerStorageForTesting(f.representative, f.storage);
+            fail("expected the fold to throw once its target table is gone");
+        } catch (Exception expected) {
+            // The pass consumed the dirty flag at its top; the failure handler must re-arm it.
+        }
+
+        // Re-armed: consuming it now returns true (and clears it again).
+        assertTrue(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
+
+        stopFixture(f);
+    }
+
     // ---- fixture ----
 
     private static class TestFixture {
@@ -270,6 +301,19 @@ public class RollupUserLastActiveTest {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        });
+    }
+
+    private void dropUserLastActiveTable(Start storage) throws Exception {
+        storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement("DROP TABLE " + USER_LAST_ACTIVE)) {
+                pst.executeUpdate();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            storage.commitTransaction(con);
+            return null;
         });
     }
 

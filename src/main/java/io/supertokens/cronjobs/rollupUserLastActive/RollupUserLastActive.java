@@ -52,6 +52,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *   representative tenant.
  *   <li>Fold, reconcile and the watermark advance to the run-start time happen in one transaction. The
  *   watermark lives in the key-value store under a reserved key, addressed via the representative tenant.
+ *   Representative selection need not be stable across restarts or config reloads: if a different tenant
+ *   in the same userPoolId group is picked, the prior watermark is merely orphaned and the next pass
+ *   re-folds an idempotent window from the retention fallback — a heavier catch-up, never an incorrect
+ *   result.
  *   <li>On failure the dirty flag is re-armed so the next tick retries.
  * </ul>
  *
@@ -137,7 +141,11 @@ public class RollupUserLastActive extends CronTask {
 
             if (firstRun && !wasDirty && !backstopDue) {
                 // A fresh dirty flag can't be trusted; only fold if there is actually something to fold.
-                if (!activityLogStorage.hasUnfoldedActivitySince(windowStart)) {
+                // The fold is inclusive of windowStart (created_at >= windowStart) while
+                // hasUnfoldedActivitySince is strict (created_at > sinceMillis), so probe at windowStart - 1
+                // to keep the existence check aligned with the fold: a row landing exactly on windowStart
+                // must not make the check skip a fold the fold itself would perform.
+                if (!activityLogStorage.hasUnfoldedActivitySince(windowStart - 1)) {
                     state.startupDone = true;
                     return;
                 }
