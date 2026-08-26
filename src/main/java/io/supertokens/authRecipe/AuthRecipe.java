@@ -703,17 +703,57 @@ public class AuthRecipe {
         deleteUser(appIdentifier, storage, userId, true, userIdMapping);
     }
 
-    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void deleteUser(AppIdentifier appIdentifier, Storage storage, String userId,
                                   boolean removeAllLinkedAccounts,
                                   UserIdMapping userIdMapping)
             throws StorageQueryException, StorageTransactionLogicException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
 
-        authRecipeStorage.startTransaction(con -> {
+        // startAuditedTransaction owns the commit and writes the deletion event on the same connection as the
+        // delete, so a user_deletion / user_group_deletion event can never be lost relative to the deletion it
+        // records (a lost deletion event is a permanent overcount in the derived active-user count).
+        auditStorage.<Void>startAuditedTransaction(appIdentifier, con -> {
+            // Resolve the group affected by this deletion and capture its presence BEFORE the delete. Any member
+            // id resolves to its group via getPrimaryUserById_Transaction; a null result means the user does not
+            // exist (or was already deleted), in which case the delete is a no-op and no event is emitted.
+            String authUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+            AuthRecipeUserInfo groupBeforeInfo = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                    con, authUserId);
+            if (groupBeforeInfo == null && userIdMapping != null) {
+                // Migration states where the external id is itself a SuperTokens user (A4): fall back to the raw
+                // id so a mapped deletion is still recorded rather than silently dropped from the ledger.
+                groupBeforeInfo = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier, con, userId);
+            }
+
             deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping);
-            authRecipeStorage.commitTransaction(con);
-            return null;
+
+            if (groupBeforeInfo == null) {
+                return AuditedResult.<Void>withoutAudit(null,
+                        "deleteUser was a no-op: the user did not exist, so nothing was deleted and no "
+                                + "user_deletion / user_group_deletion event is emitted.");
+            }
+
+            String groupUserId = groupBeforeInfo.getSupertokensUserId();
+            GroupPresence groupBefore = new GroupPresence(groupUserId, new ArrayList<>(groupBeforeInfo.tenantIds));
+            // Whole-group deletion when removing all linked accounts, or when the group has a single member (the
+            // deleted user is the whole group); otherwise a single member is removed and the group survives.
+            boolean wholeGroupDeleted = removeAllLinkedAccounts || groupBeforeInfo.loginMethods.length == 1;
+
+            AuditLogEvent event;
+            if (wholeGroupDeleted) {
+                event = LifecycleAuditEvent.forUserGroupDeletion(appIdentifier, groupUserId, groupBefore, now);
+            } else {
+                // The group survives (identified by the same primary_or_recipe_user_id); recompute its presence
+                // after the member is removed, since deleting a member can drop the group from a tenant it was
+                // only present in through that member.
+                GroupPresence groupAfter = groupPresenceInTransaction(authRecipeStorage, appIdentifier, con,
+                        groupUserId);
+                event = LifecycleAuditEvent.forUserDeletion(appIdentifier, authUserId, groupUserId, groupBefore,
+                        groupAfter, now);
+            }
+            return new AuditedResult<>((Void) null, event);
         });
     }
 

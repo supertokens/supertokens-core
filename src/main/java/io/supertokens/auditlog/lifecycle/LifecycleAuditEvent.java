@@ -65,6 +65,40 @@ public final class LifecycleAuditEvent {
                 LifecycleEventPayload.forAccountUnlinking(remainingGroupAfter, freedMemberAfter), createdAt);
     }
 
+    /**
+     * A {@code user_deletion} event: a single member (recipe user) {@code recipeUserId} was deleted from the
+     * group identified by {@code groupUserId}, which survives. The payload carries the group's before and after
+     * presence lists — member deletion is the case where after-presence is not derivable from before-presence
+     * plus the identity of the deleted member, so both are recorded.
+     */
+    public static AuditLogEvent forUserDeletion(AppIdentifier appIdentifier, String recipeUserId,
+            String groupUserId, GroupPresence groupBefore, GroupPresence groupAfter, long createdAt) {
+        return build(appIdentifier, recipeUserId, groupUserId,
+                LifecycleEventPayload.forUserDeletion(groupBefore, groupAfter), createdAt);
+    }
+
+    /**
+     * A {@code user_group_deletion} event: the entire group identified by {@code groupUserId} (a primary user
+     * and all its linked members, or a standalone recipe user) was deleted. The payload carries the group's
+     * before-list only — after deletion the group is present in no tenants.
+     */
+    public static AuditLogEvent forUserGroupDeletion(AppIdentifier appIdentifier, String groupUserId,
+            GroupPresence groupBefore, long createdAt) {
+        return build(appIdentifier, groupUserId, groupUserId,
+                LifecycleEventPayload.forUserGroupDeletion(groupBefore), createdAt);
+    }
+
+    /**
+     * A {@code tenant_association} event: the group identified by {@code groupUserId} (via member
+     * {@code recipeUserId}) was added to tenant {@code tenantId}. The payload carries the group's presence list
+     * before the association plus the tenant it was added to.
+     */
+    public static AuditLogEvent forTenantAssociation(AppIdentifier appIdentifier, String recipeUserId,
+            String groupUserId, GroupPresence groupBefore, String tenantId, long createdAt) {
+        return build(appIdentifier, recipeUserId, groupUserId,
+                LifecycleEventPayload.forTenantAssociation(groupBefore, tenantId), createdAt);
+    }
+
     private static AuditLogEvent build(AppIdentifier appIdentifier, String recipeUserId,
             String primaryOrRecipeUserId, LifecycleEventPayload payload, long createdAt) {
         return new AuditLogEvent(
