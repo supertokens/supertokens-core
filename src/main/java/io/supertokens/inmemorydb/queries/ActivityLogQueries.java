@@ -18,13 +18,19 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -106,5 +112,60 @@ public class ActivityLogQueries {
             }
             return false;
         });
+    }
+
+    /**
+     * App-scoped, window-bounded read of the activity log so callers can fold lifecycle events in Java.
+     * Returns the {@code appIdentifier} events (across all its tenants, {@code tenant_id} preserved) whose
+     * {@code event_type} is in {@code eventTypes} and whose {@code created_at} lies in
+     * {@code (fromExclusiveMillis, toInclusiveMillis]}, ordered by {@code created_at} ascending and capped
+     * at {@code limit} rows in SQL (so {@code cap + 1} detects an over-cap window). Payload is returned as
+     * the stored text (null stays null). See {@code ActivityLogStorage#getActivityLogEntriesForApp}.
+     */
+    public static List<AuditLogEvent> getActivityLogEntriesForApp(Start start, AppIdentifier appIdentifier,
+                                                                  Set<String> eventTypes, long fromExclusiveMillis,
+                                                                  long toInclusiveMillis, int limit)
+            throws SQLException, StorageQueryException {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("limit must be > 0");
+        }
+        if (eventTypes == null || eventTypes.isEmpty()) {
+            throw new IllegalArgumentException("eventTypes must be non-empty");
+        }
+        String QUERY = "SELECT app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status,"
+                + " auth_principal, identifier, created_at, payload FROM "
+                + Config.getConfig(start).getActivityLogTable()
+                + " WHERE app_id = ? AND event_type IN (" + Utils.generateCommaSeperatedQuestionMarks(eventTypes.size())
+                + ") AND created_at > ? AND created_at <= ? ORDER BY created_at ASC LIMIT ?";
+        return execute(start, QUERY, pst -> {
+            int index = 1;
+            pst.setString(index++, appIdentifier.getAppId());
+            for (String eventType : eventTypes) {
+                pst.setString(index++, eventType);
+            }
+            pst.setLong(index++, fromExclusiveMillis);
+            pst.setLong(index++, toInclusiveMillis);
+            pst.setInt(index, limit);
+        }, result -> {
+            List<AuditLogEvent> events = new ArrayList<>();
+            while (result.next()) {
+                events.add(auditLogEventFromRow(result));
+            }
+            return events;
+        });
+    }
+
+    private static AuditLogEvent auditLogEventFromRow(ResultSet result) throws SQLException {
+        return new AuditLogEvent(
+                result.getString("app_id"),
+                result.getString("tenant_id"),
+                result.getString("recipe_user_id"),
+                result.getString("primary_or_recipe_user_id"),
+                result.getString("event_type"),
+                result.getString("status"),
+                result.getString("auth_principal"),
+                result.getString("identifier"),
+                result.getLong("created_at"),
+                result.getString("payload"));
     }
 }

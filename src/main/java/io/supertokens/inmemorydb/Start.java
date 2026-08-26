@@ -4450,6 +4450,18 @@ public class Start
     }
 
     @Override
+    public List<AuditLogEvent> getActivityLogEntriesForApp(AppIdentifier appIdentifier, Set<String> eventTypes,
+                                                           long fromExclusiveMillis, long toInclusiveMillis, int limit)
+            throws StorageQueryException {
+        try {
+            return ActivityLogQueries.getActivityLogEntriesForApp(this, appIdentifier, eventTypes,
+                    fromExclusiveMillis, toInclusiveMillis, limit);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void maintainActivityLogPartitions(int retentionDays) throws StorageQueryException {
         // The in-memory (SQLite) store keeps activity_log as a plain, unpartitioned table — there are
         // no partitions to pre-create or drop, so this is a no-op (per the ActivityLogStorage contract).
