@@ -34,6 +34,7 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
@@ -290,6 +291,9 @@ public class Main {
 
         // pre-creates upcoming month partitions for the activity_log table and drops old ones
         Cronjobs.addCronjob(this, CleanupActivityLogPartitions.init(this, uniqueUserPoolIdsTenants));
+
+        // derives user_last_active from the activity_log by periodically folding recent activity
+        Cronjobs.addCronjob(this, RollupUserLastActive.init(this, uniqueUserPoolIdsTenants));
 
         // starts the DeadlockLogger if
         if (Config.getBaseConfig(this).isDeadlockLoggerEnabled()) {
