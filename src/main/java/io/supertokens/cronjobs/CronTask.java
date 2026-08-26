@@ -129,7 +129,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 for (List<TenantIdentifier> t : copied) {
                     service.execute(() -> {
                         try {
-                            doTaskPerStorage(StorageLayer.getStorage(t.get(0), main));
+                            doTaskPerStorage(t.get(0), StorageLayer.getStorage(t.get(0), main));
                         } catch (Exception e) {
                             ProcessState.getInstance(main)
                                     .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
@@ -200,6 +200,13 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     // the list belongs to tenants that are a part of the same user pool ID
     protected void doTaskPerStorage(Storage storage) throws Exception {
 
+    }
+
+    // same as doTaskPerStorage(Storage) but also receives the representative tenant the dispatcher
+    // resolved for this storage (t.get(0)), so tasks that need a TenantIdentifier to read config can
+    // get one. Defaults to delegating to the old signature so existing crons keep working unchanged.
+    protected void doTaskPerStorage(TenantIdentifier representative, Storage storage) throws Exception {
+        doTaskPerStorage(storage);
     }
 
     protected void doTaskForTargetTenant(TenantIdentifier targetTenant) throws Exception {
