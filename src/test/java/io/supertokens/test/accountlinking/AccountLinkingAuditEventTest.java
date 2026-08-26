@@ -238,6 +238,40 @@ public class AccountLinkingAuditEventTest {
     }
 
     /**
+     * Unlinking a lone primary (a primary user with no other linked members) only drops its primary status —
+     * the account stays in the same tenants and no member is freed — so it emits no {@code account_unlinking}
+     * event. This is the unlink analogue of the already-linked no-op link, and guards the {@code withoutAudit}
+     * branch that a downstream rollup relies on not emitting.
+     */
+    @Test
+    public void unlinkingALonePrimaryEmitsNoEvent() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
+        AuthRecipe.createPrimaryUser(process.getProcess(), primary.getSupertokensUserId());
+
+        // Unlinking a primary that has no other linked members only removes its primary status; it is not
+        // deleted (wasDeleted == false).
+        boolean wasDeleted = AuthRecipe.unlinkAccounts(process.getProcess(), primary.getSupertokensUserId());
+        assertFalse(wasDeleted);
+
+        // The account still exists and is now standalone (no longer a primary user).
+        AuthRecipeUserInfo refetched = AuthRecipe.getUserById(process.getProcess(), primary.getSupertokensUserId());
+        assertNotNull(refetched);
+        assertFalse(refetched.isPrimaryUser);
+        assertEquals(primary.getSupertokensUserId(), refetched.getSupertokensUserId());
+
+        // No account_unlinking event was emitted for this no-op-style unlink.
+        assertEquals(0, readEvents(storage, LifecycleEventType.ACCOUNT_UNLINKING.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    /**
      * A failure injected after the mapping write inside the audited transaction rolls back both the mapping and
      * the audit event — the same combinator + mutation path {@code linkAccounts} uses. Neither survives.
      */
