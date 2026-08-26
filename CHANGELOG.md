@@ -14,6 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - In-memory (SQLite) parity for the activity-log/rollup storage contract: transactional audit insert, the last-active fold+reconcile rollup, and an unfolded-activity existence check; partition maintenance takes a retention argument and stays a no-op.
 - `AuthRecipe.linkAccounts` / `unlinkAccounts` now emit `account_linking` / `account_unlinking` lifecycle events atomically with the mapping change (via `startAuditedTransaction`); an already-linked no-op link emits nothing.
 - `AuthRecipe.deleteUser` now emits a `user_deletion` (member removed, group survives, before+after presence) or `user_group_deletion` (whole group removed, before presence) lifecycle event, and `Multitenancy.addUserIdToTenant` a `tenant_association` event, atomically with the mutation (via `startAuditedTransaction`); a no-op deletion or already-associated call emits nothing. (`user_creation` and `tenant_disassociation` are deferred pending new transactional storage methods across the plugin-interface and storage plugins.)
+- Added `CountDeltaInterpreter`: a pure read-side fold of lifecycle events in a window into net per-tenant user-count deltas (for serving counts as `anchor + fold`), with a burst cap that requests an anchor re-count instead of folding when the window exceeds a threshold.
 
 ## [12.1.1]
 
