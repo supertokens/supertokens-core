@@ -236,6 +236,11 @@ public class Start
     }
 
     @Override
+    public void verifySchema(boolean strictMode) {
+        // The in-memory database is created fresh by this process, so it always matches this version's schema.
+    }
+
+    @Override
     public <T> T startTransaction(TransactionLogic<T> logic)
             throws StorageTransactionLogicException, StorageQueryException {
         return startTransaction(logic, TransactionIsolationLevel.READ_COMMITTED);
