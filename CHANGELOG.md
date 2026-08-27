@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [12.1.2]
+## [12.2.0]
 
 - Signing key cache refresh is single-flight: during a rotation window readers keep serving the still-valid cached keys instead of queueing behind the one refreshing thread; only cold starts and unknown-`kid` verification wait for the refresh result
 
