@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [12.1.2]
+## [12.2.0]
 
 - Bulk import no longer borrows from the live connection pool: each worker claims, imports and finalises its chunk on one connection from a dedicated pool sized to `bulk_migration_parallelism`
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
