@@ -14,9 +14,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only): in strict mode a mismatched tenant database refuses all queries until the migration is applied — re-checked every minute, so it resumes within a minute of the migration, no restart needed; the core still boots and serves all other tenants
 - With `schema_check_strict_mode: false`, mismatches are only logged: everything keeps working and just the queries touching the missing schema fail, with a "Schema mismatch ... check the core error logs" hint instead of a raw SQL error
 - Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
-
-## [12.1.2]
-
 - Bulk import no longer borrows from the live connection pool: each worker claims, imports and finalises its chunk on one connection from a dedicated pool sized to `bulk_migration_parallelism`
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
