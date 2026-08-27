@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.2.0]
+
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
   tenants inherit the changed values.
 
