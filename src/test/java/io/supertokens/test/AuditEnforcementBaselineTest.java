@@ -54,7 +54,7 @@ public class AuditEnforcementBaselineTest {
     // Number of @UnauditedTransaction annotations across src/main. SHRINK-ONLY:
     // reduce this when a site is converted to startAuditedTransaction; never raise it.
     // A new unaudited transaction should be converted, not added to the allowlist.
-    private static final int UNAUDITED_TRANSACTION_BASELINE = 62;
+    private static final int UNAUDITED_TRANSACTION_BASELINE = 58;
 
     // Mechanism files that legitimately contain the annotation's name (its declaration
     // and the aspect's error-message text) — not call-site usages.
