@@ -80,12 +80,12 @@ public class ActiveUsers {
             return;
         }
         Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
-        try {
-            StorageUtils.getActiveUsersStorage(storage).updateLastActive(appIdentifier, userId);
-            recordActiveAt(key, now);
-            emitLastActiveAuditLog(main, storage, appIdentifier, userId, now);
-        } catch (StorageQueryException ignored) {
-        }
+        // The last-active rollup cron is the sole writer of user_last_active (PLAN-011 cutover). Here we only
+        // append the throttled user_last_active activity-log event — the fold's source — and mark the storage
+        // dirty so the next rollup pass folds it. The 5-minute throttle now caps activity-log insert volume
+        // instead of direct-upsert volume. The projection updates asynchronously (within a rollup interval).
+        recordActiveAt(key, now);
+        emitLastActiveAuditLog(main, storage, appIdentifier, userId, now);
     }
 
     /**
@@ -135,6 +135,10 @@ public class ActiveUsers {
                 (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(
                         StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
 
+        // Latency optimization only: the rollup's reconcile — driven by the account_linking event that
+        // AuthRecipe.linkAccounts emits atomically with the mapping change — is the source of truth for
+        // dropping the recipe user's now-stale projection row. Deleting it here just makes the merge visible
+        // before the next rollup pass instead of after it.
         activeUsersStorage.startTransaction(con -> {
             activeUsersStorage.deleteUserActive_Transaction(con, appIdentifier, recipeUserId);
             return null;
@@ -143,14 +147,11 @@ public class ActiveUsers {
 
         // Bypass throttle: linking merges two users into primaryUserId, so its timestamp must
         // be refreshed to "now" regardless of cache state — it now represents the merged
-        // activity and an undercounted timestamp would lose the recipeUser's recency.
+        // activity and an undercounted timestamp would lose the recipeUser's recency. Emitted into the
+        // activity log (not written directly) so the rollup — the sole user_last_active writer — folds it.
         long now = System.currentTimeMillis();
-        try {
-            activeUsersStorage.updateLastActive(appIdentifier, primaryUserId);
-            recordActiveAt(cacheKey(appIdentifier, primaryUserId), now);
-            emitLastActiveAuditLog(main, activeUsersStorage, appIdentifier, primaryUserId, now);
-        } catch (StorageQueryException ignored) {
-        }
+        recordActiveAt(cacheKey(appIdentifier, primaryUserId), now);
+        emitLastActiveAuditLog(main, activeUsersStorage, appIdentifier, primaryUserId, now);
     }
 
     @TestOnly

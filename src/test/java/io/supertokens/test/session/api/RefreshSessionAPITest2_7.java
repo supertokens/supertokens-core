@@ -20,6 +20,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -466,9 +467,13 @@ public class RefreshSessionAPITest2_7 {
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(),
                 afterSessionCreateTs);
         assert (activeUsersAfterSessionCreate == 1);

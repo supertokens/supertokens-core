@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -158,6 +159,8 @@ public class SessionRemoveAPITest2_7 {
             assertTrue(sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked")
                     .contains(session2Info.get("session").getAsJsonObject().get("handle")));
 
+            // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+            RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
             int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
             assert (activeUsers == 1); // user ID is set
         }
