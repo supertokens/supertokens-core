@@ -23,6 +23,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
 - `BulkImport.importUser` (the single-user import API) now runs on the same bounded dedicated pool, opened for the duration of the call (one connection per user pool, previously a full-size proxy pool per user pool)
+- Signing key cache refresh is single-flight: during a rotation window readers keep serving the still-valid cached keys instead of queueing behind the one refreshing thread; only cold starts and unknown-`kid` verification wait for the refresh result
+- Adds a regression test for the duplicate dynamic access token signing key race: three cores rotating the
+  key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
+  The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
+  per app, which postgresql-plugin 9.7.2 does with a per-app advisory lock.
 - Added lifecycle event vocabulary and JSON payload schema for the activity log (`io.supertokens.auditlog.lifecycle`).
 - Adds a compile-time AspectJ guard (`AuditEnforcementAspect`) that fails the build on raw `SQLStorage.startTransaction(...)` calls in domain code; legacy call sites are allowlisted with `@UnauditedTransaction(justification = ...)`, backed by a shrink-only baseline test.
 - In-memory (SQLite) parity for the activity-log/rollup storage contract: transactional audit insert, the last-active fold+reconcile rollup, and an unfolded-activity existence check; partition maintenance takes a retention argument and stays a no-op.
