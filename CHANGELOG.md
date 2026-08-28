@@ -13,6 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds a compile-time AspectJ guard (`AuditEnforcementAspect`) that fails the build on raw `SQLStorage.startTransaction(...)` calls in domain code; legacy call sites are allowlisted with `@UnauditedTransaction(justification = ...)`, backed by a shrink-only baseline test.
 - In-memory (SQLite) parity for the activity-log/rollup storage contract: transactional audit insert, the last-active fold+reconcile rollup, and an unfolded-activity existence check; partition maintenance takes a retention argument and stays a no-op.
 - Added `activity_log_retention_days` (default 31), a connection-URI-domain-level protected core config that drives activity_log retention; the cleanup cron now reads it per storage.
+- In-memory (SQLite) implementations of the connection-taking sign-up and tenant-removal storage variants (`signUp_Transaction` for email-password and third-party, `createUser_Transaction` for passwordless, `removeUserIdFromTenant_Transaction`); the existing auto-commit methods now delegate to these behaviour-preserving variants.
 - In-memory (SQLite) implementation of `ActivityLogStorage.getActivityLogEntriesForApp` — the app-scoped, `(from, to]`-bounded, event-type-filtered, ascending, storage-limited window read that lets callers fold lifecycle events in Java.
 
 ## [12.1.1]
