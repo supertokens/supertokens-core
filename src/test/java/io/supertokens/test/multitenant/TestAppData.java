@@ -147,7 +147,13 @@ public class TestAppData {
                 // Legacy table: m2m stats now go to the oauth_m2m_token_stats rollup, so this is
                 // created (to drain pre-rollup rows) but never written. The rollup itself has no
                 // app_id FK on purpose — stats survive app deletion — so it is ignored too.
-                "oauth_m2m_tokens", "oauth_m2m_token_stats"};
+                "oauth_m2m_tokens", "oauth_m2m_token_stats",
+                // Rollup-derived projection: after the PLAN-011 cutover the last-active rollup cron is
+                // the sole writer of user_last_active. updateLastActive() only appends a user_last_active
+                // activity-log event and marks the storage dirty; the projection is folded asynchronously
+                // (within a rollup interval), so this table is empty right after the synchronous recipe
+                // writes above — same situation as the activity_log tables removed below.
+                "user_last_active"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 
