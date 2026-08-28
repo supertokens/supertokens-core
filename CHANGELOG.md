@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - In-memory (SQLite) implementations of the connection-taking sign-up and tenant-removal storage variants (`signUp_Transaction` for email-password and third-party, `createUser_Transaction` for passwordless, `removeUserIdFromTenant_Transaction`); the existing auto-commit methods now delegate to these behaviour-preserving variants.
 - `AuthRecipe.linkAccounts` / `unlinkAccounts` now emit `account_linking` / `account_unlinking` lifecycle events atomically with the mapping change (via `startAuditedTransaction`); an already-linked no-op link emits nothing.
 - `AuthRecipe.deleteUser` and `Multitenancy.addUserIdToTenant` now emit `user_deletion`/`user_group_deletion` and `tenant_association` lifecycle events atomically with the mutation (via `startAuditedTransaction`).
+- Added `CountDeltaInterpreter`: a pure read-side fold of lifecycle events in a window into net per-tenant user-count deltas (for serving counts as `anchor + fold`), with a burst cap that requests an anchor re-count instead of folding when the window exceeds a threshold.
 
 ## [12.1.1]
 
