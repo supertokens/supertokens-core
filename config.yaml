@@ -58,6 +58,12 @@ core_config_version: 0
 # "TOKEN_THEFT" | "UNAUTHORISED". The session is revoked regardless of this setting.
 # recent_token_reuse_behaviour:
 
+# (OPTIONAL | Default: true) boolean value. If true, the core refuses to start when the base database is missing
+# tables or columns this version needs (a skipped manual migration), and tenant databases with a mismatched schema
+# are not served. If false, mismatches are only logged and just the queries touching the missing schema fail.
+# schema_check_strict_mode:
+
+
 
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
 # reset token / link is valid for.

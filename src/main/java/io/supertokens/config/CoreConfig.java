@@ -126,6 +126,16 @@ public class CoreConfig {
     @EnumProperty({"TOKEN_THEFT", "UNAUTHORISED"})
     private String recent_token_reuse_behaviour = "TOKEN_THEFT";
 
+    @EnvName("SCHEMA_CHECK_STRICT_MODE")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "If true, the core refuses to start when the base database is missing tables or columns this version "
+                    + "needs (a skipped manual migration), and tenant databases with a mismatched schema are not "
+                    + "served. If false, mismatches are only logged and just the queries touching the missing "
+                    + "schema fail. (Default: true)")
+    private boolean schema_check_strict_mode = true;
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -679,6 +689,10 @@ public class CoreConfig {
 
     public String getRecentTokenReuseBehaviour() {
         return recent_token_reuse_behaviour;
+    }
+
+    public boolean getSchemaCheckStrictMode() {
+        return schema_check_strict_mode;
     }
 
     public long getPasswordResetTokenLifetime() {

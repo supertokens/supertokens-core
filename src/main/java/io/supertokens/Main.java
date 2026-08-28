@@ -45,6 +45,7 @@ import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -207,6 +208,28 @@ public class Main {
             StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
+        }
+
+        // Verify once, at startup, that the base database has every table/column this version needs. This is
+        // deliberately separate from initStorage (re-entered on tenant refresh / pool re-creation). How a
+        // mismatch (a skipped manual "### Migration" step) is handled depends on schema_check_strict_mode:
+        // strict (the default) refuses to start; non-strict logs it and boots, with only the queries touching
+        // the missing schema failing (they carry a schema-mismatch hint pointing at these logs).
+        boolean schemaCheckStrictMode = Config.getBaseConfig(this).getSchemaCheckStrictMode();
+        try {
+            StorageLayer.getBaseStorage(this).verifySchema(schemaCheckStrictMode);
+        } catch (SchemaMismatchException e) {
+            if (schemaCheckStrictMode) {
+                throw new QuitProgramException(e.getMessage());
+            }
+            Logging.error(this, TenantIdentifier.BASE_TENANT, e.getMessage(), true, e);
+            ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
+        } catch (StorageQueryException e) {
+            if (schemaCheckStrictMode) {
+                throw new QuitProgramException(e);
+            }
+            Logging.error(this, TenantIdentifier.BASE_TENANT,
+                    "Could not verify the database schema at startup", false, e);
         }
 
         // enable ee features if license key is provided.

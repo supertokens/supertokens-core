@@ -34,13 +34,10 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.Storage;
@@ -58,6 +55,7 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.bulkimport.ImportUserBase;
 import io.supertokens.pluginInterface.bulkimport.PrimaryUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
+import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportProxySQLStorage;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.EmailPasswordImportUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -67,19 +65,16 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessImportUser;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -107,7 +102,6 @@ public class BulkImport {
     private static final Logger log = LoggerFactory.getLogger(BulkImport.class);
 
     // This map allows reusing proxy storage for all tenants in the app and closing connections after import.
-    private static Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();
 
     public static void addUsers(AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
             throws StorageQueryException, TenantOrAppNotFoundException {
@@ -178,16 +172,17 @@ public class BulkImport {
         TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                 appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
 
-        SQLStorage bulkImportProxyStorage = (SQLStorage) getBulkImportProxyStorage(main, firstTenantIdentifier);
-
         LoginMethod primaryLM = BulkImportUserUtils.getPrimaryLoginMethod(user);
 
-        try {
+        // A single-connection import: one proxy storage per user pool of the app, each on its own dedicated
+        // one-connection pool, all released when done.
+        try (BulkImportProxyStoragePools pools = BulkImportProxyStoragePools.openForApp(main, appIdentifier, 1);
+             BulkImportWorkerStorages storages = pools.createStoragesForWorker()) {
+            BulkImportProxySQLStorage bulkImportProxyStorage = storages.forTenant(firstTenantIdentifier);
             return bulkImportProxyStorage.startTransaction(con -> {
                 try {
-                    Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
-
-                    processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage, List.of(user), allStoragesForApp);
+                    processUsersImportSteps(main, appIdentifier, bulkImportProxyStorage, List.of(user),
+                            storages.all());
 
                     bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
 
@@ -201,8 +196,6 @@ public class BulkImport {
                     // We need to rollback the transaction manually because we have overridden that in the proxy storage
                     bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
                     throw e;
-                } finally {
-                    closeAllProxyStorages();
                 }
             });
         } catch (StorageTransactionLogicException e) {
@@ -752,62 +745,5 @@ public class BulkImport {
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E037: " + e.getMessage()));
         }
-    }
-
-
-    private static synchronized Storage getBulkImportProxyStorage(Main main, TenantIdentifier tenantIdentifier)
-            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException {
-        String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
-        if (userPoolToStorageMap.containsKey(userPoolId)) {
-            return userPoolToStorageMap.get(userPoolId);
-        }
-
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(main);
-
-        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
-                allTenants,
-                Config.getBaseConfigAsJsonObject(main));
-
-        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-            if (key.getTenantIdentifier().equals(tenantIdentifier)) {
-                SQLStorage bulkImportProxyStorage = (SQLStorage) StorageLayer.getNewBulkImportProxyStorageInstance(main,
-                        normalisedConfigs.get(key), tenantIdentifier, true);
-
-                userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-                bulkImportProxyStorage.initStorage(false, new ArrayList<>());
-                return bulkImportProxyStorage;
-            }
-        }
-        throw new TenantOrAppNotFoundException(tenantIdentifier);
-    }
-
-    private static Storage[] getAllProxyStoragesForApp(Main main, AppIdentifier appIdentifier)
-            throws StorageTransactionLogicException {
-
-        try {
-            List<Storage> allProxyStorages = new ArrayList<>();
-
-            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
-            for (TenantConfig tenantConfig : tenantConfigs) {
-                allProxyStorages.add(getBulkImportProxyStorage(main, tenantConfig.tenantIdentifier));
-            }
-            return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new StorageTransactionLogicException(new Exception("E039: " + e.getMessage()));
-        } catch (InvalidConfigException e) {
-            throw new StorageTransactionLogicException(new InvalidConfigException("E040: " + e.getMessage()));
-        } catch (DbInitException e) {
-            throw new StorageTransactionLogicException(new DbInitException("E041: " + e.getMessage()));
-        } catch (IOException e) {
-            throw new StorageTransactionLogicException(new IOException("E042: " + e.getMessage()));
-        }
-    }
-
-    private static void closeAllProxyStorages() throws StorageQueryException {
-        for (SQLStorage storage : userPoolToStorageMap.values()) {
-            storage.closeConnectionForBulkImportProxyStorage();
-            storage.close();
-        }
-        userPoolToStorageMap.clear();
     }
 }
