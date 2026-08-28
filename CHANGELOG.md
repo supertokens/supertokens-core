@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.2.0]
 
+- Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
+  tenants inherit the changed values.
 - Signing key cache refresh is single-flight: during a rotation window readers keep serving the still-valid cached keys instead of queueing behind the one refreshing thread; only cold starts and unknown-`kid` verification wait for the refresh result
 
 ## [12.1.1]
