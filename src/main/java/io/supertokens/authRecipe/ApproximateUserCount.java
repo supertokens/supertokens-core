@@ -16,18 +16,27 @@
 
 package io.supertokens.authRecipe;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.telemetry.TelemetryProvider;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +80,16 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     // Tenant ids with an in-flight background refresh - the single-flight guard.
     private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
+
+    // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
+    // the delta folded from the lifecycle events in the window since the last refresh. Purely observational -
+    // it never affects the value served (the fresh exact count always wins). The burst cap matches the
+    // interpreter's default; the serving path (a later unit) is where it becomes configurable.
+    private static final CountShadowAudit SHADOW_AUDIT = new CountShadowAudit(CountDeltaInterpreter.DEFAULT_BURST_CAP);
+
+    // Per-tenant audit snapshot {exact count, snapshot time} from the last refresh, so the next refresh knows
+    // the window's lower bound and the count to advance from. Separate from the served anchor cache above.
+    private final ConcurrentHashMap<String, AuditSnapshot> auditSnapshots = new ConcurrentHashMap<>();
 
     private ApproximateUserCount() {
     }
@@ -134,6 +153,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     entries.put(tenantId, new CachedAnchor(anchor, sinceMs, System.currentTimeMillis()));
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
+                    // The slow exact recompute this refresh performs doubles as a correctness audit of the
+                    // lifecycle-event ledger (PLAN-010 decision 4). Kept entirely separate from serving.
+                    runShadowAudit(main, tenantIdentifier, storage);
                 } catch (Exception e) {
                     // Keep serving the existing (stale) entry; the next request retries the refresh.
                     ProcessState.getInstance(main).addState(
@@ -145,6 +167,117 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         } catch (RuntimeException e) {
             // e.g. the executor rejected the task - don't leave the single-flight guard stuck.
             refreshing.remove(tenantId);
+        }
+    }
+
+    /**
+     * The shadow audit (PLAN-010 unit 3), run once per successful background refresh. Reads the fresh exact
+     * tenant count and the lifecycle events committed since the previous refresh, and checks that the count
+     * moved by exactly the folded delta (see {@link CountShadowAudit}). Best-effort and observational only:
+     * any failure here is swallowed so it can never disturb serving or the refresh that just succeeded, and a
+     * discrepancy is logged, never served — the fresh exact count already won.
+     */
+    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
+        String tenantId = tenantIdentifier.getTenantId();
+        try {
+            if (!(storage instanceof ActivityLogStorage)) {
+                return; // storage keeps no lifecycle-event ledger, so there is nothing to fold against
+            }
+            ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
+            AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+
+            long snapshotMs = System.currentTimeMillis();
+            long freshExactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
+
+            AuditSnapshot previous = auditSnapshots.get(tenantId);
+            // Advance the snapshot regardless, so the next refresh's window starts where this one ends.
+            auditSnapshots.put(tenantId, new AuditSnapshot(freshExactCount, snapshotMs));
+            if (previous == null) {
+                return; // first refresh for this tenant: no prior snapshot to bound a window, only seed one
+            }
+
+            // cap + 1 so an over-cap window is detected from the row count without materialising all of it.
+            List<AuditLogEvent> windowEvents = activityLogStorage.getActivityLogEntriesForApp(
+                    tenantIdentifier.toAppIdentifier(), CountShadowAudit.LIFECYCLE_EVENT_TYPES,
+                    previous.snapshotMs, snapshotMs, SHADOW_AUDIT.getBurstCap() + 1);
+
+            CountShadowAudit.Result result = SHADOW_AUDIT.evaluate(tenantId, previous.exactCount,
+                    freshExactCount, windowEvents, previous.snapshotMs, snapshotMs);
+
+            switch (result.status) {
+                case DISCREPANCY:
+                    reportDiscrepancy(main, tenantIdentifier, result);
+                    break;
+                case RE_ANCHOR_REQUIRED:
+                    // Window too large to fold; the fresh anchor has already re-based past it. Not a bug.
+                    Logging.debug(main, tenantIdentifier, "Count shadow audit skipped for tenant " + tenantId
+                            + ": burst window of " + result.eventCount + " events exceeds the fold cap.");
+                    break;
+                case MATCH:
+                default:
+                    ProcessState.getInstance(main).addState(
+                            ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, null);
+                    break;
+            }
+        } catch (Exception e) {
+            // Observability, not correctness: never let an audit failure escape into the refresh path.
+            ProcessState.getInstance(main).addState(
+                    ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED, e);
+            Logging.debug(main, tenantIdentifier,
+                    "Count shadow audit failed for tenant " + tenantId + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reports a shadow-audit discrepancy: a human-readable {@code warn} log with the full context the issue
+     * asks for (tenant, window bounds, event count, both values) plus a structured telemetry event — the
+     * "metric" — carrying the same fields for querying/alerting. The discrepant value is never served.
+     */
+    private void reportDiscrepancy(Main main, TenantIdentifier tenantIdentifier, CountShadowAudit.Result result) {
+        String message = "Count shadow audit discrepancy for tenant " + result.tenantId
+                + ": anchor+fold expected " + result.expectedCount + " but the fresh exact count is "
+                + result.freshExactCount + " (previous exact " + result.previousExactCount + " + folded delta "
+                + result.foldedDelta + " over " + result.eventCount + " event(s) in window ("
+                + result.windowFromExclusiveMs + ", " + result.windowToInclusiveMs
+                + "]). Serving the fresh exact count.";
+        Logging.warn(main, tenantIdentifier, message);
+
+        TelemetryProvider telemetry = TelemetryProvider.getInstance(main);
+        if (telemetry != null) {
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put("audit", "count_shadow");
+            attributes.put("tenantId", result.tenantId);
+            attributes.put("expectedCount", Long.toString(result.expectedCount));
+            attributes.put("freshExactCount", Long.toString(result.freshExactCount));
+            attributes.put("previousExactCount", Long.toString(result.previousExactCount));
+            attributes.put("foldedDelta", Long.toString(result.foldedDelta));
+            attributes.put("eventCount", Integer.toString(result.eventCount));
+            attributes.put("windowFromExclusiveMs", Long.toString(result.windowFromExclusiveMs));
+            attributes.put("windowToInclusiveMs", Long.toString(result.windowToInclusiveMs));
+            telemetry.createLogEvent(tenantIdentifier, "count_shadow_audit_discrepancy", "warn", attributes);
+        }
+
+        JsonObject data = new JsonObject();
+        data.addProperty("tenantId", result.tenantId);
+        data.addProperty("expectedCount", result.expectedCount);
+        data.addProperty("freshExactCount", result.freshExactCount);
+        data.addProperty("previousExactCount", result.previousExactCount);
+        data.addProperty("foldedDelta", result.foldedDelta);
+        data.addProperty("eventCount", result.eventCount);
+        ProcessState.getInstance(main).addState(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY, null, data);
+    }
+
+    // One audit snapshot for a tenant: the exact count taken at a background refresh and when it was taken.
+    // The next refresh reads the window since {@code snapshotMs} and checks the count moved by the folded
+    // delta. Deliberately independent of the served anchor, which is rebased/creations-only-exact.
+    private static class AuditSnapshot {
+        final long exactCount;
+        final long snapshotMs;
+
+        AuditSnapshot(long exactCount, long snapshotMs) {
+            this.exactCount = exactCount;
+            this.snapshotMs = snapshotMs;
         }
     }
 
@@ -183,5 +316,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     public void expireEntryForTesting(TenantIdentifier tenantIdentifier) {
         entries.computeIfPresent(tenantIdentifier.getTenantId(),
                 (k, e) -> new CachedAnchor(e.anchor, e.sinceMs, 0));
+    }
+
+    // Test-only seam: runs one shadow-audit pass synchronously - seeding the snapshot on the first call for a
+    // tenant and comparing against the previous snapshot on later calls - so tests can exercise the audit's
+    // real storage reads and fold deterministically, without driving the background refresh executor (which
+    // staleEntryTriggersBackgroundRefresh already covers). Not a runtime entry point; mirrors
+    // expireEntryForTesting.
+    public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
+        runShadowAudit(main, tenantIdentifier, storage);
     }
 }
