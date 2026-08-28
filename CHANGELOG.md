@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.2.0]
 
+- Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
+  tenants inherit the changed values.
 - **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
 - Verifies the database schema at startup: any database (base or tenant) missing a table or column this version needs is reported with the missing columns plus the SQL to add them
 - New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only): in strict mode a mismatched tenant database refuses all queries until the migration is applied — re-checked every minute, so it resumes within a minute of the migration, no restart needed; the core still boots and serves all other tenants
