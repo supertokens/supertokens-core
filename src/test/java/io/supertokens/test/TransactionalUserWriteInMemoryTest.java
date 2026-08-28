@@ -90,7 +90,7 @@ public class TransactionalUserWriteInMemoryTest {
         // committed sign-up persists
         epStorage.startTransaction(con -> {
             try {
-                epStorage.signUp_Transaction(con, TENANT, "ep-commit", "commit@example.com", "hash", now);
+                epStorage.signUp_Transaction(TENANT, con, "ep-commit", "commit@example.com", "hash", now);
             } catch (DuplicateUserIdException | DuplicateEmailException e) {
                 throw new StorageTransactionLogicException(e);
             }
@@ -103,7 +103,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             epStorage.startTransaction(con -> {
                 try {
-                    epStorage.signUp_Transaction(con, TENANT, "ep-rollback", "rollback@example.com", "hash", now);
+                    epStorage.signUp_Transaction(TENANT, con, "ep-rollback", "rollback@example.com", "hash", now);
                 } catch (DuplicateUserIdException | DuplicateEmailException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -120,7 +120,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             epStorage.startTransaction(con -> {
                 try {
-                    epStorage.signUp_Transaction(con, TENANT, "ep-dup-email", "commit@example.com", "hash", now);
+                    epStorage.signUp_Transaction(TENANT, con, "ep-dup-email", "commit@example.com", "hash", now);
                 } catch (DuplicateUserIdException | DuplicateEmailException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -137,7 +137,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             epStorage.startTransaction(con -> {
                 try {
-                    epStorage.signUp_Transaction(con, TENANT, "ep-commit", "other@example.com", "hash", now);
+                    epStorage.signUp_Transaction(TENANT, con, "ep-commit", "other@example.com", "hash", now);
                 } catch (DuplicateUserIdException | DuplicateEmailException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -165,7 +165,7 @@ public class TransactionalUserWriteInMemoryTest {
         // committed sign-up persists
         tpStorage.startTransaction(con -> {
             try {
-                tpStorage.signUp_Transaction(con, TENANT, "tp-commit", "tp@example.com", google, now);
+                tpStorage.signUp_Transaction(TENANT, con, "tp-commit", "tp@example.com", google, now);
             } catch (io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException
                      | DuplicateThirdPartyUserException e) {
                 throw new StorageTransactionLogicException(e);
@@ -179,7 +179,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             tpStorage.startTransaction(con -> {
                 try {
-                    tpStorage.signUp_Transaction(con, TENANT, "tp-rollback", "tp2@example.com",
+                    tpStorage.signUp_Transaction(TENANT, con, "tp-rollback", "tp2@example.com",
                             new LoginMethod.ThirdParty("google", "g-2"), now);
                 } catch (io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException
                          | DuplicateThirdPartyUserException e) {
@@ -197,7 +197,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             tpStorage.startTransaction(con -> {
                 try {
-                    tpStorage.signUp_Transaction(con, TENANT, "tp-dup", "tp3@example.com", google, now);
+                    tpStorage.signUp_Transaction(TENANT, con, "tp-dup", "tp3@example.com", google, now);
                 } catch (io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException
                          | DuplicateThirdPartyUserException e) {
                     throw new StorageTransactionLogicException(e);
@@ -215,7 +215,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             tpStorage.startTransaction(con -> {
                 try {
-                    tpStorage.signUp_Transaction(con, TENANT, "tp-commit", "tp4@example.com",
+                    tpStorage.signUp_Transaction(TENANT, con, "tp-commit", "tp4@example.com",
                             new LoginMethod.ThirdParty("facebook", "f-1"), now);
                 } catch (io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException
                          | DuplicateThirdPartyUserException e) {
@@ -245,7 +245,7 @@ public class TransactionalUserWriteInMemoryTest {
         // committed creation persists
         plStorage.startTransaction(con -> {
             try {
-                plStorage.createUser_Transaction(con, TENANT, "pl-commit", "pl@example.com", "+15551110000", now);
+                plStorage.createUser_Transaction(TENANT, con, "pl-commit", "pl@example.com", "+15551110000", now);
             } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
                 throw new StorageTransactionLogicException(e);
             }
@@ -258,7 +258,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             plStorage.startTransaction(con -> {
                 try {
-                    plStorage.createUser_Transaction(con, TENANT, "pl-rollback", null, "+15551110001", now);
+                    plStorage.createUser_Transaction(TENANT, con, "pl-rollback", null, "+15551110001", now);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -274,7 +274,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             plStorage.startTransaction(con -> {
                 try {
-                    plStorage.createUser_Transaction(con, TENANT, "pl-dup-phone", null, "+15551110000", now);
+                    plStorage.createUser_Transaction(TENANT, con, "pl-dup-phone", null, "+15551110000", now);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -291,7 +291,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             plStorage.startTransaction(con -> {
                 try {
-                    plStorage.createUser_Transaction(con, TENANT, "pl-dup-email", "pl@example.com", null, now);
+                    plStorage.createUser_Transaction(TENANT, con, "pl-dup-email", "pl@example.com", null, now);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -307,7 +307,7 @@ public class TransactionalUserWriteInMemoryTest {
         try {
             plStorage.startTransaction(con -> {
                 try {
-                    plStorage.createUser_Transaction(con, TENANT, "pl-commit", "other-pl@example.com", null, now);
+                    plStorage.createUser_Transaction(TENANT, con, "pl-commit", "other-pl@example.com", null, now);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
                     throw new StorageTransactionLogicException(e);
                 }
