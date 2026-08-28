@@ -190,66 +190,23 @@ jobs:
           echo "postgresql=$(git -C supertokens-root/supertokens-postgresql-plugin rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── Register new versions with the SuperTokens API ────────────────
-  # has-db-migration is derived, not human-supplied: the postgresql plugin's
-  # migration-scripts/manifest.json is the source of truth for "this release
-  # ships DB schema changes". The manifest is keyed by the full PLUGIN
-  # version X.Y.Z (the version a plugin PR actually knows; the core pairing is
-  # only decided by this release's inputs) - minor and patch releases alike -
-  # read at the plugin SHA paired with this release; false when the manifest
-  # predates this convention. When true, the core's own CHANGELOG.md must
-  # document the migration (checked here, fails early).
+  # Derives has-db-migration from the postgresql plugin's migration manifest
+  # (single source of truth) and fails the release early if the core CHANGELOG
+  # doesn't document the migration. Shared with do-release.yml via the reusable
+  # workflow. NOTE: unlike do-release.yml, this backport path does not open the
+  # backend-apis migration PR — a backport release that ships a migration still
+  # marks the API with hasDBMigration (so SaaS rollout defers safely) but the
+  # backend-apis registry entry has to be added by hand.
   derive-db-migration-flag:
     name: Derive has-db-migration from migration manifest
     needs: update-deps
-    runs-on: ubuntu-22.04
-    outputs:
-      has-db-migration: ${{ steps.derive.outputs.has-db-migration }}
-      sql-file: ${{ steps.derive.outputs.sql-file }}
-    steps:
-      - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
-        with:
-          repository: supertokens/supertokens-postgresql-plugin
-          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
-          token: ${{ secrets.GH_TOKEN }}
-          path: plugin
-      - name: Checkout supertokens-core (for CHANGELOG.md)
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.update-deps.outputs.core-sha }}
-          path: core
-      - name: Derive has-db-migration
-        id: derive
-        run: |
-          manifest="plugin/migration-scripts/manifest.json"
-          pluginVersion="${{ inputs.postgresql-plugin-version }}"
-          if [ -f "$manifest" ]; then
-            entry=$(jq -c --arg v "$pluginVersion" '.migrations[] | select(.pluginVersion == $v)' "$manifest")
-          else
-            echo "::notice::$manifest not present at this postgresql-plugin SHA - assuming no DB migration."
-            entry=""
-          fi
-          if [ -n "$entry" ]; then
-            hasMigration=true
-            sqlfile=$(echo "$entry" | jq -r '.sql')
-            echo "sql-file=$sqlfile" >> "$GITHUB_OUTPUT"
-            echo "Plugin $pluginVersion ships a DB migration ($sqlfile): $(echo "$entry" | jq -r '.notes // ""')"
-            # The core's own release notes must document the migration too:
-            # same rule and same checker as the plugin's PR-time check. Fails
-            # here, before anything is registered or published - fixing it is
-            # a one-line changelog edit and a re-run.
-            helper=plugin/.github/helpers/schema-migration-check.py
-            if grep -q "check-changelog" "$helper" 2>/dev/null; then
-              python3 "$helper" check-changelog core/CHANGELOG.md "${{ inputs.core-version }}" "$sqlfile" \
-                || { echo "::error::supertokens-core CHANGELOG.md must document this release's DB migration: add a '### Migration' subsection under '## [${{ inputs.core-version }}]' referencing supertokens-postgresql-plugin's migration-scripts/$sqlfile."; exit 1; }
-            else
-              echo "::notice::plugin helper at this SHA predates check-changelog - skipping the core CHANGELOG migration check."
-            fi
-          else
-            hasMigration=false
-          fi
-          echo "Plugin $pluginVersion has-db-migration=$hasMigration"
-          echo "has-db-migration=$hasMigration" >> "$GITHUB_OUTPUT"
+    uses: ./.github/workflows/_release-derive-db-migration.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      core-sha: ${{ needs.update-deps.outputs.core-sha }}
+      postgresql-sha: ${{ needs.update-deps.outputs.postgresql-sha }}
+    secrets: inherit
 
   register-core-version:
     name: Register core version
@@ -509,7 +466,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X PATCH \
             -H "Content-Type: application/json" \
             -H "api-version: 0" \
-            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"hasDBMigration\":${{ needs.derive-db-migration-flag.outputs.has-db-migration }}}" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"hasDBMigration\":${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}}" \
             https://api.supertokens.io/0/core)
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
