@@ -1,6 +1,7 @@
 package io.supertokens;
 
 import io.supertokens.auditlog.AuditLog;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupDirtySignal;
 import io.supertokens.pluginInterface.ActiveUsersSQLStorage;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -100,6 +101,9 @@ public class ActiveUsers {
                 userId, userId,
                 "user_last_active", "success", null, null,
                 now, null));
+        // Signal the last-active rollup cron that this storage now has unfolded activity, so its next tick
+        // folds instead of skipping.
+        RollupDirtySignal.getInstance(main).markDirty(storage.getUserPoolId());
     }
 
     @TestOnly
