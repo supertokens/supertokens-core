@@ -11,6 +11,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
   tenants inherit the changed values.
+- **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
+- Verifies the database schema at startup: any database (base or tenant) missing a table or column this version needs is reported with the missing columns plus the SQL to add them
+- New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only): in strict mode a mismatched tenant database refuses all queries until the migration is applied — re-checked every minute, so it resumes within a minute of the migration, no restart needed; the core still boots and serves all other tenants
+- With `schema_check_strict_mode: false`, mismatches are only logged: everything keeps working and just the queries touching the missing schema fail, with a "Schema mismatch ... check the core error logs" hint instead of a raw SQL error
+- Corrects the 12.1.0 migration note: the `session_info` columns are a manual step, not applied automatically
+- Bulk import no longer borrows from the live connection pool: each worker claims, imports and finalises its chunk on one connection from a dedicated pool sized to `bulk_migration_parallelism`
+- Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
+- Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
+- `BulkImport.importUser` (the single-user import API) now runs on the same bounded dedicated pool, opened for the duration of the call (one connection per user pool, previously a full-size proxy pool per user pool)
 - Signing key cache refresh is single-flight: during a rotation window readers keep serving the still-valid cached keys instead of queueing behind the one refreshing thread; only cold starts and unknown-`kid` verification wait for the refresh result
 
 ## [12.1.1]
@@ -65,15 +74,20 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recipe_user_tenants_search_tparty ON
 
 ### Migration
 
-Additive only, applied automatically at startup; no backfill required. `session_info` gains nullable
-`prev_refresh_token_hash_2` and `refresh_token_rotated_at` columns, and M2M token stats move to a new
-`oauth_m2m_token_stats` rollup table (the legacy `oauth_m2m_tokens` table drains via the existing 31-day retention
-sweep).
+**Manual step required — NOT applied automatically.** The core only creates tables that do not exist yet
+(`CREATE TABLE IF NOT EXISTS`); it never adds columns to an existing table. On any database created by a core older
+than 12.1.0, run the following **before** starting the new core (from 12.1.2 the core detects the missing
+columns at startup: with the default `schema_check_strict_mode: true` it **refuses to start** until they exist,
+with `false` it logs them and session APIs fail with a schema-mismatch message pointing at the logs;
+12.1.0/12.1.1 start silently and fail every session API with `column prev_refresh_token_hash_2 does not exist`):
 
 ```sql
-ALTER TABLE session_info ADD COLUMN prev_refresh_token_hash_2 VARCHAR(128);
-ALTER TABLE session_info ADD COLUMN refresh_token_rotated_at BIGINT;
+ALTER TABLE session_info ADD COLUMN IF NOT EXISTS prev_refresh_token_hash_2 VARCHAR(128);
+ALTER TABLE session_info ADD COLUMN IF NOT EXISTS refresh_token_rotated_at BIGINT;
 ```
+
+Both columns are nullable; no backfill is required. The new `oauth_m2m_token_stats` rollup table *is* created
+automatically at startup (the legacy `oauth_m2m_tokens` table drains via the existing 31-day retention sweep).
 
 ## [12.0.10]
 
