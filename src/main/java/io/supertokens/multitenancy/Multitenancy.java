@@ -223,13 +223,34 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 existingTenants[existingTenants.length - 1] = targetTenantConfig;
             }
 
-            // Validate only the target tenant instead of re-normalizing and re-validating all tenants.
-            // Existing tenants were already validated when they were added.
-            JsonObject normalisedConfig = Config.getNormalisedConfigForTenant(
-                    targetTenantConfig.tenantIdentifier, existingTenants,
-                    Config.getBaseConfigAsJsonObject(main));
-            Config.assertSingleTenantConfigIsValid(main, targetTenantConfig.tenantIdentifier,
-                    normalisedConfig, targetTenantConfig);
+            TenantIdentifier targetTenantIdentifier = targetTenantConfig.tenantIdentifier;
+            boolean hasAffectedDescendants = !targetTenantIdentifier.equals(TenantIdentifier.BASE_TENANT) &&
+                    targetTenantIdentifier.getTenantId()
+                    .equals(TenantIdentifier.DEFAULT_TENANT_ID) && Arrays.stream(existingTenants).anyMatch(tenant -> {
+                TenantIdentifier tenantIdentifier = tenant.tenantIdentifier;
+                return !tenantIdentifier.equals(targetTenantIdentifier) &&
+                        tenantIdentifier.getConnectionUriDomain()
+                                .equals(targetTenantIdentifier.getConnectionUriDomain()) &&
+                        (targetTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) ||
+                                tenantIdentifier.getAppId().equals(targetTenantIdentifier.getAppId()));
+            });
+
+            if (hasAffectedDescendants) {
+                // App and CUD configs are parents in the config hierarchy. Validate the complete prospective state
+                // because changing a parent also changes every descendant that inherits from it.
+                Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs =
+                        Config.getNormalisedConfigsForAllTenants(
+                                existingTenants,
+                                Config.getBaseConfigAsJsonObject(main));
+                Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
+            } else {
+                // A leaf tenant update cannot change another tenant's effective config.
+                JsonObject normalisedConfig = Config.getNormalisedConfigForTenant(
+                        targetTenantConfig.tenantIdentifier, existingTenants,
+                        Config.getBaseConfigAsJsonObject(main));
+                Config.assertSingleTenantConfigIsValid(main, targetTenantConfig.tenantIdentifier,
+                        normalisedConfig, targetTenantConfig);
+            }
         }
 
         // Validate migration_mode state-machine transitions. We only enforce this when the
