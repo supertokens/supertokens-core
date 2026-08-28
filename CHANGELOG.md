@@ -20,6 +20,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Bulk import keeps claimed `bulk_import_users` rows locked until they are deleted or error-marked; a failed chunk rolls back to a savepoint instead of releasing the claim
 - Bulk import deletes only the rows of the partition it imported and bounds immediate retries after a database rollback
 - `BulkImport.importUser` (the single-user import API) now runs on the same bounded dedicated pool, opened for the duration of the call (one connection per user pool, previously a full-size proxy pool per user pool)
+- Adds a regression test for the duplicate dynamic access token signing key race: three cores rotating the
+  key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
+  The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
+  per app, which postgresql-plugin 9.7.2 does with a per-app advisory lock.
 
 ## [12.1.1]
 
