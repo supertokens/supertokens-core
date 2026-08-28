@@ -15,6 +15,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `activity_log_retention_days` (default 31), a connection-URI-domain-level protected core config that drives activity_log retention; the cleanup cron now reads it per storage.
 - In-memory (SQLite) implementations of the connection-taking sign-up and tenant-removal storage variants (`signUp_Transaction` for email-password and third-party, `createUser_Transaction` for passwordless, `removeUserIdFromTenant_Transaction`); the existing auto-commit methods now delegate to these behaviour-preserving variants.
 - `AuthRecipe.linkAccounts` / `unlinkAccounts` now emit `account_linking` / `account_unlinking` lifecycle events atomically with the mapping change (via `startAuditedTransaction`); an already-linked no-op link emits nothing.
+- `AuthRecipe.deleteUser` and `Multitenancy.addUserIdToTenant` now emit `user_deletion`/`user_group_deletion` and `tenant_association` lifecycle events atomically with the mutation (via `startAuditedTransaction`).
 
 ## [12.1.1]
 

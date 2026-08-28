@@ -703,17 +703,58 @@ public class AuthRecipe {
         deleteUser(appIdentifier, storage, userId, true, userIdMapping);
     }
 
-    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void deleteUser(AppIdentifier appIdentifier, Storage storage, String userId,
                                   boolean removeAllLinkedAccounts,
                                   UserIdMapping userIdMapping)
             throws StorageQueryException, StorageTransactionLogicException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
 
-        authRecipeStorage.startTransaction(con -> {
-            deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping);
-            authRecipeStorage.commitTransaction(con);
-            return null;
+        // startAuditedTransaction owns the commit and writes the deletion event on the same connection as the
+        // delete, so a user_deletion / user_group_deletion event can never be lost relative to the deletion it
+        // records (a lost deletion event is a permanent overcount in the derived active-user count).
+        auditStorage.<Void>startAuditedTransaction(appIdentifier, con -> {
+            String authUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+            // Capture the group's before-presence from INSIDE deleteUserHelper, which reads it after acquiring the
+            // row lock (the same consistent-snapshot ordering addUserIdToTenant uses for tenant_association).
+            // Reading it out here before the lock would be racy in two ways: (a) a concurrent link/tenant-
+            // association committing on this group between the read and the lock would leave the snapshot missing
+            // a tenant the group actually had at delete time — the ledger would then miss a decrement for that
+            // tenant (permanent overcount); and (b) if the user were deleted concurrently in that same window the
+            // pre-lock read would still be non-null, emitting a spurious deletion event for a delete that did
+            // nothing (permanent undercount). The helper reads the snapshot under the lock and resolves the
+            // mapped/migration (A3/A4) id internally, so a null holder means the delete was genuinely a no-op.
+            AuthRecipeUserInfo[] groupBeforeHolder = new AuthRecipeUserInfo[1];
+            deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping,
+                    groupBeforeHolder);
+            AuthRecipeUserInfo groupBeforeInfo = groupBeforeHolder[0];
+
+            if (groupBeforeInfo == null) {
+                return AuditedResult.<Void>withoutAudit(null,
+                        "deleteUser was a no-op: the user did not exist, so nothing was deleted and no "
+                                + "user_deletion / user_group_deletion event is emitted.");
+            }
+
+            String groupUserId = groupBeforeInfo.getSupertokensUserId();
+            GroupPresence groupBefore = new GroupPresence(groupUserId, new ArrayList<>(groupBeforeInfo.tenantIds));
+            // Whole-group deletion when removing all linked accounts, or when the group has a single member (the
+            // deleted user is the whole group); otherwise a single member is removed and the group survives.
+            boolean wholeGroupDeleted = removeAllLinkedAccounts || groupBeforeInfo.loginMethods.length == 1;
+
+            AuditLogEvent event;
+            if (wholeGroupDeleted) {
+                event = LifecycleAuditEvent.forUserGroupDeletion(appIdentifier, groupUserId, groupBefore, now);
+            } else {
+                // The group survives (identified by the same primary_or_recipe_user_id); recompute its presence
+                // after the member is removed, since deleting a member can drop the group from a tenant it was
+                // only present in through that member.
+                GroupPresence groupAfter = groupPresenceInTransaction(authRecipeStorage, appIdentifier, con,
+                        groupUserId);
+                event = LifecycleAuditEvent.forUserDeletion(appIdentifier, authUserId, groupUserId, groupBefore,
+                        groupAfter, now);
+            }
+            return new AuditedResult<>((Void) null, event);
         });
     }
 
@@ -722,6 +763,20 @@ public class AuthRecipe {
                                          String userId,
                                          boolean removeAllLinkedAccounts,
                                          UserIdMapping userIdMapping)
+            throws StorageQueryException {
+        deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping, null);
+    }
+
+    // groupBeforeOut, when non-null, is filled with the group's pre-deletion snapshot (read under the same row
+    // lock that guards the delete) so a caller emitting a lifecycle event records a consistent before-presence.
+    // It stays untouched (null) when the delete is a no-op — the user did not exist or was already deleted by a
+    // concurrent thread — so the caller emits nothing in that case.
+    private static void deleteUserHelper(TransactionConnection con, AppIdentifier appIdentifier,
+                                         Storage storage,
+                                         String userId,
+                                         boolean removeAllLinkedAccounts,
+                                         UserIdMapping userIdMapping,
+                                         AuthRecipeUserInfo[] groupBeforeOut)
             throws StorageQueryException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
@@ -797,6 +852,13 @@ public class AuthRecipe {
 
         if (userToDelete == null) {
             return;
+        }
+
+        // Hand the group's before-deletion snapshot back to the caller now that it is read under the row lock and
+        // before any row is removed. This is the group resolved from the (mapped-id-aware) userIdToDeleteForAuthRecipe,
+        // so it covers the migration (A3/A4) cases without a separate pre-lock read.
+        if (groupBeforeOut != null) {
+            groupBeforeOut[0] = userToDelete;
         }
 
         // If removing all linked accounts and user has multiple login methods,
