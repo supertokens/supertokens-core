@@ -186,6 +186,15 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
             AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
+            // Known boundary limitation (observational only): the window below filters events on their
+            // emit-time created_at (stamped at the start of the mutating txn), whereas freshExactCount and the
+            // event row only become visible at commit. A txn straddling snapshotMs can land its created_at on
+            // one side of the bound and its count effect on the other, yielding a one-time DISCREPANCY that is
+            // a boundary artifact, not a ledger bug (it self-heals as the misassigned mutation is folded in
+            // the adjacent window). Serving compensates for the same lag with SKEW_MARGIN_MS; the audit
+            // applies no analogous margin here because a robust fix needs an as-of-time exact count we do not
+            // have (and gating on persistence across refreshes would also mask genuine one-time missed emits,
+            // which produce the same single self-healing discrepancy). Tracked as a soak follow-up.
             long snapshotMs = System.currentTimeMillis();
             long freshExactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
 
@@ -197,6 +206,11 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
 
             // cap + 1 so an over-cap window is detected from the row count without materialising all of it.
+            // Note the read is app-scoped (getActivityLogEntriesForApp filters on app_id, not tenant), so the
+            // burst cap bounds app-wide event volume, not this tenant's alone: on a busy multi-tenant app the
+            // app-wide window between two refreshes can exceed the cap and RE_ANCHOR a quiet tenant's audit,
+            // and each per-tenant refresh may fold up to burstCap app-wide rows. Tenant-scoping the read would
+            // tighten coverage but is a plugin-interface storage-contract change, deferred to a follow-up.
             List<AuditLogEvent> windowEvents = activityLogStorage.getActivityLogEntriesForApp(
                     tenantIdentifier.toAppIdentifier(), CountShadowAudit.LIFECYCLE_EVENT_TYPES,
                     previous.snapshotMs, snapshotMs, SHADOW_AUDIT.getBurstCap() + 1);
