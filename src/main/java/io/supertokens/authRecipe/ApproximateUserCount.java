@@ -237,7 +237,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             // Observability, not correctness: never let an audit failure escape into the refresh path.
             ProcessState.getInstance(main).addState(
                     ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED, e);
-            Logging.debug(main, tenantIdentifier,
+            Logging.warn(main, tenantIdentifier,
                     "Count shadow audit failed for tenant " + tenantId + ": " + e.getMessage());
         }
     }
