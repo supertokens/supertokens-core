@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -216,5 +217,22 @@ public class RollupUserLastActive extends CronTask {
     @TestOnly
     public void runOncePerStorageForTesting(TenantIdentifier representative, Storage storage) throws Exception {
         doTaskPerStorage(representative, storage);
+    }
+
+    /**
+     * Synchronously folds every unique storage once, so a test can make activity emitted through the
+     * activity log visible in {@code user_last_active} without waiting for the scheduled cron. After the
+     * PLAN-011 cutover the rollup is the sole writer of the projection, so tests that assert active-user
+     * counts must trigger a fold between the activity and the assertion. Idempotent and monotonic
+     * ({@code GREATEST} on conflict), so it is safe to call repeatedly across a test's checkpoints.
+     */
+    @TestOnly
+    public static void runOnceForAllStoragesForTesting(Main main) throws Exception {
+        List<List<TenantIdentifier>> tenantsInfo = StorageLayer.getTenantsWithUniqueUserPoolId(main);
+        RollupUserLastActive cron = new RollupUserLastActive(main, tenantsInfo);
+        for (List<TenantIdentifier> group : tenantsInfo) {
+            TenantIdentifier representative = group.get(0);
+            cron.doTaskPerStorage(representative, StorageLayer.getStorage(representative, main));
+        }
     }
 }

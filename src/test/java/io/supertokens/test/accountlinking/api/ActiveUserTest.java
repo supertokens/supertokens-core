@@ -18,6 +18,7 @@ package io.supertokens.test.accountlinking.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -143,6 +144,8 @@ public class ActiveUserTest {
                     SemVer.v4_0.get(), "thirdparty");
         }
 
+        // Sole-writer cutover (PLAN-011): activity reaches user_last_active only through a rollup fold.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
         assertEquals(2, userCount);
 
@@ -160,6 +163,7 @@ public class ActiveUserTest {
         }
 
         // we remove the active user for the recipe user, so it should be 1
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
         assertEquals(1, userCount);
 
@@ -190,6 +194,7 @@ public class ActiveUserTest {
         }
 
         // there should still be only one active user
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
         assertEquals(1, userCount);
 

@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- `ActiveUsers.updateLastActive` no longer writes `user_last_active` directly; it only appends the throttled `user_last_active` activity-log event, and the `RollupUserLastActive` cron is now the sole writer of the projection (so counts reflect activity within a rollup interval).
 - Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
 
 ## [12.2.0]

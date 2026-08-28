@@ -6,6 +6,7 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -71,6 +72,9 @@ public class ActiveUsersTest {
         ActiveUsers.updateLastActive(main, "user1");
         ActiveUsers.updateLastActive(main, "user2");
 
+        // The rollup cron is the sole writer of user_last_active (PLAN-011 cutover): activity reaches the
+        // projection only through a fold, so force one before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(main);
         assert ActiveUsers.countUsersActiveSince(main, now) == 2;
 
         Thread.sleep(1);
@@ -78,10 +82,11 @@ public class ActiveUsersTest {
         long now2 = System.currentTimeMillis();
 
         // Throttle would otherwise skip this update since user1 was just touched above; clear so
-        // the test exercises a fresh DB write at now2.
+        // the test exercises a fresh activity-log emit at now2.
         ActiveUsers.clearCacheForTesting();
         ActiveUsers.updateLastActive(main, "user1");
 
+        RollupUserLastActive.runOnceForAllStoragesForTesting(main);
         assert ActiveUsers.countUsersActiveSince(main, now2) == 1; // only user1 is counted
         assert ActiveUsers.countUsersActiveSince(main, now) == 2; // user1 and user2 are counted
     }
@@ -184,6 +189,9 @@ public class ActiveUsersTest {
         ActiveUsers.updateLastActive(main, "user1");
         ActiveUsers.updateLastActive(main, "user2");
 
+        // Sole-writer cutover: fold the emitted activity into the projection before the API reads it.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(main);
+
         res = HttpRequestForTesting.sendGETRequest(
                 process.getProcess(),
                 "",
@@ -203,6 +211,8 @@ public class ActiveUsersTest {
         // See clearCacheForTesting above — throttle would skip the second update otherwise.
         ActiveUsers.clearCacheForTesting();
         ActiveUsers.updateLastActive(main, "user1");
+
+        RollupUserLastActive.runOnceForAllStoragesForTesting(main);
 
         params.put("since", Long.toString(now2));
         res = HttpRequestForTesting.sendGETRequest(
@@ -357,6 +367,9 @@ public class ActiveUsersTest {
                     "http://localhost:3567/t1/recipe/signup", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
                     "emailpassword");
         }
+
+        // Sole-writer cutover: the sign-up's last-active activity reaches the projection only via a fold.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
 
         { // 1 active user in the public tenant
             HashMap<String, String> params = new HashMap<>();
