@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.2.0]
 
+- Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
+  tenants inherit the changed values.
 - Adds a regression test for the duplicate dynamic access token signing key race: three cores rotating the
   key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
   The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
