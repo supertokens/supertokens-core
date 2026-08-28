@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
@@ -66,11 +67,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
-        return getNewInstance(main, config, tenantIdentifier, doNotLog, false);
-    }
-
-    public static Storage getNewBulkImportProxyStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
-        return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
+        return getNewInstance(main, config, tenantIdentifier, doNotLog);
     }
 
     public static void updateConfigJsonFromEnv(Main main, JsonObject configJson) {
@@ -105,7 +102,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     @WithinOtelSpan
-    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
+    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -125,15 +122,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
                     && (storageLayer. canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-                if (isBulkImportProxy) {
-                    result = storageLayer.createBulkImportProxyStorageInstance();
-                } else {
-                    result = storageLayer;
-                }
+                result = storageLayer;
             } else {
-                if (isBulkImportProxy) {
-                    throw new QuitProgramException("Creating a bulk import proxy storage instance with in-memory DB is not supported.");
-                }
                 result = new Start(main);
             }
         }
@@ -762,10 +752,57 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         storage.initFileLogging(infoLogPath, errorLogPath, telemetry);
                     } catch (DbInitException e) {
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                        return;
+                    }
+                    // Schema verification runs once per storage (the plugin caches a success), so this is a
+                    // no-op for already-verified pools on refresh. A tenant mismatch never takes the core down:
+                    // in strict mode (schema_check_strict_mode, the default) the storage refuses all queries
+                    // until a re-verification passes (retrySchemaVerification runs one every minute, so the
+                    // storage resumes within a minute of the migration being applied); in non-strict mode it
+                    // stays fully in use and only queries touching the missing schema fail (with a hint).
+                    try {
+                        storage.verifySchema(Config.getBaseConfig(main).getSchemaCheckStrictMode());
+                    } catch (SchemaMismatchException e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT,
+                                "Schema verification failed for storage of tenants " + tenants + ": "
+                                        + e.getMessage(), true, e);
+                        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
+                    } catch (StorageQueryException e) {
+                        Logging.error(main, TenantIdentifier.BASE_TENANT,
+                                "Could not verify schema for storage of tenants " + tenants, false, e);
                     }
                 }, executor));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        }
+    }
+
+    /**
+     * Gives every loaded storage whose schema verification has not yet passed another chance to pass. Called
+     * from {@link io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb} every minute, so a tenant
+     * storage that is refusing queries in strict mode (schema_check_strict_mode) resumes within a minute of
+     * the operator applying the migration SQL - no restart or tenant change needed. A storage that already
+     * verified returns from {@link Storage#verifySchema} without touching the database, so this is free in the
+     * steady state; a still-mismatched storage costs one schema-inspection query per run and stays quiet here,
+     * because the startup ERROR log already carries the full report.
+     */
+    public static void retrySchemaVerification(Main main) {
+        Set<Storage> storages = new HashSet<>();
+        for (ResourceDistributor.SingletonResource resource : main.getResourceDistributor()
+                .getAllResourcesWithResourceKey(RESOURCE_KEY).values()) {
+            storages.add(((StorageLayer) resource).storage);
+        }
+        boolean strictMode = Config.getBaseConfig(main).getSchemaCheckStrictMode();
+        for (Storage storage : storages) {
+            try {
+                storage.verifySchema(strictMode);
+            } catch (SchemaMismatchException e) {
+                // still mismatched: the startup ERROR already reported the details, and affected queries
+                // carry a hint pointing at it - do not repeat the report every minute
+            } catch (StorageQueryException e) {
+                Logging.debug(main, TenantIdentifier.BASE_TENANT,
+                        "Could not re-verify the database schema: " + e.getMessage());
+            }
         }
     }
 
