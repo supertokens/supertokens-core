@@ -102,88 +102,99 @@ public class ThirdPartyQueries {
         return start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try {
-                MigrationMode mode = Config.getConfig(start).getMigrationMode();
-
-                { // app_id_to_user_id — ALWAYS
-                    String QUERY = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
-                            + "(app_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
-                            + " VALUES(?, ?, ?, ?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, tenantIdentifier.getAppId());
-                        pst.setString(2, id);
-                        pst.setString(3, id);
-                        pst.setString(4, THIRD_PARTY.toString());
-                        pst.setLong(5, timeJoined);
-                        pst.setLong(6, timeJoined);
-                    });
-                }
-
-                if (mode.writesToOldTables()) { // all_auth_recipe_users
-                    String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            +
-                            "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, " +
-                            "primary_or_recipe_user_time_joined)" +
-                            " VALUES(?, ?, ?, ?, ?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, tenantIdentifier.getAppId());
-                        pst.setString(2, tenantIdentifier.getTenantId());
-                        pst.setString(3, id);
-                        pst.setString(4, id);
-                        pst.setString(5, THIRD_PARTY.toString());
-                        pst.setLong(6, timeJoined);
-                        pst.setLong(7, timeJoined);
-                    });
-                }
-
-                if (mode.writesToNewTables()) { // recipe_user_tenants
-                    // Insert row for email. Store the actual third-party provider values so the PK is
-                    // naturally unique even when two ThirdParty users share the same email address.
-                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
-                            THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.EMAIL, thirdParty.id, thirdParty.userId, email);
-
-                    // Insert row for third party id
-                    AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
-                            THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.THIRD_PARTY, "", "",
-                            new LoginMethod.ThirdParty(thirdParty.id, thirdParty.userId).getAccountInfoValue());
-                }
-
-                { // thirdparty_users — ALWAYS
-                    String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUsersTable()
-                            + "(app_id, third_party_id, third_party_user_id, user_id, email, time_joined)"
-                            + " VALUES(?, ?, ?, ?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, tenantIdentifier.getAppId());
-                        pst.setString(2, thirdParty.id);
-                        pst.setString(3, thirdParty.userId);
-                        pst.setString(4, id);
-                        pst.setString(5, email);
-                        pst.setLong(6, timeJoined);
-                    });
-                }
-
-                if (mode.writesToOldTables()) { // thirdparty_user_to_tenant
-                    String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUserToTenantTable()
-                            + "(app_id, tenant_id, user_id, third_party_id, third_party_user_id)"
-                            + " VALUES(?, ?, ?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, tenantIdentifier.getAppId());
-                        pst.setString(2, tenantIdentifier.getTenantId());
-                        pst.setString(3, id);
-                        pst.setString(4, thirdParty.id);
-                        pst.setString(5, thirdParty.userId);
-                    });
-                }
-
-                UserInfoPartial userInfo = new UserInfoPartial(id, email, thirdParty, timeJoined);
-                fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
-                fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
+                AuthRecipeUserInfo userInfo = signUp_Transaction(start, sqlCon, tenantIdentifier, id, email,
+                        thirdParty, timeJoined);
                 sqlCon.commit();
-                return AuthRecipeUserInfo.create(id, false, userInfo.toLoginMethod());
-
+                return userInfo;
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
         });
+    }
+
+    // Connection-taking variant of signUp: performs the same writes (and the userId <-> tenantId mapping) as the
+    // auto-commit version on the caller's connection without committing, so the sign-up and its lifecycle audit event
+    // can be committed (or rolled back) together by the caller.
+    public static AuthRecipeUserInfo signUp_Transaction(Start start, Connection sqlCon,
+                                                        TenantIdentifier tenantIdentifier, String id, String email,
+                                                        LoginMethod.ThirdParty thirdParty, long timeJoined)
+            throws SQLException, StorageQueryException {
+        MigrationMode mode = Config.getConfig(start).getMigrationMode();
+
+        { // app_id_to_user_id — ALWAYS
+            String QUERY = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
+                    + "(app_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                    + " VALUES(?, ?, ?, ?, ?, ?)";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, id);
+                pst.setString(3, id);
+                pst.setString(4, THIRD_PARTY.toString());
+                pst.setLong(5, timeJoined);
+                pst.setLong(6, timeJoined);
+            });
+        }
+
+        if (mode.writesToOldTables()) { // all_auth_recipe_users
+            String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
+                    +
+                    "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, " +
+                    "primary_or_recipe_user_time_joined)" +
+                    " VALUES(?, ?, ?, ?, ?, ?, ?)";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, id);
+                pst.setString(4, id);
+                pst.setString(5, THIRD_PARTY.toString());
+                pst.setLong(6, timeJoined);
+                pst.setLong(7, timeJoined);
+            });
+        }
+
+        if (mode.writesToNewTables()) { // recipe_user_tenants
+            // Insert row for email. Store the actual third-party provider values so the PK is
+            // naturally unique even when two ThirdParty users share the same email address.
+            AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                    THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.EMAIL, thirdParty.id, thirdParty.userId, email);
+
+            // Insert row for third party id
+            AccountInfoQueries.addRecipeUserAccountInfo_Transaction(start, sqlCon, tenantIdentifier, id,
+                    THIRD_PARTY.toString(), ACCOUNT_INFO_TYPE.THIRD_PARTY, "", "",
+                    new LoginMethod.ThirdParty(thirdParty.id, thirdParty.userId).getAccountInfoValue());
+        }
+
+        { // thirdparty_users — ALWAYS
+            String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUsersTable()
+                    + "(app_id, third_party_id, third_party_user_id, user_id, email, time_joined)"
+                    + " VALUES(?, ?, ?, ?, ?, ?)";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, thirdParty.id);
+                pst.setString(3, thirdParty.userId);
+                pst.setString(4, id);
+                pst.setString(5, email);
+                pst.setLong(6, timeJoined);
+            });
+        }
+
+        if (mode.writesToOldTables()) { // thirdparty_user_to_tenant
+            String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUserToTenantTable()
+                    + "(app_id, tenant_id, user_id, third_party_id, third_party_user_id)"
+                    + " VALUES(?, ?, ?, ?, ?)";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, tenantIdentifier.getTenantId());
+                pst.setString(3, id);
+                pst.setString(4, thirdParty.id);
+                pst.setString(5, thirdParty.userId);
+            });
+        }
+
+        UserInfoPartial userInfo = new UserInfoPartial(id, email, thirdParty, timeJoined);
+        fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
+        fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
+        return AuthRecipeUserInfo.create(id, false, userInfo.toLoginMethod());
     }
 
     public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
