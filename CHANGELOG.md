@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
+## [12.2.0]
 
 - Added lifecycle event vocabulary and JSON payload schema for the activity log (`io.supertokens.auditlog.lifecycle`).
 - Adds a compile-time AspectJ guard (`AuditEnforcementAspect`) that fails the build on raw `SQLStorage.startTransaction(...)` calls in domain code; legacy call sites are allowlisted with `@UnauditedTransaction(justification = ...)`, backed by a shrink-only baseline test.
