@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
 - Adds an observability-only shadow audit to the approximate-user-count background refresh; discrepancies are logged and emitted as telemetry, never served.
 - Emits `user_creation` lifecycle events atomically with the mutation from the interactive sign-up paths (email-password sign-up and password-hash import, third-party sign-in-up, passwordless user creation, WebAuthn sign-up), and `tenant_disassociation` events from `Multitenancy.removeUserIdFromTenant`, through `startAuditedTransaction`; the `@UnauditedTransaction` allowlist baseline drops from 57 to 55. Bulk-import `user_creation` emission is not yet included.
-- The `allowApproximate` user-count path now serves `exact anchor + fold(lifecycle events since the anchor)` instead of `anchor + joined-since query`, making the approximate count exact for deletions, account linking and unlinking as well as creations (no API surface change); a window over the interpreter's burst cap re-anchors immediately.
+- The `allowApproximate` user-count path now serves the exact anchor plus a fold of lifecycle events since the anchor, making the approximate count exact for creations, deletions and account (un)linking (no API change).
 
 ## [12.2.0]
 
