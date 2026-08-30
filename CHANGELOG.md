@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `ActiveUsers.updateLastActive` no longer writes `user_last_active` directly; it only appends the throttled `user_last_active` activity-log event, and the `RollupUserLastActive` cron is now the sole writer of the projection (so counts reflect activity within a rollup interval).
 - Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
 - Adds an observability-only shadow audit to the approximate-user-count background refresh; discrepancies are logged and emitted as telemetry, never served.
+- Emits `user_creation` lifecycle events atomically with the mutation from the interactive sign-up paths (email-password sign-up and password-hash import, third-party sign-in-up, passwordless user creation, WebAuthn sign-up), and `tenant_disassociation` events from `Multitenancy.removeUserIdFromTenant`, through `startAuditedTransaction`; the `@UnauditedTransaction` allowlist baseline drops from 57 to 55. Bulk-import `user_creation` emission is not yet included.
 
 ## [12.2.0]
 

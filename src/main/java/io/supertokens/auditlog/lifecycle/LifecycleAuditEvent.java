@@ -99,6 +99,29 @@ public final class LifecycleAuditEvent {
                 LifecycleEventPayload.forTenantAssociation(groupBefore, tenantId), createdAt);
     }
 
+    /**
+     * A {@code tenant_disassociation} event: the group identified by {@code groupUserId} (via member
+     * {@code recipeUserId}) was removed from tenant {@code tenantId}. The payload carries the group's presence
+     * list before the disassociation plus the tenant it was removed from.
+     */
+    public static AuditLogEvent forTenantDisassociation(AppIdentifier appIdentifier, String recipeUserId,
+            String groupUserId, GroupPresence groupBefore, String tenantId, long createdAt) {
+        return build(appIdentifier, recipeUserId, groupUserId,
+                LifecycleEventPayload.forTenantDisassociation(groupBefore, tenantId), createdAt);
+    }
+
+    /**
+     * A {@code user_creation} event: a new recipe user {@code recipeUserId} was created in tenant
+     * {@code tenantId}. A freshly created user is its own group, so it is recorded against itself as both the
+     * recipe user and the group; the payload carries only the tenant it was created in (the group's presence
+     * afterwards is exactly that single tenant, derivable read-side without a stored list).
+     */
+    public static AuditLogEvent forUserCreation(AppIdentifier appIdentifier, String recipeUserId,
+            String tenantId, long createdAt) {
+        return build(appIdentifier, recipeUserId, recipeUserId,
+                LifecycleEventPayload.forUserCreation(tenantId), createdAt);
+    }
+
     private static AuditLogEvent build(AppIdentifier appIdentifier, String recipeUserId,
             String primaryOrRecipeUserId, LifecycleEventPayload payload, long createdAt) {
         return new AuditLogEvent(

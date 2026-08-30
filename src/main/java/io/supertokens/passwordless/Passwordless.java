@@ -19,7 +19,10 @@ package io.supertokens.passwordless;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.auditlog.AuditLog;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
@@ -555,21 +558,43 @@ public class Passwordless {
             String email, String phoneNumber, long timeJoined)
             throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
 
         while (true) {
+            String userId = Utils.getUUID();
             try {
-                String userId = Utils.getUUID();
-                return passwordlessStorage.createUser(tenantIdentifier, userId, email, phoneNumber, timeJoined);
-            } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
-                // Getting these would mean that between getting the user and trying creating it:
-                // 1. the user managed to do a full create+consume flow
-                // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
-                // These should be almost impossibly rare, so it's safe to just ask the user to restart.
-                // Also, both would make the current login fail if done before the transaction
-                // by cleaning up the device/code this consume would've used.
-                throw new RestartFlowException();
-            } catch (DuplicateUserIdException e) {
-                // We can retry..
+                // Create the user and emit its user_creation event atomically on the same connection, so the
+                // event cannot be lost relative to the creation it records. The user-id retry loop on
+                // DuplicateUserIdException stays outside the transaction.
+                return auditStorage.startAuditedTransaction(appIdentifier, con -> {
+                    try {
+                        AuthRecipeUserInfo user = passwordlessStorage.createUser_Transaction(tenantIdentifier, con,
+                                userId, email, phoneNumber, timeJoined);
+                        AuditLogEvent event = LifecycleAuditEvent.forUserCreation(appIdentifier,
+                                user.getSupertokensUserId(), tenantIdentifier.getTenantId(), timeJoined);
+                        return new AuditedResult<>(user, event);
+                    } catch (DuplicateEmailException | DuplicatePhoneNumberException | DuplicateUserIdException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof DuplicateUserIdException) {
+                    // We can retry..
+                    continue;
+                } else if (e.actualException instanceof DuplicateEmailException
+                        || e.actualException instanceof DuplicatePhoneNumberException) {
+                    // Getting these would mean that between getting the user and trying creating it:
+                    // 1. the user managed to do a full create+consume flow
+                    // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                    // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                    // Also, both would make the current login fail if done before the transaction
+                    // by cleaning up the device/code this consume would've used.
+                    throw new RestartFlowException();
+                } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
+                }
+                throw new StorageQueryException(e.actualException);
             }
         }
     }
