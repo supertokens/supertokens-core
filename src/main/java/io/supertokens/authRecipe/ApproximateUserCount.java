@@ -46,7 +46,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Serving path for the opt-in approximate tenant user count (PLAN-009 skeleton, PLAN-010 unit "ledger-fold").
+ * Serving path for the tenant user count (PLAN-009 skeleton, PLAN-010 units "ledger-fold" and "default-flip").
+ * As of "default-flip" this is the default single-tenant, unfiltered count path - the {@code allowApproximate}
+ * request parameter is a vestigial no-op; the slow exact recompute survives only as the background anchor
+ * refresh (which doubles as the shadow audit).
  * Holds a per-tenant in-memory anchor {@code {exactCount, snapshotMs, computedAt}} — the exact count taken at
  * {@code snapshotMs} — and serves {@code exactCount + fold(lifecycle events in (snapshotMs, now])} at request
  * time (single-digit ms), refreshing the anchor in the background with stale-while-revalidate semantics.
