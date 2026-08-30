@@ -16,12 +16,14 @@
 
 package io.supertokens.test.accountlinking;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
 import io.supertokens.auditlog.lifecycle.LifecycleEventType;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -404,6 +406,36 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
     }
 
     /**
+     * A fake-email sign-up is pre-verified on the same audited connection as the user creation (the fake-email
+     * branch folded onto the audited transaction). This pins both halves of that path: the user still comes out
+     * verified, and exactly one {@code user_creation} event is emitted.
+     */
+    @Test
+    public void fakeEmailSignUpVerifiesAndEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        String fakeEmail = "st-user@stfakeemail.supertokens.com";
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), fakeEmail, "password");
+
+        // The fake email is pre-verified in the same transaction that created the user.
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), fakeEmail));
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
      * Importing an email-password user by password hash also emits a {@code user_creation} event (the import
      * create path goes through the same audited transaction as an interactive sign-up).
      */
@@ -485,6 +517,37 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         Row event = events.get(0);
         assertEquals(user.getSupertokensUserId(), event.recipeUserId);
         assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
+     * A WebAuthn sign-up emits exactly one {@code user_creation} event carrying the tenant it was created in.
+     * WebAuthn is the one converted path where the emit lands inside the pre-existing {@code while(true)} retry
+     * loop of the audited transaction, so it gets its own assertion like the other recipes. Driven through the
+     * HTTP sign-up flow (register options + passkey) because that is the only way to produce a valid credential.
+     */
+    @Test
+    public void webAuthnSignUpEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        JsonObject signUpResponse = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(
+                process.getProcess(), "webauthn@example.com");
+        assertEquals("OK", signUpResponse.get("status").getAsString());
+        String recipeUserId = signUpResponse.get("recipeUserId").getAsString();
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(recipeUserId, event.recipeUserId);
+        assertEquals(recipeUserId, event.primaryOrRecipeUserId);
         LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
         assertEquals(LifecycleEventType.USER_CREATION, payload.type);
         assertEquals("public", payload.tenantId);
