@@ -228,10 +228,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                             + ": burst window of " + result.eventCount + " events exceeds the fold cap.");
                     break;
                 case MATCH:
-                default:
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, null);
                     break;
+                default:
+                    // Future-proofing: a status added later must be handled explicitly, never fall through
+                    // to "matched" silently. Surfacing it as an audit failure (via the outer catch: FAILED
+                    // ProcessState + warn) makes the gap loud without disturbing serving.
+                    throw new IllegalStateException("Unhandled shadow-audit status: " + result.status);
             }
         } catch (Exception e) {
             // Observability, not correctness: never let an audit failure escape into the refresh path.
@@ -244,8 +248,11 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     /**
      * Reports a shadow-audit discrepancy: a human-readable {@code warn} log with the full context the issue
-     * asks for (tenant, window bounds, event count, both values) plus a structured telemetry event — the
-     * "metric" — carrying the same fields for querying/alerting. The discrepant value is never served.
+     * asks for (tenant, window bounds, event count, both values) plus a structured telemetry log event —
+     * the same message body carrying the individual fields as queryable attributes for alerting. The
+     * telemetry event is the only telemetry primitive the core exposes (no metric/counter API); it is
+     * emitted directly rather than only via {@code Logging.warn} so the discrepancy still reaches the
+     * collector when {@code warn} logging is turned down in config. The discrepant value is never served.
      */
     private void reportDiscrepancy(Main main, TenantIdentifier tenantIdentifier, CountShadowAudit.Result result) {
         String message = "Count shadow audit discrepancy for tenant " + result.tenantId
@@ -259,6 +266,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         TelemetryProvider telemetry = TelemetryProvider.getInstance(main);
         if (telemetry != null) {
             Map<String, String> attributes = new HashMap<>();
+            attributes.put("event", "count_shadow_audit_discrepancy");
             attributes.put("audit", "count_shadow");
             attributes.put("tenantId", result.tenantId);
             attributes.put("expectedCount", Long.toString(result.expectedCount));
@@ -268,7 +276,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             attributes.put("eventCount", Integer.toString(result.eventCount));
             attributes.put("windowFromExclusiveMs", Long.toString(result.windowFromExclusiveMs));
             attributes.put("windowToInclusiveMs", Long.toString(result.windowToInclusiveMs));
-            telemetry.createLogEvent(tenantIdentifier, "count_shadow_audit_discrepancy", "warn", attributes);
+            telemetry.createLogEvent(tenantIdentifier, message, "warn", attributes);
         }
 
         JsonObject data = new JsonObject();

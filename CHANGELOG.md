@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `ActiveUsers.updateLastActive` no longer writes `user_last_active` directly; it only appends the throttled `user_last_active` activity-log event, and the `RollupUserLastActive` cron is now the sole writer of the projection (so counts reflect activity within a rollup interval).
 - Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
-- Adds a shadow audit to the approximate-user-count background refresh that checks the exact tenant count moved by exactly the net delta folded from lifecycle events since the previous refresh; discrepancies are logged and emitted as a `count_shadow_audit_discrepancy` telemetry event, purely observationally (the fresh exact count is always served).
+- Adds an observability-only shadow audit to the approximate-user-count background refresh; discrepancies are logged and emitted as telemetry, never served.
 
 ## [12.2.0]
 
