@@ -141,8 +141,9 @@ public class ApproximateUserCountTest {
         assertTrue(response.get("approximate").getAsBoolean());
         assertTrue(response.has("asOf"));
         long asOf = response.get("asOf").getAsLong();
-        // asOf is the anchor boundary X = refresh-start - 60s skew margin, so it is in the recent past.
-        assertTrue(asOf <= after && asOf >= before - 120_000);
+        // asOf is the instant the served value is as-of (the fold window's upper bound), so it falls within
+        // the request.
+        assertTrue(asOf <= after && asOf >= before);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -201,8 +202,9 @@ public class ApproximateUserCountTest {
     }
 
     // A stale cache entry triggers a background anchor refresh (stale-while-revalidate): the request keeps
-    // serving the correct count, the refresh fires the COMPLETED process state, and the rebased anchor
-    // advances asOf. Staleness is forced via the test-only seam so we don't wait out the real 10-min TTL.
+    // serving the correct count (anchor + folded delta), the refresh fires the COMPLETED process state, and a
+    // later request advances asOf. Staleness is forced via the test-only seam so we don't wait out the real
+    // 10-min TTL.
     @Test
     public void staleEntryTriggersBackgroundRefresh() throws Exception {
         String[] args = {"../"};
@@ -224,7 +226,8 @@ public class ApproximateUserCountTest {
         assertEquals(3, primed.get("count").getAsLong());
         long asOfBefore = primed.get("asOf").getAsLong();
 
-        // Two more sign-ups land in the live delta, and age the cached anchor so the next request sees it stale.
+        // Two more sign-ups land in the folded delta (their user_creation events are after the anchor
+        // snapshot), and age the cached anchor so the next request sees it stale.
         EmailPassword.signUp(process.getProcess(), "extra0@example.com", "password0");
         EmailPassword.signUp(process.getProcess(), "extra1@example.com", "password1");
         Thread.sleep(5);
@@ -247,6 +250,50 @@ public class ApproximateUserCountTest {
                 SemVer.v5_6.get(), "");
         assertEquals(5, refreshed.get("count").getAsLong());
         assertTrue(refreshed.get("asOf").getAsLong() > asOfBefore);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The accuracy upgrade of PLAN-010 unit "ledger-fold": a deletion between two requests is reflected
+    // immediately, off the same cached anchor, because the fold sees the deletion's lifecycle event. The old
+    // joined-since delta could only ever see creations, so this count would have stayed stale until the next
+    // anchor refresh (up to the 10-min TTL). No refresh happens here — the anchor is primed once and reused.
+    @Test
+    public void apiApproximateReflectsDeletionsViaFoldWithoutARefresh() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo doomed = EmailPassword.signUp(process.getProcess(), "del@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep1@example.com", "password1");
+
+        // Prime the anchor synchronously: exact count 3, snapshotted now. The three creations are in the anchor,
+        // not the fold window.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(3, primed.get("count").getAsLong());
+
+        // Delete a user after the anchor snapshot. Its lifecycle event lands in the fold window.
+        Thread.sleep(5);
+        AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
+        Thread.sleep(5);
+
+        // Same anchor (no refresh — the entry is not stale), but the fold now carries the -1: exact count served.
+        JsonObject afterDelete = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(2, afterDelete.get("count").getAsLong());
+        assertTrue(afterDelete.get("approximate").getAsBoolean());
+        // The exact recompute agrees, confirming the fold is exact (not a lagging estimate).
+        assertEquals(2, ((AuthRecipeSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getUsersCount(process.getAppForTesting(), null));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
