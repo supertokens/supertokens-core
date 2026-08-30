@@ -110,7 +110,13 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         REFRESH_TOKEN_GRACE_PERIOD_HIT,
         REFRESH_TOKEN_REUSE_DETECTED,
         APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
-        APPROXIMATE_USER_COUNT_REFRESH_FAILED
+        APPROXIMATE_USER_COUNT_REFRESH_FAILED,
+        // Shadow audit at anchor refresh (PLAN-010 unit 3): the anchor+fold projection matched the fresh
+        // exact count, differed from it (a detected ledger/interpreter bug — logged, never served), or the
+        // audit itself could not run (best-effort — never disturbs serving or the refresh), respectively.
+        APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED,
+        APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY,
+        APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED
     }
 
     public static class EventAndException {

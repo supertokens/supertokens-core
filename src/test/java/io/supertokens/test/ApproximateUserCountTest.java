@@ -18,9 +18,16 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.auditlog.lifecycle.GroupPresence;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
 import io.supertokens.authRecipe.ApproximateUserCount;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -28,6 +35,8 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
+
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -267,6 +276,105 @@ public class ApproximateUserCountTest {
         assertTrue(response.has("approximate"));
         assertFalse(response.get("approximate").getAsBoolean());
         assertTrue(response.has("asOf"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Shadow audit, happy path (PLAN-010 unit 3): a deletion that is recorded in the lifecycle ledger moves the
+    // exact count by exactly the folded delta, so the audit at the next refresh matches. Exercises the real
+    // storage reads (fresh exact count + app-scoped window read) and the fold end to end.
+    @Test
+    public void shadowAuditMatchesWhenACountChangeIsLedgered() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo doomed = EmailPassword.signUp(process.getProcess(), "del@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep1@example.com", "password1");
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        ApproximateUserCount auc = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+
+        // Seed the audit snapshot (exact count = 3 as of now); the first pass only seeds, it cannot compare.
+        auc.runShadowAuditForTesting(process.getProcess(), tenant, storage);
+        assertNull(ProcessState.getInstance(process.getProcess()).getLastEventByName(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED));
+
+        // A deletion that IS recorded in the ledger: the exact count (-1) and the folded delta (-1) agree.
+        Thread.sleep(5);
+        AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
+        Thread.sleep(5);
+
+        ProcessState.getInstance(process.getProcess()).clear();
+        auc.runShadowAuditForTesting(process.getProcess(), tenant, storage);
+
+        assertNotNull(ProcessState.getInstance(process.getProcess()).getLastEventByName(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED));
+        assertNull(ProcessState.getInstance(process.getProcess()).getLastEventByName(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Shadow audit, detection path: a lifecycle event that implies a count change the exact count does not
+    // reflect (here a spurious group deletion — standing in for any ledger/interpreter bug) is caught. The
+    // discrepancy is logged with full context and never served; the state carries the same context for tests.
+    @Test
+    public void shadowAuditFlagsALedgerCountMismatch() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "user" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        ApproximateUserCount auc = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+
+        // Seed the audit snapshot (exact count = 3 as of now).
+        auc.runShadowAuditForTesting(process.getProcess(), tenant, storage);
+
+        // Inject a group-deletion event that never actually happened, so the ledger implies a -1 the exact
+        // count (still 3) does not reflect. A real ledger/interpreter bug looks the same to the audit.
+        Thread.sleep(5);
+        long createdAt = System.currentTimeMillis();
+        GroupPresence phantom = new GroupPresence("phantom-group",
+                Collections.singletonList(tenant.getTenantId()));
+        AuditLogEvent spurious = LifecycleAuditEvent.forUserGroupDeletion(tenant.toAppIdentifier(),
+                "phantom-group", phantom, createdAt);
+        ((ActivityLogStorage) storage).createActivityLogEntry(tenant, spurious);
+        Thread.sleep(5);
+
+        ProcessState.getInstance(process.getProcess()).clear();
+        auc.runShadowAuditForTesting(process.getProcess(), tenant, storage);
+
+        ProcessState.EventAndException event = ProcessState.getInstance(process.getProcess()).getLastEventByName(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY);
+        assertNotNull(event);
+        assertNotNull(event.data);
+        assertEquals(3, event.data.get("previousExactCount").getAsLong());
+        assertEquals(3, event.data.get("freshExactCount").getAsLong());
+        assertEquals(-1, event.data.get("foldedDelta").getAsLong());
+        assertEquals(2, event.data.get("expectedCount").getAsLong()); // 3 + (-1), never served
+        assertEquals(1, event.data.get("eventCount").getAsInt());
+        assertNull(ProcessState.getInstance(process.getProcess()).getLastEventByName(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
