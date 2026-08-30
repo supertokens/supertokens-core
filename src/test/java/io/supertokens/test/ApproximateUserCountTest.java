@@ -375,6 +375,50 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // After the default flip the additive approximate/asOf fields key purely on the CDI version, no longer on
+    // an allowApproximate opt-in. The exact-fallback shapes the ledger fold does not cover - an all-tenants
+    // count, or a recipe-filtered count - therefore carry approximate=false + asOf on 5.6 even when the param
+    // is absent. This pins that param-less contract for both fallback shapes (the recipe-filter case above
+    // still sends the param, so it does not).
+    @Test
+    public void apiFallbackShapesCarryFieldsWithoutParamOn5_6() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "user0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "user1@example.com", "password1");
+
+        // All-tenants shape, no allowApproximate param: exact recompute, but the additive fields still appear.
+        JsonObject allTenants = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?includeAllTenants=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+
+        assertEquals("OK", allTenants.get("status").getAsString());
+        assertEquals(2, allTenants.get("count").getAsLong());
+        assertTrue(allTenants.has("approximate"));
+        assertFalse(allTenants.get("approximate").getAsBoolean());
+        assertTrue(allTenants.has("asOf"));
+
+        // Recipe-filtered shape, no allowApproximate param: same param-less fallback contract.
+        JsonObject recipeFiltered = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+
+        assertEquals("OK", recipeFiltered.get("status").getAsString());
+        assertEquals(2, recipeFiltered.get("count").getAsLong());
+        assertTrue(recipeFiltered.has("approximate"));
+        assertFalse(recipeFiltered.get("approximate").getAsBoolean());
+        assertTrue(recipeFiltered.has("asOf"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // Shadow audit, happy path (PLAN-010 unit 3): a deletion that is recorded in the lifecycle ledger moves the
     // exact count by exactly the folded delta, so the audit at the next refresh matches. Exercises the real
     // storage reads (fresh exact count + app-scoped window read) and the fold end to end.
