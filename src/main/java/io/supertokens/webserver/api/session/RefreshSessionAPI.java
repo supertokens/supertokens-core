@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.auditlog.lifecycle.ActivityEventType;
+import io.supertokens.config.Config;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.AccessTokenValidityOutOfRangeException;
@@ -103,19 +104,33 @@ public class RefreshSessionAPI extends WebserverAPI {
                     appIdentifier.getAppId(), sessionInfo.session.tenantId);
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
 
-            // Record the refresh as a token_refresh activity event. This is a fail-loud audited write (see
-            // ActiveUsers.updateLastActive): a write failure fails the refresh request rather than being
-            // silently dropped, so the audit trail stays complete. Every refresh is recorded — there is no
-            // throttle.
-            if (storage.getType() == STORAGE_TYPE.SQL) {
-                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
-                            ActivityEventType.TOKEN_REFRESH);
-                } else {
-                    ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.session.userId,
-                            ActivityEventType.TOKEN_REFRESH);
+            // Skip the userid_mapping lookup and the activity-log write when the same session user_id was
+            // marked active recently. With default 1h access tokens and diverse user_ids this gate rarely
+            // fires — refreshes are typically further apart than the throttle window. Its real value is
+            // capping the blast radius of refresh loops, burst patterns (e.g. many tabs refreshing at once),
+            // and load tests that concentrate on a small user set; it is not expected to move the needle on
+            // steady-state per-request latency. This short-circuit is itself part of the throttle, so it is
+            // bypassed (every refresh records) when activity_log_throttle_enabled is off.
+            boolean throttleEnabled = Config.getConfig(tenantIdentifier, main).getActivityLogThrottleEnabled();
+            if (storage.getType() == STORAGE_TYPE.SQL
+                    && (!throttleEnabled
+                            || !ActiveUsers.wasRecentlyActive(appIdentifier, sessionInfo.session.userId))) {
+                try {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                            appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                                ActivityEventType.TOKEN_REFRESH);
+                    } else {
+                        ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.session.userId,
+                                ActivityEventType.TOKEN_REFRESH);
+                    }
+                    if (throttleEnabled) {
+                        // Mark by the session's user_id so the next refresh can short-circuit the mapping
+                        // lookup, not just the write. Meaningful only while throttling is on.
+                        ActiveUsers.markRecentlyActive(appIdentifier, sessionInfo.session.userId);
+                    }
+                } catch (StorageQueryException ignored) {
                 }
             }
 

@@ -72,7 +72,8 @@ public class CoreConfig {
             "oauth_provider_consent_login_base_url",
             "oauth_provider_url_configured_in_oauth_provider",
             "saml_legacy_acs_url",
-            "activity_log_retention_days"
+            "activity_log_retention_days",
+            "activity_log_throttle_enabled"
     };
 
     @IgnoreForAnnotationCheck
@@ -488,6 +489,19 @@ public class CoreConfig {
                     "be the same for all apps/tenants under a connection URI domain. (Default: 31)")
     private int activity_log_retention_days = 31;
 
+    @EnvName("ACTIVITY_LOG_THROTTLE_ENABLED")
+    @NotConflictingInConnectionUriDomain
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If true, throttled activity events (token_refresh, session_create, oauth_token_exchange, " +
+                    "oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 " +
+                    "minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out " +
+                    "are never throttled. Set to false to record every activity event as its own row (a complete " +
+                    "audit trail) at the cost of that write volume. Must be the same for all apps/tenants under a " +
+                    "connection URI domain. (Default: true)")
+    private boolean activity_log_throttle_enabled = true;
+
     @EnvName("WEBAUTHN_RECOVER_ACCOUNT_TOKEN_LIFETIME")
     @NotConflictingInApp
     @JsonProperty
@@ -787,6 +801,10 @@ public class CoreConfig {
 
     public int getActivityLogRetentionDays() {
         return activity_log_retention_days;
+    }
+
+    public boolean getActivityLogThrottleEnabled() {
+        return activity_log_throttle_enabled;
     }
 
     public String getOtelCollectorConnectionURI() {

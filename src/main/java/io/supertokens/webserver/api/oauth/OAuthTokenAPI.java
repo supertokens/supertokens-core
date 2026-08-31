@@ -23,7 +23,6 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -313,26 +312,25 @@ public class OAuthTokenAPI extends WebserverAPI {
         }
     }
 
-    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        SessionInfo sessionInfo;
+    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
         try {
-            sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
-        } catch (UnauthorisedException e) {
-            // The session backing the just-issued token is no longer resolvable (e.g. revoked between
-            // issuance and here): there is no user to attribute the activity to, so nothing is recorded.
-            // The audit write below stays fail-loud; a missing session is not a write failure.
-            return;
-        }
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
 
-        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
-        String activeUserId = userIdMapping != null ? userIdMapping.superTokensUserId : sessionInfo.userId;
-        ActiveUsers.updateLastActive(tenantIdentifier, main, activeUserId,
-                ActivityEventType.OAUTH_TOKEN_EXCHANGE);
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
+            } else {
+                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
 

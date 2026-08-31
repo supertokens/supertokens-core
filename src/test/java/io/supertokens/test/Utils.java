@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.CoreConfig;
@@ -168,6 +169,7 @@ public abstract class Utils extends Mockito {
             byteArrayOutputStream = new ByteArrayOutputStream();
             System.setErr(new PrintStream(byteArrayOutputStream));
             TelemetryProvider.resetForTest();
+            ActiveUsers.clearCacheForTesting();
         } catch (Exception e) {
             e.printStackTrace();
         }
