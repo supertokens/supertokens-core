@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `ActiveUsers.updateLastActive` no longer writes `user_last_active` directly; it only appends the throttled `user_last_active` activity-log event, and the `RollupUserLastActive` cron is now the sole writer of the projection (so counts reflect activity within a rollup interval).
 - Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
 - Adds an observability-only shadow audit to the approximate-user-count background refresh; discrepancies are logged and emitted as telemetry, never served.
+- The last-active rollup fold now skips activity for apps no longer present in `apps`, so a deleted app's retained `activity_log` rows can never resurrect a `user_last_active` projection row (which would violate its `apps` foreign key).
 
 ## [12.2.0]
 
