@@ -134,17 +134,16 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
 
                 if (storage.getType() == STORAGE_TYPE.SQL) {
-                    try {
-                        AppIdentifier appIdentifier = getAppIdentifier(req);
-                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                appIdentifier, storage, userId, UserIdType.ANY);
-                        if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(appIdentifier, main,
-                                    userIdMapping.superTokensUserId, ActivityEventType.SIGN_OUT);
-                        } else {
-                            ActiveUsers.updateLastActive(appIdentifier, main, userId, ActivityEventType.SIGN_OUT);
-                        }
-                    } catch (StorageQueryException ignored) {
+                    // Record the revocation as a sign_out activity event. Fail-loud audited write (see
+                    // ActiveUsers.updateLastActive): a write failure fails the request rather than being dropped.
+                    AppIdentifier appIdentifier = getAppIdentifier(req);
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                            appIdentifier, storage, userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(appIdentifier, main,
+                                userIdMapping.superTokensUserId, ActivityEventType.SIGN_OUT);
+                    } else {
+                        ActiveUsers.updateLastActive(appIdentifier, main, userId, ActivityEventType.SIGN_OUT);
                     }
                 }
                 JsonObject result = new JsonObject();

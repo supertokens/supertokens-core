@@ -22,6 +22,7 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
 import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
+import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
@@ -164,24 +165,25 @@ public class OAuthAuthAPI extends WebserverAPI {
         }
     }
 
-    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
+    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        SessionInfo sessionInfo;
         try {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
-
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
-                        ActivityEventType.OAUTH_AUTHORIZE);
-            } else {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
-                        ActivityEventType.OAUTH_AUTHORIZE);
-            }
-        } catch (Exception e) {
-            // ignore
+            sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
+        } catch (UnauthorisedException e) {
+            // The session backing the just-issued token is no longer resolvable (e.g. revoked between
+            // issuance and here): there is no user to attribute the activity to, so nothing is recorded.
+            // The audit write below stays fail-loud; a missing session is not a write failure.
+            return;
         }
+
+        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
+        String activeUserId = userIdMapping != null ? userIdMapping.superTokensUserId : sessionInfo.userId;
+        ActiveUsers.updateLastActive(tenantIdentifier, main, activeUserId,
+                ActivityEventType.OAUTH_AUTHORIZE);
     }
 }

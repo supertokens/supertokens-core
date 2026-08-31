@@ -27,9 +27,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * The semantic activity-event vocabulary: the {@code event_type} strings, the throttle classification
- * (sign_in / sign_out unthrottled; the rest throttled), and the last-active fold set (the six activity events
- * plus user_creation and account_linking; user_import and the retired user_last_active excluded).
+ * The semantic activity-event vocabulary: the {@code event_type} strings and the last-active fold set (the six
+ * activity events plus user_creation and account_linking; user_import and the retired user_last_active
+ * excluded).
  */
 public class ActivityEventTypeTest {
 
@@ -41,16 +41,6 @@ public class ActivityEventTypeTest {
         assertEquals("session_create", ActivityEventType.SESSION_CREATE.getValue());
         assertEquals("oauth_token_exchange", ActivityEventType.OAUTH_TOKEN_EXCHANGE.getValue());
         assertEquals("oauth_authorize", ActivityEventType.OAUTH_AUTHORIZE.getValue());
-    }
-
-    @Test
-    public void signInAndSignOutAreUnthrottledEverythingElseThrottled() {
-        assertFalse(ActivityEventType.SIGN_IN.isThrottled());
-        assertFalse(ActivityEventType.SIGN_OUT.isThrottled());
-        assertTrue(ActivityEventType.TOKEN_REFRESH.isThrottled());
-        assertTrue(ActivityEventType.SESSION_CREATE.isThrottled());
-        assertTrue(ActivityEventType.OAUTH_TOKEN_EXCHANGE.isThrottled());
-        assertTrue(ActivityEventType.OAUTH_AUTHORIZE.isThrottled());
     }
 
     @Test

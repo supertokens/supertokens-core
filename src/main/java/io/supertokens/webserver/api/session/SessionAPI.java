@@ -113,19 +113,18 @@ public class SessionAPI extends WebserverAPI {
                     useStaticSigningKey, accessTokenValidity);
 
             if (storage.getType() == STORAGE_TYPE.SQL) {
-                try {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                            io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                    tenantIdentifier.toAppIdentifier(), storage,
-                                    sessionInfo.session.userId, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main,
-                                userIdMapping.superTokensUserId, ActivityEventType.SESSION_CREATE);
-                    } else {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main,
-                                sessionInfo.session.userId, ActivityEventType.SESSION_CREATE);
-                    }
-                } catch (StorageQueryException ignored) {
+                // Record the session creation as a session_create activity event. Fail-loud audited write (see
+                // ActiveUsers.updateLastActive): a write failure fails the request rather than being dropped.
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                tenantIdentifier.toAppIdentifier(), storage,
+                                sessionInfo.session.userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    ActiveUsers.updateLastActive(tenantIdentifier, main,
+                            userIdMapping.superTokensUserId, ActivityEventType.SESSION_CREATE);
+                } else {
+                    ActiveUsers.updateLastActive(tenantIdentifier, main,
+                            sessionInfo.session.userId, ActivityEventType.SESSION_CREATE);
                 }
             }
 

@@ -50,7 +50,6 @@ public class ActiveUsersTest {
     @Before
     public void beforeEach() {
         Utils.reset();
-        ActiveUsers.clearCacheForTesting();
     }
 
     @Test
@@ -81,9 +80,7 @@ public class ActiveUsersTest {
 
         long now2 = System.currentTimeMillis();
 
-        // Throttle would otherwise skip this update since user1 was just touched above; clear so
-        // the test exercises a fresh activity-log emit at now2.
-        ActiveUsers.clearCacheForTesting();
+        // Every activity is recorded (no throttle), so this re-emits a fresh activity-log event at now2.
         ActiveUsers.updateLastActive(main, "user1");
 
         RollupUserLastActive.runOnceForAllStoragesForTesting(main);
@@ -208,8 +205,7 @@ public class ActiveUsersTest {
 
         long now2 = System.currentTimeMillis();
 
-        // See clearCacheForTesting above — throttle would skip the second update otherwise.
-        ActiveUsers.clearCacheForTesting();
+        // Every activity is recorded (no throttle), so this re-emits a fresh activity-log event at now2.
         ActiveUsers.updateLastActive(main, "user1");
 
         RollupUserLastActive.runOnceForAllStoragesForTesting(main);
