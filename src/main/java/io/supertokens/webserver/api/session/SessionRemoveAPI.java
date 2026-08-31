@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -139,9 +140,9 @@ public class SessionRemoveAPI extends WebserverAPI {
                                 appIdentifier, storage, userId, UserIdType.ANY);
                         if (userIdMapping != null) {
                             ActiveUsers.updateLastActive(appIdentifier, main,
-                                    userIdMapping.superTokensUserId);
+                                    userIdMapping.superTokensUserId, ActivityEventType.SIGN_OUT);
                         } else {
-                            ActiveUsers.updateLastActive(appIdentifier, main, userId);
+                            ActiveUsers.updateLastActive(appIdentifier, main, userId, ActivityEventType.SIGN_OUT);
                         }
                     } catch (StorageQueryException ignored) {
                     }

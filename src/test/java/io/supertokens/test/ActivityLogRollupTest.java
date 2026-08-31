@@ -47,7 +47,10 @@ public class ActivityLogRollupTest {
 
     private static final String APP_ID = "public";
     private static final String ACTIVITY_LOG = "activity_log";
+    // The projection table (SQLiteConfig.getUserLastActiveTable()); NOT an event type.
     private static final String USER_LAST_ACTIVE = "user_last_active";
+    // A representative folded activity event, standing in for any of the fold set.
+    private static final String SIGN_IN = "sign_in";
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -124,7 +127,9 @@ public class ActivityLogRollupTest {
 
     /**
      * A recipe user active just before being linked to a primary: after fold+reconcile in one pass, only
-     * the primary user's projection row remains (the linked-away recipe user's row is reconciled away).
+     * the primary user's projection row remains (the linked-away recipe user's row is reconciled away). The
+     * account_linking event both credits the primary in the fold (its {@code created_at} becomes the primary's
+     * recency) and drives the reconcile delete of the recipe user's row.
      */
     @Test
     public void reconcileRemovesRecipeUserLinkedAwayInWindow() throws Exception {
@@ -142,9 +147,10 @@ public class ActivityLogRollupTest {
 
         runRollup(storage, base - 10000);
 
-        // The recipe user's row is gone (folded then reconciled away); the primary user's row remains.
+        // The recipe user's row is gone (folded then reconciled away); the primary user's row remains, now at
+        // the link event's time (base + 3000) — the account_linking event credits the primary in the fold.
         assertNull(getLastActive(storage, recipeUser));
-        assertEquals(Long.valueOf(base + 2000), getLastActive(storage, primaryUser));
+        assertEquals(Long.valueOf(base + 3000), getLastActive(storage, primaryUser));
 
         stopProcess(process);
     }
@@ -210,7 +216,7 @@ public class ActivityLogRollupTest {
                 }
                 // ...and its audit entry on the SAME connection.
                 storage.createActivityLogEntry_Transaction(con, new TenantIdentifier(null, null, null),
-                        new AuditLogEvent(APP_ID, "public", user, user, "user_last_active", "success",
+                        new AuditLogEvent(APP_ID, "public", user, user, SIGN_IN, "success",
                                 null, null, base, null));
                 // Injected failure after both writes: startTransaction rolls the connection back.
                 throw new RuntimeException("injected failure after audit write");
@@ -223,6 +229,55 @@ public class ActivityLogRollupTest {
         // Both writes are gone.
         assertNull(getLastActive(storage, user));
         assertEquals(0, countActivityLogEventsForUser(storage, user));
+
+        stopProcess(process);
+    }
+
+    /**
+     * The fold credits every event in the last-active fold set — the six semantic activity events plus the
+     * two activity-implying lifecycle events (user_creation, account_linking) — and ignores everything else,
+     * notably {@code user_import} (imported != active) and other lifecycle types. account_linking credits the
+     * primary user via {@code primary_or_recipe_user_id}.
+     */
+    @Test
+    public void foldCreditsEachIncludedTypeAndIgnoresExcludedTypes() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemoryProcess();
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        long base = System.currentTimeMillis();
+
+        // One user per included event type; the user is its own primary_or_recipe_user_id...
+        String[] includedSelfCredited = {
+                "sign_in", "token_refresh", "session_create", "sign_out",
+                "oauth_token_exchange", "oauth_authorize", "user_creation"};
+        for (int i = 0; i < includedSelfCredited.length; i++) {
+            String type = includedSelfCredited[i];
+            insertActivityLogRow(storage, APP_ID, type + "-user", type + "-user", type, base + 1000 + i);
+        }
+        // ...except account_linking, which credits the PRIMARY (primary_or_recipe_user_id), not the recipe.
+        insertActivityLogRow(storage, APP_ID, "linked-away-recipe", "acctlink-primary", "account_linking",
+                base + 2000);
+
+        // Excluded: user_import (present, not active) and any other lifecycle type.
+        insertActivityLogRow(storage, APP_ID, "import-user", "import-user", "user_import", base + 3000);
+        insertActivityLogRow(storage, APP_ID, "unlink-user", "unlink-user", "account_unlinking", base + 3100);
+        insertActivityLogRow(storage, APP_ID, "deletion-user", "deletion-user", "user_deletion", base + 3200);
+
+        runRollup(storage, base - 10000);
+
+        // Every included type produced a projection row for the credited user.
+        for (String type : includedSelfCredited) {
+            assertNotNull("fold should credit " + type, getLastActive(storage, type + "-user"));
+        }
+        assertNotNull("fold should credit the primary of an account_linking event",
+                getLastActive(storage, "acctlink-primary"));
+
+        // Excluded types produced no projection row.
+        assertNull(getLastActive(storage, "import-user"));
+        assertNull(getLastActive(storage, "unlink-user"));
+        assertNull(getLastActive(storage, "deletion-user"));
+        // The linked-away recipe user was never credited (it is only ever the reconcile target).
+        assertNull(getLastActive(storage, "linked-away-recipe"));
 
         stopProcess(process);
     }
@@ -301,13 +356,13 @@ public class ActivityLogRollupTest {
     }
 
     private void insertUserLastActiveEvent(Start storage, String userId, long createdAt) throws Exception {
-        // For a user_last_active event the user is its own primary_or_recipe_user_id.
-        insertActivityLogRow(storage, APP_ID, userId, userId, "user_last_active", createdAt);
+        // For an activity event the user is its own primary_or_recipe_user_id.
+        insertActivityLogRow(storage, APP_ID, userId, userId, SIGN_IN, createdAt);
     }
 
     private void insertUserLastActiveEventForApp(Start storage, String appId, String userId, long createdAt)
             throws Exception {
-        insertActivityLogRow(storage, appId, userId, userId, "user_last_active", createdAt);
+        insertActivityLogRow(storage, appId, userId, userId, SIGN_IN, createdAt);
     }
 
     private void insertAccountLinkingEvent(Start storage, String recipeUserId, String primaryUserId, long createdAt)

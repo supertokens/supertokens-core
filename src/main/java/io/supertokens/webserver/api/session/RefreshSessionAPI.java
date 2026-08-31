@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.AccessTokenValidityOutOfRangeException;
@@ -115,9 +116,11 @@ public class RefreshSessionAPI extends WebserverAPI {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+                        ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                                ActivityEventType.TOKEN_REFRESH);
                     } else {
-                        ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.session.userId);
+                        ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.session.userId,
+                                ActivityEventType.TOKEN_REFRESH);
                     }
                     // Also mark by the session's user_id so the next refresh can short-circuit
                     // the mapping lookup, not just the upsert.

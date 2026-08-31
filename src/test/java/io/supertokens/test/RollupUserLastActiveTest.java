@@ -318,10 +318,10 @@ public class RollupUserLastActiveTest {
     }
 
     private void insertUserLastActiveEvent(Start storage, String userId, long createdAt) throws Exception {
-        // For a user_last_active event the user is its own primary_or_recipe_user_id.
+        // For an activity event the user is its own primary_or_recipe_user_id. 'sign_in' is a folded type.
         String query = "INSERT INTO " + ACTIVITY_LOG
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
-                + " VALUES (?, 'public', ?, ?, 'user_last_active', 'success', ?)";
+                + " VALUES (?, 'public', ?, ?, 'sign_in', 'success', ?)";
         storage.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try (PreparedStatement pst = sqlCon.prepareStatement(query)) {

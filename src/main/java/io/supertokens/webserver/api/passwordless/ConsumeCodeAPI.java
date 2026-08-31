@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
@@ -98,8 +99,12 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     tenantIdentifier.toAppIdentifier(), storage,
                     new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    consumeCodeResponse.user.getSupertokensUserId());
+            if (!consumeCodeResponse.createdNewUser) {
+                // Only an existing-user sign-in is an activity ping; a newly created user's activity is
+                // recorded by the in-transaction user_creation lifecycle event the fold reads.
+                ActiveUsers.updateLastActive(tenantIdentifier, main,
+                        consumeCodeResponse.user.getSupertokensUserId(), ActivityEventType.SIGN_IN);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

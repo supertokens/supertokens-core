@@ -40,6 +40,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.bulkimport.BulkImport;
@@ -149,8 +150,8 @@ public class TestAppData {
                 // app_id FK on purpose — stats survive app deletion — so it is ignored too.
                 "oauth_m2m_tokens", "oauth_m2m_token_stats",
                 // Rollup-derived projection: after the PLAN-011 cutover the last-active rollup cron is
-                // the sole writer of user_last_active. updateLastActive() only appends a user_last_active
-                // activity-log event and marks the storage dirty; the projection is folded asynchronously
+                // the sole writer of user_last_active. updateLastActive() only appends a semantic activity
+                // event and marks the storage dirty; the projection is folded asynchronously
                 // (within a rollup interval), so this table is empty right after the synchronous recipe
                 // writes above — same situation as the activity_log tables removed below.
                 "user_last_active"};
@@ -215,7 +216,7 @@ public class TestAppData {
                 generateTotpCode(process.getProcess(), totpDevice, 0));
 
         ActiveUsers.updateLastActive(app.toAppIdentifier(), process.getProcess(),
-                epUser.getSupertokensUserId());
+                epUser.getSupertokensUserId(), ActivityEventType.SIGN_IN);
 
         UserMetadata.updateUserMetadata(app.toAppIdentifier(), appStorage,
                 epUser.getSupertokensUserId(), new JsonObject());

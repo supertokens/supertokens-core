@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.thirdparty;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -85,8 +86,12 @@ public class SignInUpAPI extends WebserverAPI {
                 UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                        response.user.getSupertokensUserId());
+                if (!response.createdNewUser) {
+                    // Only an existing-user sign-in is an activity ping; a newly created user's activity is
+                    // recorded by the in-transaction user_creation lifecycle event the fold reads.
+                    ActiveUsers.updateLastActive(tenantIdentifier, main,
+                            response.user.getSupertokensUserId(), ActivityEventType.SIGN_IN);
+                }
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -150,8 +155,12 @@ public class SignInUpAPI extends WebserverAPI {
                 UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                        response.user.getSupertokensUserId());
+                if (!response.createdNewUser) {
+                    // Only an existing-user sign-in is an activity ping; a newly created user's activity is
+                    // recorded by the in-transaction user_creation lifecycle event the fold reads.
+                    ActiveUsers.updateLastActive(tenantIdentifier, main,
+                            response.user.getSupertokensUserId(), ActivityEventType.SIGN_IN);
+                }
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");

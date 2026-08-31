@@ -17,7 +17,6 @@
 package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -85,8 +84,8 @@ public class SignUpAPI extends WebserverAPI {
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    user.getSupertokensUserId());
+            // No activity event on sign-up: the in-transaction user_creation lifecycle event already records
+            // this as activity and the last-active fold reads it.
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

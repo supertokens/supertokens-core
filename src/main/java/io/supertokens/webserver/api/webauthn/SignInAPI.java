@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -76,8 +77,8 @@ public class SignInAPI extends WebserverAPI {
                 throw new WebauthNVerificationFailedException("WebAuthN sign in failed");
             }
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    signInResult.userInfo.getSupertokensUserId());
+            ActiveUsers.updateLastActive(tenantIdentifier, main,
+                    signInResult.userInfo.getSupertokensUserId(), ActivityEventType.SIGN_IN);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

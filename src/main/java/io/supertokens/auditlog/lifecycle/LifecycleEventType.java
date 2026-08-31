@@ -74,7 +74,7 @@ public enum LifecycleEventType {
 
     /**
      * @return the lifecycle event type with the given {@code event_type} value, or {@code null} if the
-     * value is not a lifecycle event (e.g. an activity event such as {@code user_last_active}).
+     * value is not a lifecycle event (e.g. an activity event such as {@code sign_in}).
      */
     public static LifecycleEventType fromValue(String value) {
         if (value != null) {
