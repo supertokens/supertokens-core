@@ -28,12 +28,12 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.inmemorydb.Start;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -90,7 +90,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "u@example.com", "password");
         AuthRecipe.deleteUser(process.getProcess(), user.getSupertokensUserId(), false);
@@ -118,7 +118,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
         AuthRecipeUserInfo member = EmailPassword.signUp(process.getProcess(), "m@example.com", "password");
@@ -151,7 +151,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
         AuthRecipeUserInfo member = EmailPassword.signUp(process.getProcess(), "m@example.com", "password");
@@ -217,7 +217,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
 
         AuthRecipe.deleteUser(t1.toAppIdentifier(), a1Storage, member.getSupertokensUserId(), false, null);
 
-        List<Row> events = readEvents((Start) a1Storage, LifecycleEventType.USER_DELETION.getValue());
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.USER_DELETION.getValue());
         assertEquals(1, events.size());
         LifecycleEventPayload payload = LifecycleEventPayload.fromJson(events.get(0).payload);
         assertEquals(LifecycleEventType.USER_DELETION, payload.type);
@@ -242,7 +242,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipe.deleteUser(process.getProcess(), "00000000-0000-0000-0000-000000000000", true);
 
@@ -266,7 +266,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "u@example.com", "password");
         String externalId = "ext-standalone";
@@ -300,7 +300,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
         AuthRecipeUserInfo member = EmailPassword.signUp(process.getProcess(), "m@example.com", "password");
@@ -356,7 +356,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         boolean added = Multitenancy.addUserIdToTenant(main, t2, t2Storage, user.getSupertokensUserId());
         assertTrue(added);
 
-        List<Row> events = readEvents((Start) a1Storage, LifecycleEventType.TENANT_ASSOCIATION.getValue());
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_ASSOCIATION.getValue());
         assertEquals(1, events.size());
         Row event = events.get(0);
         assertEquals(user.getSupertokensUserId(), event.recipeUserId);
@@ -372,7 +372,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         // Associating again is a no-op — still exactly one event.
         boolean addedAgain = Multitenancy.addUserIdToTenant(main, t2, t2Storage, user.getSupertokensUserId());
         assertFalse(addedAgain);
-        assertEquals(1, readEvents((Start) a1Storage, LifecycleEventType.TENANT_ASSOCIATION.getValue()).size());
+        assertEquals(1, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_ASSOCIATION.getValue()).size());
 
         stopProcess(process);
     }
@@ -389,7 +389,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "u@example.com", "password");
 
@@ -416,7 +416,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String fakeEmail = "st-user@stfakeemail.supertokens.com";
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), fakeEmail, "password");
@@ -445,7 +445,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // A bcrypt hash is auto-detected (hashingAlgorithm = null).
         String bcryptHash = "$2a$10$GzEm3vKoAqnJCTWesRARCe/ovjt/07qjvcH9jbLUg44Fn77gMZkmm";
@@ -474,7 +474,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         ThirdParty.SignInUpResponse first = ThirdParty.signInUp(process.getProcess(), "google", "tp-user-1",
                 "tp@example.com");
@@ -507,7 +507,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
             return;
         }
         Main main = process.getProcess();
-        Start storage = (Start) StorageLayer.getStorage(main);
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(main);
 
         AuthRecipeUserInfo user = Passwordless.createPasswordlessUser(new TenantIdentifier(null, null, null),
                 storage, "pless@example.com", null, System.currentTimeMillis());
@@ -536,7 +536,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         JsonObject signUpResponse = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(
                 process.getProcess(), "webauthn@example.com");
@@ -581,7 +581,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
                 null);
         assertTrue(removed);
 
-        List<Row> events = readEvents((Start) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue());
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue());
         assertEquals(1, events.size());
         Row event = events.get(0);
         assertEquals(user.getSupertokensUserId(), event.recipeUserId);
@@ -598,7 +598,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         boolean removedAgain = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage,
                 user.getSupertokensUserId(), null);
         assertFalse(removedAgain);
-        assertEquals(1, readEvents((Start) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
+        assertEquals(1, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
 
         stopProcess(process);
     }
@@ -624,7 +624,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         boolean removed = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage, user.getSupertokensUserId(),
                 null);
         assertFalse(removed);
-        assertEquals(0, readEvents((Start) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
+        assertEquals(0, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
 
         stopProcess(process);
     }
@@ -650,7 +650,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private List<Row> readEvents(Start storage, String eventType) throws Exception {
+    private List<Row> readEvents(SQLStorage storage, String eventType) throws Exception {
         String query = "SELECT recipe_user_id, primary_or_recipe_user_id, event_type, payload FROM "
                 + ACTIVITY_LOG + " WHERE event_type = ? ORDER BY created_at";
         return storage.startTransaction(con -> {

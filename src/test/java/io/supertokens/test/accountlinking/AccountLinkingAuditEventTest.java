@@ -23,7 +23,6 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.auditlog.AuditedResult;
@@ -32,6 +31,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -91,7 +91,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo recipe = EmailPassword.signUp(process.getProcess(), "r@example.com", "password");
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
@@ -136,7 +136,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo recipe = EmailPassword.signUp(process.getProcess(), "r@example.com", "password");
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
@@ -164,7 +164,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo recipe = EmailPassword.signUp(process.getProcess(), "r@example.com", "password");
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
@@ -204,7 +204,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
         AuthRecipeUserInfo other = EmailPassword.signUp(process.getProcess(), "o@example.com", "password");
@@ -249,7 +249,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "p@example.com", "password");
         AuthRecipe.createPrimaryUser(process.getProcess(), primary.getSupertokensUserId());
@@ -281,7 +281,7 @@ public class AccountLinkingAuditEventTest {
         if (process == null) {
             return;
         }
-        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
         AuthRecipeSQLStorage authRecipeStorage =
                 (AuthRecipeSQLStorage) StorageLayer.getStorage(process.getProcess());
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
@@ -344,7 +344,7 @@ public class AccountLinkingAuditEventTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private List<Row> readEvents(Start storage, String eventType) throws Exception {
+    private List<Row> readEvents(SQLStorage storage, String eventType) throws Exception {
         String query = "SELECT recipe_user_id, primary_or_recipe_user_id, event_type, payload FROM "
                 + ACTIVITY_LOG + " WHERE event_type = ? ORDER BY created_at";
         return storage.startTransaction(con -> {

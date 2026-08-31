@@ -150,6 +150,39 @@ public class ActivityLogRollupTest {
     }
 
     /**
+     * The fold must never resurrect a projection row for an app that no longer exists. {@code activity_log}
+     * rows are intentionally retained after an app is deleted (no app_id cascade), while {@code
+     * user_last_active} cascades on app delete; folding a since-deleted app's activity would re-insert a row
+     * that violates the {@code user_last_active -> apps} foreign key (this is what surfaced on PostgreSQL
+     * once the test DB stopped being reset). The {@code EXISTS (apps)} guard confines the fold to still-
+     * existing apps: a user_last_active event whose app_id is absent from {@code apps} is skipped, while a
+     * concurrent event for an existing app in the same window still folds normally.
+     */
+    @Test
+    public void foldSkipsActivityForAppMissingFromApps() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemoryProcess();
+        Start storage = (Start) StorageLayer.getStorage(process.getProcess());
+
+        long base = System.currentTimeMillis();
+        String existingAppUser = "rollup-app-guard-existing";
+        String deletedAppUser = "rollup-app-guard-deleted";
+        // "public" is present in the apps table; this id never is, standing in for a deleted app whose
+        // activity_log rows still linger.
+        String missingAppId = "app-that-was-deleted";
+
+        insertUserLastActiveEventForApp(storage, APP_ID, existingAppUser, base + 1000);
+        insertUserLastActiveEventForApp(storage, missingAppId, deletedAppUser, base + 2000);
+
+        runRollup(storage, base - 10000);
+
+        // The existing app's user is folded; the missing app's user is skipped (no resurrected row).
+        assertEquals(Long.valueOf(base + 1000), getLastActiveForApp(storage, APP_ID, existingAppUser));
+        assertNull(getLastActiveForApp(storage, missingAppId, deletedAppUser));
+
+        stopProcess(process);
+    }
+
+    /**
      * A transactional audit write plus a mutation on one connection, with a failure injected after the
      * write, must roll back together — neither the audit row nor the mutation survives.
      */
@@ -251,17 +284,38 @@ public class ActivityLogRollupTest {
         });
     }
 
+    private Long getLastActiveForApp(Start storage, String appId, String userId) throws Exception {
+        String query = "SELECT last_active_time FROM " + USER_LAST_ACTIVE + " WHERE app_id = ? AND user_id = ?";
+        return storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
+                pst.setString(1, appId);
+                pst.setString(2, userId);
+                try (ResultSet rs = pst.executeQuery()) {
+                    return rs.next() ? Long.valueOf(rs.getLong(1)) : null;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     private void insertUserLastActiveEvent(Start storage, String userId, long createdAt) throws Exception {
         // For a user_last_active event the user is its own primary_or_recipe_user_id.
-        insertActivityLogRow(storage, userId, userId, "user_last_active", createdAt);
+        insertActivityLogRow(storage, APP_ID, userId, userId, "user_last_active", createdAt);
+    }
+
+    private void insertUserLastActiveEventForApp(Start storage, String appId, String userId, long createdAt)
+            throws Exception {
+        insertActivityLogRow(storage, appId, userId, userId, "user_last_active", createdAt);
     }
 
     private void insertAccountLinkingEvent(Start storage, String recipeUserId, String primaryUserId, long createdAt)
             throws Exception {
-        insertActivityLogRow(storage, recipeUserId, primaryUserId, "account_linking", createdAt);
+        insertActivityLogRow(storage, APP_ID, recipeUserId, primaryUserId, "account_linking", createdAt);
     }
 
-    private void insertActivityLogRow(Start storage, String recipeUserId, String primaryOrRecipeUserId,
+    private void insertActivityLogRow(Start storage, String appId, String recipeUserId, String primaryOrRecipeUserId,
                                       String eventType, long createdAt) throws Exception {
         String query = "INSERT INTO " + ACTIVITY_LOG
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
@@ -269,7 +323,7 @@ public class ActivityLogRollupTest {
         storage.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
-                pst.setString(1, APP_ID);
+                pst.setString(1, appId);
                 pst.setString(2, recipeUserId);
                 pst.setString(3, primaryOrRecipeUserId);
                 pst.setString(4, eventType);
