@@ -25,6 +25,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
   The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
   per app, which postgresql-plugin 9.7.2 does with a per-app advisory lock.
+- Updates the bundled OpenTelemetry javaagent from 2.27.0 to 2.29.0 (CVE-2026-54704: JDBC connect-string passwords could leak into span attributes)
+- Pins transitive httpclient5 to 5.6.4 and httpcore5 / httpcore5-h2 to 5.4.3 (CVE-2026-64607, CVE-2026-54399, CVE-2026-54428)
 
 ## [12.1.1]
 
