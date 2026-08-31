@@ -166,11 +166,17 @@ public class ActiveUsersQueries {
             throws StorageQueryException, SQLException {
         String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
         String activityLogTable = Config.getConfig(start).getActivityLogTable();
+        String appsTable = Config.getConfig(start).getAppsTable();
 
         // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
+        // The apps guard skips activity for apps deleted within the window: activity_log rows are
+        // intentionally retained after an app is deleted (no app_id cascade), but user_last_active
+        // cascades on app delete, so folding a since-deleted app's rows would violate the
+        // user_last_active -> apps foreign key. EXISTS keeps the fold set to still-existing apps only.
         String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
-                + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable
+                + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable + " al"
                 + " WHERE event_type = 'user_last_active' AND created_at >= ?"
+                + " AND EXISTS (SELECT 1 FROM " + appsTable + " a WHERE a.app_id = al.app_id)"
                 + " GROUP BY app_id, primary_or_recipe_user_id"
                 + " ON CONFLICT (app_id, user_id) DO UPDATE"
                 + " SET last_active_time = MAX(" + userLastActiveTable + ".last_active_time,"

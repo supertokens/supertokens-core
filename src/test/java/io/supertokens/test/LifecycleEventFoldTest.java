@@ -35,6 +35,7 @@ import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -59,6 +60,30 @@ public class LifecycleEventFoldTest {
     public void userCreationAddsOneToItsTenant() {
         assertEquals(1, delta("t1", LifecycleEventPayload.forUserCreation("t1")));
         assertEquals(0, delta("t2", LifecycleEventPayload.forUserCreation("t1")));
+    }
+
+    @Test
+    public void userImportIsCountedExactlyLikeUserCreation() {
+        // A bulk-imported user is folded into user counts identically to an interactively created one:
+        // +1 in the tenant it lands in, 0 elsewhere. (The type differs only for the last-active rollup.)
+        assertEquals(1, delta("t1", LifecycleEventPayload.forUserImport("t1")));
+        assertEquals(0, delta("t2", LifecycleEventPayload.forUserImport("t1")));
+    }
+
+    @Test
+    public void bulkImportEmitSequenceCountsGroupOncePerTenant() {
+        // The sequence BulkImport emits for a user present in three tenants: one user_import for the first
+        // tenant, then a tenant_association per remaining tenant with the presence built up so far. The group
+        // must end counted +1 in each of its tenants and nowhere else.
+        List<LifecycleEventPayload> events = Arrays.asList(
+                LifecycleEventPayload.forUserImport("t1"),
+                LifecycleEventPayload.forTenantAssociation(group("g1", "t1"), "t2"),
+                LifecycleEventPayload.forTenantAssociation(group("g1", "t1", "t2"), "t3"));
+        Map<String, Long> deltas = CountDeltaInterpreter.computeDeltas(events);
+        assertEquals(Long.valueOf(1), deltas.get("t1"));
+        assertEquals(Long.valueOf(1), deltas.get("t2"));
+        assertEquals(Long.valueOf(1), deltas.get("t3"));
+        assertNull(deltas.get("t4"));
     }
 
     @Test

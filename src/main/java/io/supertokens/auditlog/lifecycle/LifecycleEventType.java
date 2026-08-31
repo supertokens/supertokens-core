@@ -50,7 +50,16 @@ public enum LifecycleEventType {
     TENANT_DISASSOCIATION("tenant_disassociation"),
 
     /** A new user is created in a tenant. */
-    USER_CREATION("user_creation");
+    USER_CREATION("user_creation"),
+
+    /**
+     * A user is brought in by bulk import rather than created interactively. Counted toward user totals
+     * exactly like {@link #USER_CREATION} (a +1 in the tenant it lands in), but recorded under its own
+     * type so an imported user is distinguishable from an organically created one and is excluded from the
+     * last-active rollup (which an interactive sign-up may separately feed, but an import must not: an
+     * imported user is present, not active).
+     */
+    USER_IMPORT("user_import");
 
     private final String value;
 

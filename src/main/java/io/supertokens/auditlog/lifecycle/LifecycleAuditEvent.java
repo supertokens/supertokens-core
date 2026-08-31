@@ -122,6 +122,19 @@ public final class LifecycleAuditEvent {
                 LifecycleEventPayload.forUserCreation(tenantId), createdAt);
     }
 
+    /**
+     * A {@code user_import} event: the user identified by {@code groupUserId} was brought in by bulk import
+     * and lands in tenant {@code tenantId}. Counted toward user totals exactly like {@code user_creation}, so
+     * (like a freshly created user) the group is recorded against itself as both the recipe user and the
+     * group and the payload carries only the tenant. The distinct type is what lets a downstream consumer
+     * exclude imports from the last-active rollup while still counting them.
+     */
+    public static AuditLogEvent forUserImport(AppIdentifier appIdentifier, String groupUserId,
+            String tenantId, long createdAt) {
+        return build(appIdentifier, groupUserId, groupUserId,
+                LifecycleEventPayload.forUserImport(tenantId), createdAt);
+    }
+
     private static AuditLogEvent build(AppIdentifier appIdentifier, String recipeUserId,
             String primaryOrRecipeUserId, LifecycleEventPayload payload, long createdAt) {
         return new AuditLogEvent(

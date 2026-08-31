@@ -46,7 +46,7 @@ import java.util.Set;
  *       derivable from before-presence plus the deleted member).</li>
  *   <li>{@code USER_GROUP_DELETION} — the group's before list only.</li>
  *   <li>{@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION} — the group's before list plus the tenant.</li>
- *   <li>{@code USER_CREATION} — the tenant.</li>
+ *   <li>{@code USER_CREATION} / {@code USER_IMPORT} — the tenant.</li>
  * </ul>
  *
  * <p>Construct payloads through the {@code for*} factory methods (the one builder emit sites use) and read
@@ -78,7 +78,10 @@ public class LifecycleEventPayload {
     public final GroupPresence groupBefore;
     /** {@code USER_DELETION}: the group's after-list; otherwise {@code null}. */
     public final GroupPresence groupAfter;
-    /** {@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION} / {@code USER_CREATION}: the tenant. */
+    /**
+     * {@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION} / {@code USER_CREATION} / {@code USER_IMPORT}:
+     * the tenant.
+     */
     public final String tenantId;
 
     private LifecycleEventPayload(LifecycleEventType type, List<GroupPresence> groupsBefore,
@@ -144,6 +147,11 @@ public class LifecycleEventPayload {
         return new LifecycleEventPayload(LifecycleEventType.USER_CREATION, null, null, null, null, null, tenantId);
     }
 
+    public static LifecycleEventPayload forUserImport(String tenantId) {
+        requireNonEmpty(tenantId, "tenantId");
+        return new LifecycleEventPayload(LifecycleEventType.USER_IMPORT, null, null, null, null, null, tenantId);
+    }
+
     // ---- Serialization ----
 
     /** @return the JSON string to store in the {@code activity_log.payload} column. */
@@ -177,6 +185,7 @@ public class LifecycleEventPayload {
                 json.addProperty(TENANT_ID_KEY, tenantId);
                 break;
             case USER_CREATION:
+            case USER_IMPORT:
                 json.addProperty(TENANT_ID_KEY, tenantId);
                 break;
         }
@@ -296,6 +305,9 @@ public class LifecycleEventPayload {
             case USER_CREATION:
                 requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, TENANT_ID_KEY);
                 return forUserCreation(parseTenantId(json));
+            case USER_IMPORT:
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, TENANT_ID_KEY);
+                return forUserImport(parseTenantId(json));
             default:
                 // Unreachable: every LifecycleEventType is handled above.
                 throw new InvalidLifecycleEventPayloadException("unhandled lifecycle event type: " + type);

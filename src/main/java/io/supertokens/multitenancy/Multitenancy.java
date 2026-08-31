@@ -605,6 +605,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     // a no-op with no count change, so no event is emitted.
                     userLockingStorage.lockUser(appIdentifier, con, userId);
                 } catch (UserNotFoundForLockingException e) {
+                    // The pre-audit code removed the mapping unconditionally (no lock) and could thus delete a
+                    // mapping row for a userId with no user. Relying on the FK invariant that an auth user's
+                    // tenant mapping cannot exist without the user row, a userId that cannot be locked has no
+                    // mapping to remove, so returning false (nothing removed) is correct and matches
+                    // addUserIdToTenant, which also locks the user first.
                     return AuditedResult.withoutAudit(false,
                             "User does not exist, so no mapping was removed: a no-op with no count change, so no "
                                     + "tenant_disassociation event is emitted.");
