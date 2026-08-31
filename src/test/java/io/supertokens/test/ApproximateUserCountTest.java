@@ -20,9 +20,12 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
+import io.supertokens.auditlog.lifecycle.LifecycleEventType;
 import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
@@ -141,16 +144,19 @@ public class ApproximateUserCountTest {
         assertTrue(response.get("approximate").getAsBoolean());
         assertTrue(response.has("asOf"));
         long asOf = response.get("asOf").getAsLong();
-        // asOf is the anchor boundary X = refresh-start - 60s skew margin, so it is in the recent past.
-        assertTrue(asOf <= after && asOf >= before - 120_000);
+        // asOf is the instant the served value is as-of (the fold window's upper bound), so it falls within
+        // the request.
+        assertTrue(asOf <= after && asOf >= before);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Without the param the response is byte-for-byte unchanged: no approximate/asOf fields.
+    // PLAN-010 unit "default-flip": on the current CDI version the default (param-less) path now serves the
+    // fast anchor+fold value and carries the approximate/asOf fields, exactly as if allowApproximate had been
+    // set. The count is still exact for a freshly primed tenant.
     @Test
-    public void apiWithoutParamHasNoApproximateFields() throws Exception {
+    public void apiDefaultPathServesFromFoldWithFields() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -159,15 +165,60 @@ public class ApproximateUserCountTest {
             return;
         }
 
-        EmailPassword.signUp(process.getProcess(), "user@example.com", "password");
+        for (int i = 0; i < 5; i++) {
+            EmailPassword.signUp(process.getProcess(), "user" + i + "@example.com", "password" + i);
+        }
 
+        long before = System.currentTimeMillis();
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+        long after = System.currentTimeMillis();
 
         assertEquals("OK", response.get("status").getAsString());
-        assertEquals(1, response.get("count").getAsLong());
-        assertFalse(response.has("approximate"));
-        assertFalse(response.has("asOf"));
+        assertEquals(5, response.get("count").getAsLong());
+        assertTrue(response.has("approximate"));
+        assertTrue(response.get("approximate").getAsBoolean());
+        assertTrue(response.has("asOf"));
+        long asOf = response.get("asOf").getAsLong();
+        assertTrue(asOf <= after && asOf >= before);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The allowApproximate parameter is now a no-op: the default (param-less) path serves the ledger fold on
+    // its own, so a deletion between two param-less requests - off the same primed anchor, no refresh - is
+    // reflected immediately (3 -> 2). Before the flip the param-less path was an exact recompute per request
+    // and never carried the approximate/asOf fields.
+    @Test
+    public void apiDefaultPathReflectsDeletionViaFoldWithoutParam() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo doomed = EmailPassword.signUp(process.getProcess(), "del@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep1@example.com", "password1");
+
+        // Prime the anchor synchronously with a param-less request: exact count 3, served from the fold.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+        assertEquals(3, primed.get("count").getAsLong());
+        assertTrue(primed.get("approximate").getAsBoolean());
+
+        Thread.sleep(5);
+        AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
+        Thread.sleep(5);
+
+        // Same anchor (no refresh), param-less again: the fold now carries the -1.
+        JsonObject afterDelete = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+        assertEquals(2, afterDelete.get("count").getAsLong());
+        assertTrue(afterDelete.get("approximate").getAsBoolean());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -201,8 +252,9 @@ public class ApproximateUserCountTest {
     }
 
     // A stale cache entry triggers a background anchor refresh (stale-while-revalidate): the request keeps
-    // serving the correct count, the refresh fires the COMPLETED process state, and the rebased anchor
-    // advances asOf. Staleness is forced via the test-only seam so we don't wait out the real 10-min TTL.
+    // serving the correct count (anchor + folded delta), the refresh fires the COMPLETED process state, and a
+    // later request advances asOf. Staleness is forced via the test-only seam so we don't wait out the real
+    // 10-min TTL.
     @Test
     public void staleEntryTriggersBackgroundRefresh() throws Exception {
         String[] args = {"../"};
@@ -224,7 +276,8 @@ public class ApproximateUserCountTest {
         assertEquals(3, primed.get("count").getAsLong());
         long asOfBefore = primed.get("asOf").getAsLong();
 
-        // Two more sign-ups land in the live delta, and age the cached anchor so the next request sees it stale.
+        // Two more sign-ups land in the folded delta (their user_creation events are after the anchor
+        // snapshot), and age the cached anchor so the next request sees it stale.
         EmailPassword.signUp(process.getProcess(), "extra0@example.com", "password0");
         EmailPassword.signUp(process.getProcess(), "extra1@example.com", "password1");
         Thread.sleep(5);
@@ -247,6 +300,50 @@ public class ApproximateUserCountTest {
                 SemVer.v5_6.get(), "");
         assertEquals(5, refreshed.get("count").getAsLong());
         assertTrue(refreshed.get("asOf").getAsLong() > asOfBefore);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The accuracy upgrade of PLAN-010 unit "ledger-fold": a deletion between two requests is reflected
+    // immediately, off the same cached anchor, because the fold sees the deletion's lifecycle event. The old
+    // joined-since delta could only ever see creations, so this count would have stayed stale until the next
+    // anchor refresh (up to the 10-min TTL). No refresh happens here — the anchor is primed once and reused.
+    @Test
+    public void apiApproximateReflectsDeletionsViaFoldWithoutARefresh() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo doomed = EmailPassword.signUp(process.getProcess(), "del@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep1@example.com", "password1");
+
+        // Prime the anchor synchronously: exact count 3, snapshotted now. The three creations are in the anchor,
+        // not the fold window.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(3, primed.get("count").getAsLong());
+
+        // Delete a user after the anchor snapshot. Its lifecycle event lands in the fold window.
+        Thread.sleep(5);
+        AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
+        Thread.sleep(5);
+
+        // Same anchor (no refresh — the entry is not stale), but the fold now carries the -1: exact count served.
+        JsonObject afterDelete = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(2, afterDelete.get("count").getAsLong());
+        assertTrue(afterDelete.get("approximate").getAsBoolean());
+        // The exact recompute agrees, confirming the fold is exact (not a lagging estimate).
+        assertEquals(2, ((AuthRecipeSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getUsersCount(process.getAppForTesting(), null));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -276,6 +373,50 @@ public class ApproximateUserCountTest {
         assertTrue(response.has("approximate"));
         assertFalse(response.get("approximate").getAsBoolean());
         assertTrue(response.has("asOf"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // After the default flip the additive approximate/asOf fields key purely on the CDI version, no longer on
+    // an allowApproximate opt-in. The exact-fallback shapes the ledger fold does not cover - an all-tenants
+    // count, or a recipe-filtered count - therefore carry approximate=false + asOf on 5.6 even when the param
+    // is absent. This pins that param-less contract for both fallback shapes (the recipe-filter case above
+    // still sends the param, so it does not).
+    @Test
+    public void apiFallbackShapesCarryFieldsWithoutParamOn5_6() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "user0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "user1@example.com", "password1");
+
+        // All-tenants shape, no allowApproximate param: exact recompute, but the additive fields still appear.
+        JsonObject allTenants = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?includeAllTenants=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+
+        assertEquals("OK", allTenants.get("status").getAsString());
+        assertEquals(2, allTenants.get("count").getAsLong());
+        assertTrue(allTenants.has("approximate"));
+        assertFalse(allTenants.get("approximate").getAsBoolean());
+        assertTrue(allTenants.has("asOf"));
+
+        // Recipe-filtered shape, no allowApproximate param: same param-less fallback contract.
+        JsonObject recipeFiltered = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+
+        assertEquals("OK", recipeFiltered.get("status").getAsString());
+        assertEquals(2, recipeFiltered.get("count").getAsLong());
+        assertTrue(recipeFiltered.has("approximate"));
+        assertFalse(recipeFiltered.get("approximate").getAsBoolean());
+        assertTrue(recipeFiltered.has("asOf"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -375,6 +516,123 @@ public class ApproximateUserCountTest {
         assertEquals(1, event.data.get("eventCount").getAsInt());
         assertNull(ProcessState.getInstance(process.getProcess()).getLastEventByName(
                 ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Serve-level assertion for the other newly-exact branch: account unlinking (+1). Unlinking a member from a
+    // primary group frees it into its own standalone group, so the active-user count goes up by one. Off a
+    // single primed anchor with no refresh, serve() reflects that +1 immediately because the fold sees the
+    // account_unlinking event. The old PLAN-009 joined-since delta could never see it — unlinking creates no new
+    // join row — so this count would have stayed stale until the next anchor refresh. Locks the serve()-path
+    // wiring for unlinking against regression (previously covered only via the interpreter/fold unit tests).
+    @Test
+    public void apiApproximateReflectsUnlinkingViaFoldWithoutARefresh() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+
+        // A primary group of two linked accounts (counts as one user) plus one standalone user: exact count 2.
+        AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "primary@example.com", "password0");
+        AuthRecipeUserInfo member = EmailPassword.signUp(process.getProcess(), "member@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "keep@example.com", "password2");
+        AuthRecipe.createPrimaryUser(process.getProcess(), primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), member.getSupertokensUserId(),
+                primary.getSupertokensUserId());
+
+        // Prime the anchor synchronously: exact count 2 (the linked group + the standalone). The creations and
+        // the link are all in the anchor, not the fold window.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(2, primed.get("count").getAsLong());
+
+        // Unlink the member after the anchor snapshot: it is freed into its own standalone group (+1). Its
+        // account_unlinking event lands in the fold window.
+        Thread.sleep(5);
+        AuthRecipe.unlinkAccounts(process.getProcess(), member.getSupertokensUserId());
+        Thread.sleep(5);
+
+        // Same anchor (no refresh — the entry is not stale), but the fold now carries the +1: exact count served.
+        JsonObject afterUnlink = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(3, afterUnlink.get("count").getAsLong());
+        assertTrue(afterUnlink.get("approximate").getAsBoolean());
+        // The exact recompute agrees, confirming the fold is exact (not a lagging estimate).
+        assertEquals(3, ((AuthRecipeSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getUsersCount(process.getAppForTesting(), null));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Corrupt-ledger safety at the serving path: if a lifecycle-event payload in the fold window fails to parse
+    // (InvalidLifecycleEventPayloadException — a ledger-integrity signal), serve() must never return a value
+    // derived from a corrupt fold; it re-anchors to a fresh exact count instead. Proven observable by making
+    // the fresh exact count differ from the primed anchor: a real deletion moves the exact count to 2, and a
+    // corrupt-payload event lands in the same window. The corrupt event poisons the fold, forcing the recompute,
+    // so the value served can only be the recomputed 2 — never the primed 3, and never a fold of the valid
+    // deletion alone (serve() parses every window event before folding any). Exercises the catch branch that
+    // was previously covered only indirectly.
+    @Test
+    public void apiApproximateReAnchorsOnCorruptLedgerPayload() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo doomed = EmailPassword.signUp(process.getProcess(), "del@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "keep0@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "keep1@example.com", "password2");
+
+        // Prime the anchor synchronously: exact count 3, snapshotted now.
+        JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(3, primed.get("count").getAsLong());
+
+        // A real deletion moves the exact count to 2 (its valid user_deletion event lands in the fold window).
+        Thread.sleep(5);
+        AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
+
+        // A corrupt-payload lifecycle event lands in the same window: a valid lifecycle event_type (so the
+        // window read returns it) with a payload that is not parseable against the schema.
+        TenantIdentifier tenant = process.getAppForTesting();
+        AuditLogEvent corrupt = new AuditLogEvent(tenant.getAppId(), null, "recipe-user", "recipe-user",
+                LifecycleEventType.USER_DELETION.getValue(), "success", null, null,
+                System.currentTimeMillis(), "{ this is not valid lifecycle-event JSON");
+        ((ActivityLogStorage) StorageLayer.getStorage(process.getProcess())).createActivityLogEntry(tenant, corrupt);
+        Thread.sleep(5);
+
+        // serve() hits InvalidLifecycleEventPayloadException while parsing the window, so it re-anchors to the
+        // fresh exact count (2) rather than serving a value derived from the corrupt fold.
+        JsonObject afterCorrupt = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(2, afterCorrupt.get("count").getAsLong());
+        assertTrue(afterCorrupt.get("approximate").getAsBoolean());
+        assertEquals(2, ((AuthRecipeSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getUsersCount(process.getAppForTesting(), null));
+
+        // The re-anchor re-based past the corrupt event, so a subsequent request folds cleanly off the fresh
+        // anchor (empty window) and still serves 2 — the re-anchor is durable, not a one-request fallback.
+        JsonObject next = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count?allowApproximate=true", null, 1000, 1000, null,
+                SemVer.v5_6.get(), "");
+        assertEquals(2, next.get("count").getAsLong());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
