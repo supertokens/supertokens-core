@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -64,7 +65,10 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
                     credentialsData);
 
             // No activity event on sign-up: the in-transaction user_creation lifecycle event already records
-            // this as activity and the last-active fold reads it.
+            // this as activity and the last-active fold reads it. That event is written via
+            // startAuditedTransaction and so does not mark the rollup dirty, so wake the rollup here — otherwise
+            // a sign-up-only user would fold only on the periodic backstop pass, not the next tick.
+            ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier.toAppIdentifier());
 
             JsonObject userJson = signUpResult.userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3));
 

@@ -104,6 +104,11 @@ public class ConsumeCodeAPI extends WebserverAPI {
                 // recorded by the in-transaction user_creation lifecycle event the fold reads.
                 ActiveUsers.updateLastActive(tenantIdentifier, main,
                         consumeCodeResponse.user.getSupertokensUserId(), ActivityEventType.SIGN_IN);
+            } else {
+                // The new user's fold credit is the transactional user_creation event, which — unlike the
+                // sign_in ping above — does not mark the rollup dirty. Wake the rollup so a sign-up-only user
+                // folds on the next tick instead of waiting for the periodic backstop.
+                ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier.toAppIdentifier());
             }
 
             JsonObject result = new JsonObject();

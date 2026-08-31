@@ -144,6 +144,31 @@ public class ActiveUsers {
         RollupDirtySignal.getInstance(main).markDirty(storage.getUserPoolId());
     }
 
+    /**
+     * Wakes the last-active rollup for a user whose fold credit comes from a transactional lifecycle event —
+     * {@code user_creation} on sign-up, {@code account_linking} on link (the two lifecycle members of the
+     * fold set, see {@code LastActiveFoldEvents}) — rather than from {@link #updateLastActive}. Those events
+     * are written on the mutation's own connection via {@code startAuditedTransaction}, which — unlike
+     * {@code updateLastActive} / {@link #emitActivityAuditLog} — does not touch the rollup dirty signal.
+     *
+     * <p>Without this nudge a user who only signs up (or is only linked) and produces no other activity would
+     * not be folded into {@code user_last_active} until the periodic backstop pass — up to a backstop
+     * interval — a promptness regression versus the pre-semantic-event behaviour where sign-up went through
+     * {@code updateLastActive → markDirty} and folded on the next rollup tick.
+     *
+     * <p>Call after the lifecycle event's transaction has committed. Marking dirty only signals <em>that</em>
+     * there is something to fold, never the fold window, so it is idempotent and safe to over-signal; a lost
+     * signal is corrected by the cron's periodic backstop.
+     */
+    public static void markLastActiveRollupDirty(Main main, AppIdentifier appIdentifier)
+            throws TenantOrAppNotFoundException {
+        // The projection and its dirty flag are keyed by the app's public-tenant storage pool — the same
+        // storage updateLastActive marks dirty — so a fold-relevant lifecycle event written on any tenant in
+        // the pool wakes the one rollup pass that folds it.
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+        RollupDirtySignal.getInstance(main).markDirty(storage.getUserPoolId());
+    }
+
     @TestOnly
     public static void updateLastActive(Main main, String userId) {
         try {
@@ -184,6 +209,12 @@ public class ActiveUsers {
             return null;
         });
         recentlyActiveCache.remove(cacheKey(appIdentifier, recipeUserId));
+
+        // The primary user's refreshed recency is credited by the account_linking lifecycle event
+        // AuthRecipe.linkAccounts emitted transactionally — but that event, written via startAuditedTransaction,
+        // does not mark the rollup dirty. Wake the rollup here so a link with no other activity folds on the
+        // next tick rather than waiting for the periodic backstop.
+        RollupDirtySignal.getInstance(main).markDirty(activeUsersStorage.getUserPoolId());
     }
 
     @TestOnly
