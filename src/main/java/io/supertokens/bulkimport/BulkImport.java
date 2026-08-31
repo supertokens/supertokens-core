@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,11 +38,16 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.auditlog.lifecycle.GroupPresence;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.output.Logging;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.pluginInterface.authRecipe.ACCOUNT_INFO_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
@@ -239,11 +245,80 @@ public class BulkImport {
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user roles..");
             createMultipleUserRoles(main, appIdentifier, bulkImportProxyStorage, users);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user roles DONE");
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Emitting bulk-import lifecycle events..");
+            emitBulkImportLifecycleEvents(appIdentifier, bulkImportProxyStorage, users);
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, "Emitting bulk-import lifecycle events DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Effective processUsersImportSteps DONE");
         } catch ( StorageQueryException | FeatureNotEnabledException |
                   TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(e);
         }
+    }
+
+    /**
+     * Records the count-affecting effect of a bulk import in the activity log, mirroring what the interactive
+     * paths emit but for users brought in as a batch. Per imported user (group) it writes one
+     * {@code user_import} event for the first tenant the group lands in, then one {@code tenant_association}
+     * event for every remaining tenant. A {@code user_import} is folded into user counts exactly like a
+     * {@code user_creation} (+1 in its tenant); it carries its own type so the last-active rollup — which an
+     * interactive sign-up may feed but an import must not — can tell the two apart.
+     *
+     * <p>Written through {@code startAuditedTransaction}, which persists the returned events on the bulk-import
+     * proxy storage's single held connection (its commit is a no-op on the proxy), so they land atomically with
+     * the import at {@code commitTransactionForBulkImportProxyStorage} and are rolled back with it on failure —
+     * the same combinator, and hence the same atomicity guarantee, the interactive emit sites use.
+     */
+    private static void emitBulkImportLifecycleEvents(AppIdentifier appIdentifier, Storage storage,
+            List<BulkImportUser> users) throws StorageQueryException, StorageTransactionLogicException {
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
+        auditStorage.startAuditedTransaction(appIdentifier, con -> {
+            List<AuditLogEvent> events = new ArrayList<>();
+            for (BulkImportUser user : users) {
+                // The group's id is its primary login method's supertokens user id (or the oldest login
+                // method's, if none is marked primary) — the same id the interactive path counts a group by.
+                String groupUserId = BulkImportUserUtils.getPrimaryLoginMethod(user).superTokensUserId;
+                List<String> tenantIds = distinctTenantIdsInOrder(user);
+                if (tenantIds.isEmpty()) {
+                    // Defensive: an imported user always lands in at least one tenant (import is keyed off
+                    // loginMethods.get(0).tenantIds.get(0)), so this is unreachable in practice.
+                    continue;
+                }
+                events.add(LifecycleAuditEvent.forUserImport(appIdentifier, groupUserId, tenantIds.get(0), now));
+                // Build the group's tenant presence up one tenant at a time so each tenant_association carries
+                // the before-presence the read-side interpreter needs to count it only when newly present —
+                // the same sequence associating the user to those tenants one by one would produce.
+                List<String> presenceSoFar = new ArrayList<>();
+                presenceSoFar.add(tenantIds.get(0));
+                for (int i = 1; i < tenantIds.size(); i++) {
+                    GroupPresence groupBefore = new GroupPresence(groupUserId, new ArrayList<>(presenceSoFar));
+                    events.add(LifecycleAuditEvent.forTenantAssociation(appIdentifier, groupUserId, groupUserId,
+                            groupBefore, tenantIds.get(i), now));
+                    presenceSoFar.add(tenantIds.get(i));
+                }
+            }
+            if (events.isEmpty()) {
+                return AuditedResult.<Void>withoutAudit(null,
+                        "No users in this batch resolved to a tenant to import into, so there are no "
+                                + "user_import or tenant_association events to write.");
+            }
+            return new AuditedResult<Void>(null, events.get(0),
+                    events.subList(1, events.size()).toArray(new AuditLogEvent[0]));
+        });
+    }
+
+    /**
+     * The group's tenant presence: the order-preserving union of every login method's tenants. Order matters
+     * only so the "first" tenant that carries the {@code user_import} is deterministic.
+     */
+    private static List<String> distinctTenantIdsInOrder(BulkImportUser user) {
+        LinkedHashSet<String> tenantIds = new LinkedHashSet<>();
+        for (LoginMethod loginMethod : user.loginMethods) {
+            if (loginMethod.tenantIds != null) {
+                tenantIds.addAll(loginMethod.tenantIds);
+            }
+        }
+        return new ArrayList<>(tenantIds);
     }
 
     private static void normalizeTimeJoinedForPrimaryUsers(AppIdentifier appIdentifier, Storage storage,

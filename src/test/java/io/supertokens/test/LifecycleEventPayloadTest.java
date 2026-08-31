@@ -60,9 +60,10 @@ public class LifecycleEventPayloadTest {
         assertEquals("tenant_association", LifecycleEventType.TENANT_ASSOCIATION.getValue());
         assertEquals("tenant_disassociation", LifecycleEventType.TENANT_DISASSOCIATION.getValue());
         assertEquals("user_creation", LifecycleEventType.USER_CREATION.getValue());
+        assertEquals("user_import", LifecycleEventType.USER_IMPORT.getValue());
 
-        // exactly seven event types in the vocabulary
-        assertEquals(7, LifecycleEventType.values().length);
+        // exactly eight event types in the vocabulary
+        assertEquals(8, LifecycleEventType.values().length);
 
         for (LifecycleEventType type : LifecycleEventType.values()) {
             assertEquals(type, LifecycleEventType.fromValue(type.getValue()));
@@ -141,6 +142,16 @@ public class LifecycleEventPayloadTest {
         assertEquals("public", parsed.tenantId);
         assertNull(parsed.groupBefore);
         assertEquals("{\"schemaVersion\":1,\"type\":\"user_creation\",\"tenantId\":\"public\"}", p.toJson());
+    }
+
+    @Test
+    public void testUserImportRoundTrip() throws Exception {
+        LifecycleEventPayload p = LifecycleEventPayload.forUserImport("public");
+        LifecycleEventPayload parsed = roundTrip(p);
+        assertEquals(LifecycleEventType.USER_IMPORT, parsed.type);
+        assertEquals("public", parsed.tenantId);
+        assertNull(parsed.groupBefore);
+        assertEquals("{\"schemaVersion\":1,\"type\":\"user_import\",\"tenantId\":\"public\"}", p.toJson());
     }
 
     @Test
