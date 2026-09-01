@@ -5,19 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-- `ActiveUsers.updateLastActive` no longer writes `user_last_active` directly; it only appends the throttled `user_last_active` activity-log event, and the `RollupUserLastActive` cron is now the sole writer of the projection (so counts reflect activity within a rollup interval).
-- Added Phase-1 parity tests proving the last-active rollup derives the same `countUsersActiveSince` answer (and per-user projection) as the direct write, including link/unlink cases (`ActivityLogRollupParityTest`).
-- Adds an observability-only shadow audit to the approximate-user-count background refresh; discrepancies are logged and emitted as telemetry, never served.
-- The `allowApproximate` user-count path now serves the exact anchor plus a fold of lifecycle events since the anchor, making the approximate count exact for creations, deletions and account (un)linking (no API change).
-- From CDI 5.6 the default single-tenant, unfiltered `/users/count` path serves `anchor + fold` from the lifecycle-event ledger instead of an exact recompute per request, always returning the `approximate`/`asOf` fields and making the `allowApproximate` parameter a no-op; older CDI versions are unchanged.
-- Emits `user_creation` and `tenant_disassociation` lifecycle events atomically with the mutation from the interactive user-creation and tenant-removal paths.
-- Bulk import now emits lifecycle events atomically with the import: one `user_import` per imported user (counted toward user totals like `user_creation`, but under its own type so the last-active rollup can exclude imports) plus a `tenant_association` for each remaining tenant the user lands in.
-- The last-active rollup fold now skips activity for apps no longer present in `apps`, so a deleted app's retained `activity_log` rows can never resurrect a `user_last_active` projection row (which would violate its `apps` foreign key).
-- Replaced the synthetic `user_last_active` event with semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`); the last-active fold now reads these plus the `user_creation` and `account_linking` lifecycle events, and a new protected config `activity_log_throttle_enabled` (boolean, default `true`, per connection URI domain) toggles the per-`(app, user)` write throttle on the throttled events.
-- Sign-up and account-linking now wake the last-active rollup, so a user with no other activity is folded into `user_last_active` on the next tick instead of waiting for the periodic backstop pass.
-
 ## [12.2.0]
 
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
@@ -36,16 +23,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   key at the same moment must leave exactly one new key in storage and agree on the `kid` they sign with.
   The test reproduces the race against an unfixed storage layer and passes once key creation is serialised
   per app, which postgresql-plugin 9.7.2 does with a per-app advisory lock.
-- Added lifecycle event vocabulary and JSON payload schema for the activity log (`io.supertokens.auditlog.lifecycle`).
-- Adds a compile-time AspectJ guard (`AuditEnforcementAspect`) that fails the build on raw `SQLStorage.startTransaction(...)` calls in domain code; legacy call sites are allowlisted with `@UnauditedTransaction(justification = ...)`, backed by a shrink-only baseline test.
-- In-memory (SQLite) parity for the activity-log/rollup storage contract: transactional audit insert, the last-active fold+reconcile rollup, and an unfolded-activity existence check; partition maintenance takes a retention argument and stays a no-op.
-- Added `activity_log_retention_days` (default 31), a connection-URI-domain-level protected core config that drives activity_log retention; the cleanup cron now reads it per storage.
-- In-memory (SQLite) implementations of the connection-taking sign-up and tenant-removal storage variants (`signUp_Transaction` for email-password and third-party, `createUser_Transaction` for passwordless, `removeUserIdFromTenant_Transaction`); the existing auto-commit methods now delegate to these behaviour-preserving variants.
-- In-memory (SQLite) implementation of `ActivityLogStorage.getActivityLogEntriesForApp` — the app-scoped, `(from, to]`-bounded, event-type-filtered, ascending, storage-limited window read that lets callers fold lifecycle events in Java.
-- Added the `RollupUserLastActive` cron (10-minute interval) that derives `user_last_active` from the activity log via an idempotent per-storage fold, with a skip-when-idle dirty flag, a first-run existence check, a retention-clamped catch-up window, and a periodic backstop fold.
-- `AuthRecipe.linkAccounts` / `unlinkAccounts` now emit `account_linking` / `account_unlinking` lifecycle events atomically with the mapping change (via `startAuditedTransaction`); an already-linked no-op link emits nothing.
-- `AuthRecipe.deleteUser` and `Multitenancy.addUserIdToTenant` now emit `user_deletion`/`user_group_deletion` and `tenant_association` lifecycle events atomically with the mutation (via `startAuditedTransaction`).
-- Added `CountDeltaInterpreter`: a pure read-side fold of lifecycle events in a window into net per-tenant user-count deltas (for serving counts as `anchor + fold`), with a burst cap that requests an anchor re-count instead of folding when the window exceeds a threshold.
+- Updates the bundled OpenTelemetry javaagent from 2.27.0 to 2.29.0 (CVE-2026-54704: JDBC connect-string passwords could leak into span attributes)
+- Pins transitive httpclient5 to 5.6.4 and httpcore5 / httpcore5-h2 to 5.4.3 (CVE-2026-64607, CVE-2026-54399, CVE-2026-54428)
+- Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
+- `GET /users/count` now serves an exact `anchor + fold` of the ledger instead of recomputing per request: the default single-tenant path does so from CDI 5.6 (older CDI unchanged), and the `allowApproximate` parameter becomes a no-op.
+- `user_last_active` is now derived by the new `RollupUserLastActive` cron folding activity events (its sole writer); `ActiveUsers.updateLastActive` only appends throttled events, so MAU counts reflect activity within a rollup interval.
+- In-memory (SQLite) parity for the ledger and rollup storage contract (transactional audit insert, last-active fold/reconcile, windowed event read, and the connection-taking sign-up/tenant-removal variants).
 
 ## [12.1.1]
 
