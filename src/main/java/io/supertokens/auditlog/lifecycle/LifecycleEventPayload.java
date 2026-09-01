@@ -45,7 +45,10 @@ import java.util.Set;
  *   <li>{@code USER_DELETION} — the group's before and after lists (the case where after-presence is not
  *       derivable from before-presence plus the deleted member).</li>
  *   <li>{@code USER_GROUP_DELETION} — the group's before list only.</li>
- *   <li>{@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION} — the group's before list plus the tenant.</li>
+ *   <li>{@code TENANT_ASSOCIATION} — the group's before list plus the tenant.</li>
+ *   <li>{@code TENANT_DISASSOCIATION} — the group's before and after lists plus the tenant (removing one
+ *       member's mapping leaves the group in the tenant if another member is still there, so after-presence
+ *       is not derivable from before-presence alone).</li>
  *   <li>{@code USER_CREATION} / {@code USER_IMPORT} — the tenant.</li>
  * </ul>
  *
@@ -76,7 +79,7 @@ public class LifecycleEventPayload {
     public final GroupPresence freedMemberAfter;
     /** {@code USER_DELETION} / {@code USER_GROUP_DELETION} / {@code TENANT_(DIS)ASSOCIATION}: before-list. */
     public final GroupPresence groupBefore;
-    /** {@code USER_DELETION}: the group's after-list; otherwise {@code null}. */
+    /** {@code USER_DELETION} / {@code TENANT_DISASSOCIATION}: the group's after-list; otherwise {@code null}. */
     public final GroupPresence groupAfter;
     /**
      * {@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION} / {@code USER_CREATION} / {@code USER_IMPORT}:
@@ -135,11 +138,13 @@ public class LifecycleEventPayload {
                 null, tenantId);
     }
 
-    public static LifecycleEventPayload forTenantDisassociation(GroupPresence groupBefore, String tenantId) {
+    public static LifecycleEventPayload forTenantDisassociation(GroupPresence groupBefore,
+            GroupPresence groupAfter, String tenantId) {
         requireNonNull(groupBefore, "groupBefore");
+        requireNonNull(groupAfter, "groupAfter");
         requireNonEmpty(tenantId, "tenantId");
         return new LifecycleEventPayload(LifecycleEventType.TENANT_DISASSOCIATION, null, null, null, groupBefore,
-                null, tenantId);
+                groupAfter, tenantId);
     }
 
     public static LifecycleEventPayload forUserCreation(String tenantId) {
@@ -180,8 +185,12 @@ public class LifecycleEventPayload {
                 json.add(GROUP_BEFORE_KEY, groupBefore.toJson());
                 break;
             case TENANT_ASSOCIATION:
+                json.add(GROUP_BEFORE_KEY, groupBefore.toJson());
+                json.addProperty(TENANT_ID_KEY, tenantId);
+                break;
             case TENANT_DISASSOCIATION:
                 json.add(GROUP_BEFORE_KEY, groupBefore.toJson());
+                json.add(GROUP_AFTER_KEY, groupAfter.toJson());
                 json.addProperty(TENANT_ID_KEY, tenantId);
                 break;
             case USER_CREATION:
@@ -299,9 +308,9 @@ public class LifecycleEventPayload {
                 return forTenantAssociation(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY),
                         parseTenantId(json));
             case TENANT_DISASSOCIATION:
-                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY, TENANT_ID_KEY);
+                requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, GROUP_BEFORE_KEY, GROUP_AFTER_KEY, TENANT_ID_KEY);
                 return forTenantDisassociation(parseGroup(json.get(GROUP_BEFORE_KEY), GROUP_BEFORE_KEY),
-                        parseTenantId(json));
+                        parseGroup(json.get(GROUP_AFTER_KEY), GROUP_AFTER_KEY), parseTenantId(json));
             case USER_CREATION:
                 requireKeys(json, "payload", VERSION_KEY, TYPE_KEY, TENANT_ID_KEY);
                 return forUserCreation(parseTenantId(json));

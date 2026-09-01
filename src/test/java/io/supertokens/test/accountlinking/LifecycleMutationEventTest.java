@@ -19,6 +19,7 @@ package io.supertokens.test.accountlinking;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
 import io.supertokens.auditlog.lifecycle.LifecycleEventType;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -599,6 +600,12 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         // Before the disassociation the group was present in both public and t1.
         assertTrue(payload.groupBefore.tenantIds.contains("public"));
         assertTrue(payload.groupBefore.tenantIds.contains("t1"));
+        // This standalone user was the group's only presence in t1, so the group leaves t1: after-presence is
+        // public only. The interpreter therefore folds a -1 for t1.
+        assertTrue(payload.groupAfter.tenantIds.contains("public"));
+        assertFalse(payload.groupAfter.tenantIds.contains("t1"));
+        assertEquals(-1, CountDeltaInterpreter.computeDeltaForTenant(
+                java.util.Collections.singletonList(payload), "t1"));
 
         // Removing again is a no-op — still exactly one event.
         boolean removedAgain = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage,
@@ -631,6 +638,110 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
                 null);
         assertFalse(removed);
         assertEquals(0, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    /**
+     * Finding #1 regression: when a linked group has more than one member in a tenant and only one of them is
+     * removed, the group stays present in that tenant through the remaining member, so the disassociation must
+     * NOT decrement the count. The event records an after-presence that still contains the tenant, and the
+     * interpreter folds it to zero. Before the after-presence was recorded the interpreter decremented on the
+     * before-list alone and undercounted here.
+     */
+    @Test
+    public void disassociatingOneMemberKeepsGroupWhenAnotherMemberRemains() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        initTenantIdentifiers();
+        createTenants(main);
+        Storage a1Storage = StorageLayer.getStorage(t1, main);
+        Storage t2Storage = StorageLayer.getStorage(t2, main);
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(t1, a1Storage, main, "p@example.com", "password");
+        AuthRecipeUserInfo member = EmailPassword.signUp(t1, a1Storage, main, "m@example.com", "password");
+        AuthRecipe.createPrimaryUser(main, t1.toAppIdentifier(), a1Storage, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, t1.toAppIdentifier(), a1Storage, member.getSupertokensUserId(),
+                primary.getSupertokensUserId());
+
+        // Put BOTH members into t1, so the group's presence in t1 does not depend on any single one.
+        assertTrue(Multitenancy.addUserIdToTenant(main, t2, t2Storage, primary.getSupertokensUserId()));
+        assertTrue(Multitenancy.addUserIdToTenant(main, t2, t2Storage, member.getSupertokensUserId()));
+
+        // Remove only the member from t1; the primary keeps the group in t1.
+        boolean removed = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage, member.getSupertokensUserId(),
+                null);
+        assertTrue(removed);
+
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue());
+        assertEquals(1, events.size());
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(events.get(0).payload);
+        assertEquals(LifecycleEventType.TENANT_DISASSOCIATION, payload.type);
+        assertEquals("t1", payload.tenantId);
+        // Before: group present in t1. After: still present in t1 through the primary → count unchanged.
+        assertTrue(payload.groupBefore.tenantIds.contains("t1"));
+        assertTrue(payload.groupAfter.tenantIds.contains("t1"));
+        assertEquals(0, CountDeltaInterpreter.computeDeltaForTenant(
+                java.util.Collections.singletonList(payload), "t1"));
+
+        stopProcess(process);
+    }
+
+    // ---- unlink-primary-with-members emits user_deletion (finding #2) ----
+
+    /**
+     * Finding #2 regression: unlinking the primary user id itself when the group has other members deletes that
+     * recipe user, and if it was the group's only presence in some tenant the group leaves that tenant — a
+     * {@code -1}. The path used to emit {@code account_unlinking} with an empty freed member, whose fold arm can
+     * only add {@code +1}s and so folded to zero, silently losing the decrement. It now emits {@code user_deletion}
+     * with the group's before/after presence, and the interpreter folds the {@code -1} for the vacated tenant.
+     */
+    @Test
+    public void deleteBranchUnlinkDropsGroupFromSolePresenceTenant() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        initTenantIdentifiers();
+        createTenants(main);
+        Storage a1Storage = StorageLayer.getStorage(t1, main);
+        Storage t2Storage = StorageLayer.getStorage(t2, main);
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(t1, a1Storage, main, "p@example.com", "password");
+        AuthRecipeUserInfo member = EmailPassword.signUp(t1, a1Storage, main, "m@example.com", "password");
+        AuthRecipe.createPrimaryUser(main, t1.toAppIdentifier(), a1Storage, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, t1.toAppIdentifier(), a1Storage, member.getSupertokensUserId(),
+                primary.getSupertokensUserId());
+
+        // Only the primary id is in t1, so t1 is the group's presence solely through the primary member — the
+        // one that the delete-branch unlink removes.
+        assertTrue(Multitenancy.addUserIdToTenant(main, t2, t2Storage, primary.getSupertokensUserId()));
+
+        AuthRecipeUserInfo beforeUnlink = AuthRecipe.getUserById(t1.toAppIdentifier(), a1Storage,
+                primary.getSupertokensUserId());
+        assertTrue(beforeUnlink.tenantIds.contains("t1"));
+
+        // Unlinking the primary id (with the member still linked) deletes the primary-id recipe user.
+        boolean wasDeleted = AuthRecipe.unlinkAccounts(main, t1.toAppIdentifier(), a1Storage,
+                primary.getSupertokensUserId());
+        assertTrue(wasDeleted);
+
+        // No account_unlinking event: this is a member deletion, not a split.
+        assertEquals(0, readEvents((SQLStorage) a1Storage, LifecycleEventType.ACCOUNT_UNLINKING.getValue()).size());
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.USER_DELETION.getValue());
+        assertEquals(1, events.size());
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(events.get(0).payload);
+        assertEquals(LifecycleEventType.USER_DELETION, payload.type);
+        // Before: group in public and t1. After: the deleted member was the group's only presence in t1, so the
+        // group is gone from t1 (the surviving member is only in public) → the interpreter folds a -1 for t1.
+        assertTrue(payload.groupBefore.tenantIds.contains("t1"));
+        assertFalse(payload.groupAfter.tenantIds.contains("t1"));
+        assertEquals(-1, CountDeltaInterpreter.computeDeltaForTenant(
+                java.util.Collections.singletonList(payload), "t1"));
 
         stopProcess(process);
     }

@@ -48,8 +48,10 @@ import java.util.Set;
  *       and the freed member's after lists (one group present there splits into two).</li>
  *   <li>{@code TENANT_ASSOCIATION} — {@code +1} for the tenant, unless the group was already present there
  *       (a second member joining a tenant the group already occupies changes no count).</li>
- *   <li>{@code TENANT_DISASSOCIATION} — {@code -1} for the tenant if the group was present there (the group
- *       leaves the tenant).</li>
+ *   <li>{@code TENANT_DISASSOCIATION} — {@code -1} for the tenant if the group was present there before and
+ *       absent after (the removed member was the group's last presence in the tenant); {@code 0} if another
+ *       member keeps the group in the tenant. Like {@code USER_DELETION}, both lists are recorded because the
+ *       after-presence is not derivable from the before-presence and the removed member alone.</li>
  * </ul>
  *
  * <p>Each event's delta is computed solely from its own recorded snapshots, so the fold is an order-independent
@@ -199,7 +201,11 @@ public final class CountDeltaInterpreter {
                 }
                 break;
             case TENANT_DISASSOCIATION:
-                if (event.groupBefore.tenantIds.contains(event.tenantId)) {
+                // Removing one member's tenant mapping decrements the count only if the group actually left the
+                // tenant — it was present before and, with that member gone, is absent after. A multi-member
+                // group that still has a member in the tenant stays present, so the count is unchanged.
+                if (event.groupBefore.tenantIds.contains(event.tenantId)
+                        && !event.groupAfter.tenantIds.contains(event.tenantId)) {
                     add(deltas, event.tenantId, -1);
                 }
                 break;

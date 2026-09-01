@@ -129,9 +129,11 @@ public class LifecycleEventPayloadTest {
 
     @Test
     public void testTenantDisassociationRoundTrip() throws Exception {
-        LifecycleEventPayload p = LifecycleEventPayload.forTenantDisassociation(group("u1", "public", "t2"), "t2");
+        LifecycleEventPayload p = LifecycleEventPayload.forTenantDisassociation(group("u1", "public", "t2"),
+                group("u1", "public"), "t2");
         LifecycleEventPayload parsed = roundTrip(p);
         assertEquals(group("u1", "public", "t2"), parsed.groupBefore);
+        assertEquals(group("u1", "public"), parsed.groupAfter);
         assertEquals("t2", parsed.tenantId);
     }
 

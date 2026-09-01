@@ -149,10 +149,16 @@ public class LifecycleEventFoldTest {
     }
 
     @Test
-    public void tenantDisassociationSubtractsOneWhenGroupWasPresent() {
-        assertEquals(-1, delta("t1", LifecycleEventPayload.forTenantDisassociation(group("g", "t1", "t2"), "t1")));
+    public void tenantDisassociationSubtractsOneOnlyWhenGroupActuallyLeft() {
+        // The removed member was the group's only presence in t1: present before, absent after -> -1.
+        assertEquals(-1, delta("t1", LifecycleEventPayload.forTenantDisassociation(
+                group("g", "t1", "t2"), group("g", "t2"), "t1")));
+        // Another member keeps the group in t1 (still present after) -> no count change.
+        assertEquals(0, delta("t1", LifecycleEventPayload.forTenantDisassociation(
+                group("g", "t1", "t2"), group("g", "t1", "t2"), "t1")));
         // Disassociating from a tenant the group is not recorded as present in changes nothing.
-        assertEquals(0, delta("t3", LifecycleEventPayload.forTenantDisassociation(group("g", "t1", "t2"), "t3")));
+        assertEquals(0, delta("t3", LifecycleEventPayload.forTenantDisassociation(
+                group("g", "t1", "t2"), group("g", "t1", "t2"), "t3")));
     }
 
     // ---------------------------------------------------------------- fold behaviour
@@ -427,10 +433,13 @@ public class LifecycleEventFoldTest {
                 return;
             }
             String tenant = before.tenantIds.get(rnd.nextInt(before.tenantIds.size()));
-            events.add(LifecycleEventPayload.forTenantDisassociation(before, tenant));
             for (Set<String> member : groups.get(id)) { // group-level: the group leaves the tenant entirely
                 member.remove(tenant);
             }
+            // After-presence recomputed once the group has left the tenant (the model removes it from every
+            // member), so the payload records that the group is no longer in `tenant`.
+            GroupPresence after = presence(id);
+            events.add(LifecycleEventPayload.forTenantDisassociation(before, after, tenant));
         }
 
         private String groupWithAtLeast(int memberCount) {

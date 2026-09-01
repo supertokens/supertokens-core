@@ -184,15 +184,23 @@ public class AuthRecipe {
                         // The delete will also cause the automatic unlinking.
                         // We need to make sure that it only deletes sessions for recipeUserId and not other linked
                         // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
+                        // Unlinking the primary id from a group that has other members deletes the primary-id
+                        // member (so two accounts don't share one id); the group survives via its remaining
+                        // members, resolvable through any surviving login method. This is a member deletion,
+                        // not a split: the deleted member may have been the group's only presence in some
+                        // tenant, and account_unlinking's fold arm can only ever produce +1s (for the tenants a
+                        // split leaves both groups in), so it structurally cannot express that -1. Emit
+                        // user_deletion with the group's before/after presence instead, so the interpreter
+                        // decrements any tenant the group actually left. Capture the before-presence from
+                        // primaryUser (read under the lock above, before the delete); recompute the after-
+                        // presence once the member is gone.
+                        GroupPresence groupBefore = new GroupPresence(primaryUser.getSupertokensUserId(),
+                                new ArrayList<>(primaryUser.tenantIds));
                         deleteUserHelper(con, appIdentifier, storage, recipeUserId, false, mappingResult);
-                        // The recipe user is deleted (freed member is present in no tenants); the primary group
-                        // survives with its remaining members, resolvable via any surviving login method.
-                        GroupPresence remainingGroupAfter = groupPresenceInTransaction(authRecipeStorage,
+                        GroupPresence groupAfter = groupPresenceInTransaction(authRecipeStorage,
                                 appIdentifier, con, otherLoginMethodUserId(primaryUser, recipeUserId));
-                        GroupPresence freedMemberAfter = new GroupPresence(recipeUserId, new ArrayList<>());
-                        AuditLogEvent event = LifecycleAuditEvent.forAccountUnlinking(appIdentifier, recipeUserId,
-                                remainingGroupAfter.primaryOrRecipeUserId, remainingGroupAfter, freedMemberAfter,
-                                now);
+                        AuditLogEvent event = LifecycleAuditEvent.forUserDeletion(appIdentifier, recipeUserId,
+                                groupAfter.primaryOrRecipeUserId, groupBefore, groupAfter, now);
                         return new AuditedResult<>(new UnlinkResult(resultUserId, true), event);
                     }
                 } else {
@@ -356,6 +364,7 @@ public class AuthRecipe {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
         long now = System.currentTimeMillis();
         try {
@@ -365,6 +374,19 @@ public class AuthRecipe {
             // the link it records (a lost link event is a permanent +1 in the derived active-user count).
             LinkAccountsResult result = auditStorage.startAuditedTransaction(appIdentifier, con -> {
                 try {
+                    // Lock both users before reading their group presence, in the single user_id-ordered
+                    // statement lockUsersForLinking issues (the same lock linkAccounts_Transaction takes
+                    // internally, so re-locking below is a no-op in this transaction, and the same global
+                    // ordering used by unlink/delete/tenant paths, so no lock-order inversion). Reading the
+                    // before-presence out here without the lock — as this path used to — is racy under READ
+                    // COMMITTED: a concurrent link/tenant mutation committing on either group between the read
+                    // and the lock would leave the snapshot stale, folding to a wrong per-tenant delta.
+                    try {
+                        lockingStorage.lockUsersForLinking(appIdentifier, con, _recipeUserId, _primaryUserId);
+                    } catch (UserNotFoundForLockingException e) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
+                    }
+
                     // Capture each group's presence before the mapping change: on a real link the payload
                     // records both groups' before-lists (an already-linked call emits nothing, so these
                     // reads are discarded in that case).

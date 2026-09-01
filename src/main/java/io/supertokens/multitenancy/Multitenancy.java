@@ -632,8 +632,20 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                     + "false): a no-op with no count change, so no tenant_disassociation event is "
                                     + "emitted.");
                 }
+                // Re-read the group's presence after the mapping is removed. Removing one member's mapping only
+                // drops the group from the tenant if no other member of the group is still associated with it,
+                // so the group can remain present (a no-op for the count) even though this member left. The
+                // read-side interpreter decrements only when the group was present before and absent after, so
+                // the after-list — not derivable from the before-list plus the removed member — is recorded.
+                AuthRecipeUserInfo groupInfoAfter = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                        con, userId);
+                GroupPresence groupAfter = groupInfoAfter != null
+                        ? new GroupPresence(groupInfoAfter.getSupertokensUserId(),
+                                new ArrayList<>(groupInfoAfter.tenantIds))
+                        : new GroupPresence(userId, new ArrayList<>());
                 AuditLogEvent event = LifecycleAuditEvent.forTenantDisassociation(appIdentifier, userId,
-                        groupBefore.primaryOrRecipeUserId, groupBefore, tenantIdentifier.getTenantId(), now);
+                        groupBefore.primaryOrRecipeUserId, groupBefore, groupAfter, tenantIdentifier.getTenantId(),
+                        now);
                 return new AuditedResult<>(true, event);
             });
         } catch (StorageTransactionLogicException e) {

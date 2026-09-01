@@ -100,14 +100,17 @@ public final class LifecycleAuditEvent {
     }
 
     /**
-     * A {@code tenant_disassociation} event: the group identified by {@code groupUserId} (via member
-     * {@code recipeUserId}) was removed from tenant {@code tenantId}. The payload carries the group's presence
-     * list before the disassociation plus the tenant it was removed from.
+     * A {@code tenant_disassociation} event: the member {@code recipeUserId} of the group identified by
+     * {@code groupUserId} was removed from tenant {@code tenantId}. The payload carries the group's presence
+     * list before and after the disassociation plus the tenant it was removed from — removing one member's
+     * mapping only drops the group from the tenant if no other member remains there, so the after-list is
+     * recorded rather than assumed.
      */
     public static AuditLogEvent forTenantDisassociation(AppIdentifier appIdentifier, String recipeUserId,
-            String groupUserId, GroupPresence groupBefore, String tenantId, long createdAt) {
+            String groupUserId, GroupPresence groupBefore, GroupPresence groupAfter, String tenantId,
+            long createdAt) {
         return build(appIdentifier, recipeUserId, groupUserId,
-                LifecycleEventPayload.forTenantDisassociation(groupBefore, tenantId), createdAt);
+                LifecycleEventPayload.forTenantDisassociation(groupBefore, groupAfter, tenantId), createdAt);
     }
 
     /**

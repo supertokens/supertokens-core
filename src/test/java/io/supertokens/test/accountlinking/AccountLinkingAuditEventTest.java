@@ -195,11 +195,15 @@ public class AccountLinkingAuditEventTest {
 
     /**
      * The delete branch of unlink (unlinking the primary user id itself when the group has other members, which
-     * deletes that recipe user) also emits an {@code account_unlinking} event; the freed member is present in
-     * no tenants and the surviving group is recorded as the remaining group.
+     * deletes that recipe user) is a member deletion, not a split: it emits exactly one {@code user_deletion}
+     * event — not {@code account_unlinking} — carrying the group's before and after presence. Emitting
+     * {@code account_unlinking} here (as this path used to) folds to zero, because that arm can only ever add
+     * {@code +1}s and so cannot express the {@code -1} a sole-presence member deletion implies (see the
+     * multitenant regression in {@code LifecycleMutationEventTest}). {@code deleteUserHelper} itself emits
+     * nothing, so exactly one event comes out of this path.
      */
     @Test
-    public void deleteBranchUnlinkEmitsEvent() throws Exception {
+    public void deleteBranchUnlinkEmitsUserDeletion() throws Exception {
         TestingProcessManager.TestingProcess process = startProcess();
         if (process == null) {
             return;
@@ -216,19 +220,18 @@ public class AccountLinkingAuditEventTest {
         boolean wasDeleted = AuthRecipe.unlinkAccounts(process.getProcess(), primary.getSupertokensUserId());
         assertTrue(wasDeleted);
 
-        List<Row> events = readEvents(storage, LifecycleEventType.ACCOUNT_UNLINKING.getValue());
+        // Exactly one user_deletion event, and no account_unlinking event, comes out of this path.
+        assertEquals(0, readEvents(storage, LifecycleEventType.ACCOUNT_UNLINKING.getValue()).size());
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_DELETION.getValue());
         assertEquals(1, events.size());
         Row event = events.get(0);
+        // The row's recipe id is the deleted primary-id member; the group id is the surviving group.
         assertEquals(primary.getSupertokensUserId(), event.recipeUserId);
         LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
-        assertEquals(LifecycleEventType.ACCOUNT_UNLINKING, payload.type);
-        // Freed member (the deleted recipe user) is present in no tenants.
-        assertEquals(primary.getSupertokensUserId(), payload.freedMemberAfter.primaryOrRecipeUserId);
-        assertTrue(payload.freedMemberAfter.tenantIds.isEmpty());
-        // The surviving group keeps the original primary_or_recipe_user_id (the storage retains it even though
-        // that recipe user's login method was deleted) and stays present in the tenant.
-        assertEquals(primary.getSupertokensUserId(), payload.remainingGroupAfter.primaryOrRecipeUserId);
-        assertTrue(payload.remainingGroupAfter.tenantIds.contains("public"));
+        assertEquals(LifecycleEventType.USER_DELETION, payload.type);
+        // Both members were only in "public", so the group stays in "public" after the member is removed.
+        assertTrue(payload.groupBefore.tenantIds.contains("public"));
+        assertTrue(payload.groupAfter.tenantIds.contains("public"));
         // The remaining group is still resolvable via its surviving member.
         AuthRecipeUserInfo survivor = AuthRecipe.getUserById(process.getProcess(), other.getSupertokensUserId());
         assertNotNull(survivor);
