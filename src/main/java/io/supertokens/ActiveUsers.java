@@ -1,12 +1,12 @@
 package io.supertokens;
 
 import io.supertokens.auditlog.AuditLog;
-import io.supertokens.auditlog.lifecycle.ActivityEventType;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupDirtySignal;
 import io.supertokens.pluginInterface.ActiveUsersSQLStorage;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -16,6 +16,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import io.supertokens.auditlog.UnauditedTransaction;
 
@@ -26,6 +27,22 @@ public class ActiveUsers {
     // minutes of staleness is invisible — but at refresh-token rates an unthrottled insert dominates
     // commit waits on the database. Unthrottled activity classes (sign_in, sign_out) bypass this.
     private static final long THROTTLE_MS = 5 * 60 * 1000L;
+
+    // Throttle policy for the shared plugin-interface {@link ActivityEventType} vocabulary. The vocabulary
+    // deliberately carries no throttle flag — its javadoc keeps throttling core-side — so which classes are
+    // throttled is decided here: sign_in / sign_out are low-volume, user-initiated and audit-meaningful, so
+    // they always emit; every other activity class is high-volume and shares the throttle.
+    private static final EnumSet<ActivityEventType> UNTHROTTLED_EVENTS =
+            EnumSet.of(ActivityEventType.SIGN_IN, ActivityEventType.SIGN_OUT);
+
+    /**
+     * @return whether emits of {@code eventType} are subject to the shared 5-minute per-{@code (app, user)}
+     * throttle. {@code sign_in} / {@code sign_out} return {@code false} (always emitted); the rest return
+     * {@code true}. Core-side policy over the plugin-interface {@link ActivityEventType} vocabulary.
+     */
+    public static boolean isThrottled(ActivityEventType eventType) {
+        return !UNTHROTTLED_EVENTS.contains(eventType);
+    }
 
     // Hard cap on cache size. Beyond this we sweep expired entries; if still over we clear.
     // Extra upserts for a window are acceptable; unbounded memory growth is not.
@@ -79,7 +96,7 @@ public class ActiveUsers {
      * The last-active rollup cron is the sole writer of the {@code user_last_active} projection (PLAN-011
      * cutover); here we only append the activity-log event — the fold's source — and mark the storage dirty
      * so the next rollup pass folds it. When the {@code activity_log_throttle_enabled} config is on (the
-     * default), throttled activity classes ({@link ActivityEventType#isThrottled()}) skip the append when
+     * default), throttled activity classes ({@link #isThrottled(ActivityEventType)}) skip the append when
      * this (app, user) was seen within the throttle window and unthrottled classes always append — either way
      * the recency cache is refreshed. When the config is off, the throttle and its cache are bypassed and
      * every activity is recorded as its own row (a complete audit trail). The projection updates
@@ -102,7 +119,7 @@ public class ActiveUsers {
         boolean throttleEnabled = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                 .getActivityLogThrottleEnabled();
         if (throttleEnabled && !Main.isTesting) {
-            if (eventType.isThrottled() && isRecentlyActive(key, now)) {
+            if (isThrottled(eventType) && isRecentlyActive(key, now)) {
                 return;
             }
             // Refresh the recency cache so a subsequent throttled event (and wasRecentlyActive) sees this
@@ -147,7 +164,7 @@ public class ActiveUsers {
     /**
      * Wakes the last-active rollup for a user whose fold credit comes from a transactional lifecycle event —
      * {@code user_creation} on sign-up, {@code account_linking} on link (the two lifecycle members of the
-     * fold set, see {@code LastActiveFoldEvents}) — rather than from {@link #updateLastActive}. Those events
+     * fold set, see {@code RollupEventTypes#FOLD_SET}) — rather than from {@link #updateLastActive}. Those events
      * are written on the mutation's own connection via {@code startAuditedTransaction}, which — unlike
      * {@code updateLastActive} / {@link #emitActivityAuditLog} — does not touch the rollup dirty signal.
      *

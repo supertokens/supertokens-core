@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
-import io.supertokens.auditlog.lifecycle.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.config.Config;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;

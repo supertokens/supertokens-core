@@ -3,8 +3,8 @@ package io.supertokens.inmemorydb.queries;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import io.supertokens.auditlog.lifecycle.LastActiveFoldEvents;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.auditlog.RollupEventTypes;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -154,7 +154,7 @@ public class ActiveUsersQueries {
      * caller's transaction connection. Mirrors the PostgreSQL implementation with two idempotent statements:
      * <ol>
      *   <li><b>Fold</b> — upsert each user's most recent fold-relevant activity (see
-     *       {@code LastActiveFoldEvents}) into the projection, monotonically ({@code MAX(stored, new)} never
+     *       {@code RollupEventTypes#FOLD_SET}) into the projection, monotonically ({@code MAX(stored, new)} never
      *       lowers a stored timestamp).</li>
      *   <li><b>Reconcile</b> — delete projection rows for users linked away within the same window
      *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}).</li>
@@ -172,7 +172,7 @@ public class ActiveUsersQueries {
 
         // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
         // The fold set is the semantic activity events plus the two lifecycle events that imply activity
-        // (user_creation, account_linking); see LastActiveFoldEvents. account_linking credits the primary
+        // (user_creation, account_linking); see RollupEventTypes.FOLD_SET. account_linking credits the primary
         // user here (primary_or_recipe_user_id); the reconcile below separately drops the recipe user's row.
         // The apps guard skips activity for apps deleted within the window: activity_log rows are
         // intentionally retained after an app is deleted (no app_id cascade), but user_last_active
@@ -180,7 +180,7 @@ public class ActiveUsersQueries {
         // user_last_active -> apps foreign key. EXISTS keeps the fold set to still-existing apps only.
         String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
                 + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable + " al"
-                + " WHERE event_type IN (" + LastActiveFoldEvents.sqlInList() + ") AND created_at >= ?"
+                + " WHERE event_type IN (" + RollupEventTypes.sqlInList() + ") AND created_at >= ?"
                 + " AND EXISTS (SELECT 1 FROM " + appsTable + " a WHERE a.app_id = al.app_id)"
                 + " GROUP BY app_id, primary_or_recipe_user_id"
                 + " ON CONFLICT (app_id, user_id) DO UPDATE"

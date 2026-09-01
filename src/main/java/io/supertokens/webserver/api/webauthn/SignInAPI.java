@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.webauthn;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
-import io.supertokens.auditlog.lifecycle.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;

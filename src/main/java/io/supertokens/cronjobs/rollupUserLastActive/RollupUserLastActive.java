@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Derives {@code user_last_active} from the {@code activity_log} by periodically folding recent activity
  * events into the projection (and reconciling users linked away within the window). The folded set is the
- * semantic activity events plus the activity-implying lifecycle events — see {@code LastActiveFoldEvents}.
+ * semantic activity events plus the activity-implying lifecycle events — see {@code RollupEventTypes#FOLD_SET}.
  * Runs once per unique storage via the representative-tenant overload.
  *
  * <p>Per pass:

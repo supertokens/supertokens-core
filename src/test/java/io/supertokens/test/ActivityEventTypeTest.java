@@ -16,8 +16,9 @@
 
 package io.supertokens.test;
 
-import io.supertokens.auditlog.lifecycle.ActivityEventType;
-import io.supertokens.auditlog.lifecycle.LastActiveFoldEvents;
+import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.RollupEventTypes;
 import org.junit.Test;
 
 import java.util.Set;
@@ -27,9 +28,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * The semantic activity-event vocabulary: the {@code event_type} strings, the throttle classification
- * (sign_in / sign_out unthrottled; the rest throttled), and the last-active fold set (the six activity events
- * plus user_creation and account_linking; user_import and the retired user_last_active excluded).
+ * The semantic activity-event vocabulary that core consumes from the shared plugin-interface
+ * ({@link ActivityEventType}, {@link RollupEventTypes}) — the {@code event_type} strings and the last-active
+ * fold set (the six activity events plus user_creation and account_linking; user_import and the retired
+ * user_last_active excluded) — plus core's own throttle classification ({@link ActiveUsers#isThrottled}:
+ * sign_in / sign_out unthrottled, the rest throttled). The plugin-interface has no test-running CI, so these
+ * pin the exact contract core's fold and throttle depend on.
  */
 public class ActivityEventTypeTest {
 
@@ -45,12 +49,12 @@ public class ActivityEventTypeTest {
 
     @Test
     public void signInAndSignOutAreUnthrottledEverythingElseThrottled() {
-        assertFalse(ActivityEventType.SIGN_IN.isThrottled());
-        assertFalse(ActivityEventType.SIGN_OUT.isThrottled());
-        assertTrue(ActivityEventType.TOKEN_REFRESH.isThrottled());
-        assertTrue(ActivityEventType.SESSION_CREATE.isThrottled());
-        assertTrue(ActivityEventType.OAUTH_TOKEN_EXCHANGE.isThrottled());
-        assertTrue(ActivityEventType.OAUTH_AUTHORIZE.isThrottled());
+        assertFalse(ActiveUsers.isThrottled(ActivityEventType.SIGN_IN));
+        assertFalse(ActiveUsers.isThrottled(ActivityEventType.SIGN_OUT));
+        assertTrue(ActiveUsers.isThrottled(ActivityEventType.TOKEN_REFRESH));
+        assertTrue(ActiveUsers.isThrottled(ActivityEventType.SESSION_CREATE));
+        assertTrue(ActiveUsers.isThrottled(ActivityEventType.OAUTH_TOKEN_EXCHANGE));
+        assertTrue(ActiveUsers.isThrottled(ActivityEventType.OAUTH_AUTHORIZE));
     }
 
     @Test
@@ -58,17 +62,17 @@ public class ActivityEventTypeTest {
         assertEquals(
                 Set.of("sign_in", "token_refresh", "session_create", "sign_out", "oauth_token_exchange",
                         "oauth_authorize", "user_creation", "account_linking"),
-                LastActiveFoldEvents.FOLD_EVENT_TYPES);
+                RollupEventTypes.FOLD_SET);
 
         // The retired synthetic event and imported users are not part of the fold.
-        assertFalse(LastActiveFoldEvents.FOLD_EVENT_TYPES.contains("user_last_active"));
-        assertFalse(LastActiveFoldEvents.FOLD_EVENT_TYPES.contains("user_import"));
+        assertFalse(RollupEventTypes.FOLD_SET.contains("user_last_active"));
+        assertFalse(RollupEventTypes.FOLD_SET.contains("user_import"));
     }
 
     @Test
     public void sqlInListQuotesEveryFoldType() {
-        String inList = LastActiveFoldEvents.sqlInList();
-        for (String type : LastActiveFoldEvents.FOLD_EVENT_TYPES) {
+        String inList = RollupEventTypes.sqlInList();
+        for (String type : RollupEventTypes.FOLD_SET) {
             assertTrue("expected '" + type + "' in " + inList, inList.contains("'" + type + "'"));
         }
         assertFalse(inList.contains("user_last_active"));

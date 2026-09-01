@@ -20,7 +20,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
-import io.supertokens.auditlog.lifecycle.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
