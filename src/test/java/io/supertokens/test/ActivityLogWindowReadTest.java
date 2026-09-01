@@ -109,7 +109,7 @@ public class ActivityLogWindowReadTest {
         long to = base + 10000;
 
         insertEvent(storage, "app_types", null, LIFECYCLE_TYPE, base + 1000, null);
-        insertEvent(storage, "app_types", null, "user_last_active", base + 2000, null);
+        insertEvent(storage, "app_types", null, "sign_in", base + 2000, null);
         insertEvent(storage, "app_types", null, "tenant_association", base + 3000, null);
 
         List<AuditLogEvent> lifecycleOnly = storage.getActivityLogEntriesForApp(

@@ -34,7 +34,9 @@ import java.util.Set;
  * derived here from those lists, per {@link LifecycleEventType}:
  *
  * <ul>
- *   <li>{@code USER_CREATION} — {@code +1} for the created-in tenant (a new standalone group).</li>
+ *   <li>{@code USER_CREATION} / {@code USER_IMPORT} — {@code +1} for the tenant the (new or imported) user
+ *       lands in. The two are folded identically here; the distinction is for the last-active rollup, not the
+ *       user count.</li>
  *   <li>{@code USER_GROUP_DELETION} — {@code -1} for every tenant the group was present in.</li>
  *   <li>{@code USER_DELETION} — {@code after − before} per tenant: {@code -1} for each tenant the group left
  *       (its last member there was deleted) and {@code +1} for any it newly appears in (not expected for a
@@ -147,6 +149,10 @@ public final class CountDeltaInterpreter {
     private static void applyEvent(LifecycleEventPayload event, Map<String, Long> deltas) {
         switch (event.type) {
             case USER_CREATION:
+            case USER_IMPORT:
+                // A bulk-imported user is counted toward totals exactly like an interactively created one:
+                // a +1 in the tenant it lands in. (The type distinction matters only to the last-active
+                // rollup, which folds user_creation but excludes user_import, and never enters this fold.)
                 add(deltas, event.tenantId, 1);
                 break;
             case USER_GROUP_DELETION:

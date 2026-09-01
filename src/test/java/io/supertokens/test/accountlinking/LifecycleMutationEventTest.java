@@ -16,18 +16,23 @@
 
 package io.supertokens.test.accountlinking;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
 import io.supertokens.auditlog.lifecycle.LifecycleEventType;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.passwordless.Passwordless;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -57,10 +62,17 @@ import static org.junit.Assert.assertTrue;
  *       tenant), emitted only when the user was not already in the tenant.</li>
  * </ul>
  *
- * <p>The {@code user_creation} and {@code tenant_disassociation} points from the same issue are not covered here:
- * they require new transactional storage methods across the plugin-interface and every storage plugin (there is
- * no recipe-level {@code signUp_Transaction} surface, and {@code removeUserIdFromTenant} is not transactional at
- * all), which is a public storage-API change out of scope for this core-only change.
+ * <p>The {@code user_creation} and {@code tenant_disassociation} points from the same PLAN-010 unit (issue #1397)
+ * are covered here too, now that the storage layer exposes the connection-taking sign-up / tenant-removal variants
+ * they need (plugin-interface #216, core in-memory #1396):
+ *
+ * <ul>
+ *   <li>the interactive sign-up paths (email-password sign-up and password-hash import, third-party sign-in-up
+ *       creation, passwordless user creation, WebAuthn sign-up) each emit one {@code user_creation} event
+ *       carrying the tenant, atomically with the created user;</li>
+ *   <li>{@code Multitenancy.removeUserIdFromTenant} emits a {@code tenant_disassociation} event (group
+ *       before-presence plus the tenant), only when a mapping was actually removed.</li>
+ * </ul>
  */
 public class LifecycleMutationEventTest extends MultitenantTestBase {
 
@@ -361,6 +373,258 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         boolean addedAgain = Multitenancy.addUserIdToTenant(main, t2, t2Storage, user.getSupertokensUserId());
         assertFalse(addedAgain);
         assertEquals(1, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_ASSOCIATION.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    // ---- user_creation ----
+
+    /**
+     * An email-password sign-up emits exactly one {@code user_creation} event: the row's recipe and group ids are
+     * the new user's SuperTokens id and the payload carries the tenant it was created in.
+     */
+    @Test
+    public void emailPasswordSignUpEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "u@example.com", "password");
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
+     * A fake-email sign-up is pre-verified on the same audited connection as the user creation (the fake-email
+     * branch folded onto the audited transaction). This pins both halves of that path: the user still comes out
+     * verified, and exactly one {@code user_creation} event is emitted.
+     */
+    @Test
+    public void fakeEmailSignUpVerifiesAndEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        String fakeEmail = "st-user@stfakeemail.supertokens.com";
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), fakeEmail, "password");
+
+        // The fake email is pre-verified in the same transaction that created the user.
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), fakeEmail));
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
+     * Importing an email-password user by password hash also emits a {@code user_creation} event (the import
+     * create path goes through the same audited transaction as an interactive sign-up).
+     */
+    @Test
+    public void importUserWithPasswordHashEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        // A bcrypt hash is auto-detected (hashingAlgorithm = null).
+        String bcryptHash = "$2a$10$GzEm3vKoAqnJCTWesRARCe/ovjt/07qjvcH9jbLUg44Fn77gMZkmm";
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.getProcess(),
+                "import@example.com", bcryptHash, null);
+        assertFalse(response.didUserAlreadyExist);
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(response.user.getSupertokensUserId(), event.recipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
+     * A third-party sign-in-up emits a {@code user_creation} event only when it creates a new user: signing in
+     * again with the same third-party identity is a sign-in, not a creation, so no further event is emitted.
+     */
+    @Test
+    public void thirdPartySignInUpEmitsUserCreationForNewUserOnly() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        ThirdParty.SignInUpResponse first = ThirdParty.signInUp(process.getProcess(), "google", "tp-user-1",
+                "tp@example.com");
+        assertTrue(first.createdNewUser);
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(first.user.getSupertokensUserId(), event.recipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        // Signing in again with the same third-party identity does not create a user — still exactly one event.
+        ThirdParty.SignInUpResponse second = ThirdParty.signInUp(process.getProcess(), "google", "tp-user-1",
+                "tp@example.com");
+        assertFalse(second.createdNewUser);
+        assertEquals(1, readEvents(storage, LifecycleEventType.USER_CREATION.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    /**
+     * Creating a passwordless user emits a {@code user_creation} event carrying the tenant it was created in.
+     */
+    @Test
+    public void passwordlessUserCreationEmitsEvent() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(main);
+
+        AuthRecipeUserInfo user = Passwordless.createPasswordlessUser(new TenantIdentifier(null, null, null),
+                storage, "pless@example.com", null, System.currentTimeMillis());
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    /**
+     * A WebAuthn sign-up emits exactly one {@code user_creation} event carrying the tenant it was created in.
+     * WebAuthn is the one converted path where the emit lands inside the pre-existing {@code while(true)} retry
+     * loop of the audited transaction, so it gets its own assertion like the other recipes. Driven through the
+     * HTTP sign-up flow (register options + passkey) because that is the only way to produce a valid credential.
+     */
+    @Test
+    public void webAuthnSignUpEmitsUserCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        JsonObject signUpResponse = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(
+                process.getProcess(), "webauthn@example.com");
+        assertEquals("OK", signUpResponse.get("status").getAsString());
+        String recipeUserId = signUpResponse.get("recipeUserId").getAsString();
+
+        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(recipeUserId, event.recipeUserId);
+        assertEquals(recipeUserId, event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals("public", payload.tenantId);
+
+        stopProcess(process);
+    }
+
+    // ---- tenant_disassociation ----
+
+    /**
+     * Removing a user from a tenant emits exactly one {@code tenant_disassociation} event carrying the group's
+     * before-presence and the tenant it was removed from; removing again is a no-op that emits nothing.
+     */
+    @Test
+    public void disassociatingUserFromTenantEmitsEvent() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        initTenantIdentifiers();
+        createTenants(main);
+        Storage a1Storage = StorageLayer.getStorage(t1, main);
+        Storage t2Storage = StorageLayer.getStorage(t2, main);
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(t1, a1Storage, main, "u@example.com", "password");
+        assertTrue(Multitenancy.addUserIdToTenant(main, t2, t2Storage, user.getSupertokensUserId()));
+
+        // Now the group is in both "public" and "t1"; remove it from "t1".
+        boolean removed = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage, user.getSupertokensUserId(),
+                null);
+        assertTrue(removed);
+
+        List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue());
+        assertEquals(1, events.size());
+        Row event = events.get(0);
+        assertEquals(user.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+        LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+        assertEquals(LifecycleEventType.TENANT_DISASSOCIATION, payload.type);
+        assertEquals("t1", payload.tenantId);
+        assertEquals(user.getSupertokensUserId(), payload.groupBefore.primaryOrRecipeUserId);
+        // Before the disassociation the group was present in both public and t1.
+        assertTrue(payload.groupBefore.tenantIds.contains("public"));
+        assertTrue(payload.groupBefore.tenantIds.contains("t1"));
+
+        // Removing again is a no-op — still exactly one event.
+        boolean removedAgain = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage,
+                user.getSupertokensUserId(), null);
+        assertFalse(removedAgain);
+        assertEquals(1, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
+
+        stopProcess(process);
+    }
+
+    /**
+     * Removing a user from a tenant it was never associated with emits no {@code tenant_disassociation} event.
+     */
+    @Test
+    public void disassociatingUserNotInTenantEmitsNothing() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        initTenantIdentifiers();
+        createTenants(main);
+        Storage a1Storage = StorageLayer.getStorage(t1, main);
+        Storage t2Storage = StorageLayer.getStorage(t2, main);
+
+        // User exists only in a1's public tenant, never added to t2 ("t1").
+        AuthRecipeUserInfo user = EmailPassword.signUp(t1, a1Storage, main, "u@example.com", "password");
+
+        boolean removed = Multitenancy.removeUserIdFromTenant(main, t2, t2Storage, user.getSupertokensUserId(),
+                null);
+        assertFalse(removed);
+        assertEquals(0, readEvents((SQLStorage) a1Storage, LifecycleEventType.TENANT_DISASSOCIATION.getValue()).size());
 
         stopProcess(process);
     }

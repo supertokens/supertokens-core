@@ -76,19 +76,20 @@ public class UsersCountAPI extends WebserverAPI {
             includeAllTenants = false;
         }
 
-        // Opt-in approximate mode: additive, backward-compatible. Only honoured from the CDI version that
-        // introduces it, so older clients see byte-for-byte unchanged behaviour and never the new fields.
-        String allowApproximateStr = InputParser.getQueryParamOrThrowError(req, "allowApproximate", true);
-        boolean paramSet = allowApproximateStr != null && allowApproximateStr.equalsIgnoreCase("true")
-                && getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_6);
+        // From the CDI version that serves counts from the lifecycle-event ledger, the default (param-less)
+        // path returns the fast anchor+fold value and carries the approximate/asOf metadata (PLAN-010). The
+        // historical `allowApproximate` opt-in is now a no-op - accepted (unknown query params are ignored) so
+        // clients still sending it keep working, but it changes nothing. Older CDI versions see byte-for-byte
+        // unchanged behaviour: an exact recompute and never the new fields.
+        boolean ledgerServed = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_6);
 
         RECIPE_ID[] recipeIdsEnum = recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new);
 
         try {
             long count;
-            // Whether the served value came from a cached snapshot. Stays false when we compute exact - which
-            // the approximate path only ever falls back to for the shapes it does not cover (all-tenants, or a
-            // recipe-filtered count), so the client still learns it got an exact number.
+            // Whether the served value came from a cached anchor snapshot. Stays false when we compute exact -
+            // which the ledger-served path only ever falls back to for the shapes it does not cover
+            // (all-tenants, or a recipe-filtered count), so the client still learns it got a fresh number.
             boolean approximate = false;
             long asOf = System.currentTimeMillis();
 
@@ -102,14 +103,14 @@ public class UsersCountAPI extends WebserverAPI {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                 Storage storage = getTenantStorage(req);
 
-                // The anchor + delta contract counts every user in the tenant; a recipe-id filter has no
-                // approximate equivalent, so fall back to exact in that case.
-                if (paramSet && recipeIdsEnum.length == 0) {
-                    ApproximateUserCount.ApproximateCountResult approxResult = ApproximateUserCount
+                // The anchor + fold contract counts every user in the tenant; a recipe-id filter has no
+                // ledger-fold equivalent, so fall back to an exact recompute in that case.
+                if (ledgerServed && recipeIdsEnum.length == 0) {
+                    ApproximateUserCount.ApproximateCountResult foldResult = ApproximateUserCount
                             .getInstance(main, getAppIdentifier(req)).serve(main, tenantIdentifier, storage);
-                    count = approxResult.count;
-                    approximate = approxResult.approximate;
-                    asOf = approxResult.asOf;
+                    count = foldResult.count;
+                    approximate = foldResult.approximate;
+                    asOf = foldResult.asOf;
                 } else {
                     count = AuthRecipe.getUsersCountForTenant(tenantIdentifier, storage, recipeIdsEnum);
                 }
@@ -117,7 +118,7 @@ public class UsersCountAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
-            if (paramSet) {
+            if (ledgerServed) {
                 result.addProperty("approximate", approximate);
                 result.addProperty("asOf", asOf);
             }

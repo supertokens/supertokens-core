@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -118,11 +119,11 @@ public class SessionAPI extends WebserverAPI {
                                     tenantIdentifier.toAppIdentifier(), storage,
                                     sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                                userIdMapping.superTokensUserId);
+                        ActiveUsers.updateLastActive(tenantIdentifier, main,
+                                userIdMapping.superTokensUserId, ActivityEventType.SESSION_CREATE);
                     } else {
-                        ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                                sessionInfo.session.userId);
+                        ActiveUsers.updateLastActive(tenantIdentifier, main,
+                                sessionInfo.session.userId, ActivityEventType.SESSION_CREATE);
                     }
                 } catch (StorageQueryException ignored) {
                 }

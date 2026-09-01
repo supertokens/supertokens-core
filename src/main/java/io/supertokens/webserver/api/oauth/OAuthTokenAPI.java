@@ -20,6 +20,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -321,9 +322,11 @@ public class OAuthTokenAPI extends WebserverAPI {
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
             if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
             } else {
-                ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.userId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
             }
         } catch (Exception e) {
             // ignore

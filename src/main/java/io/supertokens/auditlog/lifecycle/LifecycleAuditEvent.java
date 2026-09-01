@@ -36,7 +36,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
  */
 public final class LifecycleAuditEvent {
 
-    // Mirrors the status written for the user_last_active activity rows.
+    // Mirrors the status written for the semantic activity rows.
     private static final String STATUS_SUCCESS = "success";
 
     private LifecycleAuditEvent() {
@@ -97,6 +97,42 @@ public final class LifecycleAuditEvent {
             String groupUserId, GroupPresence groupBefore, String tenantId, long createdAt) {
         return build(appIdentifier, recipeUserId, groupUserId,
                 LifecycleEventPayload.forTenantAssociation(groupBefore, tenantId), createdAt);
+    }
+
+    /**
+     * A {@code tenant_disassociation} event: the group identified by {@code groupUserId} (via member
+     * {@code recipeUserId}) was removed from tenant {@code tenantId}. The payload carries the group's presence
+     * list before the disassociation plus the tenant it was removed from.
+     */
+    public static AuditLogEvent forTenantDisassociation(AppIdentifier appIdentifier, String recipeUserId,
+            String groupUserId, GroupPresence groupBefore, String tenantId, long createdAt) {
+        return build(appIdentifier, recipeUserId, groupUserId,
+                LifecycleEventPayload.forTenantDisassociation(groupBefore, tenantId), createdAt);
+    }
+
+    /**
+     * A {@code user_creation} event: a new recipe user {@code recipeUserId} was created in tenant
+     * {@code tenantId}. A freshly created user is its own group, so it is recorded against itself as both the
+     * recipe user and the group; the payload carries only the tenant it was created in (the group's presence
+     * afterwards is exactly that single tenant, derivable read-side without a stored list).
+     */
+    public static AuditLogEvent forUserCreation(AppIdentifier appIdentifier, String recipeUserId,
+            String tenantId, long createdAt) {
+        return build(appIdentifier, recipeUserId, recipeUserId,
+                LifecycleEventPayload.forUserCreation(tenantId), createdAt);
+    }
+
+    /**
+     * A {@code user_import} event: the user identified by {@code groupUserId} was brought in by bulk import
+     * and lands in tenant {@code tenantId}. Counted toward user totals exactly like {@code user_creation}, so
+     * (like a freshly created user) the group is recorded against itself as both the recipe user and the
+     * group and the payload carries only the tenant. The distinct type is what lets a downstream consumer
+     * exclude imports from the last-active rollup while still counting them.
+     */
+    public static AuditLogEvent forUserImport(AppIdentifier appIdentifier, String groupUserId,
+            String tenantId, long createdAt) {
+        return build(appIdentifier, groupUserId, groupUserId,
+                LifecycleEventPayload.forUserImport(tenantId), createdAt);
     }
 
     private static AuditLogEvent build(AppIdentifier appIdentifier, String recipeUserId,

@@ -19,7 +19,10 @@ package io.supertokens.thirdparty;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.auditlog.AuditLog;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -354,17 +357,39 @@ public class ThirdParty {
             String thirdPartyId, String thirdPartyUserId, String email, long timeJoined)
             throws StorageQueryException, TenantOrAppNotFoundException, DuplicateThirdPartyUserException {
         ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
 
         while (true) {
             // loop for sign up
             String userId = Utils.getUUID();
 
             try {
-                AuthRecipeUserInfo createdUser = tpStorage.signUp(tenantIdentifier, userId, email,
-                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                // Create the user and emit its user_creation event atomically on the same connection, so the
+                // event cannot be lost relative to the creation it records. The user-id retry loop on
+                // DuplicateUserIdException stays outside the transaction.
+                AuthRecipeUserInfo createdUser = auditStorage.startAuditedTransaction(appIdentifier, con -> {
+                    try {
+                        AuthRecipeUserInfo user = tpStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
+                                new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                        AuditLogEvent event = LifecycleAuditEvent.forUserCreation(appIdentifier,
+                                user.getSupertokensUserId(), tenantIdentifier.getTenantId(), timeJoined);
+                        return new AuditedResult<>(user, event);
+                    } catch (DuplicateUserIdException | DuplicateThirdPartyUserException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
                 return new SignInUpResponse(true, createdUser);
-            } catch (DuplicateUserIdException e) {
-                // we try again..
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof DuplicateUserIdException) {
+                    // we try again with a new userId
+                    continue;
+                } else if (e.actualException instanceof DuplicateThirdPartyUserException) {
+                    throw (DuplicateThirdPartyUserException) e.actualException;
+                } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
+                }
+                throw new StorageQueryException(e.actualException);
             }
         }
     }
