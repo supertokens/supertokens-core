@@ -51,10 +51,9 @@ import static org.junit.Assert.assertNull;
  * boundary. Every timestamp here is a fixed offset from a frozen {@link #BASE} anchor and the fold window is
  * passed explicitly, so the comparison is deterministic.
  *
- * <p>The seeding mirrors the production coupling in {@code ActiveUsers.updateLastActive}: every successful
- * direct upsert of {@code user_last_active} at time {@code t} is mirrored into {@code activity_log} as a
- * {@code user_last_active} event at the same {@code t} ({@code ActiveUsers.emitLastActiveAuditLog}) — which is
- * exactly what the fold reads. Linking additionally deletes the recipe user's direct row
+ * <p>The seeding reproduces the direct-write projection alongside a mirrored activity log at the same
+ * timestamp: an activity event (here {@code sign_in}, a folded type) at time {@code t} — which is exactly what
+ * the fold reads. Linking additionally deletes the recipe user's direct row
  * ({@code ActiveUsers.updateLastActiveAfterLinking}) and emits an {@code account_linking} event
  * ({@code AuthRecipe.linkAccounts}, unit 5) that the reconcile matches on.
  *
@@ -244,7 +243,9 @@ public class ActivityLogRollupParityTest {
      */
     private void recordActivity(Start storage, String userId, long createdAt) throws Exception {
         upsertDirectRow(storage, userId, createdAt);
-        insertActivityLogRow(storage, userId, userId, "user_last_active", createdAt);
+        // 'sign_in' is a folded activity type; it stands in for the activity event ActiveUsers.updateLastActive
+        // appends alongside the (now-retired) direct upsert this parity test simulates.
+        insertActivityLogRow(storage, userId, userId, "sign_in", createdAt);
     }
 
     private void upsertDirectRow(Start storage, String userId, long lastActiveTime) throws Exception {

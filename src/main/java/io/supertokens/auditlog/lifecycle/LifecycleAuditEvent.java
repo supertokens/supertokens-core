@@ -36,7 +36,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
  */
 public final class LifecycleAuditEvent {
 
-    // Mirrors the status written for the user_last_active activity rows.
+    // Mirrors the status written for the semantic activity rows.
     private static final String STATUS_SUCCESS = "success";
 
     private LifecycleAuditEvent() {

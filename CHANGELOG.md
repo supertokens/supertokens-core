@@ -15,6 +15,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Emits `user_creation` and `tenant_disassociation` lifecycle events atomically with the mutation from the interactive user-creation and tenant-removal paths.
 - Bulk import now emits lifecycle events atomically with the import: one `user_import` per imported user (counted toward user totals like `user_creation`, but under its own type so the last-active rollup can exclude imports) plus a `tenant_association` for each remaining tenant the user lands in.
 - The last-active rollup fold now skips activity for apps no longer present in `apps`, so a deleted app's retained `activity_log` rows can never resurrect a `user_last_active` projection row (which would violate its `apps` foreign key).
+- Replaced the synthetic `user_last_active` event with semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`); the last-active fold now reads these plus the `user_creation` and `account_linking` lifecycle events, and a new protected config `activity_log_throttle_enabled` (boolean, default `true`, per connection URI domain) toggles the per-`(app, user)` write throttle on the throttled events.
+- Sign-up and account-linking now wake the last-active rollup, so a user with no other activity is folded into `user_last_active` on the next tick instead of waiting for the periodic backstop pass.
 
 ## [12.2.0]
 

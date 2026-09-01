@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A per-storage, in-memory "there is something to fold" flag for the {@link RollupUserLastActive} cron.
  *
- * <p>The rollup-relevant activity-log emit paths (the {@code user_last_active} append, and — once wired —
- * the account linking/unlinking events) call {@link #markDirty} after writing a row. The cron consumes the
+ * <p>The rollup-relevant activity-log emit paths (the semantic activity-event appends, and the account
+ * linking/unlinking events) call {@link #markDirty} after writing a row. The cron consumes the
  * flag ({@link #consumeDirty}, a consume-on-read compare-and-set) at the top of each pass so it can skip the
  * pass — and avoid borrowing a connection from a possibly-idle pool — when nothing has changed.
  *

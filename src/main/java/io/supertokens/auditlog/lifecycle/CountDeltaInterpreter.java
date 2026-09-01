@@ -152,7 +152,7 @@ public final class CountDeltaInterpreter {
             case USER_IMPORT:
                 // A bulk-imported user is counted toward totals exactly like an interactively created one:
                 // a +1 in the tenant it lands in. (The type distinction matters only to the last-active
-                // rollup, which reads user_last_active/account_linking rows and never enters this fold.)
+                // rollup, which folds user_creation but excludes user_import, and never enters this fold.)
                 add(deltas, event.tenantId, 1);
                 break;
             case USER_GROUP_DELETION:

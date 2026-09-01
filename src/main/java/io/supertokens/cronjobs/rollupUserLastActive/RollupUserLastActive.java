@@ -34,8 +34,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Derives {@code user_last_active} from the {@code activity_log} by periodically folding recent
- * {@code user_last_active} events into the projection (and reconciling users linked away within the window).
+ * Derives {@code user_last_active} from the {@code activity_log} by periodically folding recent activity
+ * events into the projection (and reconciling users linked away within the window). The folded set is the
+ * semantic activity events plus the activity-implying lifecycle events — see {@code RollupEventTypes#FOLD_SET}.
  * Runs once per unique storage via the representative-tenant overload.
  *
  * <p>Per pass:
@@ -165,8 +166,8 @@ public class RollupUserLastActive extends CronTask {
                         new KeyValueInfo(String.valueOf(runStart)));
                 return AuditedResult.withoutAudit(null,
                         "The last-active rollup maintains a derived projection by folding existing "
-                                + "activity-log events into user_last_active; it consumes the audit log "
-                                + "rather than producing new events.");
+                                + "activity-log events into the user_last_active projection; it consumes the "
+                                + "audit log rather than producing new events.");
             });
 
             state.startupDone = true;
