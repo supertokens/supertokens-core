@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Dashboard session tokens are now checked for expiry when verified: `Dashboard.isValidUserSession` and `getEmailFromSessionId` reject a session whose `expiry` has passed (and revoke the expired row) instead of relying solely on the twice-daily cleanup cron, which does not run for the first 12 hours of a process' life.
+
 ## [12.2.0]
 
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
