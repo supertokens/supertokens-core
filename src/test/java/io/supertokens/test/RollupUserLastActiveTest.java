@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.mockito.Mockito;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -232,6 +233,40 @@ public class RollupUserLastActiveTest {
         }
 
         // Re-armed: consuming it now returns true (and clears it again).
+        assertTrue(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
+
+        stopFixture(f);
+    }
+
+    /**
+     * A pass whose fold is skipped — a concurrent instance holds the storage's rollup lock, so the fold
+     * returns {@code false} and writes nothing — must not advance the watermark, and must re-arm the dirty
+     * flag so the next tick retries. This pins the catch-up loss case: with a null watermark, advancing on a
+     * skipped fold would strand the deep backlog forever, since later windows only reach back the margin.
+     * Modelled by a spy whose {@code rollupLastActiveFromActivityLog_Transaction} reports it did nothing;
+     * every other call (transaction, key-value, existence check) runs against the real shared storage.
+     */
+    @Test
+    public void aSkippedFoldDoesNotAdvanceTheWatermarkAndReArmsForRetry() throws Exception {
+        TestFixture f = startFixture();
+
+        long base = System.currentTimeMillis();
+        insertUserLastActiveEvent(f.storage, "rollup-skip", base + 1000);
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+
+        // A lock loser: the fold reports it folded nothing (another instance holds the rollup lock).
+        Start skippingStorage = Mockito.spy(f.storage);
+        Mockito.doReturn(false).when(skippingStorage)
+                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong());
+
+        // Null watermark before the pass — the deep-catch-up loss case.
+        assertNull(getWatermark(f.storage, f.representative));
+
+        f.cron.runOncePerStorageForTesting(f.representative, skippingStorage);
+
+        // The skipped fold advanced nothing: the watermark stays absent, so the deep window is re-foldable.
+        assertNull(getWatermark(f.storage, f.representative));
+        // And the dirty flag is re-armed for the next tick.
         assertTrue(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
 
         stopFixture(f);

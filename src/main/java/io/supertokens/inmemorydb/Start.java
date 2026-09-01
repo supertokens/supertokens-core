@@ -1669,11 +1669,11 @@ public class Start
     }
 
     @Override
-    public void rollupLastActiveFromActivityLog_Transaction(TransactionConnection con, long windowStartMillis)
+    public boolean rollupLastActiveFromActivityLog_Transaction(TransactionConnection con, long windowStartMillis)
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            ActiveUsersQueries.rollupLastActiveFromActivityLog_Transaction(this, sqlCon, windowStartMillis);
+            return ActiveUsersQueries.rollupLastActiveFromActivityLog_Transaction(this, sqlCon, windowStartMillis);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

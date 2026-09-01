@@ -52,13 +52,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>The fold window is {@code max(watermark - MARGIN, now - retention)}; on a missing watermark it falls
  *   back to {@code now - retention}. Retention comes from {@code activity_log_retention_days} via the
  *   representative tenant.
- *   <li>Fold, reconcile and the watermark advance to the run-start time happen in one transaction. The
+ *   <li>Fold, reconcile and the watermark advance to the run-start time happen in one transaction, and
+ *   the watermark advances only when the fold actually ran: a storage whose fold skips because a
+ *   concurrent instance holds its rollup lock returns {@code false}, and this pass then leaves the
+ *   watermark where it was (re-arming the dirty flag) so the unfolded window is retried, rather than
+ *   advancing past a window it never folded. The
  *   watermark lives in the key-value store under a reserved key, addressed via the representative tenant.
  *   Representative selection need not be stable across restarts or config reloads: if a different tenant
  *   in the same userPoolId group is picked, the prior watermark is merely orphaned and the next pass
  *   re-folds an idempotent window from the retention fallback — a heavier catch-up, never an incorrect
  *   result.
- *   <li>On failure the dirty flag is re-armed so the next tick retries.
+ *   <li>On failure — or on a skipped fold — the dirty flag is re-armed so the next tick retries.
  * </ul>
  *
  * <p>Correctness does not depend on cross-instance coordination: the fold is idempotent
@@ -158,19 +162,32 @@ public class RollupUserLastActive extends CronTask {
             // The rollup consumes the activity log to maintain a derived projection; it emits no audit
             // events of its own, so it runs through the audited-transaction combinator's zero-event path.
             // The combinator owns the commit.
+            boolean[] folded = new boolean[1];
             activityLogStorage.startAuditedTransaction(appIdentifier, con -> {
-                activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, windowStartMillis);
-                // Advance the watermark to the run-start time (not "now after the fold"): the next window
-                // reaches back to windowStart = watermark - MARGIN, so under-advancing is always safe.
-                activeUsersStorage.setKeyValue_Transaction(representative, con, WATERMARK_KEY,
-                        new KeyValueInfo(String.valueOf(runStart)));
+                folded[0] = activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, windowStartMillis);
+                if (folded[0]) {
+                    // Advance the watermark only when the fold actually ran, and to the run-start time
+                    // (not "now after the fold"): the next window reaches back to windowStart =
+                    // watermark - MARGIN, so under-advancing is always safe. A skipped fold (another
+                    // instance holds the storage's rollup lock) folded nothing on this connection, so
+                    // advancing here would strand the unfolded window — on a null-watermark catch-up the
+                    // deep backlog would never be re-folded, since later windows only reach back MARGIN.
+                    activeUsersStorage.setKeyValue_Transaction(representative, con, WATERMARK_KEY,
+                            new KeyValueInfo(String.valueOf(runStart)));
+                }
                 return AuditedResult.withoutAudit(null,
                         "The last-active rollup maintains a derived projection by folding existing "
                                 + "activity-log events into the user_last_active projection; it consumes the "
                                 + "audit log rather than producing new events.");
             });
 
-            state.startupDone = true;
+            if (folded[0]) {
+                state.startupDone = true;
+            } else {
+                // The fold was skipped (a concurrent instance holds the rollup lock and is folding this
+                // window). Leave the watermark untouched and re-arm the dirty flag so the next tick retries.
+                dirtySignal.markDirty(userPoolId);
+            }
         } catch (Exception e) {
             // Re-arm the dirty flag so the next tick retries this storage.
             dirtySignal.markDirty(userPoolId);

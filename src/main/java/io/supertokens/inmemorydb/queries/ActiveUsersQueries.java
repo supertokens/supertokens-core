@@ -160,10 +160,11 @@ public class ActiveUsersQueries {
      *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}).</li>
      * </ol>
      * No advisory lock — the in-memory store is single-instance, so there is no concurrent pass to
-     * deduplicate. SQLite lacks the {@code DELETE ... USING} join, so the reconcile is expressed as a
+     * deduplicate and the fold never skips; this always returns {@code true} to match the SQLStorage
+     * contract. SQLite lacks the {@code DELETE ... USING} join, so the reconcile is expressed as a
      * correlated {@code EXISTS} sub-select (result-identical).
      */
-    public static void rollupLastActiveFromActivityLog_Transaction(Start start, Connection con,
+    public static boolean rollupLastActiveFromActivityLog_Transaction(Start start, Connection con,
                                                                    long windowStartMillis)
             throws StorageQueryException, SQLException {
         String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
@@ -194,6 +195,7 @@ public class ActiveUsersQueries {
                 + " AND al.app_id = " + userLastActiveTable + ".app_id"
                 + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id)";
         update(con, RECONCILE_QUERY, pst -> pst.setLong(1, windowStartMillis));
+        return true;
     }
 
     public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start,
