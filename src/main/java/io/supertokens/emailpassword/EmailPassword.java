@@ -242,8 +242,8 @@ public class EmailPassword {
     }
 
     // The transaction opened directly below (the duplicate-email password update) is a non-count-affecting
-    // mutation and remains on the @UnauditedTransaction allowlist (PLAN-012 backlog). The user *creation* path,
-    // by contrast, now goes through startAuditedTransaction and emits its user_creation event atomically.
+    // mutation and remains on the @UnauditedTransaction allowlist (PLAN-012 backlog). The user *import* path,
+    // by contrast, now goes through startAuditedTransaction and emits its user_import event atomically.
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
             @Nonnull String email,
@@ -262,7 +262,10 @@ public class EmailPassword {
                     try {
                         AuthRecipeUserInfo user = epStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
                                 passwordHash, timeJoined);
-                        AuditLogEvent event = LifecycleAuditEvent.forUserCreation(appIdentifier,
+                        // This is the CDI import-with-password-hash path, not an interactive sign-up: emit
+                        // user_import (like bulk import) rather than user_creation, so the imported user counts
+                        // toward user totals but is excluded from the last-active rollup / MAU fold.
+                        AuditLogEvent event = LifecycleAuditEvent.forUserImport(appIdentifier,
                                 user.getSupertokensUserId(), tenantIdentifier.getTenantId(), timeJoined);
                         return new AuditedResult<>(user, event);
                     } catch (DuplicateUserIdException | DuplicateEmailException e) {

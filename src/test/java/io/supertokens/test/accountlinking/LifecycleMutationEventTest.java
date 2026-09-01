@@ -436,11 +436,13 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
     }
 
     /**
-     * Importing an email-password user by password hash also emits a {@code user_creation} event (the import
-     * create path goes through the same audited transaction as an interactive sign-up).
+     * Importing an email-password user by password hash (the CDI import-with-password-hash API) emits a
+     * {@code user_import} event, not {@code user_creation}: like bulk import it counts toward user totals but
+     * is excluded from the last-active rollup / MAU fold ({@code user_import} is not in the fold set), so an
+     * import never inflates the active-user count.
      */
     @Test
-    public void importUserWithPasswordHashEmitsUserCreation() throws Exception {
+    public void importUserWithPasswordHashEmitsUserImport() throws Exception {
         TestingProcessManager.TestingProcess process = startProcess();
         if (process == null) {
             return;
@@ -453,13 +455,17 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
                 "import@example.com", bcryptHash, null);
         assertFalse(response.didUserAlreadyExist);
 
-        List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
-        assertEquals(1, events.size());
-        Row event = events.get(0);
+        List<Row> imports = readEvents(storage, LifecycleEventType.USER_IMPORT.getValue());
+        assertEquals(1, imports.size());
+        Row event = imports.get(0);
         assertEquals(response.user.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(response.user.getSupertokensUserId(), event.primaryOrRecipeUserId);
         LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
-        assertEquals(LifecycleEventType.USER_CREATION, payload.type);
+        assertEquals(LifecycleEventType.USER_IMPORT, payload.type);
         assertEquals("public", payload.tenantId);
+
+        // And crucially it does NOT emit user_creation (which is in the fold set and would count toward MAU).
+        assertEquals(0, readEvents(storage, LifecycleEventType.USER_CREATION.getValue()).size());
 
         stopProcess(process);
     }
