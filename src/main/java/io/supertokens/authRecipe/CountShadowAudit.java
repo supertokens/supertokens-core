@@ -19,7 +19,7 @@ package io.supertokens.authRecipe;
 import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.auditlog.lifecycle.InvalidLifecycleEventPayloadException;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
-import io.supertokens.auditlog.lifecycle.LifecycleEventType;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 
 import java.util.ArrayList;

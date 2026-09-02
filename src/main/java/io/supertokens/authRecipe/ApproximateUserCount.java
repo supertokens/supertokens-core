@@ -145,8 +145,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         if (!(storage instanceof ActivityLogStorage)) {
             // No lifecycle-event ledger to fold against (no SQL storage in the fleet is in this state). Serve
-            // the exact count directly rather than an approximation we cannot bring up to date.
-            return new ApproximateCountResult(authRecipeStorage.getUsersCount(tenantIdentifier, null), true,
+            // the exact count directly rather than an approximation we cannot bring up to date. This is a
+            // freshly-computed exact count as of now, so approximate is false (matching the contract: the
+            // caller reports false when it serves exact).
+            return new ApproximateCountResult(authRecipeStorage.getUsersCount(tenantIdentifier, null), false,
                     System.currentTimeMillis());
         }
         ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;

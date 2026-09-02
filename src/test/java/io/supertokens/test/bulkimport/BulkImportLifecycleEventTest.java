@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
-import io.supertokens.auditlog.lifecycle.LifecycleEventType;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.featureflag.EE_FEATURES;

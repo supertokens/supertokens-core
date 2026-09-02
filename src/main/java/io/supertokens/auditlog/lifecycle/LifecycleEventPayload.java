@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 
 import java.util.ArrayList;
 import java.util.Arrays;

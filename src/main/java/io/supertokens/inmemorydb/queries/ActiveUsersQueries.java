@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.pluginInterface.auditlog.RollupEventTypes;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.inmemorydb.Start;
@@ -157,7 +158,9 @@ public class ActiveUsersQueries {
      *       {@code RollupEventTypes#FOLD_SET}) into the projection, monotonically ({@code MAX(stored, new)} never
      *       lowers a stored timestamp).</li>
      *   <li><b>Reconcile</b> — delete projection rows for users linked away within the same window
-     *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}).</li>
+     *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}), but only
+     *       when the link event is not older than the row's {@code last_active_time} — a user linked then
+     *       active again in the same window keeps its post-link credit.</li>
      * </ol>
      * No advisory lock — the in-memory store is single-instance, so there is no concurrent pass to
      * deduplicate and the fold never skips; this always returns {@code true} to match the SQLStorage
@@ -194,11 +197,20 @@ public class ActiveUsersQueries {
                 + " excluded.last_active_time)";
         update(con, FOLD_QUERY, pst -> pst.setLong(1, windowStartMillis));
 
+        // The ordering guard (al.created_at >= last_active_time) makes the reconcile order-insensitive and
+        // keeps it result-identical to the PostgreSQL DELETE ... USING: only scrub a linked-away recipe user's
+        // projection row when the account_linking event is not older than the row's stored last-active. A user
+        // linked, unlinked, then active again in one window keeps its post-unlink credit (its last_active_time
+        // is newer than the stale link) instead of being wrongly deleted by the earlier link event in the same
+        // window. The event_type literal is sourced from the shared LifecycleEventType so a rename can't
+        // silently stop the reconcile from firing.
         String RECONCILE_QUERY = "DELETE FROM " + userLastActiveTable
                 + " WHERE EXISTS (SELECT 1 FROM " + activityLogTable + " al"
-                + " WHERE al.event_type = 'account_linking' AND al.created_at >= ?"
+                + " WHERE al.event_type = '" + LifecycleEventType.ACCOUNT_LINKING.getValue() + "'"
+                + " AND al.created_at >= ?"
                 + " AND al.app_id = " + userLastActiveTable + ".app_id"
-                + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id)";
+                + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id"
+                + " AND al.created_at >= " + userLastActiveTable + ".last_active_time)";
         update(con, RECONCILE_QUERY, pst -> pst.setLong(1, windowStartMillis));
         return true;
     }

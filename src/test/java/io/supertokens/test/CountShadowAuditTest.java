@@ -20,7 +20,7 @@ import io.supertokens.authRecipe.CountShadowAudit;
 import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.InvalidLifecycleEventPayloadException;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
-import io.supertokens.auditlog.lifecycle.LifecycleEventType;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import org.junit.Test;
 

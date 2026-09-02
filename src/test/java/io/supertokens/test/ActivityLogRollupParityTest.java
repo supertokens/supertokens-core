@@ -218,6 +218,49 @@ public class ActivityLogRollupParityTest {
         stopProcess(process);
     }
 
+    /**
+     * Ordering-guard parity: a user linked, then unlinked, then active again — all inside one fold window, so
+     * the {@code account_linking} event never ages out. The reconcile must not scrub the user, because its
+     * post-unlink activity is newer than the stale link. Without the {@code al.created_at >= last_active_time}
+     * guard the correlated {@code EXISTS} would delete the still-active user's row (the link event is in the
+     * window and matches on {@code app_id}/{@code recipe_user_id}), diverging from the PostgreSQL reconcile,
+     * which keeps it. Mirrors the direct writer, which simply upserted U's row when it was active again.
+     */
+    @Test
+    public void reactivatedAfterUnlinkInSameWindowKeepsRow() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemoryProcess();
+        Main main = process.getProcess();
+        Start storage = (Start) StorageLayer.getStorage(main);
+
+        long since = BASE;
+        String freedUser = "parity-reactivate-U";
+        String primaryUser = "parity-reactivate-P";
+
+        // U linked into P, then unlinked, then active again on its own — all after the boundary, so the
+        // account_linking event stays inside the fold window. P stays active too.
+        insertAccountLinkingEvent(storage, freedUser, primaryUser, BASE + 1_000);
+        insertAccountUnlinkingEvent(storage, freedUser, primaryUser, BASE + 2_000);
+        recordActivity(storage, freedUser, BASE + 3_000);
+        recordActivity(storage, primaryUser, BASE + 3_500);
+
+        // Direct-write answer: two standalone active users, U among them at its reactivation time.
+        int directCount = ActiveUsers.countUsersActiveSince(main, since);
+        assertEquals(2, directCount);
+        assertEquals(Long.valueOf(BASE + 3_000), getLastActive(storage, freedUser));
+
+        // Rebuild purely from the log: the fold credits U at its reactivation, and the ordering guard keeps the
+        // in-window account_linking (BASE + 1_000) from scrubbing U's newer row (BASE + 3_000).
+        truncateUserLastActive(storage);
+        runRollup(storage, WHOLE_HISTORY_WINDOW);
+
+        // Parity: U keeps its standalone row and both users are counted — no divergence from Postgres.
+        assertEquals(directCount, ActiveUsers.countUsersActiveSince(main, since));
+        assertEquals(Long.valueOf(BASE + 3_000), getLastActive(storage, freedUser));
+        assertEquals(Long.valueOf(BASE + 3_500), getLastActive(storage, primaryUser));
+
+        stopProcess(process);
+    }
+
     // ---- process lifecycle ----
 
     private TestingProcessManager.TestingProcess startInMemoryProcess() throws Exception {

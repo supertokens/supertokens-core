@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
-import io.supertokens.auditlog.lifecycle.LifecycleEventType;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
