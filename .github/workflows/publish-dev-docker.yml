@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
           run-for: PR
@@ -85,17 +85,17 @@ jobs:
           echo "TAG=${GITHUB_REF}" | sed 's/refs\/heads\///g' | sed 's/\//_/g' >> $GITHUB_OUTPUT
       -
         name: Login to Docker Hub
-        uses: docker/login-action@v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
       - name: Build and push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           push: true
           context: ./supertokens-root

@@ -159,7 +159,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

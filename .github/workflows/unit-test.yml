@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
           run-for: PR
@@ -78,7 +78,7 @@ jobs:
           cd supertokens-root
           ./gradlew test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

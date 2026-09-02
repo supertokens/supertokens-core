@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Run Trivy vulnerability scanner
         id: container-scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         continue-on-error: true
         with:
           image-ref: supertokens/supertokens-postgresql:latest
@@ -107,7 +107,7 @@ jobs:
 
       - name: Post notification on Slack channel
         id: deployment_message
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

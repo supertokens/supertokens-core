@@ -190,7 +190,7 @@ jobs:
         # The release itself succeeded at this point — a failed notification
         # must not fail the workflow. The step below leaves a memo instead.
         continue-on-error: true
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

@@ -31,7 +31,7 @@ jobs:
       postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
           run-for: add-dev-tag
