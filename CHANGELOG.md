@@ -28,6 +28,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
 - `GET /users/count` now serves an exact `anchor + fold` of the ledger instead of recomputing per request: the default single-tenant path does so from CDI 5.6 (older CDI unchanged), and the `allowApproximate` parameter becomes a no-op.
 - `user_last_active` is now derived by the new `RollupUserLastActive` cron folding activity events (its sole writer); `ActiveUsers.updateLastActive` only appends throttled events, so MAU counts reflect activity within a rollup interval.
+- Active-user activity and its projection now live on the user's own storage (not the app-public tenant), and active-user counts (`GET /users/count/active`, telemetry MAU) sum across every storage backing the app, so a user on a tenant with its own database is counted correctly.
 - In-memory (SQLite) parity for the ledger and rollup storage contract (transactional audit insert, last-active fold/reconcile, windowed event read, and the connection-taking sign-up/tenant-removal variants).
 
 ## [12.1.1]
