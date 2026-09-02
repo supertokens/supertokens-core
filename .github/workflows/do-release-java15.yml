@@ -83,6 +83,8 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
@@ -114,6 +116,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -121,6 +124,7 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
           token: ${{ secrets.GH_TOKEN }}
@@ -128,6 +132,7 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
@@ -136,6 +141,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
@@ -201,6 +207,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
@@ -227,11 +235,14 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
         # (No data files from core are needed here; postgresql plugin provides them)
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -290,6 +301,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -297,12 +309,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
@@ -311,6 +325,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -482,6 +497,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -489,12 +505,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
@@ -502,6 +520,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -596,6 +615,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases

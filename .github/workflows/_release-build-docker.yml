@@ -44,6 +44,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
@@ -51,12 +52,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ inputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
@@ -64,6 +67,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}

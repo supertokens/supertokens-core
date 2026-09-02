@@ -38,6 +38,8 @@ jobs:
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:

@@ -23,6 +23,8 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
@@ -46,6 +48,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
@@ -53,6 +56,7 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           token: ${{ secrets.GH_TOKEN }}
           ref: ${{ github.head_ref }}
@@ -60,6 +64,7 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
@@ -68,6 +73,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
@@ -163,6 +169,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
@@ -170,11 +177,13 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
@@ -183,6 +192,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
@@ -261,6 +271,8 @@ jobs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'

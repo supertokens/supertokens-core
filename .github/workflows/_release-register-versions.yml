@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
@@ -62,10 +64,13 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}

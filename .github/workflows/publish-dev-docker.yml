@@ -18,6 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
@@ -46,20 +48,24 @@ jobs:
           distribution: zulu
       - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: master
       - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: ./supertokens-root/supertokens-core
       - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: ./supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
       - uses: actions/checkout@v5
         if: matrix.plugin != 'sqlite'
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
           path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}

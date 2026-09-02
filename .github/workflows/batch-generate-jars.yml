@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout workflow tooling
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Parse versions into matrix
         id: parse
