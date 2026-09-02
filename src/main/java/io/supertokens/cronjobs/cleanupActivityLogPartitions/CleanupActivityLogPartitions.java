@@ -17,6 +17,7 @@
 package io.supertokens.cronjobs.cleanupActivityLogPartitions;
 
 import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.Storage;
@@ -46,9 +47,12 @@ public class CleanupActivityLogPartitions extends CronTask {
     }
 
     @Override
-    protected void doTaskPerStorage(Storage storage) throws Exception {
+    protected void doTaskPerStorage(TenantIdentifier representative, Storage storage) throws Exception {
         if (storage instanceof ActivityLogStorage) {
-            ((ActivityLogStorage) storage).maintainActivityLogPartitions();
+            // A user pool never spans connection URI domains, so the representative tenant's config
+            // yields this storage's retention deterministically.
+            int retentionDays = Config.getConfig(representative, main).getActivityLogRetentionDays();
+            ((ActivityLogStorage) storage).maintainActivityLogPartitions(retentionDays);
         }
     }
 

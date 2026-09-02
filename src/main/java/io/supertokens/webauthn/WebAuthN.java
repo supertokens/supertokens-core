@@ -40,8 +40,13 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -70,6 +75,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class WebAuthN {
 
@@ -288,14 +294,18 @@ public class WebAuthN {
             StorageQueryException, WebauthNOptionsNotExistsException, WebauthNInvalidFormatException{
         // create a new user in the auth recipe storage
         // create new credentials
-        // all within a transaction
+        // emit the user_creation event
+        // all within a single audited transaction, so the event commits atomically with the new user
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-            return webAuthNStorage.startTransaction(con -> {
+            ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+            return auditStorage.startAuditedTransaction(appIdentifier, con -> {
 
                 while (true) {
                     try {
                         String recipeUserId = Utils.getUUID();
+                        long timeJoined = System.currentTimeMillis();
 
                         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
                                 con,
@@ -318,7 +328,10 @@ public class WebAuthN {
                                 generatedOptions.relyingPartyId, credentialToSave);
                         userInfo.setExternalUserId(null);
 
-                        return new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions);
+                        AuditLogEvent event = LifecycleAuditEvent.forUserCreation(appIdentifier,
+                                userInfo.getSupertokensUserId(), tenantIdentifier.getTenantId(), timeJoined);
+                        return new AuditedResult<>(
+                                new WebAuthNSignInUpResult(credentialToSave, userInfo, generatedOptions), event);
                     } catch (DuplicateUserIdException duplicateUserIdException) {
                         //ignore and retry
                     } catch (InvalidWebauthNOptionsException | TenantOrAppNotFoundException |
@@ -357,6 +370,7 @@ public class WebAuthN {
     }
 
     @TestOnly
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static AuthRecipeUserInfo saveUser(Storage storage, TenantIdentifier tenantIdentifier, String email, String userId, String rpId)
             throws StorageQueryException, TenantOrAppNotFoundException, DuplicateEmailException,
             DuplicateUserIdException {
@@ -382,6 +396,7 @@ public class WebAuthN {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
                                               String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               boolean consumeOptions)
@@ -541,6 +556,7 @@ public class WebAuthN {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token)
             throws StorageQueryException, NoSuchAlgorithmException, InvalidTokenException {
         WebAuthNSQLStorage webauthnStorage = StorageUtils.getWebAuthNStorage(storage);
@@ -575,6 +591,7 @@ public class WebAuthN {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static AuthRecipeUserInfo getUserForToken(Storage storage, TenantIdentifier tenantIdentifier, String token)
             throws
             InvalidTokenException, StorageQueryException, NoSuchAlgorithmException {
@@ -643,6 +660,7 @@ public class WebAuthN {
         return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String email)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             EmailChangeNotAllowedException, StorageTransactionLogicException, TenantOrAppNotFoundException {

@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
@@ -241,6 +242,8 @@ public class FeatureFlagTest {
 
         // Now check the stats again:
         {
+            // PLAN-011 cutover: the sign-ups' last-active activity reaches the maus projection only via a fold.
+            RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
                     null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
@@ -285,6 +288,9 @@ public class FeatureFlagTest {
             AuthRecipe.linkAccounts(process.getProcess(), user2.get("user").getAsJsonObject().get("id").getAsString(),
                     user1.get("user").getAsJsonObject().get("id").getAsString());
 
+            // PLAN-011 cutover: fold, then reconcile drops the linked-away recipe user (user2) from the
+            // projection, driven by the account_linking event AuthRecipe.linkAccounts emits.
+            RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
                     null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
@@ -302,8 +308,12 @@ public class FeatureFlagTest {
 
             assert features.contains(new JsonPrimitive("mfa"));
             assert maus.size() == 31;
-            assert maus.get(0).getAsInt() == 4; // 2 users have signed up
-            assert maus.get(29).getAsInt() == 4;
+            // 4 users signed up (2 here + 2 earlier), but user2 was just linked into user1, so the rollup's
+            // reconcile removes user2's row: the merged pair counts once → 3 distinct active users. Pre-cutover
+            // the direct write left user2's row in place (this internal linkAccounts path never deleted it),
+            // over-counting to 4; the reconcile now applies uniformly to API- and internally-driven linking.
+            assert maus.get(0).getAsInt() == 3;
+            assert maus.get(29).getAsInt() == 3;
 
             {
                 JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();

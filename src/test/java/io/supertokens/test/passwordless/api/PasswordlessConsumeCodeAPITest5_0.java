@@ -18,6 +18,7 @@ package io.supertokens.test.passwordless.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
@@ -319,6 +320,8 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         checkResponse(response, true, email, null);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
 
@@ -388,6 +391,8 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         checkResponse(response, true, email, null);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
 

@@ -76,6 +76,12 @@ import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingExcept
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.auditlog.UnauditedTransaction;
+import io.supertokens.auditlog.lifecycle.GroupPresence;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
@@ -488,15 +494,29 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         UserLockingStorage userLockingStorage = (UserLockingStorage) storage;
         AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        long now = System.currentTimeMillis();
         try {
-            return authRecipeStorage.startTransaction(con -> {
+            // startAuditedTransaction owns the commit and writes the tenant_association event on the same
+            // connection as the mapping change, so the event cannot be lost relative to the association it
+            // records.
+            return auditStorage.startAuditedTransaction(appIdentifier, con -> {
                 try {
                     // IMPORTANT: Lock the user being added FIRST to serialize with concurrent linking operations.
                     // The locking mechanism automatically locks the primary user too if this user is linked.
                     // This ensures that if the user is being linked concurrently, we either see the linked state
                     // (if linking completed before our lock) or the linking waits for our operation to complete.
-                    LockedUser lockedUser = userLockingStorage.lockUser(
-                            tenantIdentifier.toAppIdentifier(), con, userId);
+                    LockedUser lockedUser = userLockingStorage.lockUser(appIdentifier, con, userId);
+
+                    // Capture the group's tenant-presence before the association (after the lock, so it is a
+                    // consistent snapshot): any member id resolves to its group via getPrimaryUserById_Transaction.
+                    AuthRecipeUserInfo groupInfo = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                            con, userId);
+                    GroupPresence groupBefore = groupInfo != null
+                            ? new GroupPresence(groupInfo.getSupertokensUserId(),
+                                    new ArrayList<>(groupInfo.tenantIds))
+                            : new GroupPresence(userId, new ArrayList<>());
 
                     // After locking, check if the user is part of a primary user group (either IS primary or IS linked)
                     // The locking mechanism already locked the primary user if this user is linked.
@@ -509,8 +529,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
                             con, userId);
-                    authRecipeStorage.commitTransaction(con);
-                    return result;
+                    if (!result) {
+                        // The user was already in the tenant: no count-affecting mutation, so no event is emitted.
+                        return AuditedResult.withoutAudit(false,
+                                "User was already associated with the tenant (addUserIdToTenant_Transaction "
+                                        + "returned false): a no-op with no count change, so no tenant_association "
+                                        + "event is emitted.");
+                    }
+                    AuditLogEvent event = LifecycleAuditEvent.forTenantAssociation(appIdentifier, userId,
+                            groupBefore.primaryOrRecipeUserId, groupBefore, tenantIdentifier.getTenantId(), now);
+                    return new AuditedResult<>(true, event);
                 } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
                          DuplicateThirdPartyUserException | DuplicateEmailException |
                          AnotherPrimaryUserWithPhoneNumberAlreadyExistsException |
@@ -554,12 +582,75 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         boolean finalDidExist = false;
+        // The non-auth-recipe cleanup is not count-affecting (it removes roles/metadata-style mappings, not an
+        // auth user's presence in the tenant), so it stays a separate step outside the audited transaction.
         boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage,
                 externalUserId == null ? userId : externalUserId);
         finalDidExist = finalDidExist || didExist;
 
-        didExist = StorageUtils.getMultitenancyStorage(storage)
-                .removeUserIdFromTenant(tenantIdentifier, userId);
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage userLockingStorage = (UserLockingStorage) storage;
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        MultitenancySQLStorage mtStorage = (MultitenancySQLStorage) storage;
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        long now = System.currentTimeMillis();
+        try {
+            // startAuditedTransaction owns the commit and writes the tenant_disassociation event on the same
+            // connection as the mapping change, so the event cannot be lost relative to the disassociation it
+            // records.
+            didExist = auditStorage.startAuditedTransaction(appIdentifier, con -> {
+                try {
+                    // Lock the user first so the before-presence snapshot is consistent with the removal (the same
+                    // ordering as addUserIdToTenant). A user that does not exist locks nothing and removes nothing:
+                    // a no-op with no count change, so no event is emitted.
+                    userLockingStorage.lockUser(appIdentifier, con, userId);
+                } catch (UserNotFoundForLockingException e) {
+                    // The pre-audit code removed the mapping unconditionally (no lock) and could thus delete a
+                    // mapping row for a userId with no user. Relying on the FK invariant that an auth user's
+                    // tenant mapping cannot exist without the user row, a userId that cannot be locked has no
+                    // mapping to remove, so returning false (nothing removed) is correct and matches
+                    // addUserIdToTenant, which also locks the user first.
+                    return AuditedResult.withoutAudit(false,
+                            "User does not exist, so no mapping was removed: a no-op with no count change, so no "
+                                    + "tenant_disassociation event is emitted.");
+                }
+
+                // Capture the group's tenant-presence before the disassociation (after the lock, so it is a
+                // consistent snapshot): any member id resolves to its group via getPrimaryUserById_Transaction.
+                AuthRecipeUserInfo groupInfo = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                        con, userId);
+                GroupPresence groupBefore = groupInfo != null
+                        ? new GroupPresence(groupInfo.getSupertokensUserId(),
+                                new ArrayList<>(groupInfo.tenantIds))
+                        : new GroupPresence(userId, new ArrayList<>());
+
+                boolean removed = mtStorage.removeUserIdFromTenant_Transaction(tenantIdentifier, con, userId);
+                if (!removed) {
+                    // The user was not associated with the tenant: no count-affecting mutation, so no event.
+                    return AuditedResult.withoutAudit(false,
+                            "User was not associated with the tenant (removeUserIdFromTenant_Transaction returned "
+                                    + "false): a no-op with no count change, so no tenant_disassociation event is "
+                                    + "emitted.");
+                }
+                // Re-read the group's presence after the mapping is removed. Removing one member's mapping only
+                // drops the group from the tenant if no other member of the group is still associated with it,
+                // so the group can remain present (a no-op for the count) even though this member left. The
+                // read-side interpreter decrements only when the group was present before and absent after, so
+                // the after-list — not derivable from the before-list plus the removed member — is recorded.
+                AuthRecipeUserInfo groupInfoAfter = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                        con, userId);
+                GroupPresence groupAfter = groupInfoAfter != null
+                        ? new GroupPresence(groupInfoAfter.getSupertokensUserId(),
+                                new ArrayList<>(groupInfoAfter.tenantIds))
+                        : new GroupPresence(userId, new ArrayList<>());
+                AuditLogEvent event = LifecycleAuditEvent.forTenantDisassociation(appIdentifier, userId,
+                        groupBefore.primaryOrRecipeUserId, groupBefore, groupAfter, tenantIdentifier.getTenantId(),
+                        now);
+                return new AuditedResult<>(true, event);
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;

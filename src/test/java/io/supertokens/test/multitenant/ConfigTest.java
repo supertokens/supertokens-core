@@ -27,6 +27,7 @@ import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.config.annotations.ConfigYamlOnly;
 import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
 import io.supertokens.config.annotations.NotConflictingInApp;
+import io.supertokens.config.annotations.NotConflictingInConnectionUriDomain;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -2250,8 +2251,10 @@ public class ConfigTest {
             }
 
             if (!(field.isAnnotationPresent(ConfigYamlOnly.class) ||
-                    field.isAnnotationPresent(NotConflictingInApp.class))) {
-                fail(field.getName() + " does not have ConfigYamlOnly or NotConflictingInApp annotation");
+                    field.isAnnotationPresent(NotConflictingInApp.class) ||
+                    field.isAnnotationPresent(NotConflictingInConnectionUriDomain.class))) {
+                fail(field.getName() + " does not have ConfigYamlOnly, NotConflictingInApp or " +
+                        "NotConflictingInConnectionUriDomain annotation");
             }
         }
     }
