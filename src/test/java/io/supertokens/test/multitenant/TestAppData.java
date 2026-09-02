@@ -215,7 +215,7 @@ public class TestAppData {
         Totp.verifyCode(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
                 generateTotpCode(process.getProcess(), totpDevice, 0));
 
-        ActiveUsers.updateLastActive(app.toAppIdentifier(), process.getProcess(),
+        ActiveUsers.updateLastActive(app, process.getProcess(),
                 epUser.getSupertokensUserId(), ActivityEventType.SIGN_IN);
 
         UserMetadata.updateUserMetadata(app.toAppIdentifier(), appStorage,

@@ -1009,8 +1009,13 @@ public class AuthRecipe {
         StorageUtils.getUserRolesStorage(storage)
                 .deleteAllRolesForUser_Transaction(con, appIdentifier, userId);
 
-        StorageUtils.getActiveUsersStorage(storage)
-                .deleteUserActive_Transaction(con, appIdentifier, userId);
+        // No longer scrub the user_last_active projection on delete: a user active within the window and then
+        // deleted keeps counting for the remainder of that window, consistent with the activity log's own
+        // retention stance (its richer post-deletion rows already survive this delete). Deleting the auth
+        // record removes the user's app_id_to_user_id row, so the fold's app_id_to_user_id guard stops
+        // crediting them going forward; their existing projection row simply ages out of the active window.
+        // (A recurring scrub is deliberately avoided — after this change a deleted local user's retained row is
+        // indistinguishable from a separate-database tenant user's row on another storage.)
         StorageUtils.getTOTPStorage(storage)
                 .removeUser_Transaction(con, appIdentifier, userId);
     }

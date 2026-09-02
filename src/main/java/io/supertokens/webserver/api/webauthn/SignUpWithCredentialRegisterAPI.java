@@ -68,7 +68,7 @@ public class SignUpWithCredentialRegisterAPI extends WebserverAPI {
             // this as activity and the last-active fold reads it. That event is written via
             // startAuditedTransaction and so does not mark the rollup dirty, so wake the rollup here — otherwise
             // a sign-up-only user would fold only on the periodic backstop pass, not the next tick.
-            ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier.toAppIdentifier());
+            ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier);
 
             JsonObject userJson = signUpResult.userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3));
 

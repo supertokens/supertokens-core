@@ -176,7 +176,7 @@ public class LastActiveFoldPromptnessTest {
         String recipeUser = "promptness-link-R";
         String primaryUser = "promptness-link-P";
         insertAccountLinkingEvent((Start) storage, recipeUser, primaryUser, base + 1000);
-        ActiveUsers.updateLastActiveAfterLinking(main, appIdentifier, primaryUser, recipeUser);
+        ActiveUsers.updateLastActiveAfterLinking(main, appIdentifier, storage, primaryUser, recipeUser);
         assertEquals(0, ActiveUsers.countUsersActiveSince(main, appIdentifier, base - DAY_MS));
 
         // Pass 2 is NOT forced: it folds only if the link marked the storage dirty. With the markDirty nudge in
@@ -195,6 +195,9 @@ public class LastActiveFoldPromptnessTest {
      */
     private void insertAccountLinkingEvent(Start storage, String recipeUserId, String primaryUserId, long createdAt)
             throws Exception {
+        // The fold now credits a user only if their auth record (app_id_to_user_id) lives on this storage, so
+        // seed a mapping for the credited primary (primary_or_recipe_user_id). Best-effort and idempotent.
+        ensureUserMappingBestEffort(storage, primaryUserId);
         String query = "INSERT INTO activity_log"
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
                 + " VALUES ('public', 'public', ?, ?, 'account_linking', 'success', ?)";
@@ -209,6 +212,23 @@ public class LastActiveFoldPromptnessTest {
                 throw new RuntimeException(e);
             }
             storage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    private void ensureUserMappingBestEffort(Start storage, String userId) throws Exception {
+        String query = "INSERT OR IGNORE INTO app_id_to_user_id"
+                + " (app_id, user_id, recipe_id, primary_or_recipe_user_id) VALUES ('public', ?, 'emailpassword', ?)";
+        storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
+                pst.setString(1, userId);
+                pst.setString(2, userId);
+                pst.executeUpdate();
+                storage.commitTransaction(con);
+            } catch (Exception ignored) {
+                // No app row: the fold's residency guard must skip this user.
+            }
             return null;
         });
     }

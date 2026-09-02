@@ -353,6 +353,9 @@ public class RollupUserLastActiveTest {
     }
 
     private void insertUserLastActiveEvent(Start storage, String userId, long createdAt) throws Exception {
+        // The fold now credits a user only if their auth record (app_id_to_user_id) lives on this storage, so
+        // seed a mapping for the user. Best-effort and idempotent.
+        ensureUserMappingBestEffort(storage, userId);
         // For an activity event the user is its own primary_or_recipe_user_id. 'sign_in' is a folded type.
         String query = "INSERT INTO " + ACTIVITY_LOG
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
@@ -369,6 +372,24 @@ public class RollupUserLastActiveTest {
                 throw new RuntimeException(e);
             }
             storage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    private void ensureUserMappingBestEffort(Start storage, String userId) throws Exception {
+        String query = "INSERT OR IGNORE INTO app_id_to_user_id"
+                + " (app_id, user_id, recipe_id, primary_or_recipe_user_id) VALUES (?, ?, 'emailpassword', ?)";
+        storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
+                pst.setString(1, APP_ID);
+                pst.setString(2, userId);
+                pst.setString(3, userId);
+                pst.executeUpdate();
+                storage.commitTransaction(con);
+            } catch (Exception ignored) {
+                // No app row (deleted-app case): the fold's residency guard must skip this user.
+            }
             return null;
         });
     }

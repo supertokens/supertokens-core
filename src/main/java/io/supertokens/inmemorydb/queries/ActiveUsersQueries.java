@@ -169,20 +169,25 @@ public class ActiveUsersQueries {
             throws StorageQueryException, SQLException {
         String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
         String activityLogTable = Config.getConfig(start).getActivityLogTable();
-        String appsTable = Config.getConfig(start).getAppsTable();
+        String appIdToUserIdTable = Config.getConfig(start).getAppIdToUserIdTable();
 
         // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
         // The fold set is the semantic activity events plus the two lifecycle events that imply activity
         // (user_creation, account_linking); see RollupEventTypes.FOLD_SET. account_linking credits the primary
         // user here (primary_or_recipe_user_id); the reconcile below separately drops the recipe user's row.
-        // The apps guard skips activity for apps deleted within the window: activity_log rows are
-        // intentionally retained after an app is deleted (no app_id cascade), but user_last_active
-        // cascades on app delete, so folding a since-deleted app's rows would violate the
-        // user_last_active -> apps foreign key. EXISTS keeps the fold set to still-existing apps only.
+        // The app_id_to_user_id guard folds only activity for a user whose auth record lives on this storage.
+        // With per-storage routing a user's activity is colocated with their auth record, so this normally
+        // matches; it exists as misroute insurance for the one tenant-less emit path (SessionRemoveAPI's
+        // app-wide sign-out writes to the app's public-tenant storage) — without it a separate-database
+        // tenant's user signed out there would gain a phantom public-storage projection row the summed count
+        // read double-counts. It also subsumes the old apps guard: app_id_to_user_id cascades on app delete,
+        // so a since-deleted app has no mapping rows here, so its retained activity_log rows are not folded and
+        // cannot violate the user_last_active -> apps foreign key.
         String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
                 + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable + " al"
                 + " WHERE event_type IN (" + RollupEventTypes.sqlInList() + ") AND created_at >= ?"
-                + " AND EXISTS (SELECT 1 FROM " + appsTable + " a WHERE a.app_id = al.app_id)"
+                + " AND EXISTS (SELECT 1 FROM " + appIdToUserIdTable + " m"
+                + " WHERE m.app_id = al.app_id AND m.user_id = al.primary_or_recipe_user_id)"
                 + " GROUP BY app_id, primary_or_recipe_user_id"
                 + " ON CONFLICT (app_id, user_id) DO UPDATE"
                 + " SET last_active_time = MAX(" + userLastActiveTable + ".last_active_time,"
