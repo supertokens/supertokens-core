@@ -609,11 +609,16 @@ public class ApproximateUserCountTest {
         AuthRecipe.deleteUser(process.getProcess(), doomed.getSupertokensUserId());
 
         // A corrupt-payload lifecycle event lands in the same window: a valid lifecycle event_type (so the
-        // window read returns it) with a payload that is not parseable against the schema.
+        // window read returns it) with a payload that is well-formed JSON but not parseable against the
+        // lifecycle schema (correct schemaVersion + type, but missing the required groupBefore/groupAfter).
+        // It must be syntactically-valid JSON: the Postgres payload column is JSONB, which rejects malformed
+        // JSON at write time, so a raw-garbage string would fail createActivityLogEntry before serve() ever
+        // sees it. Schema drift like this — valid JSON, wrong shape — is exactly what JSONB cannot catch and
+        // what serve()'s re-anchor must still defend against on every backend.
         TenantIdentifier tenant = process.getAppForTesting();
         AuditLogEvent corrupt = new AuditLogEvent(tenant.getAppId(), null, "recipe-user", "recipe-user",
                 LifecycleEventType.USER_DELETION.getValue(), "success", null, null,
-                System.currentTimeMillis(), "{ this is not valid lifecycle-event JSON");
+                System.currentTimeMillis(), "{\"schemaVersion\":1,\"type\":\"user_deletion\"}");
         ((ActivityLogStorage) StorageLayer.getStorage(process.getProcess())).createActivityLogEntry(tenant, corrupt);
         Thread.sleep(5);
 
