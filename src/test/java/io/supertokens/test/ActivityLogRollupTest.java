@@ -372,6 +372,11 @@ public class ActivityLogRollupTest {
 
     private void insertActivityLogRow(Start storage, String appId, String recipeUserId, String primaryOrRecipeUserId,
                                       String eventType, long createdAt) throws Exception {
+        // The fold now credits a user only if their auth record (app_id_to_user_id) lives on this storage, so
+        // seed a mapping for the credited primary_or_recipe_user_id. Best-effort: for the deleted-app case the
+        // app_id_to_user_id -> apps foreign key rejects the mapping, which is exactly the state the guard must
+        // skip, so swallow that and let the guard drop the row.
+        ensureUserMappingBestEffort(storage, appId, primaryOrRecipeUserId);
         String query = "INSERT INTO " + ACTIVITY_LOG
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
                 + " VALUES (?, 'public', ?, ?, ?, 'success', ?)";
@@ -388,6 +393,29 @@ public class ActivityLogRollupTest {
                 throw new RuntimeException(e);
             }
             storage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    /**
+     * Seeds an app_id_to_user_id row so the fold's residency guard credits {@code userId} on this storage.
+     * Best-effort and idempotent: an existing row (INSERT OR IGNORE) or a missing app (foreign-key failure,
+     * the deleted-app case the guard must skip) is silently tolerated.
+     */
+    private void ensureUserMappingBestEffort(Start storage, String appId, String userId) throws Exception {
+        String query = "INSERT OR IGNORE INTO app_id_to_user_id"
+                + " (app_id, user_id, recipe_id, primary_or_recipe_user_id) VALUES (?, ?, 'emailpassword', ?)";
+        storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
+                pst.setString(1, appId);
+                pst.setString(2, userId);
+                pst.setString(3, userId);
+                pst.executeUpdate();
+                storage.commitTransaction(con);
+            } catch (Exception ignored) {
+                // Missing app (deleted-app case): the guard must skip this user, so leave the mapping absent.
+            }
             return null;
         });
     }

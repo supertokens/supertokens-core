@@ -285,6 +285,9 @@ public class ActivityLogRollupParityTest {
 
     private void insertActivityLogRow(Start storage, String recipeUserId, String primaryOrRecipeUserId,
                                       String eventType, long createdAt) throws Exception {
+        // The fold now credits a user only if their auth record (app_id_to_user_id) lives on this storage, so
+        // seed a mapping for the credited primary_or_recipe_user_id. Best-effort and idempotent.
+        ensureUserMappingBestEffort(storage, primaryOrRecipeUserId);
         String query = "INSERT INTO " + ACTIVITY_LOG
                 + " (app_id, tenant_id, recipe_user_id, primary_or_recipe_user_id, event_type, status, created_at)"
                 + " VALUES (?, 'public', ?, ?, ?, 'success', ?)";
@@ -294,6 +297,24 @@ public class ActivityLogRollupParityTest {
             pst.setString(3, primaryOrRecipeUserId);
             pst.setString(4, eventType);
             pst.setLong(5, createdAt);
+        });
+    }
+
+    private void ensureUserMappingBestEffort(Start storage, String userId) throws Exception {
+        String query = "INSERT OR IGNORE INTO app_id_to_user_id"
+                + " (app_id, user_id, recipe_id, primary_or_recipe_user_id) VALUES (?, ?, 'emailpassword', ?)";
+        storage.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try (PreparedStatement pst = sqlCon.prepareStatement(query)) {
+                pst.setString(1, APP_ID);
+                pst.setString(2, userId);
+                pst.setString(3, userId);
+                pst.executeUpdate();
+                storage.commitTransaction(con);
+            } catch (Exception ignored) {
+                // No app row (deleted-app case): the fold's residency guard must skip this user.
+            }
+            return null;
         });
     }
 

@@ -127,16 +127,25 @@ public class ActiveUsers {
             // wasRecentlyActive stays false and every activity is recorded.
             recordActiveAt(key, now);
         }
-        // The activity log and its projection live on the app's public-tenant storage — as before, so the
-        // fold (which groups by app_id) and the count read see the same rows. The request's tenant is written
-        // into the tenant_id column for provenance only.
-        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+        // The activity log and its projection live on the storage backing the request's tenant — the same
+        // storage the user's auth record and their transactional lifecycle events (user_creation /
+        // account_linking) live on. Per-storage routing keeps a user's activity colocated with their auth
+        // record, so the per-storage fold credits them on their own storage and the summed count read
+        // (countUsersActiveSince) sees them exactly once. The request's tenant is also written into the
+        // tenant_id column for provenance. (Pre-rework this redirected to the app's public-tenant storage,
+        // which for a tenant with its own database projected the user onto a storage the count read never
+        // summed — and, once the fold's app_id_to_user_id guard is in place, dropped entirely.)
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         emitActivityAuditLog(main, storage, tenantIdentifier, userId, eventType, now);
     }
 
     /**
-     * Overload for callers that only have the app on hand (no request tenant): the event is emitted into the
-     * app's public tenant — today's behavior for every activity emit before per-tenant provenance was added.
+     * Overload for the one activity path that has no request tenant on hand — {@code SessionRemoveAPI}'s
+     * app-wide sign-out — so the event is emitted into the app's public-tenant storage. That is the single
+     * emit that can land on a storage other than the user's own; the fold's {@code app_id_to_user_id} guard
+     * covers it by refusing to project a user whose auth record does not live on the folding storage, so a
+     * separate-database tenant's user signed out app-wide here does not gain a phantom public-storage row
+     * that the summed count read would double-count.
      */
     public static void updateLastActive(AppIdentifier appIdentifier, Main main, String userId,
                                         ActivityEventType eventType)
@@ -177,12 +186,14 @@ public class ActiveUsers {
      * there is something to fold, never the fold window, so it is idempotent and safe to over-signal; a lost
      * signal is corrected by the cron's periodic backstop.
      */
-    public static void markLastActiveRollupDirty(Main main, AppIdentifier appIdentifier)
+    public static void markLastActiveRollupDirty(Main main, TenantIdentifier tenantIdentifier)
             throws TenantOrAppNotFoundException {
-        // The projection and its dirty flag are keyed by the app's public-tenant storage pool — the same
-        // storage updateLastActive marks dirty — so a fold-relevant lifecycle event written on any tenant in
-        // the pool wakes the one rollup pass that folds it.
-        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+        // The projection and its dirty flag are keyed by the storage backing the tenant the fold-relevant
+        // lifecycle event was written on — the same storage updateLastActive marks dirty — so the one rollup
+        // pass that folds that storage is woken. (Pre-rework this redirected to the app's public-tenant pool,
+        // which for a tenant with its own database woke a storage the event was never written to and left the
+        // event's own storage unflagged.)
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         RollupDirtySignal.getInstance(main).markDirty(storage.getUserPoolId());
     }
 
@@ -203,8 +214,17 @@ public class ActiveUsers {
 
     public static int countUsersActiveSince(Main main, AppIdentifier appIdentifier, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
-        return StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
+        // A user's auth record — and, with per-storage routing, their activity and last-active projection —
+        // lives on exactly one storage per app (that is why findStorageAndUserIdMappingForUser iterates
+        // storages). Sum the per-storage active-user counts across every storage backing the app; the storages
+        // are disjoint by user, so there is no double count. (Pre-rework this read only the app's public-tenant
+        // storage, which missed every user whose tenant has its own database.)
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        int count = 0;
+        for (Storage storage : storages) {
+            count += StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
+        }
+        return count;
     }
 
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")

@@ -95,7 +95,7 @@ public class SignInUpAPI extends WebserverAPI {
                     // The new user's fold credit is the transactional user_creation event, which — unlike the
                     // sign_in ping above — does not mark the rollup dirty. Wake the rollup so a sign-up-only
                     // user folds on the next tick instead of waiting for the periodic backstop.
-                    ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier.toAppIdentifier());
+                    ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier);
                 }
 
                 JsonObject result = new JsonObject();
@@ -169,7 +169,7 @@ public class SignInUpAPI extends WebserverAPI {
                     // The new user's fold credit is the transactional user_creation event, which — unlike the
                     // sign_in ping above — does not mark the rollup dirty. Wake the rollup so a sign-up-only
                     // user folds on the next tick instead of waiting for the periodic backstop.
-                    ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier.toAppIdentifier());
+                    ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier);
                 }
 
                 JsonObject result = new JsonObject();
