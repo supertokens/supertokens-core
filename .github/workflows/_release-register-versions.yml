@@ -2,6 +2,9 @@ name: Release – Register versions
 
 on:
   workflow_call:
+    secrets:
+      SUPERTOKENS_API_KEY:
+        required: true
     inputs:
       core-version:
         type: string

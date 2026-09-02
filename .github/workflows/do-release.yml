@@ -86,7 +86,8 @@ jobs:
       core-version: ${{ inputs.core-version }}
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
-    secrets: inherit
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   register-versions:
     needs: dependency-branches
@@ -98,7 +99,8 @@ jobs:
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
-    secrets: inherit
+    secrets:
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   test:
     needs: [ dependency-branches, register-versions ]
@@ -108,7 +110,6 @@ jobs:
       plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
       fast-release: ${{ inputs.fast-release }}
-    secrets: inherit
 
   mark-as-passed:
     needs: [ register-versions, test ]
@@ -119,7 +120,8 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
-    secrets: inherit
+    secrets:
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   build-docker:
     needs: dependency-branches
@@ -130,7 +132,8 @@ jobs:
       core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
       plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
-    secrets: inherit
+    secrets:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   stress-tests:
     if: inputs.run-stress-tests
@@ -150,7 +153,11 @@ jobs:
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
       push-to-ecr: ${{ inputs.push-to-ecr }}
       dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
   add-release-tags:
     needs: [dependency-branches, release-docker]
@@ -167,7 +174,9 @@ jobs:
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
-    secrets: inherit
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   build-jars:
     needs: [add-release-tags]
@@ -178,7 +187,10 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # build-jars is skipped for canary releases; !failure() lets the
   # notification still fire in that case.

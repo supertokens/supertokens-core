@@ -573,7 +573,11 @@ jobs:
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
       push-to-ecr: ${{ inputs.push-to-ecr }}
       dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
   # ── Tag all repos with release versions ───────────────────────────
   add-release-tags:
@@ -702,7 +706,10 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # ── Notify Slack about the successful release ─────────────────────
   notify-slack:

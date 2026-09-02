@@ -2,6 +2,15 @@ name: Release – Publish Docker images
 
 on:
   workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+      ECR_REGISTRY:
+        required: true
     inputs:
       core-version:
         type: string

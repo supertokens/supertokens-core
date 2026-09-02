@@ -2,6 +2,9 @@ name: Release – Build Docker image
 
 on:
   workflow_call:
+    secrets:
+      DOCKERHUB_TOKEN:
+        required: true
     inputs:
       core-version:
         type: string

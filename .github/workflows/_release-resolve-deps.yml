@@ -2,6 +2,9 @@ name: Release – Resolve dependencies
 
 on:
   workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: true
     inputs:
       core-version:
         type: string

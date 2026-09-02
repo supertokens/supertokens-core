@@ -26,6 +26,13 @@ on:
         type: boolean
         default: false
   workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_TOKEN:
+        required: true
     inputs:
       core-version:
         required: true
