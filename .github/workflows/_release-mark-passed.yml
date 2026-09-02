@@ -2,6 +2,9 @@ name: Release – Mark tests as passed
 
 on:
   workflow_call:
+    secrets:
+      SUPERTOKENS_API_KEY:
+        required: true
     inputs:
       core-version:
         type: string
@@ -15,6 +18,9 @@ on:
       is-canary:
         type: boolean
         required: true
+
+permissions:
+  contents: read
 
 jobs:
   mark-as-passed:

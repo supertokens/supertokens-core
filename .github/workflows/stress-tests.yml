@@ -14,6 +14,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   stress-tests:
     runs-on: ubuntu-22.04
@@ -35,6 +38,8 @@ jobs:
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:

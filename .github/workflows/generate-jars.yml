@@ -26,6 +26,13 @@ on:
         type: boolean
         default: false
   workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_TOKEN:
+        required: true
     inputs:
       core-version:
         required: true
@@ -45,6 +52,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   generate-jars:
     environment: publish
@@ -56,6 +66,7 @@ jobs:
       - name: Checkout workflow tooling
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: ./workflow-tools
 
       - name: Set up JDK ${{ inputs.java-version }}
@@ -67,6 +78,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: ${{ startsWith(inputs.java-version, '15') && 'for_jdk_15_releases' || 'master' }}

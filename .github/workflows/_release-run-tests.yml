@@ -21,6 +21,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   runner-indexes:
     name: Generate runner indexes
@@ -39,6 +42,10 @@ jobs:
     name: "Tests (${{ matrix.plugin }}), runner #${{ matrix.runner-index }}"
     needs: runner-indexes
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      # The JUnit report step publishes a check run.
+      checks: write
     strategy:
       fail-fast: false
       matrix:
@@ -56,6 +63,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
@@ -63,12 +71,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ inputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
@@ -77,6 +87,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}
@@ -159,7 +170,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

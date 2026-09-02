@@ -7,6 +7,9 @@ on:
     tags:
     - 'dev-*'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-versions:
     name: Dependency Versions
@@ -16,7 +19,9 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+        with:
+          persist-credentials: false
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         with:
           run-for: PR
         id: result
@@ -28,6 +33,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
@@ -53,9 +60,12 @@ jobs:
       steps:
         - name: Checkout
           uses: actions/checkout@v5
+          with:
+            persist-credentials: false
         - name: Checkout
           uses: actions/checkout@v5
           with:
+            persist-credentials: false
             path: ./supertokens-plugin
             repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
             ref: ${{ fromJson(needs.dependency-versions.outputs.branches)[matrix.plugin] }}
@@ -84,6 +94,8 @@ jobs:
           python-version: '3.11'
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Wait for Docker build
         env:
@@ -108,7 +120,7 @@ jobs:
     steps:
       - name: Mark plugin as passed
         if: matrix.plugin != 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] != ''
-        uses: muhfaris/request-action@main
+        uses: muhfaris/request-action@e9c380f048db96e11665fbb8edabf795e269ff7f # main, latest
         with:
           url: https://api.supertokens.io/0/plugin
           method: PATCH
@@ -127,7 +139,7 @@ jobs:
             }
       - name: Mark core as passed
         if: matrix.plugin == 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)['core'] != ''
-        uses: muhfaris/request-action@main
+        uses: muhfaris/request-action@e9c380f048db96e11665fbb8edabf795e269ff7f # main, latest
         with:
           url: https://api.supertokens.io/0/core
           method: PATCH

@@ -23,6 +23,9 @@ on:
         required: true
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
   dependency-branches:
     name: Dependency Branches
@@ -33,7 +36,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+        with:
+          persist-credentials: false
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
           run-for: add-dev-tag
@@ -52,6 +57,7 @@ jobs:
           distribution: zulu
       - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: master

@@ -55,6 +55,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   # ── Validate inputs ───────────────────────────────────────────────
   # Fail fast on invalid input combinations before anything is registered
@@ -80,7 +83,9 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
     steps:
       - uses: actions/checkout@v5
-      - uses: supertokens/get-core-dependencies-action@main
+        with:
+          persist-credentials: false
+      - uses: supertokens/get-core-dependencies-action@e886228a75714e77975b4d533e2f58f778211594 # main, latest
         id: result
         with:
           run-for: add-dev-tag
@@ -111,6 +116,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -118,6 +124,7 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['core'] }}
           token: ${{ secrets.GH_TOKEN }}
@@ -125,6 +132,7 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
@@ -133,6 +141,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
@@ -198,6 +207,8 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
       - name: Fetch release data files from release branch
         run: |
@@ -224,11 +235,14 @@ jobs:
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
         # No ref: — defaults to github.sha (workflow branch), gets latest helper scripts
         # (No data files from core are needed here; postgresql plugin provides them)
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-plugin
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -265,6 +279,10 @@ jobs:
     name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
     needs: [ update-deps, register-core-version, runner-indexes ]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      # The JUnit report step publishes a check run.
+      checks: write
     strategy:
       fail-fast: false
       matrix:
@@ -283,6 +301,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -290,12 +309,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
@@ -304,6 +325,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -401,7 +423,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'
@@ -475,6 +497,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -482,12 +505,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.update-deps.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
@@ -495,6 +520,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.update-deps.outputs.postgresql-sha }}
@@ -524,19 +550,19 @@ jobs:
           echo "TAG=${{ inputs.core-version }}-dev" >> $GITHUB_OUTPUT
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
       - name: Build and push dev image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           push: true
           context: ./supertokens-root
@@ -566,7 +592,11 @@ jobs:
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
       push-to-ecr: ${{ inputs.push-to-ecr }}
       dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
   # ── Tag all repos with release versions ───────────────────────────
   add-release-tags:
@@ -585,6 +615,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: for_jdk_15_releases
@@ -695,7 +726,10 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # ── Notify Slack about the successful release ─────────────────────
   notify-slack:
@@ -709,7 +743,7 @@ jobs:
         # The release itself succeeded at this point — a failed notification
         # must not fail the workflow. The step below leaves a memo instead.
         continue-on-error: true
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

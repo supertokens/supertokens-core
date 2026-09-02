@@ -2,6 +2,11 @@ name: Release – Add release tags
 
 on:
   workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: true
+      SUPERTOKENS_API_KEY:
+        required: true
     inputs:
       core-version:
         type: string
@@ -34,6 +39,9 @@ on:
         type: boolean
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   add-release-tags:
     name: Add release tags
@@ -49,6 +57,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: master
