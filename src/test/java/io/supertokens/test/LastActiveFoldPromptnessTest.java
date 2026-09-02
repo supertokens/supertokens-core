@@ -176,7 +176,7 @@ public class LastActiveFoldPromptnessTest {
         String recipeUser = "promptness-link-R";
         String primaryUser = "promptness-link-P";
         insertAccountLinkingEvent((Start) storage, recipeUser, primaryUser, base + 1000);
-        ActiveUsers.updateLastActiveAfterLinking(main, appIdentifier, primaryUser, recipeUser);
+        ActiveUsers.updateLastActiveAfterLinking(main, appIdentifier, storage, primaryUser, recipeUser);
         assertEquals(0, ActiveUsers.countUsersActiveSince(main, appIdentifier, base - DAY_MS));
 
         // Pass 2 is NOT forced: it folds only if the link marked the storage dirty. With the markDirty nudge in

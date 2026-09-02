@@ -240,13 +240,20 @@ public class ActiveUsers {
         return count;
     }
 
+    /**
+     * Reconciles the last-active projection after two accounts are linked, routing to {@code storage} — the
+     * storage backing the linked users' auth records (both linked accounts share one user pool, so the caller's
+     * already-resolved user storage is correct for both). Per-storage routing keeps this consistent with the rest
+     * of the active-user machinery: for a separate-database tenant the linked users live on the tenant's storage,
+     * so the stale-row delete and the dirty nudge must target that storage — resolving the app's public-tenant
+     * storage here (pre-rework) made the delete a silent no-op and woke the wrong pool.
+     */
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
-    public static void updateLastActiveAfterLinking(Main main, AppIdentifier appIdentifier, String primaryUserId,
-                                                    String recipeUserId)
+    public static void updateLastActiveAfterLinking(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                    String primaryUserId, String recipeUserId)
             throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
         ActiveUsersSQLStorage activeUsersStorage =
-                (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(
-                        StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
+                (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(storage);
 
         // Latency optimization only: the rollup's reconcile — driven by the account_linking event that
         // AuthRecipe.linkAccounts emits atomically with the mapping change — is the source of truth for

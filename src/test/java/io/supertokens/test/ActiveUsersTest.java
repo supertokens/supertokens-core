@@ -6,12 +6,15 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -447,6 +450,67 @@ public class ActiveUsersTest {
 
         RollupUserLastActive.runOnceForAllStoragesForTesting(main);
 
+        assertEquals(1, ActiveUsers.countUsersActiveSince(main, app, 0));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Pins that the post-link reconcile (updateLastActiveAfterLinking) routes to the storage backing the linked
+    // users, not the app's public-tenant storage. For a separate-database tenant the linked users live on the
+    // tenant's own storage, so the stale-row delete must target that storage; routing to public-tenant storage
+    // (pre-fix) makes the delete a silent no-op and the recipe user keeps counting. Failing-first on the SQL
+    // plugins in CI, where the tenant genuinely has its own database — in-memory collapses the two pools onto one
+    // DB, so the misroute is masked there (same masking as activeUserCountSumsAcrossSeparateTenantStorages).
+    @Test
+    public void activeUserReconcileAfterLinkingRoutesToTenantStorage() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.ACCOUNT_LINKING});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        AppIdentifier app = new TenantIdentifier(null, null, null).toAppIdentifier();
+
+        { // a tenant t1 with its own user pool (a separate database)
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+            TestMultitenancyAPIHelper.createTenant(main, new TenantIdentifier(null, null, null),
+                    "t1", true, true, true, coreConfig);
+        }
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Storage t1Storage = StorageLayer.getStorage(t1, main);
+
+        // Two users signed up on the separate-database tenant; their auth records and activity live on t1's
+        // storage. A rollup folds both user_creation events into t1's projection, so both count as active.
+        AuthRecipeUserInfo recipeUser =
+                EmailPassword.signUp(t1, t1Storage, main, "recipe@example.com", "validPass123");
+        AuthRecipeUserInfo primaryUser =
+                EmailPassword.signUp(t1, t1Storage, main, "primary@example.com", "validPass123");
+        RollupUserLastActive.runOnceForAllStoragesForTesting(main);
+        assertEquals(2, ActiveUsers.countUsersActiveSince(main, app, 0));
+
+        // Link the recipe user into the primary on t1's storage — the account_linking event is emitted on t1 —
+        // then run the post-link reconcile. Its stale-row delete of the recipe user must land on t1's storage;
+        // asserted BEFORE any further rollup so we measure the direct delete (the latency optimization), not the
+        // eventual rollup reconcile that would merge the two regardless.
+        AuthRecipe.createPrimaryUser(main, app, t1Storage, primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, app, t1Storage, recipeUser.getSupertokensUserId(),
+                primaryUser.getSupertokensUserId());
+        ActiveUsers.updateLastActiveAfterLinking(main, app, t1Storage, primaryUser.getSupertokensUserId(),
+                recipeUser.getSupertokensUserId());
+
+        // The recipe user's projection row is gone from t1, so only the primary remains active. With the pre-fix
+        // public-tenant routing the delete would have no-opped on a separate database and this would read 2.
         assertEquals(1, ActiveUsers.countUsersActiveSince(main, app, 0));
 
         process.kill();
