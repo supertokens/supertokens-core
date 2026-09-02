@@ -430,8 +430,11 @@ public class RefreshSessionAPITest2_7 {
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start1);
         assert (activeUsers == 0);
 
-        // Success case:
-        String userId = "userId";
+        // Success case: a real user so its app_id_to_user_id mapping exists — after the fold's residency
+        // guard the projection only credits mapped users, so the session activity below folds into the count.
+        // The signup's user_creation event lands before startTs, so the count still measures the session
+        // activity specifically.
+        String userId = signUpEmailPasswordUser(process, "activeuser@example.com");
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.add("nullProp", JsonNull.INSTANCE);
         userDataInJWT.addProperty("key", "value");
@@ -668,6 +671,17 @@ public class RefreshSessionAPITest2_7 {
         assertEquals(response.has("antiCsrfToken"), hasAntiCsrf);
 
         assertEquals(response.entrySet().size(), hasAntiCsrf ? 6 : 5);
+    }
+
+    private String signUpEmailPasswordUser(TestingProcessManager.TestingProcess process, String email)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("email", email);
+        body.addProperty("password", "validPass123");
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", body, 1000, 1000, null, SemVer.v4_0.get(), "emailpassword");
+        assertEquals("OK", res.get("status").getAsString());
+        return res.get("user").getAsJsonObject().get("id").getAsString();
     }
 
 }
