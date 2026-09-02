@@ -45,6 +45,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   generate-jars:
     environment: publish

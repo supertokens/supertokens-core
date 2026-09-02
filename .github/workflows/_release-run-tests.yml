@@ -21,6 +21,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   runner-indexes:
     name: Generate runner indexes
@@ -39,6 +42,10 @@ jobs:
     name: "Tests (${{ matrix.plugin }}), runner #${{ matrix.runner-index }}"
     needs: runner-indexes
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      # The JUnit report step publishes a check run.
+      checks: write
     strategy:
       fail-fast: false
       matrix:

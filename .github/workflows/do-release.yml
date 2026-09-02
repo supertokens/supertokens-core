@@ -57,6 +57,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   # Fail fast on invalid input combinations before anything is registered
   # or published. Every other job depends on dependency-branches, so gating

@@ -7,6 +7,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+permissions:
+  contents: read
+
 jobs:
   dependency-branches:
     name: Resolve dependencies
@@ -123,6 +126,10 @@ jobs:
     needs: [dependency-branches, update-deps]
     if: needs.update-deps.outputs.deps_changed == 'false'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      # The JUnit report step publishes a check run.
+      checks: write
     strategy:
       fail-fast: false
       matrix:

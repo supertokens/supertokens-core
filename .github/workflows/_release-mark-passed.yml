@@ -16,6 +16,9 @@ on:
         type: boolean
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   mark-as-passed:
     name: Mark as passed (${{ matrix.plugin }})

@@ -18,6 +18,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   # ── Parse the free-text version list into a JSON matrix ──────────────
   prepare:

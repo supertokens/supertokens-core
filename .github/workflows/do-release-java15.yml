@@ -55,6 +55,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   # ── Validate inputs ───────────────────────────────────────────────
   # Fail fast on invalid input combinations before anything is registered
@@ -265,6 +268,10 @@ jobs:
     name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
     needs: [ update-deps, register-core-version, runner-indexes ]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      # The JUnit report step publishes a check run.
+      checks: write
     strategy:
       fail-fast: false
       matrix:

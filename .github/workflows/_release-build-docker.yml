@@ -22,6 +22,9 @@ on:
       dev-tag:
         value: ${{ jobs.build-docker.outputs.dev-tag }}
 
+permissions:
+  contents: read
+
 jobs:
   build-docker:
     name: Build Docker image

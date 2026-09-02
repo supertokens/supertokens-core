@@ -22,6 +22,9 @@ on:
         type: string
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   release-docker:
     name: Release Docker image

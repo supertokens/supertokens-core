@@ -20,6 +20,9 @@ on:
       postgresql-sha:
         value: ${{ jobs.resolve.outputs.postgresql-sha }}
 
+permissions:
+  contents: read
+
 jobs:
   resolve:
     name: Resolve dependencies

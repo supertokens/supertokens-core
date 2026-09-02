@@ -22,6 +22,9 @@ on:
         type: boolean
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   register-core-version:
     name: Register core version
