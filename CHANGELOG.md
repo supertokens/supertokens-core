@@ -7,13 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Fixes the SAML login redirect appending `SAMLRequest` with `?` when the IdP SingleSignOnService URL already has a query string (e.g. Google's `.../saml2/idp?idpid=...`); it now uses `&` so the existing query is preserved.
 
 ## [12.2.0]
 
+- **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
+- Dashboard sessions are now checked for expiry at verification time, so an expired session is rejected and revoked instead of relying solely on the cleanup cron (GHSA-w9fp-wv6g-pqv8).
+- Fixes the SAML login redirect appending `SAMLRequest` with `?` when the IdP SingleSignOnService URL already has a query string (e.g. Google's `.../saml2/idp?idpid=...`); it now uses `&` so the existing query is preserved.
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
   tenants inherit the changed values.
-- **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
 - Verifies the database schema at startup: any database (base or tenant) missing a table or column this version needs is reported with the missing columns plus the SQL to add them
 - New config `schema_check_strict_mode` (boolean, default `true`, config.yaml / env only): in strict mode a mismatched tenant database refuses all queries until the migration is applied — re-checked every minute, so it resumes within a minute of the migration, no restart needed; the core still boots and serves all other tenants
 - With `schema_check_strict_mode: false`, mismatches are only logged: everything keeps working and just the queries touching the missing schema fail, with a "Schema mismatch ... check the core error logs" hint instead of a raw SQL error
