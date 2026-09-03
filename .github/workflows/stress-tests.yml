@@ -92,15 +92,22 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20'
-          cache: npm
-          cache-dependency-path: stress-tests/package-lock.json
       - name: Install dependencies
-        # `npm ci`, not `npm install`: this is a benchmark whose results are
-        # compared run-to-run, and `npm install` can resolve newer transitive
-        # versions (and rewrite the lockfile), which silently moves the numbers.
+        # `npm install`, because there is no lockfile to install from:
+        # stress-tests/.gitignore:6 ignores package-lock.json, so a fresh
+        # checkout has none and both `npm ci` and setup-node's npm cache fail
+        # outright ("Dependencies lock file is not found").
+        #
+        # This is a real gap for a benchmark — `npm install` can resolve newer
+        # transitive versions between runs, so the comparison table measures
+        # dependency drift alongside core changes. Fixing it properly means
+        # committing a lockfile (un-ignoring it and regenerating it against the
+        # current package.json, which pins supertokens-node exactly but leaves
+        # the rest on carets), which is a deliberate repo-policy change rather
+        # than something to slip into a CI patch.
         run: |
           cd stress-tests
-          npm ci
+          npm install
       - name: Update Docker image in compose
         run: |
           cd stress-tests

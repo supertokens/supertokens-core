@@ -8,8 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 - Stress tests now run the MIGRATED migration mode only (the LEGACY leg is retired with legacy mode), under an
-  explicit job timeout, with `npm ci` and pinned service images so run-to-run comparisons are not moved by
-  dependency or Postgres drift
+  explicit job timeout, with pinned service images so run-to-run comparisons are not moved by Postgres drift
 - Stress-test summary: the Status column now reflects a scaling-ratio breach (it previously showed OK on the very
   steps that failed the run), and sub-second measurements are reported in ms instead of collapsing to "0s"
 - The 1M-user stress suite now measures the session read paths (verify, refresh, and session-handle lookup on
