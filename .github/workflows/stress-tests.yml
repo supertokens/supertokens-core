@@ -7,12 +7,22 @@ on:
         description: 'Docker image tag to use'
         required: true
         type: string
+      modes:
+        description: 'JSON array of migration modes to run, e.g. ["MIGRATED"] or ["LEGACY"]'
+        required: false
+        type: string
+        default: '["MIGRATED"]'
   workflow_dispatch:
     inputs:
       tag:
         description: 'Docker image tag to use'
         required: true
         type: string
+      modes:
+        description: 'JSON array of migration modes, e.g. ["MIGRATED"]. Use ["LEGACY"] for pre-12.0 images, which have no migration feature.'
+        required: false
+        type: string
+        default: '["MIGRATED"]'
 
 jobs:
   stress-tests:
@@ -42,10 +52,19 @@ jobs:
     # actually run after migration. Kept as a matrix so another mode can be
     # added back with one line; fail-fast off so a future second leg's failure
     # never cancels this one.
+    #
+    # The mode is an input because this job tests a PUBLISHED image, not the
+    # checked-out source — so it can be dispatched from here against any release
+    # line's dev image. Pre-12.0 images have no migration feature at all: there
+    # is no GET /migration/mode for the suite's startup guard to confirm, and
+    # asking for MIGRATED against one fails in the first minute. Dispatch those
+    # with ["LEGACY"], which the guard tolerates on purpose for exactly this
+    # case (an absent endpoint when LEGACY is expected is a pre-migration image
+    # behaving normally).
     strategy:
       fail-fast: false
       matrix:
-        mode: [MIGRATED]
+        mode: ${{ fromJSON(inputs.modes) }}
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
