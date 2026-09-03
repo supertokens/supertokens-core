@@ -56,6 +56,8 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.refreshToken.RefreshToken;
+import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -518,6 +520,7 @@ public class Session {
             SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
             try {
                 CoreConfig config = Config.getConfig(tenantIdentifier, main);
+                warmSigningMaterial(tenantIdentifier, main);
                 return sessionStorage.startTransaction(con -> {
                     try {
 
@@ -812,6 +815,18 @@ public class Session {
                 newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
     }
 
+    // Warms the signing-material caches while this thread holds no DB connection. Token minting inside the
+    // transaction lambdas of getSession/refreshSessionHelper is then served from cache: any key-cache refresh
+    // that is due (cold start, dynamic-key rotation window) does its DB round trip here instead of checking
+    // out a second connection while the transaction holds the first - which deadlocks the pool once pool-size
+    // requests do it concurrently.
+    private static void warmSigningMaterial(TenantIdentifier tenantIdentifier, Main main)
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main).getAllKeys();
+        RefreshTokenKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getKey();
+    }
+
     private static SessionInformationHolder refreshSessionHelper(
             TenantIdentifier tenantIdentifier, Storage storage, Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo,
@@ -831,7 +846,8 @@ public class Session {
             SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
             try {
                 CoreConfig config = Config.getConfig(tenantIdentifier, main);
-                return sessionStorage.startTransaction(con -> {
+                warmSigningMaterial(tenantIdentifier, main);
+                SessionInformationHolder result = sessionStorage.startTransaction(con -> {
                     try {
                         String sessionHandle = refreshTokenInfo.sessionHandle;
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = sessionStorage
@@ -975,9 +991,11 @@ public class Session {
 
                             sessionStorage.commitTransaction(con);
 
-                            return refreshSessionHelper(tenantIdentifier, storage, main, refreshToken,
-                                    refreshTokenInfo, enableAntiCsrf,
-                                    accessTokenVersion, shouldUseStaticKey, cdiVersion, accessTokenValidity);
+                            // Case-B promoted the presented token; null tells the caller to retry AFTER this
+                            // transaction has returned its connection to the pool. Recursing here (the previous
+                            // shape) checked out a second connection while still holding this one, deadlocking
+                            // the pool at pool-size concurrent Case-B refreshes.
+                            return null;
                         }
 
                         sessionStorage.commitTransaction(con);
@@ -994,6 +1012,15 @@ public class Session {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
+                if (result == null) {
+                    // Case-B promote: retry now that the transaction above has released its connection, so a
+                    // refresh never holds more than one connection at a time. The re-read sees the promoted
+                    // state and takes the plain rotation path.
+                    return refreshSessionHelper(tenantIdentifier, storage, main, refreshToken, refreshTokenInfo,
+                            enableAntiCsrf, accessTokenVersion, shouldUseStaticKey, cdiVersion,
+                            accessTokenValidity);
+                }
+                return result;
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
                     UnauthorisedException ue = (UnauthorisedException) e.actualException;

@@ -303,8 +303,11 @@ public class AccessToken {
             keyToUse = SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
                     .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
         } else {
+            // WithoutRefresh: minting can run inside a session transaction, where triggering a key-cache
+            // refresh would check out a second DB connection while the transaction holds the first.
             keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(
-                    SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main).getLatestIssuedDynamicKey());
+                    SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
+                            .getLatestIssuedDynamicKeyWithoutRefresh());
         }
 
         String token;
@@ -349,7 +352,8 @@ public class AccessToken {
             TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main).getLatestIssuedDynamicKey().value);
+                SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main)
+                        .getLatestIssuedDynamicKeyWithoutRefresh().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 

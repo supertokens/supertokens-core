@@ -184,6 +184,19 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     public JWTSigningKeyInfo getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms algorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException,
             TenantOrAppNotFoundException {
+        // Static keys are never rotated, so a cached key for the algorithm is authoritative. This keeps the
+        // steady state DB-free: token minting calls this while already holding a transaction connection, and
+        // the getOrCreate below opens its own transaction - a second connection held on top of the first,
+        // which deadlocks the pool at pool-size concurrent mints (see Session.refreshSessionHelper).
+        List<JWTSigningKeyInfo> cachedStaticKeys = this.staticKeys;
+        if (cachedStaticKeys != null) {
+            for (JWTSigningKeyInfo cachedKey : cachedStaticKeys) {
+                if (algorithm.equalsString(cachedKey.algorithm)) {
+                    return cachedKey;
+                }
+            }
+        }
+
         JWTSigningKeyInfo key = JWTSigningKey.getInstance(appIdentifier, main)
                 .getOrCreateAndGetKeyForAlgorithm(algorithm);
 
@@ -200,8 +213,31 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     public KeyInfo getLatestIssuedDynamicKey()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
+        return pickKeyForSigning(getDynamicKeys());
+    }
+
+    // Cache-only variant for token minting inside a storage transaction: never triggers a cache refresh, so
+    // it acquires no DB connection on top of the one the caller's transaction already holds. During a
+    // rotation window this serves the outgoing key, which remains valid for signing throughout the overlap
+    // period; the refresh itself happens at the pre-transaction warm-up (Session's getAllKeys() call) where
+    // the thread holds no connection. Falls back to the refreshing path only when nothing is cached to serve.
+    public KeyInfo getLatestIssuedDynamicKeyWithoutRefresh()
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        List<KeyInfo> cached = this.dynamicKeys;
+        if (cached != null) {
+            List<KeyInfo> valid = cached.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())
+                    .collect(Collectors.toList());
+            if (!valid.isEmpty()) {
+                return pickKeyForSigning(valid);
+            }
+        }
+        return getLatestIssuedDynamicKey();
+    }
+
+    private KeyInfo pickKeyForSigning(List<KeyInfo> dynamicKeys)
+            throws TenantOrAppNotFoundException {
         CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
-        List<KeyInfo> dynamicKeys = getDynamicKeys();
 
         KeyInfo latest = dynamicKeys.get(0);
         if (dynamicKeys.size() > 1 && // if we have more than 1 available
