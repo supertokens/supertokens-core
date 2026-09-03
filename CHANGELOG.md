@@ -23,6 +23,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Corrects the 12.1.0 migration note: the `session_info` columns are a manual step
 - Updates the OTel javaagent to 2.29.0 and pins httpclient5/httpcore5 (CVE fixes)
 
+### Migration
+
+Applied automatically at startup (PostgreSQL >= 14). On large deployments already running 9.7.x, run
+the postgresql-plugin's `migration-scripts/v9.8.0.sql` ahead of the upgrade so the first dashboard
+search doesn't wait on it (safe to run online; `ANALYZE` samples the table, it does not scan it):
+
+```sql
+CREATE STATISTICS IF NOT EXISTS st_recipe_user_tenants_search_domain
+  ON (lower(split_part(account_info_value, '@', 2))) FROM recipe_user_tenants;
+CREATE STATISTICS IF NOT EXISTS st_recipe_user_tenants_search_tparty
+  ON (lower(account_info_value)) FROM recipe_user_tenants;
+ANALYZE recipe_user_tenants;
+```
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
