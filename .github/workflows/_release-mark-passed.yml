@@ -15,6 +15,10 @@ on:
       is-canary:
         type: boolean
         required: true
+      has-db-migration:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   mark-as-passed:
@@ -54,7 +58,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X PATCH \
             -H "Content-Type: application/json" \
             -H "api-version: 0" \
-            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"isCanary\":${{ inputs.is-canary }}}" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"isCanary\":${{ inputs.is-canary }},\"hasDBMigration\":${{ inputs.has-db-migration }}}" \
             https://api.supertokens.io/0/core)
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)

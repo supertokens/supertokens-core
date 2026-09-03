@@ -33,6 +33,10 @@ on:
       is-latest-release:
         type: boolean
         required: true
+      has-db-migration:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   add-release-tags:
@@ -156,6 +160,8 @@ jobs:
       - name: Tag core
         id: tag-core
         if: '!inputs.is-canary'
+        env:
+          HAS_DB_MIGRATION: ${{ inputs.has-db-migration }}
         run: |
           cd supertokens-root/supertokens-core
           ./addReleaseTag
