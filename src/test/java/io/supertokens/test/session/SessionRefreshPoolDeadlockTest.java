@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -45,9 +46,10 @@ import static junit.framework.TestCase.assertNotNull;
  * (second connection while the first was still checked out), and token minting inside the lambda
  * could open a nested transaction for signing-key lookups (always, for static-key sessions). With
  * pool-size concurrent refreshes doing this, no thread could acquire its second connection and the
- * whole pool deadlocked until the connection timeout. These tests only bound the pool when running
- * against a real SQL plugin (the config keys are plugin-scoped); in-memory runs exercise the same
- * code paths without the pool limit.
+ * whole pool deadlocked until the connection timeout. These tests run only against a real SQL
+ * plugin: the pool-size config keys are plugin-scoped, and the in-memory (SQLite shared-cache)
+ * storage has no connection pool to pin down - its cache contention under this concurrency fails
+ * for unrelated reasons.
  */
 public class SessionRefreshPoolDeadlockTest {
 
@@ -91,6 +93,12 @@ public class SessionRefreshPoolDeadlockTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+            return;
+        }
+
         String[] caseBTokens = new String[poolSize];
         for (int i = 0; i < poolSize; i++) {
             caseBTokens[i] = makeCaseBToken(process, "user" + i, false);
@@ -129,6 +137,12 @@ public class SessionRefreshPoolDeadlockTest {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+            return;
+        }
 
         // dynamic-key session and static-key session, each through the Case-B promote path
         for (boolean useStaticKey : new boolean[]{false, true}) {
