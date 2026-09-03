@@ -3,7 +3,11 @@ version: '3'
 services:
   # Note: If you are assigning a custom name to your db service on the line below, make sure it does not contain underscores
   db:
-    image: 'postgres:latest'
+    # Pinned: this suite is a performance benchmark whose whole point is
+    # run-to-run comparability, and a Postgres major bump moves every number
+    # in the comparison table while looking like a core regression. 16 tracks
+    # the Aurora PostgreSQL major that production runs.
+    image: 'postgres:16'
     environment:
       POSTGRES_USER: supertokens 
       POSTGRES_PASSWORD: supertokens 
@@ -61,7 +65,10 @@ services:
 
     networks:
       - app_network
-    restart: unless-stopped
+    # Deliberately NOT `restart: unless-stopped`. If the core dies mid-run
+    # (OOM, crash) a silent restart hands the suite a cold JVM with a cold
+    # connection pool and the run completes with plausible-looking but tainted
+    # numbers. Let it stay down so the run fails honestly instead.
     healthcheck:
       test: >
         bash -c 'exec 3<>/dev/tcp/127.0.0.1/3567 && echo -e "GET /hello HTTP/1.1\r\nhost: 127.0.0.1:3567\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "Hello"'
@@ -74,6 +81,8 @@ services:
     # the same one the per-SDK compose files use. Backs the OAuth phase's client
     # creation and M2M token issuance so the OAuth-dependent stats/revoke paths
     # can be measured against real data.
+    # TODO: pin this to a released tag for the same comparability reason as the
+    # db image above — a moving Hydra changes the OAuth phase's numbers.
     image: supertokens/oauth2-test:latest
     platform: linux/amd64
     networks:

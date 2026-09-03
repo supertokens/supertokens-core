@@ -17,21 +17,35 @@ on:
 jobs:
   stress-tests:
     runs-on: ubuntu-22.04
-    # A failed stress test must not block the release: the job still shows a
-    # red X with its failure tables, but the workflow (and thus the caller's
+    # The suite runs to completion in ~75 min; the cap is generous headroom for
+    # a slow runner, and exists so a hang OUTSIDE the suite's own per-step
+    # budgets (npm install, docker compose up, generate-users) cannot burn the
+    # 6-hour default. Raise it if the 1M dataset grows, don't remove it.
+    timeout-minutes: 150
+    # STILL ADVISORY: a failed stress run does not block the release — the job
+    # shows a red X with its failure tables, but the workflow (and the caller's
     # release-docker gate) passes.
+    #
+    # This is scheduled to come off once the scaling-ratio bounds are re-based:
+    # the two `Pagination full walk` steps currently sit at 13.0x against a
+    # bound of 15, so enforcing today would block PRs on ~13% headroom. Until
+    # then, note that nothing surfaces a failure anywhere except the run page —
+    # the LEGACY leg was red for three weeks before anyone noticed.
     continue-on-error: true
-    # One leg per migration mode. The suite has always run the core in its
-    # default LEGACY mode; the MIGRATED leg deploys a fresh core directly in
-    # MIGRATED (no backfill needed on an empty DB) so the migrated-schema read
-    # paths (app_id_to_user_id / recipe_user_tenants) are exercised at scale
-    # too. The legs run as independent parallel jobs — each on its own runner,
-    # within the current single-run envelope — and fail-fast is off so a red
-    # (e.g. expected-to-time-out) MIGRATED leg never cancels the LEGACY one.
+    # MIGRATED only. The suite historically ran the core in its default LEGACY
+    # mode; the LEGACY leg is being retired along with legacy migration mode
+    # itself, and it had failed every run since 2026-08-12 on a scaling-ratio
+    # assertion that is a true statement about the legacy schema (the
+    # all_auth_recipe_users count path is a full scan: 855ms mean at 1M) rather
+    # than a fixable bug. MIGRATED exercises the migrated-schema read paths
+    # (app_id_to_user_id / recipe_user_tenants), which is what deployments
+    # actually run after migration. Kept as a matrix so another mode can be
+    # added back with one line; fail-fast off so a future second leg's failure
+    # never cancels this one.
     strategy:
       fail-fast: false
       matrix:
-        mode: [LEGACY, MIGRATED]
+        mode: [MIGRATED]
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
@@ -39,10 +53,15 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: stress-tests/package-lock.json
       - name: Install dependencies
+        # `npm ci`, not `npm install`: this is a benchmark whose results are
+        # compared run-to-run, and `npm install` can resolve newer transitive
+        # versions (and rewrite the lockfile), which silently moves the numbers.
         run: |
           cd stress-tests
-          npm install
+          npm ci
       - name: Update Docker image in compose
         run: |
           cd stress-tests
@@ -54,9 +73,13 @@ jobs:
         # this leg's mode.
         env:
           SUPERTOKENS_MIGRATION_MODE: ${{ matrix.mode }}
+        # --wait blocks until the healthchecks pass. Without it `up -d` returns
+        # as soon as the containers are created and the suite can start against
+        # a core that is not serving yet; `depends_on` only orders the
+        # containers relative to each other, it does not gate this step.
         run: |
           cd stress-tests
-          docker compose up -d
+          docker compose up -d --wait
       - name: Generate user jsons
         run: |
           cd stress-tests
@@ -83,7 +106,10 @@ jobs:
           echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|---------------|------|-----------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+          # Status must include the ratio verdict: an over-ratio step fails the
+          # run, but Status used to read only the duration budget, so the row
+          # rendered "✅ OK" on the exact steps that turned the job red.
+          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" elif .ratioOverBound then "⚠️ OVER RATIO" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
 
       - name: Display pg_stat_statements summary
         if: always()
