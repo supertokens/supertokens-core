@@ -27,7 +27,7 @@ java {
     }
 }
 
-version = "12.1.1"
+version = "12.2.0"
 
 repositories {
     mavenCentral()
@@ -113,6 +113,16 @@ dependencies {
         // velocity-engine-core 2.4.1 (via opensaml-saml-impl) pins 3.17.0, which is
         // affected by CVE-2025-48924 (uncontrolled recursion); fixed in 3.18.0
         implementation 'org.apache.commons:commons-lang3:3.20.0'
+
+        // opensaml 5.2.3 pulls httpclient5 5.3.1 / httpcore5 5.2.x, affected by
+        // CVE-2026-64607 (connection leak on invalid Content-Encoding; fixed in 5.6.3),
+        // CVE-2026-54399 (HTTP/1.1 parser memory exhaustion; fixed in 5.4.3) and
+        // CVE-2026-54428 (HPACK decoder memory exhaustion; fixed in 5.4.3).
+        // httpclient5 5.6.4 is built against httpcore5 5.4.3.
+        implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.4'
+        implementation 'org.apache.httpcomponents.client5:httpclient5-cache:5.6.4'
+        implementation 'org.apache.httpcomponents.core5:httpcore5:5.4.3'
+        implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.4.3'
     }
 
     compileOnly project(":supertokens-plugin-interface")

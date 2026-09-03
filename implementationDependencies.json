@@ -197,24 +197,24 @@
 		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/net/shibboleth/shib-networking/9.2.3/shib-networking-9.2.3-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.3.1/httpclient5-cache-5.3.1.jar",
-		"name":"httpclient5-cache 5.3.1",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.3.1/httpclient5-cache-5.3.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.6.4/httpclient5-cache-5.6.4.jar",
+		"name":"httpclient5-cache 5.6.4",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.6.4/httpclient5-cache-5.6.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5/5.3.1/httpclient5-5.3.1.jar",
-		"name":"httpclient5 5.3.1",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5/5.3.1/httpclient5-5.3.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5/5.6.4/httpclient5-5.6.4.jar",
+		"name":"httpclient5 5.6.4",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5/5.6.4/httpclient5-5.6.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5-h2/5.2.4/httpcore5-h2-5.2.4.jar",
-		"name":"httpcore5-h2 5.2.4",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5-h2/5.2.4/httpcore5-h2-5.2.4-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5-h2/5.4.3/httpcore5-h2-5.4.3.jar",
+		"name":"httpcore5-h2 5.4.3",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5-h2/5.4.3/httpcore5-h2-5.4.3-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5/5.2.5/httpcore5-5.2.5.jar",
-		"name":"httpcore5 5.2.5",
-		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5/5.2.5/httpcore5-5.2.5-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5/5.4.3/httpcore5-5.4.3.jar",
+		"name":"httpcore5 5.4.3",
+		"src":"https://repo.maven.apache.org/maven2/org/apache/httpcomponents/core5/httpcore5/5.4.3/httpcore5-5.4.3-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/1.84/bcpkix-jdk18on-1.84.jar",

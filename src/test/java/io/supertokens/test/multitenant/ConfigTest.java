@@ -1044,6 +1044,200 @@ public class ConfigTest {
     }
 
     @Test
+    public void testUpdatingAppAPIKeysSucceedsWhenChildInheritsValue() throws Exception {
+        String[] args = {Utils.getInstallDir()};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TenantIdentifier app = new TenantIdentifier(null, "inherited-app", null);
+        TenantIdentifier child = new TenantIdentifier(null, "inherited-app", "child");
+        String oldApiKey = "inherited-app-key-0001";
+        String newApiKey = "inherited-app-key-0002";
+
+        JsonObject appConfig = new JsonObject();
+        appConfig.addProperty("api_keys", oldApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                app,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, appConfig
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                child,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, new JsonObject()
+        ), false);
+
+        assertArrayEquals(new String[]{oldApiKey}, Config.getConfig(child, process.getProcess()).getAPIKeys());
+
+        JsonObject updatedAppConfig = new JsonObject();
+        updatedAppConfig.addProperty("api_keys", newApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                app,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, updatedAppConfig
+        ), false);
+
+        assertArrayEquals(new String[]{newApiKey}, Config.getConfig(app, process.getProcess()).getAPIKeys());
+        assertArrayEquals(new String[]{newApiKey}, Config.getConfig(child, process.getProcess()).getAPIKeys());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingConnectionUriDomainAPIKeysSucceedsWhenChildInheritsValue() throws Exception {
+        String[] args = {Utils.getInstallDir()};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL ||
+                StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        TenantIdentifier connectionUriDomain = new TenantIdentifier("inherited-cud", null, null);
+        TenantIdentifier child = new TenantIdentifier("inherited-cud", null, "child");
+        TenantIdentifier app = new TenantIdentifier("inherited-cud", "app", null);
+        TenantIdentifier appChild = new TenantIdentifier("inherited-cud", "app", "child");
+        String oldApiKey = "inherited-cud-key-0001";
+        String newApiKey = "inherited-cud-key-0002";
+
+        JsonObject connectionUriDomainConfig = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(connectionUriDomainConfig, 1);
+        connectionUriDomainConfig.addProperty("api_keys", oldApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                connectionUriDomain,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, connectionUriDomainConfig
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                child,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, new JsonObject()
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                app,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, new JsonObject()
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                appChild,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, new JsonObject()
+        ), false);
+
+        assertArrayEquals(new String[]{oldApiKey}, Config.getConfig(child, process.getProcess()).getAPIKeys());
+        assertArrayEquals(new String[]{oldApiKey}, Config.getConfig(appChild, process.getProcess()).getAPIKeys());
+
+        JsonObject updatedConnectionUriDomainConfig = connectionUriDomainConfig.deepCopy();
+        updatedConnectionUriDomainConfig.addProperty("api_keys", newApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                connectionUriDomain,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, updatedConnectionUriDomainConfig
+        ), false);
+
+        assertArrayEquals(new String[]{newApiKey},
+                Config.getConfig(connectionUriDomain, process.getProcess()).getAPIKeys());
+        assertArrayEquals(new String[]{newApiKey}, Config.getConfig(child, process.getProcess()).getAPIKeys());
+        assertArrayEquals(new String[]{newApiKey}, Config.getConfig(appChild, process.getProcess()).getAPIKeys());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingAppAPIKeysRejectsExplicitChildConflict() throws Exception {
+        String[] args = {Utils.getInstallDir()};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TenantIdentifier app = new TenantIdentifier(null, "explicit-child-app", null);
+        TenantIdentifier child = new TenantIdentifier(null, "explicit-child-app", "child");
+        String oldApiKey = "explicit-child-key-0001";
+        String newApiKey = "explicit-child-key-0002";
+
+        JsonObject appConfig = new JsonObject();
+        appConfig.addProperty("api_keys", oldApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                app,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, appConfig
+        ), false);
+
+        JsonObject childConfig = new JsonObject();
+        childConfig.addProperty("api_keys", oldApiKey);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                child,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, childConfig
+        ), false);
+
+        JsonObject updatedAppConfig = new JsonObject();
+        updatedAppConfig.addProperty("api_keys", newApiKey);
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    app,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    null, null, updatedAppConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("You cannot set different values for api_keys for the same appId", e.getMessage());
+        }
+
+        assertArrayEquals(new String[]{oldApiKey}, Config.getConfig(app, process.getProcess()).getAPIKeys());
+        assertArrayEquals(new String[]{oldApiKey}, Config.getConfig(child, process.getProcess()).getAPIKeys());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testConfigNormalisation() throws Exception {
         TenantIdentifier[][] testCases = new TenantIdentifier[][]{
                 new TenantIdentifier[]{
