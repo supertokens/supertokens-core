@@ -85,8 +85,24 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
     secrets: inherit
 
-  register-versions:
+  # Derives has-db-migration from the postgresql plugin's migration manifest
+  # (single source of truth) and fails the release early if the core CHANGELOG
+  # doesn't document the migration. Shared with do-release-java15.yml via the
+  # reusable workflow. register-versions waits on this job, so a failure stops
+  # the release before anything is registered.
+  derive-db-migration-flag:
+    name: Derive has-db-migration from migration manifest
     needs: dependency-branches
+    uses: ./.github/workflows/_release-derive-db-migration.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
+      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+    secrets: inherit
+
+  register-versions:
+    needs: [ dependency-branches, derive-db-migration-flag ]
     uses: ./.github/workflows/_release-register-versions.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -108,7 +124,7 @@ jobs:
     secrets: inherit
 
   mark-as-passed:
-    needs: [ register-versions, test ]
+    needs: [ register-versions, test, derive-db-migration-flag ]
     if: ${{ !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-mark-passed.yml
     with:
@@ -116,7 +132,154 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
+      has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
     secrets: inherit
+
+  # When this release ships a DB migration, open a PR against
+  # supertokens-backend-apis that adds it to the CORE_MIGRATIONS registry —
+  # the change the SaaS rollout guard waits for. Plain-SQL migrations are
+  # code-generated from the plugin's canonical script
+  # (scripts/generate-core-migration.mjs in backend-apis - plain transactional
+  # scripts and CREATE/DROP INDEX CONCURRENTLY-only patch scripts); `custom: true`
+  # migrations get a PENDING doc instead, because generated code cannot
+  # faithfully represent arbitrary multi-step migrations and a
+  # guard-satisfying-but-wrong entry is worse than a blocking one. Everything
+  # is keyed by the full core X.Y.Z (patch releases can ship index-only
+  # migrations too). Skipped when the registry already has the version or the
+  # PR branch already exists, so re-releases stay idempotent. continue-on-error: PR creation must never
+  # fail the release — the rollout guard + pending marker + Slack reminder
+  # still cover the case where this job breaks.
+  open-backend-apis-migration-pr:
+    name: Open backend-apis migration PR
+    needs: [ dependency-branches, derive-db-migration-flag, mark-as-passed ]
+    # Runs on canary releases too (by design): the core-version input and the
+    # resolved postgresql-sha are identical for a canary and its real release
+    # (canary only appends -canary to the *tag*), so a PR opened during canary
+    # is keyed to the correct core-version and carries the correct migration
+    # script. The registry-exists and branch-exists guards below then make the
+    # later real release find that PR already open and idempotently skip — so
+    # the migration PR simply lands earlier (at canary time) rather than being
+    # duplicated. This deliberately does NOT mirror the !inputs.is-canary
+    # exclusions on build-jars / the Tag core step: opening the backend-apis PR
+    # early is safe and desirable, whereas publishing artifacts/tags is not.
+    if: ${{ !cancelled() && !failure() && needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
+    continue-on-error: true
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout supertokens-backend-apis
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-backend-apis
+          ref: dev
+          token: ${{ secrets.GH_TOKEN }}
+          path: backend-apis
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: plugin
+      - name: Generate migration and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # Passed via env (not expanded into the shell) so the release inputs
+          # can't inject GitHub-Actions expressions into this run block.
+          CORE_VERSION: ${{ inputs.core-version }}
+          PLUGIN_VERSION: ${{ inputs.postgresql-plugin-version }}
+          # The SQL script is the migration's source of truth: consume it from
+          # the derive job's output rather than re-deriving it from the manifest
+          # here, so the two jobs can't disagree on which script this release
+          # ships. custom/notes below are secondary metadata read once.
+          SQL_FILE: ${{ needs.derive-db-migration-flag.outputs.sql-file }}
+        run: |
+          coreVersion="$CORE_VERSION"
+          pluginVersion="$PLUGIN_VERSION"
+          sqlfile="$SQL_FILE"
+          entry=$(jq --arg v "$pluginVersion" '.migrations[] | select(.pluginVersion == $v)' plugin/migration-scripts/manifest.json)
+          custom=$(echo "$entry" | jq -r '.custom // false')
+          isPatch=$([ "$(echo "$coreVersion" | cut -d. -f3)" != "0" ] && echo true || echo false)
+          notes=$(echo "$entry" | jq -r '.notes // ""')
+          # has-db-migration == 'true' already gated this job, so the derive job
+          # must have emitted a sql-file; treat an empty one as a contract
+          # violation rather than silently generating an empty PR.
+          if [ -z "$sqlfile" ]; then
+            echo "::error::has-db-migration was true but the derive job produced no sql-file for plugin $pluginVersion - cannot generate the backend-apis PR."
+            exit 1
+          fi
+          cd backend-apis
+          registry=apps/backend-api/ts/helpers/multi-tenancy/rds/migration/index.ts
+          if grep -q "version: \"$coreVersion\"" "$registry"; then
+            echo "::notice::backend-apis CORE_MIGRATIONS already contains $coreVersion - no PR needed."
+            exit 0
+          fi
+          branch="core-migration/v$coreVersion"
+          if git ls-remote --exit-code origin "refs/heads/$branch" > /dev/null 2>&1; then
+            echo "::notice::Branch $branch already exists on supertokens-backend-apis (PR presumably open) - skipping."
+            exit 0
+          fi
+          git config user.name "supertokens-release-bot"
+          git config user.email "team@supertokens.com"
+          git checkout -b "$branch"
+          suffix=${coreVersion//./_}
+          if [ "$custom" = "true" ]; then
+            dest=apps/backend-api/ts/helpers/multi-tenancy/rds/migration/PENDING-$coreVersion.md
+            {
+              echo "# PENDING: core $coreVersion DB migration (custom)"
+              echo
+              echo "Core $coreVersion was released with a DB migration that is marked custom in the"
+              echo "postgresql plugin's migration manifest, so it cannot be code-generated:"
+              echo "implement migrateTo$suffix in queries.ts by hand (multi-step /"
+              echo "CONCURRENTLY handling - see the script comments), add the migrateDBTo$suffix"
+              echo "wrapper and the CORE_MIGRATIONS entry in index.ts, and delete this file."
+              echo "Until the entry exists, the SaaS rollout of core $coreVersion stays deferred"
+              echo "(saas_rollout_pending) - that is intentional."
+              if [ "$isPatch" = "true" ]; then
+                echo
+                echo "This is a patch-release migration (index add/drop only by rule; the core also does"
+                echo "it itself at boot), so the SaaS-side implementation only has to be idempotent and"
+                echo "is there for the teleport chain (CONCURRENTLY there too)."
+              fi
+              echo
+              echo "Manifest notes: $notes"
+              echo
+              echo "Canonical SQL (supertokens-postgresql-plugin/migration-scripts/$sqlfile):"
+              echo
+              echo '```sql'
+              cat "../plugin/migration-scripts/$sqlfile"
+              echo '```'
+            } > "$dest"
+            title="core $coreVersion: implement custom DB migration (PENDING)"
+          else
+            node apps/backend-api/scripts/generate-core-migration.mjs "$coreVersion" "../plugin/migration-scripts/$sqlfile"
+            title="core $coreVersion: add DB migration to CORE_MIGRATIONS"
+          fi
+          git add -A
+          git commit -m "feat: add core $coreVersion DB migration (from plugin v$pluginVersion release)"
+          git push origin "$branch"
+          # Build the body in a file and pass --body-file: a here-block keeps the
+          # continuation lines at column 0 so GitHub-flavored markdown doesn't
+          # treat the indented run-block text as a code block (which would kill
+          # the review checklist's checkboxes).
+          bodyFile="$(mktemp)"
+          {
+            echo "Auto-generated by the supertokens-core release workflow for core $coreVersion (postgresql-plugin $pluginVersion)."
+            echo
+            echo "Source of truth: supertokens-postgresql-plugin/migration-scripts/$sqlfile (manifest entry pluginVersion $pluginVersion$([ "$isPatch" = "true" ] && echo ", patch release: index-only, CONCURRENTLY"))."
+            echo "Manifest notes: $notes"
+            echo
+            echo "Until this is merged AND deployed, the SaaS (ECS) rollout of core $coreVersion stays deferred (core_version_metadata.saas_rollout_pending; a Slack reminder repeats every 6h). After deploying, trigger the rollout via POST /manual/multi-tenancy/core/release."
+            echo
+            echo "Review checklist:"
+            echo "- [ ] SQL matches the plugin release's schema change (the plugin's schema-migration-check CI verified the script against a real schema diff at PR time)"
+            echo "- [ ] CI green (coreMigrationsRegistry.test.ts validates registry ordering)"
+            echo "- [ ] Deploy backend-apis, then trigger the SaaS rollout"
+            echo
+            echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > "$bodyFile"
+          gh pr create --repo supertokens/supertokens-backend-apis --base dev --head "$branch" \
+            --title "$title" \
+            --body-file "$bodyFile"
 
   build-docker:
     needs: dependency-branches
@@ -150,7 +313,7 @@ jobs:
     secrets: inherit
 
   add-release-tags:
-    needs: [dependency-branches, release-docker]
+    needs: [dependency-branches, release-docker, derive-db-migration-flag]
     if: ${{ !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-add-tags.yml
     with:
@@ -164,6 +327,7 @@ jobs:
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
+      has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
     secrets: inherit
 
   build-jars:

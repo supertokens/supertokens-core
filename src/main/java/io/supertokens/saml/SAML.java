@@ -243,7 +243,10 @@ public class SAML {
 
         samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI), config.getSAMLRelayStateValidity());
 
-        return idpSsoUrl + "?SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
+        // The IdP SSO URL may already carry a query string (e.g. Google's
+        // ...o/saml2/idp?idpid=...), so pick the right separator instead of always using '?'.
+        String separator = idpSsoUrl.contains("?") ? "&" : "?";
+        return idpSsoUrl + separator + "SAMLRequest=" + samlRequest + "&RelayState=" + URLEncoder.encode(relayState, StandardCharsets.UTF_8);
     }
 
     public static EntityDescriptor loadIdpMetadata(String metadataXML) throws MalformedSAMLMetadataXMLException {
