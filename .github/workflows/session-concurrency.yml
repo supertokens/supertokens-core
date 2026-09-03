@@ -1,0 +1,100 @@
+name: Session Concurrency
+
+# A PR-sized saturation probe. The 1M-user stress suite varies the DATASET; this
+# varies CONCURRENCY against a deliberately small connection pool, which is the
+# only way to see the class of defect production keeps reporting (session/refresh
+# pool starvation, 5.0s Hikari connectionTimeout 500s).
+#
+# Unlike the stress suite this job IS a gate. Its thresholds are deterministic
+# and margined by three orders of magnitude — a healthy core queues for
+# single-digit milliseconds where the gate sits at 5000ms — so a failure here is
+# a real defect, not a slow runner.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
+      pool-size:
+        description: 'postgresql_connection_pool_size for the probe'
+        required: false
+        type: number
+        default: 3
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag to use'
+        required: true
+        type: string
+      pool-size:
+        description: 'postgresql_connection_pool_size for the probe'
+        required: false
+        type: number
+        default: 3
+
+jobs:
+  session-concurrency:
+    runs-on: ubuntu-22.04
+    # The probe is ~2 minutes of load; the cap is for a hung compose or image
+    # pull, not for the test itself.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Point compose at the image under test
+        run: |
+          cd stress-tests
+          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ inputs.tag }}|' docker-compose.yml
+
+      - name: Bring up the core with a small connection pool
+        # --wait gates on the healthchecks so the probe never starts against a
+        # core that is not serving yet.
+        env:
+          POSTGRESQL_CONNECTION_POOL_SIZE: ${{ inputs.pool-size }}
+        run: |
+          cd stress-tests
+          docker compose up -d --wait db supertokens
+          docker compose ps
+
+      - name: Run the session concurrency probe
+        id: probe
+        # k6 runs from its own pinned image (nothing to install) on the host
+        # network, so it reaches the core on the port compose already publishes.
+        # The image tag is pinned for the same reason the db image is: this is a
+        # measurement, and a moving k6 moves the numbers.
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/stress-tests/k6:/scripts" -w /scripts \
+            -e CORE_URL=http://localhost:3567 \
+            -e API_KEY=qwertyuiopasdfghjklzxcvbnm \
+            -e CDI_VERSION=5.4 \
+            -e POOL_SIZE=${{ inputs.pool-size }} \
+            grafana/k6:0.49.0 run session-concurrency.js
+
+      - name: Publish the probe summary
+        if: always()
+        run: |
+          if [ -f stress-tests/k6/k6-session-concurrency-summary.md ]; then
+            cat stress-tests/k6/k6-session-concurrency-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "The probe produced no summary — it failed before reporting." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Core logs on failure
+        # The interesting evidence for a pool defect is in the core's own log,
+        # and the container is gone once the job ends.
+        if: failure()
+        run: |
+          cd stress-tests
+          docker compose logs --tail 400 supertokens
+
+      - name: Upload probe results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: k6-session-concurrency
+          path: |
+            stress-tests/k6/k6-session-concurrency-summary.json
+            stress-tests/k6/k6-session-concurrency-summary.md
+          if-no-files-found: ignore

@@ -12,6 +12,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   dependency or Postgres drift
 - Stress-test summary: the Status column now reflects a scaling-ratio breach (it previously showed OK on the very
   steps that failed the run), and sub-second measurements are reported in ms instead of collapsing to "0s"
+- The 1M-user stress suite now measures the session read paths (verify, refresh, and session-handle lookup on
+  both the hit and the miss path), all held to the O(1) scaling bound
+- New session-concurrency CI probe: ~2 minutes of create/verify/refresh against a deliberately small connection
+  pool, gating on the Hikari `connectionTimeout` wall so pool-contention defects are caught in CI rather than in
+  production
 
 
 ## [12.2.0]

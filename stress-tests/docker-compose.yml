@@ -62,6 +62,11 @@ services:
       # SUPERTOKENS_MIGRATION_MODE before `docker compose up`. Defaults to LEGACY,
       # which is the core's own default and the suite's historical behavior.
       SUPERTOKENS_MIGRATION_MODE: "${SUPERTOKENS_MIGRATION_MODE:-LEGACY}"
+      # Left at the core default for the 1M suite. The session-concurrency
+      # probe overrides it to a small value so pool saturation is reachable in
+      # seconds instead of needing a million users; interpolated here rather
+      # than kept in a second compose file, same as the migration mode above.
+      POSTGRESQL_CONNECTION_POOL_SIZE: "${POSTGRESQL_CONNECTION_POOL_SIZE:-10}"
 
     networks:
       - app_network

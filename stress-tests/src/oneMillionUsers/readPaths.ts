@@ -3,6 +3,7 @@ import SuperTokens from 'supertokens-node';
 import { measureTime, runStep, setCheckpoint, CheckpointSize } from '../common/utils';
 import { measureQueryPaths } from './measureQueryPaths';
 import { measureOAuthPaths, OAuthStore } from './oauthPaths';
+import { measureSessionPaths } from './sessionPaths';
 import { walkAllUsers } from './pagination';
 
 /**
@@ -100,6 +101,10 @@ export const runReadPaths = async (
     if (oauthStore) {
       await measureOAuthPaths(deployment, oauthStore);
     }
+
+    // 10. Measure the session read paths (verify, refresh, handle lookup on
+    // both the hit and the miss path) against the current dataset.
+    await measureSessionPaths();
   } finally {
     // Always clear the checkpoint so any measurement outside a pass (or a later
     // pass) is routed correctly.
