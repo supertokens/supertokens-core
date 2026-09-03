@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Fixes the SAML login redirect appending `SAMLRequest` with `?` when the IdP SingleSignOnService URL already has a query string (e.g. Google's `.../saml2/idp?idpid=...`); it now uses `&` so the existing query is preserved.
+
 ## [12.2.0]
 
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
