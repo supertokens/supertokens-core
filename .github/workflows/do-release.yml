@@ -152,13 +152,17 @@ jobs:
   open-backend-apis-migration-pr:
     name: Open backend-apis migration PR
     needs: [ dependency-branches, derive-db-migration-flag, mark-as-passed ]
-    # Never on a canary run: the core-version input is the same as the real
-    # release (canary only appends -canary to the tag), so a canary would open
-    # a backend-apis PR keyed to the non-canary version against dev, and its
-    # core-migration/v<version> branch would then make the real release's
-    # branch-exists guard skip opening the correct PR. Mirrors the
-    # !inputs.is-canary exclusion on build-jars and the Tag core step.
-    if: ${{ !cancelled() && !failure() && needs.derive-db-migration-flag.outputs.has-db-migration == 'true' && !inputs.is-canary }}
+    # Runs on canary releases too (by design): the core-version input and the
+    # resolved postgresql-sha are identical for a canary and its real release
+    # (canary only appends -canary to the *tag*), so a PR opened during canary
+    # is keyed to the correct core-version and carries the correct migration
+    # script. The registry-exists and branch-exists guards below then make the
+    # later real release find that PR already open and idempotently skip — so
+    # the migration PR simply lands earlier (at canary time) rather than being
+    # duplicated. This deliberately does NOT mirror the !inputs.is-canary
+    # exclusions on build-jars / the Tag core step: opening the backend-apis PR
+    # early is safe and desirable, whereas publishing artifacts/tags is not.
+    if: ${{ !cancelled() && !failure() && needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
     continue-on-error: true
     runs-on: ubuntu-22.04
     steps:
