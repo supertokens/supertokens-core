@@ -17,6 +17,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - New session-concurrency CI probe: ~2 minutes of create/verify/refresh against a deliberately small connection
   pool, gating on the Hikari `connectionTimeout` wall so pool-contention defects are caught in CI rather than in
   production
+- Stress-test baselines are now qualified by image tag as well as migration mode, so runs against different
+  release lines keep separate trend histories instead of comparing against each other
 
 
 ## [12.2.0]

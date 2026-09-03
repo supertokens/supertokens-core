@@ -68,6 +68,26 @@ jobs:
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
+
+      - name: Derive the results artifact name
+        id: artifact
+        # The baseline artifact is both written and read by name, and the name
+        # used to be the migration mode alone. That was fine while every run
+        # came from one release line, but this job tests a PUBLISHED image, so a
+        # 12.1 run and a 12.2 run would write the same artifact name and then
+        # compare against each other — silently mixing release lines into one
+        # trend. Qualify it with the tag so each line keeps its own baselines.
+        env:
+          TAG: ${{ inputs.tag }}
+          MODE: ${{ matrix.mode }}
+        run: |
+          # Artifact names may not contain " : < > | * ? \ / — publish-dev-docker
+          # already slash-sanitises branch names, but a dispatch can pass
+          # anything, so normalise here too.
+          safe_tag=$(printf '%s' "$TAG" | tr '"/\\:<>|*?' '_')
+          echo "name=stress-test-stats-${safe_tag}-${MODE}" >> "$GITHUB_OUTPUT"
+          echo "Baselines for this run: stress-test-stats-${safe_tag}-${MODE}"
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
@@ -120,7 +140,7 @@ jobs:
             echo "stats.json not found — the run produced no measurements." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
-          echo "## Stress Test Results — ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
+          echo "## Stress Test Results — image \`${{ inputs.tag }}\`, ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
           echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
           echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
@@ -149,9 +169,10 @@ jobs:
           mkdir -p prev-stats
           # Artifacts are listed repo-wide, newest first; the current run has not
           # uploaded its artifact yet, so these are the previous five runs. The
-          # name is mode-specific so a leg only ever compares against prior runs
-          # of the same migration mode (the two legs must never cross-compare).
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats-${{ matrix.mode }}&per_page=5" \
+          # name carries both the image tag and the migration mode, so a run only
+          # ever compares against prior runs of the SAME release line in the SAME
+          # mode — neither the two modes nor two release lines may cross-compare.
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${{ steps.artifact.outputs.name }}&per_page=5" \
             --jq '.artifacts[] | select(.expired == false) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' \
             > artifact-list.tsv || true
           i=0
@@ -167,7 +188,7 @@ jobs:
           [ -f prev-stats/1/stats.json ] || exit 0
           {
             echo ""
-            echo "### Comparison with previous runs (${{ matrix.mode }} mode)"
+            echo "### Comparison with previous runs (${{ inputs.tag }}, ${{ matrix.mode }} mode)"
             header="| Test | This run |"
             sep="|------|----------|"
             for n in 1 2 3 4 5; do
@@ -210,8 +231,8 @@ jobs:
       - name: Upload stats for future comparisons
         uses: actions/upload-artifact@v6
         with:
-          # Per-mode name: keeps the two legs' baselines separate (the
-          # comparison step only pulls same-mode artifacts) and keeps the two
-          # matrix legs from clashing on a single artifact name within a run.
-          name: stress-test-stats-${{ matrix.mode }}
+          # Tag + mode qualified: keeps each release line's baselines separate
+          # (the comparison step only pulls artifacts matching this exact name)
+          # and keeps concurrent matrix legs from clashing within a run.
+          name: ${{ steps.artifact.outputs.name }}
           path: stress-tests/stats.json
