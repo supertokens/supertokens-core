@@ -169,6 +169,13 @@ export const DEFAULT_STEP_BUDGETS_MS: Record<string, number> = {
   'TOTP verify (user with many used codes)': 60_000,
   'Email-verification status update (mapped user)': 60_000,
   'Delete user with userid mapping': 120_000,
+  // Session read paths: token/user-addressed point reads, so the budgets are
+  // the same 60s as the other O(1) steps. The ratio bound, not the budget, is
+  // what actually guards these.
+  'Session verify (access token)': 60_000,
+  'Session refresh (refresh token)': 60_000,
+  'Session handles for user': 60_000,
+  'Session handles for user (miss)': 60_000,
   // OAuth phase: seeding (clients via the provider + bulk M2M-stat/session SQL)
   // and the measured OAuth-dependent read paths.
   'Seeding OAuth data (100k checkpoint)': 1_800_000,
@@ -446,6 +453,14 @@ export const STEP_SCALE_CLASS: Record<string, ScaleClass> = {
   'TOTP verify (user with many used codes)': 'O(1)',
   'Email-verification status update (mapped user)': 'O(1)',
   'Delete user with userid mapping': 'O(1)',
+  // Sessions are addressed by token or by user id, so none of these may grow
+  // with the user table. The miss-path handle lookup is held to the same bound
+  // as the hit path on purpose: a miss that scales while the hit stays flat is
+  // the unbounded-scan signature (C2).
+  'Session verify (access token)': 'O(1)',
+  'Session refresh (refresh token)': 'O(1)',
+  'Session handles for user': 'O(1)',
+  'Session handles for user (miss)': 'O(1)',
   // OAuth read paths. Issuance / introspection / revoke-by-handle are single-key
   // ops that must stay flat as the M2M-stats and oauth_sessions volume grows
   // (O(1)-class once plugin #357 + the revoke index land). Revoke-by-client
