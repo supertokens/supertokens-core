@@ -11,6 +11,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.2.0]
 
 - **Upgrade note: the core now verifies the database schema at startup and, by default (`schema_check_strict_mode: true`), refuses to start when the base database is missing a manual migration — run the migration SQL from the CHANGELOGs (or set `schema_check_strict_mode: false`) before upgrading**
+- Session refresh never holds two DB connections at once: the legacy Case-B refresh retry now runs after its
+  transaction has released its connection (previously `connection_pool_size` concurrent such refreshes deadlocked the
+  pool, failing requests at the 5s connection timeout)
+- Signing-key lookups during token minting are served from a cache warmed before the session transaction, instead of
+  opening a nested transaction while it holds a connection; static-key lookups no longer hit the DB on every mint
 - Dashboard sessions are now checked for expiry at verification time, so an expired session is rejected and revoked instead of relying solely on the cleanup cron (GHSA-w9fp-wv6g-pqv8).
 - Fixes the SAML login redirect appending `SAMLRequest` with `?` when the IdP SingleSignOnService URL already has a query string (e.g. Google's `.../saml2/idp?idpid=...`); it now uses `&` so the existing query is preserved.
 - Fixes app and connection URI domain configuration updates being incorrectly rejected as conflicting when affected
