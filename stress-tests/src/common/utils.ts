@@ -16,6 +16,15 @@ export const deleteStInstance = async (deploymentId: string) => {
 };
 
 export const formatTime = (ms: number): string => {
+  // Sub-second values must not all collapse to "0s". Most read-path steps in
+  // the 1M suite land in the tens-to-hundreds of milliseconds, so flooring to
+  // whole seconds made both the summary table and the run-to-run comparison
+  // unreadable: a real 63ms -> 998ms scaling failure rendered as "0s -> 1s",
+  // and the comparison printed deltas like "0s vs 0s (+200.0%)". Ratios and
+  // budgets are computed from the raw ms either way; this only affects display.
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) {
     return `${seconds}s`;
