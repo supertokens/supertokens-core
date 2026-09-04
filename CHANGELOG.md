@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Upgrades the embedded Tomcat from 11.0.22 to 11.0.25 to clear three critical CVEs (CVE-2026-65182, CVE-2026-65905, CVE-2026-68525)
 
 ## [12.2.0]
 
