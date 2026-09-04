@@ -268,7 +268,7 @@ instructions.
 
 ## 📝 License
 
-&copy; 2020-2023 SuperTokens Inc and its contributors. All rights reserved.
+&copy; 2020-2024 SuperTokens Inc and its contributors. All rights reserved.
 
 Portions of this software are licensed as follows:
 
