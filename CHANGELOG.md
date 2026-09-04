@@ -7,7 +7,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-
 ## [12.2.0]
 
 - **Upgrade note: the core now verifies the database schema at startup and, with `schema_check_strict_mode: true` (default), refuses to start until the manual migrations from the CHANGELOGs are applied**
@@ -22,6 +21,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds a regression test for the duplicate signing-key race on concurrent rotation (fixed in postgresql-plugin 9.8.0)
 - Corrects the 12.1.0 migration note: the `session_info` columns are a manual step
 - Updates the OTel javaagent to 2.29.0 and pins httpclient5/httpcore5 (CVE fixes)
+- Upgrades the embedded Tomcat to 11.0.25 to clear three critical CVEs (CVE-2026-65182, CVE-2026-65905, CVE-2026-68525)
 
 ### Migration
 
