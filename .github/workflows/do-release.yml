@@ -171,7 +171,10 @@ jobs:
         with:
           repository: supertokens/supertokens-backend-apis
           ref: dev
-          token: ${{ secrets.GH_TOKEN }}
+          # Org-level secret with access to supertokens-backend-apis; GH_TOKEN
+          # has no grant for that repo. Also persisted by checkout for the
+          # git push below.
+          token: ${{ secrets.BACKEND_APIS_PR_KEY }}
           path: backend-apis
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
@@ -182,7 +185,9 @@ jobs:
           path: plugin
       - name: Generate migration and open PR
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # gh pr create targets supertokens-backend-apis, so it needs the
+          # same org-level key as the checkout above, not GH_TOKEN.
+          GH_TOKEN: ${{ secrets.BACKEND_APIS_PR_KEY }}
           # Passed via env (not expanded into the shell) so the release inputs
           # can't inject GitHub-Actions expressions into this run block.
           CORE_VERSION: ${{ inputs.core-version }}
