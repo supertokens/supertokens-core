@@ -7,39 +7,114 @@ on:
         description: 'Docker image tag to use'
         required: true
         type: string
+      modes:
+        description: 'JSON array of migration modes to run, e.g. ["MIGRATED"] or ["LEGACY"]'
+        required: false
+        type: string
+        default: '["MIGRATED"]'
+      baselines:
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        required: false
+        type: string
+        default: '[]'
   workflow_dispatch:
     inputs:
       tag:
         description: 'Docker image tag to use'
         required: true
         type: string
+      modes:
+        description: 'JSON array of migration modes, e.g. ["MIGRATED"]. Use ["LEGACY"] for pre-12.0 images, which have no migration feature.'
+        required: false
+        type: string
+        default: '["MIGRATED"]'
+      baselines:
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        required: false
+        type: string
+        default: '[]'
 
 jobs:
   stress-tests:
     runs-on: ubuntu-22.04
-    # A failed stress test must not block the release: the job still shows a
-    # red X with its failure tables, but the workflow (and thus the caller's
+    # The suite runs to completion in ~75 min; the cap is generous headroom for
+    # a slow runner, and exists so a hang OUTSIDE the suite's own per-step
+    # budgets (npm install, docker compose up, generate-users) cannot burn the
+    # 6-hour default. Raise it if the 1M dataset grows, don't remove it.
+    timeout-minutes: 150
+    # STILL ADVISORY: a failed stress run does not block the release — the job
+    # shows a red X with its failure tables, but the workflow (and the caller's
     # release-docker gate) passes.
+    #
+    # This is scheduled to come off once the scaling-ratio bounds are re-based:
+    # the two `Pagination full walk` steps currently sit at 13.0x against a
+    # bound of 15, so enforcing today would block PRs on ~13% headroom. Until
+    # then, note that nothing surfaces a failure anywhere except the run page —
+    # the LEGACY leg was red for three weeks before anyone noticed.
     continue-on-error: true
-    # One leg per migration mode. The suite has always run the core in its
-    # default LEGACY mode; the MIGRATED leg deploys a fresh core directly in
-    # MIGRATED (no backfill needed on an empty DB) so the migrated-schema read
-    # paths (app_id_to_user_id / recipe_user_tenants) are exercised at scale
-    # too. The legs run as independent parallel jobs — each on its own runner,
-    # within the current single-run envelope — and fail-fast is off so a red
-    # (e.g. expected-to-time-out) MIGRATED leg never cancels the LEGACY one.
+    # MIGRATED only. The suite historically ran the core in its default LEGACY
+    # mode; the LEGACY leg is being retired along with legacy migration mode
+    # itself, and it had failed every run since 2026-08-12 on a scaling-ratio
+    # assertion that is a true statement about the legacy schema (the
+    # all_auth_recipe_users count path is a full scan: 855ms mean at 1M) rather
+    # than a fixable bug. MIGRATED exercises the migrated-schema read paths
+    # (app_id_to_user_id / recipe_user_tenants), which is what deployments
+    # actually run after migration. Kept as a matrix so another mode can be
+    # added back with one line; fail-fast off so a future second leg's failure
+    # never cancels this one.
+    #
+    # The mode is an input because this job tests a PUBLISHED image, not the
+    # checked-out source — so it can be dispatched from here against any release
+    # line's dev image. Pre-12.0 images have no migration feature at all: there
+    # is no GET /migration/mode for the suite's startup guard to confirm, and
+    # asking for MIGRATED against one fails in the first minute. Dispatch those
+    # with ["LEGACY"], which the guard tolerates on purpose for exactly this
+    # case (an absent endpoint when LEGACY is expected is a pre-migration image
+    # behaving normally).
     strategy:
       fail-fast: false
       matrix:
-        mode: [LEGACY, MIGRATED]
+        mode: ${{ fromJSON(inputs.modes) }}
     name: stress-tests (${{ matrix.mode }})
     steps:
       - uses: actions/checkout@v5
+
+      - name: Derive the results artifact name
+        id: artifact
+        # The baseline artifact is both written and read by name, and the name
+        # used to be the migration mode alone. That was fine while every run
+        # came from one release line, but this job tests a PUBLISHED image, so a
+        # 12.1 run and a 12.2 run would write the same artifact name and then
+        # compare against each other — silently mixing release lines into one
+        # trend. Qualify it with the tag so each line keeps its own baselines.
+        env:
+          TAG: ${{ inputs.tag }}
+          MODE: ${{ matrix.mode }}
+        run: |
+          # Artifact names may not contain " : < > | * ? \ / — publish-dev-docker
+          # already slash-sanitises branch names, but a dispatch can pass
+          # anything, so normalise here too.
+          safe_tag=$(printf '%s' "$TAG" | tr '"/\\:<>|*?' '_')
+          echo "name=stress-test-stats-${safe_tag}-${MODE}" >> "$GITHUB_OUTPUT"
+          echo "Baselines for this run: stress-test-stats-${safe_tag}-${MODE}"
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '20'
       - name: Install dependencies
+        # `npm install`, because there is no lockfile to install from:
+        # stress-tests/.gitignore:6 ignores package-lock.json, so a fresh
+        # checkout has none and both `npm ci` and setup-node's npm cache fail
+        # outright ("Dependencies lock file is not found").
+        #
+        # This is a real gap for a benchmark — `npm install` can resolve newer
+        # transitive versions between runs, so the comparison table measures
+        # dependency drift alongside core changes. Fixing it properly means
+        # committing a lockfile (un-ignoring it and regenerating it against the
+        # current package.json, which pins supertokens-node exactly but leaves
+        # the rest on carets), which is a deliberate repo-policy change rather
+        # than something to slip into a CI patch.
         run: |
           cd stress-tests
           npm install
@@ -54,9 +129,13 @@ jobs:
         # this leg's mode.
         env:
           SUPERTOKENS_MIGRATION_MODE: ${{ matrix.mode }}
+        # --wait blocks until the healthchecks pass. Without it `up -d` returns
+        # as soon as the containers are created and the suite can start against
+        # a core that is not serving yet; `depends_on` only orders the
+        # containers relative to each other, it does not gate this step.
         run: |
           cd stress-tests
-          docker compose up -d
+          docker compose up -d --wait
       - name: Generate user jsons
         run: |
           cd stress-tests
@@ -68,6 +147,9 @@ jobs:
         # mode; the suite also asserts the core actually came up in this mode.
         env:
           STRESS_TEST_MIGRATION_MODE: ${{ matrix.mode }}
+          # Recorded inside stats.json so a downloaded baseline says which image
+          # produced it without anyone having to decode the artifact name.
+          STRESS_TEST_IMAGE_TAG: ${{ inputs.tag }}
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
@@ -78,12 +160,22 @@ jobs:
             echo "stats.json not found — the run produced no measurements." >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
-          echo "## Stress Test Results — ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
-          echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
+          echo "## Stress Test Results — image \`${{ inputs.tag }}\`, ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
+          # Harness identity, so a reader can tell at a glance whether two runs
+          # measured the same thing the same way. The version is bumped by hand
+          # when the MEANING of a number changes; the fingerprint is a hash of
+          # the step titles, so it moves on its own when steps are added/removed.
+          hv=$(jq -r '.harnessVersion // 1' stress-tests/stats.json)
+          fp=$(jq -r '.stepFingerprint // "unknown"' stress-tests/stats.json)
+          echo "Measurement harness: **v${hv}**, step fingerprint \`${fp}\`. Runs only compare cleanly against baselines with the same pair." >> $GITHUB_STEP_SUMMARY
+          echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run. Steps marked \`n=\` are a mean over that many operations (~10s window) rather than a single sample." >> $GITHUB_STEP_SUMMARY
           echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|---------------|------|-----------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+          # Status must include the ratio verdict: an over-ratio step fails the
+          # run, but Status used to read only the duration budget, so the row
+          # rendered "✅ OK" on the exact steps that turned the job red.
+          jq -r '.measurements[] | "| \(.title) | \(.formatted)\(if .iterations then " (n=\(.iterations))" else "" end) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" elif .ratioOverBound then "⚠️ OVER RATIO" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
 
       - name: Display pg_stat_statements summary
         if: always()
@@ -92,7 +184,69 @@ jobs:
             cat stress-tests/pg-stats-summary.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Display comparison with previous runs
+      - name: Collate baselines and compare versions
+        if: always()
+        # The suite's own gates are within-run: each step is measured at 100k and
+        # at 1M and the RATIO is asserted against a scaling-class bound. That
+        # catches a step that starts scaling with the dataset and is blind to
+        # "this release is slower than the last one on the same step at the same
+        # size" — which is the question a release actually has to answer.
+        #
+        # This step answers it from historical artifacts: for each requested tag
+        # it pulls the newest stats.json that a previous run of that tag
+        # uploaded, and renders one column per tag. Nothing is re-run and no
+        # second image is booted — the comparison costs one API call per tag.
+        #
+        # Best-effort by construction: a tag with no recorded run yet simply has
+        # no column, and the whole step is continue-on-error so a comparison
+        # problem never colours a run that measured fine.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASELINES: ${{ inputs.baselines }}
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          cd stress-tests
+          [ -f stats.json ] || exit 0
+          mkdir -p baselines
+          echo '[]' > baselines/manifest.json
+
+          # One entry per requested tag, resolved to that tag's newest artifact.
+          # Same sanitisation as the artifact-name step: the name is the join
+          # key, so the two must agree character for character.
+          # Resolved up front rather than in the pipeline, so a malformed
+          # `baselines` input degrades to "no baselines" instead of failing the
+          # step under `set -o pipefail`.
+          tags=$(echo "$BASELINES" | jq -r '.[]' 2>/dev/null || true)
+          echo "$tags" | while read -r tag; do
+            # `if` rather than `[ ... ] && continue`, which under `set -e` exits
+            # the shell on the iterations where the test is false.
+            if [ -z "$tag" ]; then continue; fi
+            safe_tag=$(printf '%s' "$tag" | tr '"/\\:<>|*?' '_')
+            name="stress-test-stats-${safe_tag}-${MODE}"
+            meta=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=1" \
+              --jq '[.artifacts[] | select(.expired == false)][0] | select(. != null) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' 2>/dev/null || true)
+            if [ -z "$meta" ]; then
+              echo "No baseline artifact for tag '${tag}' (looked for ${name})"
+              continue
+            fi
+            id=$(printf '%s' "$meta" | cut -f1)
+            created=$(printf '%s' "$meta" | cut -f2)
+            branch=$(printf '%s' "$meta" | cut -f3)
+            dir="baselines/${safe_tag}"
+            mkdir -p "$dir"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "${dir}.zip" || continue
+            unzip -o -d "$dir" "${dir}.zip" > /dev/null || continue
+            jq --arg label "$tag" --arg tag "$tag" --arg dir "$dir" \
+               --arg createdAt "$created" --arg branch "$branch" \
+               '. + [{label: $label, tag: $tag, dir: $dir, createdAt: $createdAt, branch: $branch}]' \
+               baselines/manifest.json > baselines/manifest.next && mv baselines/manifest.next baselines/manifest.json
+          done
+
+          node scripts/compare-baselines.mjs stats.json baselines/manifest.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Display comparison with previous runs of this same tag
         if: always()
         # Comparison is best-effort — never fail the run over it.
         continue-on-error: true
@@ -104,9 +258,10 @@ jobs:
           mkdir -p prev-stats
           # Artifacts are listed repo-wide, newest first; the current run has not
           # uploaded its artifact yet, so these are the previous five runs. The
-          # name is mode-specific so a leg only ever compares against prior runs
-          # of the same migration mode (the two legs must never cross-compare).
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=stress-test-stats-${{ matrix.mode }}&per_page=5" \
+          # name carries both the image tag and the migration mode, so a run only
+          # ever compares against prior runs of the SAME release line in the SAME
+          # mode — neither the two modes nor two release lines may cross-compare.
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${{ steps.artifact.outputs.name }}&per_page=5" \
             --jq '.artifacts[] | select(.expired == false) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' \
             > artifact-list.tsv || true
           i=0
@@ -122,7 +277,9 @@ jobs:
           [ -f prev-stats/1/stats.json ] || exit 0
           {
             echo ""
-            echo "### Comparison with previous runs (${{ matrix.mode }} mode)"
+            echo "### Run-to-run history for this tag (${{ inputs.tag }}, ${{ matrix.mode }} mode)"
+            echo ""
+            echo "_Same image tag, earlier runs — this is the runner-noise view. The version comparison above is the release-to-release view._"
             header="| Test | This run |"
             sep="|------|----------|"
             for n in 1 2 3 4 5; do
@@ -160,13 +317,29 @@ jobs:
             echo "_(±% is this run relative to that run — positive means this run was slower)_"
           } >> $GITHUB_STEP_SUMMARY
 
-      # No `if: always()` here on purpose: only successful runs become
-      # comparison baselines — a failed run's timings are tainted.
+      # `if: always()`, deliberately. This used to be success-only, on the
+      # reasoning that a failed run's timings are tainted — but the job has been
+      # failing on scaling-ratio bounds for weeks at a stretch, and success-only
+      # upload turns that into baseline starvation: the tag with the most
+      # failures is the tag with no history to compare against, which is exactly
+      # backwards. Only one of the three cross-line runs produced a baseline at
+      # all.
+      #
+      # Tainted is not the same as useless, and it is recoverable information:
+      # stats.json already records per-step `failed`/`timedOut`/`afterFailure`,
+      # so the comparison step reads a failed step as "no value here" and a step
+      # that ran after an earlier failure as "shown, but never flagged as a
+      # regression". Uploading the run and marking it beats not having it.
       - name: Upload stats for future comparisons
+        if: always()
         uses: actions/upload-artifact@v6
         with:
-          # Per-mode name: keeps the two legs' baselines separate (the
-          # comparison step only pulls same-mode artifacts) and keeps the two
-          # matrix legs from clashing on a single artifact name within a run.
-          name: stress-test-stats-${{ matrix.mode }}
+          # The suite writes stats.json even when it dies mid-run, but a failure
+          # BEFORE the suite starts (compose, npm install) leaves no file — that
+          # is not an upload error.
+          if-no-files-found: ignore
+          # Tag + mode qualified: keeps each release line's baselines separate
+          # (the comparison step only pulls artifacts matching this exact name)
+          # and keeps concurrent matrix legs from clashing within a run.
+          name: ${{ steps.artifact.outputs.name }}
           path: stress-tests/stats.json

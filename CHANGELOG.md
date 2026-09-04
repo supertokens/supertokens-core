@@ -7,6 +7,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Stress tests now run the MIGRATED migration mode only (the LEGACY leg is retired with legacy mode), under an
+  explicit job timeout, with pinned service images so run-to-run comparisons are not moved by Postgres drift
+- Stress-test summary: the Status column now reflects a scaling-ratio breach (it previously showed OK on the very
+  steps that failed the run), and sub-second measurements are reported in ms instead of collapsing to "0s"
+- The 1M-user stress suite now measures the session read paths (verify, refresh, and session-handle lookup on
+  both the hit and the miss path), all held to the O(1) scaling bound
+- New session-concurrency CI probe: ~2 minutes of create/verify/refresh against a deliberately small connection
+  pool, gating on the Hikari `connectionTimeout` wall so pool-contention defects are caught in CI rather than in
+  production
+- Stress-test baselines are now qualified by image tag as well as migration mode, so runs against different
+  release lines keep separate trend histories instead of comparing against each other
+- Sub-second stress-test steps are now measured as a mean over a ~10s window of repeated operations instead of
+  a single sample, so a step's recorded time reflects the step rather than runner noise (a flat step previously
+  came out at 21.6x against a bound of 15 on one run and passed on the next)
+- Stress-test summary now includes a version comparison: for each requested image tag it pulls the newest
+  recorded run of that tag and shows the per-step delta, flagging anything a configurable margin slower. The
+  measurement harness version and step fingerprint are shown alongside, and a baseline produced by a different
+  harness is marked as not comparable rather than silently compared against
+- Stress-test runs now upload their stats as a comparison baseline even when the run failed. Success-only upload
+  starved exactly the tags that fail most; a failed run is instead read step by step — a failed step contributes
+  no value and a step that ran after an earlier failure is shown but never flagged as a regression
+
 
 ## [12.2.0]
 

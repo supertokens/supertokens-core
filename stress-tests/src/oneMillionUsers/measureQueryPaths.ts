@@ -6,7 +6,7 @@ import AccountLinking from 'supertokens-node/recipe/accountlinking';
 import Multitenancy from 'supertokens-node/recipe/multitenancy';
 import UserRoles from 'supertokens-node/recipe/userroles';
 
-import { measureTime, getCheckpoint, runStep } from '../common/utils';
+import { measureRepeated, measureTime, getCheckpoint, runStep } from '../common/utils';
 import { generateBase32Secret, totpForCounter, currentCounter } from '../common/totp';
 
 // Number of used TOTP codes to seed for the dedicated TOTP user before the
@@ -14,6 +14,10 @@ import { generateBase32Secret, totpForCounter, currentCounter } from '../common/
 // a distinct, self-minted valid code for a past time-step within the device
 // skew window, so it lands as a distinct row in the used-codes table.
 const TOTP_USED_CODES_TO_SEED = Number(process.env.STRESS_TEST_TOTP_USED_CODES ?? '3000') || 3000;
+
+// Distinct third-party fixtures the repeated sign-in step rotates over, so the
+// measurement is a lookup rather than a hot single row.
+const TP_FIXTURE_POOL = 10;
 
 const randomString = (len: number, chars = 'abcdefghijklmnopqrstuvwxyz'): string =>
   Array(len)
@@ -148,8 +152,11 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
   const extraTenantId = 'stressextra';
 
   // --- Dashboard-style user search (survey G1: leading-wildcard ILIKE search) ---
+  // The three dashboard searches are repeated rather than sampled once: each is
+  // well under a second, and the query is held identical across iterations
+  // because here the query shape is the subject of the measurement.
   await runStep(() =>
-    measureTime('Dashboard search by email prefix', async () => {
+    measureRepeated('Dashboard search by email prefix', async () => {
       await SuperTokens.getUsersNewestFirst({
         tenantId: 'public',
         limit: 100,
@@ -158,7 +165,7 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
     })
   );
   await runStep(() =>
-    measureTime('Dashboard search by provider', async () => {
+    measureRepeated('Dashboard search by provider', async () => {
       await SuperTokens.getUsersNewestFirst({
         tenantId: 'public',
         limit: 100,
@@ -167,7 +174,7 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
     })
   );
   await runStep(() =>
-    measureTime('Dashboard search by email + provider', async () => {
+    measureRepeated('Dashboard search by email + provider', async () => {
       await SuperTokens.getUsersNewestFirst({
         tenantId: 'public',
         limit: 100,
@@ -178,23 +185,31 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
 
   // --- Third-party sign-in for an existing user (survey A1 / T1a: lookup by
   // thirdPartyId + thirdPartyUserId with no value index) ---
+  //
+  // A pool of fixtures rather than one, because the measured call is a point
+  // lookup: repeating it against a single row would measure a hot row rather
+  // than the lookup path.
   await runStep(async () => {
-    const tpUserId = randomString(32);
-    const tpEmail = randomEmail();
-    const created = await ThirdParty.manuallyCreateOrUpdateUser(
-      'public',
-      'google',
-      tpUserId,
-      tpEmail,
-      true
-    );
-    warnIfNotOk('third-party fixture create', created);
-    await measureTime('Third-party sign-in for existing user', async () => {
+    const fixtures: Array<{ id: string; email: string }> = [];
+    for (let i = 0; i < TP_FIXTURE_POOL; i++) {
+      const fixture = { id: randomString(32), email: randomEmail() };
+      const created = await ThirdParty.manuallyCreateOrUpdateUser(
+        'public',
+        'google',
+        fixture.id,
+        fixture.email,
+        true
+      );
+      warnIfNotOk('third-party fixture create', created);
+      fixtures.push(fixture);
+    }
+    await measureRepeated('Third-party sign-in for existing user', async (i) => {
+      const fixture = fixtures[Math.abs(i) % fixtures.length]!;
       const res = await ThirdParty.manuallyCreateOrUpdateUser(
         'public',
         'google',
-        tpUserId,
-        tpEmail,
+        fixture.id,
+        fixture.email,
         true
       );
       warnIfNotOk('third-party sign-in', res);
@@ -244,7 +259,9 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
   await runStep(async () => {
     const primary = await makeLinkedUser();
     const standalone = await signUpEp();
-    await measureTime('canLinkAccounts precheck', async () => {
+    // Read-only precheck, so it repeats against the same pair — the pair is
+    // the point of the step (a row-constructor IN against the PK).
+    await measureRepeated('canLinkAccounts precheck', async () => {
       const res = await AccountLinking.canLinkAccounts(
         SuperTokens.convertToRecipeUserId(standalone.recipeUserId),
         primary.primaryUserId
@@ -277,13 +294,13 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
   // --- Active-users counts (survey U3 / U4: MAU aggregate). since=0 counts all
   // active users; a recent window exercises the index-range variant. ---
   await runStep(() =>
-    measureTime('Active users count', async () => {
+    measureRepeated('Active users count', async () => {
       const res = await coreFetch(deployment, '/users/count/active', { query: { since: '0' } });
       warnIfNotOk('active users count (all)', res);
     })
   );
   await runStep(() =>
-    measureTime('Active users count (with more-than-one-login-method window)', async () => {
+    measureRepeated('Active users count (with more-than-one-login-method window)', async () => {
       const since = String(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const res = await coreFetch(deployment, '/users/count/active', { query: { since } });
       warnIfNotOk('active users count (30d)', res);
@@ -303,7 +320,9 @@ export const measureQueryPaths = async (deployment: any): Promise<void> => {
   // large role (survey R1: unpaginated materialized list; unbounded delete).
   // Every bulk-imported user carries role1 and role2. ---
   await runStep(() =>
-    measureTime('List users for role (large share)', async () => {
+    // The step that flapped at 21.6x against a bound of 15 on one run and
+    // passed on the next: exactly the noise a repeated mean is meant to settle.
+    measureRepeated('List users for role (large share)', async () => {
       const res = await UserRoles.getUsersThatHaveRole('public', 'role1');
       warnIfNotOk('getUsersThatHaveRole', res);
     })

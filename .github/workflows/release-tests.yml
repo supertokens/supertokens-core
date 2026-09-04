@@ -277,6 +277,17 @@ jobs:
         run: |
           echo "TAG=$(echo "$BRANCH_NAME" | sed 's/\//_/g')" >> "$GITHUB_OUTPUT"
 
+  # ── Session concurrency probe (uses the published Docker image) ───
+  # ~2 minutes against a deliberately small connection pool. Unlike the stress
+  # suite this one gates: its thresholds are deterministic and hugely margined,
+  # so a failure is a real pool/concurrency defect rather than a slow runner.
+  session-concurrency:
+    name: Session concurrency
+    needs: [test, wait-for-docker]
+    uses: ./.github/workflows/session-concurrency.yml
+    with:
+      tag: ${{ needs.wait-for-docker.outputs.tag }}
+
   # ── Stress tests (uses the published Docker image) ────────────────
   stress-tests:
     name: Stress tests
