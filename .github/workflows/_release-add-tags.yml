@@ -111,21 +111,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          repo="supertokens/supertokens-plugin-interface"
           if [ "${{ inputs.is-canary }}" == "true" ]; then
             tag="v${{ inputs.plugin-interface-version }}-canary"
-            gh release create "$tag" \
-              --repo supertokens/supertokens-plugin-interface \
-              --title "$tag" \
-              --target "${{ inputs.plugin-interface-sha }}" \
-              --generate-notes \
-              --prerelease \
-              --latest=false
+            extra=(--target "${{ inputs.plugin-interface-sha }}" --prerelease --latest=false)
           else
-            gh release create "v${{ inputs.plugin-interface-version }}" \
-              --repo supertokens/supertokens-plugin-interface \
-              --title "v${{ inputs.plugin-interface-version }}" \
-              --generate-notes \
-              ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }}
+            tag="v${{ inputs.plugin-interface-version }}"
+            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+          fi
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
+          else
+            gh release create "$tag" --repo "$repo" --title "$tag" --generate-notes "${extra[@]}"
           fi
 
       - name: Tag postgresql-plugin
@@ -140,21 +137,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          repo="supertokens/supertokens-postgresql-plugin"
           if [ "${{ inputs.is-canary }}" == "true" ]; then
             tag="v${{ inputs.postgresql-plugin-version }}-canary"
-            gh release create "$tag" \
-              --repo supertokens/supertokens-postgresql-plugin \
-              --title "$tag" \
-              --target "${{ inputs.postgresql-sha }}" \
-              --generate-notes \
-              --prerelease \
-              --latest=false
+            extra=(--target "${{ inputs.postgresql-sha }}" --prerelease --latest=false)
           else
-            gh release create "v${{ inputs.postgresql-plugin-version }}" \
-              --repo supertokens/supertokens-postgresql-plugin \
-              --title "v${{ inputs.postgresql-plugin-version }}" \
-              --generate-notes \
-              ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }}
+            tag="v${{ inputs.postgresql-plugin-version }}"
+            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+          fi
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
+          else
+            gh release create "$tag" --repo "$repo" --title "$tag" --generate-notes "${extra[@]}"
           fi
 
       - name: Tag core
@@ -171,19 +165,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          repo="supertokens/supertokens-core"
           if [ "${{ inputs.is-canary }}" == "true" ]; then
             tag="v${{ inputs.core-version }}-canary"
-            gh release create "$tag" \
-              --repo supertokens/supertokens-core \
-              --title "$tag" \
-              --target "${{ inputs.core-sha }}" \
-              --generate-notes \
-              --prerelease \
-              --latest=false
+            extra=(--target "${{ inputs.core-sha }}" --prerelease --latest=false)
           else
-            gh release create "v${{ inputs.core-version }}" \
-              --repo supertokens/supertokens-core \
-              --title "v${{ inputs.core-version }}" \
-              --generate-notes \
-              ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }}
+            tag="v${{ inputs.core-version }}"
+            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+          fi
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
+          else
+            gh release create "$tag" --repo "$repo" --title "$tag" --generate-notes "${extra[@]}"
           fi
