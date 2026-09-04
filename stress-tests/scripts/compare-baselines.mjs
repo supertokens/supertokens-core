@@ -14,6 +14,13 @@
  * and a baseline that disagrees with the current run on either is still shown
  * but marked: its deltas are measuring a harness change as well as a core one.
  *
+ * Failed runs are uploaded as baselines too, because success-only upload starves
+ * exactly the tags that need a history most. They are read at step granularity
+ * rather than trusted or discarded wholesale: a step that failed or timed out
+ * contributes no value, and a step that ran *after* an earlier failure in the
+ * same run is shown but never flagged as a regression, since the failure may be
+ * what made it slow.
+ *
  * Input is a manifest describing what was downloaded; the workflow builds it.
  *   node scripts/compare-baselines.mjs <current stats.json> <manifest.json>
  * Manifest entries: { label, tag, dir, createdAt?, branch?, runUrl? }
@@ -80,6 +87,18 @@ const curFingerprint = current.stepFingerprint ?? null;
 const comparable = (b) =>
   b.harnessVersion === curVersion && (!curFingerprint || b.stepFingerprint === curFingerprint);
 
+/**
+ * One-cell summary of how healthy the run that produced these numbers was.
+ * Failed runs are usable step by step; this says at a glance how much of the
+ * column to trust before reading any single delta out of it.
+ */
+const health = (measurements) => {
+  const failed = measurements.filter((m) => m.failed || m.timedOut).length;
+  const tainted = measurements.filter((m) => m.afterFailure).length;
+  if (failed === 0) return '✅ clean';
+  return `⚠️ ${failed} failed${tainted ? `, ${tainted} tainted` : ''}`;
+};
+
 const pct = (cur, prev) => ((cur - prev) / prev) * 100;
 const fmtPct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 
@@ -95,12 +114,12 @@ out.push(
 out.push('');
 
 // --- baseline legend -------------------------------------------------------
-out.push(`| Column | Image tag | Recorded | Branch | Harness | Comparable |`);
-out.push(`|--------|-----------|----------|--------|---------|------------|`);
+out.push(`| Column | Image tag | Recorded | Branch | Harness | Health | Comparable |`);
+out.push(`|--------|-----------|----------|--------|---------|--------|------------|`);
 out.push(
   `| **This run** | \`${current.imageTag ?? process.env.STRESS_TEST_IMAGE_TAG ?? '—'}\` | now | ${
     process.env.GITHUB_REF_NAME ?? '—'
-  } | v${curVersion} / \`${curFingerprint ?? '—'}\` | — |`
+  } | v${curVersion} / \`${curFingerprint ?? '—'}\` | ${health(current.measurements)} | — |`
 );
 for (const b of baselines) {
   const why = [];
@@ -109,9 +128,9 @@ for (const b of baselines) {
   out.push(
     `| ${b.label} | \`${b.stats.imageTag ?? b.tag}\` | ${(b.createdAt ?? '').slice(0, 10) || '—'} | ${
       b.branch || '—'
-    } | v${b.harnessVersion} / \`${b.stepFingerprint ?? '—'}\` | ${
-      why.length === 0 ? '✅ yes' : `⚠️ ${why.join(', ')}`
-    } |`
+    } | v${b.harnessVersion} / \`${b.stepFingerprint ?? '—'}\` | ${health(
+      b.stats.measurements
+    )} | ${why.length === 0 ? '✅ yes' : `⚠️ ${why.join(', ')}`} |`
   );
 }
 out.push('');
@@ -138,20 +157,35 @@ for (const m of current.measurements) {
       continue;
     }
     if (prev.failed || prev.timedOut) {
-      cells.push(`${prev.formatted ?? '—'} (failed)`);
+      // No usable value: a failed step's recorded time is its budget, and a
+      // timed-out step's true duration is unknown by definition.
+      cells.push(prev.timedOut ? '⏱️ timed out' : '❌ failed');
       continue;
     }
     const delta = pct(m.ms, prev.ms);
+    // Only a clean, comparable observation on BOTH sides may raise a flag. A
+    // step that ran after an earlier failure — on either side — may have been
+    // slowed by that failure rather than by the code, so it is tabulated and
+    // left unflagged rather than reported as a regression nobody can act on.
     const flag =
-      comparable(b) && prev.ms >= MIN_COMPARABLE_MS && delta >= REGRESSION_PCT ? ' 🔻' : '';
-    cells.push(`${prev.formatted ?? `${Math.round(prev.ms)}ms`} (${fmtPct(delta)})${flag}`);
+      comparable(b) &&
+      !prev.afterFailure &&
+      !m.afterFailure &&
+      prev.ms >= MIN_COMPARABLE_MS &&
+      delta >= REGRESSION_PCT
+        ? ' 🔻'
+        : '';
+    const taint = prev.afterFailure ? ' ⚑' : '';
+    cells.push(`${prev.formatted ?? `${Math.round(prev.ms)}ms`} (${fmtPct(delta)})${taint}${flag}`);
     if (flag) regressions.push({ title: m.title, label: b.label, delta, prev, cur: m });
   }
   out.push(`| ${cells.join(' | ')} |`);
 }
 out.push('');
 out.push(
-  `_\`n=\` is the number of operations averaged for that step; steps without it are a single sample. 🔻 marks ≥${REGRESSION_PCT}% slower than a comparable baseline._`
+  `_\`n=\` is the number of operations averaged for that step; steps without it are a single sample. ` +
+    `🔻 marks ≥${REGRESSION_PCT}% slower than a comparable baseline. ` +
+    `⚑ marks a baseline value recorded after an earlier failure in that run — shown, but never flagged._`
 );
 
 // --- the headline ----------------------------------------------------------

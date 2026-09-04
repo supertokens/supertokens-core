@@ -25,6 +25,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   recorded run of that tag and shows the per-step delta, flagging anything a configurable margin slower. The
   measurement harness version and step fingerprint are shown alongside, and a baseline produced by a different
   harness is marked as not comparable rather than silently compared against
+- Stress-test runs now upload their stats as a comparison baseline even when the run failed. Success-only upload
+  starved exactly the tags that fail most; a failed run is instead read step by step — a failed step contributes
+  no value and a step that ran after an earlier failure is shown but never flagged as a regression
 
 
 ## [12.2.0]
