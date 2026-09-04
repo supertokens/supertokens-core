@@ -234,6 +234,13 @@ interface Measurement {
   afterFailure?: boolean;
 }
 
+/** Per-step repeat metadata for steps measured with measureRepeated. */
+export interface RepeatInfo {
+  iterations: number;
+  totalMs: number;
+  p95Ms: number;
+}
+
 export class StatsCollector {
   private static instance: StatsCollector;
   private measurements: Measurement[] = [];
@@ -249,6 +256,13 @@ export class StatsCollector {
 
   private anyPriorFailure(): boolean {
     return this.measurements.some((m) => m.failed);
+  }
+
+  private repeatInfo: Map<string, RepeatInfo> = new Map();
+
+  /** Attach repeat metadata for a step measured with measureRepeated. */
+  public addRepeatInfo(title: string, info: RepeatInfo) {
+    this.repeatInfo.set(title, info);
   }
 
   public addMeasurement(title: string, timeMs: number) {
@@ -282,6 +296,11 @@ export class StatsCollector {
     return this.measurements;
   }
 
+  /** Repeat metadata for a step, or undefined if it was a single sample. */
+  public getRepeatInfo(title: string): RepeatInfo | undefined {
+    return this.repeatInfo.get(title);
+  }
+
   public writeToFile(extra: Record<string, unknown> = {}) {
     const ratios = RatioCollector.getInstance();
     const formattedMeasurements = this.measurements.map((measurement) => {
@@ -301,6 +320,9 @@ export class StatsCollector {
         failureReason: measurement.failureReason,
         afterFailure: measurement.afterFailure === true,
         status,
+        // Present only for repeated steps: `ms` above is then the per-operation
+        // mean over `iterations` samples, not a single observation.
+        ...(this.repeatInfo.get(measurement.title) ?? {}),
       };
       // Merge in the two-size scaling ratio for steps measured at both sizes so
       // the summary table can show small/large/ratio columns per step.
@@ -331,6 +353,14 @@ export class StatsCollector {
     const stats = {
       measurements: formattedMeasurements,
       timestamp: new Date().toISOString(),
+      // Comparability metadata — see HARNESS_VERSION. The comparison step reads
+      // these off each baseline and flags any that do not match this run.
+      harnessVersion: HARNESS_VERSION,
+      stepFingerprint: stepFingerprint(formattedMeasurements.map((m) => m.title)),
+      // Which published image produced these numbers. The artifact name already
+      // encodes it, but the artifact name is not inside the file, and a baseline
+      // is read long after it was downloaded — so record it here too.
+      imageTag: process.env.STRESS_TEST_IMAGE_TAG,
       ...extra,
     };
     fs.writeFileSync('stats.json', JSON.stringify(stats, null, 2));
@@ -485,6 +515,47 @@ export const STEP_SCALE_CLASS: Record<string, ScaleClass> = {
 export const DEFAULT_RATIO_BOUNDS: Record<ScaleClass, number> = { 'O(1)': 3, 'O(n)': 15 };
 export const DEFAULT_RATIO_FLOOR_MS = 50;
 
+/**
+ * Harness identity, written into stats.json and shown in the comparison table.
+ *
+ * `HARNESS_VERSION` is manual: bump it whenever a change alters what the
+ * numbers MEAN even though the step titles are unchanged — switching a step
+ * from a single call to a repeated mean is exactly that. `stepFingerprint` is
+ * automatic: a hash of the measured step titles, so adding or removing a step
+ * invalidates comparability without anyone having to remember.
+ *
+ * A baseline whose version or fingerprint differs from the current run is still
+ * shown, but flagged: the deltas against it are not apples-to-apples.
+ */
+export const HARNESS_VERSION = 2;
+
+export const stepFingerprint = (titles: string[]): string => {
+  const canonical = [...titles].sort().join('\u0000');
+  // djb2 — no crypto import needed and collisions do not matter here; this only
+  // has to notice that the step set changed.
+  let h = 5381;
+  for (let i = 0; i < canonical.length; i++) h = ((h << 5) + h + canonical.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+};
+
+/**
+ * Repeated measurement. A step that issues one request lands in the tens of
+ * milliseconds, where a single sample is mostly runner noise — which is how a
+ * genuinely flat step came out at 21.6x against a bound of 15 on one run and
+ * passed on the next. Repeating it until the measured window is ~10s turns the
+ * recorded value into a mean over hundreds of samples, which is stable enough
+ * to compare across runs and versions.
+ *
+ * Sized automatically from a short calibration burst, so the count adapts to
+ * the step and to the runner instead of being hard-coded per step.
+ */
+export const REPEAT_TARGET_MS =
+  Number(process.env.STRESS_TEST_REPEAT_TARGET_MS ?? '10000') || 10_000;
+export const REPEAT_MAX_ITERATIONS =
+  Number(process.env.STRESS_TEST_REPEAT_MAX_ITERATIONS ?? '20000') || 20_000;
+const REPEAT_CALIBRATION_ITERATIONS = 3;
+const REPEAT_MIN_ITERATIONS = 5;
+
 const ratioFloorMs = (): number =>
   Number(process.env.STRESS_TEST_RATIO_FLOOR_MS ?? String(DEFAULT_RATIO_FLOOR_MS)) ||
   DEFAULT_RATIO_FLOOR_MS;
@@ -541,8 +612,19 @@ export class RatioCollector {
   // meaningful scaling ratio — the failed side can't be scaled against a good
   // one — so it is reported as n/a rather than pass/fail (issue #1346).
   private failedSides: Map<string, Set<CheckpointSize>> = new Map();
+  // Steps measured as a mean over many samples. The ratio floor exists to stop
+  // a noisy single-millisecond reading producing an enormous ratio; a mean over
+  // hundreds of samples does not need that protection, and applying the floor
+  // to it actively distorts the result (flooring a real 5ms mean to 50ms makes
+  // a flat step look like it improved 10x with scale).
+  private repeated: Set<string> = new Set();
 
   private constructor() {}
+
+  /** Mark a step as measured by repetition, so the ratio floor is not applied. */
+  public markRepeated(title: string) {
+    this.repeated.add(title);
+  }
 
   public static getInstance(): RatioCollector {
     if (!RatioCollector.instance) {
@@ -573,7 +655,7 @@ export class RatioCollector {
   public resultFor(title: string): RatioResult | undefined {
     const entry = this.data.get(title);
     if (!entry || entry.small === undefined || entry.large === undefined) return undefined;
-    const floorMs = ratioFloorMs();
+    const floorMs = this.repeated.has(title) ? 0 : ratioFloorMs();
     const small = Math.max(entry.small, floorMs);
     const large = Math.max(entry.large, floorMs);
     const bound = boundFor(title);
@@ -759,7 +841,11 @@ const raceStepAgainstBudget = async <T>(
  */
 export const measureTime = async <T>(
   title: string,
-  fn: (signal: AbortSignal) => Promise<T>
+  fn: (signal: AbortSignal) => Promise<T>,
+  // Set by measureRepeated: the fn ran `iterations` operations, so the value
+  // recorded for budgets, ratios and the summary is the per-operation mean
+  // rather than the total elapsed.
+  repeat?: { iterations: number; p95Ms: number }
 ): Promise<T> => {
   const st = Date.now();
   const budgetMs = getStepBudgetMs(title);
@@ -795,11 +881,30 @@ export const measureTime = async <T>(
   }
 
   const et = Date.now();
-  const timeMs = et - st;
+  const elapsedMs = et - st;
+  // For a repeated step the comparable quantity is the per-operation mean; the
+  // total is kept alongside it so the summary can show how long the step ran.
+  // `iterations` is read after fn returned, so a window cut short by the abort
+  // signal divides by what it actually ran, not by what it planned to.
+  const repeatOps = repeat ? Math.max(1, repeat.iterations) : 1;
+  const timeMs = repeat ? elapsedMs / repeatOps : elapsedMs;
   const flag = timeMs > budgetMs ? ' [OVER BUDGET]' : '';
-  console.log(
-    `    ${title}${checkpointTag} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`
-  );
+  if (repeat) {
+    StatsCollector.getInstance().addRepeatInfo(title, {
+      iterations: repeatOps,
+      totalMs: elapsedMs,
+      p95Ms: repeat.p95Ms,
+    });
+    RatioCollector.getInstance().markRepeated(title);
+    console.log(
+      `    ${title}${checkpointTag} ${formatTime(timeMs)}/op mean over ${repeatOps} ops ` +
+        `(p95 ${formatTime(repeat.p95Ms)}, ${formatTime(elapsedMs)} total, budget ${formatTime(budgetMs)})${flag}`
+    );
+  } else {
+    console.log(
+      `    ${title}${checkpointTag} took ${formatTime(timeMs)} (budget ${formatTime(budgetMs)})${flag}`
+    );
+  }
   // Small checkpoint pass: record only into the ratio harness, so the 100k
   // measurements neither pollute the 1M summary/budget table nor trip 1M
   // budgets. Large pass and un-checkpointed seeding steps record into the
@@ -813,6 +918,91 @@ export const measureTime = async <T>(
     }
   }
   return result;
+};
+
+/**
+ * Measure a cheap operation by repeating it until the measured window is long
+ * enough to be stable (~REPEAT_TARGET_MS), recording the per-operation mean.
+ *
+ * `work` receives the iteration index and must vary its own input by it —
+ * hammering one row measures a warm cache, not the path we care about. The
+ * budget still applies to the whole window and the signal is honoured between
+ * iterations, so a step that becomes pathologically slow still aborts at its
+ * budget rather than running for the full iteration count.
+ *
+ * Sizing is adaptive and cheap. One unmeasured calibration op runs first; only
+ * if it comes back fast enough that a single sample would be noise are more
+ * calibration ops run to refine the estimate. A step whose single op already
+ * fills the target window gets `iterations = 1` and is recorded exactly as a
+ * plain `measureTime` step would be — repetition is for the sub-second steps,
+ * and an operation that takes seconds is already its own signal.
+ *
+ * The calibration ops are deliberately unmeasured: they both size the run and
+ * warm JIT and page cache, so the measured window is steady-state.
+ */
+export const measureRepeated = async (
+  title: string,
+  work: (iteration: number, signal: AbortSignal) => Promise<unknown>
+): Promise<void> => {
+  const noAbort = new AbortController().signal;
+  let calOps = 0;
+  const calStart = Date.now();
+  await work(-1, noAbort);
+  calOps = 1;
+  // Refine only when the first op was cheap enough that the extra ops are free
+  // next to the measured window we are about to run anyway.
+  if (Date.now() - calStart < REPEAT_TARGET_MS / 20) {
+    for (let i = 1; i < REPEAT_CALIBRATION_ITERATIONS; i++) {
+      await work(-1 - i, noAbort);
+      calOps++;
+    }
+  }
+  const perOpMs = Math.max((Date.now() - calStart) / calOps, 0.05);
+  const iterations = Math.min(
+    REPEAT_MAX_ITERATIONS,
+    Math.max(1, Math.round(REPEAT_TARGET_MS / perOpMs))
+  );
+
+  // Single-sample fallback: nothing to average, so record it the plain way and
+  // leave the ratio floor in place rather than claiming a stabilised mean.
+  if (iterations === 1) {
+    await measureTime(title, (signal) => work(0, signal));
+    return;
+  }
+
+  // Filled in by the loop and read by measureTime *after* fn resolves — the
+  // p95 does not exist until the window has run, and the iteration count is
+  // whatever the window actually completed.
+  const progress = { iterations: 0, p95Ms: 0 };
+  const samples: number[] = [];
+  await measureTime(
+    title,
+    async (signal) => {
+      const windowStart = Date.now();
+      for (let i = 0; i < iterations; i++) {
+        if (signal.aborted) break;
+        // Wall-clock cap. The iteration count comes from a 3-op calibration
+        // burst, so a step that is much slower under load than it was during
+        // calibration would otherwise run far past the target window and trip
+        // its budget as a false timeout. Whichever limit comes first wins,
+        // subject to a floor so a genuinely slow step still gets a few samples.
+        if (i >= REPEAT_MIN_ITERATIONS && Date.now() - windowStart >= REPEAT_TARGET_MS) break;
+        const t0 = Date.now();
+        await work(i, signal);
+        samples.push(Date.now() - t0);
+        progress.iterations = samples.length;
+      }
+      progress.p95Ms = percentile(samples, 0.95);
+    },
+    progress
+  );
+};
+
+const percentile = (values: number[], p: number): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1));
+  return sorted[idx]!;
 };
 
 /**
