@@ -23,7 +23,7 @@
  *
  * Input is a manifest describing what was downloaded; the workflow builds it.
  *   node scripts/compare-baselines.mjs <current stats.json> <manifest.json>
- * Manifest entries: { label, tag, dir, createdAt?, branch?, runUrl? }
+ * Manifest entries: { label, tag, mode?, dir, createdAt?, branch?, runUrl? }
  * Output: markdown on stdout.
  */
 import { readFileSync, existsSync } from 'fs';
@@ -83,6 +83,8 @@ if (baselines.length === 0) {
 
 const curVersion = current.harnessVersion ?? 1;
 const curFingerprint = current.stepFingerprint ?? null;
+const curMode = current.migrationMode ?? process.env.STRESS_TEST_MIGRATION_MODE ?? null;
+const baselineMode = (b) => b.stats.migrationMode ?? b.mode ?? null;
 
 const comparable = (b) =>
   b.harnessVersion === curVersion && (!curFingerprint || b.stepFingerprint === curFingerprint);
@@ -107,28 +109,36 @@ out.push('');
 out.push('### Version comparison');
 out.push('');
 out.push(
-  'Each column is the newest recorded run of that image tag, in the same migration mode. ' +
+  'Each column is the newest recorded run of that image tag, in the migration mode named beside it. ' +
     '±% is **this run relative to that one** — positive means this run was slower. ' +
     'This section informs; it does not gate the release.'
 );
 out.push('');
 
 // --- baseline legend -------------------------------------------------------
-out.push(`| Column | Image tag | Recorded | Branch | Harness | Health | Comparable |`);
-out.push(`|--------|-----------|----------|--------|---------|--------|------------|`);
+out.push(`| Column | Image tag | Mode | Recorded | Branch | Harness | Health | Comparable |`);
+out.push(`|--------|-----------|------|----------|--------|---------|--------|------------|`);
 out.push(
-  `| **This run** | \`${current.imageTag ?? process.env.STRESS_TEST_IMAGE_TAG ?? '—'}\` | now | ${
-    process.env.GITHUB_REF_NAME ?? '—'
-  } | v${curVersion} / \`${curFingerprint ?? '—'}\` | ${health(current.measurements)} | — |`
+  `| **This run** | \`${current.imageTag ?? process.env.STRESS_TEST_IMAGE_TAG ?? '—'}\` | ${
+    curMode ?? '—'
+  } | now | ${process.env.GITHUB_REF_NAME ?? '—'} | v${curVersion} / \`${curFingerprint ?? '—'}\` | ${health(current.measurements)} | — |`
 );
 for (const b of baselines) {
   const why = [];
   if (b.harnessVersion !== curVersion) why.push('harness version differs');
   if (curFingerprint && b.stepFingerprint !== curFingerprint) why.push('step set differs');
+  // A cross-mode baseline is a deliberate choice by whoever dispatched the run
+  // (see the "tag:MODE" form of the `baselines` input) — the only way to
+  // compare across the 12.0 boundary at all. It is never silently treated as
+  // like-for-like: MIGRATED and LEGACY are two schemas, so a delta against one
+  // carries the schema change as well as the version change.
+  if (baselineMode(b) && curMode && baselineMode(b) !== curMode) {
+    why.push(`different migration mode (${baselineMode(b)})`);
+  }
   out.push(
-    `| ${b.label} | \`${b.stats.imageTag ?? b.tag}\` | ${(b.createdAt ?? '').slice(0, 10) || '—'} | ${
-      b.branch || '—'
-    } | v${b.harnessVersion} / \`${b.stepFingerprint ?? '—'}\` | ${health(
+    `| ${b.label} | \`${b.stats.imageTag ?? b.tag}\` | ${baselineMode(b) ?? '—'} | ${
+      (b.createdAt ?? '').slice(0, 10) || '—'
+    } | ${b.branch || '—'} | v${b.harnessVersion} / \`${b.stepFingerprint ?? '—'}\` | ${health(
       b.stats.measurements
     )} | ${why.length === 0 ? '✅ yes' : `⚠️ ${why.join(', ')}`} |`
   );
@@ -137,7 +147,7 @@ out.push('');
 if (baselines.some((b) => !comparable(b))) {
   out.push(
     '> ⚠️ A baseline marked not comparable was produced by a different measurement harness — ' +
-      'its deltas include the harness change, not just the core change. Re-run that tag to refresh it.'
+      'its deltas include the harness or schema change, not just the core change. Re-run that tag to refresh it.'
   );
   out.push('');
 }

@@ -13,7 +13,7 @@ on:
         type: string
         default: '["MIGRATED"]'
       baselines:
-        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1"]. An entry may name a migration mode explicitly as "tag:MODE" (e.g. "11.4:LEGACY") to compare across the 12.0 boundary; without one it uses this run''s mode. Leave empty to compare only against earlier runs of this same tag.'
         required: false
         type: string
         default: '[]'
@@ -29,7 +29,7 @@ on:
         type: string
         default: '["MIGRATED"]'
       baselines:
-        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1"]. An entry may name a migration mode explicitly as "tag:MODE" (e.g. "11.4:LEGACY") to compare across the 12.0 boundary; without one it uses this run''s mode. Leave empty to compare only against earlier runs of this same tag.'
         required: false
         type: string
         default: '[]'
@@ -219,12 +219,23 @@ jobs:
           # `baselines` input degrades to "no baselines" instead of failing the
           # step under `set -o pipefail`.
           tags=$(echo "$BASELINES" | jq -r '.[]' 2>/dev/null || true)
-          echo "$tags" | while read -r tag; do
+          echo "$tags" | while read -r entry; do
             # `if` rather than `[ ... ] && continue`, which under `set -e` exits
             # the shell on the iterations where the test is false.
-            if [ -z "$tag" ]; then continue; fi
+            if [ -z "$entry" ]; then continue; fi
+            # "tag" compares within this run's mode; "tag:MODE" names the mode.
+            # The escape hatch exists because artifacts are keyed by mode and
+            # pre-12.0 images only ever run LEGACY while 12.x runs MIGRATED — so
+            # without it a cross-boundary baseline could never resolve, and the
+            # column would silently just not appear. Naming the mode makes the
+            # comparison an explicit, visible choice: MIGRATED vs LEGACY is two
+            # schemas as well as two versions.
+            tag="${entry%%:*}"
+            base_mode="${entry#"$tag"}"
+            base_mode="${base_mode#:}"
+            if [ -z "$base_mode" ]; then base_mode="$MODE"; fi
             safe_tag=$(printf '%s' "$tag" | tr '"/\\:<>|*?' '_')
-            name="stress-test-stats-${safe_tag}-${MODE}"
+            name="stress-test-stats-${safe_tag}-${base_mode}"
             meta=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=1" \
               --jq '[.artifacts[] | select(.expired == false)][0] | select(. != null) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' 2>/dev/null || true)
             if [ -z "$meta" ]; then
@@ -234,13 +245,15 @@ jobs:
             id=$(printf '%s' "$meta" | cut -f1)
             created=$(printf '%s' "$meta" | cut -f2)
             branch=$(printf '%s' "$meta" | cut -f3)
-            dir="baselines/${safe_tag}"
+            dir="baselines/${safe_tag}-${base_mode}"
             mkdir -p "$dir"
             gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "${dir}.zip" || continue
             unzip -o -d "$dir" "${dir}.zip" > /dev/null || continue
-            jq --arg label "$tag" --arg tag "$tag" --arg dir "$dir" \
+            label="$tag"
+            if [ "$base_mode" != "$MODE" ]; then label="$tag ($base_mode)"; fi
+            jq --arg label "$label" --arg tag "$tag" --arg dir "$dir" --arg mode "$base_mode" \
                --arg createdAt "$created" --arg branch "$branch" \
-               '. + [{label: $label, tag: $tag, dir: $dir, createdAt: $createdAt, branch: $branch}]' \
+               '. + [{label: $label, tag: $tag, mode: $mode, dir: $dir, createdAt: $createdAt, branch: $branch}]' \
                baselines/manifest.json > baselines/manifest.next && mv baselines/manifest.next baselines/manifest.json
           done
 
