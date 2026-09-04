@@ -317,11 +317,27 @@ jobs:
             echo "_(±% is this run relative to that run — positive means this run was slower)_"
           } >> $GITHUB_STEP_SUMMARY
 
-      # No `if: always()` here on purpose: only successful runs become
-      # comparison baselines — a failed run's timings are tainted.
+      # `if: always()`, deliberately. This used to be success-only, on the
+      # reasoning that a failed run's timings are tainted — but the job has been
+      # failing on scaling-ratio bounds for weeks at a stretch, and success-only
+      # upload turns that into baseline starvation: the tag with the most
+      # failures is the tag with no history to compare against, which is exactly
+      # backwards. Only one of the three cross-line runs produced a baseline at
+      # all.
+      #
+      # Tainted is not the same as useless, and it is recoverable information:
+      # stats.json already records per-step `failed`/`timedOut`/`afterFailure`,
+      # so the comparison step reads a failed step as "no value here" and a step
+      # that ran after an earlier failure as "shown, but never flagged as a
+      # regression". Uploading the run and marking it beats not having it.
       - name: Upload stats for future comparisons
+        if: always()
         uses: actions/upload-artifact@v6
         with:
+          # The suite writes stats.json even when it dies mid-run, but a failure
+          # BEFORE the suite starts (compose, npm install) leaves no file — that
+          # is not an upload error.
+          if-no-files-found: ignore
           # Tag + mode qualified: keeps each release line's baselines separate
           # (the comparison step only pulls artifacts matching this exact name)
           # and keeps concurrent matrix legs from clashing within a run.
