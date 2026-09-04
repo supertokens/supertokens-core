@@ -2,7 +2,7 @@ import SuperTokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import { randomUUID } from 'crypto';
 
-import { measureTime, runStep } from '../common/utils';
+import { measureRepeated, runStep } from '../common/utils';
 
 /**
  * Session read paths at scale.
@@ -27,71 +27,100 @@ import { measureTime, runStep } from '../common/utils';
  * Fixtures are created fresh on each pass (see the contract in readPaths.ts):
  * refresh rotates its token, so verify and refresh each get their own session.
  * The miss-path lookup uses a random user id and needs no fixture at all.
+ *
+ * All four are measured with `measureRepeated`: one call lands in the tens of
+ * milliseconds, where the recorded number is mostly runner noise. Each step
+ * varies its input per iteration — verify and the handle lookup rotate over a
+ * fixture pool, refresh chains its own rotated token forward, and the miss path
+ * draws a fresh random id — so the repeat measures the path rather than one
+ * warm row.
  */
 export const measureSessionPaths = async (): Promise<void> => {
   console.log('\n10. Measuring session read paths');
 
-  // Pick a real user from the current dataset to own the fixture sessions.
-  // Outside any measureTime: this is setup, not a measured path.
-  let recipeUserId: string | undefined;
-  let primaryUserId: string | undefined;
+  // Pick real users from the current dataset to own the fixture sessions.
+  // Outside any measured step: this is setup, not a measured path.
+  //
+  // A pool rather than a single user, because the repeated steps rotate over it
+  // — measuring the same row a thousand times measures a warm cache. The pool
+  // is capped so fixture creation stays a rounding error next to the run.
+  const POOL_SIZE = 20;
+  const primaryUserIds: string[] = [];
+  const recipeUserIds: string[] = [];
   await runStep(async () => {
-    const page = await SuperTokens.getUsersNewestFirst({ tenantId: 'public' });
-    const user = page.users[0];
-    if (!user) {
+    const page = await SuperTokens.getUsersNewestFirst({ tenantId: 'public', limit: POOL_SIZE });
+    for (const user of page.users) {
+      primaryUserIds.push(user.id);
+      recipeUserIds.push(user.loginMethods[0]!.recipeUserId.getAsString());
+    }
+    if (recipeUserIds.length === 0) {
       throw new Error('no users in the public tenant to build session fixtures from');
     }
-    primaryUserId = user.id;
-    recipeUserId = user.loginMethods[0]!.recipeUserId.getAsString();
-    console.log(`    Session fixture user: ${primaryUserId}`);
+    console.log(`    Session fixture users: ${recipeUserIds.length}`);
   });
-  if (!recipeUserId || !primaryUserId) {
+  if (recipeUserIds.length === 0) {
     // The fixture step already recorded itself as failed; skip the rest of the
     // section rather than reporting four more failures for the same cause.
     return;
   }
-  const rid = SuperTokens.convertToRecipeUserId(recipeUserId);
 
   // Anti-CSRF is disabled on the fixtures so verify/refresh need no extra token
   // and measure the storage path rather than header plumbing.
-  const newSession = () =>
-    Session.createNewSessionWithoutRequestResponse('public', rid, undefined, undefined, true);
+  const newSession = (i: number) =>
+    Session.createNewSessionWithoutRequestResponse(
+      'public',
+      SuperTokens.convertToRecipeUserId(recipeUserIds[i % recipeUserIds.length]!),
+      undefined,
+      undefined,
+      true
+    );
 
-  let accessToken: string | undefined;
+  // One access token per fixture user, so verify rotates over distinct sessions.
+  const accessTokens: string[] = [];
   await runStep(async () => {
-    accessToken = (await newSession()).getAccessToken();
+    for (let i = 0; i < recipeUserIds.length; i++) {
+      accessTokens.push((await newSession(i)).getAccessToken());
+    }
   });
-  if (accessToken) {
+  if (accessTokens.length > 0) {
     await runStep(() =>
-      measureTime('Session verify (access token)', async () => {
-        const session = await Session.getSessionWithoutRequestResponse(accessToken!, undefined, {
-          sessionRequired: true,
-        });
-        console.log(`    Verified session handle: ${session.getHandle()}`);
+      measureRepeated('Session verify (access token)', async (i) => {
+        await Session.getSessionWithoutRequestResponse(
+          accessTokens[Math.abs(i) % accessTokens.length]!,
+          undefined,
+          { sessionRequired: true }
+        );
       })
     );
   }
 
-  // Refresh consumes and rotates its refresh token, so it gets its own session.
+  // Refresh consumes and rotates its refresh token, so it gets its own session
+  // and each iteration feeds the rotated token into the next one. That is what
+  // refresh actually does in production — a chain, not a replay — and it means
+  // the repeat needs no fixture pool of its own.
   let refreshToken: string | undefined;
   await runStep(async () => {
-    refreshToken = (await newSession()).getAllSessionTokensDangerously().refreshToken;
+    refreshToken = (await newSession(0)).getAllSessionTokensDangerously().refreshToken;
   });
   if (refreshToken) {
     await runStep(() =>
-      measureTime('Session refresh (refresh token)', async () => {
+      measureRepeated('Session refresh (refresh token)', async () => {
         const refreshed = await Session.refreshSessionWithoutRequestResponse(refreshToken!, true);
-        console.log(`    Refreshed session handle: ${refreshed.getHandle()}`);
+        refreshToken = refreshed.getAllSessionTokensDangerously().refreshToken;
       })
     );
   }
 
-  // Handle lookup, hit path: the fixture user has at least the two sessions
-  // created above plus its seeded one.
+  // Handle lookup, hit path: every fixture user owns at least its seeded session
+  // plus the one created above.
   await runStep(() =>
-    measureTime('Session handles for user', async () => {
-      const handles = await Session.getAllSessionHandlesForUser(primaryUserId!);
-      console.log(`    Session handles for fixture user: ${handles.length}`);
+    measureRepeated('Session handles for user', async (i) => {
+      const handles = await Session.getAllSessionHandlesForUser(
+        primaryUserIds[Math.abs(i) % primaryUserIds.length]!
+      );
+      if (handles.length === 0) {
+        throw new Error('expected at least one handle for a fixture user');
+      }
     })
   );
 
@@ -99,7 +128,7 @@ export const measureSessionPaths = async (): Promise<void> => {
   // no sessions must still be an indexed point read; if this one starts scaling
   // with the dataset while the hit path stays flat, the miss path is scanning.
   await runStep(() =>
-    measureTime('Session handles for user (miss)', async () => {
+    measureRepeated('Session handles for user (miss)', async () => {
       const handles = await Session.getAllSessionHandlesForUser(randomUUID());
       if (handles.length !== 0) {
         throw new Error(`expected no handles for a random user id, got ${handles.length}`);

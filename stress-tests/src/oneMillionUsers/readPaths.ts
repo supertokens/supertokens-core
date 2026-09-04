@@ -1,6 +1,12 @@
 import SuperTokens from 'supertokens-node';
 
-import { measureTime, runStep, setCheckpoint, CheckpointSize } from '../common/utils';
+import {
+  measureRepeated,
+  measureTime,
+  runStep,
+  setCheckpoint,
+  CheckpointSize,
+} from '../common/utils';
 import { measureQueryPaths } from './measureQueryPaths';
 import { measureOAuthPaths, OAuthStore } from './oauthPaths';
 import { measureSessionPaths } from './sessionPaths';
@@ -56,8 +62,12 @@ export const runReadPaths = async (
     });
 
     for (const order of ['newest', 'oldest'] as const) {
+      // Repeated: one first-page fetch is tens of milliseconds, which is
+      // runner noise. The query is deliberately identical each iteration —
+      // here the query *is* the subject, so varying it would add variance
+      // rather than remove warm-cache bias.
       await runStep(() =>
-        measureTime(`Pagination first page (${order} first)`, async () => {
+        measureRepeated(`Pagination first page (${order} first)`, async () => {
           await getPage(order);
         })
       );
@@ -78,15 +88,13 @@ export const runReadPaths = async (
     // per-tenant (public) count variants.
     console.log('\n7. Counting users');
     await runStep(() =>
-      measureTime('User count (all tenants)', async () => {
-        const total = await SuperTokens.getUserCount();
-        console.log(`    Users count (all tenants): ${total}`);
+      measureRepeated('User count (all tenants)', async () => {
+        await SuperTokens.getUserCount();
       })
     );
     await runStep(() =>
-      measureTime('User count (tenant: public)', async () => {
-        const total = await SuperTokens.getUserCount(undefined, 'public');
-        console.log(`    Users count (public tenant): ${total}`);
+      measureRepeated('User count (tenant: public)', async () => {
+        await SuperTokens.getUserCount(undefined, 'public');
       })
     );
 
