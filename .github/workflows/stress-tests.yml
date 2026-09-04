@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: '["MIGRATED"]'
+      baselines:
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        required: false
+        type: string
+        default: '[]'
   workflow_dispatch:
     inputs:
       tag:
@@ -23,6 +28,11 @@ on:
         required: false
         type: string
         default: '["MIGRATED"]'
+      baselines:
+        description: 'JSON array of image tags to compare against, newest run of each, e.g. ["dev","12.1","11.4"]. Leave empty to compare only against earlier runs of this same tag.'
+        required: false
+        type: string
+        default: '[]'
 
 jobs:
   stress-tests:
@@ -137,6 +147,9 @@ jobs:
         # mode; the suite also asserts the core actually came up in this mode.
         env:
           STRESS_TEST_MIGRATION_MODE: ${{ matrix.mode }}
+          # Recorded inside stats.json so a downloaded baseline says which image
+          # produced it without anyone having to decode the artifact name.
+          STRESS_TEST_IMAGE_TAG: ${{ inputs.tag }}
         run: |
           cd stress-tests
           npm run one-million-users | tee stress-tests.log
@@ -148,14 +161,21 @@ jobs:
             exit 0
           fi
           echo "## Stress Test Results — image \`${{ inputs.tag }}\`, ${{ matrix.mode }} migration mode" >> $GITHUB_STEP_SUMMARY
-          echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run." >> $GITHUB_STEP_SUMMARY
+          # Harness identity, so a reader can tell at a glance whether two runs
+          # measured the same thing the same way. The version is bumped by hand
+          # when the MEANING of a number changes; the fingerprint is a hash of
+          # the step titles, so it moves on its own when steps are added/removed.
+          hv=$(jq -r '.harnessVersion // 1' stress-tests/stats.json)
+          fp=$(jq -r '.stepFingerprint // "unknown"' stress-tests/stats.json)
+          echo "Measurement harness: **v${hv}**, step fingerprint \`${fp}\`. Runs only compare cleanly against baselines with the same pair." >> $GITHUB_STEP_SUMMARY
+          echo "Duration is the 1M (large) measurement; the 100k (small) column and the ratio come from the two-size scaling run. Steps marked \`n=\` are a mean over that many operations (~10s window) rather than a single sample." >> $GITHUB_STEP_SUMMARY
           echo "Read-path steps run collect-and-continue: a failed step is recorded and the run keeps going, so a single run can surface every failure at once. A ⚑ marks a step that ran *after* an earlier failure — its numbers may be tainted. Ratio is \`n/a\` when a step failed on one of the two sizes." >> $GITHUB_STEP_SUMMARY
           echo "| Test | Duration (1M) | 100k | Ratio (1M/100k) | Budget | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|---------------|------|-----------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
           # Status must include the ratio verdict: an over-ratio step fails the
           # run, but Status used to read only the duration budget, so the row
           # rendered "✅ OK" on the exact steps that turned the job red.
-          jq -r '.measurements[] | "| \(.title) | \(.formatted) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" elif .ratioOverBound then "⚠️ OVER RATIO" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
+          jq -r '.measurements[] | "| \(.title) | \(.formatted)\(if .iterations then " (n=\(.iterations))" else "" end) | \(.smallFormatted // "-") | \(.ratioText // "-") | \(.budgetFormatted // "-") | \(if .timedOut then "⏱️ TIMED OUT" elif .failed then "❌ FAILED" elif .overBudget then "⚠️ OVER BUDGET" elif .ratioOverBound then "⚠️ OVER RATIO" else "✅ OK" end)\(if .failureReason then " — " + .failureReason else "" end)\(if .afterFailure then " ⚑" else "" end) |"' stress-tests/stats.json >> $GITHUB_STEP_SUMMARY
 
       - name: Display pg_stat_statements summary
         if: always()
@@ -164,7 +184,69 @@ jobs:
             cat stress-tests/pg-stats-summary.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Display comparison with previous runs
+      - name: Collate baselines and compare versions
+        if: always()
+        # The suite's own gates are within-run: each step is measured at 100k and
+        # at 1M and the RATIO is asserted against a scaling-class bound. That
+        # catches a step that starts scaling with the dataset and is blind to
+        # "this release is slower than the last one on the same step at the same
+        # size" — which is the question a release actually has to answer.
+        #
+        # This step answers it from historical artifacts: for each requested tag
+        # it pulls the newest stats.json that a previous run of that tag
+        # uploaded, and renders one column per tag. Nothing is re-run and no
+        # second image is booted — the comparison costs one API call per tag.
+        #
+        # Best-effort by construction: a tag with no recorded run yet simply has
+        # no column, and the whole step is continue-on-error so a comparison
+        # problem never colours a run that measured fine.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASELINES: ${{ inputs.baselines }}
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          cd stress-tests
+          [ -f stats.json ] || exit 0
+          mkdir -p baselines
+          echo '[]' > baselines/manifest.json
+
+          # One entry per requested tag, resolved to that tag's newest artifact.
+          # Same sanitisation as the artifact-name step: the name is the join
+          # key, so the two must agree character for character.
+          # Resolved up front rather than in the pipeline, so a malformed
+          # `baselines` input degrades to "no baselines" instead of failing the
+          # step under `set -o pipefail`.
+          tags=$(echo "$BASELINES" | jq -r '.[]' 2>/dev/null || true)
+          echo "$tags" | while read -r tag; do
+            # `if` rather than `[ ... ] && continue`, which under `set -e` exits
+            # the shell on the iterations where the test is false.
+            if [ -z "$tag" ]; then continue; fi
+            safe_tag=$(printf '%s' "$tag" | tr '"/\\:<>|*?' '_')
+            name="stress-test-stats-${safe_tag}-${MODE}"
+            meta=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=1" \
+              --jq '[.artifacts[] | select(.expired == false)][0] | select(. != null) | "\(.id)\t\(.created_at)\t\(.workflow_run.head_branch)"' 2>/dev/null || true)
+            if [ -z "$meta" ]; then
+              echo "No baseline artifact for tag '${tag}' (looked for ${name})"
+              continue
+            fi
+            id=$(printf '%s' "$meta" | cut -f1)
+            created=$(printf '%s' "$meta" | cut -f2)
+            branch=$(printf '%s' "$meta" | cut -f3)
+            dir="baselines/${safe_tag}"
+            mkdir -p "$dir"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "${dir}.zip" || continue
+            unzip -o -d "$dir" "${dir}.zip" > /dev/null || continue
+            jq --arg label "$tag" --arg tag "$tag" --arg dir "$dir" \
+               --arg createdAt "$created" --arg branch "$branch" \
+               '. + [{label: $label, tag: $tag, dir: $dir, createdAt: $createdAt, branch: $branch}]' \
+               baselines/manifest.json > baselines/manifest.next && mv baselines/manifest.next baselines/manifest.json
+          done
+
+          node scripts/compare-baselines.mjs stats.json baselines/manifest.json >> $GITHUB_STEP_SUMMARY
+
+      - name: Display comparison with previous runs of this same tag
         if: always()
         # Comparison is best-effort — never fail the run over it.
         continue-on-error: true
@@ -195,7 +277,9 @@ jobs:
           [ -f prev-stats/1/stats.json ] || exit 0
           {
             echo ""
-            echo "### Comparison with previous runs (${{ inputs.tag }}, ${{ matrix.mode }} mode)"
+            echo "### Run-to-run history for this tag (${{ inputs.tag }}, ${{ matrix.mode }} mode)"
+            echo ""
+            echo "_Same image tag, earlier runs — this is the runner-noise view. The version comparison above is the release-to-release view._"
             header="| Test | This run |"
             sep="|------|----------|"
             for n in 1 2 3 4 5; do
