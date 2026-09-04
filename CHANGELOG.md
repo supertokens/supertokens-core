@@ -18,6 +18,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   production
 - Stress-test baselines are now qualified by image tag as well as migration mode, so runs against different
   release lines keep separate trend histories instead of comparing against each other
+- Sub-second stress-test steps are now measured as a mean over a ~10s window of repeated operations instead of
+  a single sample, so a step's recorded time reflects the step rather than runner noise (a flat step previously
+  came out at 21.6x against a bound of 15 on one run and passed on the next)
+- Stress-test summary now includes a version comparison: for each requested image tag it pulls the newest
+  recorded run of that tag and shows the per-step delta, flagging anything a configurable margin slower. The
+  measurement harness version and step fingerprint are shown alongside, and a baseline produced by a different
+  harness is marked as not comparable rather than silently compared against
 
 
 ## [12.2.0]
