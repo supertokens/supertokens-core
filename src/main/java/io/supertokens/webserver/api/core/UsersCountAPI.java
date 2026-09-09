@@ -76,12 +76,16 @@ public class UsersCountAPI extends WebserverAPI {
             includeAllTenants = false;
         }
 
-        // From the CDI version that serves counts from the lifecycle-event ledger, the default (param-less)
-        // path returns the fast anchor+fold value and carries the approximate/asOf metadata (PLAN-010). The
-        // historical `allowApproximate` opt-in is now a no-op - accepted (unknown query params are ignored) so
-        // clients still sending it keep working, but it changes nothing. Older CDI versions see byte-for-byte
-        // unchanged behaviour: an exact recompute and never the new fields.
-        boolean ledgerServed = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_6);
+        // CDI 5.7+ serves the exact lifecycle-ledger `anchor + fold` value by default and always carries the
+        // approximate/asOf metadata (PLAN-010). CDI 5.6 keeps its released behaviour: the ledger value is
+        // opt-in via `allowApproximate=true`; without the opt-in (and on any CDI < 5.6) the count is an exact
+        // recompute and the approximate/asOf fields are omitted. 5.6 must not be redefined — it already
+        // shipped in core 12.2.0 with the opt-in contract.
+        String allowApproximateStr = InputParser.getQueryParamOrThrowError(req, "allowApproximate", true);
+        boolean allowApproximate = allowApproximateStr != null && allowApproximateStr.equalsIgnoreCase("true");
+        SemVer cdiVersion = getVersionFromRequest(req);
+        boolean ledgerServed = cdiVersion.greaterThanOrEqualTo(SemVer.v5_7)
+                || (allowApproximate && cdiVersion.greaterThanOrEqualTo(SemVer.v5_6));
 
         RECIPE_ID[] recipeIdsEnum = recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new);
 
