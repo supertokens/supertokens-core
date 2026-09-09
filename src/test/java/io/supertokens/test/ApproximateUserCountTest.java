@@ -152,11 +152,12 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // PLAN-010 unit "default-flip": on the current CDI version the default (param-less) path now serves the
-    // fast anchor+fold value and carries the approximate/asOf fields, exactly as if allowApproximate had been
-    // set. The count is still exact for a freshly primed tenant.
+    // PLAN-010 unit "default-flip", re-gated to CDI 5.7 (the 5.6 opt-in contract shipped in core 12.2.0 and
+    // must not be redefined): on CDI 5.7 the default (param-less) path serves the fast anchor+fold value and
+    // carries the approximate/asOf fields, exactly as if allowApproximate had been set. The count is still
+    // exact for a freshly primed tenant.
     @Test
-    public void apiDefaultPathServesFromFoldWithFields() throws Exception {
+    public void apiDefaultPathServesFromFoldWithFieldsOn5_7() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -171,7 +172,7 @@ public class ApproximateUserCountTest {
 
         long before = System.currentTimeMillis();
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_7.get(), "");
         long after = System.currentTimeMillis();
 
         assertEquals("OK", response.get("status").getAsString());
@@ -186,12 +187,12 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // The allowApproximate parameter is now a no-op: the default (param-less) path serves the ledger fold on
-    // its own, so a deletion between two param-less requests - off the same primed anchor, no refresh - is
-    // reflected immediately (3 -> 2). Before the flip the param-less path was an exact recompute per request
-    // and never carried the approximate/asOf fields.
+    // On CDI 5.7 the default (param-less) path serves the ledger fold on its own, so a deletion between two
+    // param-less requests - off the same primed anchor, no refresh - is reflected immediately (3 -> 2). On the
+    // released 5.6 contract the param-less path is an exact recompute per request and carries no fields (see
+    // api5_6ParamLessKeepsReleasedContract).
     @Test
-    public void apiDefaultPathReflectsDeletionViaFoldWithoutParam() throws Exception {
+    public void apiDefaultPathReflectsDeletionViaFoldWithoutParamOn5_7() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -206,7 +207,7 @@ public class ApproximateUserCountTest {
 
         // Prime the anchor synchronously with a param-less request: exact count 3, served from the fold.
         JsonObject primed = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_7.get(), "");
         assertEquals(3, primed.get("count").getAsLong());
         assertTrue(primed.get("approximate").getAsBoolean());
 
@@ -216,9 +217,40 @@ public class ApproximateUserCountTest {
 
         // Same anchor (no refresh), param-less again: the fold now carries the -1.
         JsonObject afterDelete = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_7.get(), "");
         assertEquals(2, afterDelete.get("count").getAsLong());
         assertTrue(afterDelete.get("approximate").getAsBoolean());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Released-contract guard: CDI 5.6 shipped in core 12.2.0 with the ledger value opt-in via
+    // allowApproximate=true. A param-less request on 5.6 must therefore keep the pre-flip behaviour - an exact
+    // recompute with NO approximate/asOf fields - and must NOT be redefined into the 5.7 default-serve path.
+    // (The opt-in path on 5.6 is covered by apiApproximateReturnsExactAndFields; the 5.7 default by
+    // apiDefaultPathServesFromFoldWithFieldsOn5_7.)
+    @Test
+    public void api5_6ParamLessKeepsReleasedContract() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "user" + i + "@example.com", "password" + i);
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_6.get(), "");
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(3, response.get("count").getAsLong());
+        assertFalse(response.has("approximate"));
+        assertFalse(response.has("asOf"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -378,13 +410,13 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // After the default flip the additive approximate/asOf fields key purely on the CDI version, no longer on
-    // an allowApproximate opt-in. The exact-fallback shapes the ledger fold does not cover - an all-tenants
-    // count, or a recipe-filtered count - therefore carry approximate=false + asOf on 5.6 even when the param
-    // is absent. This pins that param-less contract for both fallback shapes (the recipe-filter case above
-    // still sends the param, so it does not).
+    // On CDI 5.7 the additive approximate/asOf fields key purely on the CDI version, no longer on an
+    // allowApproximate opt-in. The exact-fallback shapes the ledger fold does not cover - an all-tenants
+    // count, or a recipe-filtered count - therefore carry approximate=false + asOf even when the param is
+    // absent. This pins that param-less contract for both fallback shapes on 5.7 (the recipe-filter case above
+    // still sends the param on 5.6, so it does not).
     @Test
-    public void apiFallbackShapesCarryFieldsWithoutParamOn5_6() throws Exception {
+    public void apiFallbackShapesCarryFieldsWithoutParamOn5_7() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -399,7 +431,7 @@ public class ApproximateUserCountTest {
         // All-tenants shape, no allowApproximate param: exact recompute, but the additive fields still appear.
         JsonObject allTenants = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users/count?includeAllTenants=true", null, 1000, 1000, null,
-                SemVer.v5_6.get(), "");
+                SemVer.v5_7.get(), "");
 
         assertEquals("OK", allTenants.get("status").getAsString());
         assertEquals(2, allTenants.get("count").getAsLong());
@@ -410,7 +442,7 @@ public class ApproximateUserCountTest {
         // Recipe-filtered shape, no allowApproximate param: same param-less fallback contract.
         JsonObject recipeFiltered = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
-                SemVer.v5_6.get(), "");
+                SemVer.v5_7.get(), "");
 
         assertEquals("OK", recipeFiltered.get("status").getAsString());
         assertEquals(2, recipeFiltered.get("count").getAsLong());
