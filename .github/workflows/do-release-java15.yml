@@ -190,11 +190,29 @@ jobs:
           echo "postgresql=$(git -C supertokens-root/supertokens-postgresql-plugin rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   # ── Register new versions with the SuperTokens API ────────────────
+  # Derives has-db-migration from the postgresql plugin's migration manifest
+  # (single source of truth) and fails the release early if the core CHANGELOG
+  # doesn't document the migration. Shared with do-release.yml via the reusable
+  # workflow. NOTE: unlike do-release.yml, this backport path does not open the
+  # backend-apis migration PR — a backport release that ships a migration still
+  # marks the API with hasDBMigration (so SaaS rollout defers safely) but the
+  # backend-apis registry entry has to be added by hand.
+  derive-db-migration-flag:
+    name: Derive has-db-migration from migration manifest
+    needs: update-deps
+    uses: ./.github/workflows/_release-derive-db-migration.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      core-sha: ${{ needs.update-deps.outputs.core-sha }}
+      postgresql-sha: ${{ needs.update-deps.outputs.postgresql-sha }}
+    secrets: inherit
+
   register-core-version:
     name: Register core version
     environment: publish
     runs-on: ubuntu-22.04
-    needs: update-deps
+    needs: [ update-deps, derive-db-migration-flag ]
     steps:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
@@ -413,7 +431,7 @@ jobs:
   mark-as-passed:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
-    needs: [ dependency-branches, register-plugin-version, test ]
+    needs: [ dependency-branches, register-plugin-version, test, derive-db-migration-flag ]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     strategy:
@@ -448,7 +466,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X PATCH \
             -H "Content-Type: application/json" \
             -H "api-version: 0" \
-            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true}" \
+            -d "{\"password\":\"$SUPERTOKENS_API_KEY\",\"version\":\"${{ inputs.core-version }}\",\"planType\":\"FREE\",\"testPassed\":true,\"hasDBMigration\":${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}}" \
             https://api.supertokens.io/0/core)
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
@@ -572,7 +590,7 @@ jobs:
   add-release-tags:
     name: Add release tags
     environment: publish
-    needs: [update-deps, release-docker]
+    needs: [update-deps, release-docker, derive-db-migration-flag]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
@@ -669,6 +687,8 @@ jobs:
 
       - name: Tag core
         id: tag-core
+        env:
+          HAS_DB_MIGRATION: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
         run: |
           cd supertokens-root/supertokens-core
           ./addReleaseTag

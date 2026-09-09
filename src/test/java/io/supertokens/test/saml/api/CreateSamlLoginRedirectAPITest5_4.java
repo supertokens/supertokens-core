@@ -219,4 +219,59 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testLoginRedirectWhenSsoUrlAlreadyHasQueryString() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        // An IdP whose SingleSignOnService URL already carries a query string, e.g. Google:
+        // https://accounts.google.com/o/saml2/idp?idpid=...
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        java.security.cert.X509Certificate cert = keyMaterial.certificate;
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://accounts.google.com/o/saml2/idp?idpid=C03iijont";
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, cert);
+        String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("spEntityId", "http://example.com/saml");
+        createClientInput.addProperty("defaultRedirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        createClientInput.add("redirectURIs", new JsonArray());
+        createClientInput.get("redirectURIs").getAsJsonArray().add("http://localhost:3000/auth/callback/saml-mock");
+        createClientInput.addProperty("metadataXML", metadataXMLBase64);
+
+        JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+        assertEquals("OK", createResp.get("status").getAsString());
+        String clientId = createResp.get("clientId").getAsString();
+
+        JsonObject body = new JsonObject();
+        body.addProperty("clientId", clientId);
+        body.addProperty("redirectURI", "http://localhost:3000/auth/callback/saml-mock");
+        body.addProperty("acsURL", "http://localhost:3000/acs");
+        body.addProperty("state", "abc123");
+
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals("OK", resp.get("status").getAsString());
+        assertTrue(resp.has("ssoRedirectURI"));
+        String ssoRedirectURI = resp.get("ssoRedirectURI").getAsString();
+
+        // SAMLRequest must be appended with '&' (not '?') because the SSO URL already has a query.
+        assertTrue(ssoRedirectURI.startsWith(idpSsoUrl + "&SAMLRequest="));
+        // The existing query is preserved and there is no stray second '?'.
+        assertEquals(ssoRedirectURI.indexOf('?'), ssoRedirectURI.lastIndexOf('?'));
+        assertTrue(ssoRedirectURI.contains("idpid=C03iijont"));
+        assertTrue(ssoRedirectURI.contains("RelayState="));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
