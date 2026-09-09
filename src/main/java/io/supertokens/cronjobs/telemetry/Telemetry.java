@@ -134,9 +134,11 @@ public class Telemetry extends CronTask {
             }
 
             { // MAUs
-                // Active users are always tracked on the public tenant, so we use the public tenant's storage
-                ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
-                        app.getAsPublicTenantIdentifier(), main);
+                // A user — and their last-active projection — lives on exactly one storage per app, so sum the
+                // per-storage active counts over every storage backing the app; the storages are disjoint by
+                // user, so there is no double count. (Pre-rework this read only the public-tenant storage,
+                // undercounting every user whose tenant has its own database.)
+                Storage[] storages = StorageLayer.getStoragesForApp(main, app);
 
                 JsonArray mauArr = new JsonArray();
 
@@ -144,7 +146,10 @@ public class Telemetry extends CronTask {
 
                 for (int i = 1; i <= 31; i++) {
                     long timestamp = now - (i * 24 * 60 * 60 * 1000L);
-                    int mau = activeUsersStorage.countUsersActiveSince(app, timestamp);
+                    int mau = 0;
+                    for (Storage storage : storages) {
+                        mau += ((ActiveUsersStorage) storage).countUsersActiveSince(app, timestamp);
+                    }
                     mauArr.add(new JsonPrimitive(mau));
                 }
 

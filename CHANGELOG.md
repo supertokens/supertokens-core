@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [12.3.0]
+
+- Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
+- `GET /users/count` serves an exact `anchor + fold` of the ledger instead of recomputing per request. From CDI 5.7 this is the default single-tenant behaviour (carrying `approximate`/`asOf`); CDI 5.6 keeps its released contract where the ledger value is opt-in via `allowApproximate=true`; older CDI is unchanged.
+- `user_last_active` is now derived by the new `RollupUserLastActive` cron folding activity events (its sole writer); `ActiveUsers.updateLastActive` only appends throttled events, so MAU counts reflect activity within a rollup interval.
+- Active-user activity and its projection now live on the user's own storage (not the app-public tenant), and active-user counts (`GET /users/count/active`, telemetry MAU) sum across every storage backing the app, so a user on a tenant with its own database is counted correctly.
+- In-memory (SQLite) parity for the ledger and rollup storage contract (transactional audit insert, last-active fold/reconcile, windowed event read, and the connection-taking sign-up/tenant-removal variants).
+
+### Migration
+
+The `activity_log.payload` column changes from `TEXT` to `JSONB` (structured lifecycle-event payloads). Applied automatically at startup by the core (guarded and idempotent — skipped when the column is already `JSONB`), so an in-place upgrade needs no manual step. The canonical SQL is in supertokens-postgresql-plugin `migration-scripts/v9.9.0.sql`.
+
+**Large-deployment note:** this is an `ALTER COLUMN ... TYPE JSONB` on the partitioned `activity_log` parent, which rewrites every partition under an `ACCESS EXCLUSIVE` lock. On a large `activity_log` run the migration script *before* upgrading to avoid a startup stall (all historical payloads are `NULL`, so the cast is a pure type rewrite).
 
 ## [12.2.0]
 

@@ -53,6 +53,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class SAMLCertificate extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.saml.SAMLCertificate";
@@ -186,6 +187,7 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
         ensureStaticTestCertificateExists();
     }
 
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     private void maybeGenerateNewCertificateAndUpdateInDb() throws TenantOrAppNotFoundException {
          SQLStorage storage = (SQLStorage) StorageLayer.getStorage(
                 this.appIdentifier.getAsPublicTenantIdentifier(), main);

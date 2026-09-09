@@ -62,12 +62,54 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
+import io.supertokens.auditlog.UnauditedTransaction;
+import io.supertokens.auditlog.lifecycle.GroupPresence;
+import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 
 /*This files contains functions that are common for all auth recipes*/
 
 public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
+
+    /**
+     * The group-presence of the group identified by {@code groupUserId} (its {@code primary_or_recipe_user_id})
+     * at the current point in the transaction: the set of tenants the group is present in, as maintained by
+     * the primary/recipe user-to-tenant mapping. A group whose user no longer exists (e.g. a member deleted
+     * earlier in the same transaction) is present in no tenants.
+     */
+    private static GroupPresence groupPresenceInTransaction(AuthRecipeSQLStorage authRecipeStorage,
+                                                            AppIdentifier appIdentifier, TransactionConnection con,
+                                                            String groupUserId) throws StorageQueryException {
+        AuthRecipeUserInfo info = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier, con, groupUserId);
+        if (info == null) {
+            // The group's user no longer exists (e.g. a member deleted earlier in this transaction): present
+            // in no tenants. Keyed by the requested id since there is no resolved group id to use.
+            return new GroupPresence(groupUserId, new ArrayList<>());
+        }
+        // Key the presence by the group's current primary_or_recipe_user_id, which may differ from the
+        // requested id (e.g. after a member is unlinked/deleted the surviving group is identified by its own id).
+        return new GroupPresence(info.getSupertokensUserId(), new ArrayList<>(info.tenantIds));
+    }
+
+    /**
+     * The supertokens user id of some login method of {@code primaryUser} other than {@code excludedUserId} —
+     * used to resolve the group that survives after a member is removed (any surviving member's id maps back to
+     * the same group). {@code primaryUser} is a primary group with more than one login method here, so a match
+     * always exists.
+     */
+    private static String otherLoginMethodUserId(AuthRecipeUserInfo primaryUser, String excludedUserId) {
+        for (LoginMethod loginMethod : primaryUser.loginMethods) {
+            if (!loginMethod.getSupertokensUserId().equals(excludedUserId)) {
+                return loginMethod.getSupertokensUserId();
+            }
+        }
+        // Unreachable: this is only called for a primary group with more than one login method.
+        return primaryUser.getSupertokensUserId();
+    }
 
     @TestOnly
     public static boolean unlinkAccounts(Main main, String recipeUserId)
@@ -84,9 +126,13 @@ public class AuthRecipe {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         UserLockingStorage lockingStorage = (UserLockingStorage) storage;
         AccountInfoStorage accountInfoStorage = (AccountInfoStorage) storage;
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
 
         try {
-            UnlinkResult res = authRecipeStorage.startTransaction(con -> {
+            // startAuditedTransaction owns the commit and writes the account_unlinking event on the same
+            // connection as the unlink, so the event cannot be lost relative to the mapping change it records.
+            UnlinkResult res = auditStorage.startAuditedTransaction(appIdentifier, con -> {
                 // Acquire lock on the recipe user first
                 LockedUser lockedRecipeUser;
                 try {
@@ -115,6 +161,7 @@ public class AuthRecipe {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 con, appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
+                String resultUserId = mappingResult == null ? recipeUserId : mappingResult.externalUserId;
 
                 if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
@@ -124,17 +171,37 @@ public class AuthRecipe {
 
                         authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con,
                                 primaryUser.getSupertokensUserId(), recipeUserId);
-                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId,
-                                false);
+                        // The primary group has no other members: this only drops the user's primary status,
+                        // leaving the same account in the same tenants. No member is freed and the active-user
+                        // count is unchanged, so no account_unlinking event is emitted.
+                        return AuditedResult.withoutAudit(new UnlinkResult(resultUserId, false),
+                                "Unlinking a primary user with no other linked members only removes its primary "
+                                        + "status; the account and its tenants are unchanged, so no "
+                                        + "account_unlinking event is emitted.");
                     } else {
                         // Here we delete the recipe user id cause if we just unlink, then there will be two
                         // distinct users with the same ID - which is a broken state.
                         // The delete will also cause the automatic unlinking.
                         // We need to make sure that it only deletes sessions for recipeUserId and not other linked
                         // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
+                        // Unlinking the primary id from a group that has other members deletes the primary-id
+                        // member (so two accounts don't share one id); the group survives via its remaining
+                        // members, resolvable through any surviving login method. This is a member deletion,
+                        // not a split: the deleted member may have been the group's only presence in some
+                        // tenant, and account_unlinking's fold arm can only ever produce +1s (for the tenants a
+                        // split leaves both groups in), so it structurally cannot express that -1. Emit
+                        // user_deletion with the group's before/after presence instead, so the interpreter
+                        // decrements any tenant the group actually left. Capture the before-presence from
+                        // primaryUser (read under the lock above, before the delete); recompute the after-
+                        // presence once the member is gone.
+                        GroupPresence groupBefore = new GroupPresence(primaryUser.getSupertokensUserId(),
+                                new ArrayList<>(primaryUser.tenantIds));
                         deleteUserHelper(con, appIdentifier, storage, recipeUserId, false, mappingResult);
-                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId,
-                                true);
+                        GroupPresence groupAfter = groupPresenceInTransaction(authRecipeStorage,
+                                appIdentifier, con, otherLoginMethodUserId(primaryUser, recipeUserId));
+                        AuditLogEvent event = LifecycleAuditEvent.forUserDeletion(appIdentifier, recipeUserId,
+                                groupAfter.primaryOrRecipeUserId, groupBefore, groupAfter, now);
+                        return new AuditedResult<>(new UnlinkResult(resultUserId, true), event);
                     }
                 } else {
                     accountInfoStorage.removeAccountInfoReservationForPrimaryUserForUnlinking_Transaction(
@@ -142,7 +209,15 @@ public class AuthRecipe {
 
                     authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, lockedRecipeUser.getPrimaryUserId(),
                             recipeUserId);
-                    return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
+                    // Plain unlink: the recipe user is freed into its own standalone group; the primary group
+                    // remains. Both after-unlink presence lists go in the payload.
+                    GroupPresence remainingGroupAfter = groupPresenceInTransaction(authRecipeStorage,
+                            appIdentifier, con, lockedRecipeUser.getPrimaryUserId());
+                    GroupPresence freedMemberAfter = groupPresenceInTransaction(authRecipeStorage,
+                            appIdentifier, con, recipeUserId);
+                    AuditLogEvent event = LifecycleAuditEvent.forAccountUnlinking(appIdentifier, recipeUserId,
+                            remainingGroupAfter.primaryOrRecipeUserId, remainingGroupAfter, freedMemberAfter, now);
+                    return new AuditedResult<>(new UnlinkResult(resultUserId, false), event);
                 }
             });
             Session.revokeAllSessionsForUser(main, appIdentifier, storage, res.userId, false);
@@ -168,6 +243,7 @@ public class AuthRecipe {
         return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void reservePrimaryUserAccountInfos(Main main, Storage storage, AppIdentifier appIdentifier, List<PrimaryUser> primaryUsers)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
@@ -191,6 +267,7 @@ public class AuthRecipe {
     // values, which breaks the keyset pagination cursor (see AuthRecipe.getUsers / UserPaginationToken).
     // This normalization must run once, after all recipes' login methods have been inserted, since a group
     // can span recipes.
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateTimeJoinedForBulkImportedPrimaryUsers(Storage storage, AppIdentifier appIdentifier,
             List<String> primaryUserIds) throws StorageQueryException, StorageTransactionLogicException {
         if (primaryUserIds == null || primaryUserIds.isEmpty()) {
@@ -287,17 +364,50 @@ public class AuthRecipe {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
         try {
 
-            LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
+            // startAuditedTransaction owns the commit and writes any returned audit events on the same
+            // connection as the mapping change, so an account_linking event can never be lost relative to
+            // the link it records (a lost link event is a permanent +1 in the derived active-user count).
+            LinkAccountsResult result = auditStorage.startAuditedTransaction(appIdentifier, con -> {
                 try {
+                    // Lock both users before reading their group presence, in the single user_id-ordered
+                    // statement lockUsersForLinking issues (the same lock linkAccounts_Transaction takes
+                    // internally, so re-locking below is a no-op in this transaction, and the same global
+                    // ordering used by unlink/delete/tenant paths, so no lock-order inversion). Reading the
+                    // before-presence out here without the lock — as this path used to — is racy under READ
+                    // COMMITTED: a concurrent link/tenant mutation committing on either group between the read
+                    // and the lock would leave the snapshot stale, folding to a wrong per-tenant delta.
+                    try {
+                        lockingStorage.lockUsersForLinking(appIdentifier, con, _recipeUserId, _primaryUserId);
+                    } catch (UserNotFoundForLockingException e) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
+                    }
+
+                    // Capture each group's presence before the mapping change: on a real link the payload
+                    // records both groups' before-lists (an already-linked call emits nothing, so these
+                    // reads are discarded in that case).
+                    GroupPresence recipeGroupBefore = groupPresenceInTransaction(authRecipeStorage,
+                            appIdentifier, con, _recipeUserId);
+                    GroupPresence primaryGroupBefore = groupPresenceInTransaction(authRecipeStorage,
+                            appIdentifier, con, _primaryUserId);
+
                     boolean didLinkAccounts = authRecipeStorage.linkAccounts_Transaction(appIdentifier, con, _recipeUserId, _primaryUserId);
                     AuthRecipeUserInfo user = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier, con, _recipeUserId);
                     assert user.isPrimaryUser;
 
-                    authRecipeStorage.commitTransaction(con);
+                    if (!didLinkAccounts) {
+                        return AuditedResult.withoutAudit(new LinkAccountsResult(user, true),
+                                "Accounts were already linked: the call is a no-op with no state change, so "
+                                        + "no account_linking event is emitted.");
+                    }
 
-                    return new LinkAccountsResult(user, !didLinkAccounts);
+                    AuditLogEvent event = LifecycleAuditEvent.forAccountLinking(appIdentifier, _recipeUserId,
+                            _primaryUserId, recipeGroupBefore, primaryGroupBefore, now);
+                    return new AuditedResult<>(new LinkAccountsResult(user, false), event);
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
                          CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
                          AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
@@ -373,6 +483,7 @@ public class AuthRecipe {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static CreatePrimaryUserResult createPrimaryUser(Main main,
                                                             AppIdentifier appIdentifier,
                                                             Storage storage,
@@ -619,11 +730,53 @@ public class AuthRecipe {
                                   UserIdMapping userIdMapping)
             throws StorageQueryException, StorageTransactionLogicException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        long now = System.currentTimeMillis();
 
-        authRecipeStorage.startTransaction(con -> {
-            deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping);
-            authRecipeStorage.commitTransaction(con);
-            return null;
+        // startAuditedTransaction owns the commit and writes the deletion event on the same connection as the
+        // delete, so a user_deletion / user_group_deletion event can never be lost relative to the deletion it
+        // records (a lost deletion event is a permanent overcount in the derived active-user count).
+        auditStorage.<Void>startAuditedTransaction(appIdentifier, con -> {
+            String authUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+            // Capture the group's before-presence from INSIDE deleteUserHelper, which reads it after acquiring the
+            // row lock (the same consistent-snapshot ordering addUserIdToTenant uses for tenant_association).
+            // Reading it out here before the lock would be racy in two ways: (a) a concurrent link/tenant-
+            // association committing on this group between the read and the lock would leave the snapshot missing
+            // a tenant the group actually had at delete time — the ledger would then miss a decrement for that
+            // tenant (permanent overcount); and (b) if the user were deleted concurrently in that same window the
+            // pre-lock read would still be non-null, emitting a spurious deletion event for a delete that did
+            // nothing (permanent undercount). The helper reads the snapshot under the lock and resolves the
+            // mapped/migration (A3/A4) id internally, so a null holder means the delete was genuinely a no-op.
+            AuthRecipeUserInfo[] groupBeforeHolder = new AuthRecipeUserInfo[1];
+            deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping,
+                    groupBeforeHolder);
+            AuthRecipeUserInfo groupBeforeInfo = groupBeforeHolder[0];
+
+            if (groupBeforeInfo == null) {
+                return AuditedResult.<Void>withoutAudit(null,
+                        "deleteUser was a no-op: the user did not exist, so nothing was deleted and no "
+                                + "user_deletion / user_group_deletion event is emitted.");
+            }
+
+            String groupUserId = groupBeforeInfo.getSupertokensUserId();
+            GroupPresence groupBefore = new GroupPresence(groupUserId, new ArrayList<>(groupBeforeInfo.tenantIds));
+            // Whole-group deletion when removing all linked accounts, or when the group has a single member (the
+            // deleted user is the whole group); otherwise a single member is removed and the group survives.
+            boolean wholeGroupDeleted = removeAllLinkedAccounts || groupBeforeInfo.loginMethods.length == 1;
+
+            AuditLogEvent event;
+            if (wholeGroupDeleted) {
+                event = LifecycleAuditEvent.forUserGroupDeletion(appIdentifier, groupUserId, groupBefore, now);
+            } else {
+                // The group survives (identified by the same primary_or_recipe_user_id); recompute its presence
+                // after the member is removed, since deleting a member can drop the group from a tenant it was
+                // only present in through that member.
+                GroupPresence groupAfter = groupPresenceInTransaction(authRecipeStorage, appIdentifier, con,
+                        groupUserId);
+                event = LifecycleAuditEvent.forUserDeletion(appIdentifier, authUserId, groupUserId, groupBefore,
+                        groupAfter, now);
+            }
+            return new AuditedResult<>((Void) null, event);
         });
     }
 
@@ -632,6 +785,20 @@ public class AuthRecipe {
                                          String userId,
                                          boolean removeAllLinkedAccounts,
                                          UserIdMapping userIdMapping)
+            throws StorageQueryException {
+        deleteUserHelper(con, appIdentifier, storage, userId, removeAllLinkedAccounts, userIdMapping, null);
+    }
+
+    // groupBeforeOut, when non-null, is filled with the group's pre-deletion snapshot (read under the same row
+    // lock that guards the delete) so a caller emitting a lifecycle event records a consistent before-presence.
+    // It stays untouched (null) when the delete is a no-op — the user did not exist or was already deleted by a
+    // concurrent thread — so the caller emits nothing in that case.
+    private static void deleteUserHelper(TransactionConnection con, AppIdentifier appIdentifier,
+                                         Storage storage,
+                                         String userId,
+                                         boolean removeAllLinkedAccounts,
+                                         UserIdMapping userIdMapping,
+                                         AuthRecipeUserInfo[] groupBeforeOut)
             throws StorageQueryException {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
@@ -707,6 +874,13 @@ public class AuthRecipe {
 
         if (userToDelete == null) {
             return;
+        }
+
+        // Hand the group's before-deletion snapshot back to the caller now that it is read under the row lock and
+        // before any row is removed. This is the group resolved from the (mapped-id-aware) userIdToDeleteForAuthRecipe,
+        // so it covers the migration (A3/A4) cases without a separate pre-lock read.
+        if (groupBeforeOut != null) {
+            groupBeforeOut[0] = userToDelete;
         }
 
         // If removing all linked accounts and user has multiple login methods,
@@ -835,8 +1009,13 @@ public class AuthRecipe {
         StorageUtils.getUserRolesStorage(storage)
                 .deleteAllRolesForUser_Transaction(con, appIdentifier, userId);
 
-        StorageUtils.getActiveUsersStorage(storage)
-                .deleteUserActive_Transaction(con, appIdentifier, userId);
+        // No longer scrub the user_last_active projection on delete: a user active within the window and then
+        // deleted keeps counting for the remainder of that window, consistent with the activity log's own
+        // retention stance (its richer post-deletion rows already survive this delete). Deleting the auth
+        // record removes the user's app_id_to_user_id row, so the fold's app_id_to_user_id guard stops
+        // crediting them going forward; their existing projection row simply ages out of the active window.
+        // (A recurring scrub is deliberately avoided — after this change a deleted local user's retained row is
+        // indistinguishable from a separate-database tenant user's row on another storage.)
         StorageUtils.getTOTPStorage(storage)
                 .removeUser_Transaction(con, appIdentifier, userId);
     }

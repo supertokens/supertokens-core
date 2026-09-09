@@ -19,6 +19,7 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -288,8 +289,12 @@ public class SessionAPITest2_7 {
             return;
         }
 
+        // A real user so its app_id_to_user_id mapping exists — after the fold's residency guard the
+        // projection only credits mapped users, so the session activity below folds into the count. The
+        // signup's user_creation event lands before startTs, so the count still measures the session activity.
+        String userId = signUpEmailPasswordUser(process, "activeuser@example.com");
+
         // Failure case:
-        String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
@@ -324,7 +329,20 @@ public class SessionAPITest2_7 {
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
+    }
+
+    private String signUpEmailPasswordUser(TestingProcessManager.TestingProcess process, String email)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("email", email);
+        body.addProperty("password", "validPass123");
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", body, 1000, 1000, null, SemVer.v4_0.get(), "emailpassword");
+        assertEquals("OK", res.get("status").getAsString());
+        return res.get("user").getAsJsonObject().get("id").getAsString();
     }
 }

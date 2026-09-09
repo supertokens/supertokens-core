@@ -55,7 +55,10 @@ public class CoreConfig {
     // @EnumProperty: The property has fixed set of values (like an enum)
     // @ConfigYamlOnly: The property is configurable only from the config.yaml file.
     // @NotConflictingInApp: The property cannot have different values for tenants within an app
-    // @IgnoreForAnnotationCheck: Set this if the property is neither @ConfigYamlOnly nor @NotConflictingInApp, or should
+    // @NotConflictingInConnectionUriDomain: The property cannot have different values for any app/tenant within a
+    // connection URI domain
+    // @IgnoreForAnnotationCheck: Set this if the property is neither @ConfigYamlOnly nor @NotConflictingInApp nor
+    // @NotConflictingInConnectionUriDomain, or should
     // simply be ignored by the test (if the property is just an internal member and not an exposed config) that checks
     // for annotations on all properties.
     // @HideFromDashboard: The property should not be shown in the dashboard
@@ -68,7 +71,9 @@ public class CoreConfig {
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
             "oauth_provider_url_configured_in_oauth_provider",
-            "saml_legacy_acs_url"
+            "saml_legacy_acs_url",
+            "activity_log_retention_days",
+            "activity_log_throttle_enabled"
     };
 
     @IgnoreForAnnotationCheck
@@ -475,6 +480,28 @@ public class CoreConfig {
             "If specified, the bulk migration will wait between rounds. To disable it, set it to null. (Default: 1000)")
     private Integer bulk_migration_sleep_between_rounds_in_batch_ms = 1000;
 
+    @EnvName("ACTIVITY_LOG_RETENTION_DAYS")
+    @NotConflictingInConnectionUriDomain
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "Number of days of activity_log entries to retain; older entries are dropped by a periodic cleanup. Must " +
+                    "be the same for all apps/tenants under a connection URI domain. (Default: 31)")
+    private int activity_log_retention_days = 31;
+
+    @EnvName("ACTIVITY_LOG_THROTTLE_ENABLED")
+    @NotConflictingInConnectionUriDomain
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If true, throttled activity events (token_refresh, session_create, oauth_token_exchange, " +
+                    "oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 " +
+                    "minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out " +
+                    "are never throttled. Set to false to record every activity event as its own row (a complete " +
+                    "audit trail) at the cost of that write volume. Must be the same for all apps/tenants under a " +
+                    "connection URI domain. (Default: true)")
+    private boolean activity_log_throttle_enabled = true;
+
     @EnvName("WEBAUTHN_RECOVER_ACCOUNT_TOKEN_LIFETIME")
     @NotConflictingInApp
     @JsonProperty
@@ -770,6 +797,14 @@ public class CoreConfig {
 
     public Integer getBulkMigrationSleepBetweenRoundsInBatchMs() {
         return bulk_migration_sleep_between_rounds_in_batch_ms;
+    }
+
+    public int getActivityLogRetentionDays() {
+        return activity_log_retention_days;
+    }
+
+    public boolean getActivityLogThrottleEnabled() {
+        return activity_log_throttle_enabled;
     }
 
     public String getOtelCollectorConnectionURI() {
@@ -1068,6 +1103,13 @@ public class CoreConfig {
 
         if (bulk_migration_batch_size < 1) {
             throw new InvalidConfigException("Provided bulk_migration_batch_size must be >= 1");
+        }
+
+        // Retention must comfortably exceed the 10-minute (600s) last-active rollup interval so every
+        // activity_log row is folded before its partition is dropped; the smallest allowed value (1 day)
+        // already clears that horizon by two orders of magnitude.
+        if (activity_log_retention_days < 1) {
+            throw new InvalidConfigException("Provided activity_log_retention_days must be >= 1");
         }
 
         if (webauthn_recover_account_token_lifetime <= 0) {
@@ -1382,6 +1424,24 @@ public class CoreConfig {
                         throw new InvalidConfigException(
                                 "You cannot set different values for " + field.getName() +
                                         " for the same appId");
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
+    void assertThatConfigFromSameConnectionUriDomainAreNotConflicting(CoreConfig other)
+            throws InvalidConfigException {
+        // we do not allow different values for this across any app/tenant in the same connection URI domain
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(NotConflictingInConnectionUriDomain.class)) {
+                try {
+                    if (!Objects.equals(field.get(this), field.get(other))) {
+                        throw new InvalidConfigException(
+                                "You cannot set different values for " + field.getName() +
+                                        " for the same connectionUriDomain");
                     }
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);

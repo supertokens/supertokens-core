@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
@@ -98,8 +99,17 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     tenantIdentifier.toAppIdentifier(), storage,
                     new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    consumeCodeResponse.user.getSupertokensUserId());
+            if (!consumeCodeResponse.createdNewUser) {
+                // Only an existing-user sign-in is an activity ping; a newly created user's activity is
+                // recorded by the in-transaction user_creation lifecycle event the fold reads.
+                ActiveUsers.updateLastActive(tenantIdentifier, main,
+                        consumeCodeResponse.user.getSupertokensUserId(), ActivityEventType.SIGN_IN);
+            } else {
+                // The new user's fold credit is the transactional user_creation event, which — unlike the
+                // sign_in ping above — does not mark the rollup dirty. Wake the rollup so a sign-up-only user
+                // folds on the next tick instead of waiting for the periodic backstop.
+                ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
