@@ -19,6 +19,10 @@ The `activity_log.payload` column changes from `TEXT` to `JSONB` (structured lif
 
 **Large-deployment note:** this is an `ALTER COLUMN ... TYPE JSONB` on the partitioned `activity_log` parent, which rewrites every partition under an `ACCESS EXCLUSIVE` lock. On a large `activity_log` run the migration script *before* upgrading to avoid a startup stall (all historical payloads are `NULL`, so the cast is a pure type rewrite).
 
+```sql
+ALTER TABLE activity_log ALTER COLUMN payload TYPE JSONB USING payload::jsonb;
+```
+
 ## [12.2.0]
 
 - **Upgrade note: the core now verifies the database schema at startup and, with `schema_check_strict_mode: true` (default), refuses to start until the manual migrations from the CHANGELOGs are applied**
