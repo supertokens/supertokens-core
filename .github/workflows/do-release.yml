@@ -170,9 +170,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-backend-apis
-          # The migration-awareness companion (generate-core-migration.mjs + the
-          # CORE_MIGRATIONS registry) lives on master, not dev.
-          ref: master
+          # dev is the integration branch backend-apis PRs target; it now
+          # carries the migration-awareness companion (generate-core-migration.mjs
+          # + the CORE_MIGRATIONS registry), which it lacked during the 12.2.0
+          # release (the temporary master fallback).
+          ref: dev
           # Org-level secret with access to supertokens-backend-apis; GH_TOKEN
           # has no grant for that repo. Also persisted by checkout for the
           # git push below.
@@ -284,7 +286,7 @@ jobs:
             echo
             echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           } > "$bodyFile"
-          gh pr create --repo supertokens/supertokens-backend-apis --base master --head "$branch" \
+          gh pr create --repo supertokens/supertokens-backend-apis --base dev --head "$branch" \
             --title "$title" \
             --body-file "$bodyFile"
 
