@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
@@ -87,6 +88,7 @@ public class Totp {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static TOTPDevice createDevice(Main main, AppIdentifier appIdentifier, Storage storage, String userId,
                                           String deviceName, int skew, int period, String secretKey, boolean verified,
                                           long createdAt)
@@ -147,6 +149,7 @@ public class Totp {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void createDevices(Main main, AppIdentifier appIdentifier, Storage storage, List<TOTPDevice> devices)
             throws StorageQueryException, FeatureNotEnabledException,
             StorageTransactionLogicException {
@@ -178,6 +181,7 @@ public class Totp {
                 System.currentTimeMillis());
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private static void checkAndStoreCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                           String userId, TOTPDevice[] devices,
                                           String code)
@@ -482,6 +486,7 @@ public class Totp {
     /**
      * Delete device and also delete the user if deleting the last device
      */
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void removeDevice(AppIdentifier appIdentifier, Storage storage, String userId,
                                     String deviceName)
             throws StorageQueryException, UnknownDeviceException,

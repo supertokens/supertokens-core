@@ -18,6 +18,7 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -97,6 +98,8 @@ public class SignUpAPITest5_0 {
         assertEquals(lM.get("email").getAsString(), "random@gmail.com");
         assert (lM.entrySet().size() == 6);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignIn);
         assert (activeUsers == 1);
 
@@ -147,6 +150,8 @@ public class SignUpAPITest5_0 {
         assertEquals(lM.get("email").getAsString(), "user1.google@@stfakeemail.supertokens.com");
         assert (lM.entrySet().size() == 6);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignIn);
         assert (activeUsers == 1);
 

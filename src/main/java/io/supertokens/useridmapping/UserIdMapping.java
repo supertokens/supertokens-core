@@ -49,6 +49,7 @@ import org.jetbrains.annotations.TestOnly;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class UserIdMapping {
 
@@ -426,6 +427,7 @@ public class UserIdMapping {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
             AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)
@@ -446,6 +448,7 @@ public class UserIdMapping {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static List<io.supertokens.pluginInterface.useridmapping.UserIdMapping> getMultipleUserIdMapping(
             AppIdentifier appIdentifier, Storage storage, List<String> userIds,
             UserIdType userIdType)

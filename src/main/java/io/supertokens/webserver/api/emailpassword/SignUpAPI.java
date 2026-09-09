@@ -85,8 +85,11 @@ public class SignUpAPI extends WebserverAPI {
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    user.getSupertokensUserId());
+            // No activity event on sign-up: the in-transaction user_creation lifecycle event already records
+            // this as activity and the last-active fold reads it. That event is written via
+            // startAuditedTransaction and so does not mark the rollup dirty, so wake the rollup here — otherwise
+            // a sign-up-only user would fold only on the periodic backstop pass, not the next tick.
+            ActiveUsers.markLastActiveRollupDirty(main, tenantIdentifier);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

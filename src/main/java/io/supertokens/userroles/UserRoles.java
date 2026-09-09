@@ -34,6 +34,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class UserRoles {
     // add a role to a user and return true, if the role is already mapped to the user return false, but if
@@ -59,6 +60,7 @@ public class UserRoles {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void addMultipleRolesToMultipleUsers(Main main, AppIdentifier appIdentifier, Storage storage,
                                                        Map<TenantIdentifier, Map<String, List<String>>> rolesToUserByTenant)
             throws StorageTransactionLogicException, TenantOrAppNotFoundException {
@@ -124,6 +126,7 @@ public class UserRoles {
     // create a new role if it doesn't exist and add permissions to the role. This will create the role
     // in the user pool associated with the tenant used to query this API, so that this role can then
     // be shared across any tenant in that same user pool.
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static boolean createNewRoleOrModifyItsPermissions(AppIdentifier appIdentifier, Storage storage,
                                                               String role, String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
@@ -184,6 +187,7 @@ public class UserRoles {
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static boolean removeUserRole(TenantIdentifier tenantIdentifier, Storage storage, String userId,
                                          String role)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
@@ -277,6 +281,7 @@ public class UserRoles {
     }
 
     // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void deletePermissionsFromRole(AppIdentifier appIdentifier, Storage storage, String role,
                                                  @Nullable String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {

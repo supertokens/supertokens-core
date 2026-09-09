@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
+import io.supertokens.pluginInterface.auditlog.RollupEventTypes;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -146,6 +148,71 @@ public class ActiveUsersQueries {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });
+    }
+
+    /**
+     * Derives {@code user_last_active} from the activity log over {@code [windowStartMillis, now]}, on the
+     * caller's transaction connection. Mirrors the PostgreSQL implementation with two idempotent statements:
+     * <ol>
+     *   <li><b>Fold</b> — upsert each user's most recent fold-relevant activity (see
+     *       {@code RollupEventTypes#FOLD_SET}) into the projection, monotonically ({@code MAX(stored, new)} never
+     *       lowers a stored timestamp).</li>
+     *   <li><b>Reconcile</b> — delete projection rows for users linked away within the same window
+     *       ({@code account_linking} events, matched on {@code app_id} + {@code recipe_user_id}), but only
+     *       when the link event is not older than the row's {@code last_active_time} — a user linked then
+     *       active again in the same window keeps its post-link credit.</li>
+     * </ol>
+     * No advisory lock — the in-memory store is single-instance, so there is no concurrent pass to
+     * deduplicate and the fold never skips; this always returns {@code true} to match the SQLStorage
+     * contract. SQLite lacks the {@code DELETE ... USING} join, so the reconcile is expressed as a
+     * correlated {@code EXISTS} sub-select (result-identical).
+     */
+    public static boolean rollupLastActiveFromActivityLog_Transaction(Start start, Connection con,
+                                                                   long windowStartMillis)
+            throws StorageQueryException, SQLException {
+        String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
+        String activityLogTable = Config.getConfig(start).getActivityLogTable();
+        String appIdToUserIdTable = Config.getConfig(start).getAppIdToUserIdTable();
+
+        // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
+        // The fold set is the semantic activity events plus the two lifecycle events that imply activity
+        // (user_creation, account_linking); see RollupEventTypes.FOLD_SET. account_linking credits the primary
+        // user here (primary_or_recipe_user_id); the reconcile below separately drops the recipe user's row.
+        // The app_id_to_user_id guard folds only activity for a user whose auth record lives on this storage.
+        // With per-storage routing a user's activity is colocated with their auth record, so this normally
+        // matches; it exists as misroute insurance for the one tenant-less emit path (SessionRemoveAPI's
+        // app-wide sign-out writes to the app's public-tenant storage) — without it a separate-database
+        // tenant's user signed out there would gain a phantom public-storage projection row the summed count
+        // read double-counts. It also subsumes the old apps guard: app_id_to_user_id cascades on app delete,
+        // so a since-deleted app has no mapping rows here, so its retained activity_log rows are not folded and
+        // cannot violate the user_last_active -> apps foreign key.
+        String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
+                + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable + " al"
+                + " WHERE event_type IN (" + RollupEventTypes.sqlInList() + ") AND created_at >= ?"
+                + " AND EXISTS (SELECT 1 FROM " + appIdToUserIdTable + " m"
+                + " WHERE m.app_id = al.app_id AND m.user_id = al.primary_or_recipe_user_id)"
+                + " GROUP BY app_id, primary_or_recipe_user_id"
+                + " ON CONFLICT (app_id, user_id) DO UPDATE"
+                + " SET last_active_time = MAX(" + userLastActiveTable + ".last_active_time,"
+                + " excluded.last_active_time)";
+        update(con, FOLD_QUERY, pst -> pst.setLong(1, windowStartMillis));
+
+        // The ordering guard (al.created_at >= last_active_time) makes the reconcile order-insensitive and
+        // keeps it result-identical to the PostgreSQL DELETE ... USING: only scrub a linked-away recipe user's
+        // projection row when the account_linking event is not older than the row's stored last-active. A user
+        // linked, unlinked, then active again in one window keeps its post-unlink credit (its last_active_time
+        // is newer than the stale link) instead of being wrongly deleted by the earlier link event in the same
+        // window. The event_type literal is sourced from the shared LifecycleEventType so a rename can't
+        // silently stop the reconcile from firing.
+        String RECONCILE_QUERY = "DELETE FROM " + userLastActiveTable
+                + " WHERE EXISTS (SELECT 1 FROM " + activityLogTable + " al"
+                + " WHERE al.event_type = '" + LifecycleEventType.ACCOUNT_LINKING.getValue() + "'"
+                + " AND al.created_at >= ?"
+                + " AND al.app_id = " + userLastActiveTable + ".app_id"
+                + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id"
+                + " AND al.created_at >= " + userLastActiveTable + ".last_active_time)";
+        update(con, RECONCILE_QUERY, pst -> pst.setLong(1, windowStartMillis));
+        return true;
     }
 
     public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start,
