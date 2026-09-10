@@ -35,16 +35,20 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatefulKey()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
+            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
+            // the enabled features served on the next startup come from this persisted value (not from a
+            // fresh sync of the stored key).
+            if (!StorageLayer.isInMemDb(process.main)) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -78,16 +82,20 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatefulKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
+            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
+            // the enabled features served on the next startup come from this persisted value (not from a
+            // fresh sync of the stored key).
+            if (!StorageLayer.isInMemDb(process.main)) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -121,16 +129,20 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatelessKey()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
+            // the enabled features served on the next startup come from this persisted value (not from a
+            // fresh sync of the stored key).
+            if (!StorageLayer.isInMemDb(process.main)) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -164,16 +176,20 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatelessKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
+            // the enabled features served on the next startup come from this persisted value (not from a
+            // fresh sync of the stored key).
+            if (!StorageLayer.isInMemDb(process.main)) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
