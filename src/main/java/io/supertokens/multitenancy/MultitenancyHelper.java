@@ -430,8 +430,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
      * kept when it matches {@code loadOnlyCUD}. The match is done on the connectionUriDomain
      * <b>normalized the same way</b> as {@code loadOnlyCUD} (see
      * {@link #normalizeConnectionUriDomainForComparison}), so a stored connectionUriDomain and the
-     * configured value that differ only by case / scheme / port / trailing-slash still match instead of
-     * silently dropping a CUD the instance is meant to serve. Any excluded CUD is added to
+     * configured value that differ only by case / port still match instead of silently dropping a CUD
+     * the instance is meant to serve. Any excluded CUD is added to
      * {@code droppedTenantConfigs} (when non-null) so the caller can flag a drop of a live CUD.
      * <p>
      * Package-private and static (no {@code main}) so it can be unit-tested directly.
