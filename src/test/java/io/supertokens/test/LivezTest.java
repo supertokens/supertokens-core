@@ -104,6 +104,24 @@ public class LivezTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
+    // Default single-connector topology (admin_port unset): the admin connector is disabled, so the port-scoped
+    // gate in PathRouter is inactive and every route — including this ADMIN_ONLY one — is served on the main
+    // port. This is the config most operators run before opting into admin_port, so the health-check target must
+    // actually respond there. Guards against a future PathRouter change that starts 404-ing ADMIN_ONLY routes
+    // even when the admin connector is off.
+    @Test
+    public void testLivezReturns200OnMainPortWhenAdminPortUnset() throws Exception {
+        // Note: admin_port is intentionally NOT set here.
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        assertEquals("OK", getNoHeaders(process, MAIN + "/livez", 2000));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     // The route carries the ADMIN_ONLY classification mandated by PLAN-014.
     @Test
     public void testLivezRouteClassification() throws Exception {
