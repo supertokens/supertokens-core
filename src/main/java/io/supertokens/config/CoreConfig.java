@@ -891,7 +891,11 @@ public class CoreConfig {
 
                 if (field.getType().equals(String.class)) {
                     configJson.addProperty(field.getName(), stringValue);
-                } else if (field.getType().equals(int.class)) {
+                } else if (field.getType().equals(int.class) || field.getType().equals(Integer.class)) {
+                    // Integer (boxed) is used for fields that need a null = unset sentinel, e.g. admin_port and
+                    // bulk_migration_sleep_between_rounds_in_batch_ms. Without this branch their env vars
+                    // (SUPERTOKENS_ADMIN_PORT etc.) are read but never written to configJson, so the value is
+                    // silently dropped and the field stays at its default/null.
                     configJson.addProperty(field.getName(), Integer.parseInt(stringValue));
                 } else if (field.getType().equals(long.class)) {
                     configJson.addProperty(field.getName(), Long.parseLong(stringValue));
