@@ -31,9 +31,38 @@ public class PathRouter extends WebserverAPI {
 
     List<WebserverAPI> apis;
 
+    // Snapshot of the admin-connector routing state (enabled flag + admin port). The base config is immutable for
+    // the lifetime of the process — the admin port cannot change without a restart, and a restart builds a fresh
+    // Webserver (hence a fresh PathRouter). So we read it from the ResourceDistributor exactly once and reuse it on
+    // every request instead of taking the read lock on the config lookup on the hot path. Computed lazily on first
+    // use because config is guaranteed loaded by the time any request is served.
+    private volatile AdminGate adminGate;
+
+    private static final class AdminGate {
+        final boolean enabled;
+        final int adminPort;
+
+        AdminGate(boolean enabled, int adminPort) {
+            this.enabled = enabled;
+            this.adminPort = adminPort;
+        }
+    }
+
     public PathRouter(Main main) {
         super(main, "");
         this.apis = new ArrayList();
+    }
+
+    private AdminGate getAdminGate() {
+        AdminGate gate = this.adminGate;
+        if (gate == null) {
+            CoreConfig config = Config.getBaseConfig(main);
+            boolean enabled = config.isAdminConnectorEnabled();
+            // getAdminPort() dereferences the (nullable) admin_port, so only read it when the connector is enabled.
+            gate = new AdminGate(enabled, enabled ? config.getAdminPort() : -1);
+            this.adminGate = gate;
+        }
+        return gate;
     }
 
     public void addAPI(WebserverAPI newApi) {
@@ -118,9 +147,9 @@ public class PathRouter extends WebserverAPI {
         // Port-scoped route gate. Only active when the admin connector is enabled; otherwise every route is
         // served on the single main connector exactly as before. getAPIThatMatchesPath has already resolved the
         // canonical API (the /appid-.../<tenant>/ prefix is stripped), so the scope check is clean here.
-        CoreConfig config = Config.getBaseConfig(main);
-        if (config.isAdminConnectorEnabled()) {
-            boolean onAdminPort = req.getLocalPort() == config.getAdminPort();
+        AdminGate gate = getAdminGate();
+        if (gate.enabled) {
+            boolean onAdminPort = req.getLocalPort() == gate.adminPort;
             RouteScope scope = matchedApi.getRouteScope();
             // 404 (not 403): reads as "not served here", does not leak the route, and is not confused with an
             // auth failure. ADMIN_PREFERRED is served on both ports.

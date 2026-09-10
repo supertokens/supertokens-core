@@ -993,8 +993,12 @@ public class CoreConfig {
         }
 
         if (admin_port != null) {
-            if (admin_port < 0 || admin_port > 65535) {
-                throw new InvalidConfigException("'admin_port' must be between 0 and 65535 inclusive.");
+            // Require a concrete, reachable port. admin_port == 0 would tell Tomcat to bind an ephemeral port, but
+            // getAdminPort() still returns 0, so the PathRouter gate (req.getLocalPort() == adminPort) could never
+            // match — ADMIN_ONLY routes would be unreachable and DATA_PLANE routes would leak onto the random admin
+            // port. The connector is meant to be reached at a known port, so reject 0.
+            if (admin_port < 1 || admin_port > 65535) {
+                throw new InvalidConfigException("'admin_port' must be between 1 and 65535 inclusive.");
             }
             if (admin_port == port) {
                 throw new InvalidConfigException("'admin_port' must be different from 'port'.");

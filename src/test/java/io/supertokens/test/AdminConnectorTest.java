@@ -238,6 +238,38 @@ public class AdminConnectorTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
+    // admin_port == 0 (and any value outside [1, 65535]) is rejected at startup: 0 would make Tomcat bind an
+    // ephemeral port that the PathRouter gate can never match, silently breaking the route classification.
+    @Test
+    public void testAdminPortOutOfRangeIsRejected() throws Exception {
+        Utils.setValueInConfig("admin_port", "0");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        io.supertokens.ProcessState.EventAndException e =
+                process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("'admin_port' must be between 1 and 65535 inclusive.", e.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // admin_max_server_pool_size must be >= 1 when the admin connector is enabled.
+    @Test
+    public void testAdminMaxServerPoolSizeMustBePositive() throws Exception {
+        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_max_server_pool_size", "0");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        io.supertokens.ProcessState.EventAndException e =
+                process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("'admin_max_server_pool_size' must be >= 1.", e.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     // Pool isolation: when the data-plane pool is fully saturated, liveness/admin traffic on the admin port is
     // still served promptly because the admin connector has its own thread pool.
     @Test
