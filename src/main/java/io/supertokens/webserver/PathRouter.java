@@ -17,6 +17,8 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -111,6 +113,24 @@ public class PathRouter extends WebserverAPI {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesPath(req).service(req, resp);
+        WebserverAPI matchedApi = getAPIThatMatchesPath(req);
+
+        // Port-scoped route gate. Only active when the admin connector is enabled; otherwise every route is
+        // served on the single main connector exactly as before. getAPIThatMatchesPath has already resolved the
+        // canonical API (the /appid-.../<tenant>/ prefix is stripped), so the scope check is clean here.
+        CoreConfig config = Config.getBaseConfig(main);
+        if (config.isAdminConnectorEnabled()) {
+            boolean onAdminPort = req.getLocalPort() == config.getAdminPort();
+            RouteScope scope = matchedApi.getRouteScope();
+            // 404 (not 403): reads as "not served here", does not leak the route, and is not confused with an
+            // auth failure. ADMIN_PREFERRED is served on both ports.
+            if ((scope == RouteScope.ADMIN_ONLY && !onAdminPort)
+                    || (scope == RouteScope.DATA_PLANE && onAdminPort)) {
+                sendTextResponse(404, "Not found", resp);
+                return;
+            }
+        }
+
+        matchedApi.service(req, resp);
     }
 }

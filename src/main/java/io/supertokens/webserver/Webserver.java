@@ -34,6 +34,7 @@ import io.supertokens.OperatingSystem;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -253,6 +254,19 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         connector.setProperty("address", Config.getBaseConfig(main).getHost(main));
 
         tomcat.setConnector(connector);
+
+        // Optionally add a second connector on a separate admin port with its own (small) thread pool, so that
+        // liveness/control-plane traffic is isolated from the data-plane pool. Both connectors feed the same
+        // context / PathRouter; the PathRouter port gate decides which routes are served on which port. When the
+        // admin port is unset the server runs a single connector exactly as before.
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        if (baseConfig.isAdminConnectorEnabled()) {
+            Connector adminConnector = new Connector();
+            adminConnector.setProperty("maxThreads", baseConfig.getAdminMaxThreadPoolSize() + "");
+            adminConnector.setPort(baseConfig.getAdminPort());
+            adminConnector.setProperty("address", baseConfig.getHost(main));
+            tomcat.getService().addConnector(adminConnector);
+        }
 
         // we do this because we may run multiple tomcat servers in the same JVM
         tomcat.getEngine().setName(main.getProcessId());

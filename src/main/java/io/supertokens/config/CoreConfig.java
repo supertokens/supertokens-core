@@ -236,6 +236,23 @@ public class CoreConfig {
     @ConfigDescription("Sets the max thread pool size for incoming http server requests. (Default: 10)")
     private int max_server_pool_size = 10;
 
+    @EnvName("SUPERTOKENS_ADMIN_PORT")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The port for a second webserver connector that serves liveness and control-plane routes from a thread " +
+                    "pool separate from the data-plane pool. When set to null, the admin connector is disabled and " +
+                    "all routes are served on the main port exactly as before. (Default: null)")
+    private Integer admin_port = null;
+
+    @EnvName("ADMIN_MAX_SERVER_POOL_SIZE")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Sets the max thread pool size for requests to the admin connector. Only used when admin_port is set. " +
+                    "(Default: 5)")
+    private int admin_max_server_pool_size = 5;
+
     @EnvName("API_KEYS")
     @NotConflictingInApp
     @JsonProperty
@@ -779,6 +796,18 @@ public class CoreConfig {
         return max_server_pool_size;
     }
 
+    public boolean isAdminConnectorEnabled() {
+        return admin_port != null;
+    }
+
+    public int getAdminPort() {
+        return admin_port;
+    }
+
+    public int getAdminMaxThreadPoolSize() {
+        return admin_max_server_pool_size;
+    }
+
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
     }
@@ -961,6 +990,18 @@ public class CoreConfig {
                     "'max_server_pool_size' must be >= 1." +
                             (includeConfigFilePath ? " The config file can be"
                                     + " found here: " + getConfigFileLocation(main) : ""));
+        }
+
+        if (admin_port != null) {
+            if (admin_port < 0 || admin_port > 65535) {
+                throw new InvalidConfigException("'admin_port' must be between 0 and 65535 inclusive.");
+            }
+            if (admin_port == port) {
+                throw new InvalidConfigException("'admin_port' must be different from 'port'.");
+            }
+            if (admin_max_server_pool_size <= 0) {
+                throw new InvalidConfigException("'admin_max_server_pool_size' must be >= 1.");
+            }
         }
 
         if (api_keys != null) {
