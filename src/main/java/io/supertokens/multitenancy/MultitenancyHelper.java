@@ -459,7 +459,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
      * normalized-to-normalized. The configured {@code supertokens_saas_load_only_cud} is already
      * normalized on config load (see {@code CoreConfig}), but a DB-sourced connectionUriDomain read via
      * {@link TenantIdentifier#getConnectionUriDomain()} is only trimmed and lower-cased, so this closes
-     * the scheme/port/trailing-slash gap between the two operands.
+     * the case/port gap between the two operands. (The non-throwing variant only strips case and port;
+     * a scheme or trailing slash hits its internal path check, is caught, and is returned unchanged, but
+     * a stored connectionUriDomain can never carry either because the create path normalizes with the
+     * throwing variant.)
      */
     static String normalizeConnectionUriDomainForComparison(String connectionUriDomain) {
         if (connectionUriDomain == null
