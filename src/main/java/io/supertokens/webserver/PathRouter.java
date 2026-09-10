@@ -19,12 +19,18 @@ package io.supertokens.webserver;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.exceptions.QuitProgramException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class PathRouter extends WebserverAPI {
     private static final long serialVersionUID = -3199188474453935983L;
@@ -41,10 +47,15 @@ public class PathRouter extends WebserverAPI {
     private static final class AdminGate {
         final boolean enabled;
         final int adminPort;
+        // Operator-configured per-path RouteScope overrides (admin_only_paths / admin_preferred_paths), keyed by the
+        // normalized canonical API path. A matched API not present here keeps its compiled-in scope. Empty when the
+        // admin connector is disabled.
+        final Map<String, RouteScope> scopeOverrides;
 
-        AdminGate(boolean enabled, int adminPort) {
+        AdminGate(boolean enabled, int adminPort, Map<String, RouteScope> scopeOverrides) {
             this.enabled = enabled;
             this.adminPort = adminPort;
+            this.scopeOverrides = scopeOverrides;
         }
     }
 
@@ -59,10 +70,49 @@ public class PathRouter extends WebserverAPI {
             CoreConfig config = Config.getBaseConfig(main);
             boolean enabled = config.isAdminConnectorEnabled();
             // getAdminPort() dereferences the (nullable) admin_port, so only read it when the connector is enabled.
-            gate = new AdminGate(enabled, enabled ? config.getAdminPort() : -1);
+            gate = new AdminGate(enabled, enabled ? config.getAdminPort() : -1,
+                    enabled ? buildScopeOverrides(config) : Collections.emptyMap());
             this.adminGate = gate;
         }
         return gate;
+    }
+
+    // Build the effective per-path scope override map from config. admin_only wins over admin_preferred if a path
+    // somehow appears in both — but normalizeAndValidate already rejects that overlap before we get here.
+    private static Map<String, RouteScope> buildScopeOverrides(CoreConfig config) {
+        Map<String, RouteScope> overrides = new HashMap<>();
+        for (String path : config.getAdminPreferredPaths()) {
+            overrides.put(path, RouteScope.ADMIN_PREFERRED);
+        }
+        for (String path : config.getAdminOnlyPaths()) {
+            overrides.put(path, RouteScope.ADMIN_ONLY);
+        }
+        return overrides;
+    }
+
+    // Fail startup loudly if a configured override path (admin_only_paths / admin_preferred_paths) doesn't match any
+    // registered API — a typo would otherwise silently do nothing and leave the operator thinking a route was locked
+    // to a port. Called once after all APIs are registered (see Webserver.setupRoutes). Inert when the admin
+    // connector is disabled: config validation already rejects overrides without admin_port.
+    public void validateRouteScopeOverrides() {
+        CoreConfig config = Config.getBaseConfig(main);
+        if (!config.isAdminConnectorEnabled()) {
+            return;
+        }
+        Set<String> knownPaths = new HashSet<>();
+        for (WebserverAPI api : this.apis) {
+            knownPaths.add(CoreConfig.normalizeApiPath(api.getPath()));
+        }
+        Set<String> overridePaths = new HashSet<>();
+        overridePaths.addAll(config.getAdminOnlyPaths());
+        overridePaths.addAll(config.getAdminPreferredPaths());
+        for (String path : overridePaths) {
+            if (!knownPaths.contains(path)) {
+                throw new QuitProgramException(
+                        "Route-scope override path '" + path + "' in 'admin_only_paths'/'admin_preferred_paths' "
+                                + "does not match any known API path.");
+            }
+        }
     }
 
     public void addAPI(WebserverAPI newApi) {
@@ -150,7 +200,9 @@ public class PathRouter extends WebserverAPI {
         AdminGate gate = getAdminGate();
         if (gate.enabled) {
             boolean onAdminPort = req.getLocalPort() == gate.adminPort;
-            RouteScope scope = matchedApi.getRouteScope();
+            // Effective scope = operator override for this path (if configured), else the API's compiled-in scope.
+            RouteScope scope = gate.scopeOverrides.getOrDefault(
+                    CoreConfig.normalizeApiPath(matchedApi.getPath()), matchedApi.getRouteScope());
             // 404 (not 403): reads as "not served here", does not leak the route, and is not confused with an
             // auth failure. ADMIN_PREFERRED is served on both ports.
             if ((scope == RouteScope.ADMIN_ONLY && !onAdminPort)

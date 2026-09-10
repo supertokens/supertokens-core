@@ -253,6 +253,24 @@ public class CoreConfig {
                     "(Default: 5)")
     private int admin_max_server_pool_size = 5;
 
+    @EnvName("ADMIN_ONLY_PATHS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Comma-separated list of API paths to serve only on the admin port, overriding their compiled-in route " +
+                    "scope (e.g. '/ee/license'). Each entry must match a known API path, and admin_port must be set. " +
+                    "(Default: null)")
+    private String admin_only_paths = null;
+
+    @EnvName("ADMIN_PREFERRED_PATHS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Comma-separated list of API paths to serve on both the admin and main ports, overriding their " +
+                    "compiled-in route scope. Each entry must match a known API path, and admin_port must be set. " +
+                    "(Default: null)")
+    private String admin_preferred_paths = null;
+
     @EnvName("API_KEYS")
     @NotConflictingInApp
     @JsonProperty
@@ -808,6 +826,48 @@ public class CoreConfig {
         return admin_max_server_pool_size;
     }
 
+    // Route-scope overrides: operator-configured, per-path overrides of the compiled-in RouteScope, layered on top
+    // of the defaults (a path not listed keeps whatever scope its API declares). Only consulted when the admin
+    // connector is enabled; normalizeAndValidate rejects overrides when admin_port is unset.
+    public Set<String> getAdminOnlyPaths() {
+        return parsePathList(admin_only_paths);
+    }
+
+    public Set<String> getAdminPreferredPaths() {
+        return parsePathList(admin_preferred_paths);
+    }
+
+    private static Set<String> parsePathList(String csv) {
+        Set<String> paths = new HashSet<>();
+        if (csv == null) {
+            return paths;
+        }
+        for (String raw : csv.split(",")) {
+            String p = normalizeApiPath(raw);
+            if (!p.isEmpty()) {
+                paths.add(p);
+            }
+        }
+        return paths;
+    }
+
+    // Normalize an API path for route-scope override matching: trim, lowercase, ensure a single leading slash, and
+    // drop a trailing slash. PathRouter derives the override key from a matched API's getPath() through this same
+    // method, so the two representations stay in lockstep.
+    public static String normalizeApiPath(String path) {
+        String p = path.trim().toLowerCase();
+        if (p.isEmpty()) {
+            return p;
+        }
+        if (!p.startsWith("/")) {
+            p = "/" + p;
+        }
+        if (p.length() > 1 && p.endsWith("/")) {
+            p = p.substring(0, p.length() - 1);
+        }
+        return p;
+    }
+
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
     }
@@ -1009,6 +1069,23 @@ public class CoreConfig {
             }
             if (admin_max_server_pool_size <= 0) {
                 throw new InvalidConfigException("'admin_max_server_pool_size' must be >= 1.");
+            }
+        }
+
+        // Route-scope overrides only make sense when the admin connector is enabled (they map routes onto the admin
+        // port). A path can't be forced to two scopes at once. The "path must match a known API" check needs the
+        // registered API list, which only exists once the webserver is wired up, so it lives in
+        // PathRouter.validateRouteScopeOverrides() and fails startup there.
+        Set<String> adminOnlyPaths = getAdminOnlyPaths();
+        Set<String> adminPreferredPaths = getAdminPreferredPaths();
+        if ((!adminOnlyPaths.isEmpty() || !adminPreferredPaths.isEmpty()) && admin_port == null) {
+            throw new InvalidConfigException(
+                    "'admin_only_paths' and 'admin_preferred_paths' require 'admin_port' to be set.");
+        }
+        for (String p : adminOnlyPaths) {
+            if (adminPreferredPaths.contains(p)) {
+                throw new InvalidConfigException(
+                        "'" + p + "' cannot be listed in both 'admin_only_paths' and 'admin_preferred_paths'.");
             }
         }
 

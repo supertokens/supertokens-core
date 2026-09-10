@@ -477,6 +477,10 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new MigrationModeAPI(main));
         addAPI(new MigrationBackfillProgressAPI(main));
 
+        // All routes are registered now, so validate that every configured route-scope override path
+        // (admin_only_paths / admin_preferred_paths) matches a known API — fail startup on a typo.
+        pathRouter.validateRouteScopeOverrides();
+
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
 

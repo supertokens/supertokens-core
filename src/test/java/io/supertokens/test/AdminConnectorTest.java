@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -405,5 +406,133 @@ public class AdminConnectorTest {
         executor.shutdownNow();
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // Per-path route-scope override (admin_only_paths): an operator can promote a compiled-in ADMIN_PREFERRED route
+    // (here /hello) to ADMIN_ONLY without a code change — the Stage-3 hardening lever. /hello then behaves like an
+    // admin-only route: 200 on the admin port, 404 on the main port.
+    @Test
+    public void testAdminOnlyPathOverridePromotesRealRoute() throws Exception {
+        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_only_paths", "/hello");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        // Overridden to ADMIN_ONLY: served on the admin port, rejected on the main port.
+        assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+        try {
+            get(process, MAIN + "/hello");
+            fail("/hello overridden to admin_only should be 404 on the main port");
+        } catch (HttpResponseException e) {
+            assertEquals(404, e.statusCode);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // Per-path route-scope override (admin_preferred_paths): an operator can widen a compiled-in DATA_PLANE route
+    // (here the public JWKS endpoint) to ADMIN_PREFERRED, so it is also served on the admin port instead of being
+    // rejected there. It keeps working on the main port too.
+    @Test
+    public void testAdminPreferredPathOverrideWidensRealRoute() throws Exception {
+        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_preferred_paths", "/.well-known/jwks.json");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        // Now dual: served on both ports (default DATA_PLANE would 404 on the admin port). This endpoint returns
+        // JSON, so fetch it as a JsonObject rather than through the text get() helper.
+        JsonObject mainResp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                MAIN + "/.well-known/jwks.json", null, 2000, 2000, null,
+                Utils.getCdiVersionStringLatestForTests(), "");
+        assertTrue(mainResp.has("keys"));
+        JsonObject adminResp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                ADMIN + "/.well-known/jwks.json", null, 2000, 2000, null,
+                Utils.getCdiVersionStringLatestForTests(), "");
+        assertTrue(adminResp.has("keys"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // A typo'd override path that matches no registered API fails startup loudly (QuitProgramException surfaced as
+    // INIT_FAILURE) rather than silently doing nothing.
+    @Test
+    public void testRouteScopeOverrideUnknownPathRejected() throws Exception {
+        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_only_paths", "/does-not-exist");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        io.supertokens.ProcessState.EventAndException e =
+                process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertTrue(e.exception.getMessage().contains("does not match any known API path"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // Overrides are meaningless without the admin connector — configuring them with no admin_port is rejected.
+    @Test
+    public void testRouteScopeOverrideRequiresAdminPort() throws Exception {
+        Utils.setValueInConfig("admin_only_paths", "/hello");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        io.supertokens.ProcessState.EventAndException e =
+                process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("'admin_only_paths' and 'admin_preferred_paths' require 'admin_port' to be set.",
+                e.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // A path cannot be forced to two scopes at once.
+    @Test
+    public void testRouteScopeOverrideConflictRejected() throws Exception {
+        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_only_paths", "/hello");
+        Utils.setValueInConfig("admin_preferred_paths", "/hello");
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        io.supertokens.ProcessState.EventAndException e =
+                process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("'/hello' cannot be listed in both 'admin_only_paths' and 'admin_preferred_paths'.",
+                e.exception.getCause().getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // Overrides are configurable purely via environment variables (the primary Docker/k8s path), not just yaml.
+    @Test
+    public void testAdminOnlyPathsLoadedFromEnvVar() throws Exception {
+        String originalPort = setEnv("SUPERTOKENS_ADMIN_PORT", ADMIN_PORT + "");
+        String originalPaths = setEnv("ADMIN_ONLY_PATHS", "/hello");
+        try {
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            // The env-configured override took effect: /hello is admin-only (200 on admin, 404 on main).
+            assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+            try {
+                get(process, MAIN + "/hello");
+                fail("/hello overridden to admin_only via env var should be 404 on the main port");
+            } catch (HttpResponseException e) {
+                assertEquals(404, e.statusCode);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        } finally {
+            restoreEnv("ADMIN_ONLY_PATHS", originalPaths);
+            restoreEnv("SUPERTOKENS_ADMIN_PORT", originalPort);
+        }
     }
 }
