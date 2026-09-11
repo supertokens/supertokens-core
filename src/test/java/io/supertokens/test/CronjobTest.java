@@ -1063,7 +1063,10 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive", 600);
 
         Map<String, Integer> delays = new HashMap<>();
-        delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
+        // EELicenseCheck now performs the startup license sync itself (it used to run synchronously in
+        // EEFeatureFlag's constructor), so its initial delay is a short jittered value in [30, 60) seconds
+        // instead of a full day. It is asserted as a range below rather than an exact value.
+        String eeLicenseCheckClassName = "io.supertokens.ee.cronjobs.EELicenseCheck";
         delays.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 0);
@@ -1089,7 +1092,13 @@ public class CronjobTest {
 
         for (CronTask task : allTasks) {
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());
-            assertEquals(delays.get(task.getClass().getName()).intValue(), task.getInitialWaitTimeSeconds());
+            if (task.getClass().getName().equals(eeLicenseCheckClassName)) {
+                int delay = task.getInitialWaitTimeSeconds();
+                assertTrue("EELicenseCheck initial delay should be jittered in [30, 60), was " + delay,
+                        delay >= 30 && delay < 60);
+            } else {
+                assertEquals(delays.get(task.getClass().getName()).intValue(), task.getInitialWaitTimeSeconds());
+            }
         }
 
         process.kill();

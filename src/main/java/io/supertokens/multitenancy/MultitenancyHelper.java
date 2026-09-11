@@ -401,11 +401,66 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return inputTenantConfigs;
         }
 
-        return Arrays.stream(inputTenantConfigs)
-                .filter(tenantConfig -> tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(loadOnlyCUD)
-                        || tenantConfig.tenantIdentifier.getConnectionUriDomain()
-                        .equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
-                .toArray(TenantConfig[]::new);
+        List<TenantConfig> droppedTenantConfigs = new ArrayList<>();
+        TenantConfig[] filtered = filterTenantConfigsForLoadOnlyCUD(inputTenantConfigs, loadOnlyCUD,
+                droppedTenantConfigs);
+
+        for (TenantConfig dropped : droppedTenantConfigs) {
+            // Only a CUD that is *currently loaded* (has live resources in the distributor) is worth
+            // shouting about: replaceResourcesWithResourceKey is about to wipe its resources, which would
+            // otherwise surface as a log-free TenantOrAppNotFoundException on every request for that CUD.
+            if (isConnectionUriDomainCurrentlyLoaded(dropped.tenantIdentifier.getConnectionUriDomain())) {
+                Logging.error(main, dropped.tenantIdentifier,
+                        "supertokens_saas_load_only_cud is set to '" + loadOnlyCUD + "', which excludes the "
+                                + "previously-loaded connectionUriDomain '"
+                                + dropped.tenantIdentifier.getConnectionUriDomain()
+                                + "'. Its resources are being removed and requests for it will fail. Check that "
+                                + "supertokens_saas_load_only_cud matches the stored connectionUriDomain.", true);
+            }
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Filters {@code inputTenantConfigs} down to the CUDs that a core configured with
+     * {@code supertokens_saas_load_only_cud} should load: the default CUD is always kept, and a CUD is
+     * kept when its connectionUriDomain equals {@code loadOnlyCUD}. Both operands are already normalized
+     * on their own write path — the stored connectionUriDomain by the throwing
+     * {@code Utils.normalizeAndValidateConnectionUriDomain} at tenant-create time and {@code loadOnlyCUD}
+     * by the same normalizer on config load ({@code CoreConfig}) — so an exact match is correct for any
+     * CUD created through the API and no comparison-time normalization is needed. Any excluded CUD is
+     * added to {@code droppedTenantConfigs} (when non-null) so the caller can flag a drop of a live CUD,
+     * which is the part of this filter that actually addresses the "present, then silently wiped" symptom.
+     * <p>
+     * Package-private and static (no {@code main}) so it can be unit-tested directly.
+     */
+    static TenantConfig[] filterTenantConfigsForLoadOnlyCUD(TenantConfig[] inputTenantConfigs, String loadOnlyCUD,
+                                                            List<TenantConfig> droppedTenantConfigs) {
+        List<TenantConfig> filtered = new ArrayList<>();
+        for (TenantConfig tenantConfig : inputTenantConfigs) {
+            String connectionUriDomain = tenantConfig.tenantIdentifier.getConnectionUriDomain();
+            if (connectionUriDomain.equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
+                    || connectionUriDomain.equals(loadOnlyCUD)) {
+                filtered.add(tenantConfig);
+            } else if (droppedTenantConfigs != null) {
+                droppedTenantConfigs.add(tenantConfig);
+            }
+        }
+        return filtered.toArray(new TenantConfig[0]);
+    }
+
+    private boolean isConnectionUriDomainCurrentlyLoaded(String connectionUriDomain) {
+        TenantConfig[] currentlyLoaded = this.tenantConfigs;
+        if (currentlyLoaded == null) {
+            return false;
+        }
+        for (TenantConfig tenantConfig : currentlyLoaded) {
+            if (tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(connectionUriDomain)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {

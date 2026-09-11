@@ -205,7 +205,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
             // error and continue below.
         }
         try {
-            err = err.trim();
+            // Guard against a null message (e.g. a caller passing e.getMessage() for an exception with
+            // no message). Previously err.trim() threw an NPE that was swallowed below, logging nothing.
+            // Use a fixed placeholder rather than "" so such a line still carries greppable content beyond
+            // the tenant prefix and it is obvious at the call site that a message-less value was passed.
+            err = err == null ? "(no message)" : err.trim();
             if (getInstance(main) != null) {
                 String formattedMessage = getFormattedMessage(tenantIdentifier, err);
                 getInstance(main).errorLogger.error(formattedMessage);
@@ -239,17 +243,20 @@ public class Logging extends ResourceDistributor.SingletonResource {
             } else if (Main.isTesting) {
                 systemErr(err);
             }
-            if (message != null) {
-                message = message.trim();
-                if (getInstance(main) != null) {
-                    getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, message, e));
-                    TelemetryProvider.getInstance(main)
-                            .createLogEvent(tenantIdentifier, getFormattedMessage(tenantIdentifier, message, e),
-                                    "error");
-                }
-                if (toConsoleAsWell || getInstance(main) == null) {
-                    systemErr(prependTenantIdentifierToMessage(tenantIdentifier, message));
-                }
+            // Fall back to the exception's class name when the explicit message is null, so a
+            // null-message exception is still logged (with its stack trace) rather than dropped.
+            if (message == null) {
+                message = e.getClass().getName();
+            }
+            message = message.trim();
+            if (getInstance(main) != null) {
+                getInstance(main).errorLogger.error(getFormattedMessage(tenantIdentifier, message, e));
+                TelemetryProvider.getInstance(main)
+                        .createLogEvent(tenantIdentifier, getFormattedMessage(tenantIdentifier, message, e),
+                                "error");
+            }
+            if (toConsoleAsWell || getInstance(main) == null) {
+                systemErr(prependTenantIdentifierToMessage(tenantIdentifier, message));
             }
         } catch (NullPointerException ignored) {
         }
