@@ -56,6 +56,7 @@ import io.supertokens.webserver.api.core.ConfigAPI;
 import io.supertokens.webserver.api.core.DeleteUserAPI;
 import io.supertokens.webserver.api.core.EEFeatureFlagAPI;
 import io.supertokens.webserver.api.core.GetUserByIdAPI;
+import io.supertokens.webserver.api.core.GlobalRequestStatsAPI;
 import io.supertokens.webserver.api.core.HelloAPI;
 import io.supertokens.webserver.api.core.JWKSPublicAPI;
 import io.supertokens.webserver.api.core.LicenseKeyAPI;
@@ -417,6 +418,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeResetPasswordAPI(main));
 
         addAPI(new RequestStatsAPI(main));
+        addAPI(new GlobalRequestStatsAPI(main));
         addAPI(new GetTenantCoreConfigForDashboardAPI(main));
 
         addAPI(new BulkImportAPI(main));
