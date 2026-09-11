@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `user_last_active` is now derived by the new `RollupUserLastActive` cron folding activity events (its sole writer); `ActiveUsers.updateLastActive` only appends throttled events, so MAU counts reflect activity within a rollup interval.
 - Active-user activity and its projection now live on the user's own storage (not the app-public tenant), and active-user counts (`GET /users/count/active`, telemetry MAU) sum across every storage backing the app, so a user on a tenant with its own database is counted correctly.
 - In-memory (SQLite) parity for the ledger and rollup storage contract (transactional audit insert, last-active fold/reconcile, windowed event read, and the connection-taking sign-up/tenant-removal variants).
+- `supertokens_saas_load_only_cud` now normalizes the configured value and each connectionUriDomain the same way before comparing, so a CUD that differs only by case/port is no longer silently dropped (which previously wiped its resources and surfaced as a log-free tenant-not-found); dropping a previously-loaded CUD is now logged.
 - The EE license-key sync no longer runs synchronously in the `FeatureFlag` constructor (on the boot thread and under the resource-distributor lock on every tenant/app reload); it now runs on the `EELicenseCheck` cron with a short jittered initial delay after startup, then daily as before. Enabled features are served from the last persisted sync in the meantime.
 
 ### Migration
