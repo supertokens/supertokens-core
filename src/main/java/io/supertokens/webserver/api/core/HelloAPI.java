@@ -52,6 +52,13 @@ public class HelloAPI extends WebserverAPI {
     }
 
     @Override
+    public RouteScope getRouteScope() {
+        // Existing readiness check (with its DB round-trip). Served on the admin pool as well as the main port,
+        // permanently — existing callers on the main port must keep working. Never forced to ADMIN_ONLY.
+        return RouteScope.ADMIN_PREFERRED;
+    }
+
+    @Override
     protected boolean checkAPIKey(HttpServletRequest req) {
         return false;
     }

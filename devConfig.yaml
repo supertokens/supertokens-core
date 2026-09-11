@@ -108,6 +108,33 @@ core_config_version: 0
 # max_server_pool_size:
 
 
+# (OPTIONAL | Default: null) integer value. The port for a second webserver connector that serves liveness and
+# control-plane routes from a thread pool separate from the data-plane pool. When set to null, the admin connector
+# is disabled and all routes are served on the main port exactly as before.
+# The admin port is NOT a separate trust boundary: it applies the same 'api_keys' and IP-allow rules as the main
+# port, binds the same 'host', and has no credential of its own. It carries sensitive routes (e.g. '/ee/license',
+# which sets the license key, and '/global-request-stats'), so it is meant for the orchestrator / control plane
+# and should not be exposed beyond the network boundary your liveness check and control plane already live in.
+# admin_port:
+
+
+# (OPTIONAL | Default: 5) integer value. Sets the max thread pool size for requests to the admin connector. Only
+# used when admin_port is set.
+# admin_max_server_pool_size:
+
+
+# (OPTIONAL | Default: null) comma separated string values. Comma-separated list of API paths to serve only on the
+# admin port, overriding their compiled-in route scope (e.g. '/ee/license'). Each entry must match a known API path,
+# and admin_port must be set.
+# admin_only_paths:
+
+
+# (OPTIONAL | Default: null) comma separated string values. Comma-separated list of API paths to serve on both the
+# admin and main ports, overriding their compiled-in route scope. Each entry must match a known API path, and
+# admin_port must be set.
+# admin_preferred_paths:
+
+
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an
 # instance using this config file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric
 # (including capital) chars. Each key must have a minimum length of 20 chars
