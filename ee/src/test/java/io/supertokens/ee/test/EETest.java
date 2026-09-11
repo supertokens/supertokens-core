@@ -5,7 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
+import io.supertokens.ee.cronjobs.EELicenseCheck;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
@@ -183,15 +185,23 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             Assert.assertNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            // The license sync no longer runs synchronously in EEFeatureFlag's constructor on the boot
+            // thread; the EELicenseCheck cron performs it shortly after startup. Pin its (jittered) initial
+            // delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
 
+                // the cron performs the sync shortly after startup (it no longer runs synchronously in the
+                // constructor on the boot thread). FeatureFlagTest.testNetworkCallIsMadeInCoreInit asserts
+                // the boot itself makes no synchronous call.
                 Assert.assertNotNull(
                         process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
+                // enabled features are served from the value persisted by the previous run's sync.
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
@@ -344,20 +354,25 @@ public class EETest extends Mockito {
         }
 
         {
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            // Invalid-key detection now happens on the EELicenseCheck cron rather than in the boot-time
+            // constructor sync; pin its (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
+            process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                // the cron detects the invalid stateless key and removes it (no server call for stateless keys).
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+                Assert.assertNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
                 try {
                     FeatureFlag.getInstance(process.main).getLicenseKey();
                     fail();
                 } catch (NoLicenseKeyFoundException ignored) {
                 }
-
-                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
-                Assert.assertNull(
-                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
 
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
             }
@@ -386,20 +401,25 @@ public class EETest extends Mockito {
         }
 
         {
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            // Invalid-key detection now happens on the EELicenseCheck cron rather than in the boot-time
+            // constructor sync; pin its (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
+            process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                // the cron makes the server call for the opaque key, finds it invalid and removes it.
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
                 try {
                     FeatureFlag.getInstance(process.main).getLicenseKey();
                     fail();
                 } catch (NoLicenseKeyFoundException ignored) {
                 }
-
-                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
-                Assert.assertNotNull(
-                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
             }
@@ -453,13 +473,17 @@ public class EETest extends Mockito {
                             return new URL(null, url, stubURLStreamHandler);
                         }
                     });
+            // The stored key is now synced by the EELicenseCheck cron rather than the boot-time constructor
+            // sync, so the (mocked) server error surfaces from the cron shortly after startup. Pin its
+            // (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 Assert.assertNotNull(process.checkOrWaitForEvent(
-                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, 1000));
+                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL));
 
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
             }
@@ -496,13 +520,17 @@ public class EETest extends Mockito {
                             return new URL("https://dnsflkjahsdpfiouahopjbnakfjds.supertokens.com");
                         }
                     });
+            // The stored key is now synced by the EELicenseCheck cron rather than the boot-time constructor
+            // sync, so the (mocked) server error surfaces from the cron shortly after startup. Pin its
+            // (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 Assert.assertNotNull(process.checkOrWaitForEvent(
-                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, 1000));
+                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL));
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
             }
 
