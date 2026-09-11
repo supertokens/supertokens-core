@@ -332,6 +332,11 @@
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.63.0/opentelemetry-common-1.63.0-sources.jar"
 	},
 	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.63.0/opentelemetry-exporter-logging-1.63.0.jar",
+		"name":"opentelemetry-exporter-logging 1.63.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.63.0/opentelemetry-exporter-logging-1.63.0-sources.jar"
+	},
+	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.63.0/opentelemetry-sdk-1.63.0.jar",
 		"name":"opentelemetry-sdk 1.63.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.63.0/opentelemetry-sdk-1.63.0-sources.jar"
@@ -380,6 +385,11 @@
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-common/1.63.0/opentelemetry-exporter-common-1.63.0.jar",
 		"name":"opentelemetry-exporter-common 1.63.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-common/1.63.0/opentelemetry-exporter-common-1.63.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-trace/1.63.0/opentelemetry-sdk-trace-1.63.0.jar",
+		"name":"opentelemetry-sdk-trace 1.63.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-trace/1.63.0/opentelemetry-sdk-trace-1.63.0-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-metrics/1.63.0/opentelemetry-sdk-metrics-1.63.0.jar",
