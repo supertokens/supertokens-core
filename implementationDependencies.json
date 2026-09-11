@@ -232,11 +232,6 @@
 		"src":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.84/bcprov-jdk18on-1.84-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/cryptacular/cryptacular/1.3.0/cryptacular-1.3.0.jar",
-		"name":"cryptacular 1.3.0",
-		"src":"https://repo.maven.apache.org/maven2/org/cryptacular/cryptacular/1.3.0/cryptacular-1.3.0-sources.jar"
-	},
-	{
 		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-impl/5.2.3/opensaml-saml-impl-5.2.3.jar",
 		"name":"opensaml-saml-impl 5.2.3",
 		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-saml-impl/5.2.3/opensaml-saml-impl-5.2.3-sources.jar"
@@ -312,26 +307,6 @@
 		"src":"https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.38/logback-classic-1.5.38-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24.jar",
-		"name":"aspectjrt 1.9.24",
-		"src":"https://repo.maven.apache.org/maven2/org/aspectj/aspectjrt/1.9.24/aspectjrt-1.9.24-sources.jar"
-	},
-	{
-		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.63.0/opentelemetry-api-1.63.0.jar",
-		"name":"opentelemetry-api 1.63.0",
-		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.63.0/opentelemetry-api-1.63.0-sources.jar"
-	},
-	{
-		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.63.0/opentelemetry-context-1.63.0.jar",
-		"name":"opentelemetry-context 1.63.0",
-		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.63.0/opentelemetry-context-1.63.0-sources.jar"
-	},
-	{
-		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.63.0/opentelemetry-common-1.63.0.jar",
-		"name":"opentelemetry-common 1.63.0",
-		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.63.0/opentelemetry-common-1.63.0-sources.jar"
-	},
-	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.63.0/opentelemetry-exporter-logging-1.63.0.jar",
 		"name":"opentelemetry-exporter-logging 1.63.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-logging/1.63.0/opentelemetry-exporter-logging-1.63.0-sources.jar"
@@ -345,6 +320,11 @@
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-common/1.63.0/opentelemetry-sdk-common-1.63.0.jar",
 		"name":"opentelemetry-sdk-common 1.63.0",
 		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-common/1.63.0/opentelemetry-sdk-common-1.63.0-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.63.0/opentelemetry-api-1.63.0.jar",
+		"name":"opentelemetry-api 1.63.0",
+		"src":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.63.0/opentelemetry-api-1.63.0-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.63.0/opentelemetry-exporter-otlp-1.63.0.jar",
