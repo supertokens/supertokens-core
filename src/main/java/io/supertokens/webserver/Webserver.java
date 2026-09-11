@@ -61,6 +61,7 @@ import io.supertokens.webserver.api.core.HelloAPI;
 import io.supertokens.webserver.api.core.JWKSPublicAPI;
 import io.supertokens.webserver.api.core.LicenseKeyAPI;
 import io.supertokens.webserver.api.core.ListUsersByAccountInfoAPI;
+import io.supertokens.webserver.api.core.LivezAPI;
 import io.supertokens.webserver.api.core.NotFoundOrHelloAPI;
 import io.supertokens.webserver.api.core.RequestStatsAPI;
 import io.supertokens.webserver.api.core.SearchTagsAPI;
@@ -312,6 +313,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     private void setupRoutes() {
         addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
+        addAPI(new LivezAPI(main));
         addAPI(new JWKSPublicAPI(main));
         addAPI(new SessionAPI(main));
         addAPI(new VerifySessionAPI(main));
