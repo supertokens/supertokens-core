@@ -622,6 +622,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 false);
 
         if (tenantIdentifier != null) {
+            // Process-global, per-status-class counts (across all apps). Independent of the per-app RequestStats
+            // below; keyed at the base tenant so it never throws for an unknown app. Requests that fail tenant
+            // resolution (tenantIdentifier == null) are intentionally not counted here.
+            GlobalRequestStats.getInstance(main).incrementForStatus(resp.getStatus());
             try {
                 RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
             } catch (TenantOrAppNotFoundException e) {
