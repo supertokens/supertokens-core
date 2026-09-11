@@ -52,6 +52,15 @@ public class EELicenseCheck extends CronTask {
     @Override
     public int getInitialWaitTimeSeconds() {
         if (Main.isTesting) {
+            // Prefer the dedicated initial-wait seam (as BackfillReservationTables / ProcessBulkImportUsers /
+            // RollupUserLastActive do) so a test can pin the first-run delay without also collapsing the daily
+            // interval (which would make the cron loop every few seconds, each loop a live license-server call).
+            Integer waitTime = CronTaskTest.getInstance(main).getInitialWaitTimeInSeconds(RESOURCE_KEY);
+            if (waitTime != null) {
+                return waitTime;
+            }
+            // Backwards-compatible fallback: tests that only pin the interval still shorten the initial delay
+            // (many existing EE tests rely on setIntervalInSeconds(RESOURCE_KEY, 1) to fire the first sync fast).
             Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
             if (interval != null) {
                 return interval;

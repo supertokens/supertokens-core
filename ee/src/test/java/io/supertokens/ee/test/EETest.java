@@ -156,7 +156,7 @@ public class EETest extends Mockito {
     }
 
     @Test
-    public void testNetworkCallMadeOnCoreStartIfLicenseKeyPresent() throws Exception {
+    public void testNetworkCallMadeByCronShortlyAfterCoreStartIfLicenseKeyPresent() throws Exception {
         String[] args = {"../../"};
 
         // we do this test only for non in mem db cause it requires saving the license key across
@@ -196,8 +196,8 @@ public class EETest extends Mockito {
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
 
                 // the cron performs the sync shortly after startup (it no longer runs synchronously in the
-                // constructor on the boot thread). FeatureFlagTest.testNetworkCallIsMadeInCoreInit asserts
-                // the boot itself makes no synchronous call.
+                // constructor on the boot thread). FeatureFlagTest's
+                // testNetworkCallIsMadeByCronAfterCoreInitNotDuringBoot asserts the boot makes no sync call.
                 Assert.assertNotNull(
                         process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
@@ -1092,12 +1092,17 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             Assert.assertNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            // Invalid-key detection now happens on the EELicenseCheck cron rather than in the boot-time
+            // constructor sync; pin its (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
 
+                // the cron makes the server call for the opaque key, finds it invalid and removes it.
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
                 Assert.assertNotNull(
                         process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
@@ -1139,11 +1144,20 @@ public class EETest extends Mockito {
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            // Invalid-key detection now happens on the EELicenseCheck cron rather than in the boot-time
+            // constructor sync; pin its (jittered) initial delay to 1s so this is deterministic.
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+
+                // the cron detects the invalid stateless key and removes it (no server call for stateless keys),
+                // which zeroes the enabled features; wait for that before asserting.
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+                Assert.assertNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
 
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
             }

@@ -31,10 +31,9 @@ import static org.junit.Assert.*;
 
 /**
  * Pure unit tests (no running core / no DB) for the {@code supertokens_saas_load_only_cud} filter in
- * {@link MultitenancyHelper#filterTenantConfigsForLoadOnlyCUD}. These exercise the normalization gap
- * directly: a stored connectionUriDomain that differs from the configured value only by
- * case / port cannot be created through the API (the request path strips it), so it is constructed
- * here with a raw {@link TenantIdentifier}.
+ * {@link MultitenancyHelper#filterTenantConfigsForLoadOnlyCUD}. The filter keeps the default CUD plus
+ * any CUD whose (already-normalized) connectionUriDomain exactly equals the (already-normalized)
+ * configured value, and reports every excluded CUD so the caller can log a drop of a live CUD.
  */
 public class MultitenancyHelperFilterTest {
 
@@ -56,36 +55,17 @@ public class MultitenancyHelperFilterTest {
         return false;
     }
 
-    // A CUD whose stored connectionUriDomain differs from the configured load-only value ONLY by the
-    // normalization the config already applies (port stripped) must be retained, not silently dropped.
+    // A CUD whose (normalized) connectionUriDomain equals the configured load-only value is retained and
+    // is never reported as dropped.
     @Test
-    public void cudDifferingOnlyByPortIsRetained() {
-        // supertokens_saas_load_only_cud is normalized on config load to "example.com" (port stripped).
+    public void matchingCUDIsRetained() {
         String loadOnlyCUD = "example.com";
-        // ...but a stored connectionUriDomain can carry the port, and getConnectionUriDomain() only
-        // trims + lowercases, so a raw .equals would not match.
-        String storedCUD = "example.com:3567";
-        assertNotEquals("precondition: raw compare would have dropped this CUD (the bug)", storedCUD, loadOnlyCUD);
+        String storedCUD = "example.com";
 
         List<TenantConfig> dropped = new ArrayList<>();
         TenantConfig[] filtered = MultitenancyHelper.filterTenantConfigsForLoadOnlyCUD(
                 new TenantConfig[]{tenantConfigForCUD(storedCUD)}, loadOnlyCUD, dropped);
 
-        assertTrue(containsCUD(filtered, storedCUD));
-        assertTrue(dropped.isEmpty());
-    }
-
-    // Case-only difference must also be retained.
-    @Test
-    public void cudDifferingOnlyByCaseIsRetained() {
-        String loadOnlyCUD = "example.com";
-        String storedCUD = "Example.Com";
-
-        List<TenantConfig> dropped = new ArrayList<>();
-        TenantConfig[] filtered = MultitenancyHelper.filterTenantConfigsForLoadOnlyCUD(
-                new TenantConfig[]{tenantConfigForCUD(storedCUD)}, loadOnlyCUD, dropped);
-
-        // getConnectionUriDomain() lower-cases, so the retained entry reads back as "example.com".
         assertEquals(1, filtered.length);
         assertTrue(containsCUD(filtered, "example.com"));
         assertTrue(dropped.isEmpty());
@@ -105,12 +85,13 @@ public class MultitenancyHelperFilterTest {
         assertTrue(dropped.isEmpty());
     }
 
-    // A genuinely different CUD is dropped and reported so a live-CUD wipe can be logged loudly.
+    // A genuinely different CUD is dropped and reported so a live-CUD wipe can be logged loudly, while the
+    // default CUD and the matching CUD are retained.
     @Test
     public void unrelatedCUDIsDroppedAndReported() {
         String loadOnlyCUD = "example.com";
         TenantConfig defaultTenant = tenantConfigForCUD(TenantIdentifier.DEFAULT_CONNECTION_URI);
-        TenantConfig kept = tenantConfigForCUD("example.com:8080");
+        TenantConfig kept = tenantConfigForCUD("example.com");
         TenantConfig droppedCUD = tenantConfigForCUD("other.com");
 
         List<TenantConfig> dropped = new ArrayList<>();
@@ -118,25 +99,10 @@ public class MultitenancyHelperFilterTest {
                 new TenantConfig[]{defaultTenant, kept, droppedCUD}, loadOnlyCUD, dropped);
 
         assertTrue(containsCUD(filtered, TenantIdentifier.DEFAULT_CONNECTION_URI));
-        assertTrue(containsCUD(filtered, "example.com:8080"));
+        assertTrue(containsCUD(filtered, "example.com"));
         assertFalse(containsCUD(filtered, "other.com"));
 
         assertEquals(1, dropped.size());
         assertEquals("other.com", dropped.get(0).tenantIdentifier.getConnectionUriDomain());
-    }
-
-    // The normalizer used for comparison must be tolerant of the empty (default) string and must strip
-    // the port/case the config normalizer strips.
-    @Test
-    public void normalizeConnectionUriDomainForComparison() {
-        assertEquals(TenantIdentifier.DEFAULT_CONNECTION_URI,
-                MultitenancyHelper.normalizeConnectionUriDomainForComparison(
-                        TenantIdentifier.DEFAULT_CONNECTION_URI));
-        assertEquals(TenantIdentifier.DEFAULT_CONNECTION_URI,
-                MultitenancyHelper.normalizeConnectionUriDomainForComparison(null));
-        assertEquals("example.com",
-                MultitenancyHelper.normalizeConnectionUriDomainForComparison("Example.Com:9000"));
-        assertEquals("127.0.0.1",
-                MultitenancyHelper.normalizeConnectionUriDomainForComparison("127.0.0.1:3567"));
     }
 }

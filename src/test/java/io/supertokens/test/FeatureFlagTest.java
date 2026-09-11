@@ -885,7 +885,7 @@ public class FeatureFlagTest {
     }
 
     @Test
-    public void testNetworkCallIsMadeInCoreInit() throws Exception {
+    public void testNetworkCallIsMadeByCronAfterCoreInitNotDuringBoot() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -910,12 +910,14 @@ public class FeatureFlagTest {
 
         // Restart core. The license sync no longer runs synchronously in EEFeatureFlag's constructor on the
         // boot thread; the EELicenseCheck cron performs it shortly after startup instead. Pin the cron's
-        // (jittered) initial delay to 3s via the CronTaskTest seam so this is deterministic.
+        // (jittered) initial delay to 10s via the CronTaskTest initial-wait seam so this is deterministic. We
+        // pin the initial wait rather than the interval so the "no call within 1000ms" window below has a wide
+        // (~10s), boot-order-independent margin, and the daily interval stays untouched (the cron won't loop).
         process = TestingProcessManager.startIsolatedProcess(args, false);
         // EELicenseCheck.RESOURCE_KEY lives in the ee module, which is not on this (core) test's compile
         // classpath, so refer to it by its literal resource-key string.
         CronTaskTest.getInstance(process.getProcess())
-                .setIntervalInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 3);
+                .setInitialWaitTimeInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 10);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

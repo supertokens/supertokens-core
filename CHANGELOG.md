@@ -8,8 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.3.1]
 
 - Fixes an app losing its `FeatureFlag` resource (and `/ee/license` then failing with tenant-not-found) when reloading it throws; the app now keeps its previous resource and the failure is logged with a stack trace. Also fixes `Logging.error` silently swallowing exceptions with a null message.
-- `supertokens_saas_load_only_cud` now normalizes the configured value and each connectionUriDomain the same way before comparing, so a CUD that differs only by case/port is no longer silently dropped (which previously wiped its resources and surfaced as a log-free tenant-not-found); dropping a previously-loaded CUD is now logged.
-- The EE license-key sync no longer runs synchronously in the `FeatureFlag` constructor (on the boot thread and under the resource-distributor lock on every tenant/app reload); it now runs on the `EELicenseCheck` cron with a short jittered initial delay after startup, then daily as before. Enabled features are served from the last persisted sync in the meantime.
+- When `supertokens_saas_load_only_cud` excludes a connectionUriDomain that was previously loaded — wiping its resources and otherwise surfacing only as a log-free tenant-not-found on every request for that CUD — the drop is now logged at error level, pointing at the config vs. stored-CUD mismatch.
+- The EE license-key sync no longer runs synchronously in the `FeatureFlag` constructor (on the boot thread and under the resource-distributor lock on every tenant/app reload); it now runs on the `EELicenseCheck` cron with a short jittered initial delay after startup, then daily as before. Enabled features are served from the last persisted sync in the meantime, so feature gating is unchanged (an app that has not synced yet reads as no EE features — exactly what a key-less sync persists — and `PUT /ee/license` still syncs inline); the only behavioural change is that an app created or updated at runtime first reports its paid-usage stats on the next cron pass rather than immediately.
 
 ## [12.3.0]
 

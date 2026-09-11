@@ -207,7 +207,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             // Guard against a null message (e.g. a caller passing e.getMessage() for an exception with
             // no message). Previously err.trim() threw an NPE that was swallowed below, logging nothing.
-            err = err == null ? "" : err.trim();
+            // Use a fixed placeholder rather than "" so such a line still carries greppable content beyond
+            // the tenant prefix and it is obvious at the call site that a message-less value was passed.
+            err = err == null ? "(no message)" : err.trim();
             if (getInstance(main) != null) {
                 String formattedMessage = getFormattedMessage(tenantIdentifier, err);
                 getInstance(main).errorLogger.error(formattedMessage);
