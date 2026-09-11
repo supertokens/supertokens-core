@@ -26,8 +26,11 @@ import java.io.IOException;
 // DB-free liveness endpoint for the ECS container health check. Unlike /hello (which does a
 // storage.getKeyValue round-trip and is therefore a readiness check), /livez does NO storage access and
 // takes NO shared lock: it returns 200 purely as evidence that the process/JVM is alive and can schedule a
-// request thread. It is ADMIN_ONLY, so it is reachable only on the admin connector's isolated pool and stays
-// responsive under data-plane thread saturation and DB-pool exhaustion. See PLAN-014 / issue #1428.
+// request thread. It is ADMIN_ONLY, so when the admin connector is enabled (admin_port set) it is reachable only
+// on the admin connector's isolated pool and stays responsive under data-plane thread saturation and DB-pool
+// exhaustion. In the default single-connector topology (admin_port unset) the port gate is inert and /livez is
+// served on the main port instead — ADMIN_ONLY is a port-routing classification, not an auth guarantee. See
+// PLAN-014 / issue #1428.
 public class LivezAPI extends WebserverAPI {
 
     private static final long serialVersionUID = 1L;

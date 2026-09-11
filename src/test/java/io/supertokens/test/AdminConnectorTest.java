@@ -50,9 +50,14 @@ import static org.junit.Assert.*;
  */
 public class AdminConnectorTest {
 
-    private static final int ADMIN_PORT = 3599;
+    // The admin connector binds a real socket, so its port must actually be free. Unlike the main port — where the
+    // test harness rewrites the ":3567" placeholder in URLs to the per-process free port (HttpRequestForTesting) —
+    // the admin URL is used verbatim. build.gradle runs test classes with maxParallelForks = availableProcessors,
+    // so a hard-coded admin port collides across forks (the second Tomcat can't bind it and start() throws). Allocate
+    // it per test with getFreePort() instead.
+    private int adminPort;
+    private String admin;
     private static final String MAIN = "http://localhost:3567";
-    private static final String ADMIN = "http://localhost:" + ADMIN_PORT;
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -68,6 +73,8 @@ public class AdminConnectorTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        adminPort = TestingProcessManager.getFreePort();
+        admin = "http://localhost:" + adminPort;
     }
 
     // A minimal route stub with a configurable scope; no api-key / cdi-version needed so we can focus on the gate.
@@ -154,7 +161,7 @@ public class AdminConnectorTest {
 
         // Nothing is listening on the admin port.
         try {
-            get(process, ADMIN + "/hello");
+            get(process, admin + "/hello");
             fail("expected the admin port to not be listening");
         } catch (IOException e) {
             // connection refused / no route to host — the admin connector was never created
@@ -167,7 +174,7 @@ public class AdminConnectorTest {
     // DATA_PLANE routes: 200 on the main port, 404 on the admin port.
     @Test
     public void testDataPlaneRouteRejectedOnAdminPort() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -178,7 +185,7 @@ public class AdminConnectorTest {
         assertEquals("data-plane", get(process, MAIN + "/dataPlaneStub"));
 
         try {
-            get(process, ADMIN + "/dataPlaneStub");
+            get(process, admin + "/dataPlaneStub");
             fail("DATA_PLANE route should be 404 on the admin port");
         } catch (HttpResponseException e) {
             assertEquals(404, e.statusCode);
@@ -191,7 +198,7 @@ public class AdminConnectorTest {
     // ADMIN_ONLY routes: 404 on the main port, 200 on the admin port.
     @Test
     public void testAdminOnlyRouteRejectedOnMainPort() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -199,7 +206,7 @@ public class AdminConnectorTest {
         Webserver.getInstance(process.getProcess())
                 .addAPI(stub(process, "/adminOnlyStub", WebserverAPI.RouteScope.ADMIN_ONLY, "admin-only"));
 
-        assertEquals("admin-only", get(process, ADMIN + "/adminOnlyStub"));
+        assertEquals("admin-only", get(process, admin + "/adminOnlyStub"));
 
         try {
             get(process, MAIN + "/adminOnlyStub");
@@ -215,19 +222,19 @@ public class AdminConnectorTest {
     // ADMIN_PREFERRED routes are served on both ports (e.g. /hello).
     @Test
     public void testAdminPreferredRouteServedOnBothPorts() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         assertTrue(get(process, MAIN + "/hello").contains("Hello"));
-        assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+        assertTrue(get(process, admin + "/hello").contains("Hello"));
 
         // A custom ADMIN_PREFERRED stub is also served on both.
         Webserver.getInstance(process.getProcess())
                 .addAPI(stub(process, "/dualStub", WebserverAPI.RouteScope.ADMIN_PREFERRED, "dual"));
         assertEquals("dual", get(process, MAIN + "/dualStub"));
-        assertEquals("dual", get(process, ADMIN + "/dualStub"));
+        assertEquals("dual", get(process, admin + "/dualStub"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -288,7 +295,7 @@ public class AdminConnectorTest {
     // admin_max_server_pool_size must be >= 1 when the admin connector is enabled.
     @Test
     public void testAdminMaxServerPoolSizeMustBePositive() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("admin_max_server_pool_size", "0");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -307,7 +314,7 @@ public class AdminConnectorTest {
     // environment but never written to configJson, so the connector never started.
     @Test
     public void testAdminPortLoadedFromEnvVar() throws Exception {
-        String originalValue = setEnv("SUPERTOKENS_ADMIN_PORT", ADMIN_PORT + "");
+        String originalValue = setEnv("SUPERTOKENS_ADMIN_PORT", adminPort + "");
         try {
             String[] args = {"../"};
             TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -315,13 +322,13 @@ public class AdminConnectorTest {
 
             // The connector actually started on the env-configured admin port: ADMIN_PREFERRED /hello is reachable
             // there, which only happens if admin_port made it out of the env var and into the config.
-            assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+            assertTrue(get(process, admin + "/hello").contains("Hello"));
 
             // And the port-scoped gate is active: a DATA_PLANE route is 404 on the admin port.
             Webserver.getInstance(process.getProcess())
                     .addAPI(stub(process, "/dataPlaneStub", WebserverAPI.RouteScope.DATA_PLANE, "data-plane"));
             try {
-                get(process, ADMIN + "/dataPlaneStub");
+                get(process, admin + "/dataPlaneStub");
                 fail("DATA_PLANE route should be 404 on the admin port");
             } catch (HttpResponseException e) {
                 assertEquals(404, e.statusCode);
@@ -338,7 +345,7 @@ public class AdminConnectorTest {
     // still served promptly because the admin connector has its own thread pool.
     @Test
     public void testAdminPoolIsolatedFromSaturatedDataPlanePool() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("max_server_pool_size", "2");
         Utils.setValueInConfig("admin_max_server_pool_size", "2");
         String[] args = {"../"};
@@ -390,7 +397,7 @@ public class AdminConnectorTest {
         Thread.sleep(1000);
 
         // The admin connector's own pool serves /hello promptly despite the saturated data-plane pool.
-        String adminHello = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", ADMIN + "/hello",
+        String adminHello = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", admin + "/hello",
                 null, 2000, 2000, null, Utils.getCdiVersionStringLatestForTests(), "");
         assertTrue(adminHello.contains("Hello"));
 
@@ -413,14 +420,14 @@ public class AdminConnectorTest {
     // admin-only route: 200 on the admin port, 404 on the main port.
     @Test
     public void testAdminOnlyPathOverridePromotesRealRoute() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("admin_only_paths", "/hello");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         // Overridden to ADMIN_ONLY: served on the admin port, rejected on the main port.
-        assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+        assertTrue(get(process, admin + "/hello").contains("Hello"));
         try {
             get(process, MAIN + "/hello");
             fail("/hello overridden to admin_only should be 404 on the main port");
@@ -437,7 +444,7 @@ public class AdminConnectorTest {
     // rejected there. It keeps working on the main port too.
     @Test
     public void testAdminPreferredPathOverrideWidensRealRoute() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("admin_preferred_paths", "/.well-known/jwks.json");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -450,7 +457,7 @@ public class AdminConnectorTest {
                 Utils.getCdiVersionStringLatestForTests(), "");
         assertTrue(mainResp.has("keys"));
         JsonObject adminResp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                ADMIN + "/.well-known/jwks.json", null, 2000, 2000, null,
+                admin + "/.well-known/jwks.json", null, 2000, 2000, null,
                 Utils.getCdiVersionStringLatestForTests(), "");
         assertTrue(adminResp.has("keys"));
 
@@ -462,7 +469,7 @@ public class AdminConnectorTest {
     // INIT_FAILURE) rather than silently doing nothing.
     @Test
     public void testRouteScopeOverrideUnknownPathRejected() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("admin_only_paths", "/does-not-exist");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -494,7 +501,7 @@ public class AdminConnectorTest {
     // A path cannot be forced to two scopes at once.
     @Test
     public void testRouteScopeOverrideConflictRejected() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("admin_only_paths", "/hello");
         Utils.setValueInConfig("admin_preferred_paths", "/hello");
         String[] args = {"../"};
@@ -512,7 +519,7 @@ public class AdminConnectorTest {
     // Overrides are configurable purely via environment variables (the primary Docker/k8s path), not just yaml.
     @Test
     public void testAdminOnlyPathsLoadedFromEnvVar() throws Exception {
-        String originalPort = setEnv("SUPERTOKENS_ADMIN_PORT", ADMIN_PORT + "");
+        String originalPort = setEnv("SUPERTOKENS_ADMIN_PORT", adminPort + "");
         String originalPaths = setEnv("ADMIN_ONLY_PATHS", "/hello");
         try {
             String[] args = {"../"};
@@ -520,7 +527,7 @@ public class AdminConnectorTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             // The env-configured override took effect: /hello is admin-only (200 on admin, 404 on main).
-            assertTrue(get(process, ADMIN + "/hello").contains("Hello"));
+            assertTrue(get(process, admin + "/hello").contains("Hello"));
             try {
                 get(process, MAIN + "/hello");
                 fail("/hello overridden to admin_only via env var should be 404 on the main port");

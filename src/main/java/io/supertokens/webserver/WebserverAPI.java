@@ -65,6 +65,10 @@ public abstract class WebserverAPI extends HttpServlet {
      * served on the single main connector regardless of scope, i.e. exactly as before this classification
      * existed. {@code ADMIN_PREFERRED} is a permanent, first-class state (a route may stay dual forever) and
      * is NOT a temporary step toward {@code ADMIN_ONLY}.
+     *
+     * <p>This is a port-routing classification, not an authentication mechanism. In particular, with the admin
+     * connector disabled an {@code ADMIN_ONLY} route is served on the main port, guarded only by the usual
+     * api-key / IP-allow rules — so {@code ADMIN_ONLY} on its own is not a hard access guarantee.
      */
     public enum RouteScope {
         // Served only on the main (data-plane) port; rejected with 404 on the admin port.

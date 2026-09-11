@@ -43,9 +43,12 @@ import static org.junit.Assert.*;
  */
 public class LivezTest {
 
-    private static final int ADMIN_PORT = 3599;
+    // Allocated per test with getFreePort() rather than a constant: the admin URL is used verbatim (only the main
+    // port's ":3567" placeholder is rewritten by the harness), so a fixed admin port collides across the parallel
+    // test forks build.gradle runs (maxParallelForks = availableProcessors), failing to bind the second Tomcat.
+    private int adminPort;
+    private String admin;
     private static final String MAIN = "http://localhost:3567";
-    private static final String ADMIN = "http://localhost:" + ADMIN_PORT;
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -61,6 +64,8 @@ public class LivezTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        adminPort = TestingProcessManager.getFreePort();
+        admin = "http://localhost:" + adminPort;
     }
 
     // GET with no cdi-version header (cdiVersion == null) and no api-key header.
@@ -73,13 +78,13 @@ public class LivezTest {
     // configured (checkAPIKey is false for this route, so the credential is never required).
     @Test
     public void testLivezReturns200OnAdminPortWithoutApiKeyOrCdiVersion() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("api_keys", "abctijenbogweg=-2438243u98");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        assertEquals("OK", getNoHeaders(process, ADMIN + "/livez", 2000));
+        assertEquals("OK", getNoHeaders(process, admin + "/livez", 2000));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -88,7 +93,7 @@ public class LivezTest {
     // /livez is ADMIN_ONLY: it is rejected with 404 on the main (data-plane) port.
     @Test
     public void testLivezReturns404OnMainPort() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -141,26 +146,26 @@ public class LivezTest {
     // 500, while /livez still returns 200 promptly.
     @Test
     public void testLivezIsDbFreeWhenStorageIsDown() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         // Sanity: /livez is up on the admin port before we break storage.
-        assertEquals("OK", getNoHeaders(process, ADMIN + "/livez", 2000));
+        assertEquals("OK", getNoHeaders(process, admin + "/livez", 2000));
 
         StorageLayer.getStorage(process.getProcess()).setStorageLayerEnabled(false);
         try {
             // /hello (ADMIN_PREFERRED) is served on the admin port too, but does a DB round-trip, so it fails.
             try {
-                getNoHeaders(process, ADMIN + "/hello", 2000);
+                getNoHeaders(process, admin + "/hello", 2000);
                 fail("expected /hello to fail with the storage layer disabled");
             } catch (HttpResponseException e) {
                 assertEquals(500, e.statusCode);
             }
 
             // /livez does no storage access, so it still returns 200 while the DB is unavailable.
-            assertEquals("OK", getNoHeaders(process, ADMIN + "/livez", 2000));
+            assertEquals("OK", getNoHeaders(process, admin + "/livez", 2000));
         } finally {
             StorageLayer.getStorage(process.getProcess()).setStorageLayerEnabled(true);
         }
@@ -173,7 +178,7 @@ public class LivezTest {
     // saturated (a request on the saturated main port cannot be served in time, proving the saturation).
     @Test
     public void testLivezResponsiveWhileDataPlanePoolSaturated() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         Utils.setValueInConfig("max_server_pool_size", "2");
         Utils.setValueInConfig("admin_max_server_pool_size", "2");
         String[] args = {"../"};
@@ -227,7 +232,7 @@ public class LivezTest {
         Thread.sleep(1000);
 
         // The admin connector's own pool serves /livez promptly despite the saturated data-plane pool.
-        assertEquals("OK", getNoHeaders(process, ADMIN + "/livez", 2000));
+        assertEquals("OK", getNoHeaders(process, admin + "/livez", 2000));
 
         // Meanwhile a request on the saturated main port cannot be served in time (proves the pool was saturated).
         try {

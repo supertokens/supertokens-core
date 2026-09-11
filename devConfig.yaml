@@ -111,6 +111,10 @@ core_config_version: 0
 # (OPTIONAL | Default: null) integer value. The port for a second webserver connector that serves liveness and
 # control-plane routes from a thread pool separate from the data-plane pool. When set to null, the admin connector
 # is disabled and all routes are served on the main port exactly as before.
+# The admin port is NOT a separate trust boundary: it applies the same 'api_keys' and IP-allow rules as the main
+# port, binds the same 'host', and has no credential of its own. It carries sensitive routes (e.g. '/ee/license',
+# which sets the license key, and '/global-request-stats'), so it is meant for the orchestrator / control plane
+# and should not be exposed beyond the network boundary your liveness check and control plane already live in.
 # admin_port:
 
 

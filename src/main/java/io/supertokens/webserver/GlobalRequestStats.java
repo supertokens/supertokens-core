@@ -38,8 +38,11 @@ import java.util.concurrent.atomic.LongAdder;
  * Tomcat connector, so it deliberately includes admin-plane traffic — liveness ({@code /livez}) and stats
  * ({@code /global-request-stats}) polls land in {@code 2xx}/{@code total} alongside data-plane requests. An
  * orchestrator polling those endpoints once a second will therefore show up here; a consumer gauging data-plane
- * load or error rate should account for its own poll cadence. (Requests that fail tenant resolution — the hook's
- * {@code tenantIdentifier == null} path — are the one exception and are not counted.)
+ * load or error rate should account for its own poll cadence. Two categories of request are <em>not</em> counted,
+ * because both are answered before control reaches the end-of-{@code service()} hook: requests that fail tenant
+ * resolution (the hook's {@code tenantIdentifier == null} path), and requests 404'd by the {@link PathRouter}
+ * port gate (a route hitting the wrong connector for its {@code RouteScope}, e.g. a data-plane path probed on the
+ * admin port). So {@code total} will read below the raw connector request count when misrouted probes are present.
  *
  * <p>Held in memory only — never persisted to the database.
  */

@@ -28,9 +28,14 @@ import java.io.IOException;
 
 /**
  * Admin-only endpoint exposing the process-global, per-status-class request counts held by
- * {@link GlobalRequestStats}. Served only on the admin connector ({@link RouteScope#ADMIN_ONLY}); returns 404
- * on the main port. Additive to — and independent of — the per-app {@link RequestStatsAPI}. See issue #1429 /
- * PLAN-014.
+ * {@link GlobalRequestStats}. Classified {@link RouteScope#ADMIN_ONLY}. Additive to — and independent of — the
+ * per-app {@link RequestStatsAPI}. See issue #1429 / PLAN-014.
+ *
+ * <p>The {@code ADMIN_ONLY} scope is only enforced when the admin connector is enabled ({@code admin_port} set):
+ * then this endpoint is served on the admin port and returns 404 on the main port. In the default
+ * single-connector topology ({@code admin_port} unset) the port gate is inert, so this endpoint is served on the
+ * main data-plane port, guarded only by the usual api-key / IP-allow rules (i.e. open on a core with no
+ * {@code api_keys}). {@code ADMIN_ONLY} is a port-routing classification, not a standalone authentication guarantee.
  *
  * <p>Note for consumers: the counts are process-global across <em>both</em> connectors and include admin-plane
  * traffic (e.g. liveness/stats polls), and {@code total} counts every request while the buckets cover only

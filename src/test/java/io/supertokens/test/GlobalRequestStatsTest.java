@@ -42,9 +42,12 @@ import static org.junit.Assert.*;
  */
 public class GlobalRequestStatsTest {
 
-    private static final int ADMIN_PORT = 3598;
+    // Allocated per test with getFreePort() rather than a constant: the admin URL is used verbatim (only the main
+    // port's ":3567" placeholder is rewritten by the harness), so a fixed admin port collides across the parallel
+    // test forks build.gradle runs (maxParallelForks = availableProcessors), failing to bind the second Tomcat.
+    private int adminPort;
+    private String admin;
     private static final String MAIN = "http://localhost:3567";
-    private static final String ADMIN = "http://localhost:" + ADMIN_PORT;
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -60,6 +63,8 @@ public class GlobalRequestStatsTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        adminPort = TestingProcessManager.getFreePort();
+        admin = "http://localhost:" + adminPort;
     }
 
     // A minimal data-plane route stub that responds with a fixed status (or throws to produce a 500), with no
@@ -115,7 +120,7 @@ public class GlobalRequestStatsTest {
     // is produced, so the counts observed reflect exactly the driven requests.
     @Test
     public void testCountsByStatusClass() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -132,7 +137,7 @@ public class GlobalRequestStatsTest {
         drive(process, MAIN + "/unauth");
         drive(process, MAIN + "/boom");
 
-        JsonObject stats = getStats(process, ADMIN + "/global-request-stats");
+        JsonObject stats = getStats(process, admin + "/global-request-stats");
         assertEquals("OK", stats.get("status").getAsString());
         assertEquals(3, stats.get("2xx").getAsLong());
         assertEquals(2, stats.get("4xx").getAsLong());
@@ -148,7 +153,7 @@ public class GlobalRequestStatsTest {
     // Counts are global: requests attributed to different apps all land in the single process-wide counter.
     @Test
     public void testCountsAreGlobalAcrossApps() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -160,7 +165,7 @@ public class GlobalRequestStatsTest {
         drive(process, MAIN + "/appid-app1/ok");
         drive(process, MAIN + "/appid-app2/ok");
 
-        JsonObject stats = getStats(process, ADMIN + "/global-request-stats");
+        JsonObject stats = getStats(process, admin + "/global-request-stats");
         assertEquals(3, stats.get("2xx").getAsLong());
         assertEquals(3, stats.get("total").getAsLong());
 
@@ -171,7 +176,7 @@ public class GlobalRequestStatsTest {
     // The new endpoint is admin-only: 404 on the main port, 200 on the admin port.
     @Test
     public void testEndpointIsAdminOnly() throws Exception {
-        Utils.setValueInConfig("admin_port", ADMIN_PORT + "");
+        Utils.setValueInConfig("admin_port", adminPort + "");
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -181,7 +186,7 @@ public class GlobalRequestStatsTest {
                 new GlobalRequestStatsAPI(process.getProcess()).getRouteScope());
 
         // 200 on the admin port.
-        JsonObject stats = getStats(process, ADMIN + "/global-request-stats");
+        JsonObject stats = getStats(process, admin + "/global-request-stats");
         assertEquals("OK", stats.get("status").getAsString());
 
         // 404 on the main port.

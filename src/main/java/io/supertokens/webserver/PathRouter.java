@@ -40,8 +40,8 @@ public class PathRouter extends WebserverAPI {
     // Snapshot of the admin-connector routing state (enabled flag + admin port). The base config is immutable for
     // the lifetime of the process — the admin port cannot change without a restart, and a restart builds a fresh
     // Webserver (hence a fresh PathRouter). So we read it from the ResourceDistributor exactly once and reuse it on
-    // every request instead of taking the read lock on the config lookup on the hot path. Computed lazily on first
-    // use because config is guaranteed loaded by the time any request is served.
+    // every request rather than redoing the Config.getInstance lookup and rebuilding the override map per request on
+    // the hot path. Computed lazily on first use because config is guaranteed loaded by the time any request is served.
     private volatile AdminGate adminGate;
 
     private static final class AdminGate {
