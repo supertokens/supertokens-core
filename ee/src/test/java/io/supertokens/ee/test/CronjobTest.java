@@ -42,9 +42,14 @@ public class CronjobTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
-            // the enabled features served on the next startup come from this persisted value (not from a
-            // fresh sync of the stored key).
+            // Persist an enabled feature set for a valid key so the restarted process below serves it from
+            // the DB (the boot-time constructor no longer syncs). This is skipped on in-memory storage, not
+            // to exclude the test from in-mem runs, but because setLicenseKeyAndSyncFeatures performs a live
+            // license-server sync that would be pointless there: FeatureFlag.getEnabledFeatures() always
+            // returns every feature on in-mem (see FeatureFlag#getEnabledFeatures), so a cron-driven
+            // revocation cannot be observed. The assertions in the next block are therefore already gated to
+            // real SQL storage (the STORAGE_TYPE.SQL && !sqlite guard) exactly as they were before this PR;
+            // on in-mem the block below still starts/stops the process but makes no revocation assertions.
             if (!StorageLayer.isInMemDb(process.main)) {
                 FeatureFlag.getInstance(process.main)
                         .setLicenseKeyAndSyncFeatures(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
@@ -89,9 +94,14 @@ public class CronjobTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
-            // the enabled features served on the next startup come from this persisted value (not from a
-            // fresh sync of the stored key).
+            // Persist an enabled feature set for a valid key so the restarted process below serves it from
+            // the DB (the boot-time constructor no longer syncs). This is skipped on in-memory storage, not
+            // to exclude the test from in-mem runs, but because setLicenseKeyAndSyncFeatures performs a live
+            // license-server sync that would be pointless there: FeatureFlag.getEnabledFeatures() always
+            // returns every feature on in-mem (see FeatureFlag#getEnabledFeatures), so a cron-driven
+            // revocation cannot be observed. The assertions in the next block are therefore already gated to
+            // real SQL storage (the STORAGE_TYPE.SQL && !sqlite guard) exactly as they were before this PR;
+            // on in-mem the block below still starts/stops the process but makes no revocation assertions.
             if (!StorageLayer.isInMemDb(process.main)) {
                 FeatureFlag.getInstance(process.main)
                         .setLicenseKeyAndSyncFeatures(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
@@ -136,9 +146,14 @@ public class CronjobTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
-            // the enabled features served on the next startup come from this persisted value (not from a
-            // fresh sync of the stored key).
+            // Persist an enabled feature set for a valid key so the restarted process below serves it from
+            // the DB (the boot-time constructor no longer syncs). This is skipped on in-memory storage, not
+            // to exclude the test from in-mem runs, but because setLicenseKeyAndSyncFeatures performs a live
+            // license-server sync that would be pointless there: FeatureFlag.getEnabledFeatures() always
+            // returns every feature on in-mem (see FeatureFlag#getEnabledFeatures), so a cron-driven
+            // revocation cannot be observed. The assertions in the next block are therefore already gated to
+            // real SQL storage (the STORAGE_TYPE.SQL && !sqlite guard) exactly as they were before this PR;
+            // on in-mem the block below still starts/stops the process but makes no revocation assertions.
             if (!StorageLayer.isInMemDb(process.main)) {
                 FeatureFlag.getInstance(process.main)
                         .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
@@ -183,9 +198,14 @@ public class CronjobTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            // Persist an enabled feature set for a valid key. The boot-time constructor no longer syncs, so
-            // the enabled features served on the next startup come from this persisted value (not from a
-            // fresh sync of the stored key).
+            // Persist an enabled feature set for a valid key so the restarted process below serves it from
+            // the DB (the boot-time constructor no longer syncs). This is skipped on in-memory storage, not
+            // to exclude the test from in-mem runs, but because setLicenseKeyAndSyncFeatures performs a live
+            // license-server sync that would be pointless there: FeatureFlag.getEnabledFeatures() always
+            // returns every feature on in-mem (see FeatureFlag#getEnabledFeatures), so a cron-driven
+            // revocation cannot be observed. The assertions in the next block are therefore already gated to
+            // real SQL storage (the STORAGE_TYPE.SQL && !sqlite guard) exactly as they were before this PR;
+            // on in-mem the block below still starts/stops the process but makes no revocation assertions.
             if (!StorageLayer.isInMemDb(process.main)) {
                 FeatureFlag.getInstance(process.main)
                         .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
