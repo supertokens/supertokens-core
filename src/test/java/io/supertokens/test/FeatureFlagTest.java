@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
@@ -907,10 +908,21 @@ public class FeatureFlagTest {
         process.kill(false);
 
 
-        // Restart core and check if the call was made during init
-        process = TestingProcessManager.startIsolatedProcess(args);
+        // Restart core. The license sync no longer runs synchronously in EEFeatureFlag's constructor on the
+        // boot thread; the EELicenseCheck cron performs it shortly after startup instead. Pin the cron's
+        // (jittered) initial delay to 3s via the CronTaskTest seam so this is deterministic.
+        process = TestingProcessManager.startIsolatedProcess(args, false);
+        // EELicenseCheck.RESOURCE_KEY lives in the ee module, which is not on this (core) test's compile
+        // classpath, so refer to it by its literal resource-key string.
+        CronTaskTest.getInstance(process.getProcess())
+                .setIntervalInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 3);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // No synchronous license-server call during boot...
+        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+        // ...but the cron performs it once its initial delay elapses.
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
         process.kill();
@@ -981,8 +993,12 @@ public class FeatureFlagTest {
 
             process.kill(false);
 
-            // Restart core and check if the call was made during init
-            process = TestingProcessManager.startIsolatedProcess(args);
+            // Restart core. The license sync (and its usage-stats report) now runs on the EELicenseCheck
+            // cron shortly after startup rather than synchronously in EEFeatureFlag's constructor, so pin
+            // the cron's initial delay to 1s and read the stats off that call.
+            process = TestingProcessManager.startIsolatedProcess(args, false);
+            CronTaskTest.getInstance(process.getProcess())
+                    .setIntervalInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 1);
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
             ProcessState.EventAndException event = process.checkOrWaitForEvent(

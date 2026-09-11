@@ -12,10 +12,16 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class EELicenseCheck extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
+
+    // Initial delay before the first (and now the only startup) license sync: 30s + up to 30s of jitter,
+    // i.e. a value in [30, 60) seconds. See getInitialWaitTimeSeconds() for why it is jittered.
+    static final int INITIAL_WAIT_TIME_SECONDS_BASE = 30;
+    static final int INITIAL_WAIT_TIME_SECONDS_JITTER = 30;
 
     private EELicenseCheck(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("EELicenseCheck", main, tenantsInfo, true);
@@ -51,7 +57,10 @@ public class EELicenseCheck extends CronTask {
                 return interval;
             }
         }
-        return EEFeatureFlag.INTERVAL_BETWEEN_SERVER_SYNC; // We delay by one day cause we attempt a sync on core
-        // startup anyway.
+        // The license sync used to run synchronously in EEFeatureFlag's constructor on core startup, so this
+        // cron delayed its first run by a full day. It now owns the initial sync too, hence a short delay. It
+        // is jittered so a fleet of cores restarting together does not stampede the license server all at once.
+        // The daily interval (getIntervalTimeSeconds) is unchanged.
+        return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
     }
 }

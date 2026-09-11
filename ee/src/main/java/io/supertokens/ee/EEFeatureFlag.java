@@ -106,18 +106,13 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // returns the same instance from there on.
         Cronjobs.addCronjob(main, EELicenseCheck.init(main, StorageLayer.getTenantsWithUniqueUserPoolId(main)));
 
-        try {
-            this.syncFeatureFlagWithLicenseKey();
-        } catch (HttpResponseException | IOException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "API Error during constructor sync", false,
-                    e);
-            // server request failed. we ignore for now as later on it will sync up anyway.
-        } catch (InvalidLicenseKeyException ignored) {
-            // the license key that was in the db was invalid. If this error is thrown,
-            // it means that the key was removed from the db anyway.. so we can just ignore
-            // here.
-        } catch (Throwable ignored) {
-        }
+        // No license sync here on purpose. syncFeatureFlagWithLicenseKey() does synchronous DB stats
+        // queries + an HTTPS call to api.supertokens.com; running it in this constructor meant it ran on
+        // the boot thread (before the webserver was up) and under the global resource-distributor lock on
+        // every tenant/app reload. The EELicenseCheck cron performs the initial sync shortly after boot
+        // (jittered initial delay) and daily thereafter. Enabled features remain available in the meantime
+        // from the DB-persisted value of the last successful sync (getEnabledEEFeaturesFromDbOrCache), so
+        // nothing is lost between boot and the first cron pass.
     }
 
     @Override
