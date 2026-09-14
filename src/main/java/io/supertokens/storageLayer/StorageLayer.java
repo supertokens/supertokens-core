@@ -51,8 +51,13 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class StorageLayer extends ResourceDistributor.SingletonResource {
@@ -709,7 +714,108 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     /**
-     * Initializes each storage's connection pool concurrently using virtual threads.
+     * Upper bound on the number of storages {@link #initStoragesInParallel} initialises at the same time. Boot
+     * has tens of short, blocking tasks (TCP connect + DDL), so a small pool is all the parallelism that pays
+     * off, and the bound also caps the connection burst sent at a database many tenants share.
+     */
+    static final int STORAGE_INIT_MAX_PARALLELISM = 16;
+
+    /** How often (seconds) the storages still initialising are reported while boot waits for them. */
+    static final long STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS = 60;
+
+    /**
+     * How long (seconds) boot waits for every storage to initialise before continuing without the stragglers.
+     * Generous on purpose: a legitimate first-boot migration on a large table can take minutes. The bound exists
+     * to turn a silent hang into a diagnosable log line, not to race migrations.
+     */
+    static final long STORAGE_INIT_TIMEOUT_SECONDS = 600;
+
+    /**
+     * The executor {@link #initStoragesInParallel} runs on: a fixed pool of daemon platform threads.
+     *
+     * <p>Platform threads, deliberately. This used to be a virtual-thread-per-task executor, and on JDK 21 a
+     * virtual thread that parks inside a {@code synchronized} section is pinned to its carrier. The plugins'
+     * pool initialisation was one such section, and every Hikari DEBUG line was logged from inside it. With a
+     * carrier pool sized to the CPU count (2 on a small container) and dozens of storages contending for the
+     * shared console-appender and {@code System.out} locks, every carrier ended up occupied by a pinned
+     * waiter, the lock owner could never be scheduled to release it, and boot hung forever. A pool of platform
+     * threads cannot be wedged that way, whatever the plugin or its libraries lock on. Daemon, so a straggler
+     * left behind by {@link #awaitStorageInit} never keeps the JVM alive.
+     */
+    static ExecutorService newStorageInitExecutor(int storageCount) {
+        AtomicInteger threadNumber = new AtomicInteger();
+        return Executors.newFixedThreadPool(Math.max(1, Math.min(storageCount, STORAGE_INIT_MAX_PARALLELISM)),
+                runnable -> {
+                    Thread thread = new Thread(runnable, "storage-init-" + threadNumber.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                });
+    }
+
+    /**
+     * Waits for the storage-init futures without ever waiting forever. While some are still running, the
+     * tenants they serve are logged every {@code progressIntervalSeconds}; after {@code timeoutSeconds} the
+     * stragglers are reported as an error, {@link ProcessState.PROCESS_STATE#STORAGE_INIT_TIMED_OUT} is
+     * recorded and the method returns so boot can continue without them. Stragglers are neither cancelled nor
+     * interrupted (one may be mid-DDL): one that eventually finishes is fully usable, and until then queries
+     * against it wait in the plugin's own pool-initialisation guard rather than failing.
+     *
+     * <p>Continuing without the stragglers can never leave the core without a working base tenant: the base
+     * tenant's storage is initialised (and schema-verified) <em>synchronously</em> in {@code Main.init}
+     * (via {@code StorageLayer.getBaseStorage(main).initStorage(...)}) before {@code loadStorageLayer} ever
+     * reaches this parallel path, and a base-storage failure crashes startup there rather than reaching here.
+     * Only secondary tenant storages can time out on this path, so the base tenant and every tenant that did
+     * finish stay fully functional.
+     *
+     * <p>An unexpected exception from a task is rethrown as a {@link CompletionException}, exactly as the
+     * previous {@code CompletableFuture.join()} did, so such a failure still crashes startup.
+     *
+     * @param tenantsPerFuture the tenants of the storage behind the future at the same index, for the reports
+     * @return {@code true} if every future finished, {@code false} if the timeout was hit
+     */
+    static boolean awaitStorageInit(Main main, List<CompletableFuture<Void>> futures,
+                                    List<List<TenantIdentifier>> tenantsPerFuture, long progressIntervalSeconds,
+                                    long timeoutSeconds) {
+        CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+        while (true) {
+            try {
+                all.get(progressIntervalSeconds, TimeUnit.SECONDS);
+                return true;
+            } catch (TimeoutException e) {
+                List<List<TenantIdentifier>> stillInitialising = new ArrayList<>();
+                for (int i = 0; i < futures.size(); i++) {
+                    if (!futures.get(i).isDone()) {
+                        stillInitialising.add(tenantsPerFuture.get(i));
+                    }
+                }
+                if (System.nanoTime() < deadlineNanos) {
+                    Logging.warn(main, TenantIdentifier.BASE_TENANT,
+                            "Still waiting for " + stillInitialising.size() + " storage(s) to initialise (tenants: "
+                                    + stillInitialising + ")");
+                } else {
+                    Logging.error(main, TenantIdentifier.BASE_TENANT,
+                            "Storage initialisation did not finish within " + timeoutSeconds + "s for "
+                                    + stillInitialising.size() + " storage(s) (tenants: " + stillInitialising
+                                    + "). Continuing startup without them; they keep initialising in the "
+                                    + "background and queries against them wait until their pool is up. Take a "
+                                    + "thread dump to see what they are blocked on.", true);
+                    ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT, null);
+                    return false;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new CompletionException(e.getCause());
+            }
+        }
+    }
+
+    /**
+     * Initializes each storage's connection pool concurrently on the bounded pool of platform threads from
+     * {@link #newStorageInitExecutor} (see there for why not virtual threads), waiting with
+     * {@link #awaitStorageInit} so that a storage that never finishes cannot hang boot.
      *
      * <p>This method MUST be called outside any ResourceDistributor lock. {@code initStorage()}
      * opens TCP connections to the database and runs DDL (CREATE TABLE IF NOT EXISTS). That
@@ -726,12 +832,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * prevent other tenants from working, matching the original sequential behaviour.
      * {@code DbInitException} is the only checked exception either method declares;
      * {@code initFileLogging} declares none. Anything else (e.g. a {@link RuntimeException}
-     * from log file setup) is propagated through {@code CompletableFuture.join()} as a
+     * from log file setup) is propagated by {@code awaitStorageInit} as a
      * {@code CompletionException} and crashes startup — same as the original sequential
      * code, where such an exception would have escaped the for-loop unhandled.
-     *
-     * <p>The try-with-resources {@code close()} on the executor runs after {@code join()},
-     * by which time all tasks have terminated, so close is effectively a no-op.
      */
     private static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
         if (storagesToInit.isEmpty()) {
@@ -741,11 +844,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         String errorLogPath = Config.getBaseConfig(main).getErrorLogPath(main);
         TelemetryProvider telemetry = TelemetryProvider.getInstance(main);
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        ExecutorService executor = newStorageInitExecutor(storagesToInit.size());
+        try {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
+            List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
             for (Map.Entry<Storage, Set<TenantIdentifier>> entry : storagesToInit.entrySet()) {
                 Storage storage = entry.getKey();
                 List<TenantIdentifier> tenants = new ArrayList<>(entry.getValue());
+                tenantsPerFuture.add(tenants);
                 futures.add(CompletableFuture.runAsync(() -> {
                     try {
                         storage.initStorage(false, tenants);
@@ -773,7 +879,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     }
                 }, executor));
             }
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            awaitStorageInit(main, futures, tenantsPerFuture, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
+                    STORAGE_INIT_TIMEOUT_SECONDS);
+        } finally {
+            // no shutdownNow(): a straggler may be mid-DDL and must not be interrupted. The threads are daemon, so
+            // they never keep the JVM alive; the pool simply exits once its queue drains.
+            executor.shutdown();
         }
     }
 

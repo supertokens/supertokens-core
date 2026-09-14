@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.3.1]
+
+- Fixes a startup hang when many tenant storages initialise at once on JDK 21: storage initialisation now runs on a bounded pool of platform threads instead of virtual threads, which could be pinned inside the storage plugin's `synchronized` pool setup until no carrier was left to release the shared logging locks.
+- Startup no longer waits indefinitely for a storage to initialise: storages still initialising are logged every 60s, and after 10 minutes boot continues without them (they keep initialising in the background).
+
 ## [12.3.0]
 
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
