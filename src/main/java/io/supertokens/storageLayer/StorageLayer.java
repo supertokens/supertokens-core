@@ -760,6 +760,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * interrupted (one may be mid-DDL): one that eventually finishes is fully usable, and until then queries
      * against it wait in the plugin's own pool-initialisation guard rather than failing.
      *
+     * <p>Continuing without the stragglers can never leave the core without a working base tenant: the base
+     * tenant's storage is initialised (and schema-verified) <em>synchronously</em> in {@code Main.init}
+     * (via {@code StorageLayer.getBaseStorage(main).initStorage(...)}) before {@code loadStorageLayer} ever
+     * reaches this parallel path, and a base-storage failure crashes startup there rather than reaching here.
+     * Only secondary tenant storages can time out on this path, so the base tenant and every tenant that did
+     * finish stay fully functional.
+     *
      * <p>An unexpected exception from a task is rethrown as a {@link CompletionException}, exactly as the
      * previous {@code CompletableFuture.join()} did, so such a failure still crashes startup.
      *
