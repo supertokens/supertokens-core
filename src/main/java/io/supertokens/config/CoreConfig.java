@@ -73,7 +73,8 @@ public class CoreConfig {
             "oauth_provider_url_configured_in_oauth_provider",
             "saml_legacy_acs_url",
             "activity_log_retention_days",
-            "activity_log_throttle_enabled"
+            "activity_log_throttle_enabled",
+            "max_concurrent_requests_per_cud"
     };
 
     @IgnoreForAnnotationCheck
@@ -235,6 +236,28 @@ public class CoreConfig {
     @JsonProperty
     @ConfigDescription("Sets the max thread pool size for incoming http server requests. (Default: 10)")
     private int max_server_pool_size = 10;
+
+    @EnvName("MAX_CONCURRENT_REQUESTS_PER_CUD")
+    @NotConflictingInConnectionUriDomain
+    @JsonProperty
+    @ConfigDescription(
+            "Maximum number of requests from one connection URI domain that may be in flight at the same time (i.e. "
+                    + "how many of the max_server_pool_size threads one tenant may hold). This is a fair-share rule, "
+                    + "enforced only while the request pool is saturated (see concurrency_cap_reserved_pool_percent): "
+                    + "a connection URI domain over its cap then gets HTTP 429 immediately instead of a thread; below "
+                    + "that, no request is ever rejected. Must be the same for all apps/tenants under a connection URI "
+                    + "domain and cannot exceed max_server_pool_size. 0 disables the cap. (Default: 0)")
+    private int max_concurrent_requests_per_cud = 0;
+
+    @EnvName("CONCURRENCY_CAP_RESERVED_POOL_PERCENT")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Share of max_server_pool_size (percent) kept free for connection URI domains under their "
+                    + "max_concurrent_requests_per_cud. The per-tenant cap is only enforced once the pool has fewer "
+                    + "free threads than this; below that, tenants may exceed their cap. 100 keeps no headroom, so the "
+                    + "cap is always enforced (a hard cap). Must be between 1 and 100. (Default: 25)")
+    private int concurrency_cap_reserved_pool_percent = 25;
 
     @EnvName("API_KEYS")
     @NotConflictingInApp
@@ -779,6 +802,19 @@ public class CoreConfig {
         return max_server_pool_size;
     }
 
+    public int getMaxConcurrentRequestsPerCud() {
+        return max_concurrent_requests_per_cud;
+    }
+
+    // The process-wide in-flight request count at or above which the per-CUD concurrency cap starts being
+    // enforced. Derived from the base pool size and the reserved-headroom percent so that some threads always
+    // stay available for connection URI domains under their cap. 100% reserved => threshold 0 => the cap is
+    // always enforced. This reads the base config's pool size (max_server_pool_size is @ConfigYamlOnly).
+    public int getConcurrencyCapSaturationThreshold() {
+        return max_server_pool_size
+                - (int) Math.floor((double) max_server_pool_size * concurrency_cap_reserved_pool_percent / 100.0);
+    }
+
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
     }
@@ -961,6 +997,20 @@ public class CoreConfig {
                     "'max_server_pool_size' must be >= 1." +
                             (includeConfigFilePath ? " The config file can be"
                                     + " found here: " + getConfigFileLocation(main) : ""));
+        }
+
+        if (max_concurrent_requests_per_cud < 0) {
+            throw new InvalidConfigException("'max_concurrent_requests_per_cud' must be >= 0");
+        }
+
+        if (max_concurrent_requests_per_cud > max_server_pool_size) {
+            throw new InvalidConfigException(
+                    "'max_concurrent_requests_per_cud' must be <= 'max_server_pool_size'");
+        }
+
+        if (concurrency_cap_reserved_pool_percent < 1 || concurrency_cap_reserved_pool_percent > 100) {
+            throw new InvalidConfigException(
+                    "'concurrency_cap_reserved_pool_percent' must be between 1 and 100 inclusive");
         }
 
         if (api_keys != null) {
