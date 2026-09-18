@@ -19,6 +19,7 @@ package io.supertokens.test.webserver;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
@@ -343,6 +344,23 @@ public class ConcurrencyLimiterTest {
                     e.exception.getCause().getMessage());
             stop(process);
         }
+    }
+
+    @Test
+    public void testLowReservePercentStillReservesAtLeastOneSlot() throws Exception {
+        // A reserve percent that rounds down to zero reserved slots (floor(10 * 1 / 100) == 0) must still keep the
+        // saturation threshold strictly below the pool size. The process-wide in-flight count is bounded by the
+        // Tomcat connector's maxThreads (== max_server_pool_size), so if the threshold equalled the pool size the
+        // "global > threshold" test could never be true and the per-CUD cap would be silently never enforced.
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "1"); // floor(10 * 1 / 100) == 0 reserved
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[]{"../"});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // clamped to pool - 1 rather than pool, so a nonzero reserve always reserves at least one slot
+        assertEquals(9, Config.getBaseConfig(process.getProcess()).getConcurrencyCapSaturationThreshold());
+
+        stop(process);
     }
 
     // ----- test 2: one CUD over its cap under saturation does not affect another CUD (SQL only) -----

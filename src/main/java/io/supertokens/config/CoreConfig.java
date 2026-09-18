@@ -811,8 +811,15 @@ public class CoreConfig {
     // stay available for connection URI domains under their cap. 100% reserved => threshold 0 => the cap is
     // always enforced. This reads the base config's pool size (max_server_pool_size is @ConfigYamlOnly).
     public int getConcurrencyCapSaturationThreshold() {
-        return max_server_pool_size
-                - (int) Math.floor((double) max_server_pool_size * concurrency_cap_reserved_pool_percent / 100.0);
+        int reserved = (int) Math.floor((double) max_server_pool_size * concurrency_cap_reserved_pool_percent / 100.0);
+        // A nonzero reserve percent that rounds down to zero (small pool and/or small percent) must still reserve at
+        // least one slot, otherwise the threshold would equal the pool size. Since global in-flight is bounded by
+        // maxThreads (== max_server_pool_size), "global > threshold" could then never hold and the cap would be
+        // silently never enforced despite the operator asking for a reserve.
+        if (concurrency_cap_reserved_pool_percent > 0 && reserved == 0) {
+            reserved = 1;
+        }
+        return max_server_pool_size - reserved;
     }
 
     public boolean getHttpsEnabled() {
