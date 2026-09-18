@@ -17,8 +17,11 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -40,8 +43,14 @@ public class ConcurrencyLimiter extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.webserver.ConcurrencyLimiter";
     private static final String GLOBAL_RESOURCE_KEY = "io.supertokens.webserver.ConcurrencyLimiter.global";
 
+    // a saturated CUD is rejected on every request; log the WARN at most once per this window so it cannot flood
+    private static final long WARN_INTERVAL_MILLIS = 60 * 1000;
+
     // requests from this CUD currently in flight on this core
     private final AtomicInteger inFlight = new AtomicInteger();
+
+    // last time (epoch millis) this CUD's rejection WARN was logged; rate-limits the WARN to one per window
+    private volatile long lastWarnAtMillis = 0;
 
     // all requests currently in flight on this core; shared by every CUD's limiter of this Main
     private final AtomicInteger globalInFlight;
@@ -112,6 +121,58 @@ public class ConcurrencyLimiter extends ResourceDistributor.SingletonResource {
 
     public int inFlight() {
         return inFlight.get();
+    }
+
+    /**
+     * Records a request that was just rejected with 429 for this CUD, for observability. It bumps the app's
+     * {@code concurrentRequestsRejected} counter in {@link RequestStats} (scraped by the SaaS via
+     * {@code /requests/stats}), adds the {@link ProcessState.PROCESS_STATE#CONCURRENT_REQUEST_LIMIT_HIT} test
+     * state, and logs a single WARN — but at most once per CUD per {@link #WARN_INTERVAL_MILLIS}, because a
+     * saturated tenant is rejected on every request and would otherwise flood the log. This is best-effort and
+     * never throws, so it can never interfere with sending the 429 to the client.
+     */
+    public void onRejected(Main main, TenantIdentifier tenantIdentifier) {
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CONCURRENT_REQUEST_LIMIT_HIT, null);
+        try {
+            RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).incrementConcurrentRequestsRejected();
+        } catch (TenantOrAppNotFoundException e) {
+            // the app was removed between acquiring and rejecting; nothing to count for it
+        }
+        if (shouldWarnNow(System.currentTimeMillis())) {
+            int limit;
+            try {
+                limit = Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
+            } catch (TenantOrAppNotFoundException e) {
+                limit = 0; // config vanished mid-request; still worth a WARN, just without the exact cap
+            }
+            String cud = tenantIdentifier.getConnectionUriDomain();
+            Logging.warn(main, tenantIdentifier, "Concurrent request cap (" + limit + ") reached for "
+                    + (cud == null ? "" : cud) + "; rejecting with 429");
+        }
+    }
+
+    // returns true (and records the time) at most once per WARN_INTERVAL_MILLIS; synchronized so concurrent
+    // rejections on the same CUD produce exactly one WARN per window rather than racing on the check-then-set
+    private synchronized boolean shouldWarnNow(long now) {
+        if (now - lastWarnAtMillis >= WARN_INTERVAL_MILLIS) {
+            lastWarnAtMillis = now;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Current number of requests in flight for the CUD of {@code tenantIdentifier}, or 0 if no limiter exists yet
+     * for that CUD. Read-only: unlike {@link #getInstance}, it never creates a limiter, so reporting stats has no
+     * side effects.
+     */
+    public static int getInFlightForCud(Main main, TenantIdentifier tenantIdentifier) {
+        TenantIdentifier cud = new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null);
+        try {
+            return ((ConcurrencyLimiter) main.getResourceDistributor().getResource(cud, RESOURCE_KEY)).inFlight();
+        } catch (TenantOrAppNotFoundException e) {
+            return 0;
+        }
     }
 
     @TestOnly

@@ -19,6 +19,7 @@ package io.supertokens.test.webserver;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
@@ -46,6 +47,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -54,6 +56,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -64,6 +67,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests the per-CUD in-flight concurrency cap: a connection URI domain over its
@@ -470,7 +474,118 @@ public class ConcurrencyLimiterTest {
         stop(process);
     }
 
+    // ----- unit 2: the current in-flight count for the app's CUD is reported in /requests/stats -----
+    @Test
+    public void testConcurrentRequestsInFlightInRequestStats() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        // no cap configured (default 0 = unlimited), so the stats request itself is never rejected even while
+        // the pool is busy, and nothing is ever rejected on this CUD
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+
+        ExecutorService ex = Executors.newFixedThreadPool(6);
+        List<Future<Resp>> fillers = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            fillers.add(ex.submit(() -> get(corePort(), SLOW_PATH + "?ms=5000")));
+        }
+        waitForGlobalInFlight(process, 3, 15000);
+
+        JsonObject stats = getRequestStats(process);
+        // three fillers are still in flight (plus the stats request itself), all on the base CUD
+        assertTrue("in-flight count should reflect the concurrent load",
+                stats.get("concurrentRequestsInFlight").getAsInt() >= 3);
+        // nothing was rejected because the CUD is uncapped
+        assertEquals(0, stats.get("concurrentRequestsRejected").getAsLong());
+
+        for (Future<Resp> f : fillers) {
+            assertEquals(200, f.get(20, TimeUnit.SECONDS).status);
+        }
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- unit 2: a rejection increments the app's concurrentRequestsRejected counter in /requests/stats -----
+    @Test
+    public void testConcurrentRequestsRejectedInRequestStats() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // hard cap for determinism
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "2");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newFixedThreadPool(4);
+        List<Future<Resp>> accepted = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            accepted.add(ex.submit(() -> get(port, SLOW_PATH + "?ms=4000")));
+        }
+        waitForGlobalInFlight(process, 2, 15000);
+
+        // a third request on the capped CUD is rejected (hard cap of 2)
+        assertEquals(429, get(port, SLOW_PATH + "?ms=4000").status);
+
+        // let the pool drain so the stats request itself is admitted (it runs on the same, capped, base CUD)
+        for (Future<Resp> f : accepted) {
+            assertEquals(200, f.get(20, TimeUnit.SECONDS).status);
+        }
+        waitForGlobalInFlight(process, 0, 15000);
+
+        JsonObject stats = getRequestStats(process);
+        assertEquals(1, stats.get("concurrentRequestsRejected").getAsLong());
+        // the field is present and reflects the live counter (at least the stats request itself)
+        assertTrue(stats.get("concurrentRequestsInFlight").getAsInt() >= 1);
+
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- unit 2: two rejections on the same CUD within a minute produce exactly one WARN line -----
+    @Test
+    public void testRejectionWarnIsRateLimitedToOncePerMinute() throws Exception {
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // hard cap for determinism
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> filler = ex.submit(() -> get(port, SLOW_PATH + "?ms=5000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        // two rejections in quick succession (well within the 60s window), same base CUD
+        assertEquals(429, get(port, SLOW_PATH + "?ms=5000").status);
+        assertEquals(429, get(port, SLOW_PATH + "?ms=5000").status);
+
+        assertEquals(200, filler.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+
+        // exactly one WARN was written for this process, despite two rejections
+        File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+        int warnCount = 0;
+        try (Scanner scanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (line.contains(process.getProcess().getProcessId())
+                        && line.contains("Concurrent request cap (1) reached")) {
+                    warnCount++;
+                }
+            }
+        }
+        assertEquals(1, warnCount);
+
+        stop(process);
+    }
+
     // ---------- helpers ----------
+
+    private static JsonObject getRequestStats(TestingProcessManager.TestingProcess process) throws Exception {
+        return HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/requests/stats", null, 5000, 5000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
+    }
+
 
     private TestingProcessManager.TestingProcess startAndRegisterSlowServlet() throws Exception {
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[]{"../"});

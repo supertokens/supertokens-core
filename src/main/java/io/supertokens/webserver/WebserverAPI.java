@@ -18,7 +18,6 @@ package io.supertokens.webserver;
 
 import com.google.gson.JsonElement;
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -541,9 +540,9 @@ public abstract class WebserverAPI extends HttpServlet {
                 int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
                 limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
                 if (!limiter.tryAcquire(limit, saturationThreshold)) {
-                    // counters were already rolled back by tryAcquire; nothing to release
-                    ProcessState.getInstance(main)
-                            .addState(ProcessState.PROCESS_STATE.CONCURRENT_REQUEST_LIMIT_HIT, null);
+                    // counters were already rolled back by tryAcquire; nothing to release. onRejected records the
+                    // rejection for observability (RequestStats counter, ProcessState, one rate-limited WARN).
+                    limiter.onRejected(main, tenantIdentifier);
                     resp.setHeader("Retry-After", "1");
                     sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
                     return;
