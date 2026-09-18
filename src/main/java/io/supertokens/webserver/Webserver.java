@@ -26,6 +26,7 @@ import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.valves.ErrorReportValve;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -256,6 +257,16 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         // we do this because we may run multiple tomcat servers in the same JVM
         tomcat.getEngine().setName(main.getProcessId());
+
+        // Harden the default error handling: register our own ErrorReportValve on the host
+        // pipeline (Tomcat only auto-adds the default one when the pipeline has none of this
+        // class) with the server build string and the exception report turned off, so
+        // connector-level / pre-dispatch errors do not disclose the Tomcat version or stack
+        // frames to unauthenticated callers.
+        ErrorReportValve errorReportValve = new ErrorReportValve();
+        errorReportValve.setShowServerInfo(false);
+        errorReportValve.setShowReport(false);
+        tomcat.getHost().getPipeline().addValve(errorReportValve);
 
         // create docBase folder and get context
         new File(decideTempDirLocation() + "webapps").mkdirs();
