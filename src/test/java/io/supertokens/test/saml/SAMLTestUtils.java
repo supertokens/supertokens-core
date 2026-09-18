@@ -44,11 +44,27 @@ public class SAMLTestUtils {
                                                                       String idpEntityId,
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin) throws Exception {
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
+                allowIDPInitiatedLogin, null);
+    }
+
+    // requestedClientId != null forces a caller-supplied clientId (verbatim, dots allowed);
+    // null lets the core generate the usual "st_saml_<uuid>".
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin,
+                                                                      String requestedClientId) throws Exception {
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
         String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
 
         JsonObject createClientInput = new JsonObject();
+        if (requestedClientId != null) {
+            createClientInput.addProperty("clientId", requestedClientId);
+        }
         createClientInput.addProperty("clientSecret", "secret");
         createClientInput.addProperty("defaultRedirectURI", defaultRedirectURI);
         JsonArray redirectURIs = new JsonArray();

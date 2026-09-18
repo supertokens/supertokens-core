@@ -17,7 +17,11 @@ import org.junit.rules.TestRule;
 
 import com.google.gson.JsonObject;
 
+import org.apache.catalina.Valve;
+import org.apache.catalina.valves.ErrorReportValve;
+
 import io.supertokens.ProcessState;
+import io.supertokens.webserver.Webserver;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -624,6 +628,40 @@ public class LegacyTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // Regression: a malformed bearer token must be rejected with a clean 400 INVALID_TOKEN_ERROR
+    // from an unauthenticated caller and must NOT surface an unhandled 500 (previously an
+    // ArrayIndexOutOfBoundsException from split()[1]). Covers the token shapes that fail the
+    // "<code>.<clientId>" guard: no dot at all ("no-dot-token"), an empty code (a leading "."
+    // or a lone "."), and an empty clientId (a trailing "abc."). "abc.." now parses to
+    // code="abc"/clientId="." and is rejected downstream as an invalid code — still a 400, never a 500.
+    @Test
+    public void testLegacyUserinfoMalformedTokenIsRejectedWithout500() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        for (String malformed : new String[]{"abc.", ".", ".abc", "abc..", "no-dot-token"}) {
+            try {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", "Bearer " + malformed);
+                HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
+                        "http://localhost:3567/recipe/saml/legacy/userinfo", null, headers, 1000, 1000, null,
+                        SemVer.v5_4.get(), "saml");
+                fail("Expected a 400 for malformed token: \"" + malformed + "\"");
+            } catch (HttpResponseException e) {
+                assertEquals("token \"" + malformed + "\" must not cause a 500", 400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR", e.getMessage());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testLegacyUserinfoValidToken() throws Exception {
         String[] args = {"../"};
@@ -708,6 +746,139 @@ public class LegacyTest5_4 {
 
         assertNotNull(userInfoResponse.get("id"));
         assertEquals("user@example.com", userInfoResponse.get("id").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Regression: the legacy bearer token is "<code>.<clientId>" and clientId is caller-supplied,
+    // so it can legitimately contain dots. The parse must keep everything after the first dot as
+    // the clientId; the previous split-on-every-dot parse truncated "<uuid>.my.dotted.client" to
+    // clientId "my", which then mismatched the stored client and returned 400 for a valid token.
+    // This exercises the full happy path with a dotted clientId and asserts a 200 userinfo response.
+    @Test
+    public void testLegacyUserinfoPreservesDottedClientId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        String defaultRedirectURI = "http://localhost:3000/auth/callback/saml-mock";
+        String acsURL = "http://localhost:3000/acs";
+        String idpEntityId = "https://saml.example.com/entityid";
+        String idpSsoUrl = "https://mocksaml.com/api/saml/sso";
+
+        // A caller-supplied clientId that contains dots.
+        String dottedClientId = "st_saml_my.dotted.client";
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                defaultRedirectURI,
+                acsURL,
+                idpEntityId,
+                idpSsoUrl,
+                false,
+                dottedClientId
+        );
+        assertEquals(dottedClientId, clientInfo.clientId);
+
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process,
+                clientInfo.clientId,
+                clientInfo.defaultRedirectURI,
+                clientInfo.acsURL,
+                "test-state"
+        );
+
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                clientInfo.idpEntityId,
+                "https://saml.supertokens.com",
+                clientInfo.acsURL,
+                "user@example.com",
+                null,
+                relayState,
+                clientInfo.keyMaterial,
+                300
+        );
+
+        JsonObject callbackFormData = new JsonObject();
+        callbackFormData.addProperty("SAMLResponse", samlResponseBase64);
+        callbackFormData.addProperty("RelayState", relayState);
+
+        String redirectURI = null;
+        try {
+            HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml", false);
+            fail("Expected redirect response");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(302, e.statusCode);
+            redirectURI = e.getMessage();
+        }
+
+        String authCode = extractAuthCodeFromRedirectURI(redirectURI);
+
+        JsonObject tokenFormData = new JsonObject();
+        tokenFormData.addProperty("client_id", clientInfo.clientId);
+        tokenFormData.addProperty("client_secret", "secret");
+        tokenFormData.addProperty("code", authCode);
+
+        JsonObject tokenResponse = HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/legacy/token", tokenFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertEquals("OK", tokenResponse.get("status").getAsString());
+
+        String accessToken = tokenResponse.get("access_token").getAsString();
+        // The token embeds the dotted clientId after the first dot.
+        assertEquals(authCode + "." + dottedClientId, accessToken);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + accessToken);
+        JsonObject userInfoResponse = HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/legacy/userinfo", null, headers, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertNotNull(userInfoResponse.get("id"));
+        assertEquals("user@example.com", userInfoResponse.get("id").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Regression for the Tomcat error-response hardening: the embedded Tomcat must register an
+    // ErrorReportValve on the host pipeline with both the server build string and the exception
+    // report turned off, so connector-level / pre-dispatch errors (which bypass the servlet's own
+    // catch-all and are rendered by this valve) cannot disclose the "Apache Tomcat/<version>" build
+    // string or stack frames to unauthenticated callers. Those pre-dispatch errors are awkward to
+    // trigger deterministically over the wire from this harness, so we lock the hardening in at the
+    // configuration level: a future refactor that drops the valve or flips either flag fails here.
+    @Test
+    public void testTomcatErrorReportValveHidesServerInfoAndReport() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        var tomcat = Webserver.getInstance(process.getProcess()).getTomcatReference().getTomcatForTest();
+
+        ErrorReportValve hardenedValve = null;
+        for (Valve valve : tomcat.getHost().getPipeline().getValves()) {
+            if (valve instanceof ErrorReportValve) {
+                hardenedValve = (ErrorReportValve) valve;
+            }
+        }
+
+        assertNotNull("an ErrorReportValve must be registered on the host pipeline", hardenedValve);
+
+        // ErrorReportValve exposes setters but not getters for these flags in this Tomcat version,
+        // so read the protected fields directly to assert the hardening is in effect.
+        java.lang.reflect.Field showServerInfoField = ErrorReportValve.class.getDeclaredField("showServerInfo");
+        showServerInfoField.setAccessible(true);
+        assertEquals(false, showServerInfoField.getBoolean(hardenedValve));
+
+        java.lang.reflect.Field showReportField = ErrorReportValve.class.getDeclaredField("showReport");
+        showReportField.setAccessible(true);
+        assertEquals(false, showReportField.getBoolean(hardenedValve));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
