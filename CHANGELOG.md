@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.8] - 2026-09-21
+
+- enforce dashboard session expiry at verification time
+
 ## [11.4.7] - 2026-08-05
 
 - hardening signature validation
