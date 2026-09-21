@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.0.11] - 2026-09-21
+
+- enforce dashboard session expiry at verification time
+
 ## [12.0.10]
 
 - fixes a SAML XML Signature Wrapping authentication bypass
