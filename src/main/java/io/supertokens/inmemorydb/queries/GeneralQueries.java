@@ -556,6 +556,14 @@ public class GeneralQueries {
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsExpiresAtIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLConsumedAssertionsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLConsumedAssertionsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLConsumedAssertionsExpiresAtIndex(start), NO_OP_SETTER);
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getRecipeUserAccountInfosTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, AccountInfoQueries.getQueryToCreateRecipeUserAccountInfosTable(start), NO_OP_SETTER);

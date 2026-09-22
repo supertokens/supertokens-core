@@ -219,6 +219,8 @@ public class SQLiteConfig {
 
     public String getSAMLClaimsTable() { return "saml_claims"; }
 
+    public String getSAMLConsumedAssertionsTable() { return "saml_consumed_assertions"; }
+
     public String getRecipeUserAccountInfosTable() {
         return "recipe_user_account_infos";
     }
