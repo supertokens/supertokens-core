@@ -44,6 +44,7 @@ public class LegacyTest5_4 {
     @Before
     public void beforeEach() throws IOException {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
         // Set the legacy ACS URL for testing
         Utils.setValueInConfig("saml_legacy_acs_url", "http://localhost:3567/recipe/saml/legacy/callback");
     }

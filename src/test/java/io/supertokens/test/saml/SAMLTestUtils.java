@@ -6,10 +6,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 
 public class SAMLTestUtils {
+
+    // GHSA-wfg2-vqfg-rqh6: saml_sp_entity_id has no default and must be configured per deployment.
+    // Tests set an explicit value in the config before starting the process.
+    public static final String TEST_SP_ENTITY_ID = "https://saml.supertokens.com";
+
+    public static void setSAMLSPEntityIdConfig() {
+        try {
+            Utils.setValueInConfig("saml_sp_entity_id", "\"" + TEST_SP_ENTITY_ID + "\"");
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public static class CreatedClientInfo {
         public final String clientId;
