@@ -232,11 +232,12 @@ public class SAML {
         }
 
         String idpSsoUrl = client.ssoLoginURL;
+        String spEntityId = requireConfiguredSPEntityID(config);
         AuthnRequest request = buildAuthnRequest(
                 main,
                 tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
-                config.getSAMLSPEntityID(), acsURL,
+                spEntityId, acsURL,
                 client.enableRequestSigning);
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
@@ -501,9 +502,15 @@ public class SAML {
             throw new SAMLResponseVerificationFailedException();
         }
         validateSamlResponseTimestamps(response);
-        validateSamlResponseAudience(response, config.getSAMLSPEntityID());
 
-        var claims = extractAllClaims(response);
+        // Identity is taken from a single assertion, and that same assertion's audience is validated on it.
+        // Previously the audience was checked per-response (first matching assertion) while identity was taken
+        // from every assertion (last NameID wins), so an assertion issued to a different audience could supply
+        // the identity while another assertion satisfied the audience restriction. See GHSA-wfg2-vqfg-rqh6.
+        Assertion authenticatingAssertion = selectAuthenticatingAssertion(response);
+        validateAssertionAudience(authenticatingAssertion, config.getSAMLSPEntityID());
+
+        var claims = extractAssertionClaims(authenticatingAssertion);
 
         String code = UUID.randomUUID().toString();
         samlStorage.saveSAMLClaims(tenantIdentifier, client.clientId, code, claims, config.getSAMLClaimsValidity());
@@ -539,95 +546,102 @@ public class SAML {
         }
     }
 
-    private static void validateSamlResponseAudience(Response samlResponse, String expectedAudience)
+    private static Assertion selectAuthenticatingAssertion(Response samlResponse)
             throws SAMLResponseVerificationFailedException {
-        boolean audienceMatched = false;
-
-        for (Assertion assertion : samlResponse.getAssertions()) {
-            Conditions conditions = assertion.getConditions();
-            if (conditions == null) {
-                continue;
-            }
-            java.util.List<AudienceRestriction> restrictions = conditions.getAudienceRestrictions();
-            if (restrictions == null || restrictions.isEmpty()) {
-                continue;
-            }
-            for (AudienceRestriction ar : restrictions) {
-                java.util.List<Audience> audiences = ar.getAudiences();
-                if (audiences == null || audiences.isEmpty()) {
-                    continue;
-                }
-                for (Audience aud : audiences) {
-                    if (expectedAudience.equals(aud.getURI())) {
-                        audienceMatched = true;
-                        break;
-                    }
-                }
-                if (audienceMatched) {
-                    break;
-                }
-            }
-            if (audienceMatched) {
-                break;
-            }
-        }
-
-        if (!audienceMatched) {
+        // Signature verification above has already established that the assertion is signed (either the whole
+        // Response is signed, or every Assertion is individually signed). We use a single assertion as the
+        // source of identity and validate its audience on that same assertion, mirroring the SAML Web Browser
+        // SSO profile requirement that each assertion be evaluated independently.
+        List<Assertion> assertions = samlResponse.getAssertions();
+        if (assertions == null || assertions.isEmpty()) {
             throw new SAMLResponseVerificationFailedException();
         }
+        return assertions.get(0);
     }
 
-    private static JsonObject extractAllClaims(Response samlResponse) {
-        JsonObject claims = new JsonObject();
-
-        for (Assertion assertion : samlResponse.getAssertions()) {
-            // Extract NameID as a claim
-            Subject subject = assertion.getSubject();
-            if (subject != null && subject.getNameID() != null) {
-                String nameId = subject.getNameID().getValue();
-                String nameIdFormat = subject.getNameID().getFormat();
-                JsonArray nameIdArr = new JsonArray();
-                nameIdArr.add(nameId);
-                claims.add("NameID", nameIdArr);
-                if (nameIdFormat != null) {
-                    JsonArray nameIdFormatArr = new JsonArray();
-                    nameIdFormatArr.add(nameIdFormat);
-                    claims.add("NameIDFormat", nameIdFormatArr);
+    private static void validateAssertionAudience(Assertion assertion, String expectedAudience)
+            throws SAMLResponseVerificationFailedException {
+        // The SP entity ID must be configured per deployment: there is no shared default, so a null or blank
+        // expected audience means saml_sp_entity_id was not set and no assertion may be accepted. This also
+        // closes the shared-default-audience variant. See GHSA-wfg2-vqfg-rqh6.
+        if (expectedAudience == null || expectedAudience.trim().isEmpty()) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        Conditions conditions = assertion.getConditions();
+        if (conditions == null) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        List<AudienceRestriction> restrictions = conditions.getAudienceRestrictions();
+        if (restrictions == null || restrictions.isEmpty()) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        for (AudienceRestriction ar : restrictions) {
+            List<Audience> audiences = ar.getAudiences();
+            if (audiences == null) {
+                continue;
+            }
+            for (Audience aud : audiences) {
+                if (expectedAudience.equals(aud.getURI())) {
+                    return;
                 }
             }
+        }
+        throw new SAMLResponseVerificationFailedException();
+    }
 
-            // Extract all attributes from AttributeStatements
-            for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
-                for (Attribute attribute : attributeStatement.getAttributes()) {
-                    String attributeName = attribute.getName();
-                    JsonArray attributeValues = new JsonArray();
+    private static String requireConfiguredSPEntityID(CoreConfig config) {
+        String spEntityId = config.getSAMLSPEntityID();
+        if (spEntityId == null || spEntityId.trim().isEmpty()) {
+            throw new IllegalStateException(
+                    "saml_sp_entity_id must be configured for this tenant before SAML can be used");
+        }
+        return spEntityId;
+    }
 
-                    for (XMLObject attributeValue : attribute.getAttributeValues()) {
-                        String value = null;
-                        if (attributeValue instanceof XSString) {
-                            // xsi:type="xsd:string" or "xs:string" — used by AD FS, Azure AD, and most
-                            // enterprise IdPs. OpenSAML 4 materialises these as XSStringImpl, which does
-                            // NOT implement the AttributeValue marker interface, so a plain instanceof
-                            // AttributeValue check would silently drop every such value.
-                            value = ((XSString) attributeValue).getValue();
-                        } else if (attributeValue instanceof org.opensaml.saml.saml2.core.AttributeValue) {
-                            org.opensaml.saml.saml2.core.AttributeValue attrValue =
-                                    (org.opensaml.saml.saml2.core.AttributeValue) attributeValue;
-                            value = attrValue.getDOM() != null
-                                    ? attrValue.getDOM().getTextContent()
-                                    : attrValue.getTextContent();
-                        } else if (attributeValue.getDOM() != null) {
-                            // Catch-all for XSAny, XSURI, and any other typed XMLObject.
-                            value = attributeValue.getDOM().getTextContent();
-                        }
-                        if (value != null && !value.trim().isEmpty()) {
-                            attributeValues.add(value.trim());
-                        }
+    private static JsonObject extractAssertionClaims(Assertion assertion) {
+        JsonObject claims = new JsonObject();
+
+        // Extract NameID as a claim
+        Subject subject = assertion.getSubject();
+        if (subject != null && subject.getNameID() != null) {
+            String nameId = subject.getNameID().getValue();
+            String nameIdFormat = subject.getNameID().getFormat();
+            JsonArray nameIdArr = new JsonArray();
+            nameIdArr.add(nameId);
+            claims.add("NameID", nameIdArr);
+            if (nameIdFormat != null) {
+                JsonArray nameIdFormatArr = new JsonArray();
+                nameIdFormatArr.add(nameIdFormat);
+                claims.add("NameIDFormat", nameIdFormatArr);
+            }
+        }
+
+        // Extract all attributes from AttributeStatements
+        for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
+            for (Attribute attribute : attributeStatement.getAttributes()) {
+                String attributeName = attribute.getName();
+                JsonArray attributeValues = new JsonArray();
+
+                for (XMLObject attributeValue : attribute.getAttributeValues()) {
+                    String value = null;
+                    if (attributeValue instanceof XSString) {
+                        value = ((XSString) attributeValue).getValue();
+                    } else if (attributeValue instanceof org.opensaml.saml.saml2.core.AttributeValue) {
+                        org.opensaml.saml.saml2.core.AttributeValue attrValue =
+                                (org.opensaml.saml.saml2.core.AttributeValue) attributeValue;
+                        value = attrValue.getDOM() != null
+                                ? attrValue.getDOM().getTextContent()
+                                : attrValue.getTextContent();
+                    } else if (attributeValue.getDOM() != null) {
+                        value = attributeValue.getDOM().getTextContent();
                     }
-
-                    if (!attributeValues.isEmpty()) {
-                        claims.add(attributeName, attributeValues);
+                    if (value != null && !value.trim().isEmpty()) {
+                        attributeValues.add(value.trim());
                     }
+                }
+
+                if (!attributeValues.isEmpty()) {
+                    claims.add(attributeName, attributeValues);
                 }
             }
         }
@@ -713,7 +727,7 @@ public class SAML {
 
         SAMLCertificate certificate = SAMLCertificate.getInstance(tenantIdentifier.toAppIdentifier(), main);
         CoreConfig config = Config.getConfig(tenantIdentifier, main);
-        String spEntityId = config.getSAMLSPEntityID();
+        String spEntityId = requireConfiguredSPEntityID(config);
         try {
             X509Certificate cert = certificate.getCertificate();
             String certString = java.util.Base64.getEncoder().encodeToString(cert.getEncoded());

@@ -38,6 +38,7 @@ public class HandleSAMLCallbackTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     @Test

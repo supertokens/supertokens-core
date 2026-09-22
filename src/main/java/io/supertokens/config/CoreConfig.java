@@ -1026,9 +1026,9 @@ public class CoreConfig {
         }
 
         // Normalize
-        if (saml_sp_entity_id == null) {
-            saml_sp_entity_id = "https://saml.supertokens.com";
-        }
+        // Note: saml_sp_entity_id intentionally has no default. A shared default audience let an assertion
+        // minted for one SuperTokens deployment be accepted by another. It must be configured per deployment.
+        // See GHSA-wfg2-vqfg-rqh6.
 
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
