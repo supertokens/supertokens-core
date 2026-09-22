@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.0.24]
+
+- Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2-xqvf-8rcx).
+
+
 ## [6.0.23]
 
 - fix: resolve api_keys and IP access config against the app's public tenant
