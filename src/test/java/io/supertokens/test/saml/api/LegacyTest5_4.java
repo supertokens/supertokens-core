@@ -307,7 +307,7 @@ public class LegacyTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -519,7 +519,7 @@ public class LegacyTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -665,7 +665,7 @@ public class LegacyTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
