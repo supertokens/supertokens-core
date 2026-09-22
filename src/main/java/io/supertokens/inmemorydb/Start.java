@@ -4028,12 +4028,17 @@ public class Start
 
     @Override
     public void saveRelayStateInfo(TenantIdentifier tenantIdentifier, SAMLRelayStateInfo relayStateInfo, long relayStateValidity)  throws StorageQueryException {
-        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI, relayStateValidity);
+        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI, relayStateInfo.inResponseTo, relayStateInfo.acsURL, relayStateValidity);
     }
 
     @Override
-    public SAMLRelayStateInfo getRelayStateInfo(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
-        return SAMLQueries.getRelayStateInfo(this, tenantIdentifier, relayState);
+    public SAMLRelayStateInfo getRelayStateInfoAndRemove(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
+        return SAMLQueries.getRelayStateInfoAndRemove(this, tenantIdentifier, relayState);
+    }
+
+    @Override
+    public boolean markSAMLAssertionConsumed(TenantIdentifier tenantIdentifier, String assertionId, long expiresAt) throws StorageQueryException {
+        return SAMLQueries.markSAMLAssertionConsumed(this, tenantIdentifier, assertionId, expiresAt);
     }
 
     @Override
