@@ -105,7 +105,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -167,7 +167,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -328,7 +328,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -358,7 +358,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState2,
+                SAMLTestUtils.requestIdFor(relayState2),
                 clientInfo.keyMaterial,
                 300
         );

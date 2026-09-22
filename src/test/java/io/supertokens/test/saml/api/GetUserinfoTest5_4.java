@@ -165,7 +165,7 @@ public class GetUserinfoTest5_4 {
                 clientInfo1.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo1.keyMaterial,
                 300
         );
@@ -239,7 +239,7 @@ public class GetUserinfoTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );

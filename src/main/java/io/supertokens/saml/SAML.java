@@ -56,6 +56,8 @@ import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.Subject;
+import org.opensaml.saml.saml2.core.SubjectConfirmation;
+import org.opensaml.saml.saml2.core.SubjectConfirmationData;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
@@ -242,7 +244,13 @@ public class SAML {
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
-        samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI), config.getSAMLRelayStateValidity());
+        // Persist the AuthnRequest ID and the ACS URL alongside the RelayState. At callback time the
+        // IdP echoes the request ID back as Response.InResponseTo, letting us bind the response to this
+        // exact login (GHSA-3r7x-rhvc-fw28), and the ACS URL lets us pin Destination / Recipient so an
+        // assertion minted for a different endpoint cannot be redirected here.
+        samlStorage.saveRelayStateInfo(tenantIdentifier,
+                new SAMLRelayStateInfo(relayState, clientId, state, redirectURI, request.getID(), acsURL),
+                config.getSAMLRelayStateValidity());
 
         // The IdP SSO URL may already carry a query string (e.g. Google's
         // ...o/saml2/idp?idpid=...), so pick the right separator instead of always using '?'.
@@ -426,6 +434,143 @@ public class SAML {
         SignatureValidator.validate(signature, credential);
     }
 
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    /**
+     * Pins the response Destination and each assertion's SubjectConfirmationData Recipient to the ACS URL
+     * this login was started with, so an assertion minted for a different endpoint cannot be replayed here.
+     * This can only be anchored on the SP-initiated path, where the ACS URL was persisted at login; the
+     * IdP-initiated path has no such anchor (the SAML client carries no configured ACS), so it relies on the
+     * assertion single-use cache instead.
+     */
+    private static void validateResponseDestinationAndRecipient(Response response, SAMLRelayStateInfo relayStateInfo)
+            throws SAMLResponseVerificationFailedException {
+        if (relayStateInfo == null || relayStateInfo.acsURL == null) {
+            return;
+        }
+        String expectedAcs = relayStateInfo.acsURL;
+
+        String destination = trimToNull(response.getDestination());
+        if (destination != null && !destination.equals(expectedAcs)) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
+        for (Assertion assertion : response.getAssertions()) {
+            if (assertion.getSubject() == null) {
+                continue;
+            }
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd == null) {
+                    continue;
+                }
+                String recipient = trimToNull(scd.getRecipient());
+                if (recipient != null && !recipient.equals(expectedAcs)) {
+                    throw new SAMLResponseVerificationFailedException();
+                }
+            }
+        }
+    }
+
+    /**
+     * Binds the response to the login it claims to answer. On the SP-initiated path the response
+     * InResponseTo must equal the AuthnRequest ID we issued (and any SubjectConfirmationData InResponseTo
+     * present must be consistent). On the IdP-initiated path the response is unsolicited, so it must carry
+     * no InResponseTo at all; a present one signals a solicited response being smuggled through the
+     * unauthenticated IdP-initiated branch.
+     */
+    private static void validateResponseInResponseTo(Response response, SAMLRelayStateInfo relayStateInfo)
+            throws SAMLResponseVerificationFailedException {
+        String responseInResponseTo = trimToNull(response.getInResponseTo());
+
+        if (relayStateInfo != null) {
+            String expected = trimToNull(relayStateInfo.inResponseTo);
+            if (expected == null || responseInResponseTo == null || !expected.equals(responseInResponseTo)) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+        } else if (responseInResponseTo != null) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
+        String expected = relayStateInfo == null ? null : trimToNull(relayStateInfo.inResponseTo);
+        for (Assertion assertion : response.getAssertions()) {
+            if (assertion.getSubject() == null) {
+                continue;
+            }
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd == null) {
+                    continue;
+                }
+                String scdInResponseTo = trimToNull(scd.getInResponseTo());
+                if (scdInResponseTo == null) {
+                    continue;
+                }
+                if (relayStateInfo == null || !scdInResponseTo.equals(expected)) {
+                    throw new SAMLResponseVerificationFailedException();
+                }
+            }
+        }
+    }
+
+    /**
+     * Records every assertion in the response as consumed, rejecting the response if any assertion has
+     * already been consumed. Combined with the atomic insert-if-absent in storage, this makes each signed
+     * assertion usable at most once and closes the IdP-initiated replay window (which has no RelayState to
+     * consume). See GHSA-3r7x-rhvc-fw28.
+     */
+    private static void enforceAssertionSingleUse(TenantIdentifier tenantIdentifier, Storage storage,
+                                                  Response response, CoreConfig config)
+            throws SAMLResponseVerificationFailedException, StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        long now = System.currentTimeMillis();
+        for (Assertion assertion : response.getAssertions()) {
+            String assertionId = trimToNull(assertion.getID());
+            if (assertionId == null) {
+                // An assertion with no ID cannot be tracked for replay; fail closed rather than accept it.
+                throw new SAMLResponseVerificationFailedException();
+            }
+            long expiresAt = assertionExpiry(assertion, now, config);
+            boolean fresh = samlStorage.markSAMLAssertionConsumed(tenantIdentifier, assertionId, expiresAt);
+            if (!fresh) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+        }
+    }
+
+    /**
+     * The point after which a consumed-assertion row may be purged. Kept at least as long as the assertion
+     * could otherwise be validated, so a replay is caught while the assertion is still in-window. Prefers the
+     * assertion's own NotOnOrAfter bounds and falls back to the configured claims validity.
+     */
+    private static long assertionExpiry(Assertion assertion, long now, CoreConfig config) {
+        Long notOnOrAfter = null;
+        if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
+            notOnOrAfter = assertion.getConditions().getNotOnOrAfter().toEpochMilli();
+        }
+        if (assertion.getSubject() != null) {
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd != null && scd.getNotOnOrAfter() != null) {
+                    long v = scd.getNotOnOrAfter().toEpochMilli();
+                    if (notOnOrAfter == null || v > notOnOrAfter) {
+                        notOnOrAfter = v;
+                    }
+                }
+            }
+        }
+        if (notOnOrAfter == null || notOnOrAfter < now) {
+            return now + config.getSAMLClaimsValidity();
+        }
+        return notOnOrAfter;
+    }
+
     private static void validateSamlResponseTimestamps(Response samlResponse) throws SAMLResponseVerificationFailedException {
         Instant now = Instant.now();
 
@@ -470,10 +615,12 @@ public class SAML {
         Response response = parseSamlResponse(samlResponse);
         String state = null;
         String redirectURI = null;
+        // Non-null only on the SP-initiated path; carries the AuthnRequest ID and ACS URL from login.
+        SAMLRelayStateInfo relayStateInfo = null;
 
         if (relayState != null && !relayState.isEmpty()) {
             // sp initiated
-            var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
+            relayStateInfo = samlStorage.getRelayStateInfoAndRemove(tenantIdentifier, relayState);
             if (relayStateInfo == null) {
                 throw new InvalidRelayStateException();
             }
@@ -506,12 +653,21 @@ public class SAML {
         }
         validateSamlResponseTimestamps(response);
 
-        // Identity is taken from a single assertion, and that same assertion's audience is validated on it.
-        // Previously the audience was checked per-response (first matching assertion) while identity was taken
-        // from every assertion (last NameID wins), so an assertion issued to a different audience could supply
-        // the identity while another assertion satisfied the audience restriction. See GHSA-wfg2-vqfg-rqh6.
+        // Bind the response to this login and reject replays. On the SP-initiated path relayStateInfo
+        // carries the AuthnRequest ID and ACS URL captured at login; on the IdP-initiated path it is null.
+        // (GHSA-3r7x-rhvc-fw28)
+        validateResponseDestinationAndRecipient(response, relayStateInfo);
+        validateResponseInResponseTo(response, relayStateInfo);
+
+        // Identity is taken from a single assertion, and that same assertion's audience is validated on it,
+        // so an assertion issued to a different audience cannot supply the identity while another assertion
+        // satisfies the audience restriction. (GHSA-wfg2-vqfg-rqh6)
         Assertion authenticatingAssertion = selectAuthenticatingAssertion(response);
         validateAssertionAudience(authenticatingAssertion, config.getSAMLSPEntityID());
+
+        // Consume every assertion in the response exactly once. Done last, after all other checks pass,
+        // so a rejected response never burns an assertion ID. (GHSA-3r7x-rhvc-fw28)
+        enforceAssertionSingleUse(tenantIdentifier, storage, response, config);
 
         var claims = extractAssertionClaims(authenticatingAssertion);
 
