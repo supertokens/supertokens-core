@@ -426,6 +426,15 @@ public class WebAuthN {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
+
+                    // Defense in depth (GHSA-6v34-w48w-44rc): the resolved credential owner must be a member of
+                    // the tenant this sign-in was requested for. The storage queries above already enforce tenant
+                    // membership; this recipe-layer check guards against any future storage path re-opening the
+                    // cross-tenant sign-in, independently of the backend.
+                    if (fullyLoadedUserInfo.tenantIds == null
+                            || !fullyLoadedUserInfo.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
+                    }
                     UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
                     return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
