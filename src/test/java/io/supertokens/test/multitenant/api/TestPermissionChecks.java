@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -24,9 +25,12 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.config.Config;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.SemVer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -311,6 +315,14 @@ public class TestPermissionChecks {
                         new TenantIdentifier("localhost.org", null, null),
                         "You must use the default or same connectionUriDomain to create/update a connectionUriDomain"
                 ),
+                // GHSA-4rf2-xqvf-8rcx: an app scoped under a connectionUriDomain must NOT be able to
+                // create/update that connectionUriDomain (it could otherwise rewrite the CUD's api_keys and
+                // take over sibling apps). Source (cud, app, public) targeting the CUD must be rejected.
+                new TestCase(
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        "You must use the default or same connectionUriDomain to create/update a connectionUriDomain"
+                ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, null),
                         new TenantIdentifier(null, null, null),
@@ -363,6 +375,115 @@ public class TestPermissionChecks {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+    }
+
+    // GHSA-4rf2-xqvf-8rcx: end-to-end takeover reproduction. An app scoped under a
+    // connectionUriDomain must not be able to rewrite that CUD's config (including api_keys),
+    // which would otherwise let the app take over sibling apps under the same CUD.
+    @Test
+    public void testAppUnderCudCannotRewriteCudApiKeys() throws Exception {
+        Utils.reset();
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) {
+            process.kill();
+            return;
+        }
+
+        Main main = process.getProcess();
+        TenantIdentifier base = new TenantIdentifier(null, null, null);
+        TenantIdentifier cud = new TenantIdentifier("127.0.0.1", null, null);
+        TenantIdentifier a1 = new TenantIdentifier("127.0.0.1", "a1", null);
+        TenantIdentifier a2 = new TenantIdentifier("127.0.0.1", "a2", null);
+        String a2Key = "victima2key000000000000000";
+
+        JsonObject cudConfig = new JsonObject();
+        StorageLayer.getStorage(base, main).modifyConfigToAddANewUserPoolForTesting(cudConfig, 1);
+
+        // Admin setup: a connectionUriDomain with two apps under it. app a2 carries its own
+        // api_keys (the victim). The CUD itself has no api_keys.
+        TestMultitenancyAPIHelper.createConnectionUriDomain(main, base, "127.0.0.1", true, true, true, cudConfig);
+        TestMultitenancyAPIHelper.createApp(main, cud, "a1", true, true, true, new JsonObject());
+        JsonObject a2Config = new JsonObject();
+        a2Config.addProperty("api_keys", a2Key);
+        TestMultitenancyAPIHelper.createApp(main, cud, "a2", true, true, true, a2Config);
+
+        assertNull(Config.getConfig(cud, main).getAPIKeys());
+
+        // Attack (hop 1): as app a1, attempt to rewrite the parent CUD's api_keys. Before the fix
+        // this passed the permission check and installed the attacker's key on the CUD, which is
+        // the parent of every sibling app.
+        JsonObject malicious = new JsonObject();
+        malicious.addProperty("api_keys", "attackerkey000000000000000");
+        try {
+            TestMultitenancyAPIHelper.createConnectionUriDomain(main, a1, "127.0.0.1", true, true, true, malicious);
+            fail("app-scoped source was allowed to update its parent connectionUriDomain (GHSA-4rf2)");
+        } catch (HttpResponseException e) {
+            assertTrue(e.getMessage().contains(
+                    "You must use the default or same connectionUriDomain to create/update a connectionUriDomain"));
+        }
+
+        // The CUD's api_keys must be unchanged: no takeover key was installed.
+        assertNull(Config.getConfig(cud, main).getAPIKeys());
+        // And the sibling app a2's own key is intact.
+        assertArrayEquals(new String[]{a2Key}, Config.getConfig(a2, main).getAPIKeys());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // GHSA-4rf2-xqvf-8rcx (variant 2): a source scoped to an app or CUD must not reach the base tenant by
+    // omitting the identifier in the request body. Before the fix, an omitted connectionUriDomain resolved to
+    // the base tenant with no permission check, letting such a source change base-tenant config (firstFactors,
+    // enabled recipes). Core config is separately refused for base, so this is config integrity, not key theft.
+    @Test
+    public void testNonBaseSourceCannotUpdateBaseTenantViaOmittedIdentifier() throws Exception {
+        Utils.reset();
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) {
+            process.kill();
+            return;
+        }
+
+        Main main = process.getProcess();
+        TenantIdentifier base = new TenantIdentifier(null, null, null);
+        JsonObject cudConfig = new JsonObject();
+        StorageLayer.getStorage(base, main).modifyConfigToAddANewUserPoolForTesting(cudConfig, 1);
+        TestMultitenancyAPIHelper.createConnectionUriDomain(main, base, "127.0.0.1", true, true, true, cudConfig);
+
+        // As the CUD's public app, send a v2 connectionUriDomain update that omits the identifier, so the
+        // request targets the base tenant, and try to change its firstFactors.
+        TenantIdentifier cudSource = new TenantIdentifier("127.0.0.1", null, null);
+        JsonObject body = new JsonObject();
+        JsonArray firstFactors = new JsonArray();
+        firstFactors.add("emailpassword");
+        body.add("firstFactors", firstFactors);
+
+        try {
+            HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                    HttpRequestForTesting.getMultitenantUrl(cudSource,
+                            "/recipe/multitenancy/connectionuridomain/v2"),
+                    body, 1000, 2500, null, SemVer.v5_0.get(), "multitenancy");
+            fail("app/CUD-scoped source updated the base tenant via an omitted identifier (GHSA-4rf2 variant 2)");
+        } catch (HttpResponseException e) {
+            assertTrue(e.getMessage().contains("You must use the default tenant to create/update the base tenant"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
