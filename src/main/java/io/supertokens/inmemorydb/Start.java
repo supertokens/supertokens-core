@@ -430,6 +430,43 @@ public class Start
     }
 
     @Override
+    public void createNewSession_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                             String sessionHandle, String userId, String refreshTokenHash2,
+                                             JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                             long createdAtTime, boolean useStaticKey)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.createNewSession_Transaction(this, sqlCon, tenantIdentifier, sessionHandle, userId,
+                    refreshTokenHash2, userDataInDatabase, expiry, userDataInJWT, createdAtTime, useStaticKey);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = e.getMessage();
+                if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public String lockUserAndGetPrimaryId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                       String userId) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.lockUserAndGetPrimaryId_Transaction(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void deleteSessionsOfUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             SessionQueries.deleteSessionsOfUser(this, appIdentifier, userId);
