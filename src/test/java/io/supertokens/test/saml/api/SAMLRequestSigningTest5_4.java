@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.saml.MockSAML;
@@ -74,6 +75,7 @@ public class SAMLRequestSigningTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     /**
