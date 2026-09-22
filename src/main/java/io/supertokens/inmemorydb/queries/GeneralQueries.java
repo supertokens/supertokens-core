@@ -2032,6 +2032,11 @@ public class GeneralQueries {
 
         AuthRecipeUserInfo webauthnUser = WebAuthNQueries.getUserInfoByCredentialId_Transaction(start, connection,
                 tenantIdentifier, credentialId);
+        if (webauthnUser == null) {
+            // No credential owner is a member of the requested tenant (see GHSA-6v34-w48w-44rc). Return null
+            // rather than dereferencing, so sign-in reports the credential as not existing for this tenant.
+            return null;
+        }
         return getPrimaryUserInfoForUserId_Transaction(start, connection, tenantIdentifier.toAppIdentifier(),
                 webauthnUser.getSupertokensUserId());
     }
