@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [11.4.8]
 
 - Serializes session creation with account unlink to close a session race (GHSA-2pc4-vw9j-454c).
+- Enforces dashboard session expiry at verification time (GHSA-w9fp-wv6g-pqv8).
 - Enforces SAML callback replay protection and request binding (GHSA-3r7x-rhvc-fw28).
 - Binds SAML identity to a single validated assertion and requires saml_sp_entity_id (GHSA-wfg2-vqfg-rqh6).
 
