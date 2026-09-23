@@ -116,6 +116,8 @@ public class AuthRecipe {
                                 con, appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
 
+                // Same external recipe user id the post-commit revokeAllSessionsForUser below uses.
+                String resultUserId = mappingResult == null ? recipeUserId : mappingResult.externalUserId;
                 // Revoke the unlinked user's sessions inside this locked transaction (GHSA-2pc4-vw9j-454c).
                 // Session creation now takes the same user lock, so a session created concurrently with this
                 // unlink is serialized: it is either already inserted and deleted here, or created only after
