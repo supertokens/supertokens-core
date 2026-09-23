@@ -7,6 +7,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.2.1]
+
+- Serializes session creation with account unlink to close a session race (GHSA-2pc4-vw9j-454c).
+- Enforces SAML callback replay protection and request binding (GHSA-3r7x-rhvc-fw28).
+- Binds SAML identity to a single validated assertion and requires saml_sp_entity_id (GHSA-wfg2-vqfg-rqh6).
+- Scopes WebAuthn sign-in to the requested tenant (GHSA-6v34-w48w-44rc).
+- Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
+
+
 ## [12.2.0]
 
 - **Upgrade note: the core now verifies the database schema at startup and, with `schema_check_strict_mode: true` (default), refuses to start until the manual migrations from the CHANGELOGs are applied**
