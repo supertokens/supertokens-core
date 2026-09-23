@@ -212,9 +212,6 @@ public class Session {
     // CDI >= 5.6). null keeps the configured access_token_validity. When set it is validated shorten-only
     // (0 < param <= configured) - out-of-range throws AccessTokenValidityOutOfRangeException (the webserver
     // maps it to a 400, never a clamp). Nothing about the override is persisted.
-    @UnauditedTransaction(justification = "Session creation locks the recipe user and inserts the session in one "
-            + "transaction to serialize with account link/unlink (GHSA-2pc4-vw9j-454c); session creation is not an "
-            + "audited-transaction event and emits its own session-created event.")
     public static SessionInformationHolder createNewSession(TenantIdentifier tenantIdentifier, Storage storage,
                                                             Main main, @Nonnull String recipeUserId,
                                                             @Nonnull JsonObject userDataInJWT,
