@@ -216,6 +216,49 @@ public class DashboardTest {
     }
 
     @Test
+    public void testExpiredSessionIsRejectedAtVerification() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "password123";
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        DashboardSQLStorage storage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        // Create a session whose expiry is in the past, without waiting for the cleanup cron. This is the
+        // shape of a token whose 30-day lifetime has elapsed.
+        String expiredSessionId = io.supertokens.utils.Utils.getUUID();
+        long now = System.currentTimeMillis();
+        storage.createNewDashboardUserSession(process.getAppForTesting().toAppIdentifier(), user.userId,
+                expiredSessionId, now - Dashboard.DASHBOARD_SESSION_DURATION - 1000, now - 1000);
+
+        // The row exists, but verification must not accept it and must not leak the user's email.
+        assertFalse(Dashboard.isValidUserSession(process.getProcess(), expiredSessionId));
+        assertNull(Dashboard.getEmailFromSessionId(process.getAppForTesting().toAppIdentifier(),
+                storage, expiredSessionId));
+
+        // Verifying an expired session revokes it, so it does not depend on the 12-hour cleanup cron.
+        assertNull(storage.getSessionInfoWithSessionId(process.getAppForTesting().toAppIdentifier(),
+                expiredSessionId));
+
+        // Positive control: a freshly issued session still authenticates and resolves its email.
+        String validSessionId = Dashboard.signInDashboardUser(process.getProcess(), email, password);
+        assertTrue(Dashboard.isValidUserSession(process.getProcess(), validSessionId));
+        assertEquals(email, Dashboard.getEmailFromSessionId(process.getAppForTesting().toAppIdentifier(),
+                storage, validSessionId));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testUpdatingDashboardUsersCredentialsShouldRevokeSessions() throws Exception {
 
         String[] args = {"../"};

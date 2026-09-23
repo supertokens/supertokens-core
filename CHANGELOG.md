@@ -7,6 +7,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.1.2]
+
+- Serializes session creation with account unlink to close a session race (GHSA-2pc4-vw9j-454c).
+- Enforces SAML callback replay protection and request binding (GHSA-3r7x-rhvc-fw28).
+- Binds SAML identity to a single validated assertion and requires saml_sp_entity_id (GHSA-wfg2-vqfg-rqh6).
+- Scopes WebAuthn sign-in to the requested tenant (GHSA-6v34-w48w-44rc).
+- Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
+- Enforces dashboard session expiry at verification time (GHSA-w9fp-wv6g-pqv8).
+
+
 ## [12.1.1]
 
 - In-memory (SQLite) dashboard user search (`getUsers_new`) now mirrors the postgresql storage's sargable prefix arms and adds matching partial indexes on `recipe_user_tenants`.
