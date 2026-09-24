@@ -3972,6 +3972,16 @@ public class Start
     }
 
     @Override
+    public boolean isOAuthTokenRevokedByGID_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                        String gid) throws StorageQueryException {
+        try {
+            return !OAuthQueries.isOAuthSessionExistsByGID(this, (Connection) con.getConnection(), appIdentifier, gid);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public boolean isOAuthTokenRevokedByJTI(AppIdentifier appIdentifier, String gid, String jti)
             throws StorageQueryException {
         try {

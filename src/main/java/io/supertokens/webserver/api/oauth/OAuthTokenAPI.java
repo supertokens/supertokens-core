@@ -46,6 +46,8 @@ import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.jwt.JWT.JWTException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.output.Logging;
@@ -394,6 +396,24 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         final JsonObject[] finalResponse = {null};
 
+        // Pre-warm the signing-key caches OUTSIDE the transaction so that token re-signing and JWT payload
+        // verification inside the transaction below are served from cache and never borrow a second pool
+        // connection while the outer connection is held. Any cold-start key creation or dynamic-key rotation
+        // happens here, where this thread holds no connection. Mirrors Session#warmSigningMaterial and the
+        // deadlock note on SigningKeys#getStaticKeyForAlgorithm (PLAN-017).
+        try {
+            SigningKeys signingKeys = SigningKeys.getInstance(appIdentifier, main);
+            signingKeys.getAllKeys(); // used by getPayloadFromJWTToken to verify the exchanged access token
+            if (useDynamicKey) {
+                signingKeys.getLatestIssuedDynamicKey();
+            } else {
+                signingKeys.getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            }
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException
+                 | UnsupportedJWTSigningAlgorithmException e) {
+            throw new ServletException(e);
+        }
+
         try {
             sqlStorage.startTransaction(con -> {
                 try {
@@ -416,8 +436,10 @@ public class OAuthTokenAPI extends WebserverAPI {
                     if (introspectResp == null) return null; // already responded; auto-rollback
 
                     JsonObject refreshTokenPayload = introspectResp.jsonResponse.getAsJsonObject();
+                    // Run the revocation read on the outer connection `con` (not a nested borrow) and reuse
+                    // the already-loaded oauthClient for the revoke round-trip — see PLAN-017.
                     OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, sqlStorage,
-                            refreshTokenPayload, externalRefreshToken, oauthClient.clientId);
+                            con, refreshTokenPayload, externalRefreshToken, oauthClient);
 
                     if (!refreshTokenPayload.get("active").getAsBoolean()) {
                         String gidForLog = refreshTokenPayload.has("gid")
@@ -446,9 +468,11 @@ public class OAuthTokenAPI extends WebserverAPI {
                     }
 
                     // ── 4. Transform tokens ────────────────────────────────────────
+                    // useCacheOnlySigningKey = true: re-sign from the pre-warmed key caches only, so signing
+                    // never borrows a second connection while `con` is held (PLAN-017).
                     exchangeResp.jsonResponse = OAuth.transformTokens(main, appIdentifier, sqlStorage,
                             exchangeResp.jsonResponse.getAsJsonObject(),
-                            iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+                            iss, accessTokenUpdate, idTokenUpdate, useDynamicKey, true);
 
                     // ── 5. Extract gid / jti / sessionHandle ───────────────────────
                     String gid = null, jti = null, sessionHandle = null;
@@ -461,6 +485,10 @@ public class OAuthTokenAPI extends WebserverAPI {
                             jti = atPayload.get("jti").getAsString();
                             if (atPayload.has("sessionHandle")) {
                                 sessionHandle = atPayload.get("sessionHandle").getAsString();
+                                // Best-effort side work that may target a DIFFERENT tenant's storage/pool than
+                                // the one holding `con`; it must NOT be threaded onto `con` (that would run it
+                                // against the wrong storage). Leave it as a separate call — do not "helpfully"
+                                // fold it into the transaction (PLAN-017 §5.4).
                                 updateLastActive(appIdentifier, sessionHandle);
                             }
                         } catch (TryRefreshTokenException e) {
