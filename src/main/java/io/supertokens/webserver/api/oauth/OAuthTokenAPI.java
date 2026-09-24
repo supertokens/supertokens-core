@@ -416,6 +416,10 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         try {
             sqlStorage.startTransaction(con -> {
+                // Tracked purely for CORE-3 diagnostics (PLAN-017): once the provider exchange has succeeded,
+                // any later failure that rolls back this transaction is a stranded-mapping risk we debug-log.
+                boolean exchangeSucceeded = false;
+                String gid = null;
                 try {
                     // ── 1. SELECT … FOR UPDATE ─────────────────────────────────────
                     String internalToken = sqlStorage.getRefreshTokenMappingForUpdate_Transaction(
@@ -466,6 +470,9 @@ public class OAuthTokenAPI extends WebserverAPI {
                                         + tokenSuffix(externalRefreshToken) + "'");
                         return null; // already responded; auto-rollback
                     }
+                    // Provider has now (re)issued tokens. From here on, a rollback strands the local mapping
+                    // while the provider has already rotated — the atomicity gap we debug-log below (PLAN-017 CORE-3).
+                    exchangeSucceeded = true;
 
                     // ── 4. Transform tokens ────────────────────────────────────────
                     // useCacheOnlySigningKey = true: re-sign from the pre-warmed key caches only, so signing
@@ -475,7 +482,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                             iss, accessTokenUpdate, idTokenUpdate, useDynamicKey, true);
 
                     // ── 5. Extract gid / jti / sessionHandle ───────────────────────
-                    String gid = null, jti = null, sessionHandle = null;
+                    String jti = null, sessionHandle = null;
                     if (exchangeResp.jsonResponse.getAsJsonObject().has("access_token")) {
                         try {
                             JsonObject atPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main,
@@ -492,6 +499,10 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 updateLastActive(appIdentifier, sessionHandle);
                             }
                         } catch (TryRefreshTokenException e) {
+                            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                                    "OAuth non-rotating refresh: gid/jti extraction from the re-signed access token"
+                                            + " was skipped — ext=...'" + tokenSuffix(externalRefreshToken)
+                                            + "' — " + e);
                             // ignore — shouldn't happen
                         }
                     }
@@ -541,11 +552,35 @@ public class OAuthTokenAPI extends WebserverAPI {
                                             + " — ext=...'" + tokenSuffix(externalRefreshToken) + "'");
                         }
 
-                        sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, gid,
-                                newInternalToken, sessionHandle, jti, refreshTokenExp);
+                        try {
+                            sqlStorage.updateOAuthSessionInternal_Transaction(appIdentifier, con, gid,
+                                    newInternalToken, sessionHandle, jti, refreshTokenExp);
+                        } catch (StorageQueryException e) {
+                            // Diagnostic only (PLAN-017 CORE-3): the provider exchange already succeeded, so this
+                            // rollback leaves the local mapping behind the provider (stranded-mapping risk). Rethrow
+                            // unchanged — no control-flow, response, retry or rollback change.
+                            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                                    "OAuth non-rotating refresh: local mapping update failed after a successful"
+                                            + " provider exchange — transaction will roll back (stranded-mapping"
+                                            + " risk), ext=...'" + tokenSuffix(externalRefreshToken) + "' gid="
+                                            + (gid == null ? "?" : gid) + " — " + e);
+                            throw e;
+                        }
                     }
 
-                    sqlStorage.commitTransaction(con);
+                    try {
+                        sqlStorage.commitTransaction(con);
+                    } catch (StorageQueryException e) {
+                        // Diagnostic only (PLAN-017 CORE-3): commit failed even though the provider exchange
+                        // succeeded, so the local mapping rolls back while the provider already rotated. Rethrow
+                        // unchanged — same rollback and error response as before.
+                        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                                "OAuth non-rotating refresh: commit failed after a successful provider exchange —"
+                                        + " local mapping rolled back (stranded-mapping risk), ext=...'"
+                                        + tokenSuffix(externalRefreshToken) + "' gid=" + (gid == null ? "?" : gid)
+                                        + " — " + e);
+                        throw e;
+                    }
 
                     exchangeResp.jsonResponse.getAsJsonObject().remove("refresh_token");
                     exchangeResp.jsonResponse.getAsJsonObject().addProperty("status", "OK");
@@ -556,6 +591,17 @@ public class OAuthTokenAPI extends WebserverAPI {
                          | InvalidKeySpecException | JWTCreationException | JWTException
                          | UnsupportedJWTSigningAlgorithmException | OAuthClientNotFoundException
                          | ServletException e) {
+                    if (exchangeSucceeded) {
+                        // Diagnostic only (PLAN-017 CORE-3): a post-exchange step (e.g. re-signing) failed after
+                        // the provider exchange succeeded, so the transaction rolls back while the provider has
+                        // already rotated (stranded-mapping risk). Behaviour unchanged — the same exception is
+                        // still wrapped and rethrown below.
+                        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                                "OAuth non-rotating refresh: post-exchange step failed after a successful provider"
+                                        + " exchange — transaction will roll back (stranded-mapping risk), ext=...'"
+                                        + tokenSuffix(externalRefreshToken) + "' gid=" + (gid == null ? "?" : gid)
+                                        + " — " + e);
+                    }
                     throw new StorageTransactionLogicException(e);
                 }
                 return null;
