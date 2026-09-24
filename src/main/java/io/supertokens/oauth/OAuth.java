@@ -39,8 +39,10 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
@@ -329,6 +331,14 @@ public class OAuth {
     }
 
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
+        return transformTokens(main, appIdentifier, storage, jsonBody, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey, false);
+    }
+
+    // useCacheOnlySigningKey: when true, token re-signing serves signing keys from the in-memory cache only and
+    // never triggers a key-cache refresh/creation (which would open its own transaction). The non-rotating
+    // refresh handler calls this from inside its transaction after pre-warming the signing caches outside the
+    // transaction, so this path holds no second pool connection (see OAuthTokenAPI#handleNonRotatingRefresh).
+    public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey, boolean useCacheOnlySigningKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String atHash = null;
 
         if (jsonBody.has("refresh_token")) {
@@ -339,7 +349,7 @@ public class OAuth {
 
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0, useCacheOnlySigningKey);
             jsonBody.addProperty("access_token", accessToken);
 
             // Compute at_hash as per OAuth 2.0 standard
@@ -356,7 +366,7 @@ public class OAuth {
 
         if (jsonBody.has("id_token")) {
             String idToken = jsonBody.get("id_token").getAsString();
-            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0, useCacheOnlySigningKey);
             jsonBody.addProperty("id_token", idToken);
         }
 
@@ -475,29 +485,43 @@ public class OAuth {
             payload.entrySet().clear();
             payload.addProperty("active", false);
 
-            refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
-            Map<String, String> formFields = new HashMap<>();
-            formFields.put("token", refreshToken);
-
             try {
+                // This overload resolves the client from storage (borrowing a connection); the revoke
+                // round-trip itself is shared with the transaction-aware twin below.
                 OAuthClient oAuthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
-                formFields.put("client_secret", oAuthClient.clientSecret);
-                formFields.put("client_id", oAuthClient.clientId);
-
-                HttpRequestForOAuthProvider.Response revokeResponse = doOAuthProxyFormPOST(
-                     main, appIdentifier, oauthStorage,
-                     clientId, // clientIdToCheck
-                     "/oauth2/revoke", // path
-                     false, // proxyToAdmin
-                     false, // camelToSnakeCaseConversion
-                     formFields,
-                     new HashMap<>());
-
-            } catch (OAuthAPIException | OAuthClientNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
+                revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oAuthClient);
+            } catch (OAuthClientNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
                     InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException |
                     IllegalBlockSizeException | BadPaddingException e){
                 //ignore
             }
+        }
+    }
+
+    // Best-effort revocation of a refresh token that introspection has just found invalid, shared by both
+    // verifyAndUpdateIntrospectRefreshTokenPayload overloads. The caller supplies the already-resolved
+    // OAuthClient, so this method never fetches it from storage (i.e. never borrows a connection of its own).
+    private static void revokeRefreshTokenAtProvider(Main main, AppIdentifier appIdentifier,
+            OAuthStorage oauthStorage, String refreshToken, OAuthClient oAuthClient)
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException,
+            InvalidConfigException, IOException {
+        refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+        Map<String, String> formFields = new HashMap<>();
+        formFields.put("token", refreshToken);
+        formFields.put("client_secret", oAuthClient.clientSecret);
+        formFields.put("client_id", oAuthClient.clientId);
+
+        try {
+            doOAuthProxyFormPOST(
+                 main, appIdentifier, oauthStorage,
+                 oAuthClient.clientId, // clientIdToCheck
+                 "/oauth2/revoke", // path
+                 false, // proxyToAdmin
+                 false, // camelToSnakeCaseConversion
+                 formFields,
+                 new HashMap<>());
+        } catch (OAuthAPIException | OAuthClientNotFoundException e){
+            //ignore
         }
     }
 
@@ -511,6 +535,50 @@ public class OAuth {
             revoked = oauthStorage.isOAuthTokenRevokedByGID(appIdentifier, payload.get("gid").getAsString());
         }
         return revoked;
+    }
+
+    // Transaction-aware twin of verifyAndUpdateIntrospectRefreshTokenPayload: runs the revoked-by-GID read on
+    // the caller's already-open connection so the non-rotating refresh handler holds exactly one pool
+    // connection for its whole DB lifetime. The already-loaded oauthClient is reused for the revoke round-trip
+    // instead of re-fetching it from storage (which would borrow a second connection).
+    public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
+            OAuthSQLStorage oauthStorage, TransactionConnection con, JsonObject payload, String refreshToken,
+            OAuthClient oauthClient) throws StorageQueryException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException, InvalidConfigException, IOException {
+
+        if (!payload.get("active").getAsBoolean()) {
+            return; // refresh token is not active
+        }
+
+        Transformations.transformExt(payload);
+        payload.remove("ext");
+
+        boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, con, payload);
+
+        if (!isValid) {
+            payload.entrySet().clear();
+            payload.addProperty("active", false);
+
+            // The caller already loaded oauthClient, so no storage fetch (and no second connection) is needed.
+            revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oauthClient);
+        }
+    }
+
+    private static boolean isTokenRevokedBasedOnPayload(OAuthSQLStorage oauthStorage, AppIdentifier appIdentifier,
+            TransactionConnection con, JsonObject payload) throws StorageQueryException {
+        if (payload.has("jti")) {
+            // Access-token payload. The non-rotating refresh path only ever introspects refresh tokens (gid,
+            // no jti), so this transaction-aware check is never reached with an access token. The sole
+            // revoked-by-JTI storage method is non-transactional and would borrow a second pool connection,
+            // defeating this fix's single-connection guarantee; there is deliberately no
+            // isOAuthTokenRevokedByJTI_Transaction because nothing needs one. Fail loud rather than silently
+            // re-introduce a nested connection if a caller ever routes an access token here.
+            throw new IllegalStateException(
+                    "transaction-aware refresh-token revocation check received an access-token (jti) payload");
+        }
+        // Refresh-token payload: run the revoked-by-GID existence check on the caller's connection.
+        return oauthStorage.isOAuthTokenRevokedByGID_Transaction(appIdentifier, con,
+                payload.get("gid").getAsString());
     }
 
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
