@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.api.core.HelloAPI;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -521,8 +522,35 @@ public abstract class WebserverAPI extends HttpServlet {
 
 
         TenantIdentifier tenantIdentifier = null;
+        ConcurrencyLimiter limiter = null;
+        boolean acquired = false;
         try {
             tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
+
+            // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. This runs
+            // before the IP filter and API-key check so a rejected request does not spend a thread on those or
+            // on any DB work. The real /hello liveness probe is never capped, but is still counted so it
+            // contributes to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
+            // /.well-known/jwks.json) is counted and capped. If the CUD is unknown, we skip the limiter and let
+            // the existing 400 path below handle the missing tenant.
+            try {
+                int limit = (this instanceof HelloAPI)
+                        ? 0
+                        : Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
+                int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
+                limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
+                if (!limiter.tryAcquire(limit, saturationThreshold)) {
+                    // counters were already rolled back by tryAcquire; nothing to release. onRejected records the
+                    // rejection for observability (RequestStats counter, ProcessState, one rate-limited WARN).
+                    limiter.onRejected(main, tenantIdentifier);
+                    resp.setHeader("Retry-After", "1");
+                    sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
+                    return;
+                }
+                acquired = true;
+            } catch (TenantOrAppNotFoundException e) {
+                // unknown CUD: skip the limiter; the request continues and hits the existing 400 path
+            }
 
             if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response
@@ -592,6 +620,11 @@ public abstract class WebserverAPI extends HttpServlet {
                 String msg = e.toString();
                 msg = maskDBPassword(msg);
                 sendTextResponse(500, msg, resp);
+            }
+        } finally {
+            // release on every exit path (incl. QuitProgramException and the 500 fallback) if we acquired
+            if (acquired) {
+                limiter.release();
             }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),

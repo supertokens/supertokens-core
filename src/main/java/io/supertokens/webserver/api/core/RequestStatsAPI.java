@@ -47,7 +47,7 @@ public class RequestStatsAPI extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
-            JsonObject stats = RequestStats.getInstance(main, appIdentifier).getStats();
+            JsonObject stats = RequestStats.getInstance(main, appIdentifier).getStats(main, appIdentifier);
             stats.addProperty("status", "OK");
             super.sendJsonResponse(200, stats, resp);
 
