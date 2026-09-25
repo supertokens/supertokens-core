@@ -60,6 +60,21 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class OAuth {
+
+    // ── Test-only OAuth-provider stub hook (PLAN-017 / CORE-2) ───────────────────────────────────────
+    // Lets a test replace the real HTTP round-trip to the OAuth provider with a deterministic,
+    // in-process response, without any network and without releasing the caller's DB connection. It is
+    // installed AFTER the getOAuthClientById(clientIdToCheck) validation below, so the stub does NOT hide
+    // that storage borrow — it only removes the network dependency. Inert unless a test sets it.
+    @FunctionalInterface
+    public interface DoOAuthProxyFormPOSTTestHook {
+        HttpRequestForOAuthProvider.Response handle(String path, boolean proxyToAdmin,
+                Map<String, String> formFields) throws OAuthAPIException;
+    }
+
+    // Test-only (see interface doc above); left unset in production.
+    public static volatile DoOAuthProxyFormPOSTTestHook doOAuthProxyFormPOSTTestHook = null;
+
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
         EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
@@ -123,6 +138,12 @@ public class OAuth {
 
         if (clientIdToCheck != null) {
             oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
+        }
+
+        // Test-only: short-circuit the OAuth-provider HTTP round-trip with a deterministic response. Placed
+        // after the client-existence check above so it does not mask that borrow (PLAN-017 / CORE-2).
+        if (doOAuthProxyFormPOSTTestHook != null) {
+            return doOAuthProxyFormPOSTTestHook.handle(path, proxyToAdmin, formFields);
         }
 
         // Request transformations

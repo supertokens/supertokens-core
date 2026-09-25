@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.3.1]
 
 - Non-rotating OAuth refresh no longer holds multiple DB connections per request: the token-revocation read now runs on the request's existing transaction connection, and token re-signing serves the pre-warmed signing-key caches instead of opening a nested transaction — removing the hold-and-wait pool exhaustion under load.
+- Adds a regression test asserting a non-rotating OAuth refresh borrows at most one DB connection at a time.
 
 ## [12.3.0]
 
