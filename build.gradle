@@ -123,6 +123,11 @@ dependencies {
         implementation 'org.apache.httpcomponents.client5:httpclient5-cache:5.6.4'
         implementation 'org.apache.httpcomponents.core5:httpcore5:5.4.3'
         implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.4.3'
+
+        // bcprov-jdk18on 1.84 (transitive via webauthn4j-core / opensaml) is affected by
+        // CVE-2026-8763 (Bouncy Castle Name Constraints bypass in X.509 path validation);
+        // fixed in 1.85. Surfaced by the container security scan of supertokens-postgresql.
+        implementation 'org.bouncycastle:bcprov-jdk18on:1.85'
     }
 
     compileOnly project(":supertokens-plugin-interface")

@@ -557,6 +557,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
+          pull: true
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
