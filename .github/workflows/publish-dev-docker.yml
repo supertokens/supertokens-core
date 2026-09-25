@@ -98,6 +98,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
+          pull: true
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-${{ matrix.plugin }}:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin/.github/helpers/docker/Dockerfile
