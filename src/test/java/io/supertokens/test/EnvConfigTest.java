@@ -197,6 +197,10 @@ public class EnvConfigTest {
                 new Object[]{"BULK_MIGRATION_BATCH_SIZE", "8000", 8000}, // default
                 new Object[]{"BULK_MIGRATION_BATCH_SIZE", "1000", 1000},
                 new Object[]{"BULK_MIGRATION_BATCH_SIZE", "1", 1}, // minimum valid
+
+                // BULK_MIGRATION_SLEEP_BETWEEN_ROUNDS_IN_BATCH_MS: Integer (boxed, so it can be null in config.yaml)
+                new Object[]{"BULK_MIGRATION_SLEEP_BETWEEN_ROUNDS_IN_BATCH_MS", "5000", 5000},
+                new Object[]{"BULK_MIGRATION_SLEEP_BETWEEN_ROUNDS_IN_BATCH_MS", "0", 0},
                 
                 // WEBAUTHN_RECOVER_ACCOUNT_TOKEN_LIFETIME: must be > 0 (in milliseconds)
                 new Object[]{"WEBAUTHN_RECOVER_ACCOUNT_TOKEN_LIFETIME", "3600000", (long) 3600000}, // 1 hour
