@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.3.0]
 
-- Adds a test-only connection-pool guard (in-memory + postgresql): a call chain that holds one connection and borrows a second from the same pool — the nested-acquisition pool-exhaustion pattern — now fails fast in tests instead of deadlocking.
+- Adds a test-only connection-pool guard (in-memory + postgresql): a call chain that holds one connection and borrows a second from the same pool — the nested-acquisition pool-exhaustion pattern — is detected in tests. Warns by default while the pre-existing instances are cleaned up (PLAN-018); an opt-in flag makes it fail fast.
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
 - `GET /users/count` serves an exact `anchor + fold` of the ledger instead of recomputing per request. From CDI 5.7 this is the default single-tenant behaviour (carrying `approximate`/`asOf`); CDI 5.6 keeps its released contract where the ledger value is opt-in via `allowApproximate=true`; older CDI is unchanged.
 - `user_last_active` is now derived by the new `RollupUserLastActive` cron folding activity events (its sole writer); `ActiveUsers.updateLastActive` only appends throttled events, so MAU counts reflect activity within a rollup interval.

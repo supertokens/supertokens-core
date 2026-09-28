@@ -74,8 +74,11 @@ public class NestedConnectionAcquisitionGuardTest {
         Object ok = sqlStorage.startTransaction(con -> "ok");
         assertEquals("ok", ok);
 
-        // Negative: a helper that ignores `con` and borrows a SECOND connection from the same pool trips it.
+        // Negative: a helper that ignores `con` and borrows a SECOND connection from the same pool.
+        // The guard warns by default (PLAN-018 cleanup); arm throw-mode so detection surfaces as a throw
+        // this test can assert, then reset it so the rest of the suite stays in warn-mode.
         Exception caught = null;
+        ConnectionPool.setThrowOnNestedAcquisition(true);
         try {
             sqlStorage.startTransaction(con -> {
                 try {
@@ -88,6 +91,8 @@ public class NestedConnectionAcquisitionGuardTest {
             fail("expected the nested same-pool acquisition guard to fire");
         } catch (Exception e) {
             caught = e;
+        } finally {
+            ConnectionPool.setThrowOnNestedAcquisition(false);
         }
         assertTrue("guard message not found in exception chain: " + messageChain(caught),
                 messageChain(caught).contains("Nested same-pool connection acquisition"));
