@@ -406,7 +406,7 @@ public class WebAuthN {
             WebauthNCredentialNotExistsException, UnknownUserIdException {
         try {
             WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-            return webAuthNStorage.startTransaction(con -> {
+            WebAuthNSignInUpResult signInResult = webAuthNStorage.startTransaction(con -> {
 
                 try {
                     WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,
@@ -442,13 +442,21 @@ public class WebAuthN {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
-                    UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
                     return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {
                     throw new StorageTransactionLogicException(e);
                 }
             });
+
+            // Decorate the returned user with its external user id AFTER the transaction. This is a stable
+            // external<->internal id translation (a userid_mapping lookup), not a live user-record read, so it
+            // needs no transactional consistency with the sign-in. Doing it inside the transaction borrowed a
+            // SECOND connection from the same pool while the transaction connection was held — the hold-and-wait
+            // pool-exhaustion pattern this cleanup removes.
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                    new AuthRecipeUserInfo[]{signInResult.userInfo});
+            return signInResult;
         } catch (StorageTransactionLogicException e) {
             if (e.getCause() instanceof InvalidWebauthNOptionsException) {
                 throw (InvalidWebauthNOptionsException) e.getCause();

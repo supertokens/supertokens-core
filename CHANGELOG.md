@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.3.1]
 
 - Fix: WebAuthN.updateUserEmail resolved the user-id mapping on a second pooled connection; the lookup now runs on the transaction's own connection.
+- Fix: WebAuthn recipe transactions resolved user records on a second pooled connection.
 
 ## [12.3.0]
 
