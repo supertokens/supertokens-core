@@ -978,6 +978,117 @@ public class PasswordlessQueries {
         });
     }
 
+    // Transaction variant of getPrimaryUserIdUsingEmail that reuses the caller's connection instead of
+    // borrowing a fresh pooled connection (avoids nested same-pool acquisition). Same SQL as the non-tx form.
+    public static String getPrimaryUserIdUsingEmail_Transaction(Start start, Connection sqlCon,
+                                                                TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdUsingEmail_Transaction_new(start, sqlCon, tenantIdentifier, email);
+        }
+        return getPrimaryUserIdUsingEmail_Transaction_legacy(start, sqlCon, tenantIdentifier, email);
+    }
+
+    private static String getPrimaryUserIdUsingEmail_Transaction_legacy(Start start, Connection sqlCon,
+                                                                        TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
+                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.email = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getPrimaryUserIdUsingEmail_Transaction_new(Start start, Connection sqlCon,
+                                                                     TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid" +
+                " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id" +
+                " WHERE rut.app_id = ? AND rut.tenant_id = ? AND rut.account_info_type = 'email'" +
+                " AND rut.account_info_value = ? AND rut.recipe_id = 'passwordless'";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    // Transaction variant of getPrimaryUserByPhoneNumber that reuses the caller's connection instead of
+    // borrowing a fresh pooled connection (avoids nested same-pool acquisition). Same SQL as the non-tx form.
+    public static String getPrimaryUserByPhoneNumber_Transaction(Start start, Connection sqlCon,
+                                                                 TenantIdentifier tenantIdentifier,
+                                                                 @Nonnull String phoneNumber)
+            throws StorageQueryException, SQLException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserByPhoneNumber_Transaction_new(start, sqlCon, tenantIdentifier, phoneNumber);
+        }
+        return getPrimaryUserByPhoneNumber_Transaction_legacy(start, sqlCon, tenantIdentifier, phoneNumber);
+    }
+
+    private static String getPrimaryUserByPhoneNumber_Transaction_legacy(Start start, Connection sqlCon,
+                                                                         TenantIdentifier tenantIdentifier,
+                                                                         @Nonnull String phoneNumber)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
+                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.phone_number = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, phoneNumber);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    private static String getPrimaryUserByPhoneNumber_Transaction_new(Start start, Connection sqlCon,
+                                                                      TenantIdentifier tenantIdentifier,
+                                                                      @Nonnull String phoneNumber)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS auid" +
+                " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id" +
+                " WHERE rut.app_id = ? AND rut.tenant_id = ? AND rut.account_info_type = 'phone'" +
+                " AND rut.account_info_value = ? AND rut.recipe_id = 'passwordless'";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, phoneNumber);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws StorageQueryException, SQLException, UnknownUserIdException {
