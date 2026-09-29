@@ -17,6 +17,14 @@ on:
         type: boolean
         required: false
         default: false
+      plugin-interface-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-plugin-interface
+      postgresql-plugin-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-postgresql-plugin
 
 env:
   total-runners: 6
@@ -69,7 +77,7 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-plugin-interface
+          repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
 
@@ -77,7 +85,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-postgresql-plugin
+          repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}
 

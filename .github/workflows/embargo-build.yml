@@ -1,0 +1,263 @@
+name: Embargo build
+
+# Builds a security release privately, for the managed fleet, before anything is public.
+# Runs ONLY in the private mirror supertokens/supertokens-core-security.
+#
+#   resolve  -> commits: this repo's <core-ref>, public plugin branches; version + CHANGELOG checks
+#   deps     -> implementationDependencies.json must already be committed (never pushed from CI)
+#   test     -> full suite on exactly those commits
+#   build    -> after tests pass: image to the fleet's ECR repo as <version>, labelled with its
+#               commits, migration flag and this run's id. Gated by the `embargo` environment;
+#               refuses to overwrite an existing tag (a changed build gets a new patch version).
+#   stress   -> stress tests against that exact digest, pulled from ECR
+#
+# Then: roll the fleet to <version>. On release day: promote-image.yml, push the code
+# (fast-forward), do-release with prebuilt=true -- all in supertokens/supertokens-core.
+#
+# Security-repo setup: environment `embargo` (required reviewers) holding the push role;
+# variables AWS_REGION, ECR_REPOSITORY, EMBARGO_PUSH_ROLE_ARN, EMBARGO_PULL_ROLE_ARN.
+
+run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: 'Version to build (X.Y.Z); must match build.gradle'
+        required: true
+        type: string
+      core-ref:
+        description: 'Branch (or commit) of this repo to build, e.g. 12.2'
+        required: true
+        type: string
+      plugin-interface-branch:
+        description: 'Branch of supertokens-plugin-interface (public), e.g. 8.2'
+        required: true
+        type: string
+      postgresql-plugin-branch:
+        description: 'Branch of supertokens-postgresql-plugin (public), e.g. 9.8'
+        required: true
+        type: string
+      run-stress-tests:
+        description: 'Run the stress tests against the built image'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: embargo-build-${{ inputs.core-version }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve commits
+    if: github.repository == 'supertokens/supertokens-core-security'
+    runs-on: ubuntu-22.04
+    outputs:
+      core-sha: ${{ steps.shas.outputs.core }}
+      plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
+      postgresql-sha: ${{ steps.shas.outputs.postgresql }}
+      postgresql-plugin-version: ${{ steps.shas.outputs.postgresql-version }}
+    steps:
+      - name: Refuse to run in a public repository
+        if: ${{ !github.event.repository.private }}
+        run: |
+          echo "::error::Embargo builds only run in a private repository."
+          exit 1
+
+      - name: Check version format
+        env:
+          VERSION: ${{ inputs.core-version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::core-version must be X.Y.Z"; exit 1; }
+
+      - name: Checkout core
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.core-ref }}
+
+      - name: Check build.gradle and CHANGELOG
+        env:
+          VERSION: ${{ inputs.core-version }}
+        run: |
+          v=$(grep -E "^\s*version\s*=" build.gradle | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/")
+          if [ "$v" != "$VERSION" ]; then
+            echo "::error::build.gradle says $v, expected $VERSION"; exit 1
+          fi
+          if ! grep -qF "## [$VERSION]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1
+          fi
+
+      - name: Resolve commits
+        id: shas
+        env:
+          PI_BRANCH: ${{ inputs.plugin-interface-branch }}
+          PG_BRANCH: ${{ inputs.postgresql-plugin-branch }}
+        run: |
+          set -euo pipefail
+          head_of() {
+            local sha
+            sha=$(git ls-remote "https://github.com/$1.git" "refs/heads/$2" | cut -f1)
+            if [ -z "$sha" ]; then echo "::error::$1 has no branch '$2'" >&2; exit 1; fi
+            echo "$sha"
+          }
+          core=$(git rev-parse HEAD)
+          pi=$(head_of supertokens/supertokens-plugin-interface "$PI_BRANCH")
+          pg=$(head_of supertokens/supertokens-postgresql-plugin "$PG_BRANCH")
+          pg_version=$(curl -fsSL "https://raw.githubusercontent.com/supertokens/supertokens-postgresql-plugin/$pg/build.gradle" \
+            | grep -E "^\s*version\s*=" | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/")
+          {
+            echo "core=$core"
+            echo "plugin-interface=$pi"
+            echo "postgresql=$pg"
+            echo "postgresql-version=$pg_version"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Embargo build $GITHUB_REF_NAME: core ${{ inputs.core-version }}"
+            echo "| | branch | commit |"
+            echo "|---|---|---|"
+            echo "| core | \`${{ inputs.core-ref }}\` | \`$core\` |"
+            echo "| plugin-interface | \`$PI_BRANCH\` | \`$pi\` |"
+            echo "| postgresql-plugin ($pg_version) | \`$PG_BRANCH\` | \`$pg\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # The build commit must already contain up-to-date dependency manifests: CI never commits
+  # here, because a new commit would no longer be the commit that was tested and built.
+  deps:
+    name: Check dependency manifests
+    needs: resolve
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up JDK 21.0.7
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21.0.7
+          distribution: zulu
+
+      - name: Checkout supertokens-root
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-root
+          path: supertokens-root
+          ref: master
+
+      - name: Checkout supertokens-core
+        uses: actions/checkout@v5
+        with:
+          path: supertokens-root/supertokens-core
+          ref: ${{ needs.resolve.outputs.core-sha }}
+
+      - name: Checkout supertokens-plugin-interface
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-plugin-interface
+          path: supertokens-root/supertokens-plugin-interface
+          ref: ${{ needs.resolve.outputs.plugin-interface-sha }}
+
+      - name: Checkout supertokens-postgresql-plugin
+        uses: actions/checkout@v5
+        with:
+          repository: supertokens/supertokens-postgresql-plugin
+          path: supertokens-root/supertokens-postgresql-plugin
+          ref: ${{ needs.resolve.outputs.postgresql-sha }}
+
+      - name: Load modules
+        run: |
+          cd supertokens-root
+          cat > modules.txt <<'EOF'
+          core,master
+          plugin-interface,master
+          postgresql-plugin,master
+          EOF
+          ./loadModules
+
+      - name: Generate dependency manifests
+        run: cd supertokens-root && ./gradlew generateDependenciesJson
+
+      - name: Core manifest must be unchanged
+        run: |
+          cd supertokens-root/supertokens-core
+          if ! git diff --quiet; then
+            git --no-pager diff --stat
+            echo "::error::Dependency manifests are out of date. Run './gradlew generateDependenciesJson' in supertokens-root, commit the core changes to this branch, and re-run."
+            exit 1
+          fi
+
+  derive-db-migration-flag:
+    name: Derive has-db-migration
+    needs: resolve
+    uses: ./.github/workflows/_release-derive-db-migration.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      postgresql-plugin-version: ${{ needs.resolve.outputs.postgresql-plugin-version }}
+      core-sha: ${{ needs.resolve.outputs.core-sha }}
+      postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
+    secrets: inherit
+
+  test:
+    needs: [ resolve, deps ]
+    uses: ./.github/workflows/_release-run-tests.yml
+    with:
+      core-sha: ${{ needs.resolve.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.resolve.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
+      fast-release: false
+    secrets: inherit
+
+  # Only after the tests pass on exactly these commits: the image records this run's id as
+  # proof, and do-release (prebuilt) refuses images without it.
+  build:
+    needs: [ resolve, derive-db-migration-flag, test ]
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_image-build.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      core-sha: ${{ needs.resolve.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.resolve.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
+      target: ecr
+      aws-role-arn: ${{ vars.EMBARGO_PUSH_ROLE_ARN }}
+      has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
+      tests-run-id: ${{ github.run_id }}
+    secrets: inherit
+
+  stress-tests:
+    if: inputs.run-stress-tests
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/stress-tests.yml
+    with:
+      image: ${{ needs.build.outputs.image-ref }}
+      aws-role-arn: ${{ vars.EMBARGO_PULL_ROLE_ARN }}
+
+  summary:
+    name: Summary
+    needs: [ resolve, build, stress-tests ]
+    if: ${{ github.repository == 'supertokens/supertokens-core-security' && !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Next steps
+        env:
+          VERSION: ${{ inputs.core-version }}
+          IMAGE: ${{ needs.build.outputs.image-ref }}
+          STRESS: ${{ needs.stress-tests.result }}
+        run: |
+          {
+            echo "### $VERSION is in ECR"
+            echo ""
+            echo "\`$IMAGE\`"
+            echo ""
+            echo "Stress tests: job result **$STRESS**. They never fail the run, so open the stress-tests jobs and read their tables before rolling out."
+            echo ""
+            echo "Next: roll the fleet to $VERSION. On release day, in supertokens/supertokens-core:"
+            echo "1. \`promote-image.yml\` with core-version=$VERSION (image public before code)"
+            echo "2. push this branch to the public one, as a fast-forward"
+            echo "3. \`do-release.yml\` with prebuilt=true"
+          } >> "$GITHUB_STEP_SUMMARY"
