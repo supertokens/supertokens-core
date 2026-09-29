@@ -63,6 +63,7 @@ jobs:
   # it here stops the whole release.
   validate-inputs:
     name: Validate inputs
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-22.04
     steps:
       - name: Check fast-release and is-latest-release are mutually exclusive
@@ -109,7 +110,7 @@ jobs:
 
   mark-as-passed:
     needs: [ register-versions, test ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-mark-passed.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -138,7 +139,7 @@ jobs:
 
   release-docker:
     needs: [ build-docker, stress-tests, mark-as-passed ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-publish-docker.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -151,7 +152,7 @@ jobs:
 
   add-release-tags:
     needs: [dependency-branches, release-docker]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-add-tags.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -168,7 +169,7 @@ jobs:
 
   build-jars:
     needs: [add-release-tags]
-    if: ${{ !cancelled() && !failure() && !inputs.is-canary }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() && !inputs.is-canary }}
     uses: ./.github/workflows/generate-jars.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -182,7 +183,7 @@ jobs:
   notify-slack:
     name: Notify Slack
     needs: [ add-release-tags, build-jars ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Post release notification on Slack channel
