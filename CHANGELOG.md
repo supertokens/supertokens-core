@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.3.1]
+
+- A core config value that is a JSON object or array (for example `"access_token_validity": {}` in a create/update app or tenant request, or a map in `config.yaml`) is now rejected as an invalid config (HTTP 400) instead of failing with an `UnsupportedOperationException` (HTTP 500).
+
 ## [12.3.0]
 
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).

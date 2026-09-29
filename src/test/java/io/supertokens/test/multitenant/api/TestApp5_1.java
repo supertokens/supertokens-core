@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -589,6 +590,47 @@ public class TestApp5_1 {
                 if (!e.getMessage().contains("Invalid config key")) {
                     assertEquals(expectedErrorMessages[i], e.getMessage());
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testObjectOrArrayValueInCoreConfigWhileCreatingAppReturns400() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] properties = new String[]{
+                "access_token_validity", // long
+                "password_hashing_alg", // String
+                "passwordless_max_code_input_attempts", // int
+        };
+        JsonElement[] values = new JsonElement[]{
+                new JsonObject(),
+                new JsonObject(),
+                new JsonArray(),
+        };
+        String[] expectedErrorMessages = new String[]{
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                "Http error. Status Code: 400. Message: Invalid core config: 'password_hashing_alg' must be of type " +
+                        "String",
+                "Http error. Status Code: 400. Message: Invalid core config: 'passwordless_max_code_input_attempts' " +
+                        "must be of type int",
+        };
+
+        for (int i = 0; i < properties.length; i++) {
+            JsonObject config = new JsonObject();
+            config.add(properties[i], values[i]);
+            try {
+                createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
+                        config);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(expectedErrorMessages[i], e.getMessage());
             }
         }
     }
