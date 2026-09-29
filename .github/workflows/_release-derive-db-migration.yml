@@ -55,7 +55,7 @@ jobs:
         with:
           repository: ${{ inputs.postgresql-plugin-repo }}
           ref: ${{ inputs.postgresql-sha }}
-          token: ${{ secrets.GH_TOKEN || github.token }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
           path: plugin
       - name: Checkout supertokens-core (for CHANGELOG.md)
         uses: actions/checkout@v5

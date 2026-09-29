@@ -134,6 +134,8 @@ jobs:
           tag: ${{ steps.tag.outputs.tag }}
           has-db-migration: ${{ inputs.has-db-migration }}
           tests-run-id: ${{ inputs.tests-run-id }}
+          # Only set in the security repo; lets the build read private plugin mirrors.
+          token: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   ecr:
     name: Build image (ECR)
@@ -226,3 +228,5 @@ jobs:
           tag: ${{ steps.tag.outputs.tag }}
           has-db-migration: ${{ inputs.has-db-migration }}
           tests-run-id: ${{ inputs.tests-run-id }}
+          # Only set in the security repo; lets the build read private plugin mirrors.
+          token: ${{ secrets.EMBARGO_REPO_TOKEN }}

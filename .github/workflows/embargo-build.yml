@@ -3,8 +3,10 @@ name: Embargo build
 # Builds a security release privately, for the managed fleet, before anything is public.
 # Runs ONLY in the private mirror supertokens/supertokens-core-security.
 #
-#   resolve  -> commits: this repo's <core-ref>, public plugin branches; version + CHANGELOG checks
-#   deps     -> implementationDependencies.json must already be committed (never pushed from CI)
+#   resolve  -> commits: this repo's <core-ref> plus the plugin branches, each from its public repo
+#               or, for a fix that spans the plugins, its private -security mirror
+#   deps     -> implementationDependencies.json must already be committed (never pushed from CI),
+#               in core and in any plugin built from a private mirror
 #   test     -> full suite on exactly those commits
 #   build    -> after tests pass: image to the fleet's ECR repo as <version>, labelled with its
 #               commits, migration flag and this run's id. Gated by the `embargo` environment;
@@ -12,10 +14,12 @@ name: Embargo build
 #   stress   -> stress tests against that exact digest, pulled from ECR
 #
 # Then: roll the fleet to <version>. On release day: promote-image.yml, push the code
-# (fast-forward), do-release with prebuilt=true -- all in supertokens/supertokens-core.
+# (fast-forward; the private plugin branches too), do-release with prebuilt=true (ticking
+# release-plugin-interface / release-postgresql-plugin when those changed) -- all public.
 #
 # Security-repo setup: environment `embargo` (required reviewers) holding the push role;
-# variables AWS_REGION, ECR_REPOSITORY, EMBARGO_PUSH_ROLE_ARN, EMBARGO_PULL_ROLE_ARN.
+# variables AWS_REGION, ECR_REPOSITORY, EMBARGO_PUSH_ROLE_ARN, EMBARGO_PULL_ROLE_ARN; secret
+# EMBARGO_REPO_TOKEN (contents:read on the private plugin mirrors) when building from them.
 
 run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})
 
@@ -31,13 +35,29 @@ on:
         required: true
         type: string
       plugin-interface-branch:
-        description: 'Branch of supertokens-plugin-interface (public), e.g. 8.2'
+        description: 'Branch of supertokens-plugin-interface, e.g. 8.2'
         required: true
         type: string
       postgresql-plugin-branch:
-        description: 'Branch of supertokens-postgresql-plugin (public), e.g. 9.8'
+        description: 'Branch of supertokens-postgresql-plugin, e.g. 9.8'
         required: true
         type: string
+      plugin-interface-repo:
+        description: 'Where plugin-interface comes from: the public repo, or its private -security mirror when the fix spans it'
+        required: true
+        type: choice
+        options:
+          - supertokens/supertokens-plugin-interface
+          - supertokens/supertokens-plugin-interface-security
+        default: supertokens/supertokens-plugin-interface
+      postgresql-plugin-repo:
+        description: 'Where postgresql-plugin comes from: the public repo, or its private -security mirror when the fix spans it'
+        required: true
+        type: choice
+        options:
+          - supertokens/supertokens-postgresql-plugin
+          - supertokens/supertokens-postgresql-plugin-security
+        default: supertokens/supertokens-postgresql-plugin
       run-stress-tests:
         description: 'Run the stress tests against the built image'
         required: true
@@ -94,21 +114,31 @@ jobs:
       - name: Resolve commits
         id: shas
         env:
+          GH_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
+          PI_REPO: ${{ inputs.plugin-interface-repo }}
           PI_BRANCH: ${{ inputs.plugin-interface-branch }}
+          PG_REPO: ${{ inputs.postgresql-plugin-repo }}
           PG_BRANCH: ${{ inputs.postgresql-plugin-branch }}
+          CORE_REF: ${{ inputs.core-ref }}
+          VERSION: ${{ inputs.core-version }}
         run: |
           set -euo pipefail
+          # Sets HEAD_SHA; no command substitution, so ::error:: annotations reach the log.
           head_of() {
-            local sha
-            sha=$(git ls-remote "https://github.com/$1.git" "refs/heads/$2" | cut -f1)
-            if [ -z "$sha" ]; then echo "::error::$1 has no branch '$2'" >&2; exit 1; fi
-            echo "$sha"
+            if ! HEAD_SHA=$(gh api "repos/$1/branches/$2" --jq .commit.sha 2>/dev/null) || [ -z "$HEAD_SHA" ]; then
+              echo "::error::Can't read branch '$2' of $1. It doesn't exist, or (for a -security mirror) EMBARGO_REPO_TOKEN is missing or can't read it."
+              exit 1
+            fi
+          }
+          gradle_version_of() {  # <repo> <sha>
+            gh api "repos/$1/contents/build.gradle?ref=$2" --jq .content | base64 -d \
+              | grep -E "^\s*version\s*=" | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/"
           }
           core=$(git rev-parse HEAD)
-          pi=$(head_of supertokens/supertokens-plugin-interface "$PI_BRANCH")
-          pg=$(head_of supertokens/supertokens-postgresql-plugin "$PG_BRANCH")
-          pg_version=$(curl -fsSL "https://raw.githubusercontent.com/supertokens/supertokens-postgresql-plugin/$pg/build.gradle" \
-            | grep -E "^\s*version\s*=" | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/")
+          head_of "$PI_REPO" "$PI_BRANCH"; pi="$HEAD_SHA"
+          head_of "$PG_REPO" "$PG_BRANCH"; pg="$HEAD_SHA"
+          pi_version=$(gradle_version_of "$PI_REPO" "$pi")
+          pg_version=$(gradle_version_of "$PG_REPO" "$pg")
           {
             echo "core=$core"
             echo "plugin-interface=$pi"
@@ -116,12 +146,12 @@ jobs:
             echo "postgresql-version=$pg_version"
           } >> "$GITHUB_OUTPUT"
           {
-            echo "### Embargo build $GITHUB_REF_NAME: core ${{ inputs.core-version }}"
-            echo "| | branch | commit |"
-            echo "|---|---|---|"
-            echo "| core | \`${{ inputs.core-ref }}\` | \`$core\` |"
-            echo "| plugin-interface | \`$PI_BRANCH\` | \`$pi\` |"
-            echo "| postgresql-plugin ($pg_version) | \`$PG_BRANCH\` | \`$pg\` |"
+            echo "### Embargo build: core $VERSION"
+            echo "| | source | branch | version | commit |"
+            echo "|---|---|---|---|---|"
+            echo "| core | this repo | \`$CORE_REF\` | $VERSION | \`$core\` |"
+            echo "| plugin-interface | \`$PI_REPO\` | \`$PI_BRANCH\` | $pi_version | \`$pi\` |"
+            echo "| postgresql-plugin | \`$PG_REPO\` | \`$PG_BRANCH\` | $pg_version | \`$pg\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # The build commit must already contain up-to-date dependency manifests: CI never commits
@@ -153,16 +183,18 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-plugin-interface
+          repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.resolve.outputs.plugin-interface-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-postgresql-plugin
+          repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.resolve.outputs.postgresql-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Load modules
         run: |
@@ -177,14 +209,29 @@ jobs:
       - name: Generate dependency manifests
         run: cd supertokens-root && ./gradlew generateDependenciesJson
 
-      - name: Core manifest must be unchanged
+      # Core and any plugin built from a private mirror: we own those commits, so the manifests
+      # must be in them. Public plugins: their own release-tests keep them current; only warn.
+      - name: Manifests must be unchanged
+        env:
+          PI_PRIVATE: ${{ inputs.plugin-interface-repo != 'supertokens/supertokens-plugin-interface' }}
+          PG_PRIVATE: ${{ inputs.postgresql-plugin-repo != 'supertokens/supertokens-postgresql-plugin' }}
         run: |
-          cd supertokens-root/supertokens-core
-          if ! git diff --quiet; then
-            git --no-pager diff --stat
-            echo "::error::Dependency manifests are out of date. Run './gradlew generateDependenciesJson' in supertokens-root, commit the core changes to this branch, and re-run."
-            exit 1
-          fi
+          cd supertokens-root
+          fail=0
+          check() {  # <dir> <must-be-clean: true|false>
+            if git -C "$1" diff --quiet; then return; fi
+            git -C "$1" --no-pager diff --stat
+            if [ "$2" = "true" ]; then
+              echo "::error::$1: dependency manifests are out of date. Run './gradlew generateDependenciesJson' in supertokens-root, commit the $1 changes to the branch being built, and re-run."
+              fail=1
+            else
+              echo "::warning::$1 (public): dependency manifests differ; its own release-tests will update them."
+            fi
+          }
+          check supertokens-core true
+          check supertokens-plugin-interface "$PI_PRIVATE"
+          check supertokens-postgresql-plugin "$PG_PRIVATE"
+          exit "$fail"
 
   derive-db-migration-flag:
     name: Derive has-db-migration
@@ -195,6 +242,7 @@ jobs:
       postgresql-plugin-version: ${{ needs.resolve.outputs.postgresql-plugin-version }}
       core-sha: ${{ needs.resolve.outputs.core-sha }}
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
+      postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
     secrets: inherit
 
   test:
@@ -204,6 +252,8 @@ jobs:
       core-sha: ${{ needs.resolve.outputs.core-sha }}
       plugin-interface-sha: ${{ needs.resolve.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
+      plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
+      postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
       fast-release: false
     secrets: inherit
 
@@ -221,6 +271,8 @@ jobs:
       plugin-interface-sha: ${{ needs.resolve.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
       target: ecr
+      plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
+      postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
       aws-role-arn: ${{ vars.EMBARGO_PUSH_ROLE_ARN }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
       tests-run-id: ${{ github.run_id }}
@@ -248,6 +300,10 @@ jobs:
           VERSION: ${{ inputs.core-version }}
           IMAGE: ${{ needs.build.outputs.image-ref }}
           STRESS: ${{ needs.stress-tests.result }}
+          PI_PRIVATE: ${{ inputs.plugin-interface-repo != 'supertokens/supertokens-plugin-interface' }}
+          PG_PRIVATE: ${{ inputs.postgresql-plugin-repo != 'supertokens/supertokens-postgresql-plugin' }}
+          PI_BRANCH: ${{ inputs.plugin-interface-branch }}
+          PG_BRANCH: ${{ inputs.postgresql-plugin-branch }}
         run: |
           {
             echo "### $VERSION is in ECR"
@@ -259,5 +315,9 @@ jobs:
             echo "Next: roll the fleet to $VERSION. On release day, in supertokens/supertokens-core:"
             echo "1. \`promote-image.yml\` with core-version=$VERSION (image public before code)"
             echo "2. push this branch to the public one, as a fast-forward"
+            if [ "$PI_PRIVATE" = "true" ]; then echo "   - and plugin-interface \`$PI_BRANCH\` from its -security mirror to the public repo"; fi
+            if [ "$PG_PRIVATE" = "true" ]; then echo "   - and postgresql-plugin \`$PG_BRANCH\` from its -security mirror to the public repo"; fi
             echo "3. \`do-release.yml\` with prebuilt=true"
+            if [ "$PI_PRIVATE" = "true" ]; then echo "   - tick release-plugin-interface"; fi
+            if [ "$PG_PRIVATE" = "true" ]; then echo "   - tick release-postgresql-plugin"; fi
           } >> "$GITHUB_STEP_SUMMARY"

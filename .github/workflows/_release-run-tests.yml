@@ -80,6 +80,7 @@ jobs:
           repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
@@ -88,6 +89,7 @@ jobs:
           repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Load modules
         run: |
