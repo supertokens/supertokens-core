@@ -1,0 +1,185 @@
+name: Build core image
+description: >-
+  Checks out supertokens-root + core + plugin-interface + postgresql-plugin at exact commits,
+  verifies them, and builds + pushes the multi-arch core image with provenance labels.
+  Registry login is the caller's job. The core is checked out from the calling repository.
+inputs:
+  core-version:
+    description: Core version; must match version in core's build.gradle.
+    required: true
+  core-sha:
+    required: true
+  plugin-interface-sha:
+    required: true
+  postgresql-sha:
+    required: true
+  plugin-interface-repo:
+    required: false
+    default: supertokens/supertokens-plugin-interface
+  postgresql-plugin-repo:
+    required: false
+    default: supertokens/supertokens-postgresql-plugin
+  java-version:
+    required: false
+    default: '21.0.7'
+  root-ref:
+    description: supertokens-root ref (for_jdk_15_releases for the Java 15 lines).
+    required: false
+    default: master
+  image:
+    description: Target repository, without tag (e.g. supertokens/supertokens-dev-postgresql).
+    required: true
+  tag:
+    required: true
+  has-db-migration:
+    description: Recorded as a label; empty when unknown.
+    required: false
+    default: ''
+  tests-run-id:
+    description: Run id whose tests passed on exactly these commits before this build; empty if the build did not wait for tests.
+    required: false
+    default: ''
+outputs:
+  digest:
+    description: Digest of the pushed image index (sha256:...).
+    value: ${{ steps.build.outputs.digest }}
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK
+      uses: actions/setup-java@v5
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: zulu
+
+    - name: Checkout supertokens-root
+      uses: actions/checkout@v5
+      with:
+        repository: supertokens/supertokens-root
+        path: supertokens-root
+        ref: ${{ inputs.root-ref }}
+
+    - name: Checkout supertokens-core
+      uses: actions/checkout@v5
+      with:
+        path: supertokens-root/supertokens-core
+        ref: ${{ inputs.core-sha }}
+
+    - name: Checkout supertokens-plugin-interface
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ inputs.plugin-interface-repo }}
+        path: supertokens-root/supertokens-plugin-interface
+        ref: ${{ inputs.plugin-interface-sha }}
+
+    - name: Checkout supertokens-postgresql-plugin
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ inputs.postgresql-plugin-repo }}
+        path: supertokens-root/supertokens-postgresql-plugin
+        ref: ${{ inputs.postgresql-sha }}
+
+    - name: Load modules
+      shell: bash
+      run: |
+        cd supertokens-root
+        cat > modules.txt <<'MODULES'
+        core,master
+        plugin-interface,master
+        postgresql-plugin,master
+        MODULES
+        ./loadModules
+
+    # loadModules silently clones public master for any module directory that is missing,
+    # so check that every module is exactly at the commit we were asked to build.
+    - name: Verify module commits and core version
+      id: verify
+      shell: bash
+      env:
+        CORE_VERSION: ${{ inputs.core-version }}
+        CORE_SHA: ${{ inputs.core-sha }}
+        PI_SHA: ${{ inputs.plugin-interface-sha }}
+        PG_SHA: ${{ inputs.postgresql-sha }}
+      run: |
+        set -euo pipefail
+        cd supertokens-root
+        # Sets RESOLVED to the full SHA; annotations go to stdout, so no command substitution here.
+        check() {
+          local dir="$1" want actual
+          if ! want=$(git -C "$dir" rev-parse --verify "$2^{commit}" 2>/dev/null); then
+            echo "::error::$dir: cannot resolve '$2'"; exit 1
+          fi
+          actual=$(git -C "$dir" rev-parse HEAD)
+          if [ "$actual" != "$want" ]; then
+            echo "::error::$dir is at $actual, expected $want"; exit 1
+          fi
+          RESOLVED="$actual"
+        }
+        gradle_version() { grep -E "^\s*version\s*=" "$1/build.gradle" | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/"; }
+
+        check supertokens-core "$CORE_SHA"; core="$RESOLVED"
+        check supertokens-plugin-interface "$PI_SHA"; pi="$RESOLVED"
+        check supertokens-postgresql-plugin "$PG_SHA"; pg="$RESOLVED"
+
+        v=$(gradle_version supertokens-core)
+        if [ "$v" != "$CORE_VERSION" ]; then
+          echo "::error::core build.gradle says $v, expected $CORE_VERSION"; exit 1
+        fi
+        {
+          echo "core-sha=$core"
+          echo "plugin-interface-sha=$pi"
+          echo "postgresql-sha=$pg"
+          echo "plugin-interface-version=$(gradle_version supertokens-plugin-interface)"
+          echo "postgresql-plugin-version=$(gradle_version supertokens-postgresql-plugin)"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Setup test environment
+      shell: bash
+      run: cd supertokens-root && ./utils/setupTestEnv --local
+
+    - name: Generate config file
+      shell: bash
+      run: |
+        cd supertokens-root
+        cat supertokens-core/config.yaml > config.yaml
+        cat supertokens-postgresql-plugin/config.yaml >> config.yaml
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Build and push image
+      id: build
+      uses: docker/build-push-action@v7
+      with:
+        push: true
+        context: ./supertokens-root
+        file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        tags: ${{ inputs.image }}:${{ inputs.tag }}
+        # The image carries its own release manifest: prebuilt (embargoed) releases read
+        # these labels back instead of trusting a separately stored record.
+        labels: |
+          org.opencontainers.image.version=${{ inputs.core-version }}
+          org.opencontainers.image.revision=${{ steps.verify.outputs.core-sha }}
+          com.supertokens.plugin-interface.version=${{ steps.verify.outputs.plugin-interface-version }}
+          com.supertokens.plugin-interface.revision=${{ steps.verify.outputs.plugin-interface-sha }}
+          com.supertokens.postgresql-plugin.version=${{ steps.verify.outputs.postgresql-plugin-version }}
+          com.supertokens.postgresql-plugin.revision=${{ steps.verify.outputs.postgresql-sha }}
+          com.supertokens.has-db-migration=${{ inputs.has-db-migration }}
+          com.supertokens.release.tests-run-id=${{ inputs.tests-run-id }}
+
+    - name: Summary
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        TAG: ${{ inputs.tag }}
+        DIGEST: ${{ steps.build.outputs.digest }}
+      run: |
+        {
+          echo "Built \`$IMAGE:$TAG\`"
+          echo ""
+          echo "Digest: \`$DIGEST\`"
+        } >> "$GITHUB_STEP_SUMMARY"

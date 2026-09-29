@@ -46,13 +46,13 @@ on:
         required: true
         type: boolean
         default: false
-      push-to-ecr:
-        description: 'Push Docker images to Amazon ECR'
-        required: true
-        type: boolean
-        default: true
       fast-release:
         description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
+        required: true
+        type: boolean
+        default: false
+      force-retag:
+        description: 'Allow moving an already-published version tag to a new image digest (emergencies only)'
         required: true
         type: boolean
         default: false
@@ -289,15 +289,18 @@ jobs:
             --title "$title" \
             --body-file "$bodyFile"
 
+  # Builds once into the dev repo; stress tests and promotion then use that exact digest.
   build-docker:
-    needs: dependency-branches
-    uses: ./.github/workflows/_release-build-docker.yml
+    needs: [ dependency-branches, derive-db-migration-flag ]
+    uses: ./.github/workflows/_image-build.yml
     with:
       core-version: ${{ inputs.core-version }}
       is-canary: ${{ inputs.is-canary }}
       core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
       plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      target: dockerhub-dev
+      has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
     secrets: inherit
 
   stress-tests:
@@ -305,19 +308,19 @@ jobs:
     needs: [ build-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
-      tag: ${{ needs.build-docker.outputs.dev-tag }}
+      image: ${{ needs.build-docker.outputs.image-ref }}
 
   release-docker:
     needs: [ build-docker, stress-tests, mark-as-passed ]
     if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
-    uses: ./.github/workflows/_release-publish-docker.yml
+    uses: ./.github/workflows/_image-promote.yml
     with:
+      source-image: ${{ needs.build-docker.outputs.image-ref }}
       core-version: ${{ inputs.core-version }}
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
-      push-to-ecr: ${{ inputs.push-to-ecr }}
-      dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
+      force-retag: ${{ inputs.force-retag }}
     secrets: inherit
 
   add-release-tags:
@@ -377,7 +380,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ !inputs.release-plugin-interface && ' (not released in this run)' || '' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ !inputs.release-postgresql-plugin && ' (not released in this run)' || '' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}${{ inputs.is-canary && '-canary' || '' }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ !inputs.release-plugin-interface && ' (not released in this run)' || '' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ !inputs.release-postgresql-plugin && ' (not released in this run)' || '' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}${{ inputs.is-canary && '-canary' || '' }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
 
       - name: Memo failed Slack notification
         if: steps.slack-notify.outcome == 'failure'

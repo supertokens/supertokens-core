@@ -4,15 +4,27 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Docker image tag to use'
-        required: true
+        description: 'Tag in supertokens/supertokens-dev-postgresql (ignored when image is set)'
+        required: false
         type: string
+        default: ''
+      image:
+        description: 'Full image reference, preferably pinned by digest (<repo>@sha256:...)'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker image tag to use'
-        required: true
+        description: 'Tag in supertokens/supertokens-dev-postgresql (ignored when image is set)'
+        required: false
         type: string
+        default: ''
+      image:
+        description: 'Full image reference, preferably pinned by digest (<repo>@sha256:...)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   stress-tests:
@@ -44,9 +56,18 @@ jobs:
           cd stress-tests
           npm install
       - name: Update Docker image in compose
+        env:
+          IMAGE: ${{ inputs.image }}
+          TAG: ${{ inputs.tag }}
         run: |
+          if [ -z "$IMAGE" ]; then
+            if [ -z "$TAG" ]; then
+              echo "::error::Set either image or tag"; exit 1
+            fi
+            IMAGE="supertokens/supertokens-dev-postgresql:$TAG"
+          fi
           cd stress-tests
-          sed -i 's|supertokens/supertokens-postgresql|supertokens/supertokens-dev-postgresql:${{ inputs.tag }}|' docker-compose.yml
+          sed -i "s|supertokens/supertokens-postgresql|$IMAGE|" docker-compose.yml
           cat docker-compose.yml
       - name: Bring up the services
         # Compose interpolates SUPERTOKENS_MIGRATION_MODE into the supertokens
