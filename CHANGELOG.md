@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixes a slow WebAuthn sign-in lookup that read every credential of the app. Sign-in now finds the credential
+  by its relying party too, so a credential registered for another relying party returns
+  `CREDENTIAL_NOT_FOUND_ERROR` instead of `INVALID_AUTHENTICATOR_ERROR`.
+- In-memory storage: WebAuthn sign-up and sign-in only accept generated options from the request's tenant,
+  matching PostgreSQL.
+
 ## [12.3.0]
 
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
