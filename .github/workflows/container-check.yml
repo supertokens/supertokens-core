@@ -11,6 +11,7 @@ on:
 jobs:
   container-scan:
     name: Scan SuperTokens PostgreSQL Container
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-latest
     
     steps:
