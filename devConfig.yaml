@@ -108,6 +108,22 @@ core_config_version: 0
 # max_server_pool_size:
 
 
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 0) integer value. Maximum number of requests from one connection URI
+# domain that may be in flight at the same time (i.e. how many of the max_server_pool_size threads one tenant may
+# hold). This is a fair-share rule, enforced only while the request pool is saturated (see
+# concurrency_cap_reserved_pool_percent): a connection URI domain over its cap then gets HTTP 429 immediately instead
+# of a thread; below that, no request is ever rejected. Must be the same for all apps/tenants under a connection URI
+# domain and cannot exceed max_server_pool_size. 0 disables the cap.
+# max_concurrent_requests_per_cud:
+
+
+# (OPTIONAL | Default: 25) integer value. Share of max_server_pool_size (percent) kept free for connection URI
+# domains under their max_concurrent_requests_per_cud. The per-tenant cap is only enforced once the pool has fewer
+# free threads than this; below that, tenants may exceed their cap. 100 keeps no headroom, so the cap is always
+# enforced (a hard cap). Must be between 1 and 100.
+# concurrency_cap_reserved_pool_percent:
+
+
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an
 # instance using this config file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric
 # (including capital) chars. Each key must have a minimum length of 20 chars

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Adds `max_concurrent_requests_per_cud` (SaaS-protected, `0` = off) and `concurrency_cap_reserved_pool_percent` (base config, default 25): once the request pool has less than the reserved share of free threads, a connection URI domain above its cap gets `429` immediately instead of a thread; below that, no request is ever rejected.
+- `GET /requests/stats` now also reports `concurrentRequestsRejected` (requests 429'd by the concurrency cap since process start) and `concurrentRequestsInFlight`; a rejection is logged at most once per connection URI domain per minute. `concurrentRequestsInFlight` is CUD-wide (the cap is per connection URI domain), so every app in the same CUD reports the same value — scrapers should aggregate it per-CUD, not sum it across an app list.
+
 ## [12.3.0]
 
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).

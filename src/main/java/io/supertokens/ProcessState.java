@@ -116,7 +116,10 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         // audit itself could not run (best-effort — never disturbs serving or the refresh), respectively.
         APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED,
         APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY,
-        APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED
+        APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED,
+        // A request was rejected with 429 by the per-CUD in-flight concurrency cap (the pool was saturated and
+        // the connection URI domain was over its max_concurrent_requests_per_cud). Testing-only signal.
+        CONCURRENT_REQUEST_LIMIT_HIT
     }
 
     public static class EventAndException {
