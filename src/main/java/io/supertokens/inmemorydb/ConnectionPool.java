@@ -21,6 +21,8 @@ import org.sqlite.SQLiteConfig;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConnectionPool extends ResourceDistributor.SingletonResource {
 
@@ -46,10 +48,94 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
                 .setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
+    // ── Test-only guard: two connections from the same pool in one call chain ──────────────────────
+    // Mirrors the guard in the postgresql plugin's ConnectionPool: a call chain that holds one connection
+    // (inside a startTransaction) and borrows a SECOND from the same pool is the hold-and-wait pool-
+    // exhaustion pattern behind the OAuth-refresh regression. Keyed per pool; active only under
+    // Start.isTesting. During the PLAN-018 cleanup it WARNS by default (so the suite stays green while the
+    // pre-existing instances are fixed); flip throwOnNestedAcquisition to fail fast — used by the guard's own
+    // regression test, and intended to become the default once the cleanup lands.
+    private static final ThreadLocal<Map<String, Integer>> TXN_DEPTH_BY_POOL =
+            ThreadLocal.withInitial(HashMap::new);
+
+    private static volatile boolean throwOnNestedAcquisition = false;
+
+    // Test hook: when true, a nested same-pool acquisition throws instead of only warning.
+    public static void setThrowOnNestedAcquisition(boolean value) {
+        throwOnNestedAcquisition = value;
+    }
+
+    private static String poolKey(Start start) {
+        return start.getUserPoolId() + "~" + start.getConnectionPoolId();
+    }
+
+    // Called by Start.startTransactionHelper AFTER it has taken its own connection, wrapping the callback.
+    static void enterTransaction(Start start) {
+        if (!Start.isTesting) {
+            return;
+        }
+        TXN_DEPTH_BY_POOL.get().merge(poolKey(start), 1, Integer::sum);
+    }
+
+    static void exitTransaction(Start start) {
+        if (!Start.isTesting) {
+            return;
+        }
+        Map<String, Integer> depths = TXN_DEPTH_BY_POOL.get();
+        String key = poolKey(start);
+        Integer depth = depths.get(key);
+        if (depth == null) {
+            return;
+        }
+        if (depth <= 1) {
+            depths.remove(key);
+        } else {
+            depths.put(key, depth - 1);
+        }
+    }
+
+    private static void assertNoNestedPoolAcquisition(Start start) {
+        if (!Start.isTesting) {
+            return;
+        }
+        Integer depth = TXN_DEPTH_BY_POOL.get().get(poolKey(start));
+        if (depth == null || depth <= 0) {
+            return;
+        }
+        String message = "Nested same-pool connection acquisition on pool '" + poolKey(start) + "' at "
+                + nestedAcquisitionSite() + ": a helper borrows a SECOND connection while a startTransaction on"
+                + " this pool is open — the hold-and-wait pool-exhaustion (OAuth-refresh deadlock) class. Thread"
+                + " the transaction's connection through the helper (use its *_Transaction overload), or resolve"
+                + " the value before opening the transaction.";
+        if (throwOnNestedAcquisition) {
+            throw new IllegalStateException(message);
+        }
+        // Warn-mode default during the PLAN-018 cleanup: surface it without failing the suite.
+        System.err.println("[nested-conn-guard][WARN] " + message);
+    }
+
+    // The nearest application frame that borrowed the second connection — for locating the site in warn-mode.
+    private static String nestedAcquisitionSite() {
+        for (StackTraceElement f : Thread.currentThread().getStackTrace()) {
+            String cn = f.getClassName();
+            if (!cn.startsWith("io.supertokens.")) {
+                continue;
+            }
+            if (cn.endsWith(".ConnectionPool") || cn.endsWith(".QueryExecutorTemplate")
+                    || (cn.endsWith(".Start") && f.getMethodName().startsWith("startTransaction"))) {
+                continue;
+            }
+            return cn.substring(cn.lastIndexOf('.') + 1) + "." + f.getMethodName()
+                    + "(" + f.getFileName() + ":" + f.getLineNumber() + ")";
+        }
+        return "unknown";
+    }
+
     public static Connection getConnection(Start start) throws SQLException {
         if (!start.enabled) {
             throw new SQLException("Storage layer disabled");
         }
+        assertNoNestedPoolAcquisition(start);
         SQLiteConfig config = new SQLiteConfig();
         config.enforceForeignKeys(true);
         return new ConnectionWithLocks(DriverManager.getConnection(URL, config.toProperties()),
