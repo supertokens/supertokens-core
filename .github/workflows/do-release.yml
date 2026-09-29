@@ -45,6 +45,7 @@ jobs:
   # ── Resolve branches for the given versions ───────────────────────
   dependency-branches:
     name: Resolve dependencies
+    if: github.repository == 'supertokens/supertokens-core'
     environment: publish
     runs-on: ubuntu-22.04
     outputs:
@@ -233,7 +234,7 @@ jobs:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
     needs: [ dependency-branches, register-plugin-version, test ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -377,7 +378,7 @@ jobs:
     name: Release Docker image
     environment: publish
     needs: [ build-docker, stress-tests, mark-as-passed ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -418,7 +419,7 @@ jobs:
     name: Add release tags
     environment: publish
     needs: [dependency-branches, release-docker]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
