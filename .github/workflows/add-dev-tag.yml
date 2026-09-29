@@ -26,6 +26,7 @@ on:
 jobs:
   dependency-branches:
     name: Dependency Branches
+    if: github.repository == 'supertokens/supertokens-core'
     environment: publish
     runs-on: ubuntu-latest
     outputs:
