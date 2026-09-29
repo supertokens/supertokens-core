@@ -236,6 +236,41 @@ public class CoreConfig {
     @ConfigDescription("Sets the max thread pool size for incoming http server requests. (Default: 10)")
     private int max_server_pool_size = 10;
 
+    @EnvName("SUPERTOKENS_ADMIN_PORT")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The port for a second webserver connector that serves liveness and control-plane routes from a thread " +
+                    "pool separate from the data-plane pool. When set to null, the admin connector is disabled and " +
+                    "all routes are served on the main port exactly as before. (Default: null)")
+    private Integer admin_port = null;
+
+    @EnvName("ADMIN_MAX_SERVER_POOL_SIZE")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Sets the max thread pool size for requests to the admin connector. Only used when admin_port is set. " +
+                    "(Default: 5)")
+    private int admin_max_server_pool_size = 5;
+
+    @EnvName("ADMIN_ONLY_PATHS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Comma-separated list of API paths to serve only on the admin port, overriding their compiled-in route " +
+                    "scope (e.g. '/ee/license'). Each entry must match a known API path, and admin_port must be set. " +
+                    "(Default: null)")
+    private String admin_only_paths = null;
+
+    @EnvName("ADMIN_PREFERRED_PATHS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "Comma-separated list of API paths to serve on both the admin and main ports, overriding their " +
+                    "compiled-in route scope. Each entry must match a known API path, and admin_port must be set. " +
+                    "(Default: null)")
+    private String admin_preferred_paths = null;
+
     @EnvName("API_KEYS")
     @NotConflictingInApp
     @JsonProperty
@@ -779,6 +814,60 @@ public class CoreConfig {
         return max_server_pool_size;
     }
 
+    public boolean isAdminConnectorEnabled() {
+        return admin_port != null;
+    }
+
+    public int getAdminPort() {
+        return admin_port;
+    }
+
+    public int getAdminMaxThreadPoolSize() {
+        return admin_max_server_pool_size;
+    }
+
+    // Route-scope overrides: operator-configured, per-path overrides of the compiled-in RouteScope, layered on top
+    // of the defaults (a path not listed keeps whatever scope its API declares). Only consulted when the admin
+    // connector is enabled; normalizeAndValidate rejects overrides when admin_port is unset.
+    public Set<String> getAdminOnlyPaths() {
+        return parsePathList(admin_only_paths);
+    }
+
+    public Set<String> getAdminPreferredPaths() {
+        return parsePathList(admin_preferred_paths);
+    }
+
+    private static Set<String> parsePathList(String csv) {
+        Set<String> paths = new HashSet<>();
+        if (csv == null) {
+            return paths;
+        }
+        for (String raw : csv.split(",")) {
+            String p = normalizeApiPath(raw);
+            if (!p.isEmpty()) {
+                paths.add(p);
+            }
+        }
+        return paths;
+    }
+
+    // Normalize an API path for route-scope override matching: trim, lowercase, ensure a single leading slash, and
+    // drop a trailing slash. PathRouter derives the override key from a matched API's getPath() through this same
+    // method, so the two representations stay in lockstep.
+    public static String normalizeApiPath(String path) {
+        String p = path.trim().toLowerCase();
+        if (p.isEmpty()) {
+            return p;
+        }
+        if (!p.startsWith("/")) {
+            p = "/" + p;
+        }
+        if (p.length() > 1 && p.endsWith("/")) {
+            p = p.substring(0, p.length() - 1);
+        }
+        return p;
+    }
+
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
     }
@@ -862,7 +951,11 @@ public class CoreConfig {
 
                 if (field.getType().equals(String.class)) {
                     configJson.addProperty(field.getName(), stringValue);
-                } else if (field.getType().equals(int.class)) {
+                } else if (field.getType().equals(int.class) || field.getType().equals(Integer.class)) {
+                    // Integer (boxed) is used for fields that need a null = unset sentinel, e.g. admin_port and
+                    // bulk_migration_sleep_between_rounds_in_batch_ms. Without this branch their env vars
+                    // (SUPERTOKENS_ADMIN_PORT etc.) are read but never written to configJson, so the value is
+                    // silently dropped and the field stays at its default/null.
                     configJson.addProperty(field.getName(), Integer.parseInt(stringValue));
                 } else if (field.getType().equals(long.class)) {
                     configJson.addProperty(field.getName(), Long.parseLong(stringValue));
@@ -961,6 +1054,39 @@ public class CoreConfig {
                     "'max_server_pool_size' must be >= 1." +
                             (includeConfigFilePath ? " The config file can be"
                                     + " found here: " + getConfigFileLocation(main) : ""));
+        }
+
+        if (admin_port != null) {
+            // Require a concrete, reachable port. admin_port == 0 would tell Tomcat to bind an ephemeral port, but
+            // getAdminPort() still returns 0, so the PathRouter gate (req.getLocalPort() == adminPort) could never
+            // match — ADMIN_ONLY routes would be unreachable and DATA_PLANE routes would leak onto the random admin
+            // port. The connector is meant to be reached at a known port, so reject 0.
+            if (admin_port < 1 || admin_port > 65535) {
+                throw new InvalidConfigException("'admin_port' must be between 1 and 65535 inclusive.");
+            }
+            if (admin_port == port) {
+                throw new InvalidConfigException("'admin_port' must be different from 'port'.");
+            }
+            if (admin_max_server_pool_size <= 0) {
+                throw new InvalidConfigException("'admin_max_server_pool_size' must be >= 1.");
+            }
+        }
+
+        // Route-scope overrides only make sense when the admin connector is enabled (they map routes onto the admin
+        // port). A path can't be forced to two scopes at once. The "path must match a known API" check needs the
+        // registered API list, which only exists once the webserver is wired up, so it lives in
+        // PathRouter.validateRouteScopeOverrides() and fails startup there.
+        Set<String> adminOnlyPaths = getAdminOnlyPaths();
+        Set<String> adminPreferredPaths = getAdminPreferredPaths();
+        if ((!adminOnlyPaths.isEmpty() || !adminPreferredPaths.isEmpty()) && admin_port == null) {
+            throw new InvalidConfigException(
+                    "'admin_only_paths' and 'admin_preferred_paths' require 'admin_port' to be set.");
+        }
+        for (String p : adminOnlyPaths) {
+            if (adminPreferredPaths.contains(p)) {
+                throw new InvalidConfigException(
+                        "'" + p + "' cannot be listed in both 'admin_only_paths' and 'admin_preferred_paths'.");
+            }
         }
 
         if (api_keys != null) {

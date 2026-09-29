@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.3.1]
+
+- Adds an opt-in admin webserver connector on a separate port (`admin_port`) with its own thread pool (`admin_max_server_pool_size`, default 5), and a port-scoped route classification (`RouteScope`: `DATA_PLANE`/`ADMIN_ONLY`/`ADMIN_PREFERRED`) so liveness/control-plane traffic can be served isolated from the data-plane pool; `/hello` and `/ee/*` are `ADMIN_PREFERRED` (served on both ports). When `admin_port` is unset, the server runs a single connector exactly as before.
+- Fixes boxed-`Integer` config fields being silently dropped when set via environment variable: `updateConfigJsonFromEnv` had no `Integer` branch, so `SUPERTOKENS_ADMIN_PORT` (and the pre-existing `BULK_MIGRATION_SLEEP_BETWEEN_ROUNDS_IN_BATCH_MS`) were read but never applied.
+- Adds optional per-path route-scope overrides for the admin connector: `admin_only_paths` and `admin_preferred_paths` (comma-separated API paths, yaml/env) layer over the compiled-in `RouteScope` defaults, so an operator can promote a route to `ADMIN_ONLY` or widen one to `ADMIN_PREFERRED` without a code change. Both require `admin_port`, reject overlaps, and fail startup on a path that matches no known API.
+- Adds an admin-only `GET /global-request-stats` endpoint returning process-global, in-memory request counts bucketed by response-status class (`2xx`/`4xx`/`5xx`), a `total`, and a `since` timestamp (cumulative since process start, never persisted). Additive: the per-app `GET /requests/stats` is unchanged.
+- Adds a DB-free `/livez` liveness endpoint (`ADMIN_ONLY`, no api-key, no cdi-version) for the container health check: it does no storage access and takes no shared lock, so it stays responsive on the admin connector's isolated pool under data-plane thread saturation and DB-pool exhaustion (unlike `/hello`, which does a storage round-trip and is a readiness check).
+
 ## [12.3.0]
 
 - Adds an `activity_log` lifecycle/activity event ledger: user creation, import, deletion, account (un)linking, tenant (dis)association and semantic activity events (`sign_in`, `token_refresh`, `session_create`, `sign_out`, `oauth_token_exchange`, `oauth_authorize`) are written atomically with their mutation, enforced by a compile-time AspectJ audit guard on raw `startTransaction`. New protected configs `activity_log_retention_days` (default 31) and `activity_log_throttle_enabled` (default `true`).
