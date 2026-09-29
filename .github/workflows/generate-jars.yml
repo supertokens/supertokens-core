@@ -47,6 +47,7 @@ on:
 
 jobs:
   generate-jars:
+    if: github.repository == 'supertokens/supertokens-core'
     environment: publish
     runs-on: ubuntu-latest
     concurrency:
