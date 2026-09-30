@@ -124,7 +124,7 @@ public class SAML {
 
     public static SAMLClient createOrUpdateSAMLClient(
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
+            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning, JsonArray acsURLs)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
@@ -151,7 +151,7 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning, acsURLs);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
@@ -226,6 +226,21 @@ public class SAML {
 
         if (!redirectURIOk) {
             throw new InvalidClientException();
+        }
+
+        // If the client configured an ACS allow-list, the login's ACS URL must be a member. This is the
+        // SP-initiated counterpart to the IdP-initiated Recipient pinning; a null list = not configured.
+        if (client.acsURLs != null) {
+            boolean acsOk = false;
+            for (JsonElement a : client.acsURLs) {
+                if (a.getAsString().equals(acsURL)) {
+                    acsOk = true;
+                    break;
+                }
+            }
+            if (!acsOk) {
+                throw new InvalidClientException();
+            }
         }
 
         String idpSsoUrl = client.ssoLoginURL;
@@ -438,15 +453,26 @@ public class SAML {
      * IdP-initiated path has no such anchor (the SAML client carries no configured ACS), so it relies on the
      * assertion single-use cache instead.
      */
-    private static void validateResponseDestinationAndRecipient(Response response, SAMLRelayStateInfo relayStateInfo)
-            throws SAMLResponseVerificationFailedException {
-        if (relayStateInfo == null || relayStateInfo.acsURL == null) {
+    private static void validateResponseDestinationAndRecipient(Response response, SAMLRelayStateInfo relayStateInfo,
+            JsonArray clientAcsURLs) throws SAMLResponseVerificationFailedException {
+        // Build the set of ACS URLs this response is allowed to have been sent to. On the SP-initiated
+        // path that is the single ACS URL captured at login. On the IdP-initiated path there is no
+        // login-time ACS, so we fall back to the SAML client's configured ACS allow-list (nullable);
+        // when it is null the client has not opted in and we preserve the legacy no-pin behaviour.
+        java.util.Set<String> allowedAcs = new java.util.HashSet<>();
+        if (relayStateInfo != null && relayStateInfo.acsURL != null) {
+            allowedAcs.add(relayStateInfo.acsURL);
+        } else if (relayStateInfo == null && clientAcsURLs != null) {
+            for (JsonElement a : clientAcsURLs) {
+                allowedAcs.add(a.getAsString());
+            }
+        }
+        if (allowedAcs.isEmpty()) {
             return;
         }
-        String expectedAcs = relayStateInfo.acsURL;
 
         String destination = trimToNull(response.getDestination());
-        if (destination != null && !destination.equals(expectedAcs)) {
+        if (destination != null && !allowedAcs.contains(destination)) {
             throw new SAMLResponseVerificationFailedException();
         }
 
@@ -460,7 +486,7 @@ public class SAML {
                     continue;
                 }
                 String recipient = trimToNull(scd.getRecipient());
-                if (recipient != null && !recipient.equals(expectedAcs)) {
+                if (recipient != null && !allowedAcs.contains(recipient)) {
                     throw new SAMLResponseVerificationFailedException();
                 }
             }
@@ -645,7 +671,7 @@ public class SAML {
         // Bind the response to this login and reject replays. On the SP-initiated path relayStateInfo
         // carries the AuthnRequest ID and ACS URL captured at login; on the IdP-initiated path it is null.
         // (GHSA-3r7x-rhvc-fw28)
-        validateResponseDestinationAndRecipient(response, relayStateInfo);
+        validateResponseDestinationAndRecipient(response, relayStateInfo, client.acsURLs);
         validateResponseInResponseTo(response, relayStateInfo);
 
         // Identity is taken from a single assertion, and that same assertion's audience is validated on it,
