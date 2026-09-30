@@ -1,5 +1,7 @@
 package io.supertokens.test.saml;
 
+import io.supertokens.test.Utils;
+
 import java.nio.charset.StandardCharsets;
 
 import com.google.gson.JsonArray;
@@ -10,6 +12,18 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 
 public class SAMLTestUtils {
+    // wfg2: tests must configure saml_sp_entity_id (no default) before starting the process,
+    // or the audience check fails before the ACS pinning under test is reached.
+    public static final String TEST_SP_ENTITY_ID = "https://saml.supertokens.com";
+
+    public static void setSAMLSPEntityIdConfig() {
+        try {
+            Utils.setValueInConfig("saml_sp_entity_id", "\"" + TEST_SP_ENTITY_ID + "\"");
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public static class CreatedClientInfo {
         public final String clientId;
@@ -44,6 +58,17 @@ public class SAMLTestUtils {
                                                                       String idpEntityId,
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin) throws Exception {
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
+                allowIDPInitiatedLogin, null);
+    }
+
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin,
+                                                                      JsonArray acsURLs) throws Exception {
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
         String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
@@ -56,6 +81,9 @@ public class SAMLTestUtils {
         createClientInput.add("redirectURIs", redirectURIs);
         createClientInput.addProperty("metadataXML", metadataXMLBase64);
         createClientInput.addProperty("allowIDPInitiatedLogin", allowIDPInitiatedLogin);
+        if (acsURLs != null) {
+            createClientInput.add("acsURLs", acsURLs);
+        }
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");
