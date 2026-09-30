@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - SAML callback replay hardening (GHSA-3r7x-rhvc-fw28): the callback RelayState is now single-use, every assertion is consumed at most once (new `saml_consumed_assertions` table), and the response is bound to the login via InResponseTo and Destination/Recipient pinning — closing the SP- and IdP-initiated replay windows.
+- SAML: a client can carry an optional ACS-URL allow-list (`acsURLs`). When set, the login's ACS URL (SP-initiated) and the response Destination/`SubjectConfirmationData.Recipient` (IdP-initiated) must be a member — extending Destination/Recipient pinning to the IdP-initiated path, which previously had no anchor. A null list preserves existing behaviour. (GHSA-3r7x-rhvc-fw28 follow-up)
 - SAML: identity and audience are taken from a single validated assertion and `saml_sp_entity_id` is required, so an assertion issued to a different Service Provider can no longer supply the authenticated identity (GHSA-wfg2-vqfg-rqh6).
 - Multitenancy: an app-scoped API key can no longer rewrite its parent connectionUriDomain's credentials to take over sibling apps (GHSA-4rf2-xqvf-8rcx).
 - WebAuthn: sign-in is scoped to the requested tenant, so a passkey registered in one tenant is no longer accepted at another (GHSA-6v34-w48w-44rc).

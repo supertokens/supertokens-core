@@ -58,6 +58,17 @@ public class SAMLTestUtils {
                                                                       String idpEntityId,
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin) throws Exception {
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
+                allowIDPInitiatedLogin, null);
+    }
+
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin,
+                                                                      JsonArray acsURLs) throws Exception {
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
         String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
@@ -70,6 +81,9 @@ public class SAMLTestUtils {
         createClientInput.add("redirectURIs", redirectURIs);
         createClientInput.addProperty("metadataXML", metadataXMLBase64);
         createClientInput.addProperty("allowIDPInitiatedLogin", allowIDPInitiatedLogin);
+        if (acsURLs != null) {
+            createClientInput.add("acsURLs", acsURLs);
+        }
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null, SemVer.v5_4.get(), "saml");

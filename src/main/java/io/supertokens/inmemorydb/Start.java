@@ -4415,7 +4415,8 @@ public class Start
             return SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.clientSecret,
                     samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI,
                     samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin,
-                    samlClient.enableRequestSigning);
+                    samlClient.enableRequestSigning,
+                    samlClient.acsURLs == null ? null : samlClient.acsURLs.toString());
         } catch (SQLException e) {
             String errorMessage = e.getMessage();
             String table = io.supertokens.inmemorydb.config.Config.getConfig(this).getSAMLClientsTable();
