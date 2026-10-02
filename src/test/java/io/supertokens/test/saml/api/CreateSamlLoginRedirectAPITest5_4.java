@@ -17,6 +17,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.saml.MockSAML;
@@ -38,6 +39,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     @Test

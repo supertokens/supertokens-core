@@ -163,6 +163,14 @@ public class AuthRecipe {
                                 recipeUserId, UserIdType.SUPERTOKENS);
                 String resultUserId = mappingResult == null ? recipeUserId : mappingResult.externalUserId;
 
+                // Revoke the unlinked user's sessions inside this locked transaction (GHSA-2pc4-vw9j-454c).
+                // Session creation now takes the same user lock, so a session created concurrently with this
+                // unlink is serialized: it is either already inserted and deleted here, or created only after
+                // this transaction commits, against the post-unlink identity. The post-commit
+                // revokeAllSessionsForUser below still runs for its cross-tenant enumeration and events.
+                ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
+                        .deleteSessionsOfUser_Transaction(con, appIdentifier, resultUserId);
+
                 if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {

@@ -61,6 +61,9 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
         }
 
+        // Optional ACS allow-list; absent = null = not configured (legacy behaviour preserved).
+        JsonArray acsURLs = InputParser.parseArrayOrThrowError(input, "acsURLs", true);
+
         String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", false);
 
         Boolean allowIDPInitiatedLogin = InputParser.parseBooleanOrThrowError(input, "allowIDPInitiatedLogin", true);
@@ -88,7 +91,7 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                     main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI,
-                    redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning);
+                    redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning, acsURLs);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
