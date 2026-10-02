@@ -79,7 +79,9 @@ public class SAMLResponseReplayTest5_4 {
                 clientInfo.acsURL,
                 "victim@example.com",
                 null,
-                null,
+                // SP-initiated: the response must carry the InResponseTo of the AuthnRequest, or
+                // GHSA-3r7x's InResponseTo binding rejects the (legitimate) first submission.
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
