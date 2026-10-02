@@ -20,7 +20,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.AuditLog;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -215,9 +217,6 @@ public class Session {
     // CDI >= 5.6). null keeps the configured access_token_validity. When set it is validated shorten-only
     // (0 < param <= configured) - out-of-range throws AccessTokenValidityOutOfRangeException (the webserver
     // maps it to a 400, never a clamp). Nothing about the override is persisted.
-    @UnauditedTransaction(justification = "Session creation locks the recipe user and inserts the session in one "
-            + "transaction to serialize with account link/unlink (GHSA-2pc4-vw9j-454c); session creation is not an "
-            + "audited-transaction event and emits its own session-created event.")
     public static SessionInformationHolder createNewSession(TenantIdentifier tenantIdentifier, Storage storage,
                                                             Main main, @Nonnull String recipeUserId,
                                                             @Nonnull JsonObject userDataInJWT,
@@ -272,7 +271,9 @@ public class Session {
                 // the session is either created against the current identity and then caught by the unlink's
                 // in-transaction revocation, or created after the unlink resolves the new identity. Closes the
                 // window where a session created concurrently with an unlink survived it (GHSA-2pc4-vw9j-454c).
-                primaryUserIdSupertokens = sessionStorage.startTransaction(con -> {
+                ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+                primaryUserIdSupertokens = auditStorage.startAuditedTransaction(tenantIdentifier.toAppIdentifier(),
+                        con -> {
                     try {
                         LockedUser locked = lockingStorage.lockUser(tenantIdentifier.toAppIdentifier(), con,
                                 recipeUserIdSupertokens);
@@ -285,8 +286,11 @@ public class Session {
                         sessionStorage.createNewSession_Transaction(con, tenantIdentifier, sessionHandleF,
                                 recipeUserIdExternal, refreshTokenHash2, userDataInDatabaseF, refreshToken.expiry,
                                 userDataInJWTF, refreshToken.createdTime, useStaticKeyF);
-                        sessionStorage.commitTransaction(con);
-                        return pid;
+                        // Session creation emits its own session_created event (emitSessionCreatedEvent, below),
+                        // so the locked insert itself carries no audit event.
+                        return AuditedResult.withoutAudit(pid, "Session creation emits its own session_created "
+                                + "event; the locked insert serializes with account link/unlink "
+                                + "(GHSA-2pc4-vw9j-454c).");
                     } catch (UserNotFoundForLockingException | TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
