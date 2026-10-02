@@ -41,13 +41,13 @@ on:
         required: true
         type: boolean
         default: true
-      push-to-ecr:
-        description: 'Push Docker images to Amazon ECR'
-        required: true
-        type: boolean
-        default: true
       fast-release:
         description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite. Cannot be combined with "latest release"'
+        required: true
+        type: boolean
+        default: false
+      force-retag:
+        description: 'Allow moving an already-published version tag to a new image digest (emergencies only)'
         required: true
         type: boolean
         default: false
@@ -477,91 +477,21 @@ jobs:
             exit 1
           fi
 
-  # ── Build and publish the dev Docker image ────────────────────────
+  # ── Build the dev Docker image (once; stress tests and promotion use its digest) ──
   build-docker:
     name: Build Docker image
-    needs: [ update-deps ]
-    runs-on: ubuntu-22.04
-    outputs:
-      dev-tag: ${{ steps.set_tag.outputs.TAG }}
-    steps:
-      - name: Set up JDK 15
-        uses: actions/setup-java@v5
-        with:
-          java-version: 15
-          distribution: zulu
-
-      - name: Checkout supertokens-root
-        uses: actions/checkout@v5
-        with:
-          repository: supertokens/supertokens-root
-          path: supertokens-root
-          ref: for_jdk_15_releases
-
-      - name: Checkout supertokens-core
-        uses: actions/checkout@v5
-        with:
-          path: supertokens-root/supertokens-core
-          ref: ${{ needs.update-deps.outputs.core-sha }}
-
-      - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v5
-        with:
-          repository: supertokens/supertokens-plugin-interface
-          path: supertokens-root/supertokens-plugin-interface
-          ref: ${{ needs.update-deps.outputs.plugin-interface-sha }}
-
-      - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
-        with:
-          repository: supertokens/supertokens-postgresql-plugin
-          path: supertokens-root/supertokens-postgresql-plugin
-          ref: ${{ needs.update-deps.outputs.postgresql-sha }}
-
-      - name: Load modules
-        run: |
-          cd supertokens-root
-          cat > modules.txt <<'EOF'
-          core,master
-          plugin-interface,master
-          postgresql-plugin,master
-          EOF
-          ./loadModules
-
-      - name: Setup test environment
-        run: cd supertokens-root && ./utils/setupTestEnv --local
-
-      - name: Generate config file
-        run: |
-          cd supertokens-root
-          cat supertokens-core/config.yaml > config.yaml
-          cat supertokens-postgresql-plugin/config.yaml >> config.yaml
-
-      - name: Compute image tag
-        id: set_tag
-        run: |
-          echo "TAG=${{ inputs.core-version }}-dev" >> $GITHUB_OUTPUT
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build and push dev image
-        uses: docker/build-push-action@v7
-        with:
-          push: true
-          context: ./supertokens-root
-          tags: supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}
-          file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
+    needs: [ update-deps, derive-db-migration-flag ]
+    uses: ./.github/workflows/_image-build.yml
+    with:
+      core-version: ${{ inputs.core-version }}
+      core-sha: ${{ needs.update-deps.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.update-deps.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.update-deps.outputs.postgresql-sha }}
+      target: dockerhub-dev
+      java-version: '15'
+      root-ref: for_jdk_15_releases
+      has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
+    secrets: inherit
 
   # ── Stress tests ──────────────────────────────────────────────────
   stress-tests:
@@ -570,21 +500,21 @@ jobs:
     needs: [ build-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
-      tag: ${{ needs.build-docker.outputs.dev-tag }}
+      image: ${{ needs.build-docker.outputs.image-ref }}
 
   # ── Tag and publish the release Docker image ──────────────────────
   release-docker:
     name: Release Docker image
     needs: [ build-docker, stress-tests, mark-as-passed ]
     if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
-    uses: ./.github/workflows/_release-publish-docker.yml
+    uses: ./.github/workflows/_image-promote.yml
     with:
+      source-image: ${{ needs.build-docker.outputs.image-ref }}
       core-version: ${{ inputs.core-version }}
       is-canary: false
       is-latest-release: ${{ inputs.is-latest-release }}
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
-      push-to-ecr: ${{ inputs.push-to-ecr }}
-      dev-tag: ${{ needs.build-docker.outputs.dev-tag }}
+      force-retag: ${{ inputs.force-retag }}
     secrets: inherit
 
   # ── Tag all repos with release versions ───────────────────────────
@@ -745,7 +675,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ !inputs.release-plugin-interface && ' (not released in this run)' || '' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ !inputs.release-postgresql-plugin && ' (not released in this run)' || '' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n*Pushed to ECR:* ${{ inputs.push-to-ecr && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
+                  text: "*Core:* v${{ inputs.core-version }}\n*Plugin interface:* v${{ inputs.plugin-interface-version }}${{ !inputs.release-plugin-interface && ' (not released in this run)' || '' }}\n*PostgreSQL plugin:* v${{ inputs.postgresql-plugin-version }}${{ !inputs.release-postgresql-plugin && ' (not released in this run)' || '' }}\n*Docker `latest` tag:* ${{ inputs.is-latest-release && 'yes' || 'no' }}\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ inputs.core-version }}|GitHub release> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Workflow run>"
 
       - name: Memo failed Slack notification
         if: steps.slack-notify.outcome == 'failure'
