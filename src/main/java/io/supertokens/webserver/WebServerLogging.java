@@ -16,13 +16,13 @@
 
 package io.supertokens.webserver;
 
-import ch.qos.logback.core.CoreConstants;
 import io.supertokens.Main;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.utils.Utils;
 
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 public class WebServerLogging extends Handler {
@@ -37,7 +37,6 @@ public class WebServerLogging extends Handler {
     public void publish(LogRecord record) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(CoreConstants.LINE_SEPARATOR);
         sb.append(record.getInstant());
         sb.append(" | ");
         sb.append(record.getSourceClassName());
@@ -53,9 +52,15 @@ public class WebServerLogging extends Handler {
         if (record.getThrown() != null) {
             sb.append(" | ");
             sb.append(Utils.throwableStacktraceToString(record.getThrown()));
-            Logging.error(main, TenantIdentifier.BASE_TENANT, sb.toString(), false); // TODO logging
+            Logging.error(main, TenantIdentifier.BASE_TENANT, sb.toString(), false);
+        } else if (record.getLevel().intValue() >= Level.SEVERE.intValue()) {
+            Logging.error(main, TenantIdentifier.BASE_TENANT, sb.toString(), false);
+        } else if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
+            Logging.warn(main, TenantIdentifier.BASE_TENANT, sb.toString());
+        } else if (record.getLevel().intValue() >= Level.INFO.intValue()) {
+            Logging.info(main, TenantIdentifier.BASE_TENANT, sb.toString(), false);
         } else {
-            Logging.debug(main, TenantIdentifier.BASE_TENANT, sb.toString()); // TODO logging
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, sb.toString());
         }
     }
 
