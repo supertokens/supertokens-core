@@ -46,6 +46,8 @@ public class SAMLResponseReplayTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        // saml_sp_entity_id has no default and is required (GHSA-wfg2); the SAML callback 500s without it.
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     @Test

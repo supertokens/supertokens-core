@@ -100,7 +100,7 @@ public class SAMLMultiAssertionAudienceTest5_4 {
                 clientInfo.idpEntityId, clientInfo.acsURL,
                 ATTACKER_EMAIL, SP_ENTITY_ID,
                 VICTIM_EMAIL, OTHER_AUDIENCE,
-                relayState, clientInfo.keyMaterial, 300);
+                SAMLTestUtils.requestIdFor(relayState), clientInfo.keyMaterial, 300);
 
         JsonObject callbackBody = new JsonObject();
         callbackBody.addProperty("samlResponse", responseBase64);
@@ -148,7 +148,7 @@ public class SAMLMultiAssertionAudienceTest5_4 {
                 clientInfo.idpEntityId, clientInfo.acsURL,
                 VICTIM_EMAIL, OTHER_AUDIENCE,
                 ATTACKER_EMAIL, SP_ENTITY_ID,
-                relayState, clientInfo.keyMaterial, 300);
+                SAMLTestUtils.requestIdFor(relayState), clientInfo.keyMaterial, 300);
 
         JsonObject callbackBody = new JsonObject();
         callbackBody.addProperty("samlResponse", responseBase64);
