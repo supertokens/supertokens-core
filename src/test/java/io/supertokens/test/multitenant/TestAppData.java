@@ -273,6 +273,7 @@ public class TestAppData {
         ((SAMLStorage) appStorage).createOrUpdateSAMLClient(app, new SAMLClient("abcd", "efgh", "http://localhost:5225", new JsonArray(), "http://localhost:3000", "http://idp.example.com", "abcdefgh", false, true, null));
         ((SAMLStorage) appStorage).saveRelayStateInfo(app, new SAMLRelayStateInfo("1234", "abcd", "qwer", "http://localhost:3000/auth/callback/saml", "_reqid-1234", "http://localhost:3000/acs"), 300000);
         ((SAMLStorage) appStorage).saveSAMLClaims(app, "abcd", "efgh", new JsonObject(), 30000);
+        ((SAMLStorage) appStorage).markSAMLAssertionConsumed(app, "_assertion-1234", System.currentTimeMillis() + 300000);
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
