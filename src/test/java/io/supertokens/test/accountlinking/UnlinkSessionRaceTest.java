@@ -83,7 +83,12 @@ public class UnlinkSessionRaceTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        // This race needs real row-level locking (FOR UPDATE on app_id_to_user_id) to serialize the
+        // concurrent session-create and unlink. The in-memory SQLite (shared cache) returns
+        // SQLITE_LOCKED instead of blocking, so the latch-based race cannot run there; exercise it only
+        // against an external SQL storage (e.g. postgres).
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
 

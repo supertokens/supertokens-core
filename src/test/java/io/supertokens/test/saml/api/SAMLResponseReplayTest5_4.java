@@ -46,6 +46,8 @@ public class SAMLResponseReplayTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        // saml_sp_entity_id has no default and is required (GHSA-wfg2); the SAML callback 500s without it.
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     @Test
@@ -77,7 +79,9 @@ public class SAMLResponseReplayTest5_4 {
                 clientInfo.acsURL,
                 "victim@example.com",
                 null,
-                null,
+                // SP-initiated: the response must carry the InResponseTo of the AuthnRequest, or
+                // GHSA-3r7x's InResponseTo binding rejects the (legitimate) first submission.
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
