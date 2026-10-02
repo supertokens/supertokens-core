@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      aws-role-arn:
+        description: 'Role to assume (OIDC) to pull the image from ECR; the caller must grant id-token: write'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       tag:
@@ -22,6 +27,11 @@ on:
         default: ''
       image:
         description: 'Full image reference, preferably pinned by digest (<repo>@sha256:...)'
+        required: false
+        type: string
+        default: ''
+      aws-role-arn:
+        description: 'Role to assume (OIDC) to pull the image from ECR; the caller must grant id-token: write'
         required: false
         type: string
         default: ''
@@ -55,6 +65,17 @@ jobs:
         run: |
           cd stress-tests
           npm install
+      - name: Configure AWS credentials (ECR pull)
+        if: inputs.aws-role-arn != ''
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: inputs.aws-role-arn != ''
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Update Docker image in compose
         env:
           IMAGE: ${{ inputs.image }}

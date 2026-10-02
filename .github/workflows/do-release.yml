@@ -56,6 +56,11 @@ on:
         required: true
         type: boolean
         default: false
+      prebuilt:
+        description: 'Embargoed release: publish the image already in ECR under this version (built and tested privately) instead of building. Push the code first.'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   # Fail fast on invalid input combinations before anything is registered
@@ -76,6 +81,11 @@ jobs:
         run: |
           echo "::error::A canary release must not be marked as the latest release. Untick one of the two options."
           exit 1
+      - name: Check prebuilt is not combined with canary or force-retag
+        if: inputs.prebuilt && (inputs.is-canary || inputs.force-retag)
+        run: |
+          echo "::error::A prebuilt (embargoed) release publishes exactly the image the fleet runs: it can't be a canary and must never force-retag."
+          exit 1
 
   dependency-branches:
     needs: validate-inputs
@@ -86,6 +96,81 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
     secrets: inherit
 
+  # Prebuilt (embargoed) releases: the image already exists in ECR under this version, built
+  # and tested privately in supertokens-core-security. Its labels record the commits it was
+  # built from; check them against the public branches this release resolved.
+  prebuilt-image:
+    name: Load prebuilt image
+    needs: dependency-branches
+    if: inputs.prebuilt
+    environment: publish
+    runs-on: ubuntu-22.04
+    outputs:
+      image-ref: ${{ steps.manifest.outputs.image-ref }}
+      core-sha: ${{ steps.manifest.outputs.core-sha }}
+      plugin-interface-sha: ${{ steps.manifest.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ steps.manifest.outputs.postgresql-sha }}
+      has-db-migration: ${{ steps.manifest.outputs.has-db-migration }}
+    steps:
+      - name: Checkout workflow sources
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Set up crane
+        uses: ./.github/actions/setup-crane
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Read image manifest
+        id: manifest
+        env:
+          REPO: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
+          VERSION: ${{ inputs.core-version }}
+        run: |
+          set -euo pipefail
+          bash .github/helpers/read-image-manifest.sh "$REPO" "$VERSION" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Verify against the public branches
+        env:
+          VERSION: ${{ inputs.core-version }}
+          IMAGE_VERSION: ${{ steps.manifest.outputs.core-version }}
+          IMAGE_CORE_SHA: ${{ steps.manifest.outputs.core-sha }}
+          IMAGE_PI_SHA: ${{ steps.manifest.outputs.plugin-interface-sha }}
+          IMAGE_PG_SHA: ${{ steps.manifest.outputs.postgresql-sha }}
+          TESTS_RUN_ID: ${{ steps.manifest.outputs.tests-run-id }}
+          CORE_SHA: ${{ needs.dependency-branches.outputs.core-sha }}
+          PI_SHA: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
+          PG_SHA: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          PI_REPO: supertokens/supertokens-plugin-interface
+          PG_REPO: supertokens/supertokens-postgresql-plugin
+        run: bash .github/helpers/verify-prebuilt-image.sh
+
+  # The commits this release is about: the resolved branch heads, or for a prebuilt release
+  # the commits the image was built from (verified above). Everything downstream uses these.
+  release-shas:
+    name: Release commits
+    needs: [ dependency-branches, prebuilt-image ]
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    runs-on: ubuntu-22.04
+    outputs:
+      core-sha: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.core-sha || needs.dependency-branches.outputs.core-sha }}
+      plugin-interface-sha: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.plugin-interface-sha || needs.dependency-branches.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.postgresql-sha || needs.dependency-branches.outputs.postgresql-sha }}
+    steps:
+      - name: Record
+        env:
+          MODE: ${{ inputs.prebuilt && 'prebuilt image' || 'resolved branches' }}
+        run: echo "Release commits come from the $MODE."
+
   # Derives has-db-migration from the postgresql plugin's migration manifest
   # (single source of truth) and fails the release early if the core CHANGELOG
   # doesn't document the migration. Shared with do-release-java15.yml via the
@@ -93,39 +178,59 @@ jobs:
   # the release before anything is registered.
   derive-db-migration-flag:
     name: Derive has-db-migration from migration manifest
-    needs: dependency-branches
+    needs: release-shas
     uses: ./.github/workflows/_release-derive-db-migration.yml
     with:
       core-version: ${{ inputs.core-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
-      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
-      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      core-sha: ${{ needs.release-shas.outputs.core-sha }}
+      postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
     secrets: inherit
 
   register-versions:
-    needs: [ dependency-branches, derive-db-migration-flag ]
+    needs: [ release-shas, derive-db-migration-flag ]
     uses: ./.github/workflows/_release-register-versions.yml
     with:
       core-version: ${{ inputs.core-version }}
-      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
+      core-sha: ${{ needs.release-shas.outputs.core-sha }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
-      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
     secrets: inherit
 
   test:
-    needs: [ dependency-branches, register-versions ]
+    # A prebuilt image was tested privately on exactly these commits (see its tests-run-id).
+    if: ${{ !inputs.prebuilt }}
+    needs: [ release-shas, register-versions ]
     uses: ./.github/workflows/_release-run-tests.yml
     with:
-      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
-      plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
-      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      core-sha: ${{ needs.release-shas.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.release-shas.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       fast-release: ${{ inputs.fast-release }}
     secrets: inherit
 
+  # Prebuilt: the migration flag derived here (from the same plugin commit) must match the
+  # one recorded when the image was built.
+  prebuilt-consistency:
+    name: Check prebuilt migration flag
+    needs: [ prebuilt-image, derive-db-migration-flag ]
+    if: inputs.prebuilt
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Compare has-db-migration
+        env:
+          DERIVED: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
+          RECORDED: ${{ needs.prebuilt-image.outputs.has-db-migration }}
+        run: |
+          if [ "$DERIVED" != "$RECORDED" ]; then
+            echo "::error::has-db-migration is '$DERIVED' here but the image recorded '$RECORDED'"
+            exit 1
+          fi
+
   mark-as-passed:
-    needs: [ register-versions, test, derive-db-migration-flag ]
+    needs: [ register-versions, test, derive-db-migration-flag, prebuilt-consistency ]
     if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-mark-passed.yml
     with:
@@ -152,7 +257,7 @@ jobs:
   # still cover the case where this job breaks.
   open-backend-apis-migration-pr:
     name: Open backend-apis migration PR
-    needs: [ dependency-branches, derive-db-migration-flag, mark-as-passed ]
+    needs: [ release-shas, derive-db-migration-flag, mark-as-passed ]
     # Runs on canary releases too (by design): the core-version input and the
     # resolved postgresql-sha are identical for a canary and its real release
     # (canary only appends -canary to the *tag*), so a PR opened during canary
@@ -183,7 +288,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: supertokens/supertokens-postgresql-plugin
-          ref: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+          ref: ${{ needs.release-shas.outputs.postgresql-sha }}
           token: ${{ secrets.GH_TOKEN }}
           path: plugin
       - name: Generate migration and open PR
@@ -291,31 +396,34 @@ jobs:
 
   # Builds once into the dev repo; stress tests and promotion then use that exact digest.
   build-docker:
-    needs: [ dependency-branches, derive-db-migration-flag ]
+    if: ${{ !inputs.prebuilt }}
+    needs: [ release-shas, derive-db-migration-flag ]
     uses: ./.github/workflows/_image-build.yml
     with:
       core-version: ${{ inputs.core-version }}
       is-canary: ${{ inputs.is-canary }}
-      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
-      plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
-      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      core-sha: ${{ needs.release-shas.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.release-shas.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       target: dockerhub-dev
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
     secrets: inherit
 
   stress-tests:
-    if: inputs.run-stress-tests
+    if: inputs.run-stress-tests && !inputs.prebuilt
     needs: [ build-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
       image: ${{ needs.build-docker.outputs.image-ref }}
 
   release-docker:
-    needs: [ build-docker, stress-tests, mark-as-passed ]
+    needs: [ build-docker, stress-tests, mark-as-passed, prebuilt-image ]
     if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_image-promote.yml
     with:
-      source-image: ${{ needs.build-docker.outputs.image-ref }}
+      # Prebuilt: the version tag already exists in ECR on this digest, so ECR is a no-op check
+      # plus floating tags, and Docker Hub gets exactly the image the fleet runs.
+      source-image: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.image-ref || needs.build-docker.outputs.image-ref }}
       core-version: ${{ inputs.core-version }}
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
@@ -324,16 +432,16 @@ jobs:
     secrets: inherit
 
   add-release-tags:
-    needs: [dependency-branches, release-docker, derive-db-migration-flag]
+    needs: [release-shas, release-docker, derive-db-migration-flag]
     if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-add-tags.yml
     with:
       core-version: ${{ inputs.core-version }}
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
-      core-sha: ${{ needs.dependency-branches.outputs.core-sha }}
-      plugin-interface-sha: ${{ needs.dependency-branches.outputs.plugin-interface-sha }}
-      postgresql-sha: ${{ needs.dependency-branches.outputs.postgresql-sha }}
+      core-sha: ${{ needs.release-shas.outputs.core-sha }}
+      plugin-interface-sha: ${{ needs.release-shas.outputs.plugin-interface-sha }}
+      postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       release-plugin-interface: ${{ inputs.release-plugin-interface }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}

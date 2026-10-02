@@ -1,0 +1,98 @@
+name: Promote image
+
+# Publishes a core image that already exists in ECR under its version tag (e.g. an embargoed
+# build that the fleet already runs): moves the ECR floating tags and copies it, by digest, to
+# Docker Hub. Nothing is rebuilt. Run this first on release day, so the patched image can be
+# pulled before the code is public; do-release with prebuilt=true then finds everything in place.
+#
+# Also the tool for re-pointing floating tags (latest, X.Y, X) at an existing version.
+
+run-name: Promote image v${{ inputs.core-version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: 'Version already in ECR (X.Y.Z)'
+        required: true
+        type: string
+      is-latest-for-major:
+        description: 'Move the <major> tag to this version'
+        required: true
+        type: boolean
+        default: false
+      is-latest-release:
+        description: 'Move the latest tag to this version'
+        required: true
+        type: boolean
+        default: false
+      push-to-dockerhub:
+        description: 'Copy to Docker Hub (untick to only move ECR floating tags)'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: promote-image-${{ inputs.core-version }}
+  cancel-in-progress: false
+
+jobs:
+  lookup:
+    name: Look up image in ECR
+    if: github.repository == 'supertokens/supertokens-core'
+    environment: publish
+    runs-on: ubuntu-22.04
+    outputs:
+      image-ref: ${{ steps.manifest.outputs.image-ref }}
+    steps:
+      - name: Checkout workflow sources
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Set up crane
+        uses: ./.github/actions/setup-crane
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Read image manifest
+        id: manifest
+        env:
+          REPO: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
+          VERSION: ${{ inputs.core-version }}
+        run: |
+          set -euo pipefail
+          bash .github/helpers/read-image-manifest.sh "$REPO" "$VERSION" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Check image version
+        env:
+          VERSION: ${{ inputs.core-version }}
+          LABEL: ${{ steps.manifest.outputs.core-version }}
+          TESTS_RUN_ID: ${{ steps.manifest.outputs.tests-run-id }}
+        run: |
+          if [ "$LABEL" != "$VERSION" ]; then
+            echo "::error::ECR tag $VERSION holds an image labelled $LABEL"; exit 1
+          fi
+          if [ -z "$TESTS_RUN_ID" ]; then
+            echo "::notice::Image has no tests-run-id label (built by a normal release, not an embargoed build)."
+          fi
+
+  promote:
+    needs: lookup
+    uses: ./.github/workflows/_image-promote.yml
+    with:
+      source-image: ${{ needs.lookup.outputs.image-ref }}
+      core-version: ${{ inputs.core-version }}
+      is-canary: false
+      is-latest-release: ${{ inputs.is-latest-release }}
+      is-latest-for-major: ${{ inputs.is-latest-for-major }}
+      push-to-dockerhub: ${{ inputs.push-to-dockerhub }}
+    secrets: inherit

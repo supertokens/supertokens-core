@@ -22,6 +22,12 @@ inputs:
   java-version:
     required: false
     default: '21.0.7'
+  token:
+    description: >-
+      Token for the plugin checkouts. Empty = the job's github.token (enough for public repos).
+      Embargo builds pass one that can read the private -security plugin mirrors.
+    required: false
+    default: ''
   root-ref:
     description: supertokens-root ref (for_jdk_15_releases for the Java 15 lines).
     required: false
@@ -71,6 +77,7 @@ runs:
         repository: ${{ inputs.plugin-interface-repo }}
         path: supertokens-root/supertokens-plugin-interface
         ref: ${{ inputs.plugin-interface-sha }}
+        token: ${{ inputs.token || github.token }}
 
     - name: Checkout supertokens-postgresql-plugin
       uses: actions/checkout@v5
@@ -78,6 +85,7 @@ runs:
         repository: ${{ inputs.postgresql-plugin-repo }}
         path: supertokens-root/supertokens-postgresql-plugin
         ref: ${{ inputs.postgresql-sha }}
+        token: ${{ inputs.token || github.token }}
 
     - name: Load modules
       shell: bash
