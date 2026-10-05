@@ -23,6 +23,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.saml.MockSAML;
 import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.utils.SemVer;
@@ -56,7 +57,6 @@ public class SAMLConfigTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
-        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     /**
@@ -67,6 +67,7 @@ public class SAMLConfigTest5_4 {
     public void testRelayStateExpiry() throws Exception {
         // Start with a very short relay state validity (1 second)
         Utils.setValueInConfig("saml_relay_state_validity", "1000");
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -104,7 +105,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -131,6 +132,7 @@ public class SAMLConfigTest5_4 {
     public void testClaimsExpiry() throws Exception {
         // Start with a very short claims validity (1 second)
         Utils.setValueInConfig("saml_claims_validity", "1000");
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -165,7 +167,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -261,7 +263,9 @@ public class SAMLConfigTest5_4 {
      * Test that the default SP entity ID is used when not configured.
      */
     @Test
-    public void testDefaultSpEntityId() throws Exception {
+    public void testSamlFailsWhenSpEntityIdNotConfigured() throws Exception {
+        // GHSA-wfg2-vqfg-rqh6: saml_sp_entity_id has no default. With it unset, SAML must not operate:
+        // serving SP metadata (and starting a login) fails until it is configured per deployment.
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -270,12 +274,14 @@ public class SAMLConfigTest5_4 {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.SAML});
 
-        // Get SP metadata and verify it contains the default entity ID
-        String metadataXML = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
-
-        assertTrue("SP metadata should contain default entity ID",
-                metadataXML.contains("entityID=\"https://saml.supertokens.com\""));
+        try {
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+            fail("SP metadata must not be served when saml_sp_entity_id is not configured");
+        } catch (HttpResponseException e) {
+            assertEquals(500, e.statusCode);
+            assertTrue(e.getMessage().contains("saml_sp_entity_id must be configured"));
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -322,7 +328,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -352,7 +358,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState2,
+                SAMLTestUtils.requestIdFor(relayState2),
                 clientInfo.keyMaterial,
                 300
         );
