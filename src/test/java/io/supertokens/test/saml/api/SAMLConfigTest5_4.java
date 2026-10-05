@@ -56,6 +56,7 @@ public class SAMLConfigTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     /**
