@@ -15,6 +15,30 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SAML: a client can carry an optional ACS-URL allow-list (`acsURLs`). When set, the login's ACS URL (SP-initiated) and the response Destination/`SubjectConfirmationData.Recipient` (IdP-initiated) must be a member — extending Destination/Recipient pinning to the IdP-initiated path, which previously had no anchor. A null list preserves existing behaviour. (GHSA-3r7x-rhvc-fw28 follow-up)
 - Binds SAML identity to a single validated assertion and requires saml_sp_entity_id (GHSA-wfg2-vqfg-rqh6).
 
+### Migration
+
+The SAML replay hardening (applied by supertokens-postgresql-plugin) adds two columns to `saml_relay_state`, the `saml_consumed_assertions` table, and the `saml_clients.acs_urls` allow-list column. The plugin applies them automatically at startup (`CREATE TABLE` / `ADD COLUMN IF NOT EXISTS`); large PostgreSQL deployments can pre-apply the statements below ahead of the upgrade. Additive and online-safe.
+
+```sql
+ALTER TABLE saml_relay_state ADD COLUMN IF NOT EXISTS in_response_to VARCHAR(256);
+ALTER TABLE saml_relay_state ADD COLUMN IF NOT EXISTS acs_url TEXT;
+
+CREATE TABLE IF NOT EXISTS saml_consumed_assertions (
+    app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    assertion_id VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    CONSTRAINT saml_consumed_assertions_pkey PRIMARY KEY(app_id, tenant_id, assertion_id),
+    CONSTRAINT saml_consumed_assertions_app_id_fkey FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE,
+    CONSTRAINT saml_consumed_assertions_tenant_id_fkey FOREIGN KEY(app_id, tenant_id) REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS saml_consumed_assertions_expires_at_index ON saml_consumed_assertions (expires_at);
+
+ALTER TABLE saml_clients ADD COLUMN IF NOT EXISTS acs_urls TEXT;
+```
+
+
 ## [11.4.7] - 2026-08-05
 
 - hardening signature validation
