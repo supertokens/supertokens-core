@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           path: supertokens-root/supertokens-core
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || github.token }}
           ref: ${{ github.head_ref }}
 
       - name: Checkout supertokens-plugin-interface
@@ -60,7 +60,7 @@ jobs:
           repository: supertokens/supertokens-plugin-interface
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
@@ -68,7 +68,7 @@ jobs:
           repository: supertokens/supertokens-postgresql-plugin
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || github.token }}
 
       - name: Load modules
         run: |
@@ -248,7 +248,7 @@ jobs:
   wait-for-docker:
     name: Wait for Docker image
     needs: [dependency-branches, update-deps]
-    if: needs.update-deps.outputs.deps_changed == 'false'
+    if: github.repository == 'supertokens/supertokens-core' && needs.update-deps.outputs.deps_changed == 'false'
     runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.set_tag.outputs.TAG }}
