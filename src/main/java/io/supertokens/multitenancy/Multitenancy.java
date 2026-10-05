@@ -133,12 +133,31 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 }
             } else if (!targetTenant.getConnectionUriDomain()
                     .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
-                // this means that we are creating a new connectionuridomain, and must use the base tenant for this
-                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))
-                        && !sourceTenant.getConnectionUriDomain().equals(targetTenant.getConnectionUriDomain())) {
+                // this means that we are creating or updating a connectionUriDomain, and must use either the
+                // base tenant, or the public app and public tenant of the same connectionUriDomain, to do this.
+                // Comparing only the connectionUriDomain string would let a principal scoped to an app under the
+                // CUD (e.g. (cud, app, public)) pass as "self" for the CUD's public tenant and rewrite the CUD's
+                // config, including its api_keys, which escalates to sibling apps. See GHSA-4rf2-xqvf-8rcx.
+                boolean sourceIsBase = sourceTenant.equals(new TenantIdentifier(null, null, null));
+                boolean sourceIsSameCudPublic =
+                        sourceTenant.getConnectionUriDomain().equals(targetTenant.getConnectionUriDomain())
+                                && sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)
+                                && sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID);
+                if (!sourceIsBase && !sourceIsSameCudPublic) {
                     throw new BadPermissionException(
                             "You must use the default or same connectionUriDomain to create/update a " +
                                     "connectionUriDomain");
+                }
+            } else {
+                // target is the base tenant (empty connectionUriDomain, public app, public tenant). Only the
+                // base tenant itself may create/update it. Otherwise a source scoped to an app or CUD could
+                // reach the base tenant by omitting the identifier in the request body (which resolves to the
+                // base tenant) and change its configuration, e.g. firstFactors and enabled recipes. Core config
+                // is separately refused for the base tenant, so this is not key theft. See GHSA-4rf2-xqvf-8rcx
+                // (variant 2).
+                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
+                    throw new BadPermissionException(
+                            "You must use the default tenant to create/update the base tenant");
                 }
             }
         }
