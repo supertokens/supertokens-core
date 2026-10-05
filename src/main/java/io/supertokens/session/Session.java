@@ -48,6 +48,9 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.useridmapping.LockedUser;
+import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
+import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
@@ -78,6 +81,16 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
 public class Session {
+
+    // Test-only hook fired inside createNewSession, under the account-linking user lock, immediately before
+    // the session row is inserted. Lets a test hold the lock at that exact point to deterministically
+    // interleave session creation with a concurrent unlinkAccounts (GHSA-2pc4-vw9j-454c). Null in production.
+    private static volatile Runnable createSessionBeforeInsertHook = null;
+
+    @TestOnly
+    public static void setCreateSessionBeforeInsertHook(Runnable hook) {
+        createSessionBeforeInsertHook = hook;
+    }
 
     // Validates the optional per-mint access token validity override (PLAN-002 decision 11, CDI >= 5.6).
     // Shorten-only: 0 < param <= the tenant's effective configured access_token_validity. Out-of-range is a hard
@@ -219,6 +232,7 @@ public class Session {
         }
 
         String primaryUserId = recipeUserId;
+        String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
@@ -226,25 +240,91 @@ public class Session {
             if (userIdMapping != null) {
                 recipeUserId = userIdMapping.superTokensUserId;
             }
+            final String recipeUserIdSupertokens = recipeUserId;
 
-            primaryUserId = StorageUtils.getAuthRecipeStorage(storage)
-                    .getPrimaryUserIdStrForUserId(tenantIdentifier.toAppIdentifier(), recipeUserId);
-            if (primaryUserId == null) {
-                primaryUserId = recipeUserId;
-            }
-
-            HashMap<String, String> userIdMappings = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
+            // The recipe user's external id is independent of account link/unlink, so resolve it before
+            // the lock. It goes into the tokens and the session row.
+            HashMap<String, String> recipeExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
                     tenantIdentifier.toAppIdentifier(), storage,
-                    new ArrayList<>(Arrays.asList(primaryUserId, recipeUserId)));
-            if (userIdMappings.containsKey(primaryUserId)) {
-                primaryUserId = userIdMappings.get(primaryUserId);
+                    new ArrayList<>(Arrays.asList(recipeUserIdSupertokens)));
+            final String recipeUserIdExternal = recipeExternal.getOrDefault(recipeUserIdSupertokens,
+                    recipeUserIdSupertokens);
+
+            final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(tenantIdentifier, main,
+                    sessionHandle, recipeUserIdExternal, null, antiCsrfToken);
+            final String refreshTokenHash2 = Utils.hashSHA256(Utils.hashSHA256(refreshToken.token));
+
+            UserLockingStorage lockingStorage = (UserLockingStorage) storage;
+            SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
+            final JsonObject userDataInDatabaseF = userDataInDatabase;
+            final JsonObject userDataInJWTF = userDataInJWT;
+            final boolean useStaticKeyF = useStaticKey;
+            final String sessionHandleF = sessionHandle;
+
+            String primaryUserIdSupertokens;
+            try {
+                // Resolve the primary user id and insert the session under the same user lock that account
+                // link/unlink take, in one transaction. This serializes session creation with unlinkAccounts:
+                // the session is either created against the current identity and then caught by the unlink's
+                // in-transaction revocation, or created after the unlink resolves the new identity. Closes the
+                // window where a session created concurrently with an unlink survived it (GHSA-2pc4-vw9j-454c).
+                primaryUserIdSupertokens = sessionStorage.startTransaction(con -> {
+                    try {
+                        LockedUser locked = lockingStorage.lockUser(tenantIdentifier.toAppIdentifier(), con,
+                                recipeUserIdSupertokens);
+                        String pid = locked.getPrimaryUserId() != null ? locked.getPrimaryUserId()
+                                : recipeUserIdSupertokens;
+                        Runnable beforeInsert = createSessionBeforeInsertHook;
+                        if (beforeInsert != null) {
+                            beforeInsert.run();
+                        }
+                        sessionStorage.createNewSession_Transaction(con, tenantIdentifier, sessionHandleF,
+                                recipeUserIdExternal, refreshTokenHash2, userDataInDatabaseF, refreshToken.expiry,
+                                userDataInJWTF, refreshToken.createdTime, useStaticKeyF);
+                        sessionStorage.commitTransaction(con);
+                        return pid;
+                    } catch (UserNotFoundForLockingException | TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof UserNotFoundForLockingException) {
+                    // The recipe user is not in the account-linking table, so no unlink can target it and
+                    // there is no race to guard against. Fall back to the unlocked insert.
+                    primaryUserIdSupertokens = recipeUserIdSupertokens;
+                    sessionStorage.createNewSession(tenantIdentifier, sessionHandle, recipeUserIdExternal,
+                            refreshTokenHash2, userDataInDatabase, refreshToken.expiry, userDataInJWT,
+                            refreshToken.createdTime, useStaticKey);
+                } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
+                } else {
+                    throw e;
+                }
             }
-            if (userIdMappings.containsKey(recipeUserId)) {
-                recipeUserId = userIdMappings.get(recipeUserId);
-            }
+
+            // External id for the primary user id resolved under the lock (may differ from the recipe id).
+            HashMap<String, String> primaryExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
+                    tenantIdentifier.toAppIdentifier(), storage,
+                    new ArrayList<>(Arrays.asList(primaryUserIdSupertokens)));
+            primaryUserId = primaryExternal.getOrDefault(primaryUserIdSupertokens, primaryUserIdSupertokens);
+
+            TokenInfo accessToken = AccessToken.createNewAccessToken(tenantIdentifier, main, sessionHandle,
+                    recipeUserIdExternal, primaryUserId, Utils.hashSHA256(refreshToken.token), null, userDataInJWT,
+                    antiCsrfToken, null, version, useStaticKey, true, accessTokenValidity); // fresh mint: apply jitter
+
+            emitSessionCreatedEvent(main, storage, tenantIdentifier, recipeUserIdExternal, primaryUserId,
+                    sessionHandle);
+
+            TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
+                    refreshToken.createdTime);
+            return new SessionInformationHolder(
+                    new SessionInfo(sessionHandle, primaryUserId, recipeUserIdExternal, userDataInJWT,
+                            tenantIdentifier.getTenantId()),
+                    accessToken,
+                    refreshToken, idRefreshToken, antiCsrfToken);
         }
 
-        String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
+        // Non-SQL storage: no account linking, so no lock is needed.
         final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(tenantIdentifier, main,
                 sessionHandle, recipeUserId, null,
                 antiCsrfToken);
