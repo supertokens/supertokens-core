@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.3.1]
 
+- Hardening: the legacy SAML userinfo endpoint now rejects a malformed bearer token with a 400 instead of throwing on a token like `x.` (previously an unauthenticated 500), and parses the `<code>.<clientId>` token on the first dot only so a caller-supplied `clientId` that contains dots is preserved rather than truncated.
+- Hardening: the embedded Tomcat error valve no longer discloses the server build string or exception stack frames on connector-level errors.
 - Fixes a startup hang when many tenant storages initialise at once on JDK 21: storage initialisation now runs on a bounded pool of platform threads instead of virtual threads, which could be pinned inside the storage plugin's `synchronized` pool setup until no carrier was left to release the shared logging locks.
 - Startup no longer waits indefinitely for a storage to initialise: storages still initialising are logged every 60s, and after 10 minutes boot continues without them (they keep initialising in the background).
 - Adds an opt-in admin webserver connector on a separate port (`admin_port`) with its own thread pool (`admin_max_server_pool_size`, default 5), and a port-scoped route classification (`RouteScope`: `DATA_PLANE`/`ADMIN_ONLY`/`ADMIN_PREFERRED`) so liveness/control-plane traffic can be served isolated from the data-plane pool; `/hello` and `/ee/*` are `ADMIN_PREFERRED` (served on both ports). When `admin_port` is unset, the server runs a single connector exactly as before.
