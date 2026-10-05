@@ -434,6 +434,32 @@ public class Start
     }
 
     @Override
+    public void createNewSession_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                             String sessionHandle, String userId, String refreshTokenHash2,
+                                             JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                             long createdAtTime, boolean useStaticKey)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.createNewSession_Transaction(this, sqlCon, tenantIdentifier, sessionHandle, userId,
+                    refreshTokenHash2, userDataInDatabase, expiry, userDataInJWT, createdAtTime, useStaticKey);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                SQLiteConfig config = Config.getConfig(this);
+                String serverMessage = e.getMessage();
+                if (isForeignKeyConstraintError(
+                        serverMessage,
+                        config.getTenantsTable(),
+                        new String[]{"app_id", "tenant_id"},
+                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void deleteSessionsOfUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             SessionQueries.deleteSessionsOfUser(this, appIdentifier, userId);
@@ -4172,7 +4198,8 @@ public class Start
             return SAMLQueries.createOrUpdateSAMLClient(this, tenantIdentifier, samlClient.clientId, samlClient.clientSecret,
                     samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI,
                     samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin,
-                    samlClient.enableRequestSigning);
+                    samlClient.enableRequestSigning,
+                    samlClient.acsURLs == null ? null : samlClient.acsURLs.toString());
         } catch (SQLException e) {
             String errorMessage = e.getMessage();
             String table = io.supertokens.inmemorydb.config.Config.getConfig(this).getSAMLClientsTable();
@@ -4205,12 +4232,17 @@ public class Start
 
     @Override
     public void saveRelayStateInfo(TenantIdentifier tenantIdentifier, SAMLRelayStateInfo relayStateInfo, long relayStateValidity)  throws StorageQueryException {
-        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI, relayStateValidity);
+        SAMLQueries.saveRelayStateInfo(this, tenantIdentifier, relayStateInfo.relayState, relayStateInfo.clientId, relayStateInfo.state, relayStateInfo.redirectURI, relayStateInfo.inResponseTo, relayStateInfo.acsURL, relayStateValidity);
     }
 
     @Override
-    public SAMLRelayStateInfo getRelayStateInfo(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
-        return SAMLQueries.getRelayStateInfo(this, tenantIdentifier, relayState);
+    public SAMLRelayStateInfo getRelayStateInfoAndRemove(TenantIdentifier tenantIdentifier, String relayState) throws StorageQueryException {
+        return SAMLQueries.getRelayStateInfoAndRemove(this, tenantIdentifier, relayState);
+    }
+
+    @Override
+    public boolean markSAMLAssertionConsumed(TenantIdentifier tenantIdentifier, String assertionId, long expiresAt) throws StorageQueryException {
+        return SAMLQueries.markSAMLAssertionConsumed(this, tenantIdentifier, assertionId, expiresAt);
     }
 
     @Override

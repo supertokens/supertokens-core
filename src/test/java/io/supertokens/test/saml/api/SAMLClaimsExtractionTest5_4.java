@@ -71,6 +71,7 @@ public class SAMLClaimsExtractionTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     // ── shared constants ──────────────────────────────────────────────────────
@@ -98,7 +99,7 @@ public class SAMLClaimsExtractionTest5_4 {
                 clientInfo.acsURL,
                 nameId,
                 attributes,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300);
 
