@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [12.3.1]
+## [12.4.0]
 
 - Hardening: the legacy SAML userinfo endpoint now rejects a malformed bearer token with a 400 instead of throwing on a token like `x.` (previously an unauthenticated 500), and parses the `<code>.<clientId>` token on the first dot only so a caller-supplied `clientId` that contains dots is preserved rather than truncated.
 - Hardening: the embedded Tomcat error valve no longer discloses the server build string or exception stack frames on connector-level errors.
@@ -19,6 +19,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixes an app losing its `FeatureFlag` resource (and `/ee/license` then failing with tenant-not-found) when reloading it throws; the app now keeps its previous resource and the failure is logged with a stack trace. Also fixes `Logging.error` silently swallowing exceptions with a null message.
 - When `supertokens_saas_load_only_cud` excludes a connectionUriDomain that was previously loaded — wiping its resources and otherwise surfacing only as a log-free tenant-not-found on every request for that CUD — the drop is now logged at error level, pointing at the config vs. stored-CUD mismatch.
 - The EE license-key sync no longer runs synchronously in the `FeatureFlag` constructor (on the boot thread and under the resource-distributor lock on every tenant/app reload); it now runs on the `EELicenseCheck` cron with a short jittered initial delay after startup, then daily as before. Enabled features are served from the last persisted sync in the meantime, so feature gating is unchanged (an app that has not synced yet reads as no EE features — exactly what a key-less sync persists — and `PUT /ee/license` still syncs inline); the only behavioural change is that an app created or updated at runtime first reports its paid-usage stats on the next cron pass rather than immediately.
+- Adds `max_concurrent_requests_per_cud` (SaaS-protected, `0` = off) and `concurrency_cap_reserved_pool_percent` (base config, default 25): once the request pool has less than the reserved share of free threads, a connection URI domain above its cap gets `429` immediately instead of a thread; below that, no request is ever rejected.
+- `GET /requests/stats` now also reports `concurrentRequestsRejected` (requests 429'd by the concurrency cap since process start) and `concurrentRequestsInFlight`; a rejection is logged at most once per connection URI domain per minute. `concurrentRequestsInFlight` is CUD-wide (the cap is per connection URI domain), so every app in the same CUD reports the same value — scrapers should aggregate it per-CUD, not sum it across an app list.
 
 ## [12.3.0]
 
