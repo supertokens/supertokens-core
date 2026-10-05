@@ -34,6 +34,7 @@ import io.supertokens.OperatingSystem;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -55,10 +56,12 @@ import io.supertokens.webserver.api.core.ConfigAPI;
 import io.supertokens.webserver.api.core.DeleteUserAPI;
 import io.supertokens.webserver.api.core.EEFeatureFlagAPI;
 import io.supertokens.webserver.api.core.GetUserByIdAPI;
+import io.supertokens.webserver.api.core.GlobalRequestStatsAPI;
 import io.supertokens.webserver.api.core.HelloAPI;
 import io.supertokens.webserver.api.core.JWKSPublicAPI;
 import io.supertokens.webserver.api.core.LicenseKeyAPI;
 import io.supertokens.webserver.api.core.ListUsersByAccountInfoAPI;
+import io.supertokens.webserver.api.core.LivezAPI;
 import io.supertokens.webserver.api.core.NotFoundOrHelloAPI;
 import io.supertokens.webserver.api.core.RequestStatsAPI;
 import io.supertokens.webserver.api.core.SearchTagsAPI;
@@ -254,6 +257,19 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         tomcat.setConnector(connector);
 
+        // Optionally add a second connector on a separate admin port with its own (small) thread pool, so that
+        // liveness/control-plane traffic is isolated from the data-plane pool. Both connectors feed the same
+        // context / PathRouter; the PathRouter port gate decides which routes are served on which port. When the
+        // admin port is unset the server runs a single connector exactly as before.
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        if (baseConfig.isAdminConnectorEnabled()) {
+            Connector adminConnector = new Connector();
+            adminConnector.setProperty("maxThreads", baseConfig.getAdminMaxThreadPoolSize() + "");
+            adminConnector.setPort(baseConfig.getAdminPort());
+            adminConnector.setProperty("address", baseConfig.getHost(main));
+            tomcat.getService().addConnector(adminConnector);
+        }
+
         // we do this because we may run multiple tomcat servers in the same JVM
         tomcat.getEngine().setName(main.getProcessId());
 
@@ -297,6 +313,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     private void setupRoutes() {
         addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
+        addAPI(new LivezAPI(main));
         addAPI(new JWKSPublicAPI(main));
         addAPI(new SessionAPI(main));
         addAPI(new VerifySessionAPI(main));
@@ -403,6 +420,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeResetPasswordAPI(main));
 
         addAPI(new RequestStatsAPI(main));
+        addAPI(new GlobalRequestStatsAPI(main));
         addAPI(new GetTenantCoreConfigForDashboardAPI(main));
 
         addAPI(new BulkImportAPI(main));
@@ -462,6 +480,10 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new MigrationModeAPI(main));
         addAPI(new MigrationBackfillProgressAPI(main));
+
+        // All routes are registered now, so validate that every configured route-scope override path
+        // (admin_only_paths / admin_preferred_paths) matches a known API — fail startup on a typo.
+        pathRouter.validateRouteScopeOverrides();
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
