@@ -46,6 +46,13 @@ public class EEFeatureFlagAPI extends WebserverAPI {
     }
 
     @Override
+    public RouteScope getRouteScope() {
+        // Control-plane route. Admin-preferred: also served on the admin pool, but MUST stay served on the main
+        // port too (SaaS control plane, self-hosted license setup, and the SDKs call it there). Never admin-only.
+        return RouteScope.ADMIN_PREFERRED;
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {

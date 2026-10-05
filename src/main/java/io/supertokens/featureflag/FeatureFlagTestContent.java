@@ -31,6 +31,9 @@ public class FeatureFlagTestContent extends ResourceDistributor.SingletonResourc
 
     public static final String EE_FOLDER_LOCATION = "validityTesting";
     public static final String ENABLED_FEATURES = "enabledFeatures";
+    // Test-only hook: a Set<String> of app ids for which the FeatureFlag constructor should throw,
+    // used to simulate a transient per-app construction failure during a resource reload.
+    public static final String FAIL_CONSTRUCTOR_FOR_APPS = "failConstructorForApps";
     private static final String RESOURCE_ID = "io.supertokens.featureflag.FeatureFlagTestContent";
     private Map<String, Object> keyValue = new HashMap<String, Object>();
 
