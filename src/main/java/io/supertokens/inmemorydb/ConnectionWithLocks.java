@@ -102,6 +102,7 @@ public class ConnectionWithLocks implements Connection {
             con.close();
         } finally {
             this.unlockAllLocks();
+            ConnectionPool.onRelease(); // test-only borrow tracking (PLAN-017 / CORE-2); inert unless a test enabled it
         }
     }
 
