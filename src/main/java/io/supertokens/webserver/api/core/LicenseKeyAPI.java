@@ -46,6 +46,13 @@ public class LicenseKeyAPI extends WebserverAPI {
     }
 
     @Override
+    public RouteScope getRouteScope() {
+        // Control-plane route. Admin-preferred: also served on the admin pool, but MUST stay served on the main
+        // port too (self-hosted customers set their license via `curl PUT <CORE>/ee/license`). Never admin-only.
+        return RouteScope.ADMIN_PREFERRED;
+    }
+
+    @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
