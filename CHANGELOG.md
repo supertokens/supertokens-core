@@ -17,6 +17,29 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
 - Enforces dashboard session expiry at verification time (GHSA-w9fp-wv6g-pqv8).
 
+### Migration
+
+The SAML replay hardening (applied by supertokens-postgresql-plugin) adds two columns to `saml_relay_state`, the `saml_consumed_assertions` table, and the `saml_clients.acs_urls` allow-list column. The plugin applies them automatically at startup (`CREATE TABLE` / `ADD COLUMN IF NOT EXISTS`); large PostgreSQL deployments can pre-apply the statements below ahead of the upgrade. Additive and online-safe.
+
+```sql
+ALTER TABLE saml_relay_state ADD COLUMN IF NOT EXISTS in_response_to VARCHAR(256);
+ALTER TABLE saml_relay_state ADD COLUMN IF NOT EXISTS acs_url TEXT;
+
+CREATE TABLE IF NOT EXISTS saml_consumed_assertions (
+    app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',
+    assertion_id VARCHAR(256) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    CONSTRAINT saml_consumed_assertions_pkey PRIMARY KEY(app_id, tenant_id, assertion_id),
+    CONSTRAINT saml_consumed_assertions_app_id_fkey FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE,
+    CONSTRAINT saml_consumed_assertions_tenant_id_fkey FOREIGN KEY(app_id, tenant_id) REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS saml_consumed_assertions_expires_at_index ON saml_consumed_assertions (expires_at);
+
+ALTER TABLE saml_clients ADD COLUMN IF NOT EXISTS acs_urls TEXT;
+```
+
 
 ## [12.0.10]
 
