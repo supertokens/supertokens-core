@@ -59,6 +59,26 @@ public abstract class WebserverAPI extends HttpServlet {
     public static final Set<SemVer> supportedVersions = new HashSet<>();
     private String rid;
 
+    /**
+     * Determines which webserver connector(s) a route is served on when the admin connector is enabled
+     * (see {@code admin_port} in {@link CoreConfig}). When the admin connector is disabled every route is
+     * served on the single main connector regardless of scope, i.e. exactly as before this classification
+     * existed. {@code ADMIN_PREFERRED} is a permanent, first-class state (a route may stay dual forever) and
+     * is NOT a temporary step toward {@code ADMIN_ONLY}.
+     *
+     * <p>This is a port-routing classification, not an authentication mechanism. In particular, with the admin
+     * connector disabled an {@code ADMIN_ONLY} route is served on the main port, guarded only by the usual
+     * api-key / IP-allow rules — so {@code ADMIN_ONLY} on its own is not a hard access guarantee.
+     */
+    public enum RouteScope {
+        // Served only on the main (data-plane) port; rejected with 404 on the admin port.
+        DATA_PLANE,
+        // Served only on the admin port; rejected with 404 on the main port.
+        ADMIN_ONLY,
+        // Served on both the main and the admin port.
+        ADMIN_PREFERRED
+    }
+
     static {
         supportedVersions.add(SemVer.v2_7);
         supportedVersions.add(SemVer.v2_8);
@@ -184,6 +204,14 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected boolean versionNeeded(HttpServletRequest req) {
         return true;
+    }
+
+    /**
+     * The connector scope for this route. Defaults to {@link RouteScope#DATA_PLANE}; the few admin/control-plane
+     * routes override this. Consulted by {@link PathRouter} only when the admin connector is enabled.
+     */
+    public RouteScope getRouteScope() {
+        return RouteScope.DATA_PLANE;
     }
 
     private String getApiKeyFromRequest(HttpServletRequest req) {
@@ -598,6 +626,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 false);
 
         if (tenantIdentifier != null) {
+            // Process-global, per-status-class counts (across all apps). Independent of the per-app RequestStats
+            // below; keyed at the base tenant so it never throws for an unknown app. Requests that fail tenant
+            // resolution (tenantIdentifier == null) are intentionally not counted here.
+            GlobalRequestStats.getInstance(main).incrementForStatus(resp.getStatus());
             try {
                 RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
             } catch (TenantOrAppNotFoundException e) {
