@@ -543,6 +543,14 @@ public class GeneralQueries {
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsAppIdTenantIdIndex(start), NO_OP_SETTER);
             update(start, SAMLQueries.getQueryToCreateSAMLClaimsExpiresAtIndex(start), NO_OP_SETTER);
         }
+
+        if (!doesTableExists(start, Config.getConfig(start).getSAMLConsumedAssertionsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, SAMLQueries.getQueryToCreateSAMLConsumedAssertionsTable(start), NO_OP_SETTER);
+
+            // indexes
+            update(start, SAMLQueries.getQueryToCreateSAMLConsumedAssertionsExpiresAtIndex(start), NO_OP_SETTER);
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
@@ -1413,6 +1421,11 @@ public class GeneralQueries {
 
         AuthRecipeUserInfo webauthnUser = WebAuthNQueries.getUserInfoByCredentialId_Transaction(start, connection,
                 tenantIdentifier, credentialId);
+        if (webauthnUser == null) {
+            // No credential owner is a member of the requested tenant (see GHSA-6v34-w48w-44rc). Return null
+            // rather than dereferencing, so sign-in reports the credential as not existing for this tenant.
+            return null;
+        }
         return getPrimaryUserInfoForUserId_Transaction(start, connection, tenantIdentifier.toAppIdentifier(),
                 webauthnUser.getSupertokensUserId());
     }
@@ -1424,6 +1437,25 @@ public class GeneralQueries {
         return execute(start, QUERY, pst -> {
             pst.setString(1, id);
             pst.setString(2, appIdentifier.getAppId());
+        }, result -> {
+            if (result.next()) {
+                return result.getString("primary_or_recipe_user_id");
+            }
+            return null;
+        });
+    }
+
+    // GHSA-2pc4-vw9j-454c: returns the user's primary_or_recipe_user_id from app_id_to_user_id (or null if
+    // absent) inside the caller's transaction. SQLite serializes write transactions on a single database-level
+    // lock, so the subsequent session insert / unlink writes already serialize these two operations; the row
+    // is read here without FOR UPDATE (unsupported by SQLite) purely to resolve the primary id under that lock.
+    public static String lockUserAndGetPrimaryId_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                             String userId) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getAppIdToUserIdTable() +
+                " WHERE app_id = ? AND user_id = ?";
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
         }, result -> {
             if (result.next()) {
                 return result.getString("primary_or_recipe_user_id");
