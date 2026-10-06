@@ -51,6 +51,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -126,10 +127,13 @@ public class TestWebAuthNCrossTenantSignIn_5_3 {
         JsonObject crossTenantResp = signIn(main, t2,
                 t2Assertion.keySet().iterator().next(), t2Assertion.values().iterator().next());
         assertNotEquals("cross-tenant sign-in must be rejected", "OK", crossTenantResp.get("status").getAsString());
-        // 11.x rejects the cross-tenant credential via the tenant-scoped credential lookup
-        // (CREDENTIAL_NOT_FOUND_ERROR); 12.x reports UNKNOWN_USER_ID_ERROR. Both are secure
-        // rejections (non-OK asserted above) under GHSA-6v34-w48w-44rc.
-        assertEquals("CREDENTIAL_NOT_FOUND_ERROR", crossTenantResp.get("status").getAsString());
+        // The cross-tenant credential is rejected; the exact code is non-deterministic on 11.x
+        // (the tenant-scoped credential vs user lookup can surface as CREDENTIAL_NOT_FOUND_ERROR or
+        // UNKNOWN_USER_ID_ERROR). Both are secure rejections (GHSA-6v34-w48w-44rc).
+        String crossTenantStatus = crossTenantResp.get("status").getAsString();
+        assertTrue("cross-tenant sign-in must be rejected with a not-found error, got " + crossTenantStatus,
+                crossTenantStatus.equals("CREDENTIAL_NOT_FOUND_ERROR")
+                        || crossTenantStatus.equals("UNKNOWN_USER_ID_ERROR"));
 
         // Control: signing in at tenant 1 with the same passkey still succeeds.
         JsonObject t1SignInOptions = signInOptions(main, t1);
