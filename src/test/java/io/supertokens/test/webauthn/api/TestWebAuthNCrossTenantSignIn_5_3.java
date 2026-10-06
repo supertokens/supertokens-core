@@ -127,13 +127,7 @@ public class TestWebAuthNCrossTenantSignIn_5_3 {
         JsonObject crossTenantResp = signIn(main, t2,
                 t2Assertion.keySet().iterator().next(), t2Assertion.values().iterator().next());
         assertNotEquals("cross-tenant sign-in must be rejected", "OK", crossTenantResp.get("status").getAsString());
-        // The cross-tenant credential is rejected; the exact code is non-deterministic on 11.x
-        // (the tenant-scoped credential vs user lookup can surface as CREDENTIAL_NOT_FOUND_ERROR or
-        // UNKNOWN_USER_ID_ERROR). Both are secure rejections (GHSA-6v34-w48w-44rc).
-        String crossTenantStatus = crossTenantResp.get("status").getAsString();
-        assertTrue("cross-tenant sign-in must be rejected with a not-found error, got " + crossTenantStatus,
-                crossTenantStatus.equals("CREDENTIAL_NOT_FOUND_ERROR")
-                        || crossTenantStatus.equals("UNKNOWN_USER_ID_ERROR"));
+        assertEquals("UNKNOWN_USER_ID_ERROR", crossTenantResp.get("status").getAsString());
 
         // Control: signing in at tenant 1 with the same passkey still succeeds.
         JsonObject t1SignInOptions = signInOptions(main, t1);
