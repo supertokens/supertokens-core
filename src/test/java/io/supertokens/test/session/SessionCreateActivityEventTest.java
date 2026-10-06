@@ -17,7 +17,9 @@
 package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
@@ -118,6 +120,36 @@ public class SessionCreateActivityEventTest {
         // The fold guards primary_or_recipe_user_id against app_id_to_user_id, which holds SuperTokens ids.
         assertEquals(user.getSupertokensUserId(), event.recipeUserId);
         assertEquals(user.getSupertokensUserId(), event.primaryOrRecipeUserId);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Session creation counts as user activity: the {@code session_create} row alone (the user's
+     * {@code user_creation} row predates the window) makes the last-active rollup count a mapped user as active.
+     */
+    @Test
+    public void sessionCreateAloneCountsMappedUserAsActive() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "active@example.com", "password");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "external-2", null,
+                false);
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
+        Thread.sleep(20);
+        long startTs = System.currentTimeMillis();
+        assertEquals(0, ActiveUsers.countUsersActiveSince(process.getProcess(), startTs));
+
+        createSession(process, "external-2");
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
+
+        assertEquals(1, ActiveUsers.countUsersActiveSince(process.getProcess(), startTs));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
