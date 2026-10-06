@@ -31,6 +31,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Container security scan: pin `org.bouncycastle:bcprov-jdk18on` to 1.85 (CVE-2026-8763), and pull the base image on every container build so OS security patches land in each release/dev image.
 - Environment variables are now also applied to boxed `Long`, `Boolean`, `Float` and `Double` config fields, not only to primitives and boxed `Integer`.
 - Fix: WebAuthN.signIn resolved the user-id mapping on a second pooled connection; the lookup now runs on the transaction's own connection.
+- Session verify on CDI < 5.6 (when it updates the session), OAuth non-rotating refresh and the in-memory passwordless device creation now run at the default READ COMMITTED isolation level instead of REPEATABLE READ. The first two already lock the session / token row with `SELECT ... FOR UPDATE`, so a concurrent request now waits and reads the latest row instead of failing with a serialization error and retrying.
 
 ## [12.3.0]
 
