@@ -102,7 +102,9 @@ public class ListPrimaryUsersTransactionParityTest {
     /**
      * Runs the parity + guard checks once per in-memory migration mode, so the {@code _legacy_Transaction} branches
      * (old-table reads, legacy email union incl. WebAuthn, HashSet dedup) are exercised as well as the
-     * {@code _new_Transaction} ones. The mode is static and governs writes too, so each mode gets a fresh process.
+     * {@code _new_Transaction} ones. The mode is static and governs writes too, so each mode runs against a fresh app
+     * (on the shared core process; the mode is read from the static config on every query). The mode setting only
+     * affects the in-memory storage, so on any other storage a single pass is run.
      */
     @Test
     public void transactionalReadsMatchNonTransactionalAndAvoidNestedAcquisition() throws Exception {
@@ -110,19 +112,22 @@ public class ListPrimaryUsersTransactionParityTest {
             for (MigrationMode mode : MigrationMode.values()) {
                 Utils.reset();
                 SQLiteConfig.setMigrationModeForTesting(mode);
-                runParityAndGuard(mode);
+                if (!runParityAndGuard(mode)) {
+                    break; // not in-memory: the mode has no effect, further passes would repeat the same check
+                }
             }
         } finally {
             SQLiteConfig.setMigrationModeForTesting(MigrationMode.MIGRATED);
         }
     }
 
-    private void runParityAndGuard(MigrationMode mode) throws Exception {
+    /** @return whether the storage is in-memory, i.e. whether running the other migration modes is meaningful */
+    private boolean runParityAndGuard(MigrationMode mode) throws Exception {
         TestingProcessManager.TestingProcess process = startWithAccountLinking();
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             stop(process);
-            return;
+            return false;
         }
 
         Main main = process.getProcess();
@@ -204,7 +209,8 @@ public class ListPrimaryUsersTransactionParityTest {
         }
 
         // ── (2) guard: the _Transaction reads must NOT borrow a second connection inside a startTransaction ──
-        if (storage instanceof io.supertokens.inmemorydb.Start) {
+        boolean inMemory = storage instanceof io.supertokens.inmemorydb.Start;
+        if (inMemory) {
             String uid = epUser.getSupertokensUserId();
             ConnectionPool.setThrowOnNestedAcquisition(true);
             try {
@@ -231,6 +237,7 @@ public class ListPrimaryUsersTransactionParityTest {
         }
 
         stop(process);
+        return inMemory;
     }
 
     private static void addNullEmailResetToken(Main main, TenantIdentifier tenant, String userId, String token)
