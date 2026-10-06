@@ -16,6 +16,8 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
+import javax.annotation.Nullable;
+
 import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import io.supertokens.auditlog.UnauditedTransaction;
@@ -25,19 +27,21 @@ public class ActiveUsers {
     // Skip appending a throttled activity event if we already wrote one for this (app, userId) within
     // this window. The activity log feeds daily/monthly active-user counts (via the fold), so a few
     // minutes of staleness is invisible — but at refresh-token rates an unthrottled insert dominates
-    // commit waits on the database. Unthrottled activity classes (sign_in, sign_out) bypass this.
+    // commit waits on the database. Unthrottled activity classes (sign_in, session_create, sign_out) bypass this.
     private static final long THROTTLE_MS = 5 * 60 * 1000L;
 
     // Throttle policy for the shared plugin-interface {@link ActivityEventType} vocabulary. The vocabulary
     // deliberately carries no throttle flag — its javadoc keeps throttling core-side — so which classes are
-    // throttled is decided here: sign_in / sign_out are low-volume, user-initiated and audit-meaningful, so
-    // they always emit; every other activity class is high-volume and shares the throttle.
+    // throttled is decided here: sign_in / session_create / sign_out are low-volume, user-initiated and
+    // audit-meaningful, so they always emit (session_create is the one per-session audit row); every other
+    // activity class is high-volume and shares the throttle.
     private static final EnumSet<ActivityEventType> UNTHROTTLED_EVENTS =
-            EnumSet.of(ActivityEventType.SIGN_IN, ActivityEventType.SIGN_OUT);
+            EnumSet.of(ActivityEventType.SIGN_IN, ActivityEventType.SESSION_CREATE, ActivityEventType.SIGN_OUT);
 
     /**
      * @return whether emits of {@code eventType} are subject to the shared 5-minute per-{@code (app, user)}
-     * throttle. {@code sign_in} / {@code sign_out} return {@code false} (always emitted); the rest return
+     * throttle. {@code sign_in} / {@code session_create} / {@code sign_out} return {@code false} (always
+     * emitted); the rest return
      * {@code true}. Core-side policy over the plugin-interface {@link ActivityEventType} vocabulary.
      */
     public static boolean isThrottled(ActivityEventType eventType) {
@@ -134,9 +138,22 @@ public class ActiveUsers {
     public static void updateLastActive(TenantIdentifier tenantIdentifier, Storage storage, Main main, String userId,
                                         ActivityEventType eventType)
             throws TenantOrAppNotFoundException {
+        updateLastActive(tenantIdentifier, storage, main, userId, userId, null, eventType);
+    }
+
+    /**
+     * Variant for a caller that has resolved both the recipe user and its primary user (SuperTokens ids, not
+     * external ids) and has an identifier for the activity — {@code Session.createNewSession} records the
+     * session handle. The row carries {@code recipeUserId} and {@code primaryUserId} in their own columns; the
+     * fold credits, and the recency cache is keyed by, {@code primaryUserId}.
+     */
+    public static void updateLastActive(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                        String recipeUserId, String primaryUserId, @Nullable String identifier,
+                                        ActivityEventType eventType)
+            throws TenantOrAppNotFoundException {
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
         long now = System.currentTimeMillis();
-        String key = cacheKey(appIdentifier, userId);
+        String key = cacheKey(appIdentifier, primaryUserId);
         boolean throttleEnabled = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                 .getActivityLogThrottleEnabled();
         if (throttleEnabled && !Main.isTesting) {
@@ -148,7 +165,8 @@ public class ActiveUsers {
             // wasRecentlyActive stays false and every activity is recorded.
             recordActiveAt(key, now);
         }
-        emitActivityAuditLog(main, storage, tenantIdentifier, userId, eventType, now);
+        emitActivityAuditLog(main, storage, tenantIdentifier, recipeUserId, primaryUserId, identifier, eventType,
+                now);
     }
 
     /**
@@ -172,11 +190,12 @@ public class ActiveUsers {
      * request. {@code tenant_id} carries the request's tenant; {@code event_type} is {@code eventType}'s value.
      */
     private static void emitActivityAuditLog(Main main, Storage storage, TenantIdentifier tenantIdentifier,
-                                             String userId, ActivityEventType eventType, long now) {
+                                             String recipeUserId, String primaryUserId,
+                                             @Nullable String identifier, ActivityEventType eventType, long now) {
         AuditLog.emit(main, storage, tenantIdentifier, new AuditLogEvent(
                 tenantIdentifier.getAppId(), tenantIdentifier.getTenantId(),
-                userId, userId,
-                eventType.getValue(), "success", null, null,
+                recipeUserId, primaryUserId,
+                eventType.getValue(), "success", null, identifier,
                 now, null));
         // Signal the last-active rollup cron that this storage now has unfolded activity, so its next tick
         // folds instead of skipping.
