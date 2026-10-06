@@ -442,7 +442,8 @@ public class WebAuthN {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
-                    UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
+                    UserIdMapping.populateExternalUserIdForUsers(con, tenantIdentifier.toAppIdentifier(), storage,
+                            new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
                     return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {
