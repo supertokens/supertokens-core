@@ -22,6 +22,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds `max_concurrent_requests_per_cud` (SaaS-protected, `0` = off) and `concurrency_cap_reserved_pool_percent` (base config, default 25): once the request pool has less than the reserved share of free threads, a connection URI domain above its cap gets `429` immediately instead of a thread; below that, no request is ever rejected.
 - `GET /requests/stats` now also reports `concurrentRequestsRejected` (requests 429'd by the concurrency cap since process start) and `concurrentRequestsInFlight`; a rejection is logged at most once per connection URI domain per minute. `concurrentRequestsInFlight` is CUD-wide (the cap is per connection URI domain), so every app in the same CUD reports the same value — scrapers should aggregate it per-CUD, not sum it across an app list.
 - A core config value that is a JSON object or array (for example `"access_token_validity": {}` in a create/update app or tenant request, or a map in `config.yaml`) is now rejected as an invalid config (HTTP 400) instead of failing with an `UnsupportedOperationException` (HTTP 500).
+- Container security scan: pin `org.bouncycastle:bcprov-jdk18on` to 1.85 (CVE-2026-8763), and pull the base image on every container build so OS security patches land in each release/dev image.
+- Environment variables are now also applied to boxed `Long`, `Boolean`, `Float` and `Double` config fields, not only to primitives and boxed `Integer`.
 
 ## [12.3.0]
 
