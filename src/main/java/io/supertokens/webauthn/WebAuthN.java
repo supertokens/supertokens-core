@@ -50,6 +50,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
@@ -660,6 +661,16 @@ public class WebAuthN {
         return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
+    // Transaction-scoped variant: resolves the mapping on the caller's connection, so the lookup runs in the
+    // same transaction as the surrounding work instead of borrowing a second connection from the same pool.
+    private static String translateToInternalUserId(TransactionConnection con, Storage storage,
+                                                    TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                UserIdMapping.getUserIdMapping(con, tenantIdentifier.toAppIdentifier(), storage, userId, null);
+        return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
+    }
+
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String email)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
@@ -669,7 +680,9 @@ public class WebAuthN {
         try {
             webAuthNStorage.startTransaction(con -> {
 
-                String userIdFromMapping = translateToInternalUserId(storage, tenantIdentifier, userId);
+                // Resolve the internal user id on the transaction's own connection (not a second pooled
+                // connection), keeping the mapping read inside this transaction.
+                String userIdFromMapping = translateToInternalUserId(con, storage, tenantIdentifier, userId);
 
                 AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                         .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userIdFromMapping);
