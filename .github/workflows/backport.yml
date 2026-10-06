@@ -53,6 +53,7 @@ permissions:
 
 jobs:
   prepare:
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-latest
     outputs:
       targets: ${{ steps.parse.outputs.targets }}
