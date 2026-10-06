@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.3.1]
 
 - Adds a test-only connection-pool guard (in-memory + postgresql): a call chain that holds one connection and borrows a second from the same pool — the nested-acquisition pool-exhaustion pattern — is detected in tests. Warns by default while the pre-existing instances are cleaned up (PLAN-018); an opt-in flag makes it fail fast.
+- Fix: `EmailPassword.consumeResetPasswordToken` no longer borrows a second pooled connection inside its transaction (new `AuthRecipe.getUserById_Transaction` and `listPrimaryUsersByEmail/PhoneNumber_Transaction` reads).
 
 ## [12.3.0]
 
