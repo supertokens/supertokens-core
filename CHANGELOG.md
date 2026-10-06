@@ -30,7 +30,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A core config value that is a JSON object or array (for example `"access_token_validity": {}` in a create/update app or tenant request, or a map in `config.yaml`) is now rejected as an invalid config (HTTP 400) instead of failing with an `UnsupportedOperationException` (HTTP 500).
 - Container security scan: pin `org.bouncycastle:bcprov-jdk18on` to 1.85 (CVE-2026-8763), and pull the base image on every container build so OS security patches land in each release/dev image.
 - Environment variables are now also applied to boxed `Long`, `Boolean`, `Float` and `Double` config fields, not only to primitives and boxed `Integer`.
-- Fix: WebAuthn recipe transactions resolved user records on a second pooled connection.
+- Fix: WebAuthN.signIn resolved the user-id mapping on a second pooled connection; the lookup now runs on the transaction's own connection.
 
 ## [12.3.0]
 
