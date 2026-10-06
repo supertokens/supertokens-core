@@ -1000,13 +1000,13 @@ public class CoreConfig {
                     // (SUPERTOKENS_ADMIN_PORT etc.) are read but never written to configJson, so the value is
                     // silently dropped and the field stays at its default/null.
                     configJson.addProperty(field.getName(), Integer.parseInt(stringValue));
-                } else if (field.getType().equals(long.class)) {
+                } else if (field.getType().equals(long.class) || field.getType().equals(Long.class)) {
                     configJson.addProperty(field.getName(), Long.parseLong(stringValue));
-                } else if (field.getType().equals(boolean.class)) {
+                } else if (field.getType().equals(boolean.class) || field.getType().equals(Boolean.class)) {
                     configJson.addProperty(field.getName(), Boolean.parseBoolean(stringValue));
-                } else if (field.getType().equals(float.class)) {
+                } else if (field.getType().equals(float.class) || field.getType().equals(Float.class)) {
                     configJson.addProperty(field.getName(), Float.parseFloat(stringValue));
-                } else if (field.getType().equals(double.class)) {
+                } else if (field.getType().equals(double.class) || field.getType().equals(Double.class)) {
                     configJson.addProperty(field.getName(), Double.parseDouble(stringValue));
                 }
             }
