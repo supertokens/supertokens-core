@@ -19,8 +19,11 @@ package io.supertokens.test.session;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
@@ -155,8 +158,56 @@ public class SessionCreateActivityEventTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * The one case where the row's two ids differ: a session for a linked, non-primary recipe user. The row carries
+     * the recipe user's SuperTokens id as {@code recipe_user_id} and the primary's SuperTokens id as
+     * {@code primary_or_recipe_user_id} (the id the fold credits), even when both users have external ids mapped.
+     */
+    @Test
+    public void sessionCreateRowCarriesPrimaryAndRecipeSuperTokensIdsForLinkedUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(process.getProcess(), "primary@example.com", "password");
+        AuthRecipeUserInfo recipe = EmailPassword.signUp(process.getProcess(), "linked@example.com", "password");
+        AuthRecipe.createPrimaryUser(process.getProcess(), primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), recipe.getSupertokensUserId(), primary.getSupertokensUserId());
+        UserIdMapping.createUserIdMapping(process.getProcess(), primary.getSupertokensUserId(), "external-primary",
+                null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), recipe.getSupertokensUserId(), "external-linked",
+                null, false);
+
+        long startTs = System.currentTimeMillis() - 1;
+        JsonObject session = createSession(process, "external-linked", "external-primary");
+        assertEquals("external-linked", session.get("recipeUserId").getAsString());
+
+        List<AuditLogEvent> events = readSessionEvents(process, startTs);
+        assertEquals(1, events.size());
+        AuditLogEvent event = events.get(0);
+        assertEquals("session_create", event.eventType);
+        assertEquals(session.get("handle").getAsString(), event.identifier);
+        assertEquals(recipe.getSupertokensUserId(), event.recipeUserId);
+        assertEquals(primary.getSupertokensUserId(), event.primaryOrRecipeUserId);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private static String createSession(TestingProcessManager.TestingProcess process, String userId)
             throws Exception {
+        return createSession(process, userId, userId).get("handle").getAsString();
+    }
+
+    // Returns the response's session object; expectedUserId is the (primary, mapped-back) userId it must carry.
+    private static JsonObject createSession(TestingProcessManager.TestingProcess process, String userId,
+                                            String expectedUserId) throws Exception {
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", new JsonObject());
@@ -167,8 +218,9 @@ public class SessionCreateActivityEventTest {
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v5_0.get(),
                 "session");
         assertEquals("OK", response.get("status").getAsString());
-        assertEquals(userId, response.getAsJsonObject("session").get("userId").getAsString());
-        return response.getAsJsonObject("session").get("handle").getAsString();
+        JsonObject session = response.getAsJsonObject("session");
+        assertEquals(expectedUserId, session.get("userId").getAsString());
+        return session;
     }
 
     private static List<AuditLogEvent> readSessionEvents(TestingProcessManager.TestingProcess process, long fromTs)

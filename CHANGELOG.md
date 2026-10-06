@@ -31,7 +31,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Container security scan: pin `org.bouncycastle:bcprov-jdk18on` to 1.85 (CVE-2026-8763), and pull the base image on every container build so OS security patches land in each release/dev image.
 - Environment variables are now also applied to boxed `Long`, `Boolean`, `Float` and `Double` config fields, not only to primitives and boxed `Integer`.
 - Fix: WebAuthN.signIn resolved the user-id mapping on a second pooled connection; the lookup now runs on the transaction's own connection.
-- A session create now writes one activity-log row instead of two: an unthrottled `session_create` with the session handle and SuperTokens user ids; the untyped `session_created` event is no longer written.
+- A session create now writes one activity-log row instead of two: an unthrottled `session_create` with the session handle and SuperTokens user ids; the untyped `session_created` event is no longer written. Anyone querying `activity_log` directly (for example SIEM exports or audit queries) should note the rename: rows previously written as `session_created` are now `session_create`.
 
 ## [12.3.0]
 
