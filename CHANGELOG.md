@@ -26,6 +26,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `CREDENTIAL_NOT_FOUND_ERROR` instead of `INVALID_AUTHENTICATOR_ERROR`.
 - In-memory storage: WebAuthn sign-up and sign-in only accept generated options from the request's tenant,
   matching PostgreSQL.
+- A core config value that is a JSON object or array (for example `"access_token_validity": {}` in a create/update app or tenant request, or a map in `config.yaml`) is now rejected as an invalid config (HTTP 400) instead of failing with an `UnsupportedOperationException` (HTTP 500).
+- Container security scan: pin `org.bouncycastle:bcprov-jdk18on` to 1.85 (CVE-2026-8763), and pull the base image on every container build so OS security patches land in each release/dev image.
+- Environment variables are now also applied to boxed `Long`, `Boolean`, `Float` and `Double` config fields, not only to primitives and boxed `Integer`.
 
 ## [12.3.0]
 
