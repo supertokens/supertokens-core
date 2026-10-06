@@ -422,13 +422,13 @@ public class WebAuthN {
                     String credentialId = getCredentialId(credentialsData);
 
                     WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
-                            con, credentialId);
+                            con, generatedOptions.relyingPartyId, credentialId);
                     if(credential==null) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
 
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
-                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
+                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, generatedOptions.relyingPartyId, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
 
                     if (consumeOptions) {
                         // challenges are single-use (WebAuthn L3 §13.4.3): consume the options atomically with
