@@ -21,8 +21,11 @@ import org.sqlite.SQLiteConfig;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionPool extends ResourceDistributor.SingletonResource {
 
@@ -52,17 +55,26 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     // Mirrors the guard in the postgresql plugin's ConnectionPool: a call chain that holds one connection
     // (inside a startTransaction) and borrows a SECOND from the same pool is the hold-and-wait pool-
     // exhaustion pattern behind the OAuth-refresh regression. Keyed per pool; active only under
-    // Start.isTesting. During the PLAN-018 cleanup it WARNS by default (so the suite stays green while the
-    // pre-existing instances are fixed); flip throwOnNestedAcquisition to fail fast — used by the guard's own
-    // regression test, and intended to become the default once the cleanup lands.
+    // Start.isTesting. While the pre-existing instances are cleaned up it WARNS by default (so the suite stays
+    // green): each offending call site is recorded and printed once to stdout, which the gradle test logging
+    // shows in the CI log (stderr is not shown). Flip throwOnNestedAcquisition to fail fast — used by the
+    // guard's own regression test, and intended to become the default once the cleanup lands.
     private static final ThreadLocal<Map<String, Integer>> TXN_DEPTH_BY_POOL =
             ThreadLocal.withInitial(HashMap::new);
 
     private static volatile boolean throwOnNestedAcquisition = false;
 
+    // Warn-mode record: every distinct call site that borrowed a nested same-pool connection in this JVM.
+    private static final Set<String> NESTED_ACQUISITION_SITES = ConcurrentHashMap.newKeySet();
+
     // Test hook: when true, a nested same-pool acquisition throws instead of only warning.
     public static void setThrowOnNestedAcquisition(boolean value) {
         throwOnNestedAcquisition = value;
+    }
+
+    // Test hook: the distinct call sites recorded by the warn-mode guard so far in this JVM.
+    public static Set<String> getNestedAcquisitionSites() {
+        return Collections.unmodifiableSet(NESTED_ACQUISITION_SITES);
     }
 
     private static String poolKey(Start start) {
@@ -102,16 +114,19 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
         if (depth == null || depth <= 0) {
             return;
         }
+        String site = nestedAcquisitionSite();
         String message = "Nested same-pool connection acquisition on pool '" + poolKey(start) + "' at "
-                + nestedAcquisitionSite() + ": a helper borrows a SECOND connection while a startTransaction on"
+                + site + ": a helper borrows a SECOND connection while a startTransaction on"
                 + " this pool is open — the hold-and-wait pool-exhaustion (OAuth-refresh deadlock) class. Thread"
                 + " the transaction's connection through the helper (use its *_Transaction overload), or resolve"
                 + " the value before opening the transaction.";
         if (throwOnNestedAcquisition) {
             throw new IllegalStateException(message);
         }
-        // Warn-mode default during the PLAN-018 cleanup: surface it without failing the suite.
-        System.err.println("[nested-conn-guard][WARN] " + message);
+        // Warn-mode default during the cleanup: record the site and surface it once, without failing the suite.
+        if (NESTED_ACQUISITION_SITES.add(site)) {
+            System.out.println("[nested-conn-guard][WARN] " + message);
+        }
     }
 
     // The nearest application frame that borrowed the second connection — for locating the site in warn-mode.
