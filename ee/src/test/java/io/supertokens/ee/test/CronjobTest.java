@@ -32,19 +32,30 @@ public class CronjobTest {
         FeatureFlag.clearURLClassLoader();
     }
 
+    // Persist an enabled feature set for a valid key so a restarted process serves it from the DB (the
+    // boot-time constructor no longer syncs). Skipped on in-memory storage, not to exclude the test from
+    // in-mem runs, but because setLicenseKeyAndSyncFeatures performs a live license-server sync that would
+    // be pointless there: FeatureFlag.getEnabledFeatures() always returns every feature on in-mem (see
+    // FeatureFlag#getEnabledFeatures), so a cron-driven revocation cannot be observed. The revocation
+    // assertions in the callers are already gated to real SQL storage (the STORAGE_TYPE.SQL && !sqlite guard).
+    private static void persistLicenseKeyForRestart(TestingProcessManager.TestingProcess process, String licenseKey)
+            throws Exception {
+        if (!StorageLayer.isInMemDb(process.main)) {
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(licenseKey);
+        }
+    }
+
 
     @Test
     public void cronjobUpdatesStatefulKey()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
+            persistLicenseKeyForRestart(process, EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -78,16 +89,14 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatefulKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
+            persistLicenseKeyForRestart(process, EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -121,16 +130,14 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatelessKey()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+            persistLicenseKeyForRestart(process, EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -164,16 +171,14 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatelessKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+            throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            StorageLayer.getStorage(process.main)
-                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+            persistLicenseKeyForRestart(process, EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

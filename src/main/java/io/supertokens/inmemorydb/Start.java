@@ -3696,7 +3696,13 @@ public class Start
                                                                     AppIdentifier appIdentifier, List<String> userIds,
                                                                     boolean isSupertokensIds)
             throws StorageQueryException {
-        throw new UnsupportedOperationException("'getMultipleUserIdMapping_Transaction' is not supported for in-memory db");
+        try {
+            Connection sqlCon = (Connection) connection.getConnection();
+            return UserIdMappingQueries.getMultipleUserIdMapping_Transaction(this, sqlCon, appIdentifier, userIds,
+                    isSupertokensIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -4115,11 +4121,11 @@ public class Start
 
     @Override
     public WebAuthNStoredCredential loadCredentialById_Transaction(TenantIdentifier tenantIdentifier,
-                                                                  TransactionConnection con, String credentialId)
+                                                                  TransactionConnection con, String rpId, String credentialId)
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            return WebAuthNQueries.loadCredentialById_Transaction(this, sqlCon, tenantIdentifier, credentialId);
+            return WebAuthNQueries.loadCredentialById_Transaction(this, sqlCon, tenantIdentifier, rpId, credentialId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -4237,11 +4243,11 @@ public class Start
 
     @Override
     public void updateCounter_Transaction(TenantIdentifier tenantIdentifier,
-                                                              TransactionConnection con, String credentialId,
+                                                              TransactionConnection con, String rpId, String credentialId,
                                                               long counter) throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, credentialId, counter);
+            WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, rpId, credentialId, counter);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -24,14 +24,18 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -1104,6 +1108,49 @@ public class UserIdMappingTest {
                     .getUserIdMapping(process.getProcess(), user_2.getSupertokensUserId(), UserIdType.SUPERTOKENS);
             assertNull(mapping);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPopulateExternalUserIdForUsersOnTransactionConnection() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
+
+        AuthRecipeUserInfo mappedUser = EmailPassword.signUp(process.getProcess(), "mapped@example.com",
+                "testPassword");
+        AuthRecipeUserInfo unmappedUser = EmailPassword.signUp(process.getProcess(), "unmapped@example.com",
+                "testPassword");
+        UserIdMapping.createUserIdMapping(process.getProcess(), mappedUser.getSupertokensUserId(), "external-test",
+                null, false);
+
+        AuthRecipeUserInfo[] users = new AuthRecipeUserInfo[]{
+                AuthRecipe.getUserById(process.getProcess(), mappedUser.getSupertokensUserId()),
+                AuthRecipe.getUserById(process.getProcess(), unmappedUser.getSupertokensUserId())};
+
+        // resolve the mappings on the transaction's own connection
+        ((SQLStorage) storage).startTransaction(con -> {
+            try {
+                UserIdMapping.populateExternalUserIdForUsers(con, appIdentifier, storage, users);
+            } catch (StorageQueryException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            return null;
+        });
+
+        assertEquals("external-test", users[0].getSupertokensOrExternalUserId());
+        assertEquals("external-test", users[0].loginMethods[0].getSupertokensOrExternalUserId());
+        assertEquals(unmappedUser.getSupertokensUserId(), users[1].getSupertokensOrExternalUserId());
+        assertEquals(unmappedUser.getSupertokensUserId(), users[1].loginMethods[0].getSupertokensOrExternalUserId());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

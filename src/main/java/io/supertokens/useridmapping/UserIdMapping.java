@@ -700,6 +700,26 @@ public class UserIdMapping {
     public static void populateExternalUserIdForUsers(AppIdentifier appIdentifier, Storage storage,
                                                       AuthRecipeUserInfo[] users)
             throws StorageQueryException {
+        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
+                collectSuperTokensUserIds(users));
+        applyExternalUserIds(users, userIdMappings);
+    }
+
+    public static void populateExternalUserIdForUsers(TransactionConnection con, AppIdentifier appIdentifier,
+                                                      Storage storage, AuthRecipeUserInfo[] users)
+            throws StorageQueryException {
+        // userIds are already filtered for a tenant
+        List<io.supertokens.pluginInterface.useridmapping.UserIdMapping> mappings =
+                ((UserIdMappingSQLStorage) storage).getMultipleUserIdMapping_Transaction(con, appIdentifier,
+                        collectSuperTokensUserIds(users), true);
+        HashMap<String, String> userIdMappings = new HashMap<>();
+        for (io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping : mappings) {
+            userIdMappings.put(mapping.superTokensUserId, mapping.externalUserId);
+        }
+        applyExternalUserIds(users, userIdMappings);
+    }
+
+    private static ArrayList<String> collectSuperTokensUserIds(AuthRecipeUserInfo[] users) {
         Set<String> userIds = new HashSet<>();
 
         for (AuthRecipeUserInfo user : users) {
@@ -709,11 +729,10 @@ public class UserIdMapping {
                 userIds.add(lm.getSupertokensUserId());
             }
         }
-        ArrayList<String> userIdsList = new ArrayList<>(userIds);
-        userIdsList.addAll(userIds);
-        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
-                userIdsList);
+        return new ArrayList<>(userIds);
+    }
 
+    private static void applyExternalUserIds(AuthRecipeUserInfo[] users, HashMap<String, String> userIdMappings) {
         for (AuthRecipeUserInfo user : users) {
             user.setExternalUserId(userIdMappings.get(user.getSupertokensUserId()));
 
