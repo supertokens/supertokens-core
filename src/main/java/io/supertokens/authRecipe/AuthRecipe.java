@@ -72,6 +72,11 @@ public class AuthRecipe {
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
             UnlinkResult res = authRecipeStorage.startTransaction(con -> {
+                // Lock the recipe user's app_id_to_user_id row so session creation (which takes the same lock)
+                // serializes with this unlink (GHSA-2pc4-vw9j-454c): a session created concurrently is either
+                // already inserted and revoked below, or created only after this commits against the new identity.
+                authRecipeStorage.lockUserAndGetPrimaryId_Transaction(appIdentifier, con, recipeUserId);
+
                 AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier, con,
                         recipeUserId);
                 if (primaryUser == null) {
@@ -86,6 +91,13 @@ public class AuthRecipe {
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
+
+                // Revoke the unlinked user's sessions inside this locked transaction (GHSA-2pc4-vw9j-454c). The
+                // same external recipe user id the post-commit revokeAllSessionsForUser below uses, so both
+                // revocations target the identical session rows.
+                String resultUserId = mappingResult == null ? recipeUserId : mappingResult.externalUserId;
+                ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
+                        .deleteSessionsOfUser_Transaction(con, appIdentifier, resultUserId);
 
                 if (primaryUser.getSupertokensUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
