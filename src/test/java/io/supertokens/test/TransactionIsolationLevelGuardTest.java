@@ -42,13 +42,22 @@ public class TransactionIsolationLevelGuardTest {
     private static final Pattern NON_DEFAULT_LEVEL = Pattern.compile(
             "TransactionIsolationLevel\\s*\\.\\s*(REPEATABLE_READ|SERIALIZABLE|READ_UNCOMMITTED|NONE)\\b");
 
+    // A wildcard static import would let a bare REPEATABLE_READ through the pattern above.
+    private static final Pattern WILDCARD_STATIC_IMPORT = Pattern.compile(
+            "import\\s+static\\s+[\\w.]*TransactionIsolationLevel\\s*\\.\\s*\\*");
+
     @Test
     public void noCallSiteRequestsANonDefaultIsolationLevel() throws Exception {
         List<String> offenders = new ArrayList<>();
-        for (File f : javaFilesUnder(sourceRoot())) {
+        List<File> files = new ArrayList<>();
+        for (File root : sourceRoots()) {
+            files.addAll(javaFilesUnder(root));
+        }
+        for (File f : files) {
             String[] lines = Files.readString(f.toPath(), StandardCharsets.UTF_8).split("\n", -1);
             for (int i = 0; i < lines.length; i++) {
-                if (NON_DEFAULT_LEVEL.matcher(lines[i]).find()) {
+                if (NON_DEFAULT_LEVEL.matcher(lines[i]).find()
+                        || WILDCARD_STATIC_IMPORT.matcher(lines[i]).find()) {
                     offenders.add(f.getName() + ":" + (i + 1));
                 }
             }
@@ -75,21 +84,32 @@ public class TransactionIsolationLevelGuardTest {
     }
 
     // Same lookup as AuditEnforcementBaselineTest: walk up from the compiled test class so the
-    // test works from any working directory, then fall back to a cwd-relative path.
-    private static File sourceRoot() throws Exception {
+    // test works from any working directory, then fall back to a cwd-relative path. The ee module
+    // is scanned too when present.
+    private static List<File> sourceRoots() throws Exception {
+        File repoRoot = repoRoot();
+        List<File> roots = new ArrayList<>();
+        roots.add(new File(repoRoot, "src/main/java"));
+        File ee = new File(repoRoot, "ee/src/main/java");
+        if (ee.isDirectory()) {
+            roots.add(ee);
+        }
+        return roots;
+    }
+
+    private static File repoRoot() throws Exception {
         File start = new File(TransactionIsolationLevelGuardTest.class.getProtectionDomain()
                 .getCodeSource().getLocation().toURI());
         for (File d = start; d != null; d = d.getParentFile()) {
-            File cand = new File(d, "src/main/java/io/supertokens");
-            if (cand.isDirectory()) {
-                return cand;
+            if (new File(d, "src/main/java/io/supertokens").isDirectory()) {
+                return d;
             }
         }
-        File cwdCand = new File("src/main/java/io/supertokens");
-        if (cwdCand.isDirectory()) {
-            return cwdCand;
+        File cwd = new File("").getAbsoluteFile();
+        if (new File(cwd, "src/main/java/io/supertokens").isDirectory()) {
+            return cwd;
         }
         throw new IllegalStateException("could not locate src/main/java/io/supertokens from "
-                + start + " or " + cwdCand.getAbsolutePath());
+                + start + " or " + cwd);
     }
 }
