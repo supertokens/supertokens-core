@@ -7,6 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.2.4]
+
+- Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
+- Enforces dashboard session expiry at verification time (GHSA-w9fp-wv6g-pqv8).
+- Scopes WebAuthn sign-in to the requested tenant (GHSA-6v34-w48w-44rc).
+- Serializes session creation with account unlink to close a session race (GHSA-2pc4-vw9j-454c).
+
+
 ## [11.2.3] - 2026-07-29
 
 - resolve api_keys and IP access config against the app's public tenant
