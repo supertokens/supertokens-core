@@ -25,6 +25,14 @@ on:
         type: string
         required: false
         default: supertokens/supertokens-postgresql-plugin
+      java-version:
+        type: string
+        required: false
+        default: '21.0.7'
+      root-ref:
+        type: string
+        required: false
+        default: master
 
 env:
   total-runners: 6
@@ -55,10 +63,10 @@ jobs:
           - sqlite
           - postgresql
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v5
         with:
-          java-version: 21.0.7
+          java-version: ${{ inputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
@@ -66,7 +74,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: ${{ inputs.root-ref }}
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
