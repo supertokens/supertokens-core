@@ -21,7 +21,7 @@ name: Embargo build
 # variables AWS_REGION, ECR_REPOSITORY, EMBARGO_PUSH_ROLE_ARN, EMBARGO_PULL_ROLE_ARN; secret
 # EMBARGO_REPO_TOKEN (contents:read on the private plugin mirrors) when building from them.
 
-run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})
+run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -63,6 +63,11 @@ on:
         required: true
         type: boolean
         default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: embargo-build-${{ inputs.core-version }}
@@ -276,7 +281,7 @@ jobs:
       postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
       java-version: ${{ needs.resolve.outputs.java-version }}
       root-ref: ${{ needs.resolve.outputs.root-ref }}
-      fast-release: false
+      fast-release: ${{ inputs.fast-release }}
     secrets: inherit
 
   # Only after the tests pass on exactly these commits: the image records this run's id as
