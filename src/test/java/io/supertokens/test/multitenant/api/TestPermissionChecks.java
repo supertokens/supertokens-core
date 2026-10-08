@@ -18,6 +18,7 @@ package io.supertokens.test.multitenant.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -384,7 +385,7 @@ public class TestPermissionChecks {
     public void testAppUnderCudCannotRewriteCudApiKeys() throws Exception {
         Utils.reset();
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
@@ -446,7 +447,7 @@ public class TestPermissionChecks {
     public void testNonBaseSourceCannotUpdateBaseTenantViaOmittedIdentifier() throws Exception {
         Utils.reset();
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
@@ -469,7 +470,7 @@ public class TestPermissionChecks {
         TenantIdentifier cudSource = new TenantIdentifier("127.0.0.1", null, null);
         JsonObject body = new JsonObject();
         JsonArray firstFactors = new JsonArray();
-        firstFactors.add("emailpassword");
+        firstFactors.add(new JsonPrimitive("emailpassword"));
         body.add("firstFactors", firstFactors);
 
         try {
