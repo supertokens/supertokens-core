@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [11.3.8]
 
+- Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
+- Scopes WebAuthn sign-in to the requested tenant (GHSA-6v34-w48w-44rc).
 - Serializes session creation with account unlink to close a session race (GHSA-2pc4-vw9j-454c).
 - Enforces SAML callback replay protection and request binding (GHSA-3r7x-rhvc-fw28).
 - SAML: a client can carry an optional ACS-URL allow-list (`acsURLs`). When set, the login's ACS URL (SP-initiated) and the response Destination/`SubjectConfirmationData.Recipient` (IdP-initiated) must be a member — extending Destination/Recipient pinning to the IdP-initiated path, which previously had no anchor. A null list preserves existing behaviour. (GHSA-3r7x-rhvc-fw28 follow-up)
