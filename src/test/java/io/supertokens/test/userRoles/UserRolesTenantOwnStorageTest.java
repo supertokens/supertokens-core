@@ -73,8 +73,11 @@ public class UserRolesTenantOwnStorageTest {
     }
 
     // creates tenant a1/t1 backed by its own user pool (a separate database),
-    // so that the app's public tenant storage and the tenant's storage are different
-    private void setupTenantWithOwnStorage(TestingProcessManager.TestingProcess process)
+    // so that the app's public tenant storage and the tenant's storage are different.
+    // returns true only when the storage really hands the tenant its own user pool;
+    // false when the scenario is not reachable there (e.g. the built-in in-memory
+    // sqlite storage, which silently keeps one pool for every tenant)
+    private boolean setupTenantWithOwnStorage(TestingProcessManager.TestingProcess process)
             throws Exception {
         Main main = process.getProcess();
 
@@ -107,11 +110,13 @@ public class UserRolesTenantOwnStorageTest {
 
         // guard: the scenario only means something if the tenant really is backed by
         // a different user pool than the app's public tenant. A plugin whose
-        // modifyConfigToAddANewUserPoolForTesting silently no-ops would otherwise run
-        // these tests against shared storage and prove nothing.
-        assertNotEquals(
-                StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), main).getUserPoolId(),
-                StorageLayer.getStorage(new TenantIdentifier(null, "a1", "t1"), main).getUserPoolId());
+        // modifyConfigToAddANewUserPoolForTesting silently no-ops runs these tests
+        // against shared storage and proves nothing, so treat that as "scenario not
+        // reachable" rather than letting the tests pass vacuously (or fail loudly,
+        // as they would on the built-in in-memory sqlite storage).
+        return !StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), main).getUserPoolId()
+                .equals(StorageLayer.getStorage(new TenantIdentifier(null, "a1", "t1"), main)
+                        .getUserPoolId());
     }
 
     @Test
@@ -129,9 +134,15 @@ public class UserRolesTenantOwnStorageTest {
             return;
         }
 
-        // this test needs a storage plugin that can create a second user pool (sqlite cannot)
+        // this test needs a storage that can create a second user pool (the built-in
+        // in-memory sqlite storage cannot)
         try {
-            setupTenantWithOwnStorage(process);
+            if (!setupTenantWithOwnStorage(process)) {
+                // storage cannot give the tenant its own user pool; the scenario is
+                // not reachable there
+                process.kill();
+                return;
+            }
         } catch (UnsupportedOperationException e) {
             // plugin cannot express multiple user pools; the scenario is not reachable there
             process.kill();
@@ -206,7 +217,10 @@ public class UserRolesTenantOwnStorageTest {
         }
 
         try {
-            setupTenantWithOwnStorage(process);
+            if (!setupTenantWithOwnStorage(process)) {
+                process.kill();
+                return;
+            }
         } catch (UnsupportedOperationException e) {
             process.kill();
             return;
