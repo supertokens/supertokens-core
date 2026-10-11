@@ -104,6 +104,14 @@ public class UserRolesTenantOwnStorageTest {
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
                         null, null, config));
+
+        // guard: the scenario only means something if the tenant really is backed by
+        // a different user pool than the app's public tenant. A plugin whose
+        // modifyConfigToAddANewUserPoolForTesting silently no-ops would otherwise run
+        // these tests against shared storage and prove nothing.
+        assertNotEquals(
+                StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), main).getUserPoolId(),
+                StorageLayer.getStorage(new TenantIdentifier(null, "a1", "t1"), main).getUserPoolId());
     }
 
     @Test
