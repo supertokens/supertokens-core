@@ -256,6 +256,50 @@ public class MockSAML {
         return Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8));
     }
 
+    // GHSA-wfg2-vqfg-rqh6: a Response whose signed assertion has no SubjectConfirmationData Recipient, while the
+    // unsigned Response wrapper names `destination`. Models an IdP that omits Recipient, or an attacker re-wrapping
+    // an assertion: with assertion-level signing the wrapper's Destination proves nothing.
+    public static String generateSignedSAMLResponseWithoutRecipientBase64(
+            String issuerEntityId,
+            String audience,
+            String destination,
+            String nameId,
+            String inResponseTo,
+            KeyMaterial keyMaterial,
+            int notOnOrAfterSeconds
+    ) {
+        Instant now = Instant.now();
+        Instant notOnOrAfter = now.plusSeconds(Math.max(60, notOnOrAfterSeconds));
+
+        Response response = build(Response.DEFAULT_ELEMENT_NAME);
+        response.setID(randomId());
+        response.setVersion(SAMLVersion.VERSION_20);
+        response.setIssueInstant(now);
+        response.setDestination(destination);
+        if (inResponseTo != null) {
+            response.setInResponseTo(inResponseTo);
+        }
+
+        Issuer issuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        issuer.setValue(issuerEntityId);
+        response.setIssuer(issuer);
+
+        Status status = build(Status.DEFAULT_ELEMENT_NAME);
+        StatusCode statusCode = build(StatusCode.DEFAULT_ELEMENT_NAME);
+        statusCode.setValue(StatusCode.SUCCESS);
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        Assertion assertion = buildAssertion(
+                issuerEntityId, nameId, audience, null /* no Recipient */, inResponseTo,
+                now, notOnOrAfter, true /* withConditions */);
+        signAssertion(assertion, keyMaterial);
+        response.getAssertions().add(assertion);
+
+        String xml = toXmlString(response);
+        return Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8));
+    }
+
     // GHSA-wfg2-vqfg-rqh6: build a Response with two individually-signed assertions, each with its own
     // NameID and audience, in the given order. Models the multi-assertion audience bypass, where an
     // assertion issued to a different audience is placed alongside one that satisfies the SP's audience.

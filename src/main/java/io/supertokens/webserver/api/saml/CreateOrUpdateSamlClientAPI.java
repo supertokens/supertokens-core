@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginRequiresACSURLsException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -63,6 +64,9 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
 
         // Optional ACS allow-list; absent = null = not configured (legacy behaviour preserved).
         JsonArray acsURLs = InputParser.parseArrayOrThrowError(input, "acsURLs", true);
+        if (acsURLs != null && acsURLs.size() > 0 && !SAML.hasACSURLs(acsURLs)) {
+            throw new ServletException(new BadRequestException("acsURLs must only contain non-empty strings"));
+        }
 
         String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", false);
 
@@ -95,6 +99,9 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
+        } catch (IDPInitiatedLoginRequiresACSURLsException e) {
+            throw new ServletException(new BadRequestException(
+                    "acsURLs must contain at least one URL when allowIDPInitiatedLogin is true"));
         } catch (DuplicateEntityIdException e) {
             JsonObject res = new JsonObject();
             res.addProperty("status", "DUPLICATE_IDP_ENTITY_ERROR");
