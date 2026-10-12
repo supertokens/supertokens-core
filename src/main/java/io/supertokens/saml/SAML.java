@@ -101,6 +101,7 @@ import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginRequiresACSURLsException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
@@ -131,8 +132,15 @@ public class SAML {
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
             String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning, JsonArray acsURLs)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
-            FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException {
+            FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException,
+            IDPInitiatedLoginRequiresACSURLsException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
+        // IdP-initiated login has no login-time ACS URL to pin the response to, so it is only allowed when the
+        // client carries an ACS allow-list. Enforced on every create and update.
+        if (allowIDPInitiatedLogin && !hasACSURLs(acsURLs)) {
+            throw new IDPInitiatedLoginRequiresACSURLsException();
+        }
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -249,7 +257,7 @@ public class SAML {
         }
 
         String idpSsoUrl = client.ssoLoginURL;
-        String spEntityId = requireConfiguredSPEntityID(config);
+        String spEntityId = config.getSAMLSPEntityID();
         AuthnRequest request = buildAuthnRequest(
                 main,
                 tenantIdentifier.toAppIdentifier(),
@@ -449,6 +457,21 @@ public class SAML {
         SignatureValidator.validate(signature, credential);
     }
 
+    /**
+     * True if the ACS allow-list has at least one entry and every entry is a non-blank string.
+     */
+    public static boolean hasACSURLs(JsonArray acsURLs) {
+        if (acsURLs == null || acsURLs.size() == 0) {
+            return false;
+        }
+        for (JsonElement a : acsURLs) {
+            if (!a.isJsonPrimitive() || !a.getAsJsonPrimitive().isString() || a.getAsString().trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static String trimToNull(String s) {
         if (s == null) {
             return null;
@@ -458,27 +481,35 @@ public class SAML {
     }
 
     /**
-     * Pins the response Destination and each assertion's SubjectConfirmationData Recipient to the ACS URL
-     * this login was started with, so an assertion minted for a different endpoint cannot be replayed here.
-     * This can only be anchored on the SP-initiated path, where the ACS URL was persisted at login; the
-     * IdP-initiated path has no such anchor (the SAML client carries no configured ACS), so it relies on the
-     * assertion single-use cache instead.
+     * Pins the response Destination and each assertion's SubjectConfirmationData Recipient to the ACS URLs
+     * this response may have been sent to: the ACS URL the login was started with (SP-initiated), or the
+     * client's ACS allow-list (IdP-initiated, where it is mandatory).
+     *
+     * The authenticating assertion must carry a Recipient (saml-profiles-2.0 section 4.1.4.2 requires one
+     * on the bearer confirmation). It sits inside the signed assertion, so unlike the Destination of an
+     * unsigned Response wrapper it cannot be stripped or rewritten. Because saml_sp_entity_id defaults to a
+     * value shared by every deployment, this Recipient is what stops an assertion issued to another
+     * SuperTokens deployment from being accepted here. (GHSA-wfg2-vqfg-rqh6)
      */
-    private static void validateResponseDestinationAndRecipient(Response response, SAMLRelayStateInfo relayStateInfo,
-            JsonArray clientAcsURLs) throws SAMLResponseVerificationFailedException {
-        // Build the set of ACS URLs this response is allowed to have been sent to. On the SP-initiated
-        // path that is the single ACS URL captured at login. On the IdP-initiated path there is no
-        // login-time ACS, so we fall back to the SAML client's configured ACS allow-list (nullable);
-        // when it is null the client has not opted in and we preserve the legacy no-pin behaviour.
+    private static void validateResponseDestinationAndRecipient(Response response, Assertion authenticatingAssertion,
+            SAMLRelayStateInfo relayStateInfo, JsonArray clientAcsURLs) throws SAMLResponseVerificationFailedException {
         java.util.Set<String> allowedAcs = new java.util.HashSet<>();
         if (relayStateInfo != null && relayStateInfo.acsURL != null) {
             allowedAcs.add(relayStateInfo.acsURL);
-        } else if (relayStateInfo == null && clientAcsURLs != null) {
+        } else if (clientAcsURLs != null) {
+            // IdP-initiated, or an SP-initiated login whose relay state predates recording the ACS URL.
             for (JsonElement a : clientAcsURLs) {
                 allowedAcs.add(a.getAsString());
             }
         }
+
+        if (!hasRecipient(authenticatingAssertion)) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
         if (allowedAcs.isEmpty()) {
+            // Only an SP-initiated login started before the ACS URL was recorded, for a client without an
+            // allow-list. There is nothing to pin to.
             return;
         }
 
@@ -502,6 +533,19 @@ public class SAML {
                 }
             }
         }
+    }
+
+    private static boolean hasRecipient(Assertion assertion) {
+        if (assertion.getSubject() == null) {
+            return false;
+        }
+        for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+            SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+            if (scd != null && trimToNull(scd.getRecipient()) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -659,9 +703,17 @@ public class SAML {
             // idp initiated
             String idpEntityId = response.getIssuer().getValue();
             client = samlStorage.getSAMLClientByIDPEntityId(tenantIdentifier, idpEntityId);
+            if (client == null) {
+                throw new InvalidClientException();
+            }
             redirectURI = client.defaultRedirectURI;
 
             if (!client.allowIDPInitiatedLogin) {
+                throw new IDPInitiatedLoginDisallowedException();
+            }
+            // A client stored before the ACS allow-list was required for IdP-initiated login can still have it
+            // enabled without one. Refuse the login: without the list nothing pins the response to this SP.
+            if (!hasACSURLs(client.acsURLs)) {
                 throw new IDPInitiatedLoginDisallowedException();
             }
         }
@@ -682,13 +734,12 @@ public class SAML {
         // Bind the response to this login and reject replays. On the SP-initiated path relayStateInfo
         // carries the AuthnRequest ID and ACS URL captured at login; on the IdP-initiated path it is null.
         // (GHSA-3r7x-rhvc-fw28)
-        validateResponseDestinationAndRecipient(response, relayStateInfo, client.acsURLs);
-        validateResponseInResponseTo(response, relayStateInfo);
-
         // Identity is taken from a single assertion, and that same assertion's audience is validated on it,
         // so an assertion issued to a different audience cannot supply the identity while another assertion
         // satisfies the audience restriction. (GHSA-wfg2-vqfg-rqh6)
         Assertion authenticatingAssertion = selectAuthenticatingAssertion(response);
+        validateResponseDestinationAndRecipient(response, authenticatingAssertion, relayStateInfo, client.acsURLs);
+        validateResponseInResponseTo(response, relayStateInfo);
         validateAssertionAudience(authenticatingAssertion, config.getSAMLSPEntityID());
 
         // Consume every assertion in the response exactly once. Done last, after all other checks pass,
@@ -746,9 +797,9 @@ public class SAML {
 
     private static void validateAssertionAudience(Assertion assertion, String expectedAudience)
             throws SAMLResponseVerificationFailedException {
-        // The SP entity ID must be configured per deployment: there is no shared default, so a null or blank
-        // expected audience means saml_sp_entity_id was not set and no assertion may be accepted. This also
-        // closes the shared-default-audience variant. See GHSA-wfg2-vqfg-rqh6.
+        // saml_sp_entity_id always has a value (it defaults to a value shared by every deployment); a blank one
+        // must still never match. The shared default is covered by the Recipient binding in
+        // validateResponseDestinationAndRecipient. See GHSA-wfg2-vqfg-rqh6.
         if (expectedAudience == null || expectedAudience.trim().isEmpty()) {
             throw new SAMLResponseVerificationFailedException();
         }
@@ -772,15 +823,6 @@ public class SAML {
             }
         }
         throw new SAMLResponseVerificationFailedException();
-    }
-
-    private static String requireConfiguredSPEntityID(CoreConfig config) {
-        String spEntityId = config.getSAMLSPEntityID();
-        if (spEntityId == null || spEntityId.trim().isEmpty()) {
-            throw new IllegalStateException(
-                    "saml_sp_entity_id must be configured for this tenant before SAML can be used");
-        }
-        return spEntityId;
     }
 
     private static JsonObject extractAssertionClaims(Assertion assertion) {
@@ -912,7 +954,7 @@ public class SAML {
 
         SAMLCertificate certificate = SAMLCertificate.getInstance(tenantIdentifier.toAppIdentifier(), main);
         CoreConfig config = Config.getConfig(tenantIdentifier, main);
-        String spEntityId = requireConfiguredSPEntityID(config);
+        String spEntityId = config.getSAMLSPEntityID();
         try {
             X509Certificate cert = certificate.getCertificate();
             String certString = java.util.Base64.getEncoder().encodeToString(cert.getEncoded());
