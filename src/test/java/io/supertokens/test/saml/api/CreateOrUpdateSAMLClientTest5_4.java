@@ -371,6 +371,9 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         updatedRedirectURIs.add("http://localhost:3000/auth/callback/saml-mock-3");
         updateInput.add("redirectURIs", updatedRedirectURIs);
         updateInput.addProperty("allowIDPInitiatedLogin", true);
+        JsonArray updatedAcsURLs = new JsonArray();
+        updatedAcsURLs.add("http://localhost:3000/auth/public/saml/callback");
+        updateInput.add("acsURLs", updatedAcsURLs);
         // metadata is required by the API even on update
         updateInput.addProperty("metadataXML", metadataXMLBase64_2);
 
@@ -387,13 +390,14 @@ public class CreateOrUpdateSAMLClientTest5_4 {
         assertEquals("http://localhost:3000/auth/callback/saml-mock-2", updateResp.get("redirectURIs").getAsJsonArray().get(0).getAsString());
         assertEquals("http://localhost:3000/auth/callback/saml-mock-3", updateResp.get("redirectURIs").getAsJsonArray().get(1).getAsString());
         assertTrue(updateResp.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(updatedAcsURLs, updateResp.get("acsURLs"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     private static void verifyClientStructureWithoutClientSecret(JsonObject client, boolean generatedClientId) throws Exception {
-        assertEquals(8, client.size());
+        assertEquals(client.has("acsURLs") ? 9 : 8, client.size());
 
         String[] FIELDS = new String[]{
                 "clientId",

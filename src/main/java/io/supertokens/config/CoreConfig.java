@@ -1083,9 +1083,12 @@ public class CoreConfig {
         }
 
         // Normalize
-        // Note: saml_sp_entity_id intentionally has no default. A shared default audience let an assertion
-        // minted for one SuperTokens deployment be accepted by another. It must be configured per deployment.
-        // See GHSA-wfg2-vqfg-rqh6.
+        // This default is shared by every deployment, so the audience alone cannot tell two SuperTokens SPs
+        // apart. SAML compensates by requiring an ACS allow-list for IdP-initiated login and a matching signed
+        // Recipient on the authenticating assertion. See GHSA-wfg2-vqfg-rqh6.
+        if (saml_sp_entity_id == null) {
+            saml_sp_entity_id = "https://saml.supertokens.com";
+        }
 
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
