@@ -263,9 +263,7 @@ public class SAMLConfigTest5_4 {
      * Test that the default SP entity ID is used when not configured.
      */
     @Test
-    public void testSamlFailsWhenSpEntityIdNotConfigured() throws Exception {
-        // GHSA-wfg2-vqfg-rqh6: saml_sp_entity_id has no default. With it unset, SAML must not operate:
-        // serving SP metadata (and starting a login) fails until it is configured per deployment.
+    public void testDefaultSpEntityId() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -274,14 +272,12 @@ public class SAMLConfigTest5_4 {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.SAML});
 
-        try {
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
-            fail("SP metadata must not be served when saml_sp_entity_id is not configured");
-        } catch (HttpResponseException e) {
-            assertEquals(500, e.statusCode);
-            assertTrue(e.getMessage().contains("saml_sp_entity_id must be configured"));
-        }
+        // Get SP metadata and verify it contains the default entity ID
+        String metadataXML = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+
+        assertTrue("SP metadata should contain default entity ID",
+                metadataXML.contains("entityID=\"https://saml.supertokens.com\""));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -12,8 +12,7 @@ import io.supertokens.utils.SemVer;
 
 public class SAMLTestUtils {
 
-    // GHSA-wfg2-vqfg-rqh6: saml_sp_entity_id has no default and must be configured per deployment.
-    // Tests set an explicit value in the config before starting the process.
+    // Matches the core's default saml_sp_entity_id. Tests that set it explicitly use this value.
     public static final String TEST_SP_ENTITY_ID = "https://saml.supertokens.com";
 
     public static void setSAMLSPEntityIdConfig() {
@@ -58,8 +57,14 @@ public class SAMLTestUtils {
                                                                       String idpEntityId,
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin) throws Exception {
+        // IdP-initiated login requires an ACS allow-list, so default it to the client's ACS URL.
+        JsonArray acsURLs = null;
+        if (allowIDPInitiatedLogin) {
+            acsURLs = new JsonArray();
+            acsURLs.add(acsURL);
+        }
         return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
-                allowIDPInitiatedLogin, null);
+                allowIDPInitiatedLogin, acsURLs);
     }
 
     public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
