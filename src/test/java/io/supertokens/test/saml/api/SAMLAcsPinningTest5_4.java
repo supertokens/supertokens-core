@@ -38,9 +38,8 @@ import static org.junit.Assert.assertNotNull;
 
 /**
  * Regression tests for IdP-initiated ACS pinning (GHSA-3r7x-rhvc-fw28 follow-up). On the IdP-initiated
- * path there is no login-time ACS URL to pin against, so Destination/Recipient pinning falls back to the
- * SAML client's configured ACS allow-list (`acsURLs`). When the list is null the client has not opted in
- * and the legacy no-pin behaviour is preserved.
+ * path there is no login-time ACS URL to pin against, so Destination/Recipient pinning uses the SAML
+ * client's ACS allow-list (`acsURLs`), which IdP-initiated login requires (see SAMLIdpInitiatedAcsURLsTest5_4).
  */
 public class SAMLAcsPinningTest5_4 {
 
@@ -62,9 +61,6 @@ public class SAMLAcsPinningTest5_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
-        // wfg2: saml_sp_entity_id has no default and must be configured, or the audience check fails
-        // (before we ever reach the ACS pinning under test). Set it to match AUDIENCE.
-        SAMLTestUtils.setSAMLSPEntityIdConfig();
     }
 
     private static TestingProcessManager.TestingProcess startWithSAML() throws Exception {
@@ -129,27 +125,6 @@ public class SAMLAcsPinningTest5_4 {
 
         JsonObject resp = idpInitiatedCallback(process, samlResponse);
         assertEquals("SAML_RESPONSE_VERIFICATION_FAILED_ERROR", resp.get("status").getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    /** IdP-initiated, client has no configured ACS (null) -> accepted, preserving legacy behaviour. */
-    @Test
-    public void idpInitiatedWithoutConfiguredAcsIsAccepted() throws Exception {
-        TestingProcessManager.TestingProcess process = startWithSAML();
-
-        // No acsURLs configured (the 6-arg helper passes null).
-        SAMLTestUtils.CreatedClientInfo clientInfo = SAMLTestUtils.createClientWithGeneratedMetadata(
-                process, DEFAULT_REDIRECT_URI, ACS_URL, IDP_ENTITY_ID, IDP_SSO_URL, true /* allowIDPInitiatedLogin */);
-
-        // Even an assertion minted for a different ACS is accepted, because the client has not opted in.
-        String samlResponse = MockSAML.generateSignedSAMLResponseBase64(
-                clientInfo.idpEntityId, AUDIENCE, OTHER_ACS_URL, "user@example.com",
-                null, null, clientInfo.keyMaterial, 300);
-
-        JsonObject resp = idpInitiatedCallback(process, samlResponse);
-        assertEquals("OK", resp.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
