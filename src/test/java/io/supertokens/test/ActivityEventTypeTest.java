@@ -48,11 +48,11 @@ public class ActivityEventTypeTest {
     }
 
     @Test
-    public void signInAndSignOutAreUnthrottledEverythingElseThrottled() {
+    public void signInSessionCreateAndSignOutAreUnthrottledEverythingElseThrottled() {
         assertFalse(ActiveUsers.isThrottled(ActivityEventType.SIGN_IN));
+        assertFalse(ActiveUsers.isThrottled(ActivityEventType.SESSION_CREATE));
         assertFalse(ActiveUsers.isThrottled(ActivityEventType.SIGN_OUT));
         assertTrue(ActiveUsers.isThrottled(ActivityEventType.TOKEN_REFRESH));
-        assertTrue(ActiveUsers.isThrottled(ActivityEventType.SESSION_CREATE));
         assertTrue(ActiveUsers.isThrottled(ActivityEventType.OAUTH_TOKEN_EXCHANGE));
         assertTrue(ActiveUsers.isThrottled(ActivityEventType.OAUTH_AUTHORIZE));
     }
