@@ -55,19 +55,18 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     // Mirrors the guard in the postgresql plugin's ConnectionPool: a call chain that holds one connection
     // (inside a startTransaction) and borrows a SECOND from the same pool is the hold-and-wait pool-
     // exhaustion pattern behind the OAuth-refresh regression. Keyed per pool; active only under
-    // Start.isTesting. While the pre-existing instances are cleaned up it WARNS by default (so the suite stays
-    // green): each offending call site is recorded and printed once to stdout, which the gradle test logging
-    // shows in the CI log (stderr is not shown). Flip throwOnNestedAcquisition to fail fast — used by the
-    // guard's own regression test, and intended to become the default once the cleanup lands.
+    // Start.isTesting. It THROWS by default, so a new instance fails the test that introduces it. Setting
+    // throwOnNestedAcquisition to false is a test-only opt-out to warn mode: each offending call site is
+    // recorded and printed once to stdout, which the gradle test logging shows in the CI log (stderr is not shown).
     private static final ThreadLocal<Map<String, Integer>> TXN_DEPTH_BY_POOL =
             ThreadLocal.withInitial(HashMap::new);
 
-    private static volatile boolean throwOnNestedAcquisition = false;
+    private static volatile boolean throwOnNestedAcquisition = true;
 
     // Warn-mode record: every distinct call site that borrowed a nested same-pool connection in this JVM.
     private static final Set<String> NESTED_ACQUISITION_SITES = ConcurrentHashMap.newKeySet();
 
-    // Test hook: when true, a nested same-pool acquisition throws instead of only warning.
+    // Test hook: when true (the default), a nested same-pool acquisition throws; false opts out to warn mode.
     public static void setThrowOnNestedAcquisition(boolean value) {
         throwOnNestedAcquisition = value;
     }
@@ -123,7 +122,7 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
         if (throwOnNestedAcquisition) {
             throw new IllegalStateException(message);
         }
-        // Warn-mode default during the cleanup: record the site and surface it once, without failing the suite.
+        // Warn-mode opt-out: record the site and surface it once, without failing the test.
         if (NESTED_ACQUISITION_SITES.add(site)) {
             System.out.println("[nested-conn-guard][WARN] " + message);
         }

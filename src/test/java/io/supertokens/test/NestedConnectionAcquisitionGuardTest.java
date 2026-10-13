@@ -80,10 +80,8 @@ public class NestedConnectionAcquisitionGuardTest {
         assertEquals("ok", ok);
 
         // Negative: a helper that ignores `con` and borrows a SECOND connection from the same pool.
-        // The guard warns by default while existing instances are cleaned up; arm throw-mode so detection surfaces as a throw
-        // this test can assert, then reset it so the rest of the suite stays in warn-mode.
+        // The guard throws by default, so no arming is needed for the detection to surface as a throw.
         Exception caught = null;
-        ConnectionPool.setThrowOnNestedAcquisition(true);
         try {
             sqlStorage.startTransaction(con -> {
                 try {
@@ -96,8 +94,6 @@ public class NestedConnectionAcquisitionGuardTest {
             fail("expected the nested same-pool acquisition guard to fire");
         } catch (Exception e) {
             caught = e;
-        } finally {
-            ConnectionPool.setThrowOnNestedAcquisition(false);
         }
         assertTrue("guard message not found in exception chain: " + messageChain(caught),
                 messageChain(caught).contains("Nested same-pool connection acquisition"));
@@ -124,15 +120,20 @@ public class NestedConnectionAcquisitionGuardTest {
         io.supertokens.inmemorydb.Start inMem = (io.supertokens.inmemorydb.Start) storage;
         SQLStorage sqlStorage = (SQLStorage) storage;
 
-        // Default (warn) mode: the nested borrow is allowed, but its call site must be recorded so it can be
-        // reported — the warning line alone is not enough to act on.
-        assertEquals("borrowed", sqlStorage.startTransaction(con -> {
-            try (Connection second = ConnectionPool.getConnection(inMem)) {
-                return "borrowed";
-            } catch (Exception e) {
-                throw new StorageTransactionLogicException(e);
-            }
-        }));
+        // Warn-mode opt-out: the nested borrow is allowed, but its call site must be recorded so it can be
+        // reported — the warning line alone is not enough to act on. Restore the throwing default afterwards.
+        ConnectionPool.setThrowOnNestedAcquisition(false);
+        try {
+            assertEquals("borrowed", sqlStorage.startTransaction(con -> {
+                try (Connection second = ConnectionPool.getConnection(inMem)) {
+                    return "borrowed";
+                } catch (Exception e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            }));
+        } finally {
+            ConnectionPool.setThrowOnNestedAcquisition(true);
+        }
         assertTrue("nested acquisition site not recorded: " + ConnectionPool.getNestedAcquisitionSites(),
                 ConnectionPool.getNestedAcquisitionSites().stream()
                         .anyMatch(site -> site.startsWith(getClass().getSimpleName() + ".")));
@@ -156,11 +157,10 @@ public class NestedConnectionAcquisitionGuardTest {
         SQLStorage sqlStorage = (SQLStorage) storage;
         TenantIdentifier missingTenant = new TenantIdentifier(null, null, "nonexistent");
 
-        // A real FK conflict inside a transaction, with throw-mode armed: classifying it must probe the tenants
-        // table on the transaction's own connection. Borrowing a second one would surface as the guard's
-        // IllegalStateException instead of TenantOrAppNotFoundException.
+        // A real FK conflict inside a transaction, with the guard in its default throw mode: classifying it must
+        // probe the tenants table on the transaction's own connection. Borrowing a second one would surface as the
+        // guard's IllegalStateException instead of TenantOrAppNotFoundException.
         Exception actual = null;
-        ConnectionPool.setThrowOnNestedAcquisition(true);
         try {
             sqlStorage.startTransaction(con -> {
                 try {
@@ -173,8 +173,6 @@ public class NestedConnectionAcquisitionGuardTest {
             fail("expected the FK conflict to be classified as TenantOrAppNotFoundException");
         } catch (StorageTransactionLogicException e) {
             actual = e.actualException;
-        } finally {
-            ConnectionPool.setThrowOnNestedAcquisition(false);
         }
         assertTrue("expected TenantOrAppNotFoundException, got: " + messageChain(actual),
                 actual instanceof TenantOrAppNotFoundException);

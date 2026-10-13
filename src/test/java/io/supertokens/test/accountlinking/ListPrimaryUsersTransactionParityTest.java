@@ -24,7 +24,6 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.config.SQLiteConfig;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.MigrationMode;
@@ -212,27 +211,22 @@ public class ListPrimaryUsersTransactionParityTest {
         boolean inMemory = storage instanceof io.supertokens.inmemorydb.Start;
         if (inMemory) {
             String uid = epUser.getSupertokensUserId();
-            ConnectionPool.setThrowOnNestedAcquisition(true);
-            try {
-                // Positive: threading `con` through the reads keeps everything on the transaction connection.
-                sqlStorage.startTransaction(
-                        con -> sqlStorage.listPrimaryUsersByEmail_Transaction(tenant, con, sharedEmail));
-                sqlStorage.startTransaction(
-                        con -> sqlStorage.listPrimaryUsersByPhoneNumber_Transaction(tenant, con, phone));
-                sqlStorage.startTransaction(
-                        con -> AuthRecipe.getUserById_Transaction(tenant.toAppIdentifier(), con, storage, uid));
+            // Positive: threading `con` through the reads keeps everything on the transaction connection.
+            sqlStorage.startTransaction(
+                    con -> sqlStorage.listPrimaryUsersByEmail_Transaction(tenant, con, sharedEmail));
+            sqlStorage.startTransaction(
+                    con -> sqlStorage.listPrimaryUsersByPhoneNumber_Transaction(tenant, con, phone));
+            sqlStorage.startTransaction(
+                    con -> AuthRecipe.getUserById_Transaction(tenant.toAppIdentifier(), con, storage, uid));
 
-                // Negative control: the non-transaction read borrows a second connection and trips the guard,
-                // proving the guard is armed and that the _Transaction variants are what avoids it.
-                try {
-                    sqlStorage.startTransaction(con -> AuthRecipe.getUserById(tenant.toAppIdentifier(), storage, uid));
-                    fail("expected the nested same-pool acquisition guard to fire on the non-transaction read");
-                } catch (Exception e) {
-                    assertTrue("guard message not found in exception chain: " + messageChain(e),
-                            messageChain(e).contains("Nested same-pool connection acquisition"));
-                }
-            } finally {
-                ConnectionPool.setThrowOnNestedAcquisition(false);
+            // Negative control: the non-transaction read borrows a second connection and trips the guard,
+            // proving the guard is armed and that the _Transaction variants are what avoids it.
+            try {
+                sqlStorage.startTransaction(con -> AuthRecipe.getUserById(tenant.toAppIdentifier(), storage, uid));
+                fail("expected the nested same-pool acquisition guard to fire on the non-transaction read");
+            } catch (Exception e) {
+                assertTrue("guard message not found in exception chain: " + messageChain(e),
+                        messageChain(e).contains("Nested same-pool connection acquisition"));
             }
         }
 
@@ -265,24 +259,15 @@ public class ListPrimaryUsersTransactionParityTest {
         Main main = process.getProcess();
         TenantIdentifier tenant = process.getAppForTesting();
         Storage storage = StorageLayer.getStorage(main);
-        boolean inMemory = storage instanceof io.supertokens.inmemorydb.Start;
-
         AuthRecipeUserInfo user = EmailPassword.signUp(main, "reset@example.com", "password123");
         String userId = user.getSupertokensUserId();
 
         // Positive: an unlinked EP user — the email is resolved from the user's EP login method.
         addNullEmailResetToken(main, tenant, userId, "token-unlinked");
-        if (inMemory) {
-            ConnectionPool.setThrowOnNestedAcquisition(true);
-        }
-        try {
-            EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
-                    tenant, storage, "token-unlinked");
-            assertEquals(userId, result.userId);
-            assertEquals("reset@example.com", result.email);
-        } finally {
-            ConnectionPool.setThrowOnNestedAcquisition(false);
-        }
+        EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
+                tenant, storage, "token-unlinked");
+        assertEquals(userId, result.userId);
+        assertEquals("reset@example.com", result.email);
 
         // Negative: once the user is linked to a second login method the null-email token is ambiguous and must be
         // rejected (the loginMethods.length > 1 check, which now reads through the transaction path).
@@ -291,16 +276,11 @@ public class ListPrimaryUsersTransactionParityTest {
         AuthRecipe.linkAccounts(main, tpUser.getSupertokensUserId(), userId);
 
         addNullEmailResetToken(main, tenant, userId, "token-linked");
-        if (inMemory) {
-            ConnectionPool.setThrowOnNestedAcquisition(true);
-        }
         try {
             EmailPassword.consumeResetPasswordToken(tenant, storage, "token-linked");
             fail("expected ResetPasswordInvalidTokenException for a null-email token on a linked user");
         } catch (ResetPasswordInvalidTokenException expected) {
             // ok
-        } finally {
-            ConnectionPool.setThrowOnNestedAcquisition(false);
         }
 
         stop(process);
