@@ -661,8 +661,11 @@ public class EmailPassword {
                 if (matchedToken.email == null) {
                     // this is possible if the token was generated before migration, and then consumed
                     // after migration
-                    AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage,
-                            userId);
+                    // Read on the transaction's own connection: the surrounding startTransaction still holds a
+                    // connection from this pool, so borrowing a second one here is the nested same-pool acquisition
+                    // (pool-exhaustion) pattern the connection guard flags.
+                    AuthRecipeUserInfo user = AuthRecipe.getUserById_Transaction(tenantIdentifier.toAppIdentifier(),
+                            con, storage, userId);
                     if (user == null) {
                         throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                     }

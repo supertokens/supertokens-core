@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [12.4.0]
 
 - Hardening: the legacy SAML userinfo endpoint now rejects a malformed bearer token with a 400 instead of throwing on a token like `x.` (previously an unauthenticated 500), and parses the `<code>.<clientId>` token on the first dot only so a caller-supplied `clientId` that contains dots is preserved rather than truncated.
@@ -34,6 +35,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Session verify on CDI < 5.6 (when it updates the session), OAuth non-rotating refresh and the in-memory passwordless device creation now run at the default READ COMMITTED isolation level instead of REPEATABLE READ. The first two already lock the session / token row with `SELECT ... FOR UPDATE`, so a concurrent request now waits and reads the latest row instead of failing with a serialization error and retrying.
 - Adds a test-only connection-pool guard (in-memory + postgresql): a call chain that holds one connection and borrows a second from the same pool — the nested-acquisition pool-exhaustion pattern — is detected in tests. Warns by default while the existing instances are cleaned up; an opt-in flag makes it fail fast.
 - A session create now writes one activity-log row instead of two: an unthrottled `session_create` with the session handle and SuperTokens user ids; the untyped `session_created` event is no longer written. Anyone querying `activity_log` directly (for example SIEM exports or audit queries) should note the rename: rows previously written as `session_created` are now `session_create`.
+- Fix: `EmailPassword.consumeResetPasswordToken` no longer borrows a second pooled connection inside its transaction (new `AuthRecipe.getUserById_Transaction` and `listPrimaryUsersByEmail/PhoneNumber_Transaction` reads).
+
 
 ## [12.3.0]
 

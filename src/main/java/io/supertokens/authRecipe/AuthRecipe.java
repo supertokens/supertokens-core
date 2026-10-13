@@ -243,6 +243,15 @@ public class AuthRecipe {
         return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
+    // Transaction variant of getUserById: the primary-user read runs on the caller's transaction connection
+    // instead of borrowing a second connection from the same pool (nested same-pool acquisition). Use this from
+    // recipe code that already holds a startTransaction connection on this storage's pool.
+    public static AuthRecipeUserInfo getUserById_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                             Storage storage, String userId)
+            throws StorageQueryException {
+        return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById_Transaction(appIdentifier, con, userId);
+    }
+
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void reservePrimaryUserAccountInfos(Main main, Storage storage, AppIdentifier appIdentifier, List<PrimaryUser> primaryUsers)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
