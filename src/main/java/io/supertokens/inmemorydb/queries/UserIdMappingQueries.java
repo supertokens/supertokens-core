@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -221,6 +222,33 @@ public class UserIdMappingQueries {
             while (result.next()) {
                 UserIdMapping temp = UserIdMappingRowMapper.getInstance().mapOrThrow(result);
                 userIdMappings.put(temp.superTokensUserId, temp.externalUserId);
+            }
+            return userIdMappings;
+        });
+    }
+
+    public static List<UserIdMapping> getMultipleUserIdMapping_Transaction(Start start, Connection sqlCon,
+                                                                           AppIdentifier appIdentifier,
+                                                                           List<String> userIds,
+                                                                           boolean isSupertokensIds)
+            throws SQLException, StorageQueryException {
+        if (userIds == null || userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? AND "
+                + (isSupertokensIds ? "supertokens_user_id" : "external_user_id") + " IN ("
+                + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) + ")";
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            for (int i = 0; i < userIds.size(); i++) {
+                // i+2 cause this starts with 1 and not 0, and 1 is appId
+                pst.setString(i + 2, userIds.get(i));
+            }
+        }, result -> {
+            List<UserIdMapping> userIdMappings = new ArrayList<>();
+            while (result.next()) {
+                userIdMappings.add(UserIdMappingRowMapper.getInstance().mapOrThrow(result));
             }
             return userIdMappings;
         });

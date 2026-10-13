@@ -51,7 +51,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage.TransactionIsolationLevel;
 
 public class PasswordlessQueries {
     public static String getQueryToCreateUsersTable(Start start) {
@@ -184,7 +183,7 @@ public class PasswordlessQueries {
                 throw new StorageTransactionLogicException(throwables);
             }
             return null;
-        }, TransactionIsolationLevel.REPEATABLE_READ);
+        });
     }
 
     public static PasswordlessDevice getDevice_Transaction(Start start, Connection con,

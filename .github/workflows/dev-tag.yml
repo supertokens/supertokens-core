@@ -10,6 +10,7 @@ on:
 jobs:
   dependency-versions:
     name: Dependency Versions
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.result.outputs.versions }}

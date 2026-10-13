@@ -50,6 +50,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.webauthn.AccountRecoveryTokenInfo;
 import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
 import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
@@ -421,13 +422,13 @@ public class WebAuthN {
                     String credentialId = getCredentialId(credentialsData);
 
                     WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
-                            con, credentialId);
+                            con, generatedOptions.relyingPartyId, credentialId);
                     if(credential==null) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
 
                     verifyAuthenticationData(credentialsData, generatedOptions, credential);
-                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
+                    webAuthNStorage.updateCounter_Transaction(tenantIdentifier, con, generatedOptions.relyingPartyId, credentialId, credential.counter); //the verifyAuthenticatorData method's verify step updates the credential on this object. We have to save the updated value!
 
                     if (consumeOptions) {
                         // challenges are single-use (WebAuthn L3 §13.4.3): consume the options atomically with
@@ -441,7 +442,8 @@ public class WebAuthN {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
-                    UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
+                    UserIdMapping.populateExternalUserIdForUsers(con, tenantIdentifier.toAppIdentifier(), storage,
+                            new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
                     return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
                          WebauthNInvalidFormatException  e) {
@@ -660,6 +662,16 @@ public class WebAuthN {
         return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
+    // Transaction-scoped variant: resolves the mapping on the caller's connection, so the lookup runs in the
+    // same transaction as the surrounding work instead of borrowing a second connection from the same pool.
+    private static String translateToInternalUserId(TransactionConnection con, Storage storage,
+                                                    TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                UserIdMapping.getUserIdMapping(con, tenantIdentifier.toAppIdentifier(), storage, userId, null);
+        return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
+    }
+
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String email)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
@@ -669,7 +681,9 @@ public class WebAuthN {
         try {
             webAuthNStorage.startTransaction(con -> {
 
-                String userIdFromMapping = translateToInternalUserId(storage, tenantIdentifier, userId);
+                // Resolve the internal user id on the transaction's own connection (not a second pooled
+                // connection), keeping the mapping read inside this transaction.
+                String userIdFromMapping = translateToInternalUserId(con, storage, tenantIdentifier, userId);
 
                 AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                         .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userIdFromMapping);

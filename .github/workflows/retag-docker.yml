@@ -15,6 +15,7 @@ on:
 jobs:
   retag:
     name: Retag Docker image
+    if: github.repository == 'supertokens/supertokens-core'
     environment: publish
     runs-on: ubuntu-22.04
     steps:

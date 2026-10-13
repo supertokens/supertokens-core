@@ -22,6 +22,7 @@ jobs:
   # ── Parse the free-text version list into a JSON matrix ──────────────
   prepare:
     name: Parse version list
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.parse.outputs.matrix }}

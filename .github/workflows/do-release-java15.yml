@@ -62,6 +62,7 @@ jobs:
   # it here stops the whole release.
   validate-inputs:
     name: Validate inputs
+    if: github.repository == 'supertokens/supertokens-core'
     runs-on: ubuntu-22.04
     steps:
       - name: Check fast-release and is-latest-release are mutually exclusive
@@ -432,7 +433,7 @@ jobs:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
     needs: [ dependency-branches, register-plugin-version, test, derive-db-migration-flag ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -557,6 +558,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
+          pull: true
           context: ./supertokens-root
           tags: supertokens/supertokens-dev-postgresql:${{ steps.set_tag.outputs.TAG }}
           file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
@@ -575,7 +577,7 @@ jobs:
   release-docker:
     name: Release Docker image
     needs: [ build-docker, stress-tests, mark-as-passed ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/_release-publish-docker.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -591,7 +593,7 @@ jobs:
     name: Add release tags
     environment: publish
     needs: [update-deps, release-docker, derive-db-migration-flag]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 15
@@ -707,7 +709,7 @@ jobs:
   # ── Build and commit the release JARs ─────────────────────────────
   build-jars:
     needs: [add-release-tags]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     uses: ./.github/workflows/generate-jars.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -721,7 +723,7 @@ jobs:
   notify-slack:
     name: Notify Slack
     needs: [ build-jars ]
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
     runs-on: ubuntu-22.04
     steps:
       - name: Post release notification on Slack channel
