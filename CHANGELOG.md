@@ -37,6 +37,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The nested same-pool connection-acquisition guard now fails fast by default.
 - A session create now writes one activity-log row instead of two: an unthrottled `session_create` with the session handle and SuperTokens user ids; the untyped `session_created` event is no longer written. Anyone querying `activity_log` directly (for example SIEM exports or audit queries) should note the rename: rows previously written as `session_created` are now `session_create`.
 - Fix: `EmailPassword.consumeResetPasswordToken` no longer borrows a second pooled connection inside its transaction (new `AuthRecipe.getUserById_Transaction` and `listPrimaryUsersByEmail/PhoneNumber_Transaction` reads).
+- Fixes role revocation returning UNKNOWN_ROLE_ERROR for tenants with their own storage: role existence is now checked against the app-level storage before the tenant transaction, mirroring how role assignment works
 
 
 ## [12.3.0]
