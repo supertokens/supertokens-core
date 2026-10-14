@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.inmemorydb.TransactionCounters;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
@@ -547,8 +548,17 @@ public abstract class WebserverAPI extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        // Test-only: brackets the request for the in-memory storage's per-request transaction counters (a no-op
+        // outside tests).
+        TransactionCounters.beginRequest();
+        try {
+            serviceRequest(req, resp);
+        } finally {
+            TransactionCounters.endRequest(req.getMethod() + " " + req.getRequestURI());
+        }
+    }
 
-
+    private void serviceRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         TenantIdentifier tenantIdentifier = null;
         ConcurrencyLimiter limiter = null;
         boolean acquired = false;
