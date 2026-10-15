@@ -94,6 +94,15 @@ public class OAuthToken {
 
     public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
+        return reSignToken(appIdentifier, main, token, iss, payloadUpdate, atHash, tokenType, useDynamicSigningKey, retryCount, false);
+    }
+
+    // useCacheOnlySigningKey: when true, resolve the signing key from the in-memory cache only and never
+    // trigger a key-cache refresh/creation (which opens its own transaction). Callers that run inside an
+    // existing storage transaction pass true after pre-warming the caches while holding no connection, so
+    // signing never borrows a second pool connection.
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount, boolean useCacheOnlySigningKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+            JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         payload.addProperty("iss", iss);
@@ -144,8 +153,12 @@ public class OAuthToken {
         JWTSigningKeyInfo keyToUse;
         if (useDynamicSigningKey) {
             keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(
-                    SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
+                    useCacheOnlySigningKey
+                            ? SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKeyWithoutRefresh()
+                            : SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
         } else {
+            // getStaticKeyForAlgorithm already serves a cached key DB-free when the cache is warm; the
+            // non-rotating refresh handler pre-warms it before opening the transaction.
             keyToUse = SigningKeys.getInstance(appIdentifier, main)
                     .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
         }
