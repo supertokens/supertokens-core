@@ -45,6 +45,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.filters.RemoteAddrFilter;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -58,6 +59,8 @@ public abstract class WebserverAPI extends HttpServlet {
     private static final long serialVersionUID = 1L;
     protected final Main main;
     public static final Set<SemVer> supportedVersions = new HashSet<>();
+    // Test-only hook around every request, called on the servlet thread that handles it; null outside tests.
+    private static volatile RequestObserver requestObserver = null;
     private String rid;
 
     /**
@@ -547,8 +550,20 @@ public abstract class WebserverAPI extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        RequestObserver observer = requestObserver;
+        if (observer == null) {
+            serviceRequest(req, resp);
+            return;
+        }
+        observer.onRequestStart(req);
+        try {
+            serviceRequest(req, resp);
+        } finally {
+            observer.onRequestEnd(req);
+        }
+    }
 
-
+    private void serviceRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         TenantIdentifier tenantIdentifier = null;
         ConcurrencyLimiter limiter = null;
         boolean acquired = false;
@@ -740,6 +755,22 @@ public abstract class WebserverAPI extends HttpServlet {
         public BadRequestException(String msg) {
             super(msg);
         }
+    }
+
+    // Observes the start and end of each request on the servlet thread that handles it, e.g. so a test can measure
+    // per-thread state for exactly one API call.
+    public interface RequestObserver {
+        void onRequestStart(HttpServletRequest req);
+
+        void onRequestEnd(HttpServletRequest req);
+    }
+
+    // Installs the observer for requests that start from now on (null removes it) and returns the previous one.
+    @TestOnly
+    public static RequestObserver setRequestObserverForTesting(RequestObserver observer) {
+        RequestObserver previous = requestObserver;
+        requestObserver = observer;
+        return previous;
     }
 
     protected static class APIKeyUnauthorisedException extends Exception {

@@ -279,6 +279,7 @@ public class Start
         try {
             con = ConnectionPool.getConnection(this);
             con.setAutoCommit(false);
+            TransactionCounters.transactionOpened();
             // Mark this thread as holding a connection from this pool for the duration of the callback, so a
             // nested same-pool borrow (a helper not threading `con`) is caught by ConnectionPool's guard.
             ConnectionPool.enterTransaction(this);
