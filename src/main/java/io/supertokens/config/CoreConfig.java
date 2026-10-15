@@ -566,6 +566,16 @@ public class CoreConfig {
     @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
     private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
+    @EnvName("DISABLE_USER_ID_MAPPING")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription(
+            "If true, the core skips all user id mapping lookups for this app and rejects creating user id mappings " +
+                    "or updating their externalUserIdInfo; removing mappings is still allowed. It cannot be turned " +
+                    "on while the app has user id mappings. Cores pick up config changes on their next refresh, so " +
+                    "stop creating mappings before turning this on. (Default: false)")
+    private boolean disable_user_id_mapping = false;
+
     @EnvName("OTEL_COLLECTOR_CONNECTION_URI")
     @ConfigYamlOnly
     @JsonProperty
@@ -937,6 +947,10 @@ public class CoreConfig {
 
     public boolean getActivityLogThrottleEnabled() {
         return activity_log_throttle_enabled;
+    }
+
+    public boolean isUserIdMappingDisabled() {
+        return disable_user_id_mapping;
     }
 
     public String getOtelCollectorConnectionURI() {

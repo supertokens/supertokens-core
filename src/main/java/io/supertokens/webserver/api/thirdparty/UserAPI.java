@@ -91,7 +91,8 @@ public class UserAPI extends WebserverAPI {
                     user = ThirdParty.getUser(appIdentifier, storageAndUserIdMapping.storage,
                             userId);
                     if (user != null) {
-                        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageAndUserIdMapping.storage,
+                        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier,
+                                storageAndUserIdMapping.storage,
                                 new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
@@ -103,7 +104,7 @@ public class UserAPI extends WebserverAPI {
                 user = ThirdParty.getUser(tenantIdentifier, storage, thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
-                    UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                    UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage,
                             new AuthRecipeUserInfo[]{user});
                 }
             }

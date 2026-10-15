@@ -95,7 +95,7 @@ public class UserAPI extends WebserverAPI {
                             appIdentifier,
                             storageAndUserIdMapping.storage, userId);
                     if (user != null) {
-                        UserIdMapping.populateExternalUserIdForUsers(appIdentifier,
+                        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier,
                                 storageAndUserIdMapping.storage,
                                 new AuthRecipeUserInfo[]{user});
                     }
@@ -110,7 +110,7 @@ public class UserAPI extends WebserverAPI {
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
                     if (user != null) {
-                        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage,
+                        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storage,
                                 new AuthRecipeUserInfo[]{user});
                     }
                 }

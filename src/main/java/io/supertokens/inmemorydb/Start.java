@@ -121,6 +121,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
@@ -2665,10 +2666,30 @@ public class Start
         throw new UnsupportedOperationException("'addRolesToUsers_Transaction' is not supported for in-memory db");
     }
 
+    // Counts every call core makes into the user id mapping storage, so tests can assert that a request with
+    // disable_user_id_mapping on never asks for a mapping. Queries the storage runs internally (e.g. the
+    // email-verification lookup during user hydration) are not counted.
+    private static final AtomicLong userIdMappingCallCount = new AtomicLong();
+
+    private static void countUserIdMappingCall() {
+        userIdMappingCallCount.incrementAndGet();
+    }
+
+    @TestOnly
+    public static long getUserIdMappingCallCountForTesting() {
+        return userIdMappingCallCount.get();
+    }
+
+    @TestOnly
+    public static void resetUserIdMappingCallCountForTesting() {
+        userIdMappingCallCount.set(0);
+    }
+
     @Override
     public void createUserIdMapping(AppIdentifier appIdentifier, String superTokensUserId, String externalUserId,
                                     @org.jetbrains.annotations.Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
+        countUserIdMappingCall();
         try {
             UserIdMappingQueries.createUserIdMapping(this, appIdentifier, superTokensUserId, externalUserId,
                     externalUserIdInfo);
@@ -2709,12 +2730,14 @@ public class Start
     public void createBulkUserIdMapping(AppIdentifier appIdentifier,
                                         Map<String, String> superTokensUserIdToExternalUserId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         throw new UnsupportedOperationException("'createBulkUserIdMapping' is not supported for in-memory db");
     }
 
     @Override
     public boolean deleteUserIdMapping(AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             if (isSuperTokensUserId) {
                 return UserIdMappingQueries.deleteUserIdMappingWithSuperTokensUserId(this, appIdentifier,
@@ -2731,6 +2754,7 @@ public class Start
     @Override
     public UserIdMapping getUserIdMapping(AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             if (isSuperTokensUserId) {
                 return UserIdMappingQueries.getuseraIdMappingWithSuperTokensUserId(this, appIdentifier,
@@ -2746,6 +2770,7 @@ public class Start
     @Override
     public UserIdMapping[] getUserIdMapping(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId(this,
                     appIdentifier,
@@ -2759,6 +2784,7 @@ public class Start
     public boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, String userId,
                                                     boolean isSuperTokensUserId,
                                                     @Nullable String externalUserIdInfo) throws StorageQueryException {
+        countUserIdMappingCall();
 
         try {
             if (isSuperTokensUserId) {
@@ -2775,6 +2801,7 @@ public class Start
 
     @Override
     public boolean hasUserIdMappings(AppIdentifier appIdentifier) throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             return UserIdMappingQueries.hasUserIdMappings(this, appIdentifier);
         } catch (SQLException e) {
@@ -2786,6 +2813,7 @@ public class Start
     public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier appIdentifier,
                                                                      ArrayList<String> userIds)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             return UserIdMappingQueries.getUserIdMappingWithUserIds(this, appIdentifier, userIds);
         } catch (SQLException e) {
@@ -3715,6 +3743,7 @@ public class Start
     public UserIdMapping getUserIdMapping_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                       String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             Connection sqlCon = (Connection) con.getConnection();
             if (isSuperTokensUserId) {
@@ -3734,6 +3763,7 @@ public class Start
     public UserIdMapping[] getUserIdMapping_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                         String userId)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             Connection sqlCon = (Connection) con.getConnection();
             return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId_Transaction(this,
@@ -3750,6 +3780,7 @@ public class Start
                                                                     AppIdentifier appIdentifier, List<String> userIds,
                                                                     boolean isSupertokensIds)
             throws StorageQueryException {
+        countUserIdMappingCall();
         try {
             Connection sqlCon = (Connection) connection.getConnection();
             return UserIdMappingQueries.getMultipleUserIdMapping_Transaction(this, sqlCon, appIdentifier, userIds,

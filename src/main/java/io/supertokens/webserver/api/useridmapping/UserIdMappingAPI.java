@@ -95,7 +95,7 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            UserIdMapping.createUserIdMapping(
+            UserIdMapping.createUserIdMapping(main,
                     getAppIdentifier(req), enforcePublicTenantAndGetAllStoragesForApp(req),
                     superTokensUserId, externalUserId, externalUserIdInfo, force,
                     getVersionFromRequest(req).greaterThanOrEqualTo(

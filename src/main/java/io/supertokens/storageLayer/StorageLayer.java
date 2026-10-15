@@ -541,14 +541,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             if (((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                         tenantIdentifier.toAppIdentifier(), storage, userId, userIdType);
 
                 return new StorageAndUserIdMapping(storage, mapping);
             }
 
         } else if (userIdType == UserIdType.EXTERNAL) {
-            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                     tenantIdentifier.toAppIdentifier(), storage,
                     userId, userIdType);
             if (mapping != null) {
@@ -556,13 +556,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
         } else if (userIdType == UserIdType.ANY) {
             if (((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                         tenantIdentifier.toAppIdentifier(), storage, userId, userIdType);
 
                 return new StorageAndUserIdMapping(storage, mapping);
             }
 
-            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                     tenantIdentifier.toAppIdentifier(), storage,
                     userId, userIdType);
             if (mapping != null) {
@@ -586,7 +586,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
-            AppIdentifier appIdentifier, Storage[] storages, String userId,
+            Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
             UserIdType userIdType) throws StorageQueryException, UnknownUserIdException {
 
         if (storages.length == 0) {
@@ -602,7 +602,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (userIdType == UserIdType.SUPERTOKENS) {
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                             appIdentifier, storage,
                             userId, userIdType);
 
@@ -615,7 +615,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         } else if (userIdType == UserIdType.EXTERNAL) {
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                         appIdentifier, storage,
                         userId, userIdType);
 
@@ -630,7 +630,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             // look for the user in auth recipes as supertokens user id
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                             appIdentifier, storage,
                             userId, userIdType);
 
@@ -640,7 +640,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
             // Look for user in auth recipes using user id mapping
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                         appIdentifier, storage,
                         userId, userIdType);
 
@@ -667,7 +667,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static List<StorageAndUserIdMapping> findStorageAndUserIdMappingForBulkUserImport(
-            AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
+            Main main, AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
             UserIdType userIdType) throws StorageQueryException {
 
         if (storages.length == 0) {
@@ -686,7 +686,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
         if (userIdType != UserIdType.ANY) {
             for (Storage storage : storages) {
-                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(
+                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(main,
                         appIdentifier, storage,
                         userIds, userIdType);
 

@@ -19,6 +19,7 @@ package io.supertokens.multitenancy;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,7 @@ import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingExcept
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
@@ -185,7 +187,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                              boolean shouldPreventProtecterdConfigUpdate,
                                              boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
-            TenantOrAppNotFoundException, CannotModifyBaseConfigException {
+            TenantOrAppNotFoundException, CannotModifyBaseConfigException, StorageQueryException {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (targetTenantConfig.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
@@ -254,6 +256,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                 tenantIdentifier.getAppId().equals(targetTenantIdentifier.getAppId()));
             });
 
+            Map<TenantIdentifier, JsonObject> changedConfigs = new HashMap<>();
             if (hasAffectedDescendants) {
                 // App and CUD configs are parents in the config hierarchy. Validate the complete prospective state
                 // because changing a parent also changes every descendant that inherits from it.
@@ -262,6 +265,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                 existingTenants,
                                 Config.getBaseConfigAsJsonObject(main));
                 Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
+                for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry : normalisedConfigs.entrySet()) {
+                    changedConfigs.put(entry.getKey().getTenantIdentifier(), entry.getValue());
+                }
             } else {
                 // A leaf tenant update cannot change another tenant's effective config.
                 JsonObject normalisedConfig = Config.getNormalisedConfigForTenant(
@@ -269,7 +275,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         Config.getBaseConfigAsJsonObject(main));
                 Config.assertSingleTenantConfigIsValid(main, targetTenantConfig.tenantIdentifier,
                         normalisedConfig, targetTenantConfig);
+                changedConfigs.put(targetTenantConfig.tenantIdentifier, normalisedConfig);
             }
+
+            assertNoUserIdMappingsWhereMappingGetsDisabled(main, changedConfigs);
         }
 
         // Validate migration_mode state-machine transitions. We only enforce this when the
@@ -294,6 +303,32 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // validate third party config
         if (!skipThirdPartyConfigValidation) {
             ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
+        }
+    }
+
+    // disable_user_id_mapping hides existing mappings, so it can only be turned on for an app that has none. Apps
+    // where it is already on were checked when it was turned on, and mapping creation is rejected since then.
+    private static void assertNoUserIdMappingsWhereMappingGetsDisabled(Main main,
+                                                                       Map<TenantIdentifier, JsonObject> configs)
+            throws InvalidConfigException, StorageQueryException {
+        Set<AppIdentifier> checkedApps = new HashSet<>();
+        for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
+            JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
+            if (disabled == null || disabled.isJsonNull() || !disabled.getAsBoolean()) {
+                continue;
+            }
+            AppIdentifier appIdentifier = entry.getKey().toAppIdentifier();
+            if (!checkedApps.add(appIdentifier) || UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+                continue;
+            }
+            try {
+                if (UserIdMapping.hasUserIdMappings(main, appIdentifier)) {
+                    throw new InvalidConfigException(
+                            "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
+                }
+            } catch (TenantOrAppNotFoundException e) {
+                // the app is being created, so it has no users yet
+            }
         }
     }
 

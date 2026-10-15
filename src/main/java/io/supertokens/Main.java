@@ -50,6 +50,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.jetbrains.annotations.TestOnly;
@@ -256,6 +257,8 @@ public class Main {
             }
 
             MultitenancyHelper.getInstance(this).loadStorageLayer();
+
+            UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(this);
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
