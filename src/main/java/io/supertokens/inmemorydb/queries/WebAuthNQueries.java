@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -530,16 +531,10 @@ public class WebAuthNQueries {
 
     public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
             throws StorageQueryException {
-        try {
-            return start.startTransaction(con -> {
-                Connection sqlConnection = (Connection) con.getConnection();
-                try {
-                    return getUsersInfoUsingIdList_Transaction(start, sqlConnection, ids, appIdentifier);
-                } catch (SQLException e) {
-                    throw new StorageQueryException(e);
-                }
-            });
-        } catch (StorageTransactionLogicException e) {
+        // Read-only, so plain autocommit reads on one connection, like the postgresql plugin.
+        try (Connection sqlConnection = ConnectionPool.getConnection(start)) {
+            return getUsersInfoUsingIdList_Transaction(start, sqlConnection, ids, appIdentifier);
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }

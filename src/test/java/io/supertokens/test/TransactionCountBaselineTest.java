@@ -82,11 +82,11 @@ public class TransactionCountBaselineTest {
         // warm-up: the first session creates the signing keys
         createSession(process, userId);
 
-        JsonObject session = baseline.measure("session create", Snapshot.of(1, 0, 2),
+        JsonObject session = baseline.measure("session create", Snapshot.of(0, 0, 2),
                 () -> createSession(process, userId));
         String handle = session.getAsJsonObject("session").get("handle").getAsString();
 
-        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(2, 1, 1),
+        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(1, 1, 1),
                 () -> refreshSession(process, session.getAsJsonObject("refreshToken").get("token").getAsString()));
 
         baseline.measure("session verify (checkDatabase)", Snapshot.of(0, 0, 0),
@@ -127,7 +127,7 @@ public class TransactionCountBaselineTest {
         baseline.measure("email-password sign-up", Snapshot.of(1, 1, 1),
                 () -> emailPasswordSignUp(process, "ep-user@example.com"));
 
-        baseline.measure("email-password sign-in", Snapshot.of(1, 0, 2), () -> {
+        baseline.measure("email-password sign-in", Snapshot.of(0, 0, 2), () -> {
             JsonObject body = new JsonObject();
             body.addProperty("email", "ep-user@example.com");
             body.addProperty("password", "validPass123");
@@ -151,7 +151,7 @@ public class TransactionCountBaselineTest {
 
         baseline.measure("third-party sign-in-up (new user)", Snapshot.of(1, 1, 1),
                 () -> thirdPartySignInUp(process, "tp-user", "tp-user@example.com"));
-        baseline.measure("third-party sign-in-up (existing user)", Snapshot.of(2, 0, 2),
+        baseline.measure("third-party sign-in-up (existing user)", Snapshot.of(1, 0, 2),
                 () -> thirdPartySignInUp(process, "tp-user", "tp-user@example.com"));
 
         baseline.assertMatches();
@@ -173,7 +173,7 @@ public class TransactionCountBaselineTest {
                 () -> consumeCode(process, code));
 
         JsonObject secondCode = createCode(process, "pl-user@example.com");
-        baseline.measure("passwordless consume-code (existing user)", Snapshot.of(3, 1, 2),
+        baseline.measure("passwordless consume-code (existing user)", Snapshot.of(2, 1, 2),
                 () -> consumeCode(process, secondCode));
 
         baseline.assertMatches();
@@ -209,20 +209,42 @@ public class TransactionCountBaselineTest {
         Map<String, String> byUserId = new HashMap<>();
         byUserId.put("userId", userId);
 
-        baseline.measure("get user by id", Snapshot.of(2, 0, 0),
+        baseline.measure("get user by id", Snapshot.of(0, 0, 0),
                 () -> get(process, "/user/id", byUserId, null));
 
         Map<String, String> byEmail = new HashMap<>();
         byEmail.put("email", "read-user@example.com");
         byEmail.put("doUnionOfAccountInfo", "false");
-        baseline.measure("get users by account info", Snapshot.of(1, 0, 0),
+        baseline.measure("get users by account info", Snapshot.of(0, 0, 0),
                 () -> get(process, "/users/by-accountinfo", byEmail, null));
 
-        baseline.measure("user metadata get", Snapshot.of(1, 0, 0),
+        baseline.measure("user metadata get", Snapshot.of(0, 0, 0),
                 () -> get(process, "/recipe/user/metadata", byUserId, "usermetadata"));
 
         baseline.measure("user roles get", Snapshot.of(0, 0, 0),
                 () -> get(process, "/recipe/user/roles", byUserId, "userroles"));
+
+        // The same reads for a user with a user id mapping, addressed by the external id: the lookup resolves
+        // the mapping instead of finding the id in the auth recipes.
+        String mappedUserId = emailPasswordSignUp(process, "mapped-user@example.com").get("id").getAsString();
+        JsonObject mapping = new JsonObject();
+        mapping.addProperty("superTokensUserId", mappedUserId);
+        mapping.addProperty("externalUserId", "external-read-user");
+        assertEquals("OK", post(process, "/recipe/userid/map", mapping, "useridmapping").get("status").getAsString());
+        Map<String, String> byExternalId = new HashMap<>();
+        byExternalId.put("userId", "external-read-user");
+
+        baseline.measure("get user by id (external id)", Snapshot.of(0, 0, 0), () -> {
+            JsonObject response = get(process, "/user/id", byExternalId, null);
+            assertEquals("external-read-user", response.getAsJsonObject("user").get("id").getAsString());
+            return response;
+        });
+
+        baseline.measure("user metadata get (external id)", Snapshot.of(0, 0, 0),
+                () -> get(process, "/recipe/user/metadata", byExternalId, "usermetadata"));
+
+        baseline.measure("user roles get (external id)", Snapshot.of(0, 0, 0),
+                () -> get(process, "/recipe/user/roles", byExternalId, "userroles"));
 
         baseline.assertMatches();
         stop(process);
