@@ -488,7 +488,7 @@ public abstract class WebserverAPI extends HttpServlet {
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
             return StorageLayer.findStorageAndUserIdMappingForUser(
-                    appIdentifier, storages, userId, userIdType);
+                    main, appIdentifier, storages, userId, userIdType);
         } catch (UnknownUserIdException e) {
             if (isCallFromAuthRecipeAPI) {
                 throw e;

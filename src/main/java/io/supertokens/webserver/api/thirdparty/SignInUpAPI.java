@@ -83,7 +83,7 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
                         tenantIdentifier, storage,
                         thirdPartyId, thirdPartyUserId, email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 
                 if (!response.createdNewUser) {
@@ -157,7 +157,7 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
                         email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 
                 if (!response.createdNewUser) {

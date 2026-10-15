@@ -226,7 +226,7 @@ public class Session {
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
+                    main, tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
             if (userIdMapping != null) {
                 recipeUserId = userIdMapping.superTokensUserId;
             }
@@ -240,7 +240,7 @@ public class Session {
             superTokensPrimaryUserId = primaryUserId;
 
             HashMap<String, String> userIdMappings = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifier.toAppIdentifier(), storage,
+                    main, tenantIdentifier.toAppIdentifier(), storage,
                     new ArrayList<>(Arrays.asList(primaryUserId, recipeUserId)));
             if (userIdMappings.containsKey(primaryUserId)) {
                 primaryUserId = userIdMappings.get(primaryUserId);

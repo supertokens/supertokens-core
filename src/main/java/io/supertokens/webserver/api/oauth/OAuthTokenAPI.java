@@ -318,7 +318,7 @@ public class OAuthTokenAPI extends WebserverAPI {
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
             SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
 
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                     appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,

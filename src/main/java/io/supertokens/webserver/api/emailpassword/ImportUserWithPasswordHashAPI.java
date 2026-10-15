@@ -104,7 +104,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
                     tenantIdentifier, storage, main, email,
                     passwordHash, passwordHashingAlgorithm);
-            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+            UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage,
                     new AuthRecipeUserInfo[]{importUserResponse.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

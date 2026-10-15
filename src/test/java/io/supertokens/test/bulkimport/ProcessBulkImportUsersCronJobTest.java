@@ -111,7 +111,7 @@ public class ProcessBulkImportUsersCronJobTest {
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
         assertEquals(usersCount, container.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage, container.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storage, container.users);
 
         TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
@@ -198,7 +198,7 @@ public class ProcessBulkImportUsersCronJobTest {
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
         assertEquals(usersCount, container.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage, container.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storage, container.users);
 
         TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
@@ -421,7 +421,7 @@ public class ProcessBulkImportUsersCronJobTest {
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
         assertEquals(usersCount, container.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage, container.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storage, container.users);
 
         TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
@@ -596,8 +596,8 @@ public class ProcessBulkImportUsersCronJobTest {
 
         assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT2, containerT2.users);
 
         BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t1, storageT1,
                 bulkImportUserT1,
@@ -658,8 +658,8 @@ public class ProcessBulkImportUsersCronJobTest {
 
         assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT2, containerT2.users);
 
         BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t1, storageT1,
                 bulkImportUserT1,
@@ -720,8 +720,8 @@ public class ProcessBulkImportUsersCronJobTest {
 
         assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT2, containerT2.users);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -775,8 +775,8 @@ public class ProcessBulkImportUsersCronJobTest {
 
         assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
 
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
-        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, storageT2, containerT2.users);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

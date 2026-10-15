@@ -59,7 +59,7 @@ public class ConsumeRecoverAccountTokenAPI extends WebserverAPI {
 
             AccountRecoveryTokenInfo recoveryTokenInfo = WebAuthN.consumeRecoverAccountToken(main, tenantIdentifier, storage, token);
 
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(main,
                     tenantIdentifier.toAppIdentifier(), storage, recoveryTokenInfo.userId, UserIdType.SUPERTOKENS);
 
 
