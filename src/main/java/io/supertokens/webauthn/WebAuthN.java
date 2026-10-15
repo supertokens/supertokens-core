@@ -189,7 +189,8 @@ public class WebAuthN {
         return challenge;
     }
 
-    public static WebauthNCredentialResponse registerCredentials(Storage storage, TenantIdentifier tenantIdentifier, String recipeUserId,
+    public static WebauthNCredentialResponse registerCredentials(Main main, Storage storage,
+                                                                 TenantIdentifier tenantIdentifier, String recipeUserId,
                                                                  String optionsId, JsonObject credentialsDataJson)
             throws InvalidWebauthNOptionsException, StorageQueryException, WebauthNVerificationFailedException,
             WebauthNInvalidFormatException, WebauthNOptionsNotExistsException, DuplicateCredentialException,
@@ -206,7 +207,7 @@ public class WebAuthN {
         RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialsDataJson,
                 generatedOptions);
 
-        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
+        String supertokensUserId = translateToInternalUserId(main, storage, tenantIdentifier, recipeUserId);
         String credentialId = getCredentialId(credentialsDataJson);
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                 verifiedRegistrationData,
@@ -398,7 +399,7 @@ public class WebAuthN {
     }
 
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
-    public static WebAuthNSignInUpResult signIn(Storage storage, TenantIdentifier tenantIdentifier,
+    public static WebAuthNSignInUpResult signIn(Main main, Storage storage, TenantIdentifier tenantIdentifier,
                                               String webauthnGeneratedOptionsId, JsonObject credentialsData,
                                               boolean consumeOptions)
             throws InvalidWebauthNOptionsException, WebauthNVerificationFailedException,
@@ -442,7 +443,7 @@ public class WebAuthN {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
-                    UserIdMapping.populateExternalUserIdForUsers(con, tenantIdentifier.toAppIdentifier(), storage,
+                    UserIdMapping.populateExternalUserIdForUsers(main, con, tenantIdentifier.toAppIdentifier(), storage,
                             new AuthRecipeUserInfo[]{fullyLoadedUserInfo});
                     return new WebAuthNSignInUpResult(credential, fullyLoadedUserInfo, generatedOptions);
                 } catch (InvalidWebauthNOptionsException | WebauthNVerificationFailedException |
@@ -475,10 +476,11 @@ public class WebAuthN {
         return webAuthNStorage.loadOptionsById(tenantIdentifier, webauthnGeneratedOptionsId);
     }
 
-    public static WebAuthNStoredCredential loadCredentialByIdForUser(Storage storage, TenantIdentifier tenantIdentifier,
+    public static WebAuthNStoredCredential loadCredentialByIdForUser(Main main, Storage storage,
+                                                              TenantIdentifier tenantIdentifier,
                                                               String credentialId, String recipeUserId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
+        String supertokensUserId = translateToInternalUserId(main, storage, tenantIdentifier, recipeUserId);
         WebAuthNStoredCredential loadedCredential = webAuthNStorage.loadCredentialByIdForUser(tenantIdentifier, credentialId, supertokensUserId);
         if(loadedCredential != null) {
             loadedCredential.userId = recipeUserId;
@@ -532,7 +534,7 @@ public class WebAuthN {
             throws NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException,
             StorageQueryException, UnknownUserIdException {
 
-        String userId = translateToInternalUserId(storage, tenantIdentifier, userIdFromRequest);
+        String userId = translateToInternalUserId(main, storage, tenantIdentifier, userIdFromRequest);
 
         AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
 
@@ -627,11 +629,11 @@ public class WebAuthN {
         return Config.getConfig(tenantIdentifier, main).getWebauthnRecoverAccountTokenLifetime();
     }
 
-    public static void removeCredential(Storage storage, TenantIdentifier tenantIdentifier,
+    public static void removeCredential(Main main, Storage storage, TenantIdentifier tenantIdentifier,
                                         String userId, String credentialId)
             throws StorageQueryException, WebauthNCredentialNotExistsException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, userId);
+        String supertokensUserId = translateToInternalUserId(main, storage, tenantIdentifier, userId);
         webAuthNStorage.removeCredential(tenantIdentifier, supertokensUserId, credentialId);
     }
 
@@ -642,10 +644,11 @@ public class WebAuthN {
         webAuthNStorage.removeOptions(tenantIdentifier, optionsId);
     }
 
-    public static List<WebAuthNStoredCredential> listCredentialsForUser(Storage storage, TenantIdentifier tenantIdentifier,
+    public static List<WebAuthNStoredCredential> listCredentialsForUser(Main main, Storage storage,
+                                                                          TenantIdentifier tenantIdentifier,
                                                                           String userId) throws StorageQueryException {
         WebAuthNStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
-        String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, userId);
+        String supertokensUserId = translateToInternalUserId(main, storage, tenantIdentifier, userId);
         List<WebAuthNStoredCredential> loadedCredentials = webAuthNStorage.listCredentialsForUser(tenantIdentifier, supertokensUserId);
         for (WebAuthNStoredCredential credential : loadedCredentials) {
             credential.userId = userId; //change back to the external user id
@@ -653,27 +656,29 @@ public class WebAuthN {
         return loadedCredentials;
     }
 
-    private static String translateToInternalUserId(Storage storage,
+    private static String translateToInternalUserId(Main main, Storage storage,
                                                     TenantIdentifier tenantIdentifier,
                                                     String userId)
             throws StorageQueryException {
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                UserIdMapping.getUserIdMapping(tenantIdentifier.toAppIdentifier(), storage, userId, null);
+                UserIdMapping.getUserIdMapping(main, tenantIdentifier.toAppIdentifier(), storage, userId, null);
         return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
     // Transaction-scoped variant: resolves the mapping on the caller's connection, so the lookup runs in the
     // same transaction as the surrounding work instead of borrowing a second connection from the same pool.
-    private static String translateToInternalUserId(TransactionConnection con, Storage storage,
+    private static String translateToInternalUserId(Main main, TransactionConnection con, Storage storage,
                                                     TenantIdentifier tenantIdentifier, String userId)
             throws StorageQueryException {
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                UserIdMapping.getUserIdMapping(con, tenantIdentifier.toAppIdentifier(), storage, userId, null);
+                UserIdMapping.getUserIdMapping(main, con, tenantIdentifier.toAppIdentifier(), storage, userId,
+                        null);
         return userIdMapping == null ? userId : userIdMapping.superTokensUserId;
     }
 
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
-    public static void updateUserEmail(Storage storage, TenantIdentifier tenantIdentifier, String userId, String email)
+    public static void updateUserEmail(Main main, Storage storage, TenantIdentifier tenantIdentifier, String userId,
+                                       String email)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             EmailChangeNotAllowedException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
@@ -683,7 +688,7 @@ public class WebAuthN {
 
                 // Resolve the internal user id on the transaction's own connection (not a second pooled
                 // connection), keeping the mapping read inside this transaction.
-                String userIdFromMapping = translateToInternalUserId(con, storage, tenantIdentifier, userId);
+                String userIdFromMapping = translateToInternalUserId(main, con, storage, tenantIdentifier, userId);
 
                 AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                         .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userIdFromMapping);

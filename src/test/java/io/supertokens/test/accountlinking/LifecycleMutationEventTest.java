@@ -216,7 +216,7 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
                 primary.getSupertokensUserId());
         assertTrue(beforeDelete.tenantIds.contains("t1"));
 
-        AuthRecipe.deleteUser(t1.toAppIdentifier(), a1Storage, member.getSupertokensUserId(), false, null);
+        AuthRecipe.deleteUser(main, t1.toAppIdentifier(), a1Storage, member.getSupertokensUserId(), false, null);
 
         List<Row> events = readEvents((SQLStorage) a1Storage, LifecycleEventType.USER_DELETION.getValue());
         assertEquals(1, events.size());

@@ -116,7 +116,7 @@ public class RefreshSessionAPI extends WebserverAPI {
                     && (!throttleEnabled
                             || !ActiveUsers.wasRecentlyActive(appIdentifier, sessionInfo.session.userId))) {
                 try {
-                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                             appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
                         ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,

@@ -38,6 +38,12 @@ import static io.supertokens.inmemorydb.config.Config.getConfig;
 
 public class UserIdMappingQueries {
 
+    public static boolean hasUserIdMappings(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT 1 FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? LIMIT 1";
+        return execute(start, QUERY, pst -> pst.setString(1, appIdentifier.getAppId()), ResultSet::next);
+    }
+
     public static String getQueryToCreateUserIdMappingTable(Start start) {
         String tableName = Config.getConfig(start).getUserIdMappingTable();
         // @formatter:off

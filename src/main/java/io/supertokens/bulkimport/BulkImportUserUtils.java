@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.JsonValidatorUtils.ValueType;
 import io.supertokens.utils.Utils;
 
@@ -68,7 +69,7 @@ public class BulkImportUserUtils {
         List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
         List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode);
 
-        externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
+        externalUserId = validateAndNormaliseExternalUserId(main, appIdentifier, externalUserId, errors);
 
         validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
 
@@ -264,9 +265,14 @@ public class BulkImportUserUtils {
         return loginMethods;
     }
 
-    private String validateAndNormaliseExternalUserId(String externalUserId, List<String> errors) {
+    private String validateAndNormaliseExternalUserId(Main main, AppIdentifier appIdentifier, String externalUserId,
+                                                      List<String> errors) {
         if (externalUserId == null) {
             return null;
+        }
+
+        if (UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+            errors.add("Cannot set externalUserId: " + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE);
         }
 
         if (externalUserId.length() > 128) {
