@@ -39,6 +39,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fix: `EmailPassword.consumeResetPasswordToken` no longer borrows a second pooled connection inside its transaction (new `AuthRecipe.getUserById_Transaction` and `listPrimaryUsersByEmail/PhoneNumber_Transaction` reads).
 - Fixes role revocation returning UNKNOWN_ROLE_ERROR for tenants with their own storage: role existence is now checked against the app-level storage before the tenant transaction, mirroring how role assignment works
 - Adds test-only, per-request transaction and commit counters to the in-memory storage (transactions opened, writing commits, auto-commit writes), and a baseline test that pins today's counts for the hot session, sign-up / sign-in and read APIs. No production behaviour change.
+- User id mapping lookups (`UserIdMapping.getUserIdMapping`) are now plain autocommit reads instead of a transaction around a single read, so get user by id, user metadata get, session create and refresh each open one transaction fewer. In-memory storage: the WebAuthn part of a user lookup no longer opens a transaction, matching PostgreSQL.
 
 
 ## [12.3.0]
