@@ -106,7 +106,9 @@ jobs:
     environment: publish
     runs-on: ubuntu-22.04
     outputs:
-      image-ref: ${{ steps.manifest.outputs.image-ref }}
+      # The digest, not image-ref: the ref contains the ECR registry (a secret), and GitHub
+      # drops job outputs that contain a secret.
+      digest: ${{ steps.manifest.outputs.digest }}
       core-sha: ${{ steps.manifest.outputs.core-sha }}
       plugin-interface-sha: ${{ steps.manifest.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ steps.manifest.outputs.postgresql-sha }}
@@ -423,7 +425,8 @@ jobs:
     with:
       # Prebuilt: the version tag already exists in ECR on this digest, so ECR is a no-op check
       # plus floating tags, and Docker Hub gets exactly the image the fleet runs.
-      source-image: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.image-ref || needs.build-docker.outputs.image-ref }}
+      source-image: ${{ !inputs.prebuilt && needs.build-docker.outputs.image-ref || '' }}
+      source-ecr-digest: ${{ inputs.prebuilt && needs.prebuilt-image.outputs.digest || '' }}
       core-version: ${{ inputs.core-version }}
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
