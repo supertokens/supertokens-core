@@ -24,7 +24,6 @@ import com.webauthn4j.data.PublicKeyCredential;
 import com.webauthn4j.test.EmulatorUtil;
 import io.supertokens.ProcessState;
 import io.supertokens.inmemorydb.Start;
-import io.supertokens.inmemorydb.TransactionCounters;
 import io.supertokens.inmemorydb.TransactionCounters.Snapshot;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -46,7 +45,7 @@ import static org.junit.Assert.fail;
 
 /**
  * Pins how many transactions and commits each hot API makes today on the in-memory storage, measured with
- * {@link TransactionCounters} around one HTTP request. The commit-reduction follow-ups lower these numbers as
+ * {@link TransactionCountCapture} around one HTTP request. The commit-reduction follow-ups lower these numbers as
  * they land, so update the expected value in the same change; any other difference is a regression.
  * <p>
  * Each expected value reads {@code Snapshot.of(transactionsOpened, writingCommits, autocommitWrites)}. Activity
@@ -96,8 +95,9 @@ public class TransactionCountBaselineTest {
         baseline.measure("session info", Snapshot.of(0, 0, 0), () -> {
             Map<String, String> params = new HashMap<>();
             params.put("sessionHandle", handle);
-            return HttpRequestForTesting.sendGETRequest(process.getProcess(), "", BASE + "/recipe/session", params,
-                    1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "session");
+            JsonObject response = get(process, "/recipe/session", params, "session");
+            assertEquals(handle, response.get("sessionHandle").getAsString());
+            return response;
         });
 
         baseline.measure("session remove", Snapshot.of(0, 0, 1), () -> {
@@ -105,7 +105,10 @@ public class TransactionCountBaselineTest {
             JsonArray handles = new JsonArray();
             handles.add(handle);
             body.add("sessionHandles", handles);
-            return post(process, "/recipe/session/remove", body, "session");
+            JsonObject response = post(process, "/recipe/session/remove", body, "session");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(handles, response.getAsJsonArray("sessionHandlesRevoked"));
+            return response;
         });
 
         baseline.assertMatches();
@@ -231,7 +234,7 @@ public class TransactionCountBaselineTest {
         private boolean mismatch = false;
 
         <T> T measure(String api, Snapshot expected, Callable<T> request) throws Exception {
-            TransactionCounters.Captured<T> captured = TransactionCounters.captureRequest(request);
+            TransactionCountCapture.Captured<T> captured = TransactionCountCapture.captureRequest(request);
             boolean matches = expected.equals(captured.counts);
             mismatch |= !matches;
             lines.add((matches ? "  ok       " : "  MISMATCH ") + api + ": expected " + expected + ", got "

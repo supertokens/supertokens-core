@@ -20,10 +20,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
 // ── Test-only per-thread transaction / commit counters for the in-memory storage ─────────────────────
 // Lets a test prove how many transactions and durable commits one call makes. Counts are kept per thread
@@ -34,21 +31,15 @@ import java.util.concurrent.Callable;
 // - autocommitWrites: write statements run on an auto-commit connection, i.e. outside any transaction.
 // Writes are the statements run through QueryExecutorTemplate.update / executeBatch.
 //
-// A direct call is measured on the calling thread with reset() + snapshot(). An HTTP API call runs on a
-// webserver thread, so WebserverAPI brackets each request with beginRequest / endRequest, and
-// captureRequest() returns the counts of the one request a test sends.
+// A call is measured on the thread that runs it with reset() + snapshot(). An HTTP API call runs on a webserver
+// thread, so tests measure it through a WebserverAPI request observer that does the same around the request.
 public final class TransactionCounters {
-
-    private static final long REQUEST_WAIT_MS = 10_000;
 
     private static final ThreadLocal<int[]> COUNTS = ThreadLocal.withInitial(() -> new int[3]);
 
     private static final int TRANSACTIONS_OPENED = 0;
     private static final int WRITING_COMMITS = 1;
     private static final int AUTOCOMMIT_WRITES = 2;
-
-    // Counts of the requests completed since the last captureRequest started; guarded by itself.
-    private static final List<Snapshot> COMPLETED_REQUESTS = new ArrayList<>();
 
     private TransactionCounters() {
     }
@@ -83,27 +74,6 @@ public final class TransactionCounters {
         COUNTS.get()[counter]++;
     }
 
-    // ── request bracketing, called by WebserverAPI.service ──
-
-    public static void beginRequest() {
-        if (!Start.isTesting) {
-            return;
-        }
-        COUNTS.remove();
-    }
-
-    public static void endRequest(String request) {
-        if (!Start.isTesting) {
-            return;
-        }
-        Snapshot snapshot = currentSnapshot(request);
-        COUNTS.remove();
-        synchronized (COMPLETED_REQUESTS) {
-            COMPLETED_REQUESTS.add(snapshot);
-            COMPLETED_REQUESTS.notifyAll();
-        }
-    }
-
     // ── test API ──
 
     // Clears the calling thread's counts.
@@ -115,39 +85,8 @@ public final class TransactionCounters {
     // The calling thread's counts since the last reset().
     @TestOnly
     public static Snapshot snapshot() {
-        return currentSnapshot(null);
-    }
-
-    // Runs one HTTP request against this process's webserver and returns that request's counts. Waits for the
-    // request to finish on the server side, since the client can receive the response before the server's
-    // service() returns. Fails unless exactly one request completed.
-    @TestOnly
-    public static <T> Captured<T> captureRequest(Callable<T> request) throws Exception {
-        synchronized (COMPLETED_REQUESTS) {
-            COMPLETED_REQUESTS.clear();
-        }
-        T result = request.call();
-        synchronized (COMPLETED_REQUESTS) {
-            long deadline = System.currentTimeMillis() + REQUEST_WAIT_MS;
-            while (COMPLETED_REQUESTS.isEmpty()) {
-                long left = deadline - System.currentTimeMillis();
-                if (left <= 0) {
-                    throw new IllegalStateException("no request completed on the webserver within "
-                            + REQUEST_WAIT_MS + " ms");
-                }
-                COMPLETED_REQUESTS.wait(left);
-            }
-            if (COMPLETED_REQUESTS.size() != 1) {
-                throw new IllegalStateException("expected exactly one request, got " + COMPLETED_REQUESTS);
-            }
-            return new Captured<>(result, COMPLETED_REQUESTS.get(0));
-        }
-    }
-
-    private static Snapshot currentSnapshot(String request) {
         int[] counts = COUNTS.get();
-        return new Snapshot(request, counts[TRANSACTIONS_OPENED], counts[WRITING_COMMITS],
-                counts[AUTOCOMMIT_WRITES]);
+        return Snapshot.of(counts[TRANSACTIONS_OPENED], counts[WRITING_COMMITS], counts[AUTOCOMMIT_WRITES]);
     }
 
     public static final class Snapshot {
@@ -187,16 +126,6 @@ public final class TransactionCounters {
         public String toString() {
             return (request == null ? "" : request + " ") + "{transactionsOpened=" + transactionsOpened
                     + ", writingCommits=" + writingCommits + ", autocommitWrites=" + autocommitWrites + "}";
-        }
-    }
-
-    public static final class Captured<T> {
-        public final T response;
-        public final Snapshot counts;
-
-        Captured(T response, Snapshot counts) {
-            this.response = response;
-            this.counts = counts;
         }
     }
 }

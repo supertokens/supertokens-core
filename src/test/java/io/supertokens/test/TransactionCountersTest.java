@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -164,13 +166,26 @@ public class TransactionCountersTest {
         }
 
         // /hello does one storage read and no transaction.
-        TransactionCounters.Captured<String> hello = TransactionCounters.captureRequest(
+        TransactionCountCapture.Captured<String> hello = TransactionCountCapture.captureRequest(
                 () -> HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello",
                         null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null));
         assertEquals("Hello", hello.response.trim());
         assertEquals(Snapshot.of(0, 0, 0), hello.counts);
         assertTrue(hello.counts.request, hello.counts.request.startsWith("GET /")
                 && hello.counts.request.endsWith("/hello"));
+        // The capture removes its request observer when it returns, so later requests are not recorded.
+        assertNull(WebserverAPI.setRequestObserverForTesting(null));
+
+        // ... and when the request fails.
+        try {
+            TransactionCountCapture.captureRequest(() -> {
+                throw new IllegalStateException("request failed");
+            });
+            fail();
+        } catch (IllegalStateException e) {
+            assertEquals("request failed", e.getMessage());
+        }
+        assertNull(WebserverAPI.setRequestObserverForTesting(null));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
