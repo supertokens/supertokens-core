@@ -37,6 +37,7 @@ import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import java.sql.Savepoint;
 import java.util.*;
 import java.util.concurrent.Callable;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 /**
  * One bulk import worker. Each invocation claims a chunk of {@code bulk_import_users} rows with
@@ -82,6 +83,7 @@ public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
     }
 
     @Override
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public Boolean call() {
         // Fresh instance per invocation: allExternalUserIds must not bleed across retry rounds.
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);

@@ -42,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.signingKeys.JWTSigningKey";
@@ -134,6 +135,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * @throws StorageQueryException            If there is an error interacting with the database
      * @throws StorageTransactionLogicException If there is an error interacting with the database
      */
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     public List<JWTSigningKeyInfo> getAllSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
@@ -178,6 +180,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * @throws StorageQueryException                   If there is an error interacting with the database
      * @throws StorageTransactionLogicException        If there is an error interacting with the database
      */
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {

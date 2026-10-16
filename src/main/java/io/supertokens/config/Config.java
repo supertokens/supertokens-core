@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
@@ -160,6 +161,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             throws InvalidConfigException, IOException {
         Map<String, Storage> userPoolToStorage = new HashMap<>();
         Map<String, Config> appIdToConfigMap = new HashMap<>();
+        Map<String, Config> connectionUriDomainToConfigMap = new HashMap<>();
         Map<String, String> userPoolIdToConnectionUriDomain = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
             JsonObject currentConfig = normalisedConfigs.get(key);
@@ -208,6 +210,20 @@ public class Config extends ResourceDistributor.SingletonResource {
                     appIdToConfigMap.put(connectionUriAndAppId, configForCurrentAppId);
                 } else {
                     configForCurrentAppId.core.assertThatConfigFromSameAppIdAreNotConflicting(
+                            new Config(main, currentConfig).core);
+                }
+            }
+
+            {
+                // some core configs must resolve the same value across every app/tenant in the same
+                // connection URI domain (e.g. activity_log_retention_days, since apps in a CUD can share
+                // a storage). Group by CUD alone and check for conflicts.
+                String connectionUriDomain = key.getTenantIdentifier().getConnectionUriDomain();
+                Config configForCurrentCUD = connectionUriDomainToConfigMap.get(connectionUriDomain);
+                if (configForCurrentCUD == null) {
+                    connectionUriDomainToConfigMap.put(connectionUriDomain, new Config(main, currentConfig));
+                } else {
+                    configForCurrentCUD.core.assertThatConfigFromSameConnectionUriDomainAreNotConflicting(
                             new Config(main, currentConfig).core);
                 }
             }
@@ -446,6 +462,27 @@ public class Config extends ResourceDistributor.SingletonResource {
                 }
                 existingCore.assertThatConfigFromSameAppIdAreNotConflicting(targetConfig.core);
                 break; // only need one existing config per app
+            }
+        }
+
+        // 5b. Check CUD-level core config conflicts: some configs must resolve the same value across every
+        // app/tenant under the same connection URI domain, so compare against any existing config from the
+        // same CUD (regardless of app).
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                existingConfigs.entrySet()) {
+            TenantIdentifier existingTenant = entry.getKey().getTenantIdentifier();
+            if (existingTenant.equals(targetTenant)) {
+                continue;
+            }
+            if (Objects.equals(existingTenant.getConnectionUriDomain(), targetTenant.getConnectionUriDomain())) {
+                CoreConfig existingCore;
+                if (existingTenant.equals(new TenantIdentifier(null, null, null))) {
+                    existingCore = new Config(main, getBaseConfigAsJsonObject(main)).core;
+                } else {
+                    existingCore = ((Config) entry.getValue()).core;
+                }
+                existingCore.assertThatConfigFromSameConnectionUriDomainAreNotConflicting(targetConfig.core);
+                break; // only need one existing config per CUD
             }
         }
 

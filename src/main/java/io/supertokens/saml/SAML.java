@@ -56,6 +56,8 @@ import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.Subject;
+import org.opensaml.saml.saml2.core.SubjectConfirmation;
+import org.opensaml.saml.saml2.core.SubjectConfirmationData;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
@@ -99,6 +101,7 @@ import io.supertokens.pluginInterface.saml.SAMLRelayStateInfo;
 import io.supertokens.pluginInterface.saml.SAMLStorage;
 import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.exceptions.IDPInitiatedLoginDisallowedException;
+import io.supertokens.saml.exceptions.IDPInitiatedLoginRequiresACSURLsException;
 import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
@@ -127,10 +130,17 @@ public class SAML {
 
     public static SAMLClient createOrUpdateSAMLClient(
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning)
+            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning, JsonArray acsURLs)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
-            FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException {
+            FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException,
+            IDPInitiatedLoginRequiresACSURLsException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
+        // IdP-initiated login has no login-time ACS URL to pin the response to, so it is only allowed when the
+        // client carries an ACS allow-list. Enforced on every create and update.
+        if (allowIDPInitiatedLogin && !hasACSURLs(acsURLs)) {
+            throw new IDPInitiatedLoginRequiresACSURLsException();
+        }
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
@@ -154,7 +164,7 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning);
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning, acsURLs);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
@@ -231,17 +241,39 @@ public class SAML {
             throw new InvalidClientException();
         }
 
+        // If the client configured an ACS allow-list, the login's ACS URL must be a member. This is the
+        // SP-initiated counterpart to the IdP-initiated Recipient pinning; a null list = not configured.
+        if (client.acsURLs != null) {
+            boolean acsOk = false;
+            for (JsonElement a : client.acsURLs) {
+                if (a.getAsString().equals(acsURL)) {
+                    acsOk = true;
+                    break;
+                }
+            }
+            if (!acsOk) {
+                throw new InvalidClientException();
+            }
+        }
+
         String idpSsoUrl = client.ssoLoginURL;
+        String spEntityId = config.getSAMLSPEntityID();
         AuthnRequest request = buildAuthnRequest(
                 main,
                 tenantIdentifier.toAppIdentifier(),
                 idpSsoUrl,
-                config.getSAMLSPEntityID(), acsURL,
+                spEntityId, acsURL,
                 client.enableRequestSigning);
         String samlRequest = deflateAndBase64RedirectMessage(request);
         String relayState = UUID.randomUUID().toString();
 
-        samlStorage.saveRelayStateInfo(tenantIdentifier, new SAMLRelayStateInfo(relayState, clientId, state, redirectURI), config.getSAMLRelayStateValidity());
+        // Persist the AuthnRequest ID and the ACS URL alongside the RelayState. At callback time the
+        // IdP echoes the request ID back as Response.InResponseTo, letting us bind the response to this
+        // exact login (GHSA-3r7x-rhvc-fw28), and the ACS URL lets us pin Destination / Recipient so an
+        // assertion minted for a different endpoint cannot be redirected here.
+        samlStorage.saveRelayStateInfo(tenantIdentifier,
+                new SAMLRelayStateInfo(relayState, clientId, state, redirectURI, request.getID(), acsURL),
+                config.getSAMLRelayStateValidity());
 
         // The IdP SSO URL may already carry a query string (e.g. Google's
         // ...o/saml2/idp?idpid=...), so pick the right separator instead of always using '?'.
@@ -425,6 +457,190 @@ public class SAML {
         SignatureValidator.validate(signature, credential);
     }
 
+    /**
+     * True if the ACS allow-list has at least one entry and every entry is a non-blank string.
+     */
+    public static boolean hasACSURLs(JsonArray acsURLs) {
+        if (acsURLs == null || acsURLs.size() == 0) {
+            return false;
+        }
+        for (JsonElement a : acsURLs) {
+            if (!a.isJsonPrimitive() || !a.getAsJsonPrimitive().isString() || a.getAsString().trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    /**
+     * Pins the response Destination and each assertion's SubjectConfirmationData Recipient to the ACS URLs
+     * this response may have been sent to: the ACS URL the login was started with (SP-initiated), or the
+     * client's ACS allow-list (IdP-initiated, where it is mandatory).
+     *
+     * The authenticating assertion must carry a Recipient (saml-profiles-2.0 section 4.1.4.2 requires one
+     * on the bearer confirmation). It sits inside the signed assertion, so unlike the Destination of an
+     * unsigned Response wrapper it cannot be stripped or rewritten. Because saml_sp_entity_id defaults to a
+     * value shared by every deployment, this Recipient is what stops an assertion issued to another
+     * SuperTokens deployment from being accepted here. (GHSA-wfg2-vqfg-rqh6)
+     */
+    private static void validateResponseDestinationAndRecipient(Response response, Assertion authenticatingAssertion,
+            SAMLRelayStateInfo relayStateInfo, JsonArray clientAcsURLs) throws SAMLResponseVerificationFailedException {
+        java.util.Set<String> allowedAcs = new java.util.HashSet<>();
+        if (relayStateInfo != null && relayStateInfo.acsURL != null) {
+            allowedAcs.add(relayStateInfo.acsURL);
+        } else if (clientAcsURLs != null) {
+            // IdP-initiated, or an SP-initiated login whose relay state predates recording the ACS URL.
+            for (JsonElement a : clientAcsURLs) {
+                allowedAcs.add(a.getAsString());
+            }
+        }
+
+        if (!hasRecipient(authenticatingAssertion)) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
+        if (allowedAcs.isEmpty()) {
+            // Only an SP-initiated login started before the ACS URL was recorded, for a client without an
+            // allow-list. There is nothing to pin to.
+            return;
+        }
+
+        String destination = trimToNull(response.getDestination());
+        if (destination != null && !allowedAcs.contains(destination)) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
+        for (Assertion assertion : response.getAssertions()) {
+            if (assertion.getSubject() == null) {
+                continue;
+            }
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd == null) {
+                    continue;
+                }
+                String recipient = trimToNull(scd.getRecipient());
+                if (recipient != null && !allowedAcs.contains(recipient)) {
+                    throw new SAMLResponseVerificationFailedException();
+                }
+            }
+        }
+    }
+
+    private static boolean hasRecipient(Assertion assertion) {
+        if (assertion.getSubject() == null) {
+            return false;
+        }
+        for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+            SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+            if (scd != null && trimToNull(scd.getRecipient()) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Binds the response to the login it claims to answer. On the SP-initiated path the response
+     * InResponseTo must equal the AuthnRequest ID we issued (and any SubjectConfirmationData InResponseTo
+     * present must be consistent). On the IdP-initiated path the response is unsolicited, so it must carry
+     * no InResponseTo at all; a present one signals a solicited response being smuggled through the
+     * unauthenticated IdP-initiated branch.
+     */
+    private static void validateResponseInResponseTo(Response response, SAMLRelayStateInfo relayStateInfo)
+            throws SAMLResponseVerificationFailedException {
+        String responseInResponseTo = trimToNull(response.getInResponseTo());
+
+        if (relayStateInfo != null) {
+            String expected = trimToNull(relayStateInfo.inResponseTo);
+            if (expected == null || responseInResponseTo == null || !expected.equals(responseInResponseTo)) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+        } else if (responseInResponseTo != null) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
+        String expected = relayStateInfo == null ? null : trimToNull(relayStateInfo.inResponseTo);
+        for (Assertion assertion : response.getAssertions()) {
+            if (assertion.getSubject() == null) {
+                continue;
+            }
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd == null) {
+                    continue;
+                }
+                String scdInResponseTo = trimToNull(scd.getInResponseTo());
+                if (scdInResponseTo == null) {
+                    continue;
+                }
+                if (relayStateInfo == null || !scdInResponseTo.equals(expected)) {
+                    throw new SAMLResponseVerificationFailedException();
+                }
+            }
+        }
+    }
+
+    /**
+     * Records every assertion in the response as consumed, rejecting the response if any assertion has
+     * already been consumed. Combined with the atomic insert-if-absent in storage, this makes each signed
+     * assertion usable at most once and closes the IdP-initiated replay window (which has no RelayState to
+     * consume). See GHSA-3r7x-rhvc-fw28.
+     */
+    private static void enforceAssertionSingleUse(TenantIdentifier tenantIdentifier, Storage storage,
+                                                  Response response, CoreConfig config)
+            throws SAMLResponseVerificationFailedException, StorageQueryException {
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        long now = System.currentTimeMillis();
+        for (Assertion assertion : response.getAssertions()) {
+            String assertionId = trimToNull(assertion.getID());
+            if (assertionId == null) {
+                // An assertion with no ID cannot be tracked for replay; fail closed rather than accept it.
+                throw new SAMLResponseVerificationFailedException();
+            }
+            long expiresAt = assertionExpiry(assertion, now, config);
+            boolean fresh = samlStorage.markSAMLAssertionConsumed(tenantIdentifier, assertionId, expiresAt);
+            if (!fresh) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+        }
+    }
+
+    /**
+     * The point after which a consumed-assertion row may be purged. Kept at least as long as the assertion
+     * could otherwise be validated, so a replay is caught while the assertion is still in-window. Prefers the
+     * assertion's own NotOnOrAfter bounds and falls back to the configured claims validity.
+     */
+    private static long assertionExpiry(Assertion assertion, long now, CoreConfig config) {
+        Long notOnOrAfter = null;
+        if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
+            notOnOrAfter = assertion.getConditions().getNotOnOrAfter().toEpochMilli();
+        }
+        if (assertion.getSubject() != null) {
+            for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                if (scd != null && scd.getNotOnOrAfter() != null) {
+                    long v = scd.getNotOnOrAfter().toEpochMilli();
+                    if (notOnOrAfter == null || v > notOnOrAfter) {
+                        notOnOrAfter = v;
+                    }
+                }
+            }
+        }
+        if (notOnOrAfter == null || notOnOrAfter < now) {
+            return now + config.getSAMLClaimsValidity();
+        }
+        return notOnOrAfter;
+    }
+
     private static void validateSamlResponseTimestamps(Response samlResponse) throws SAMLResponseVerificationFailedException {
         Instant now = Instant.now();
 
@@ -469,10 +685,12 @@ public class SAML {
         Response response = parseSamlResponse(samlResponse);
         String state = null;
         String redirectURI = null;
+        // Non-null only on the SP-initiated path; carries the AuthnRequest ID and ACS URL from login.
+        SAMLRelayStateInfo relayStateInfo = null;
 
         if (relayState != null && !relayState.isEmpty()) {
             // sp initiated
-            var relayStateInfo = samlStorage.getRelayStateInfo(tenantIdentifier, relayState);
+            relayStateInfo = samlStorage.getRelayStateInfoAndRemove(tenantIdentifier, relayState);
             if (relayStateInfo == null) {
                 throw new InvalidRelayStateException();
             }
@@ -485,9 +703,17 @@ public class SAML {
             // idp initiated
             String idpEntityId = response.getIssuer().getValue();
             client = samlStorage.getSAMLClientByIDPEntityId(tenantIdentifier, idpEntityId);
+            if (client == null) {
+                throw new InvalidClientException();
+            }
             redirectURI = client.defaultRedirectURI;
 
             if (!client.allowIDPInitiatedLogin) {
+                throw new IDPInitiatedLoginDisallowedException();
+            }
+            // A client stored before the ACS allow-list was required for IdP-initiated login can still have it
+            // enabled without one. Refuse the login: without the list nothing pins the response to this SP.
+            if (!hasACSURLs(client.acsURLs)) {
                 throw new IDPInitiatedLoginDisallowedException();
             }
         }
@@ -504,9 +730,23 @@ public class SAML {
             throw new SAMLResponseVerificationFailedException();
         }
         validateSamlResponseTimestamps(response);
-        validateSamlResponseAudience(response, config.getSAMLSPEntityID());
 
-        var claims = extractAllClaims(response);
+        // Bind the response to this login and reject replays. On the SP-initiated path relayStateInfo
+        // carries the AuthnRequest ID and ACS URL captured at login; on the IdP-initiated path it is null.
+        // (GHSA-3r7x-rhvc-fw28)
+        // Identity is taken from a single assertion, and that same assertion's audience is validated on it,
+        // so an assertion issued to a different audience cannot supply the identity while another assertion
+        // satisfies the audience restriction. (GHSA-wfg2-vqfg-rqh6)
+        Assertion authenticatingAssertion = selectAuthenticatingAssertion(response);
+        validateResponseDestinationAndRecipient(response, authenticatingAssertion, relayStateInfo, client.acsURLs);
+        validateResponseInResponseTo(response, relayStateInfo);
+        validateAssertionAudience(authenticatingAssertion, config.getSAMLSPEntityID());
+
+        // Consume every assertion in the response exactly once. Done last, after all other checks pass,
+        // so a rejected response never burns an assertion ID. (GHSA-3r7x-rhvc-fw28)
+        enforceAssertionSingleUse(tenantIdentifier, storage, response, config);
+
+        var claims = extractAssertionClaims(authenticatingAssertion);
 
         String code = UUID.randomUUID().toString();
         samlStorage.saveSAMLClaims(tenantIdentifier, client.clientId, code, claims, config.getSAMLClaimsValidity());
@@ -542,95 +782,93 @@ public class SAML {
         }
     }
 
-    private static void validateSamlResponseAudience(Response samlResponse, String expectedAudience)
+    private static Assertion selectAuthenticatingAssertion(Response samlResponse)
             throws SAMLResponseVerificationFailedException {
-        boolean audienceMatched = false;
-
-        for (Assertion assertion : samlResponse.getAssertions()) {
-            Conditions conditions = assertion.getConditions();
-            if (conditions == null) {
-                continue;
-            }
-            java.util.List<AudienceRestriction> restrictions = conditions.getAudienceRestrictions();
-            if (restrictions == null || restrictions.isEmpty()) {
-                continue;
-            }
-            for (AudienceRestriction ar : restrictions) {
-                java.util.List<Audience> audiences = ar.getAudiences();
-                if (audiences == null || audiences.isEmpty()) {
-                    continue;
-                }
-                for (Audience aud : audiences) {
-                    if (expectedAudience.equals(aud.getURI())) {
-                        audienceMatched = true;
-                        break;
-                    }
-                }
-                if (audienceMatched) {
-                    break;
-                }
-            }
-            if (audienceMatched) {
-                break;
-            }
-        }
-
-        if (!audienceMatched) {
+        // Signature verification above has already established that the assertion is signed (either the whole
+        // Response is signed, or every Assertion is individually signed). We use a single assertion as the
+        // source of identity and validate its audience on that same assertion, mirroring the SAML Web Browser
+        // SSO profile requirement that each assertion be evaluated independently.
+        List<Assertion> assertions = samlResponse.getAssertions();
+        if (assertions == null || assertions.isEmpty()) {
             throw new SAMLResponseVerificationFailedException();
         }
+        return assertions.get(0);
     }
 
-    private static JsonObject extractAllClaims(Response samlResponse) {
-        JsonObject claims = new JsonObject();
-
-        for (Assertion assertion : samlResponse.getAssertions()) {
-            // Extract NameID as a claim
-            Subject subject = assertion.getSubject();
-            if (subject != null && subject.getNameID() != null) {
-                String nameId = subject.getNameID().getValue();
-                String nameIdFormat = subject.getNameID().getFormat();
-                JsonArray nameIdArr = new JsonArray();
-                nameIdArr.add(nameId);
-                claims.add("NameID", nameIdArr);
-                if (nameIdFormat != null) {
-                    JsonArray nameIdFormatArr = new JsonArray();
-                    nameIdFormatArr.add(nameIdFormat);
-                    claims.add("NameIDFormat", nameIdFormatArr);
+    private static void validateAssertionAudience(Assertion assertion, String expectedAudience)
+            throws SAMLResponseVerificationFailedException {
+        // saml_sp_entity_id always has a value (it defaults to a value shared by every deployment); a blank one
+        // must still never match. The shared default is covered by the Recipient binding in
+        // validateResponseDestinationAndRecipient. See GHSA-wfg2-vqfg-rqh6.
+        if (expectedAudience == null || expectedAudience.trim().isEmpty()) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        Conditions conditions = assertion.getConditions();
+        if (conditions == null) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        List<AudienceRestriction> restrictions = conditions.getAudienceRestrictions();
+        if (restrictions == null || restrictions.isEmpty()) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+        for (AudienceRestriction ar : restrictions) {
+            List<Audience> audiences = ar.getAudiences();
+            if (audiences == null) {
+                continue;
+            }
+            for (Audience aud : audiences) {
+                if (expectedAudience.equals(aud.getURI())) {
+                    return;
                 }
             }
+        }
+        throw new SAMLResponseVerificationFailedException();
+    }
 
-            // Extract all attributes from AttributeStatements
-            for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
-                for (Attribute attribute : attributeStatement.getAttributes()) {
-                    String attributeName = attribute.getName();
-                    JsonArray attributeValues = new JsonArray();
+    private static JsonObject extractAssertionClaims(Assertion assertion) {
+        JsonObject claims = new JsonObject();
 
-                    for (XMLObject attributeValue : attribute.getAttributeValues()) {
-                        String value = null;
-                        if (attributeValue instanceof XSString) {
-                            // xsi:type="xsd:string" or "xs:string" — used by AD FS, Azure AD, and most
-                            // enterprise IdPs. OpenSAML 4 materialises these as XSStringImpl, which does
-                            // NOT implement the AttributeValue marker interface, so a plain instanceof
-                            // AttributeValue check would silently drop every such value.
-                            value = ((XSString) attributeValue).getValue();
-                        } else if (attributeValue instanceof org.opensaml.saml.saml2.core.AttributeValue) {
-                            org.opensaml.saml.saml2.core.AttributeValue attrValue =
-                                    (org.opensaml.saml.saml2.core.AttributeValue) attributeValue;
-                            value = attrValue.getDOM() != null
-                                    ? attrValue.getDOM().getTextContent()
-                                    : attrValue.getTextContent();
-                        } else if (attributeValue.getDOM() != null) {
-                            // Catch-all for XSAny, XSURI, and any other typed XMLObject.
-                            value = attributeValue.getDOM().getTextContent();
-                        }
-                        if (value != null && !value.trim().isEmpty()) {
-                            attributeValues.add(value.trim());
-                        }
+        // Extract NameID as a claim
+        Subject subject = assertion.getSubject();
+        if (subject != null && subject.getNameID() != null) {
+            String nameId = subject.getNameID().getValue();
+            String nameIdFormat = subject.getNameID().getFormat();
+            JsonArray nameIdArr = new JsonArray();
+            nameIdArr.add(nameId);
+            claims.add("NameID", nameIdArr);
+            if (nameIdFormat != null) {
+                JsonArray nameIdFormatArr = new JsonArray();
+                nameIdFormatArr.add(nameIdFormat);
+                claims.add("NameIDFormat", nameIdFormatArr);
+            }
+        }
+
+        // Extract all attributes from AttributeStatements
+        for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
+            for (Attribute attribute : attributeStatement.getAttributes()) {
+                String attributeName = attribute.getName();
+                JsonArray attributeValues = new JsonArray();
+
+                for (XMLObject attributeValue : attribute.getAttributeValues()) {
+                    String value = null;
+                    if (attributeValue instanceof XSString) {
+                        value = ((XSString) attributeValue).getValue();
+                    } else if (attributeValue instanceof org.opensaml.saml.saml2.core.AttributeValue) {
+                        org.opensaml.saml.saml2.core.AttributeValue attrValue =
+                                (org.opensaml.saml.saml2.core.AttributeValue) attributeValue;
+                        value = attrValue.getDOM() != null
+                                ? attrValue.getDOM().getTextContent()
+                                : attrValue.getTextContent();
+                    } else if (attributeValue.getDOM() != null) {
+                        value = attributeValue.getDOM().getTextContent();
                     }
-
-                    if (!attributeValues.isEmpty()) {
-                        claims.add(attributeName, attributeValues);
+                    if (value != null && !value.trim().isEmpty()) {
+                        attributeValues.add(value.trim());
                     }
+                }
+
+                if (!attributeValues.isEmpty()) {
+                    claims.add(attributeName, attributeValues);
                 }
             }
         }

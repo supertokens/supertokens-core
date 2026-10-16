@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class DeleteExpiredPasswordlessDevices extends CronTask {
 
@@ -55,6 +56,7 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     }
 
     @Override
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     protected void doTaskPerTenant(TenantIdentifier tenantIdentifier) throws Exception {
         if (StorageLayer.getStorage(tenantIdentifier, this.main).getType() != STORAGE_TYPE.SQL) {
             return;

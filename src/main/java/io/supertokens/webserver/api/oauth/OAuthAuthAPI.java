@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
@@ -173,9 +174,11 @@ public class OAuthAuthAPI extends WebserverAPI {
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
             if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                        ActivityEventType.OAUTH_AUTHORIZE);
             } else {
-                ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.userId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
+                        ActivityEventType.OAUTH_AUTHORIZE);
             }
         } catch (Exception e) {
             // ignore

@@ -23,6 +23,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.saml.MockSAML;
 import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.utils.SemVer;
@@ -66,6 +67,7 @@ public class SAMLConfigTest5_4 {
     public void testRelayStateExpiry() throws Exception {
         // Start with a very short relay state validity (1 second)
         Utils.setValueInConfig("saml_relay_state_validity", "1000");
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -103,7 +105,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -130,6 +132,7 @@ public class SAMLConfigTest5_4 {
     public void testClaimsExpiry() throws Exception {
         // Start with a very short claims validity (1 second)
         Utils.setValueInConfig("saml_claims_validity", "1000");
+        SAMLTestUtils.setSAMLSPEntityIdConfig();
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -164,7 +167,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -321,7 +324,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState,
+                SAMLTestUtils.requestIdFor(relayState),
                 clientInfo.keyMaterial,
                 300
         );
@@ -351,7 +354,7 @@ public class SAMLConfigTest5_4 {
                 clientInfo.acsURL,
                 "user@example.com",
                 null,
-                relayState2,
+                SAMLTestUtils.requestIdFor(relayState2),
                 clientInfo.keyMaterial,
                 300
         );

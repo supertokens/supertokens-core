@@ -38,6 +38,7 @@ import org.jetbrains.annotations.TestOnly;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class EmailVerification {
 
@@ -114,6 +115,7 @@ public class EmailVerification {
         }
     }
 
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static User verifyEmail(TenantIdentifier tenantIdentifier, Storage storage, String token)
             throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException,

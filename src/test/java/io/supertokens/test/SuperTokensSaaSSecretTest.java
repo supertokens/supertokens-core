@@ -443,16 +443,22 @@ public class SuperTokensSaaSSecretTest {
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
             "oauth_provider_url_configured_in_oauth_provider",
-            "saml_legacy_acs_url"
+            "saml_legacy_acs_url",
+            "activity_log_retention_days",
+            "activity_log_throttle_enabled"
     };
-    private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{
+    private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new Object[]{
             "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1",
             "192.0.0.1",
             "http://localhost:4444",
             "http://localhost:4445",
             "http://localhost:3001/auth/oauth",
             "http://localhost:4444",
-            "http://localhost:5225/api/oauth/saml"
+            "http://localhost:5225/api/oauth/saml",
+            // equal to the base default so the CUD-level not-conflicting check passes for apps under the base CUD
+            31,
+            // equal to the base default so the CUD-level not-conflicting check passes for apps under the base CUD
+            true
     };
 
     @Test
@@ -573,6 +579,8 @@ public class SuperTokensSaaSSecretTest {
                 j.addProperty(PROTECTED_CORE_CONFIG[i], (String) PROTECTED_CORE_CONFIG_VALUES[i]);
             } else if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof Integer) {
                 j.addProperty(PROTECTED_CORE_CONFIG[i], (Integer) PROTECTED_CORE_CONFIG_VALUES[i]);
+            } else if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof Boolean) {
+                j.addProperty(PROTECTED_CORE_CONFIG[i], (Boolean) PROTECTED_CORE_CONFIG_VALUES[i]);
             }
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                     new TenantConfig(new TenantIdentifier(null, "a" + i, null), new EmailPasswordConfig(false),

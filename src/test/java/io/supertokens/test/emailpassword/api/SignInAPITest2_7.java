@@ -19,6 +19,7 @@ package io.supertokens.test.emailpassword.api;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -161,6 +162,8 @@ public class SignInAPITest2_7 {
         signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
         assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignIn);
         assert (activeUsers == 1);
 

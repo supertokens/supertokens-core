@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -116,7 +117,11 @@ public class SessionRemoveAPITest2_7 {
         // Case where we have UserId:
         {
             // create new Session
-            String userId = "userId2";
+            // A real user so its auth record (and app_id_to_user_id mapping) lives on this storage: after the
+            // fold's residency guard, the SIGN_OUT emitted on session removal only credits users whose mapping
+            // is present, so a fabricated userId would fold to nothing. The signup's user_creation event lands
+            // before checkpoint1, so the count below still measures the SIGN_OUT specifically.
+            String userId = signUpEmailPasswordUser(process, "activeuser@example.com");
             JsonObject userDataInJWT = new JsonObject();
             userDataInJWT.addProperty("key", "value");
             JsonObject userDataInDatabase = new JsonObject();
@@ -158,6 +163,8 @@ public class SessionRemoveAPITest2_7 {
             assertTrue(sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked")
                     .contains(session2Info.get("session").getAsJsonObject().get("handle")));
 
+            // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+            RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
             int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
             assert (activeUsers == 1); // user ID is set
         }
@@ -371,6 +378,17 @@ public class SessionRemoveAPITest2_7 {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private String signUpEmailPasswordUser(TestingProcessManager.TestingProcess process, String email)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("email", email);
+        body.addProperty("password", "validPass123");
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", body, 1000, 1000, null, SemVer.v4_0.get(), "emailpassword");
+        assertEquals("OK", res.get("status").getAsString());
+        return res.get("user").getAsJsonObject().get("id").getAsString();
     }
 
 }
