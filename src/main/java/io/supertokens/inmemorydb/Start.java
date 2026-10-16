@@ -4035,6 +4035,32 @@ public class Start
     }
 
     @Override
+    public OAuthClient getOAuthClientById_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                      String clientId)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        try {
+            OAuthClient client = OAuthQueries.getOAuthClientById(this, (Connection) con.getConnection(), clientId,
+                    appIdentifier);
+            if (client == null) {
+                throw new OAuthClientNotFoundException();
+            }
+            return client;
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isOAuthTokenRevokedByGID_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                        String gid) throws StorageQueryException {
+        try {
+            return !OAuthQueries.isOAuthSessionExistsByGID(this, (Connection) con.getConnection(), appIdentifier, gid);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public boolean isOAuthTokenRevokedByJTI(AppIdentifier appIdentifier, String gid, String jti)
             throws StorageQueryException {
         try {
