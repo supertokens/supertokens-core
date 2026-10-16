@@ -45,6 +45,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource {
     private static final String ACCESS_TOKEN_SIGNING_ALGO = "RS256";
@@ -116,6 +117,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
     }
 
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     public synchronized void transferLegacyKeyToNewTable()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
@@ -206,6 +208,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         storage.removeAccessTokenSigningKeysBefore(appIdentifier, System.currentTimeMillis() - signingKeyLifetime);
     }
 
+    @UnauditedTransaction(justification = "System signing-key or certificate housekeeping; no user-facing state change to audit.")
     public List<SigningKeys.KeyInfo> getOrCreateAndGetSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);

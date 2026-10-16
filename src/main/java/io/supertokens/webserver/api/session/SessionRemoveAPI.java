@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -137,11 +138,18 @@ public class SessionRemoveAPI extends WebserverAPI {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
                         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 appIdentifier, storage, userId, UserIdType.ANY);
+                        // Emit onto the storage sessions were just revoked on — the user's own storage,
+                        // already resolved above (the app-specific user storage in the across-all-tenants
+                        // branch, the request tenant's storage otherwise) — rather than redirecting to the
+                        // app's public-tenant storage. This keeps the SIGN_OUT colocated with the user's
+                        // auth record so the per-storage fold and summed count read stay consistent for a
+                        // separate-database tenant, without leaning on the fold residency guard as a backstop.
                         if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(appIdentifier, main,
-                                    userIdMapping.superTokensUserId);
+                            ActiveUsers.updateLastActive(appIdentifier, storage, main,
+                                    userIdMapping.superTokensUserId, ActivityEventType.SIGN_OUT);
                         } else {
-                            ActiveUsers.updateLastActive(appIdentifier, main, userId);
+                            ActiveUsers.updateLastActive(appIdentifier, storage, main, userId,
+                                    ActivityEventType.SIGN_OUT);
                         }
                     } catch (StorageQueryException ignored) {
                     }

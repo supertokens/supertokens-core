@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.pluginInterface.authRecipe.exceptions.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.CannotLinkSinceRecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
@@ -795,11 +796,14 @@ public class LinkAccountsTest {
         long secondUserTime = System.currentTimeMillis();
         ActiveUsers.updateLastActive(process.getProcess(), user2.getSupertokensUserId());
 
+        // Sole-writer cutover (PLAN-011): activity reaches user_last_active only through a rollup fold.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 2);
         long createPrimaryTime = System.currentTimeMillis();
         AuthRecipe.createPrimaryUser(process.getProcess(), user.getSupertokensUserId());
         Thread.sleep(50);
 
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 2);
 
         {
@@ -814,6 +818,9 @@ public class LinkAccountsTest {
             assertEquals("OK", response.get("status").getAsString());
         }
 
+        // Fold, then reconcile removes the linked-away recipe user's row (the account_linking event stays
+        // within the fold window), so the merged pair counts once — matching the pre-cutover direct write.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), secondUserTime), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), createPrimaryTime),
@@ -846,11 +853,14 @@ public class LinkAccountsTest {
         long secondUserTime = System.currentTimeMillis();
         ActiveUsers.updateLastActive(process.getProcess(), user2.getSupertokensUserId());
 
+        // Sole-writer cutover (PLAN-011): activity reaches user_last_active only through a rollup fold.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 2);
         long createPrimaryTime = System.currentTimeMillis();
         AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId());
         Thread.sleep(50);
 
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 2);
 
         {
@@ -865,6 +875,9 @@ public class LinkAccountsTest {
             assertEquals("OK", response.get("status").getAsString());
         }
 
+        // Fold, then reconcile removes the linked-away recipe user's row (the account_linking event stays
+        // within the fold window), so the merged pair counts once — matching the pre-cutover direct write.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), secondUserTime), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.getProcess(), createPrimaryTime),

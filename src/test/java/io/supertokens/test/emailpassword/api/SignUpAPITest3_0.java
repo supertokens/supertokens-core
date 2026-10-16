@@ -18,6 +18,7 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
@@ -86,6 +87,8 @@ public class SignUpAPITest3_0 {
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
         assert (activeUsers == 1);
         AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))

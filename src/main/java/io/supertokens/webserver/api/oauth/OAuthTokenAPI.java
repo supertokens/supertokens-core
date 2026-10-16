@@ -20,6 +20,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -67,6 +68,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import io.supertokens.auditlog.UnauditedTransaction;
 
 public class OAuthTokenAPI extends WebserverAPI {
 
@@ -320,9 +322,11 @@ public class OAuthTokenAPI extends WebserverAPI {
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
             if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
             } else {
-                ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.userId);
+                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
+                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
             }
         } catch (Exception e) {
             // ignore
@@ -380,6 +384,7 @@ public class OAuthTokenAPI extends WebserverAPI {
      * SQL path: DB transaction with {@code SELECT … FOR UPDATE} covering the full Hydra
      * round-trip. The caller must already hold the JVM lock for this token.
      */
+    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private void handleNonRotatingRefresh(
             HttpServletRequest req, HttpServletResponse resp,
             AppIdentifier appIdentifier, OAuthSQLStorage sqlStorage, OAuthClient oauthClient,

@@ -19,6 +19,7 @@ package io.supertokens.test.thirdparty.api;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
+import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -87,6 +88,8 @@ public class ThirdPartySignInUpAPITest2_8 {
                     user.get("email").getAsString()));
         }
 
+        // PLAN-011 cutover: fold emitted activity into the projection before reading the count.
+        RollupUserLastActive.runOnceForAllStoragesForTesting(process.getProcess());
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
 

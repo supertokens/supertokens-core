@@ -210,6 +210,17 @@ bcrypt_log_rounds: 4
 # rounds. To disable it, set it to null.
 # bulk_migration_sleep_between_rounds_in_batch_ms:
 
+# (OPTIONAL | Default: 31) int value. Number of days of activity_log entries to retain; older entries are dropped
+# by a periodic cleanup. Must be the same for all apps/tenants under a connection URI domain.
+# activity_log_retention_days:
+
+# (OPTIONAL | Default: true) boolean value. If true, throttled activity events (token_refresh, session_create,
+# oauth_token_exchange, oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5
+# minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out are never
+# throttled. Set to false to record every activity event as its own row (a complete audit trail) at the cost of
+# that write volume. Must be the same for all apps/tenants under a connection URI domain.
+# activity_log_throttle_enabled:
+
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a webauthn
 # account recovery token is valid for.
 # webauthn_recover_account_token_lifetime:

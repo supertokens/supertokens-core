@@ -21,7 +21,7 @@ name: Embargo build
 # variables AWS_REGION, ECR_REPOSITORY, EMBARGO_PUSH_ROLE_ARN, EMBARGO_PULL_ROLE_ARN; secret
 # EMBARGO_REPO_TOKEN (contents:read on the private plugin mirrors) when building from them.
 
-run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})
+run-name: Embargo build v${{ inputs.core-version }} (${{ inputs.core-ref }})${{ inputs.fast-release && ' [smoke tests only]' || '' }}
 
 on:
   workflow_dispatch:
@@ -63,6 +63,11 @@ on:
         required: true
         type: boolean
         default: true
+      fast-release:
+        description: 'Fast release: only run smoke tests (login + session tests) instead of the full suite'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: embargo-build-${{ inputs.core-version }}
@@ -81,6 +86,8 @@ jobs:
       plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
       postgresql-sha: ${{ steps.shas.outputs.postgresql }}
       postgresql-plugin-version: ${{ steps.shas.outputs.postgresql-version }}
+      java-version: ${{ steps.toolchain.outputs.java-version }}
+      root-ref: ${{ steps.toolchain.outputs.root-ref }}
     steps:
       - name: Refuse to run in a public repository
         if: ${{ !github.event.repository.private }}
@@ -93,6 +100,24 @@ jobs:
           VERSION: ${{ inputs.core-version }}
         run: |
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::core-version must be X.Y.Z"; exit 1; }
+
+      # JDK + supertokens-root branch are chosen by core major version: core >= 11 targets
+      # Java 21 and builds against root 'master'; earlier lines (6.0..10.1) are Java 15 and
+      # build against the 'for_jdk_15_releases' root, which carries the old-Gradle build/release
+      # scripts those lines need. See GHSA-6v34 backport thread.
+      - name: Derive JDK + root by core major version
+        id: toolchain
+        env:
+          VERSION: ${{ inputs.core-version }}
+        run: |
+          major="${VERSION%%.*}"
+          if [ "$major" -ge 11 ]; then
+            echo "java-version=21.0.7" >> "$GITHUB_OUTPUT"
+            echo "root-ref=master" >> "$GITHUB_OUTPUT"
+          else
+            echo "java-version=15.0.2" >> "$GITHUB_OUTPUT"
+            echo "root-ref=for_jdk_15_releases" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout core
         uses: actions/checkout@v5
@@ -161,10 +186,10 @@ jobs:
     needs: resolve
     runs-on: ubuntu-22.04
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK ${{ needs.resolve.outputs.java-version }}
         uses: actions/setup-java@v5
         with:
-          java-version: 21.0.7
+          java-version: ${{ needs.resolve.outputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
@@ -172,7 +197,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: ${{ needs.resolve.outputs.root-ref }}
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
@@ -254,7 +279,9 @@ jobs:
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
       plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
       postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
-      fast-release: false
+      java-version: ${{ needs.resolve.outputs.java-version }}
+      root-ref: ${{ needs.resolve.outputs.root-ref }}
+      fast-release: ${{ inputs.fast-release }}
     secrets: inherit
 
   # Only after the tests pass on exactly these commits: the image records this run's id as
@@ -273,6 +300,8 @@ jobs:
       target: ecr
       plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
       postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
+      java-version: ${{ needs.resolve.outputs.java-version }}
+      root-ref: ${{ needs.resolve.outputs.root-ref }}
       aws-role-arn: ${{ vars.EMBARGO_PUSH_ROLE_ARN }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
       tests-run-id: ${{ github.run_id }}

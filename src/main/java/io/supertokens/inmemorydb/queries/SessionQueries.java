@@ -107,6 +107,30 @@ public class SessionQueries {
         });
     }
 
+    public static void createNewSession_Transaction(Start start, java.sql.Connection con,
+                                                    TenantIdentifier tenantIdentifier, String sessionHandle,
+                                                    String userId, String refreshTokenHash2,
+                                                    JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                                    long createdAtTime, boolean useStaticKey)
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getSessionInfoTable()
+                + "(app_id, tenant_id, session_handle, user_id, refresh_token_hash_2, session_data, expires_at,"
+                + " jwt_user_payload, created_at_time, use_static_key)" + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        update(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, sessionHandle);
+            pst.setString(4, userId);
+            pst.setString(5, refreshTokenHash2);
+            pst.setString(6, userDataInDatabase.toString());
+            pst.setLong(7, expiry);
+            pst.setString(8, userDataInJWT.toString());
+            pst.setLong(9, createdAtTime);
+            pst.setBoolean(10, useStaticKey);
+        });
+    }
+
     public static SessionInfo getSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                          String sessionHandle)
             throws SQLException, StorageQueryException {

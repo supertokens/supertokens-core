@@ -116,8 +116,11 @@ public class LinkAccountsAPI extends WebserverAPI {
 
             if (!linkAccountsResult.wasAlreadyLinked) {
                 try {
+                    // Route to the storage backing the linked users' auth records (both accounts share one pool,
+                    // enforced above), not the app's public-tenant storage, so a separate-database tenant's
+                    // stale-row delete and dirty nudge land on the tenant's own storage.
                     ActiveUsers.updateLastActiveAfterLinking(
-                            main, appIdentifier, primaryUserId, recipeUserId);
+                            main, appIdentifier, primaryUserIdStorage, primaryUserId, recipeUserId);
                 } catch (Exception e) {
                     // ignore
                 }
