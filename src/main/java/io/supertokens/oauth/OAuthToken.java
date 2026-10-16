@@ -54,7 +54,20 @@ public class OAuthToken {
             @Nonnull Main main, @Nonnull String token)
             throws TenantOrAppNotFoundException, TryRefreshTokenException, StorageQueryException,
             UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
-        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(appIdentifier, main).getAllKeys();
+        return getPayloadFromJWTToken(appIdentifier, main, token, false);
+    }
+
+    // useCacheOnlySigningKeys: when true, verify against the in-memory key cache only and never refresh it, so
+    // a caller holding a transaction connection never borrows a second one (see
+    // SigningKeys#getAllKeysWithoutRefresh). The caller must have warmed the cache before opening its transaction.
+    public static JsonObject getPayloadFromJWTToken(AppIdentifier appIdentifier,
+            @Nonnull Main main, @Nonnull String token, boolean useCacheOnlySigningKeys)
+            throws TenantOrAppNotFoundException, TryRefreshTokenException, StorageQueryException,
+            UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        SigningKeys signingKeys = SigningKeys.getInstance(appIdentifier, main);
+        List<JWTSigningKeyInfo> keyInfoList = useCacheOnlySigningKeys
+                ? signingKeys.getAllKeysWithoutRefresh()
+                : signingKeys.getAllKeys();
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
         JWT.JWTPreParseInfo preParseJWTInfo = null;

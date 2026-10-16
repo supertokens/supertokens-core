@@ -42,6 +42,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - User id mapping lookups (`UserIdMapping.getUserIdMapping`) are now plain autocommit reads instead of a transaction around a single read, so get user by id, user metadata get, session create and refresh each open one transaction fewer. In-memory storage: the WebAuthn part of a user lookup no longer opens a transaction, matching PostgreSQL.
 - Non-rotating OAuth refresh no longer holds multiple DB connections per request: the token-revocation read now runs on the request's existing transaction connection, and token re-signing serves the pre-warmed signing-key caches instead of opening a nested transaction — removing the hold-and-wait pool exhaustion under load.
 - Adds a regression test asserting a non-rotating OAuth refresh borrows at most one DB connection at a time.
+- Non-rotating OAuth refresh: revoking a locally revoked token at the provider now checks the client on the request's transaction connection, and verifying the re-signed access token reads the signing keys from cache only, so neither borrows a second DB connection.
 
 
 ## [12.3.0]

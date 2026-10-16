@@ -491,9 +491,11 @@ public class OAuthTokenAPI extends WebserverAPI {
                     String jti = null, sessionHandle = null;
                     if (exchangeResp.jsonResponse.getAsJsonObject().has("access_token")) {
                         try {
+                            // Cache-only key read: a rotation window that opened during the provider calls
+                            // must not refresh the key cache (a nested transaction) while `con` is held.
                             JsonObject atPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main,
                                     exchangeResp.jsonResponse.getAsJsonObject()
-                                            .get("access_token").getAsString());
+                                            .get("access_token").getAsString(), true);
                             gid = atPayload.get("gid").getAsString();
                             jti = atPayload.get("jti").getAsString();
                             if (atPayload.has("sessionHandle")) {

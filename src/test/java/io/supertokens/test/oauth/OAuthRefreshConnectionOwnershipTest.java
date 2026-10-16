@@ -42,7 +42,9 @@ import org.junit.rules.TestRule;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.*;
 
@@ -261,6 +263,111 @@ public class OAuthRefreshConnectionOwnershipTest {
             int peak = ConnectionPool.getPeakConcurrentConnectionsPerThread();
             assertEquals("cold/dynamic signing key non-rotating refresh must still hold at most one DB"
                     + " connection at a time (peak was " + peak + ")", 1, peak);
+        } finally {
+            OAuth.doOAuthProxyFormPOSTTestHook = null;
+            ConnectionPool.stopBorrowTracking();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Revoked-locally branch: the provider still reports the refresh token active, but Core has revoked it (Core's
+     * revoke APIs only write Core's tables). The handler then revokes the token at the provider while holding its
+     * transaction connection; the client-existence check for that call must run on the same connection.
+     */
+    @Test
+    public void nonRotatingRefresh_locallyRevokedToken_holdsOneConnection() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        Main main = process.getProcess();
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
+        seedStorage(main, appIdentifier, true /* warm signing keys */);
+        OAuth.revokeRefreshToken(main, appIdentifier, StorageLayer.getStorage(main), GID);
+
+        List<String> providerPaths = new CopyOnWriteArrayList<>();
+        OAuth.DoOAuthProxyFormPOSTTestHook stub = providerStub();
+        OAuth.doOAuthProxyFormPOSTTestHook = (path, proxyToAdmin, formFields) -> {
+            providerPaths.add(path);
+            return stub.handle(path, proxyToAdmin, formFields);
+        };
+        try {
+            ConnectionPool.startBorrowTracking(false);
+            JsonObject response = OAuthAPIHelper.token(main, refreshRequestBody());
+            ConnectionPool.stopBorrowTracking();
+
+            assertEquals("OAUTH_ERROR", response.get("status").getAsString());
+            assertEquals("token_inactive", response.get("error").getAsString());
+            assertTrue("the locally revoked token must still be revoked at the provider",
+                    providerPaths.contains("/oauth2/revoke"));
+            assertFalse("a revoked token must not be exchanged", providerPaths.contains("/oauth2/token"));
+
+            int peak = ConnectionPool.getPeakConcurrentConnectionsPerThread();
+            assertEquals("revoking a locally revoked token at the provider must not borrow a second DB"
+                    + " connection (peak was " + peak + ")", 1, peak);
+        } finally {
+            OAuth.doOAuthProxyFormPOSTTestHook = null;
+            ConnectionPool.stopBorrowTracking();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Rotation window opening mid-request: the handler warms the signing-key caches before its transaction, but
+     * the dynamic-key rotation window can open during the provider calls. Verifying the re-signed access token
+     * must then serve the cached keys instead of refreshing them in a nested transaction.
+     */
+    @Test
+    public void nonRotatingRefresh_rotationWindowOpensDuringProviderCall_holdsOneConnection() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        Main main = process.getProcess();
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
+        seedStorage(main, appIdentifier, true /* warm signing keys */);
+
+        OAuth.DoOAuthProxyFormPOSTTestHook stub = providerStub();
+        OAuth.doOAuthProxyFormPOSTTestHook = (path, proxyToAdmin, formFields) -> {
+            if (path.equals("/oauth2/token")) {
+                // Age the cached dynamic keys so the rotation window is open from here on. The keys stay valid
+                // (expiryTime is unchanged); only the "generate a new key" check in getDynamicKeys now fires.
+                try {
+                    for (SigningKeys.KeyInfo key : SigningKeys.getInstance(appIdentifier, main).getDynamicKeys()) {
+                        key.createdAtTime = 0;
+                    }
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            return stub.handle(path, proxyToAdmin, formFields);
+        };
+        try {
+            ConnectionPool.startBorrowTracking(false);
+            JsonObject response = OAuthAPIHelper.token(main, refreshRequestBody());
+            ConnectionPool.stopBorrowTracking();
+
+            assertEquals("OK", response.get("status").getAsString());
+            int peak = ConnectionPool.getPeakConcurrentConnectionsPerThread();
+            assertEquals("verifying the re-signed access token must not refresh the signing-key cache while the"
+                    + " transaction connection is held (peak was " + peak + ")", 1, peak);
         } finally {
             OAuth.doOAuthProxyFormPOSTTestHook = null;
             ConnectionPool.stopBorrowTracking();

@@ -158,10 +158,22 @@ public class OAuthQueries {
 
     public static OAuthClient getOAuthClientById(Start start, String clientId, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
+        // Borrow a pool connection and delegate to the connection-scoped twin below, so the query and its
+        // result mapping live in exactly one place.
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            return getOAuthClientById(start, con, clientId, appIdentifier);
+        }
+    }
+
+    // Transaction-aware twin of getOAuthClientById: same read run on the caller's connection instead of
+    // borrowing a new one from the pool.
+    public static OAuthClient getOAuthClientById(Start start, Connection con, String clientId,
+                                                 AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT client_secret, is_client_credentials_only, enable_refresh_token_rotation FROM " + Config.getConfig(start).getOAuthClientsTable() +
             " WHERE client_id = ? AND app_id = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, clientId);
             pst.setString(2, appIdentifier.getAppId());
         }, (result) -> {

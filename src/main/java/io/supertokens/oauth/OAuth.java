@@ -510,7 +510,8 @@ public class OAuth {
                 // This overload resolves the client from storage (borrowing a connection); the revoke
                 // round-trip itself is shared with the transaction-aware twin below.
                 OAuthClient oAuthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
-                revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oAuthClient);
+                revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oAuthClient,
+                        oAuthClient.clientId);
             } catch (OAuthClientNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
                     InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException |
                     IllegalBlockSizeException | BadPaddingException e){
@@ -521,9 +522,11 @@ public class OAuth {
 
     // Best-effort revocation of a refresh token that introspection has just found invalid, shared by both
     // verifyAndUpdateIntrospectRefreshTokenPayload overloads. The caller supplies the already-resolved
-    // OAuthClient, so this method never fetches it from storage (i.e. never borrows a connection of its own).
+    // OAuthClient. A non-null clientIdToCheck makes doOAuthProxyFormPOST re-check the client in storage on a
+    // pooled connection; a caller holding a transaction connection must check it on that connection itself
+    // and pass null, or the check becomes a nested borrow.
     private static void revokeRefreshTokenAtProvider(Main main, AppIdentifier appIdentifier,
-            OAuthStorage oauthStorage, String refreshToken, OAuthClient oAuthClient)
+            OAuthStorage oauthStorage, String refreshToken, OAuthClient oAuthClient, String clientIdToCheck)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException,
             InvalidConfigException, IOException {
         refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
@@ -535,7 +538,7 @@ public class OAuth {
         try {
             doOAuthProxyFormPOST(
                  main, appIdentifier, oauthStorage,
-                 oAuthClient.clientId, // clientIdToCheck
+                 clientIdToCheck,
                  "/oauth2/revoke", // path
                  false, // proxyToAdmin
                  false, // camelToSnakeCaseConversion
@@ -580,8 +583,14 @@ public class OAuth {
             payload.entrySet().clear();
             payload.addProperty("active", false);
 
-            // The caller already loaded oauthClient, so no storage fetch (and no second connection) is needed.
-            revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oauthClient);
+            // Check the client still exists on the caller's connection `con` (not a nested borrow), then skip the
+            // proxy's own storage check by passing a null clientIdToCheck.
+            try {
+                oauthStorage.getOAuthClientById_Transaction(appIdentifier, con, oauthClient.clientId);
+            } catch (OAuthClientNotFoundException e) {
+                return; // client deleted meanwhile; nothing to revoke at the provider (same outcome as before)
+            }
+            revokeRefreshTokenAtProvider(main, appIdentifier, oauthStorage, refreshToken, oauthClient, null);
         }
     }
 
