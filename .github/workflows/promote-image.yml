@@ -43,7 +43,9 @@ jobs:
     environment: publish
     runs-on: ubuntu-22.04
     outputs:
-      image-ref: ${{ steps.manifest.outputs.image-ref }}
+      # The digest, not image-ref: the ref contains the ECR registry (a secret), and GitHub
+      # drops job outputs that contain a secret.
+      digest: ${{ steps.manifest.outputs.digest }}
     steps:
       - name: Checkout workflow sources
         uses: actions/checkout@v5
@@ -89,7 +91,7 @@ jobs:
     needs: lookup
     uses: ./.github/workflows/_image-promote.yml
     with:
-      source-image: ${{ needs.lookup.outputs.image-ref }}
+      source-ecr-digest: ${{ needs.lookup.outputs.digest }}
       core-version: ${{ inputs.core-version }}
       is-canary: false
       is-latest-release: ${{ inputs.is-latest-release }}

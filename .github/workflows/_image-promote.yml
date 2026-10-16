@@ -12,9 +12,18 @@ on:
   workflow_call:
     inputs:
       source-image:
-        description: 'Image pinned by digest: <repo>@sha256:...'
+        description: 'Image pinned by digest: <repo>@sha256:... (or give source-ecr-digest)'
         type: string
-        required: true
+        required: false
+        default: ''
+      source-ecr-digest:
+        description: >-
+          Digest (sha256:...) of an image in our ECR repository. Use this instead of source-image
+          when the image is in ECR: the registry is a secret, and GitHub drops job outputs that
+          contain one, so callers pass the digest and the ref is rebuilt here.
+        type: string
+        required: false
+        default: ''
       core-version:
         type: string
         required: true
@@ -48,6 +57,27 @@ jobs:
         with:
           sparse-checkout: .github
 
+      - name: Resolve source image
+        id: source
+        env:
+          SOURCE_IMAGE: ${{ inputs.source-image }}
+          ECR_DIGEST: ${{ inputs.source-ecr-digest }}
+          ECR_REPO: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
+        run: |
+          if [ -n "$SOURCE_IMAGE" ] && [ -n "$ECR_DIGEST" ]; then
+            echo "::error::Give either source-image or source-ecr-digest, not both"; exit 1
+          fi
+          if [ -n "$ECR_DIGEST" ]; then
+            if ! [[ "$ECR_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::source-ecr-digest must be sha256:<64 hex>, got '$ECR_DIGEST'"; exit 1
+            fi
+            echo "ref=$ECR_REPO@$ECR_DIGEST" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SOURCE_IMAGE" ]; then
+            echo "ref=$SOURCE_IMAGE" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::No source image: give source-image or source-ecr-digest"; exit 1
+          fi
+
       - name: Set up crane
         uses: ./.github/actions/setup-crane
 
@@ -70,7 +100,7 @@ jobs:
       - name: Promote to Docker Hub
         if: inputs.push-to-dockerhub
         env:
-          SOURCE: ${{ inputs.source-image }}
+          SOURCE: ${{ steps.source.outputs.ref }}
           VERSION: ${{ inputs.core-version }}
           IS_CANARY: ${{ inputs.is-canary }}
           LATEST_FOR_MAJOR: ${{ inputs.is-latest-for-major }}
@@ -82,7 +112,7 @@ jobs:
 
       - name: Promote to ECR
         env:
-          SOURCE: ${{ inputs.source-image }}
+          SOURCE: ${{ steps.source.outputs.ref }}
           TARGET: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
           VERSION: ${{ inputs.core-version }}
           IS_CANARY: ${{ inputs.is-canary }}
