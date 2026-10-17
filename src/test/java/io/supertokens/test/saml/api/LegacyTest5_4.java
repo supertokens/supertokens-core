@@ -8,7 +8,9 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
@@ -554,7 +556,9 @@ public class LegacyTest5_4 {
         assertEquals("OK", tokenResponse.get("status").getAsString());
         assertNotNull(tokenResponse.get("access_token"));
         String accessToken = tokenResponse.get("access_token").getAsString();
-        assertEquals(authCode + "." + clientInfo.clientId, accessToken);
+        // The access token is a fresh random value, not derived from the code or the client id
+        assertFalse(accessToken.contains(authCode));
+        assertFalse(accessToken.contains(clientInfo.clientId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -709,6 +713,271 @@ public class LegacyTest5_4 {
 
         assertNotNull(userInfoResponse.get("id"));
         assertEquals("user@example.com", userInfoResponse.get("id").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // ========== Code / token exchange hardening ==========
+
+    private static final String TOKEN_URL = "http://localhost:3567/recipe/saml/legacy/token";
+    private static final String USERINFO_URL = "http://localhost:3567/recipe/saml/legacy/userinfo";
+
+    private TestingProcessManager.TestingProcess startWithSAML() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+        return process;
+    }
+
+    private SAMLTestUtils.CreatedClientInfo createLegacyClient(TestingProcessManager.TestingProcess process,
+                                                               String idpEntityId) throws Exception {
+        return SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                TEST_REDIRECT_URI,
+                "http://localhost:3000/acs",
+                idpEntityId,
+                "https://mocksaml.com/api/saml/sso"
+        );
+    }
+
+    // Runs a legacy SP-initiated login through the callback and returns the code from the redirect.
+    private String loginAndGetCode(TestingProcessManager.TestingProcess process,
+                                   SAMLTestUtils.CreatedClientInfo clientInfo, String email) throws Exception {
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process, clientInfo.clientId, clientInfo.defaultRedirectURI, clientInfo.acsURL, "test-state");
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                clientInfo.idpEntityId,
+                "https://saml.supertokens.com",
+                clientInfo.acsURL,
+                email,
+                null,
+                SAMLTestUtils.requestIdFor(relayState),
+                clientInfo.keyMaterial,
+                300
+        );
+        JsonObject callbackFormData = new JsonObject();
+        callbackFormData.addProperty("SAMLResponse", samlResponseBase64);
+        callbackFormData.addProperty("RelayState", relayState);
+        try {
+            HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/legacy/callback", callbackFormData, 1000, 1000, null,
+                    SemVer.v5_4.get(), "saml", false);
+            fail("Expected redirect response");
+            return null;
+        } catch (HttpResponseException e) {
+            assertEquals(302, e.statusCode);
+            return extractAuthCodeFromRedirectURI(e.getMessage());
+        }
+    }
+
+    private JsonObject exchangeCode(TestingProcessManager.TestingProcess process, String clientId,
+                                    String clientSecret, String code) throws Exception {
+        JsonObject tokenFormData = new JsonObject();
+        tokenFormData.addProperty("client_id", clientId);
+        tokenFormData.addProperty("client_secret", clientSecret);
+        tokenFormData.addProperty("code", code);
+        return HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                TOKEN_URL, tokenFormData, 5000, 5000, null, SemVer.v5_4.get(), "saml");
+    }
+
+    private void assertExchangeFails(TestingProcessManager.TestingProcess process, String clientId,
+                                     String clientSecret, String code, String expectedMessage) throws Exception {
+        try {
+            exchangeCode(process, clientId, clientSecret, code);
+            fail("Expected the code exchange to fail");
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: " + expectedMessage, e.getMessage());
+        }
+    }
+
+    private JsonObject callUserinfo(TestingProcessManager.TestingProcess process, String authorizationHeader)
+            throws Exception {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", authorizationHeader);
+        return HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
+                USERINFO_URL, null, headers, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+    }
+
+    private void assertUserinfoRejected(TestingProcessManager.TestingProcess process, String authorizationHeader)
+            throws Exception {
+        try {
+            callUserinfo(process, authorizationHeader);
+            fail("Expected userinfo to reject: " + authorizationHeader);
+        } catch (HttpResponseException e) {
+            assertEquals("for " + authorizationHeader, 400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testIssue3_legacyTokenRequiresValidCode() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+
+        SAMLTestUtils.CreatedClientInfo clientA = createLegacyClient(process, "https://idp-a.example.com/entityid");
+        SAMLTestUtils.CreatedClientInfo clientB = createLegacyClient(process, "https://idp-b.example.com/entityid");
+
+        // A code that was never issued is not exchanged, even with valid client credentials
+        assertExchangeFails(process, clientA.clientId, "secret", java.util.UUID.randomUUID().toString(),
+                "Invalid code");
+        assertExchangeFails(process, clientA.clientId, "secret", "anything", "Invalid code");
+
+        // A code issued to client A cannot be exchanged by client B (and is burnt by the attempt)
+        String codeForA = loginAndGetCode(process, clientA, "a@example.com");
+        assertExchangeFails(process, clientB.clientId, "secret", codeForA, "Invalid code");
+        assertExchangeFails(process, clientA.clientId, "secret", codeForA, "Invalid code");
+
+        // A wrong client secret is rejected before the code is redeemed, so the code survives
+        String code = loginAndGetCode(process, clientA, "a@example.com");
+        assertExchangeFails(process, clientA.clientId, "wrong-secret", code, "Invalid client_secret");
+        assertExchangeFails(process, clientA.clientId, "secre", code, "Invalid client_secret");
+
+        // The right client gets a fresh access token, exactly once
+        JsonObject tokenResponse = exchangeCode(process, clientA.clientId, "secret", code);
+        assertEquals("OK", tokenResponse.get("status").getAsString());
+        String accessToken = tokenResponse.get("access_token").getAsString();
+        assertFalse(accessToken.contains(code));
+        assertFalse(accessToken.equals(code + "." + clientA.clientId));
+        assertExchangeFails(process, clientA.clientId, "secret", code, "Invalid code");
+
+        // An access token cannot be exchanged as a code
+        assertExchangeFails(process, clientA.clientId, "secret", accessToken, "Invalid code");
+
+        JsonObject userInfo = callUserinfo(process, "Bearer " + accessToken);
+        assertEquals("a@example.com", userInfo.get("id").getAsString());
+        assertEquals(clientA.clientId, userInfo.get("aud").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue22_userinfoRejectsRawCode() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = createLegacyClient(process, "https://saml.example.com/entityid");
+        String code = loginAndGetCode(process, clientInfo, "user@example.com");
+
+        // Neither the code nor a value built from the code and the public client id is an access token
+        assertUserinfoRejected(process, "Bearer " + code + "." + clientInfo.clientId);
+        assertUserinfoRejected(process, "Bearer " + code);
+
+        // Those attempts did not consume the code: the client can still exchange it
+        String accessToken = exchangeCode(process, clientInfo.clientId, "secret", code)
+                .get("access_token").getAsString();
+
+        // A modified access token is not accepted
+        assertUserinfoRejected(process, "Bearer " + accessToken + "x");
+
+        JsonObject userInfo = callUserinfo(process, "Bearer " + accessToken);
+        assertEquals("user@example.com", userInfo.get("id").getAsString());
+
+        // The access token is single use
+        assertUserinfoRejected(process, "Bearer " + accessToken);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testLegacyAccessTokenNotAcceptedAsCodeByNonLegacyUserinfo() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = createLegacyClient(process, "https://saml.example.com/entityid");
+        String code = loginAndGetCode(process, clientInfo, "user@example.com");
+        String accessToken = exchangeCode(process, clientInfo.clientId, "secret", code)
+                .get("access_token").getAsString();
+
+        // The non-legacy userinfo API redeems codes, never legacy access tokens (with or without the key prefix)
+        for (String candidate : new String[]{accessToken, "legacy_access_token:" + accessToken}) {
+            JsonObject body = new JsonObject();
+            body.addProperty("accessToken", candidate);
+            body.addProperty("clientId", clientInfo.clientId);
+            JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/user", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+            assertEquals("INVALID_TOKEN_ERROR", resp.get("status").getAsString());
+        }
+
+        // ... so the access token is still valid at the legacy userinfo endpoint
+        JsonObject userInfo = callUserinfo(process, "Bearer " + accessToken);
+        assertEquals("user@example.com", userInfo.get("id").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testLegacyCodeExchangedOnceUnderConcurrency() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+
+        SAMLTestUtils.CreatedClientInfo clientInfo = createLegacyClient(process, "https://saml.example.com/entityid");
+
+        int threads = 8;
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        try {
+            for (int trial = 0; trial < 5; trial++) {
+                String code = loginAndGetCode(process, clientInfo, "user@example.com");
+                java.util.concurrent.CyclicBarrier barrier = new java.util.concurrent.CyclicBarrier(threads);
+                java.util.List<java.util.concurrent.Future<Boolean>> futures = new java.util.ArrayList<>();
+                for (int i = 0; i < threads; i++) {
+                    futures.add(executor.submit(() -> {
+                        barrier.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                        try {
+                            exchangeCode(process, clientInfo.clientId, "secret", code);
+                            return true;
+                        } catch (HttpResponseException e) {
+                            assertEquals(400, e.statusCode);
+                            return false;
+                        }
+                    }));
+                }
+                int succeeded = 0;
+                for (java.util.concurrent.Future<Boolean> f : futures) {
+                    if (f.get(30, java.util.concurrent.TimeUnit.SECONDS)) {
+                        succeeded++;
+                    }
+                }
+                assertEquals("a code must be exchanged exactly once", 1, succeeded);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMatthewM3_userinfoMalformedTokenIsNot500() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+
+        String[] malformed = {
+                "Bearer .",
+                "Bearer abc.",
+                "Bearer .abc",
+                "Bearer a.b.c",
+                "Bearer ..",
+                "Bearer  ",
+                "Bearer a b",
+                "Bearer %zz",
+                "Bearer " + "a".repeat(5000),
+        };
+        for (String header : malformed) {
+            try {
+                callUserinfo(process, header);
+                fail("Expected userinfo to reject: " + header);
+            } catch (HttpResponseException e) {
+                // A client error, never an internal server error
+                assertEquals("for " + header, 400, e.statusCode);
+                String message = e.getMessage();
+                assertTrue(message, message.equals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR")
+                        || message.equals("Http error. Status Code: 400. Message: Authorization header is required"));
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
