@@ -19,6 +19,7 @@ package io.supertokens.test.accountlinking;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -304,6 +305,76 @@ public class SessionTests {
     @Test
     public void testIssue24_deleteMappedPrimaryLoginMethodRevokesItsSessions() throws Exception {
         deletePrimaryLoginMethodRevokesItsSessions(true);
+    }
+
+    @Test
+    public void testIssue100_revokeAllCoversMappedLinkedAccounts() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Main main = process.getProcess();
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(main, "test1@example.com", "password");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(main, "test2@example.com", "password");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(main, "test3@example.com", "password");
+        // primary and one linked login method are mapped, the third is not
+        UserIdMapping.createUserIdMapping(main, user1.getSupertokensUserId(), "extid1", null, false);
+        UserIdMapping.createUserIdMapping(main, user2.getSupertokensUserId(), "extid2", null, false);
+        AuthRecipe.createPrimaryUser(main, user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, user2.getSupertokensUserId(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, user3.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        // revoking / listing by the external id, the internal id or a linked login method's id covers every
+        // login method's sessions
+        String[] idsToRevokeWith = {"extid1", user1.getSupertokensUserId(), "extid2"};
+        for (String revokeWith : idsToRevokeWith) {
+            SessionInformationHolder s1 = Session.createNewSession(main, "extid1", new JsonObject(),
+                    new JsonObject());
+            SessionInformationHolder s2 = Session.createNewSession(main, "extid2", new JsonObject(),
+                    new JsonObject());
+            SessionInformationHolder s3 = Session.createNewSession(main, user3.getSupertokensUserId(),
+                    new JsonObject(), new JsonObject());
+
+            String[] listed = Session.getAllNonExpiredSessionHandlesForUser(main, revokeWith);
+            assertEquals(revokeWith, 3, listed.length);
+            String[] tenantListed = Session.getAllNonExpiredSessionHandlesForUser(
+                    ResourceDistributor.getAppForTesting(), StorageLayer.getStorage(main), revokeWith, true);
+            assertEquals(revokeWith, 3, tenantListed.length);
+
+            String[] revoked = Session.revokeAllSessionsForUser(main, revokeWith);
+            assertEquals(revokeWith, 3, revoked.length);
+            assertSessionRevoked(main, s1);
+            assertSessionRevoked(main, s2);
+            assertSessionRevoked(main, s3);
+        }
+
+        // the tenant-scoped revoke covers them too
+        SessionInformationHolder s1 = Session.createNewSession(main, "extid1", new JsonObject(), new JsonObject());
+        SessionInformationHolder s2 = Session.createNewSession(main, "extid2", new JsonObject(), new JsonObject());
+        String[] revoked = Session.revokeAllSessionsForUser(main, ResourceDistributor.getAppForTesting(),
+                StorageLayer.getStorage(main), "extid1", true);
+        assertEquals(2, revoked.length);
+        assertSessionRevoked(main, s1);
+        assertSessionRevoked(main, s2);
+
+        // without linked accounts only the given id's sessions are revoked
+        SessionInformationHolder s4 = Session.createNewSession(main, "extid1", new JsonObject(), new JsonObject());
+        SessionInformationHolder s5 = Session.createNewSession(main, "extid2", new JsonObject(), new JsonObject());
+        revoked = Session.revokeAllSessionsForUser(main, ResourceDistributor.getAppForTesting().toAppIdentifier(),
+                StorageLayer.getStorage(main), "extid1", false);
+        assertEquals(1, revoked.length);
+        assertEquals(s4.session.handle, revoked[0]);
+        assertNotNull(Session.getSession(main, s5.session.handle));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test

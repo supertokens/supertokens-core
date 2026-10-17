@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
+- Sessions: revoking or listing all sessions of a user with linked accounts now also covers sessions stored under the external (user id mapped) ids of the linked login methods, and accepts the external id of any login method of the account.
 
 ## [12.3.1]
 
