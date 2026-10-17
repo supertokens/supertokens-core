@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
-- WebAuthn: the stored credential id is taken from the verified attestation; a registration whose `id` or `rawId` differs from it is rejected (`INVALID_CREDENTIALS_ERROR`), and a credential id already registered in the app (under any relying party id) cannot be registered again.
+- WebAuthn: the stored credential id is taken from the verified attestation; a registration whose `id` or `rawId` differs from it is rejected (`INVALID_CREDENTIALS_ERROR`), and a credential id already registered in the app under another relying party id cannot be registered again (sign-up and credential register both return `INVALID_AUTHENTICATOR_ERROR` with reason "Credential already registered"; a duplicate under the same relying party id still returns `CREDENTIAL_ALREADY_EXISTS_ERROR` from credential register).
 - WebAuthn: sign-in returns the owner of the stored credential whose public key verified the assertion, and only accepts a credential registered for the relying party id of the sign-in options.
 - WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
 - WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.

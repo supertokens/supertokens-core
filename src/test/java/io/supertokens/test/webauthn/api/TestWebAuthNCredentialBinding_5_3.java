@@ -211,8 +211,19 @@ public class TestWebAuthNCredentialBinding_5_3 {
         JsonObject registerResp = registerCredential(main, tenant,
                 attackerOptions.get("webauthnGeneratedOptionsId").getAsString(),
                 attackerKey.register(attackerOptions, OTHER_ORIGIN), attacker.get("recipeUserId").getAsString());
-        assertEquals(registerResp.toString(), "CREDENTIAL_ALREADY_EXISTS_ERROR",
+        // reported like at sign-up (INVALID_AUTHENTICATOR_ERROR is in the CDI spec of credential register)
+        assertEquals(registerResp.toString(), "INVALID_AUTHENTICATOR_ERROR",
                 registerResp.get("status").getAsString());
+        assertEquals(registerResp.toString(), "Credential already registered",
+                registerResp.get("reason").getAsString());
+
+        // a duplicate under the same relying party id keeps its previous status (primary key conflict)
+        JsonObject victimOptionsAgain = registerOptions(main, tenant, "victim@example.com", RP_ID, ORIGIN);
+        JsonObject sameRpResp = registerCredential(main, tenant,
+                victimOptionsAgain.get("webauthnGeneratedOptionsId").getAsString(),
+                victimKey.register(victimOptionsAgain, ORIGIN), victim.get("recipeUserId").getAsString());
+        assertEquals(sameRpResp.toString(), "CREDENTIAL_ALREADY_EXISTS_ERROR",
+                sameRpResp.get("status").getAsString());
 
         // the victim still signs in
         JsonObject victimSignIn = signIn(main, tenant, victimKey, RP_ID, ORIGIN, victimCredentialId);

@@ -75,6 +75,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import io.supertokens.auditlog.UnauditedTransaction;
 
 public class WebAuthN {
@@ -204,8 +205,12 @@ public class WebAuthN {
 
         String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
         String credentialId = getAttestedCredentialId(credentialsDataJson, verifiedRegistrationData);
-        if (credentialIdExistsInApp(storage, tenantIdentifier, credentialId)) {
-            throw new DuplicateCredentialException();
+        // Credential ids must be unique within the app, across relying party ids: sign in looks a credential up
+        // by id alone. The same id under another relying party id is rejected like at sign-up; a duplicate under
+        // the same relying party id is left to the primary key, which reports DuplicateCredentialException.
+        WebAuthNStoredCredential existing = loadCredentialByIdInApp(storage, tenantIdentifier, credentialId);
+        if (existing != null && !Objects.equals(existing.rpId, generatedOptions.relyingPartyId)) {
+            throw new WebauthNVerificationFailedException("Credential already registered");
         }
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                 verifiedRegistrationData,
@@ -423,13 +428,13 @@ public class WebAuthN {
         validateRawIdMatchesId(credentialsJson, id);
     }
 
-    private static boolean credentialIdExistsInApp(Storage storage, TenantIdentifier tenantIdentifier,
-                                                   String credentialId) throws StorageQueryException {
+    private static WebAuthNStoredCredential loadCredentialByIdInApp(Storage storage, TenantIdentifier tenantIdentifier,
+                                                                    String credentialId) throws StorageQueryException {
         WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
         try {
             return ((ActivityLogSQLStorage) storage).startAuditedTransaction(tenantIdentifier.toAppIdentifier(),
                     con -> AuditedResult.withoutAudit(
-                            webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId) != null,
+                            webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId),
                             "Read-only lookup of an existing credential id before registration; writes nothing."));
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e);
