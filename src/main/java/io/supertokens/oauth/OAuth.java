@@ -268,6 +268,41 @@ public class OAuth {
         return response;
     }
 
+    /**
+     * Fetches a login or consent request from the OAuth provider (challengeRequestPath is
+     * /admin/oauth2/auth/requests/login or /admin/oauth2/auth/requests/consent) and makes sure that the OAuth
+     * client of the request belongs to the given app. This must be called before a caller supplied challenge
+     * is accepted or rejected, since the OAuth provider may be shared between apps.
+     *
+     * @throws OAuthClientNotFoundException if the client of the request is not a client of this app
+     * @throws OAuthAPIException            if the OAuth provider returns an error for the challenge
+     */
+    public static void checkChallengeBelongsToApp(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                  String challengeRequestPath, Map<String, String> queryParams)
+            throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        HttpRequestForOAuthProvider.Response response = doOAuthProxyGET(main, appIdentifier, storage,
+                null, // the client is not known yet, it is checked below
+                challengeRequestPath, true, true, queryParams, new HashMap<>());
+
+        String clientId = null;
+        if (response.jsonResponse != null && response.jsonResponse.isJsonObject()) {
+            JsonObject responseObject = response.jsonResponse.getAsJsonObject();
+            if (responseObject.has("client") && responseObject.get("client").isJsonObject()) {
+                JsonObject client = responseObject.getAsJsonObject("client");
+                if (client.has("clientId") && client.get("clientId").isJsonPrimitive()) {
+                    clientId = client.get("clientId").getAsString();
+                }
+            }
+        }
+
+        if (clientId == null) {
+            throw new OAuthClientNotFoundException();
+        }
+
+        StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId); // may throw OAuthClientNotFoundException
+    }
+
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
         if (response.statusCode >= 400) {
             String error = "unknown_error";

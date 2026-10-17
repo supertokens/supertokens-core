@@ -75,7 +75,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
-                null, // clientIdToCheck
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

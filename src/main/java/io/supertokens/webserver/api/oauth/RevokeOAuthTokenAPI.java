@@ -22,6 +22,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +105,13 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     if (parsedHeader.length != 2) {
                         throw new ServletException(new BadRequestException("authorizationHeader must contain clientId:clientSecret"));
                     }
-                    clientId = parsedHeader[0];
+                    try {
+                        // the OAuth provider URL-decodes the client id from the Basic auth header (RFC 6749,
+                        // section 2.3.1), so we do the same before checking that the client belongs to this app
+                        clientId = URLDecoder.decode(parsedHeader[0], StandardCharsets.UTF_8);
+                    } catch (RuntimeException e) {
+                        throw new ServletException(new BadRequestException("authorizationHeader is not valid"));
+                    }
                     clientSecret = parsedHeader[1];
                 } else {
                     clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
@@ -127,7 +135,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
-                    null, //clientIdToCheck
+                    clientId, //clientIdToCheck
                     "/oauth2/revoke", // path
                     false, // proxyToAdmin
                     false, // camelToSnakeCaseConversion

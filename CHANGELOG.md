@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- OAuth2 provider: when several apps share one OAuth provider, the login/consent request APIs (get consent, accept/reject login, accept/reject consent) now resolve the challenge's OAuth client first and return `CLIENT_NOT_FOUND_ERROR` if it is not a client of the calling app, as `GET /recipe/oauth/auth/requests/login` already did.
+- OAuth2 provider: `POST /recipe/oauth/tokens/revoke`, `POST /recipe/oauth/token/revoke` and `GET /recipe/oauth/clients` check that the client belongs to the calling app before calling the OAuth provider and return `CLIENT_NOT_FOUND_ERROR` otherwise. `POST /recipe/oauth/auth` returns `CLIENT_NOT_FOUND_ERROR` when `params.client_id` is missing.
+- OAuth2 provider: parameter names (not only values) are URL-encoded in the requests sent to the OAuth provider. The client id from a Basic `Authorization` header is URL-decoded before the ownership check, and `POST /recipe/oauth/token` returns an `invalid_request` `OAUTH_ERROR` when that client id differs from a `client_id` in the body.
+
 ## [12.3.1]
 
 ### Security
