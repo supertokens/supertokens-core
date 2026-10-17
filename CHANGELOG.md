@@ -64,6 +64,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
 - User roles: `POST /recipe/user/role/remove` and `GET /recipe/role/users` now check that the role exists in the app's public tenant storage (where roles are stored), as `PUT /recipe/user/role` already did, and remove or list the user-role mappings in the tenant's own storage. Previously both returned `UNKNOWN_ROLE_ERROR` for tenants on a separate database, so a role could not be revoked from a single user there. Removing a user's role also deletes the mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
 
+- Multitenancy (with the plugin-interface release of this round): the CDI ≥ 5.1 / v2 tenant GET and list APIs no longer return a disabled login method's factor ids in `firstFactors`; a legacy tenant whose stored `firstFactors` only names disabled login methods is returned with `firstFactors: []`. Tenants written by current cores are unchanged.
+
 ### Changes
 
 - In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
