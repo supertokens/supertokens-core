@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- SAML callback: an assertion is accepted only within a window bounded by signed values. Its bearer `SubjectConfirmationData` must carry a `NotOnOrAfter`, which is now enforced (and `NotBefore`, if present). The `Assertion` `IssueInstant` must be present and at most 5 minutes old (allowing for clock skew). The consumed-assertion record is kept until that same window has passed, plus the clock skew, so it can no longer be purged while the assertion would still be accepted.
+- SAML callback: on SP-initiated logins the AuthnRequest ID must also appear as the `InResponseTo` of the authenticating assertion's bearer `SubjectConfirmationData`, not only on the Response.
+- SAML callback: an SP-initiated response with no known ACS URL to pin `Destination`/`Recipient` to is rejected.
+- SAML clients: an update that omits `acsURLs` keeps the client's current ACS allow-list instead of clearing it; send `acsURLs: []` to clear it.
+
 ## [12.3.1]
 
 ### Security
