@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Email-password sign-up no longer marks every placeholder-looking email as verified. It now auto-verifies only
+  `<userId>@stfakeemail.supertokens.com` where `<userId>` is the id (or mapped external id) of an existing user of
+  the same app, which is the placeholder the backend SDKs generate when a user without an email adds a password
+  factor. Other addresses on `@stfakeemail.supertokens.com` (including third-party placeholders) and addresses ending
+  in `.fakeemail.com` are created unverified.
+
 ## [12.3.1]
 
 ### Security

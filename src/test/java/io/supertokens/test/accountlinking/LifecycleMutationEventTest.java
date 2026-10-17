@@ -419,13 +419,19 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         }
         SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        String fakeEmail = "st-user@stfakeemail.supertokens.com";
+        // Only the placeholder of an existing user (<userId>@stfakeemail.supertokens.com) is pre-verified.
+        AuthRecipeUserInfo existingUser = EmailPassword.signUp(process.getProcess(), "existing@example.com",
+                "password");
+        String fakeEmail = existingUser.getSupertokensUserId() + "@stfakeemail.supertokens.com";
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), fakeEmail, "password");
 
         // The fake email is pre-verified in the same transaction that created the user.
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), fakeEmail));
 
+        // One user_creation event per sign-up: the existing user's and the fake-email user's.
         List<Row> events = readEvents(storage, LifecycleEventType.USER_CREATION.getValue());
+        assertEquals(2, events.size());
+        events.removeIf(e -> !user.getSupertokensUserId().equals(e.recipeUserId));
         assertEquals(1, events.size());
         Row event = events.get(0);
         assertEquals(user.getSupertokensUserId(), event.recipeUserId);

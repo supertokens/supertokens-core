@@ -19,6 +19,7 @@ package io.supertokens.emailpassword;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -63,15 +64,19 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.auditlog.UnauditedTransaction;
 
 public class EmailPassword {
+
+    private static final String SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN = "@stfakeemail.supertokens.com";
 
     public static class ImportUserResponse {
         public boolean didUserAlreadyExist;
@@ -113,6 +118,20 @@ public class EmailPassword {
                                             @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
+        return signUp(tenantIdentifier, storage, main, email, password, email);
+    }
+
+    /**
+     * @param email           the normalised email the user is created with
+     * @param emailAsProvided the email as sent by the caller, before normalisation. It is only used to match the
+     *                        local part of a placeholder email against an (external) user id, since user ids are
+     *                        case-sensitive while normalisation lower-cases the email.
+     */
+    public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                            @Nonnull String email, @Nonnull String password,
+                                            @Nullable String emailAsProvided)
+            throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
+            BadPermissionException {
 
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
@@ -126,23 +145,26 @@ public class EmailPassword {
         EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
-        boolean isFakeEmail = Utils.isFakeEmail(email);
 
         while (true) {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
             try {
-                // Create the user (and, for a fake email, mark it verified) and emit its user_creation event
-                // atomically on the same connection, so the event cannot be lost relative to the creation it
-                // records. The user-id retry loop on DuplicateUserIdException stays outside the transaction.
+                // Create the user (and, for a placeholder email of an existing user, mark it verified) and emit
+                // its user_creation event atomically on the same connection, so the event cannot be lost relative
+                // to the creation it records. The user-id retry loop on DuplicateUserIdException stays outside the
+                // transaction.
                 AuthRecipeUserInfo newUser = auditStorage.startAuditedTransaction(appIdentifier, con -> {
                     try {
+                        // Checked before the new user is inserted, so the new user's own id can never match.
+                        boolean isPlaceholderEmailOfExistingUser = isPlaceholderEmailOfExistingUser_Transaction(
+                                storage, con, appIdentifier, email, emailAsProvided);
                         AuthRecipeUserInfo user = epStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
                                 hashedPassword, timeJoined);
-                        if (isFakeEmail) {
-                            // A fake email is treated as pre-verified; do it on the same connection so the user,
-                            // its verification and the user_creation event all commit (or roll back) together.
+                        if (isPlaceholderEmailOfExistingUser) {
+                            // Such a placeholder is treated as pre-verified; do it on the same connection so the
+                            // user, its verification and the user_creation event all commit (or roll back) together.
                             evStorage.updateIsEmailVerified_Transaction(appIdentifier, con,
                                     user.getSupertokensUserId(), email, true);
                             user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
@@ -173,6 +195,48 @@ public class EmailPassword {
                 throw new StorageQueryException(e.actualException);
             }
         }
+    }
+
+    /**
+     * Returns true only for the placeholder email the backend SDKs generate when a user without an email address
+     * adds a password factor: {@code <userId>@stfakeemail.supertokens.com}, where {@code <userId>} is the id of a user
+     * that already exists in this app (a SuperTokens user id, or an external user id from user id mapping). Other
+     * addresses that merely look like placeholders (other local parts on that domain, or addresses on
+     * {@code *.fakeemail.com}) are not marked as verified on sign-up.
+     */
+    private static boolean isPlaceholderEmailOfExistingUser_Transaction(Storage storage, TransactionConnection con,
+                                                                        AppIdentifier appIdentifier,
+                                                                        String email, String emailAsProvided)
+            throws StorageQueryException {
+        if (!email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN)) {
+            return false;
+        }
+        List<String> candidateUserIds = new ArrayList<>();
+        candidateUserIds.add(email.substring(0, email.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length()));
+        if (emailAsProvided != null && email.equals(Utils.normaliseEmail(emailAsProvided))) {
+            // user ids are case-sensitive, so also try the local part as the caller sent it
+            String trimmed = emailAsProvided.trim();
+            String localPartAsProvided = trimmed.substring(0,
+                    trimmed.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length());
+            if (!candidateUserIds.contains(localPartAsProvided)) {
+                candidateUserIds.add(localPartAsProvided);
+            }
+        }
+
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) storage;
+        for (String candidate : candidateUserIds) {
+            if (candidate.isEmpty()) {
+                continue;
+            }
+            if (authRecipeStorage.doesUserIdExist_Transaction(con, appIdentifier, candidate)) {
+                return true;
+            }
+            if (userIdMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, candidate, false) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @TestOnly
