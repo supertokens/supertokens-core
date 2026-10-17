@@ -241,9 +241,11 @@ public class SignUpAPITest5_0 {
             return;
         }
 
-        // A tenant of this app with a custom (non built-in) third-party provider
-        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
-                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+        // A tenant of this (the test's) app with a custom (non built-in) third-party provider
+        TenantIdentifier app = process.getAppForTesting();
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), app,
+                new TenantConfig(new TenantIdentifier(app.getConnectionUriDomain(), app.getAppId(), "t1"),
+                        new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                                 new ThirdPartyConfig.Provider("corp-idp", "Corp IdP", null, null, null, null, null,
                                         null, null, null, null, null, null, null)}),
