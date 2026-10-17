@@ -49,6 +49,7 @@ import org.junit.rules.TestRule;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -729,6 +730,24 @@ public class TestTenantCreationBehaviour {
                 assertEquals(secondaryFactor, Set.of(), firstFactorsFromV2Get(tenantV2));
             }
         }
+
+        {
+            // a firstFactors list stored by the core must not leave an explicitly enabled recipe without a first
+            // factor when a later call disables the recipe in that list
+            String tenantId = "t" + (tenantCount++);
+            createOrUpdateTenant_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, tenantId,
+                    new Gson().fromJson("{\"emailPasswordEnabled\": true, \"firstFactors\": null, " +
+                            "\"requiredSecondaryFactors\": [\"otp-phone\"]}", JsonObject.class));
+            createOrUpdateTenant_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, tenantId,
+                    new Gson().fromJson("{\"emailPasswordEnabled\": false, \"passwordlessEnabled\": true, " +
+                            "\"requiredSecondaryFactors\": null}", JsonObject.class));
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, tenantId);
+            assertEquals(factorsOfRecipe("passwordless"),
+                    firstFactorsFromV2Get(getTenant_5_1(tenantIdentifier, process.getProcess())));
+            JsonObject tenant5 = getTenant_5_0(tenantIdentifier, process.getProcess());
+            assertTrue(tenant5.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+            assertFalse(tenant5.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+        }
     }
 
     private static class FactorUpdateCall {
@@ -844,6 +863,14 @@ public class TestTenantCreationBehaviour {
             calls.add(new FactorUpdateCall("5", "{\"firstFactors\": [\"" + factor + "\"]}"));
             calls.add(new FactorUpdateCall("v2", "{\"firstFactors\": [\"" + factor + "\"]}"));
         }
+        for (String disabled : new String[]{"emailPassword", "thirdParty", "passwordless"}) {
+            for (String enabled : new String[]{"emailPassword", "thirdParty", "passwordless"}) {
+                if (!disabled.equals(enabled)) {
+                    calls.add(new FactorUpdateCall("5",
+                            "{\"" + disabled + "Enabled\": false, \"" + enabled + "Enabled\": true}"));
+                }
+            }
+        }
         calls.add(new FactorUpdateCall("5", "{\"firstFactors\": null}"));
         calls.add(new FactorUpdateCall("5", "{\"requiredSecondaryFactors\": null}"));
 
@@ -859,7 +886,7 @@ public class TestTenantCreationBehaviour {
                 continue;
             }
             Set<String> requestedAfterFirst = first.requestedFirstFactors(created);
-            checked += checkFirstFactors(afterFirst, requestedAfterFirst, storage, List.of(first));
+            checked += checkFirstFactors(created, afterFirst, requestedAfterFirst, storage, List.of(first));
 
             for (FactorUpdateCall second : calls) {
                 TenantConfig afterSecond = applyOrNull(afterFirst, second);
@@ -868,7 +895,8 @@ public class TestTenantCreationBehaviour {
                 }
                 Set<String> requestedAfterSecond = new HashSet<>(requestedAfterFirst);
                 requestedAfterSecond.addAll(second.requestedFirstFactors(afterFirst));
-                checked += checkFirstFactors(afterSecond, requestedAfterSecond, storage, List.of(first, second));
+                checked += checkFirstFactors(afterFirst, afterSecond, requestedAfterSecond, storage,
+                        List.of(first, second));
 
                 for (FactorUpdateCall third : calls) {
                     TenantConfig afterThird = applyOrNull(afterSecond, third);
@@ -877,7 +905,7 @@ public class TestTenantCreationBehaviour {
                     }
                     Set<String> requestedAfterThird = new HashSet<>(requestedAfterSecond);
                     requestedAfterThird.addAll(third.requestedFirstFactors(afterSecond));
-                    checked += checkFirstFactors(afterThird, requestedAfterThird, storage,
+                    checked += checkFirstFactors(afterSecond, afterThird, requestedAfterThird, storage,
                             List.of(first, second, third));
                 }
             }
@@ -897,13 +925,34 @@ public class TestTenantCreationBehaviour {
         }
     }
 
-    private static int checkFirstFactors(TenantConfig tenantConfig, Set<String> requested, Storage storage,
-                                         List<FactorUpdateCall> sequence) {
+    private static int checkFirstFactors(TenantConfig before, TenantConfig tenantConfig, Set<String> requested,
+                                         Storage storage, List<FactorUpdateCall> sequence) {
         Set<String> violations = unrequestedFirstFactors(tenantConfig, requested, storage);
-        assertTrue("first factors " + violations + " were never requested; calls: " + sequence +
-                        "; stored firstFactors: " +
-                        (tenantConfig.firstFactors == null ? null : List.of(tenantConfig.firstFactors)),
-                violations.isEmpty());
+        String state = "; calls: " + sequence + "; stored firstFactors: " +
+                (tenantConfig.firstFactors == null ? null : List.of(tenantConfig.firstFactors));
+        assertTrue("first factors " + violations + " were never requested" + state, violations.isEmpty());
+
+        // a recipe that the last (CDI <= 5.0) call explicitly enabled stays a usable login method: the CDI 5.0
+        // GET shows it enabled, and it is a first factor unless the tenant already had a non-empty firstFactors
+        // list without it (CDI 5.0 keeps such a caller-provided list)
+        FactorUpdateCall last = sequence.get(sequence.size() - 1);
+        if (!last.isV2 && !(last.body.has("firstFactors") && last.body.get("firstFactors").isJsonArray())) {
+            JsonObject json5 = tenantConfig.toJson5_0(false, storage, new String[0]);
+            Set<String> v2FirstFactors = firstFactorsFromV2Get(tenantConfig.toJson_v2_5_1(false, storage,
+                    new String[0]));
+            for (String recipe : new String[]{"emailPassword", "thirdParty", "passwordless"}) {
+                if (!last.body.has(recipe + "Enabled") || !last.body.get(recipe + "Enabled").getAsBoolean()) {
+                    continue;
+                }
+                assertTrue(recipe + " was enabled but CDI 5.0 GET shows it disabled" + state,
+                        json5.get(recipe).getAsJsonObject().get("enabled").getAsBoolean());
+                Set<String> factors = factorsOfRecipe(recipe);
+                boolean keptByExistingList = before.firstFactors != null && before.firstFactors.length > 0 &&
+                        Arrays.stream(before.firstFactors).noneMatch(factors::contains);
+                assertTrue(recipe + " was enabled but has no first factor" + state,
+                        keptByExistingList || factors.stream().anyMatch(v2FirstFactors::contains));
+            }
+        }
         return 1;
     }
 
