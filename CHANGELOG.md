@@ -40,6 +40,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - TOTP: `/recipe/totp/device/verify` checks the code (with rate limiting and replay protection) also when the device
   is already verified. It returns `INVALID_TOTP_ERROR` / `LIMIT_REACHED_ERROR` for a wrong code, and
   `OK` with `wasAlreadyVerified: true` only for a valid code.
+- Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
+- Sessions: revoking or listing all sessions of a user with linked accounts now also covers sessions stored under the external (user id mapped) ids of the linked login methods, and accepts the external id of any login method of the account.
+- Dashboard: a sign-in that overlaps a password or email change of the dashboard user no longer leaves a session behind. After creating the session, sign-in re-checks that the credentials it verified are still current and removes the session otherwise.
+- Email password: changing a user's email or password now deletes the user's password reset tokens in the same transaction, and consuming a reset token (`POST /recipe/user/password/reset/token/consume`, and the older `POST /recipe/user/password/reset`) returns `RESET_PASSWORD_INVALID_TOKEN_ERROR` when the token's email is not the email of any login method of the account. This includes tokens created (`POST /recipe/user/password/reset/token`, e.g. through the SDKs' `createResetPasswordToken` / `createResetPasswordLink`) with an email the account never had: they are still issued, with a warning in the core log, but can no longer be consumed. Tokens issued for the primary user id with the email of another linked login method keep working.
+- WebAuthn: consuming a recover-account token returns `RECOVER_ACCOUNT_TOKEN_INVALID_ERROR` when the token's email is not the email of any login method of the account (same rule, including the creation-time log warning).
 
 ## [12.3.1]
 
