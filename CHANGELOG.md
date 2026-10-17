@@ -10,10 +10,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - Email-password sign-up no longer marks every placeholder-looking email as verified. It now auto-verifies only
-  `<userId>@stfakeemail.supertokens.com` where `<userId>` is the id (or mapped external id) of an existing user of
-  the same app, which is the placeholder the backend SDKs generate when a user without an email adds a password
-  factor. Other addresses on `@stfakeemail.supertokens.com` (including third-party placeholders) and addresses ending
-  in `.fakeemail.com` are created unverified.
+  `<userId>@stfakeemail.supertokens.com` where `<userId>` contains no `.` and is the id (or mapped external id) of
+  an existing user of the same app with no email on any login method of the user or of its primary user. This
+  is the placeholder the backend SDKs generate when a user without an email adds a password factor. Other addresses
+  on `@stfakeemail.supertokens.com` (including third-party placeholders `<thirdPartyUserId>.<thirdPartyId>@...`) and
+  addresses ending in `.fakeemail.com` are created unverified. Existing verification state is not changed.
+  The backend SDKs still predict sign-up verification with the old suffix rule (`isFakeEmail`); until they adopt
+  the narrowed rule, a session sign-up with such an address can create an email-password user that then fails to
+  link to the session user (`EMAIL_VERIFICATION_REQUIRED`).
 
 ## [12.3.1]
 

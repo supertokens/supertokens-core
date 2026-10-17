@@ -419,9 +419,12 @@ public class LifecycleMutationEventTest extends MultitenantTestBase {
         }
         SQLStorage storage = (SQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        // Only the placeholder of an existing user (<userId>@stfakeemail.supertokens.com) is pre-verified.
-        AuthRecipeUserInfo existingUser = EmailPassword.signUp(process.getProcess(), "existing@example.com",
-                "password");
+        // Only the placeholder of an existing user without any email (<userId>@stfakeemail.supertokens.com) is
+        // pre-verified.
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+442071838750",
+                null, null);
+        AuthRecipeUserInfo existingUser = Passwordless.consumeCode(process.getProcess(), code.deviceId,
+                code.deviceIdHash, code.userInputCode, null).user;
         String fakeEmail = existingUser.getSupertokensUserId() + "@stfakeemail.supertokens.com";
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), fakeEmail, "password");
 

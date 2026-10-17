@@ -21,7 +21,11 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -113,7 +117,7 @@ public class SignUpAPITest5_0 {
     }
 
     @Test
-    public void testSignUpWithPlaceholderEmailOfExistingUserMarksTheEmailAsVerified() throws Exception {
+    public void testSignUpWithPlaceholderEmailOfUserWithoutEmailMarksTheEmailAsVerified() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -123,10 +127,9 @@ public class SignUpAPITest5_0 {
             return;
         }
 
-        // The placeholder the SDKs generate when a user without an email adds a password factor:
+        // The placeholder the SDKs generate when a user without any email adds a password factor:
         // <existing user id>@stfakeemail.supertokens.com
-        AuthRecipeUserInfo existingUser = EmailPassword.signUp(process.getProcess(), "existing@example.com",
-                "validPass123");
+        AuthRecipeUserInfo existingUser = createPhoneOnlyUser(process, "+442071838750");
         String placeholderEmail = existingUser.getSupertokensUserId() + "@stfakeemail.supertokens.com";
 
         JsonObject responseBody = new JsonObject();
@@ -210,11 +213,22 @@ public class SignUpAPITest5_0 {
                 lM.get("recipeUserId").getAsString(), normalisedEmail));
     }
 
+    private static AuthRecipeUserInfo createPhoneOnlyUser(TestingProcessManager.TestingProcess process,
+                                                          String phoneNumber) throws Exception {
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                null, null);
+        return Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode,
+                null).user;
+    }
+
     @Test
     public void testIssue107_signUpDoesNotAutoVerifyAttackerChosenFakeEmail() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
@@ -237,23 +251,52 @@ public class SignUpAPITest5_0 {
         assertSignUpVerified(process, java.util.UUID.randomUUID() + "@stfakeemail.supertokens.com", false);
         assertSignUpVerified(process, "@stfakeemail.supertokens.com", false);
 
-        // <existing user id>@stfakeemail.supertokens.com (the SDK's password-factor placeholder) is still verified
-        AuthRecipeUserInfo existingUser = EmailPassword.signUp(process.getProcess(), "existing@example.com",
+        // An external user id the caller could choose does not make the placeholder verified: here an account with
+        // an email holds the external id "victimtwitterid2.twitter" (third-party placeholder shape) ...
+        AuthRecipeUserInfo userWithChosenId = EmailPassword.signUp(process.getProcess(), "chooser@example.com",
                 "validPass123");
-        assertSignUpVerified(process, existingUser.getSupertokensUserId() + "@stfakeemail.supertokens.com", true);
+        UserIdMapping.createUserIdMapping(process.getProcess(), userWithChosenId.getSupertokensUserId(),
+                "victimtwitterid2.twitter", null, false);
+        assertSignUpVerified(process, "victimtwitterid2.twitter@stfakeemail.supertokens.com", false);
+        // ... and the same id shape is refused even when its user has no email at all
+        AuthRecipeUserInfo phoneUserWithChosenId = createPhoneOnlyUser(process, "+442071838751");
+        UserIdMapping.createUserIdMapping(process.getProcess(), phoneUserWithChosenId.getSupertokensUserId(),
+                "victimtwitterid3.twitter", null, false);
+        assertSignUpVerified(process, "victimtwitterid3.twitter@stfakeemail.supertokens.com", false);
+        // ... and an external id without that shape, whose user has an email, is refused too
+        UserIdMapping.createUserIdMapping(process.getProcess(),
+                EmailPassword.signUp(process.getProcess(), "handle@example.com", "validPass123")
+                        .getSupertokensUserId(), "attackerhandle", null, false);
+        assertSignUpVerified(process, "attackerhandle@stfakeemail.supertokens.com", false);
 
-        // ... also when the existing user's id is a mapped external user id, including a mixed-case one
-        AuthRecipeUserInfo mappedUser = EmailPassword.signUp(process.getProcess(), "mapped@example.com",
+        // The id of an existing user that has an email is not verified (the SDKs only generate the placeholder for
+        // users without any email)
+        AuthRecipeUserInfo userWithEmail = EmailPassword.signUp(process.getProcess(), "existing@example.com",
                 "validPass123");
-        UserIdMapping.createUserIdMapping(process.getProcess(), mappedUser.getSupertokensUserId(), "ExtUser-AbC",
-                null, false);
+        assertSignUpVerified(process, userWithEmail.getSupertokensUserId() + "@stfakeemail.supertokens.com", false);
+
+        // ... also when the email is on another login method of the same primary user
+        AuthRecipeUserInfo linkedPhoneUser = createPhoneOnlyUser(process, "+442071838752");
+        AuthRecipe.createPrimaryUser(process.getProcess(), userWithEmail.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), linkedPhoneUser.getSupertokensUserId(),
+                userWithEmail.getSupertokensUserId());
+        assertSignUpVerified(process, linkedPhoneUser.getSupertokensUserId() + "@stfakeemail.supertokens.com", false);
+
+        // <id of a user without any email>@stfakeemail.supertokens.com (the SDK's password-factor placeholder) is
+        // still verified
+        AuthRecipeUserInfo phoneOnlyUser = createPhoneOnlyUser(process, "+442071838753");
+        assertSignUpVerified(process, phoneOnlyUser.getSupertokensUserId() + "@stfakeemail.supertokens.com", true);
+
+        // ... also when that user's id is a mapped external user id, including a mixed-case one
+        AuthRecipeUserInfo mappedPhoneOnlyUser = createPhoneOnlyUser(process, "+442071838754");
+        UserIdMapping.createUserIdMapping(process.getProcess(), mappedPhoneOnlyUser.getSupertokensUserId(),
+                "ExtUser-AbC", null, false);
         assertSignUpVerified(process, "ExtUser-AbC@stfakeemail.supertokens.com", true);
 
         // ... but not for the same external id with a different case, which is not a user id of this app
-        AuthRecipeUserInfo mappedUser2 = EmailPassword.signUp(process.getProcess(), "mapped2@example.com",
-                "validPass123");
-        UserIdMapping.createUserIdMapping(process.getProcess(), mappedUser2.getSupertokensUserId(), "OtherExt",
-                null, false);
+        AuthRecipeUserInfo mappedPhoneOnlyUser2 = createPhoneOnlyUser(process, "+442071838755");
+        UserIdMapping.createUserIdMapping(process.getProcess(), mappedPhoneOnlyUser2.getSupertokensUserId(),
+                "OtherExt", null, false);
         assertSignUpVerified(process, "OTHEREXT@stfakeemail.supertokens.com", false);
 
         process.kill();

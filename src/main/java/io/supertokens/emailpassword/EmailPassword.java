@@ -151,18 +151,19 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             try {
-                // Create the user (and, for a placeholder email of an existing user, mark it verified) and emit
+                // Create the user (and, for the placeholder email of a user without email, mark it verified) and emit
                 // its user_creation event atomically on the same connection, so the event cannot be lost relative
                 // to the creation it records. The user-id retry loop on DuplicateUserIdException stays outside the
                 // transaction.
                 AuthRecipeUserInfo newUser = auditStorage.startAuditedTransaction(appIdentifier, con -> {
                     try {
                         // Checked before the new user is inserted, so the new user's own id can never match.
-                        boolean isPlaceholderEmailOfExistingUser = isPlaceholderEmailOfExistingUser_Transaction(
-                                storage, con, appIdentifier, email, emailAsProvided);
+                        boolean isPlaceholderEmailOfUserWithoutEmail =
+                                isPlaceholderEmailOfUserWithoutEmail_Transaction(storage, con, appIdentifier, email,
+                                        emailAsProvided);
                         AuthRecipeUserInfo user = epStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
                                 hashedPassword, timeJoined);
-                        if (isPlaceholderEmailOfExistingUser) {
+                        if (isPlaceholderEmailOfUserWithoutEmail) {
                             // Such a placeholder is treated as pre-verified; do it on the same connection so the
                             // user, its verification and the user_creation event all commit (or roll back) together.
                             evStorage.updateIsEmailVerified_Transaction(appIdentifier, con,
@@ -198,15 +199,21 @@ public class EmailPassword {
     }
 
     /**
-     * Returns true only for the placeholder email the backend SDKs generate when a user without an email address
-     * adds a password factor: {@code <userId>@stfakeemail.supertokens.com}, where {@code <userId>} is the id of a user
-     * that already exists in this app (a SuperTokens user id, or an external user id from user id mapping). Other
-     * addresses that merely look like placeholders (other local parts on that domain, or addresses on
-     * {@code *.fakeemail.com}) are not marked as verified on sign-up.
+     * Returns true only for the placeholder email the backend SDKs generate when a user that has no email address on
+     * any of its login methods adds a password factor: {@code <userId>@stfakeemail.supertokens.com}, where
+     * {@code <userId>} is the id of an existing user of this app (a SuperTokens user id, or an external user id from
+     * user id mapping) and neither that user nor any login method of its primary user has an email.
+     * It returns false (the new login method is created unverified) for everything else, in particular:
+     * - addresses on {@code *.fakeemail.com},
+     * - local parts that contain a '.', which is the shape of third-party placeholders
+     *   ({@code <thirdPartyUserId>.<thirdPartyId>}); the SDKs' own placeholder for SuperTokens user ids never has one,
+     * - local parts that are not the id of an existing user, or whose user already has an email (the SDKs only
+     *   generate this placeholder for users without one).
      */
-    private static boolean isPlaceholderEmailOfExistingUser_Transaction(Storage storage, TransactionConnection con,
-                                                                        AppIdentifier appIdentifier,
-                                                                        String email, String emailAsProvided)
+    private static boolean isPlaceholderEmailOfUserWithoutEmail_Transaction(Storage storage,
+                                                                            TransactionConnection con,
+                                                                            AppIdentifier appIdentifier,
+                                                                            String email, String emailAsProvided)
             throws StorageQueryException {
         if (!email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN)) {
             return false;
@@ -225,18 +232,40 @@ public class EmailPassword {
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) storage;
+        List<AuthRecipeUserInfo> matchedUsers = new ArrayList<>();
         for (String candidate : candidateUserIds) {
-            if (candidate.isEmpty()) {
-                continue;
+            if (candidate.isEmpty() || candidate.contains(".")) {
+                // a '.' in the local part is the third-party placeholder shape; never auto-verified
+                return false;
             }
-            if (authRecipeStorage.doesUserIdExist_Transaction(con, appIdentifier, candidate)) {
-                return true;
+            AuthRecipeUserInfo userBySuperTokensId = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                    con, candidate);
+            if (userBySuperTokensId != null) {
+                matchedUsers.add(userBySuperTokensId);
             }
-            if (userIdMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, candidate, false) != null) {
-                return true;
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                    userIdMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, candidate, false);
+            if (mapping != null) {
+                AuthRecipeUserInfo userByExternalId = authRecipeStorage.getPrimaryUserById_Transaction(
+                        appIdentifier, con, mapping.superTokensUserId);
+                if (userByExternalId != null) {
+                    matchedUsers.add(userByExternalId);
+                }
             }
         }
-        return false;
+        if (matchedUsers.isEmpty()) {
+            return false;
+        }
+        // Every user the local part refers to must be without any email, as the SDKs only generate this placeholder
+        // for such users; otherwise fail closed.
+        for (AuthRecipeUserInfo user : matchedUsers) {
+            for (LoginMethod loginMethod : user.loginMethods) {
+                if (loginMethod.email != null) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @TestOnly
