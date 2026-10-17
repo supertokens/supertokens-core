@@ -14,6 +14,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
 - WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
 
+### Changes
+
+- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
+
 ## [12.3.1]
 
 ### Security
