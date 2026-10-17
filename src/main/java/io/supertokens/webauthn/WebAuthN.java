@@ -565,6 +565,28 @@ public class WebAuthN {
         }
     }
 
+    // A recover account token is bound to the email it was sent to. If it was issued for a webauthn login method,
+    // that login method must still have this email. Otherwise (the token was issued for an account to add a
+    // webauthn login method with this email) some login method of the account must still have it.
+    private static boolean isRecoverAccountTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenUserId,
+                                                                    String tokenEmail) {
+        if (user == null || tokenEmail == null) {
+            return false;
+        }
+        String email = Utils.normaliseEmail(tokenEmail);
+        for (LoginMethod lM : user.loginMethods) {
+            if (lM.recipeId == RECIPE_ID.WEBAUTHN && lM.getSupertokensUserId().equals(tokenUserId)) {
+                return email.equals(Utils.normaliseEmail(lM.email));
+            }
+        }
+        for (LoginMethod lM : user.loginMethods) {
+            if (lM.email != null && email.equals(Utils.normaliseEmail(lM.email))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static AccountRecoveryTokenInfo consumeRecoverAccountToken(Main main, TenantIdentifier tenantIdentifier, Storage storage, String token)
             throws StorageQueryException, NoSuchAlgorithmException, InvalidTokenException {
@@ -582,6 +604,14 @@ public class WebAuthN {
                     }
 
                     webauthnStorage.deleteAccountRecoveryTokenByEmail_Transaction(tenantIdentifier, con, recoveryTokenInfo.email);
+
+                    if (!isRecoverAccountTokenEmailStillOnAccount(
+                            StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById_Transaction(
+                                    tenantIdentifier.toAppIdentifier(), con, recoveryTokenInfo.userId),
+                            recoveryTokenInfo.userId, recoveryTokenInfo.email)) {
+                        // the email the token was sent to no longer belongs to the account
+                        return null;
+                    }
                 }
 
                 return recoveryTokenInfo;

@@ -90,6 +90,45 @@ public class RecoverAccountFlowTest {
     }
 
     @Test
+    public void testIssue101_recoverAccountTokenInvalidAfterEmailChange() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
+        assertEquals(1, users.size());
+        String recipeUserId = users.get(0).get("recipeUserId").getAsString();
+
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(),
+                "user0@example.com", users.get(0).getAsJsonObject("user").get("id").getAsString());
+        assertTrue(recoverAccountToken.has("token"));
+
+        JsonObject updateEmailResponse = Utils.updateEmail(process.getProcess(), recipeUserId, "new@example.com");
+        assertEquals("OK", updateEmailResponse.get("status").getAsString());
+
+        JsonObject recoverAccountResponse = Utils.consumeToken(process.getProcess(),
+                recoverAccountToken.get("token").getAsString());
+        assertEquals("RECOVER_ACCOUNT_TOKEN_INVALID_ERROR", recoverAccountResponse.get("status").getAsString());
+
+        // a token for the new email still works
+        JsonObject newToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(),
+                "new@example.com", users.get(0).getAsJsonObject("user").get("id").getAsString());
+        JsonObject newTokenResponse = Utils.consumeToken(process.getProcess(), newToken.get("token").getAsString());
+        assertEquals("OK", newTokenResponse.get("status").getAsString());
+        assertEquals("new@example.com", newTokenResponse.get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void recoverAccountFailsWithNonExistingUserTest() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

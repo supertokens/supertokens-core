@@ -727,9 +727,21 @@ public class EmailPasswordTest {
                 signInUpResponse.user.getSupertokensUserId(),
                 "test@example.com");
 
+        // the login method with test@example.com was deleted by the unlink, so the account the token points to
+        // (the primary user id, whose remaining login method has test2@example.com) no longer has this email
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), token);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        // a token for an email the account still has works
+        String token2 = EmailPassword.generatePasswordResetToken(process.getProcess(),
+                signInUpResponse.user.getSupertokensUserId(),
+                "test2@example.com");
         EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.getProcess(),
-                token);
-        assert (res.email.equals("test@example.com"));
+                token2);
+        assert (res.email.equals("test2@example.com"));
         assert (res.userId.equals(signInUpResponse.user.getSupertokensUserId()));
 
         process.kill();
