@@ -11,6 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
 - Sessions: revoking or listing all sessions of a user with linked accounts now also covers sessions stored under the external (user id mapped) ids of the linked login methods, and accepts the external id of any login method of the account.
+- Dashboard: a sign-in that overlaps a password or email change of the dashboard user no longer leaves a session behind. After creating the session, sign-in re-checks that the credentials it verified are still current and removes the session otherwise.
 
 ## [12.3.1]
 
