@@ -816,9 +816,24 @@ public class BulkImport {
                 Totp.createDevices(main, appIdentifier, storage, devices);
             }
         } catch (StorageQueryException e) {
-            throw new StorageTransactionLogicException(new Exception("E036: " + e.getMessage()));
+            throw new StorageTransactionLogicException(
+                    new Exception("E036: " + redactTotpSecrets(e.getMessage(), devices)));
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E037: " + e.getMessage()));
         }
+    }
+
+    // Database errors for batch inserts can echo the inserted values. This message is stored as the bulk import
+    // user's error message and can be logged, so the TOTP secrets are removed from it.
+    public static String redactTotpSecrets(String message, List<TOTPDevice> devices) {
+        if (message == null) {
+            return null;
+        }
+        for (TOTPDevice device : devices) {
+            if (device.secretKey != null && !device.secretKey.isEmpty()) {
+                message = message.replace(device.secretKey, "<redacted>");
+            }
+        }
+        return message;
     }
 }

@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - OpenTelemetry: method spans (`@WithinOtelSpan`) no longer export raw argument and return values. Only the type is recorded, plus the value for an allow-list of non-sensitive types (tenant/app identifiers, booleans, numbers, enums); configs (database credentials, `api_keys`, `supertokens_saas_secret`), strings and other objects are recorded by type only, and exceptions by type without their message.
+- Bulk import: validation errors no longer embed the login method (including `plainTextPassword` / `passwordHash`) or the TOTP `secretKey`. A login method without a tenant is now reported as `LoginMethod at index <i> (recipeId: <recipe>) has no tenantId`, and an over-long TOTP secret as `TOTP secretKey is too long. Max length is 256.`. TOTP secrets are also removed from the stored `E036` database error message.
 
 ## [12.3.1]
 

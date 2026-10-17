@@ -26,6 +26,10 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.test.InMemoryOtelForTesting;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.bulkimport.BulkImportTestUtils;
@@ -596,6 +600,100 @@ public class AddBulkImportUsersTest {
 
     private void checkUserRoleFields(BulkImportUser.UserRole userRole, String objectType, List<String> expectedFields) {
         checkFields(userRole, objectType, expectedFields);
+    }
+
+    @Test
+    public void testIssue115_bulkImportErrorDoesNotContainPassword() throws Exception {
+        String plainTextPassword = "plainTextPasswordValueForTest123";
+        String passwordHash = "$2a$10$passwordHashValueForTest0123456789";
+        String totpSecret = "TOTPSECRETVALUEFORTEST" + "A".repeat(300);
+
+        try (InMemoryOtelForTesting otel = InMemoryOtelForTesting.install()) {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(
+                    new String[]{"../"});
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            Main main = process.getProcess();
+
+            if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+                process.kill();
+                return;
+            }
+            setFeatureFlags(main, new EE_FEATURES[]{EE_FEATURES.MFA});
+
+            JsonParser parser = new JsonParser();
+            JsonObject userWithPlainTextPassword = parser.parse("{\"totpDevices\":[{\"secretKey\":\"" + totpSecret
+                    + "\",\"deviceName\":\"d1\"}],\"loginMethods\":[{\"recipeId\":\"emailpassword\","
+                    + "\"email\":\"johndoe@example.com\",\"plainTextPassword\":\"" + plainTextPassword
+                    + "\",\"tenantIds\":[]}]}").getAsJsonObject();
+            JsonObject userWithPasswordHash = parser.parse("{\"loginMethods\":[{\"recipeId\":\"emailpassword\","
+                    + "\"email\":\"janedoe@example.com\",\"passwordHash\":\"" + passwordHash
+                    + "\",\"hashingAlgorithm\":\"bcrypt\",\"tenantIds\":[]}]}").getAsJsonObject();
+
+            JsonArray users = new JsonArray();
+            users.add(userWithPlainTextPassword);
+            users.add(userWithPasswordHash);
+            JsonObject bulkRequest = new JsonObject();
+            bulkRequest.add("users", users);
+
+            // the error log file is shared across runs: only look at what this test appends to it
+            java.io.File errorLogFile = new java.io.File(Config.getConfig(main).getErrorLogPath(main));
+            long errorLogOffset = errorLogFile.exists() ? errorLogFile.length() : 0;
+
+            List<String> responses = new java.util.ArrayList<>();
+            for (String[] endpointAndBody : new String[][]{
+                    {"http://localhost:3567/bulk-import/users", bulkRequest.toString()},
+                    {"http://localhost:3567/bulk-import/import", userWithPlainTextPassword.toString()},
+                    {"http://localhost:3567/bulk-import/import", userWithPasswordHash.toString()}}) {
+                try {
+                    HttpRequestForTesting.sendJsonPOSTRequest(main, "", endpointAndBody[0],
+                            parser.parse(endpointAndBody[1]).getAsJsonObject(), 1000, 1000, null,
+                            Utils.getCdiVersionStringLatestForTests(), null);
+                    fail("The API should have thrown an error");
+                } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                    assertEquals(400, e.statusCode);
+                    responses.add(getResponseMessageFromError(e.getMessage()));
+                }
+            }
+
+            // The error structure is unchanged; the login method is referred to by index and recipe
+            assertTrue(responses.get(0), responses.get(0).contains("{\"error\":\"" + genericErrMsg
+                    + "\",\"users\":[{\"index\":0,\"errors\":[\"TOTP secretKey is too long. Max length is 256.\","
+                    + "\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]},"
+                    + "{\"index\":1,\"errors\":[\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}]}"));
+            assertTrue(responses.get(1), responses.get(1).contains("{\"errors\":[\"TOTP secretKey is too long. "
+                    + "Max length is 256.\",\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}"));
+            assertTrue(responses.get(2), responses.get(2).contains(
+                    "{\"errors\":[\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}"));
+
+            // the errors are logged by the webserver: neither the logs nor the exported log events contain secrets
+            String exported = otel.getAllExportedText();
+            assertTrue(exported.contains("API threw an exception: POST"));
+            List<String> logsAndResponses = new java.util.ArrayList<>(responses);
+            logsAndResponses.add(exported);
+            if (Utils.isFileLoggingEnabled() && errorLogFile.exists()) {
+                byte[] errorLog = java.nio.file.Files.readAllBytes(errorLogFile.toPath());
+                String appendedErrorLog = new String(errorLog, (int) Math.min(errorLogOffset, errorLog.length),
+                        (int) (errorLog.length - Math.min(errorLogOffset, errorLog.length)),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(appendedErrorLog.contains("API threw an exception: POST"));
+                logsAndResponses.add(appendedErrorLog);
+            }
+            for (String text : logsAndResponses) {
+                assertFalse(text.contains(plainTextPassword));
+                assertFalse(text.contains(passwordHash));
+                assertFalse(text.contains("TOTPSECRETVALUEFORTEST"));
+            }
+
+            // Database errors for TOTP device inserts are stored and logged without the secrets
+            TOTPDevice device = new TOTPDevice("userId", "d1", "TOTPSECRETVALUEFORTEST", 30, 1, true, 0);
+            assertEquals("Batch entry 0 INSERT ... VALUES ('userId', 'd1', '<redacted>') was aborted",
+                    BulkImport.redactTotpSecrets(
+                            "Batch entry 0 INSERT ... VALUES ('userId', 'd1', 'TOTPSECRETVALUEFORTEST') was aborted",
+                            List.of(device)));
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 
     private String getResponseMessageFromError(String response) {

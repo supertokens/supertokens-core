@@ -302,7 +302,8 @@ public class BulkImportUserUtils {
         }
 
         if (secretKey.length() > 256) {
-            errors.add("TOTP secretKey " + secretKey + " is too long. Max length is 256.");
+            // The secret itself must never be part of an error message, as these end up in responses and logs
+            errors.add("TOTP secretKey is too long. Max length is 256.");
         }
 
         // We don't perform any normalisation on the secretKey in ImportTotpDeviceAPI.java
@@ -564,9 +565,14 @@ public class BulkImportUserUtils {
 
         // Now validate that all the tenants share the same storage
         String commonTenantUserPoolId = null;
-        for (LoginMethod loginMethod : loginMethods) {
+        for (int loginMethodIndex = 0; loginMethodIndex < loginMethods.size(); loginMethodIndex++) {
+            LoginMethod loginMethod = loginMethods.get(loginMethodIndex);
             if (loginMethod.tenantIds == null || loginMethod.tenantIds.isEmpty()) {
-                errors.add("LoginMethod '" + loginMethod + "' has no tenantId");
+                // The login method is referred to by its position and recipe: serialising it would put its
+                // credentials (plainTextPassword, passwordHash) into the error message, responses and logs.
+                errors.add("LoginMethod at index " + loginMethodIndex + " (recipeId: " + loginMethod.recipeId
+                        + ") has no tenantId");
+                continue;
             }
             for (String tenantId : loginMethod.tenantIds) {
                 TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
