@@ -39,7 +39,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -66,7 +65,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Several apps of one core may share the same OAuth provider. These tests make sure that a caller of one app
@@ -440,17 +438,71 @@ public class TestOAuthClientAppOwnership {
         String alias = "stcl%5F" + publicAppClient.get("clientId").getAsString().substring("stcl_".length());
 
         for (String clientId : new String[]{alias, "a/b", "a?b", "a#b", "a b", "a+b", "a:b", "a%2Fb", "a&b"}) {
-            try {
-                createClientCredentialsClient(main, OTHER_APP_BASE, clientId);
-                fail("client id " + clientId + " should have been rejected");
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-            }
+            JsonObject response = createClientCredentialsClient(main, OTHER_APP_BASE, clientId);
+            assertInvalidClientMetadata(response);
+            assertEquals("clientId can only contain letters, digits and the characters . _ ~ -",
+                    response.get("errorDescription").getAsString());
         }
 
         JsonObject client = createClientCredentialsClient(main, OTHER_APP_BASE, "custom-client_1.0~x");
         assertEquals("OK", client.get("status").getAsString());
         assertEquals("custom-client_1.0~x", client.get("clientId").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testClientIdUnderAnotherKeySpellingIsRejected() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        JsonObject publicAppClient = createClientCredentialsClient(main, PUBLIC_APP_BASE, null);
+        String publicAppClientId = publicAppClient.get("clientId").getAsString();
+        String alias = "stcl%5F" + publicAppClientId.substring("stcl_".length());
+
+        // every one of these keys would be sent to the OAuth provider as client_id
+        String[][] bodies = new String[][]{
+                {"clientId", "safe-client-id", "client_id", alias},
+                {"clientId", "safe-client-id", "clientID", "a/b"},
+                {"client_id", alias},
+                {"clientID", alias},
+                {"CLIENT_ID", alias},
+                {"ClientId", alias},
+                // two spellings of another field
+                {"clientName", "a", "client_name", "b"},
+        };
+        for (String[] fields : bodies) {
+            JsonObject body = new JsonObject();
+            for (int i = 0; i < fields.length; i += 2) {
+                body.addProperty(fields[i], fields[i + 1]);
+            }
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                    OTHER_APP_BASE + "/recipe/oauth/clients", body, 5000, 20000, null,
+                    SemVer.v5_2.get(), "");
+            assertInvalidClientMetadata(response);
+        }
+
+        // the same for updates
+        JsonObject otherAppClient = createClientCredentialsClient(main, OTHER_APP_BASE, null);
+        JsonObject updateBody = new JsonObject();
+        updateBody.addProperty("clientId", otherAppClient.get("clientId").getAsString());
+        updateBody.addProperty("client_id", publicAppClientId);
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients", updateBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertInvalidClientMetadata(response);
+
+        // no client with the alias was created in the other app
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("clientId", alias);
+        response = HttpRequestForTesting.sendGETRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients", queryParams, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -801,6 +853,12 @@ public class TestOAuthClientAppOwnership {
                 appBase + "/recipe/oauth/auth/requests/consent/accept?consentChallenge="
                         + URLEncoder.encode(consentChallenge, StandardCharsets.UTF_8),
                 body, 5000, 20000, null, SemVer.v5_2.get(), "");
+    }
+
+    private static void assertInvalidClientMetadata(JsonObject response) {
+        assertEquals(response.toString(), "OAUTH_ERROR", response.get("status").getAsString());
+        assertEquals("invalid_client_metadata", response.get("error").getAsString());
+        assertEquals(400, response.get("statusCode").getAsInt());
     }
 
     // the OAUTH_ERROR the OAuth provider returns for an unknown login/consent challenge
