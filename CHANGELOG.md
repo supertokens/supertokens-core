@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- OpenTelemetry: method spans (`@WithinOtelSpan`) no longer export raw argument and return values. Only the type is recorded, plus the value for an allow-list of non-sensitive types (tenant/app identifiers, booleans, numbers, enums); configs (database credentials, `api_keys`, `supertokens_saas_secret`), strings and other objects are recorded by type only, and exceptions by type without their message.
+
 ## [12.3.1]
 
 ### Security
