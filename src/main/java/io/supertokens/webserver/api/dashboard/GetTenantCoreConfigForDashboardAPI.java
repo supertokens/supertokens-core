@@ -37,18 +37,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public static final String MASKED_VALUE = "********";
 
-    // key=value pairs (URI query strings, connection attribute lists) whose key names a credential
-    private static final Pattern SECRET_PARAM_PATTERN = Pattern.compile(
-            "(?i)((?:^|[?&;\\s])[^=&;?\\s]*(?:password|passwd|pwd|secret|token|api_key|apikey|api-key)" +
-                    "[^=&;?\\s]*=)[^&;\\s]*");
+    // String values longer than this are returned fully masked instead of being inspected.
+    public static final int MAX_INSPECTED_VALUE_LENGTH = 8192;
+
+    // Substrings that mark the key of a key=value pair (URI query, connection attributes) as a credential
+    private static final String[] SECRET_PARAM_KEY_PARTS = new String[]{
+            "password", "passwd", "pwd", "secret", "token", "api_key", "apikey", "api-key"};
 
     public GetTenantCoreConfigForDashboardAPI(Main main) {
         super(main, RECIPE_ID.DASHBOARD.toString());
@@ -112,28 +112,89 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
     }
 
     public static String maskCredentialsInString(String value) {
-        String result = value;
+        if (value.length() > MAX_INSPECTED_VALUE_LENGTH) {
+            return MASKED_VALUE;
+        }
+        return maskSecretParams(maskUserInfoPassword(value));
+    }
 
-        // scheme://user:password@host... -> scheme://user:********@host...
-        // The last '@' is used as the end of the user info so that a password containing '@' is fully masked.
-        int schemeEnd = result.indexOf("://");
-        if (schemeEnd >= 0) {
-            int userInfoStart = schemeEnd + 3;
-            int userInfoEnd = result.lastIndexOf('@');
-            if (userInfoEnd > userInfoStart) {
-                int colon = result.substring(userInfoStart, userInfoEnd).indexOf(':');
-                if (colon >= 0) {
-                    result = result.substring(0, userInfoStart + colon + 1) + MASKED_VALUE
-                            + result.substring(userInfoEnd);
-                }
+    // scheme://user:password@host... -> scheme://user:********@host...
+    // Only the authority (after "://", up to the first '/', '?' or '#') is inspected.
+    private static String maskUserInfoPassword(String value) {
+        int schemeEnd = value.indexOf("://");
+        if (schemeEnd < 0) {
+            return value;
+        }
+        int authorityStart = schemeEnd + 3;
+        int authorityEnd = value.length();
+        for (int i = authorityStart; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '/' || c == '?' || c == '#') {
+                authorityEnd = i;
+                break;
             }
         }
+        int userInfoEnd = value.lastIndexOf('@', authorityEnd - 1);
+        if (userInfoEnd < authorityStart) {
+            return value;
+        }
+        int colon = value.indexOf(':', authorityStart);
+        if (colon < 0 || colon > userInfoEnd) {
+            return value;
+        }
+        return value.substring(0, colon + 1) + MASKED_VALUE + value.substring(userInfoEnd);
+    }
 
-        // ...?password=xyz&... / password=xyz;... -> password=********
-        Matcher matcher = SECRET_PARAM_PATTERN.matcher(result);
-        result = matcher.replaceAll("$1" + Matcher.quoteReplacement(MASKED_VALUE));
+    private static boolean isParamKeyBoundary(char c) {
+        return c == '?' || c == '&' || c == ';' || Character.isWhitespace(c);
+    }
 
-        return result;
+    private static boolean isSecretParamKey(String key) {
+        String k = key.toLowerCase(Locale.ROOT);
+        for (String part : SECRET_PARAM_KEY_PARTS) {
+            if (k.contains(part)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ...?password=xyz&... / password=xyz;... -> password=********
+    // A key starts at the beginning of the value or after '?', '&', ';' or whitespace. The value of a secret
+    // key is masked up to the next '&' (the parameter separator the JDBC drivers use) or the end of the
+    // string, so ';' or whitespace inside it does not end the masking. Single linear pass.
+    private static String maskSecretParams(String value) {
+        StringBuilder result = new StringBuilder(value.length());
+        int i = 0;
+        int n = value.length();
+        boolean atKeyStart = true;
+        while (i < n) {
+            if (atKeyStart) {
+                int keyEnd = i;
+                while (keyEnd < n && value.charAt(keyEnd) != '=' && !isParamKeyBoundary(value.charAt(keyEnd))) {
+                    keyEnd++;
+                }
+                if (keyEnd < n && value.charAt(keyEnd) == '=' && isSecretParamKey(value.substring(i, keyEnd))) {
+                    int valueEnd = value.indexOf('&', keyEnd + 1);
+                    if (valueEnd < 0) {
+                        valueEnd = n;
+                    }
+                    result.append(value, i, keyEnd + 1).append(MASKED_VALUE);
+                    i = valueEnd;
+                    atKeyStart = false;
+                    continue;
+                }
+                result.append(value, i, keyEnd);
+                i = keyEnd;
+                atKeyStart = false;
+                continue;
+            }
+            char c = value.charAt(i);
+            result.append(c);
+            i++;
+            atKeyStart = isParamKeyBoundary(c);
+        }
+        return result.toString();
     }
 
     static void maskSecretValue(JsonObject fieldJson) {

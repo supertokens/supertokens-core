@@ -192,6 +192,35 @@ public class GetTenantCoreConfigForDashboardAPITest {
         assertEquals("password=" + m + "&allowPublicKeyRetrieval=true",
                 GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
                         "password=abc&allowPublicKeyRetrieval=true"));
+        // a secret parameter value is masked up to the next '&', even if it contains ';' or whitespace
+        assertEquals("postgresql://host/db?password=" + m + "&sslmode=require",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                        "postgresql://host/db?password=Ab3;xYz9Qw&sslmode=require"));
+        assertEquals("password=" + m + "&allowPublicKeyRetrieval=true",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                        "password=Ab3 xYz9&allowPublicKeyRetrieval=true"));
+        assertEquals("sslmode=require;password=" + m,
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("sslmode=require;password=a b;c"));
+        // user info is only looked for in the authority: an '@' in the query does not mask host/port/db
+        assertEquals("postgresql://srv.example.com:5432/postgres?user=admin@srv&password=" + m + "&sslmode=require",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                        "postgresql://srv.example.com:5432/postgres?user=admin@srv&password=pw&sslmode=require"));
+        assertEquals("postgresql://user:" + m + "@host:5432/db?application_name=svc@prod",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                        "postgresql://user:pass@host:5432/db?application_name=svc@prod"));
+        assertEquals("postgresql://host:5432/db#a:b@c",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("postgresql://host:5432/db#a:b@c"));
+        // very long values are not inspected but fully masked
+        assertEquals(m, GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                "password".repeat(GetTenantCoreConfigForDashboardAPI.MAX_INSPECTED_VALUE_LENGTH)));
+        // inspection is a linear pass: a value at the size limit made of repeated keywords without any '='
+        // (the worst case for a backtracking regex) is handled quickly and left unchanged
+        String keywords = "passwordtoken".repeat(GetTenantCoreConfigForDashboardAPI.MAX_INSPECTED_VALUE_LENGTH / 13);
+        long start = System.nanoTime();
+        for (int i = 0; i < 100; i++) {
+            assertEquals(keywords, GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(keywords));
+        }
+        assertTrue(System.nanoTime() - start < 5_000_000_000L);
         // values without credentials are unchanged
         for (String unchanged : new String[]{"postgresql://user@host:5432/db", "postgresql://host:5432/db",
                 "allowPublicKeyRetrieval=true", "localhost", "BCRYPT", ""}) {
