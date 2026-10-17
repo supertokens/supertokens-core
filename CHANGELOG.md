@@ -66,6 +66,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Error pages that the embedded Tomcat renders itself (for example for a malformed request line) no longer include exception details, stack traces or the server version. Error responses written by the core APIs are unchanged.
 - Dashboard sign-in verifies the password before checking whether the account is suspended: a wrong password now returns `INVALID_CREDENTIALS_ERROR` for suspended accounts too (`USER_SUSPENDED_ERROR` is returned only for the correct password).
 - Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
+- User roles: `POST /recipe/user/role/remove` and `GET /recipe/role/users` now check that the role exists in the app's public tenant storage (where roles are stored), as `PUT /recipe/user/role` already did, and remove or list the user-role mappings in the tenant's own storage. Previously both returned `UNKNOWN_ROLE_ERROR` for tenants on a separate database, so a role could not be revoked from a single user there. Removing a user's role also deletes the mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
 
 ## [12.3.1]
 

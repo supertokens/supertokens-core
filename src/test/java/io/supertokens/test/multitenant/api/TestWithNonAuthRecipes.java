@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
+import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
@@ -44,6 +45,7 @@ import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -320,6 +322,151 @@ public class TestWithNonAuthRecipes {
             JsonObject jsonUser2 = TestMultitenancyAPIHelper.getUserById(t0, user2.getSupertokensUserId(),
                     process.getProcess());
             assertEquals(user2.toJson(true), jsonUser2.get("user").getAsJsonObject());
+        }
+    }
+
+    private JsonObject removeUserRole(TenantIdentifier tenantIdentifier, String userId, String role)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        requestBody.addProperty("role", role);
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/role/remove"), requestBody,
+                1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "userroles");
+    }
+
+    private JsonObject getUsersForRole(TenantIdentifier tenantIdentifier, String role)
+            throws HttpResponseException, IOException {
+        Map<String, String> params = new HashMap<>();
+        params.put("role", role);
+        return HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role/users"), params,
+                1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "userroles");
+    }
+
+    @Test
+    public void testIssue13_removeRoleOnSeparateDbTenant() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        TenantIdentifier t0 = new TenantIdentifier(null, null, null);
+        Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        // t1 must be on a database different from the public tenant's for this test to be meaningful
+        assertNotSame(t0Storage, t1Storage);
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com",
+                "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
+                "password123");
+
+        TestMultitenancyAPIHelper.createRole(t0, "admin", process.getProcess());
+        TestMultitenancyAPIHelper.addRoleToUser(t0, user1.getSupertokensUserId(), "admin", process.getProcess());
+        TestMultitenancyAPIHelper.addRoleToUser(t1, user2.getSupertokensUserId(), "admin", process.getProcess());
+
+        // the role only exists in the public tenant's storage, the mapping lives in t1's storage
+        assertFalse(StorageUtils.getUserRolesStorage(t1Storage).doesRoleExist(t1.toAppIdentifier(), "admin"));
+        assertEquals(1, TestMultitenancyAPIHelper.getUserRoles(t1, user2.getSupertokensUserId(),
+                process.getProcess()).get("roles").getAsJsonArray().size());
+
+        {
+            JsonObject response = removeUserRole(t1, user2.getSupertokensUserId(), "admin");
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didUserHaveRole").getAsBoolean());
+        }
+
+        assertEquals(0, TestMultitenancyAPIHelper.getUserRoles(t1, user2.getSupertokensUserId(),
+                process.getProcess()).get("roles").getAsJsonArray().size());
+        UserRolesStorage t1RolesStorage = StorageUtils.getUserRolesStorage(t1Storage);
+        assertEquals(0, t1RolesStorage.getRolesForUser(t1, user2.getSupertokensUserId()).length);
+
+        {
+            // removing it again reports that the user no longer had the role
+            JsonObject response = removeUserRole(t1, user2.getSupertokensUserId(), "admin");
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserHaveRole").getAsBoolean());
+        }
+
+        {
+            // a role that does not exist in the app is still reported as unknown
+            JsonObject response = removeUserRole(t1, user2.getSupertokensUserId(), "unknownRole");
+            assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
+        }
+
+        // the mapping in the public tenant is untouched and can still be removed there
+        assertEquals(1, TestMultitenancyAPIHelper.getUserRoles(t0, user1.getSupertokensUserId(),
+                process.getProcess()).get("roles").getAsJsonArray().size());
+        {
+            JsonObject response = removeUserRole(t0, user1.getSupertokensUserId(), "admin");
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didUserHaveRole").getAsBoolean());
+        }
+        assertEquals(0, TestMultitenancyAPIHelper.getUserRoles(t0, user1.getSupertokensUserId(),
+                process.getProcess()).get("roles").getAsJsonArray().size());
+    }
+
+    @Test
+    public void testIssue13_listUsersForRoleOnSeparateDbTenant() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        TenantIdentifier t0 = new TenantIdentifier(null, null, null);
+        Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        // t1 must be on a database different from the public tenant's for this test to be meaningful
+        assertNotSame(t0Storage, t1Storage);
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com",
+                "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
+                "password123");
+
+        TestMultitenancyAPIHelper.createRole(t0, "admin", process.getProcess());
+        TestMultitenancyAPIHelper.addRoleToUser(t0, user1.getSupertokensUserId(), "admin", process.getProcess());
+        TestMultitenancyAPIHelper.addRoleToUser(t1, user2.getSupertokensUserId(), "admin", process.getProcess());
+
+        {
+            JsonObject response = getUsersForRole(t1, "admin");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.get("users").getAsJsonArray().size());
+            assertEquals(user2.getSupertokensUserId(),
+                    response.get("users").getAsJsonArray().get(0).getAsString());
+        }
+
+        {
+            JsonObject response = getUsersForRole(t0, "admin");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.get("users").getAsJsonArray().size());
+            assertEquals(user1.getSupertokensUserId(),
+                    response.get("users").getAsJsonArray().get(0).getAsString());
+        }
+
+        {
+            // a role that does not exist in the app is still reported as unknown
+            JsonObject response = getUsersForRole(t1, "unknownRole");
+            assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
+        }
+
+        {
+            // a role that exists but has no users in the tenant returns an empty list
+            TestMultitenancyAPIHelper.createRole(t0, "viewer", process.getProcess());
+            JsonObject response = getUsersForRole(t1, "viewer");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(0, response.get("users").getAsJsonArray().size());
         }
     }
 
