@@ -64,6 +64,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SAML legacy flow: `GET /recipe/saml/legacy/userinfo` accepts only an access token issued by the token endpoint (single use, valid for `saml_claims_validity`); a code, or a malformed bearer value, returns `400 INVALID_TOKEN_ERROR` instead of claims or a `500`.
 - SAML codes are consumed with a single atomic `DELETE ... RETURNING` in the in-memory database too, so a code cannot be redeemed twice by concurrent requests.
 - Error pages that the embedded Tomcat renders itself (for example for a malformed request line) no longer include exception details, stack traces or the server version. Error responses written by the core APIs are unchanged.
+- Dashboard sign-in verifies the password before checking whether the account is suspended: a wrong password now returns `INVALID_CREDENTIALS_ERROR` for suspended accounts too (`USER_SUSPENDED_ERROR` is returned only for the correct password).
+- Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
 
 ## [12.3.1]
 
