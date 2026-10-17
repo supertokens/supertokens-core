@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Third-party sign-in: an email change now only updates the recipe user of the signing-in tenant. Previously it also rewrote the email of every other user in the app with the same `thirdPartyId` and `thirdPartyUserId` (for example the same provider identity in another tenant), skipping their email-change checks. Fixed in the in-memory storage; the PostgreSQL plugin needs the matching release.
+- Third-party sign-in with `isVerified: true` now marks only the email sent in that request as verified, and only if it is still the login method's email, checked under the user lock. A concurrent sign-in that changed the email can no longer get its unverified email marked as verified. The CDI 2.7 sign-in path gets the same fix.
+
 ## [12.3.1]
 
 ### Security
