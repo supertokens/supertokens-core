@@ -76,13 +76,17 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 appIdentifier,
                 storage,
                 clientId, // clientIdToCheck
-                "/admin/clients/" + clientId, // proxyPath
+                OAuth.getAdminClientPath(clientId), // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>()
             );
             if (response != null) {
+                if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                    // the OAuth provider resolved a different client than the one checked above
+                    throw new OAuthClientNotFoundException();
+                }
                 OAuthClient client = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 if (client.clientSecret != null) {
@@ -113,6 +117,14 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
         if (!input.has("clientId")) {
             input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+        } else {
+            String clientIdInput = InputParser.parseStringOrThrowError(input, "clientId", false);
+            if (!OAuth.isSafeClientId(clientIdInput)) {
+                // the id is used in OAuth provider paths, form fields and Basic auth headers, so it must not need
+                // any encoding (otherwise it could alias the client of another app)
+                throw new ServletException(new BadRequestException(
+                        "clientId can only contain letters, digits and the characters . _ ~ -"));
+            }
         }
 
         boolean enableRefreshTokenRotation = false;
@@ -180,8 +192,14 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
                     clientId,
-                    "/admin/clients/" + clientId,
+                    OAuth.getAdminClientPath(clientId),
                     true, true, queryParams, null);
+
+            if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                // the OAuth provider resolved a different client than the one checked above
+                OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+                return;
+            }
 
             JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
@@ -224,7 +242,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 appIdentifier,
                 storage,
                 clientId, // clientIdToCheck
-                "/admin/clients/" + clientId,
+                OAuth.getAdminClientPath(clientId),
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
@@ -233,6 +251,11 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
 
             if (response != null) {
+                if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                    // the OAuth provider updated a different client than the one checked above
+                    OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+                    return;
+                }
                 try {
                     OAuth.addOrUpdateClient(main, appIdentifier, storage, clientId, client.clientSecret, client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
                 } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidConfigException e) {

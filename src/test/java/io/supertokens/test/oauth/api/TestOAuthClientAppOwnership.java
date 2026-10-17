@@ -26,7 +26,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.config.Config;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
+import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
 import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
@@ -37,6 +39,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -63,6 +66,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Several apps of one core may share the same OAuth provider. These tests make sure that a caller of one app
@@ -389,11 +393,10 @@ public class TestOAuthClientAppOwnership {
         String publicAppClientId = publicAppClient.get("clientId").getAsString();
         assertTrue(publicAppClientId.startsWith("stcl_"));
 
-        // the other app registers a client whose id is the URL-encoded form of the public app's client id
+        // the other app has a client whose id is the URL-encoded form of the public app's client id (such ids are
+        // rejected at creation now, so it is registered the way an older core would have done it)
         String encodedClientId = "stcl%5F" + publicAppClientId.substring("stcl_".length());
-        JsonObject otherAppClient = createClientCredentialsClient(main, OTHER_APP_BASE, encodedClientId);
-        assertEquals("OK", otherAppClient.get("status").getAsString());
-        assertEquals(encodedClientId, otherAppClient.get("clientId").getAsString());
+        registerLegacyClientInOtherApp(main, encodedClientId);
 
         // the OAuth provider decodes the Basic auth client id, so this authenticates the public app's client
         String authorizationHeader = "Basic " + Base64.getEncoder().encodeToString(
@@ -420,6 +423,95 @@ public class TestOAuthClientAppOwnership {
                 SemVer.v5_2.get(), "");
         assertEquals("OK", response.get("status").getAsString());
         assertNotNull(response.get("access_token"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testClientIdThatNeedsEncodingIsRejectedAtCreation() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        JsonObject publicAppClient = createClientCredentialsClient(main, PUBLIC_APP_BASE, null);
+        String alias = "stcl%5F" + publicAppClient.get("clientId").getAsString().substring("stcl_".length());
+
+        for (String clientId : new String[]{alias, "a/b", "a?b", "a#b", "a b", "a+b", "a:b", "a%2Fb", "a&b"}) {
+            try {
+                createClientCredentialsClient(main, OTHER_APP_BASE, clientId);
+                fail("client id " + clientId + " should have been rejected");
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+            }
+        }
+
+        JsonObject client = createClientCredentialsClient(main, OTHER_APP_BASE, "custom-client_1.0~x");
+        assertEquals("OK", client.get("status").getAsString());
+        assertEquals("custom-client_1.0~x", client.get("clientId").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testEncodedClientIdAliasCannotReachOtherAppsClient() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        JsonObject victimBody = new JsonObject();
+        victimBody.addProperty("clientName", "victim");
+        JsonObject victim = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                PUBLIC_APP_BASE + "/recipe/oauth/clients", victimBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", victim.get("status").getAsString());
+        String victimClientId = victim.get("clientId").getAsString();
+
+        // a client of the other app whose id URL-decodes to the public app's client id
+        String alias = "stcl%5F" + victimClientId.substring("stcl_".length());
+        registerLegacyClientInOtherApp(main, alias);
+
+        // GET only reaches the other app's own client
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("clientId", alias);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients", queryParams, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(alias, response.get("clientId").getAsString());
+        assertFalse("victim".equals(response.has("clientName") ? response.get("clientName").getAsString() : null));
+
+        // PUT only updates the other app's own client
+        JsonObject updateBody = new JsonObject();
+        updateBody.addProperty("clientId", alias);
+        updateBody.addProperty("clientName", "changed-by-other-app");
+        response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients", updateBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(alias, response.get("clientId").getAsString());
+
+        // remove only deletes the other app's own client
+        JsonObject removeBody = new JsonObject();
+        removeBody.addProperty("clientId", alias);
+        response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients/remove", removeBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", response.get("status").getAsString());
+
+        // the public app's client is unchanged and still exists
+        queryParams.put("clientId", victimClientId);
+        response = HttpRequestForTesting.sendGETRequest(main, "",
+                PUBLIC_APP_BASE + "/recipe/oauth/clients", queryParams, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(victimClientId, response.get("clientId").getAsString());
+        assertEquals("victim", response.get("clientName").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -523,6 +615,29 @@ public class TestOAuthClientAppOwnership {
         ), false);
 
         return process;
+    }
+
+    // Registers a client in the other app the way an older core did: without validating the (caller chosen) id.
+    // The client is created in the OAuth provider under exactly this (literal) id and recorded in the other app.
+    private void registerLegacyClientInOtherApp(Main main, String clientId) throws Exception {
+        String adminUrl = Config.getConfig(new TenantIdentifier(null, null, null), main)
+                .getOAuthProviderAdminServiceUrl();
+        JsonObject body = new JsonObject();
+        body.addProperty("client_id", clientId);
+        body.addProperty("client_secret", "legacy-client-secret");
+        JsonArray grantTypes = new JsonArray();
+        grantTypes.add(new JsonPrimitive("client_credentials"));
+        body.add("grant_types", grantTypes);
+        body.addProperty("token_endpoint_auth_method", "client_secret_basic");
+        body.addProperty("access_token_strategy", "jwt");
+        body.addProperty("owner", "_otherapp");
+        HttpRequestForOAuthProvider.Response response = HttpRequestForOAuthProvider.doJsonPost(
+                adminUrl + "/admin/clients", new HashMap<>(), body);
+        assertEquals(response.rawResponse, 201, response.statusCode);
+
+        TenantIdentifier otherApp = new TenantIdentifier(null, "otherapp", null);
+        OAuth.addOrUpdateClient(main, otherApp.toAppIdentifier(), StorageLayer.getStorage(otherApp, main),
+                clientId, "legacy-client-secret", true, false);
     }
 
     private JsonObject createAuthCodeClient(Main main, String appBase) throws Exception {

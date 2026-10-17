@@ -48,6 +48,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -56,6 +57,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 public class OAuth {
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
@@ -266,6 +268,37 @@ public class OAuth {
         }
 
         return response;
+    }
+
+    private static final Pattern SAFE_CLIENT_ID = Pattern.compile("^[A-Za-z0-9._~-]+$");
+
+    /**
+     * Whether a caller chosen client id only uses characters that need no encoding (RFC 3986 unreserved
+     * characters), so that the id is the same in every place it appears (paths, form fields, Basic auth).
+     */
+    public static boolean isSafeClientId(String clientId) {
+        return clientId != null && SAFE_CLIENT_ID.matcher(clientId).matches();
+    }
+
+    /**
+     * The OAuth provider admin path of a client. The client id is percent-encoded as a single path segment, so
+     * that the OAuth provider resolves exactly the client whose app ownership was checked.
+     */
+    public static String getAdminClientPath(String clientId) {
+        return "/admin/clients/" + URLEncoder.encode(clientId, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    /**
+     * Whether a client object returned by the OAuth provider (after snake to camel case conversion) is the client
+     * with the given id.
+     */
+    public static boolean isResponseForClient(JsonElement clientResponse, String clientId) {
+        if (clientResponse == null || !clientResponse.isJsonObject()) {
+            return false;
+        }
+        JsonObject client = clientResponse.getAsJsonObject();
+        return client.has("clientId") && client.get("clientId").isJsonPrimitive()
+                && client.get("clientId").getAsString().equals(clientId);
     }
 
     /**
