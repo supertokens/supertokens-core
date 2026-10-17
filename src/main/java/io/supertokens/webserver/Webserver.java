@@ -26,6 +26,7 @@ import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.valves.ErrorReportValve;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -264,6 +265,14 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         // the amount of time for which we should wait for all requests to finish when
         // calling stop
         context.setUnloadDelay(5000);
+
+        // Errors that Tomcat answers itself (for example a malformed request line, which never reaches an API) are
+        // rendered by the host's error report valve. Keep exception details, stack traces and the server version
+        // out of those pages. Responses written by the APIs are not affected.
+        ErrorReportValve errorReportValve = new ErrorReportValve();
+        errorReportValve.setShowReport(false);
+        errorReportValve.setShowServerInfo(false);
+        tomcat.getHost().getPipeline().addValve(errorReportValve);
 
         // start tomcat
         try {

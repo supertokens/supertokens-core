@@ -804,6 +804,52 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
+    public void testMatthewM4_tomcatErrorPageHasNoStackTraceOrServerInfo() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        int port = Config.getConfig(process.getProcess()).getPort(process.getProcess());
+
+        // Requests that Tomcat rejects itself, before any API is called
+        String[] requestLines = {
+                "GET /hello?a={} HTTP/1.1",
+                "GET /hello|x HTTP/1.1",
+                "GET /recipe/saml/legacy/userinfo?x=<script> HTTP/1.1",
+        };
+        for (String requestLine : requestLines) {
+            String response;
+            try (java.net.Socket socket = new java.net.Socket("localhost", port)) {
+                socket.setSoTimeout(5000);
+                java.io.OutputStream out = socket.getOutputStream();
+                out.write((requestLine + "\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                        .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+                out.flush();
+                response = new String(socket.getInputStream().readAllBytes(),
+                        java.nio.charset.StandardCharsets.ISO_8859_1);
+            }
+            assertTrue(response, response.startsWith("HTTP/1.1 400"));
+            assertFalse(response, response.contains("Exception"));
+            assertFalse(response, response.contains("org.apache"));
+            assertFalse(response, response.contains("Tomcat"));
+            assertFalse(response, response.contains("Invalid character"));
+        }
+
+        // Error responses written by the APIs are unchanged
+        try {
+            HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:" + port + "/randomPath", null, 1000, 1000, null);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(404, e.statusCode);
+            assertEquals("Http error. Status Code: 404. Message: Not found", e.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void notFoundTest() throws InterruptedException, IOException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
