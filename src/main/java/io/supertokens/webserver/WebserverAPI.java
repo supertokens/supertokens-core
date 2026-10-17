@@ -204,6 +204,30 @@ public abstract class WebserverAPI extends HttpServlet {
         return apiKey;
     }
 
+    /**
+     * Returns the config that request-level access checks (API keys, IP rules) are enforced against. It is the
+     * config of the most specific of (connectionUriDomain, appId, tenantId), (connectionUriDomain, appId, public)
+     * and (connectionUriDomain, public, public) that is loaded, and the base config if none of them is. Falling
+     * back to an ancestor instead of skipping the check means that a request naming an app or tenant that does
+     * not resolve is held to the same rules as its connection URI domain (or the base config), rather than to
+     * none at all.
+     */
+    private CoreConfig getConfigForAccessCheck(String connectionUriDomain, String appId, String tenantId) {
+        TenantIdentifier[] candidates = new TenantIdentifier[]{
+                new TenantIdentifier(connectionUriDomain, appId, tenantId),
+                new TenantIdentifier(connectionUriDomain, appId, null),
+                new TenantIdentifier(connectionUriDomain, null, null)
+        };
+        for (TenantIdentifier candidate : candidates) {
+            try {
+                return Config.getConfig(candidate, this.main);
+            } catch (TenantOrAppNotFoundException ignored) {
+                // try the next, less specific, candidate
+            }
+        }
+        return Config.getBaseConfig(this.main);
+    }
+
     private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
         try {
             String apiKey = getApiKeyFromRequest(req);
@@ -211,12 +235,12 @@ public abstract class WebserverAPI extends HttpServlet {
             // Resolve the API keys from the app's public tenant rather than the raw request
             // tenant. api_keys is @NotConflictingInApp (identical across an app's tenants), so
             // for a real tenant this is equivalent, but it also resolves for an unknown tenant
-            // segment (e.g. /ghosttenant/...) under a real app — which previously threw
-            // TenantOrAppNotFoundException and caused this check to be skipped entirely,
-            // letting an unauthenticated caller through.
-            String[] keys = Config.getConfig(
-                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), null),
-                    this.main).getAPIKeys();
+            // segment (e.g. /ghosttenant/...) under a real app. If the app itself does not
+            // resolve, the keys of the nearest loaded ancestor (the connection URI domain's
+            // public app, then the base config) are enforced instead of skipping the check, so
+            // such a request still needs a valid key and gets the same 401 as a wrong key.
+            String[] keys = getConfigForAccessCheck(getConnectionUriDomain(req), getAppId(req), null)
+                    .getAPIKeys();
             if (keys != null) {
                 if (apiKey == null) {
                     throw new ServletException(new APIKeyUnauthorisedException());
@@ -249,10 +273,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
         } catch (TenantOrAppNotFoundException e) {
-            // The app/CUD does not exist, so there is no api_keys config to enforce and no app
-            // to operate on — let the app-specific handler return its "app not found" (400).
-            // (For an unknown *tenant* under a real app the key IS enforced: the lookup above
-            // resolves the app's public tenant, so we never reach here in that case.)
+            // only the base config is looked up here, and it always exists; never skip the check
+            throw new ServletException(new APIKeyUnauthorisedException());
         }
     }
 
@@ -468,19 +490,9 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        CoreConfig config = null;
-        try {
-            config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
-        } catch (TenantOrAppNotFoundException e) {
-            // Unknown tenant: fall back to the app's public-tenant IP rules rather than
-            // skipping IP access control (which would let an unknown tenant path segment
-            // bypass an IP allow/deny configured on the app).
-            try {
-                config = Config.getConfig(getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main);
-            } catch (TenantOrAppNotFoundException e2) {
-                return true; // no app either, so no IP access control to apply
-            }
-        }
+        // An unknown tenant falls back to the app's public-tenant IP rules, and an unknown app to the connection
+        // URI domain's (or the base config's) rules, rather than skipping IP access control.
+        CoreConfig config = getConfigForAccessCheck(getConnectionUriDomain(req), getAppId(req), getTenantId(req));
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
