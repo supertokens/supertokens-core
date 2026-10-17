@@ -129,6 +129,52 @@ public class RecoverAccountFlowTest {
     }
 
     @Test
+    public void testIssue101_recoverAccountTokenForPrimaryIdWithLinkedLoginMethodEmailIsConsumable()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // primary created from a webauthn user with user0@example.com, linked email-password login method with
+        // the verified email user1@example.com
+        List<JsonObject> users = Utils.registerUsers(process.getProcess(), 1);
+        String primaryId = users.get(0).getAsJsonObject("user").get("id").getAsString();
+        Utils.makePrimaryUserFrom(process, primaryId);
+        List<AuthRecipeUserInfo> emailPasswordUsers = Utils.createEmailPasswordUsers(process, 1, false, 1);
+        Utils.verifyEmailFor(process.getProcess(), emailPasswordUsers.get(0).getSupertokensUserId(),
+                "user1@example.com");
+        Utils.linkAccounts(process.getProcess(), List.of(primaryId),
+                List.of(emailPasswordUsers.get(0).getSupertokensUserId()));
+
+        // token issued for the primary id with the linked login method's email (to add a webauthn login method)
+        JsonObject recoverAccountToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(),
+                "user1@example.com", primaryId);
+        assertTrue(recoverAccountToken.has("token"));
+
+        JsonObject recoverAccountResponse = Utils.consumeToken(process.getProcess(),
+                recoverAccountToken.get("token").getAsString());
+        assertEquals("OK", recoverAccountResponse.get("status").getAsString());
+        assertEquals(primaryId, recoverAccountResponse.get("userId").getAsString());
+        assertEquals("user1@example.com", recoverAccountResponse.get("email").getAsString());
+
+        // a token for an email that is on no login method of the account is rejected
+        JsonObject otherToken = Utils.generateRecoverAccountTokenForEmail(process.getProcess(),
+                "nobody@example.com", primaryId);
+        JsonObject otherResponse = Utils.consumeToken(process.getProcess(), otherToken.get("token").getAsString());
+        assertEquals("RECOVER_ACCOUNT_TOKEN_INVALID_ERROR", otherResponse.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void recoverAccountFailsWithNonExistingUserTest() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

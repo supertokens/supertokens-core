@@ -749,6 +749,51 @@ public class EmailPasswordTest {
     }
 
     @Test
+    public void testIssue101_resetTokenForPrimaryIdWithLinkedLoginMethodEmailIsConsumable() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // primary created from an email-password user with a@example.com, linked third-party login method with the
+        // verified email b@example.com
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(process.getProcess(), "a@example.com", "password");
+        AuthRecipe.createPrimaryUser(process.getProcess(), epUser.getSupertokensUserId());
+        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
+                "b@example.com", true);
+        AuthRecipe.linkAccounts(process.getProcess(), tpUser.user.getSupertokensUserId(),
+                epUser.getSupertokensUserId());
+
+        // the SDK issues this token for the primary id with b@example.com, to add an email-password login method
+        // with that email
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), epUser.getSupertokensUserId(),
+                "b@example.com");
+        EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(
+                process.getProcess(), token);
+        assertEquals(epUser.getSupertokensUserId(), res.userId);
+        assertEquals("b@example.com", res.email);
+
+        // a token for an email that is on no login method of the account is rejected
+        String otherToken = EmailPassword.generatePasswordResetToken(process.getProcess(),
+                epUser.getSupertokensUserId(), "nobody@example.com");
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), otherToken);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void deletionOfTpUserDeletesPasswordResetToken() throws Exception {
         String[] args = {"../"};
 

@@ -41,6 +41,7 @@ import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenExceptio
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.output.Logging;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -479,6 +480,14 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
+        AuthRecipeUserInfo tokenUser = email == null ? null
+                : AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
+        if (tokenUser != null && !isResetTokenEmailStillOnAccount(tokenUser, email)) {
+            // Kept issuing (no new status for this API), but the token will be rejected when consumed.
+            Logging.warn(main, tenantIdentifier, "Password reset token created for an email that does not belong "
+                    + "to any login method of the user; it will be rejected when consumed.");
+        }
+
         while (true) {
 
             // we first generate a password reset token
@@ -586,7 +595,7 @@ public class EmailPassword {
 
                 if (matchedToken.email != null && !isResetTokenEmailStillOnAccount(
                         authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                userId), userId, matchedToken.email)) {
+                                userId), matchedToken.email)) {
                     // the email the token was sent to no longer belongs to the account
                     epStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
@@ -687,7 +696,7 @@ public class EmailPassword {
 
                 if (matchedToken.email != null && !isResetTokenEmailStillOnAccount(
                         authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                userId), userId, matchedToken.email)) {
+                                userId), matchedToken.email)) {
                     // the email the token was sent to no longer belongs to the account
                     epStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
@@ -721,20 +730,17 @@ public class EmailPassword {
         }
     }
 
-    // A reset token is bound to the email it was sent to. If it was issued for an email-password login method,
-    // that login method must still have this email. Otherwise (the token was issued for an account to add an
-    // email-password login method with this email) some login method of the account must still have it.
-    private static boolean isResetTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenUserId,
-                                                           String tokenEmail) {
-        if (user == null) {
+    // A reset token is bound to the email it was sent to: that email must still belong to the account. This is
+    // checked against every login method of the account, not only the email-password login method with the
+    // token's user id, because the SDKs also issue tokens for the primary user id with the email of another
+    // linked login method, to add an email-password login method with that email.
+    // Tokens issued before an email or password change of the email-password login method are deleted by that
+    // change (updateUsersEmailOrPassword).
+    private static boolean isResetTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenEmail) {
+        if (user == null || tokenEmail == null) {
             return false;
         }
         String email = Utils.normaliseEmail(tokenEmail);
-        for (LoginMethod lM : user.loginMethods) {
-            if (lM.recipeId == RECIPE_ID.EMAIL_PASSWORD && lM.getSupertokensUserId().equals(tokenUserId)) {
-                return email.equals(Utils.normaliseEmail(lM.email));
-            }
-        }
         for (LoginMethod lM : user.loginMethods) {
             if (lM.email != null && email.equals(Utils.normaliseEmail(lM.email))) {
                 return true;

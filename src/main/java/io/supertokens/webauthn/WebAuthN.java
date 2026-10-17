@@ -31,6 +31,7 @@ import com.webauthn4j.verifier.exception.VerificationException;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -547,6 +548,12 @@ public class WebAuthN {
             throw new UnknownUserIdException();
         }
 
+        if (!isRecoverAccountTokenEmailStillOnAccount(user, email)) {
+            // Kept issuing (no new status for this API), but the token will be rejected when consumed.
+            Logging.warn(main, tenantIdentifier, "Recover account token created for an email that does not belong "
+                    + "to any login method of the user; it will be rejected when consumed.");
+        }
+
         while (true) {
             // we first generate a password reset token
             byte[] random = new byte[32];
@@ -565,20 +572,15 @@ public class WebAuthN {
         }
     }
 
-    // A recover account token is bound to the email it was sent to. If it was issued for a webauthn login method,
-    // that login method must still have this email. Otherwise (the token was issued for an account to add a
-    // webauthn login method with this email) some login method of the account must still have it.
-    private static boolean isRecoverAccountTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenUserId,
-                                                                    String tokenEmail) {
+    // A recover account token is bound to the email it was sent to: that email must still belong to the account.
+    // This is checked against every login method of the account, not only the webauthn login method with the
+    // token's user id, because the SDKs also issue tokens for the primary user id with the email of another linked
+    // login method, to add a webauthn login method with that email.
+    private static boolean isRecoverAccountTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenEmail) {
         if (user == null || tokenEmail == null) {
             return false;
         }
         String email = Utils.normaliseEmail(tokenEmail);
-        for (LoginMethod lM : user.loginMethods) {
-            if (lM.recipeId == RECIPE_ID.WEBAUTHN && lM.getSupertokensUserId().equals(tokenUserId)) {
-                return email.equals(Utils.normaliseEmail(lM.email));
-            }
-        }
         for (LoginMethod lM : user.loginMethods) {
             if (lM.email != null && email.equals(Utils.normaliseEmail(lM.email))) {
                 return true;
@@ -608,7 +610,7 @@ public class WebAuthN {
                     if (!isRecoverAccountTokenEmailStillOnAccount(
                             StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById_Transaction(
                                     tenantIdentifier.toAppIdentifier(), con, recoveryTokenInfo.userId),
-                            recoveryTokenInfo.userId, recoveryTokenInfo.email)) {
+                            recoveryTokenInfo.email)) {
                         // the email the token was sent to no longer belongs to the account
                         return null;
                     }
