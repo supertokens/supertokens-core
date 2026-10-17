@@ -26,10 +26,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
 - WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
 
-### Changes
-
-- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
-- In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
 - TOTP: verifications of the same user are serialised (a per-user lock is taken before the used codes are read), so
   concurrent requests can no longer reuse a code or exceed `totp_max_attempts`.
 - TOTP: replay protection and the attempt limit use the user's used codes across all tenants of the app, matching
@@ -67,6 +63,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dashboard sign-in verifies the password before checking whether the account is suspended: a wrong password now returns `INVALID_CREDENTIALS_ERROR` for suspended accounts too (`USER_SUSPENDED_ERROR` is returned only for the correct password).
 - Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
 - User roles: `POST /recipe/user/role/remove` and `GET /recipe/role/users` now check that the role exists in the app's public tenant storage (where roles are stored), as `PUT /recipe/user/role` already did, and remove or list the user-role mappings in the tenant's own storage. Previously both returned `UNKNOWN_ROLE_ERROR` for tenants on a separate database, so a role could not be revoked from a single user there. Removing a user's role also deletes the mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
+
+### Changes
+
+- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
+- In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
 
 ## [12.3.1]
 
