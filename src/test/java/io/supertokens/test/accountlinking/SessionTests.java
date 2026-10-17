@@ -36,12 +36,14 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.usermetadata.UserMetadata;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -228,6 +230,80 @@ public class SessionTests {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static void assertSessionRevoked(Main main, SessionInformationHolder session) throws Exception {
+        try {
+            Session.getSession(main, session.session.handle);
+            fail();
+        } catch (UnauthorisedException e) {
+            // ok
+        }
+        try {
+            Session.refreshSession(main, session.refreshToken.token, session.antiCsrfToken, false,
+                    AccessToken.VERSION.V5);
+            fail();
+        } catch (UnauthorisedException e) {
+            // ok
+        }
+    }
+
+    private void deletePrimaryLoginMethodRevokesItsSessions(boolean mapPrimaryUser) throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        String primaryId = user1.getSupertokensUserId();
+        if (mapPrimaryUser) {
+            UserIdMapping.createUserIdMapping(process.getProcess(), user1.getSupertokensUserId(), "extid1", null,
+                    false);
+            primaryId = "extid1";
+        }
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+        JsonObject metadata = new JsonObject();
+        metadata.addProperty("k1", "v1");
+        UserMetadata.updateUserMetadata(process.getProcess(), primaryId, metadata);
+
+        SessionInformationHolder session1 = Session.createNewSession(process.getProcess(), primaryId,
+                new JsonObject(), new JsonObject());
+        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(),
+                user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
+
+        // delete only the primary user's own login method
+        AuthRecipe.deleteUser(process.getProcess(), primaryId, false);
+
+        AuthRecipeUserInfo remaining = AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId());
+        assertEquals(1, remaining.loginMethods.length);
+        assertEquals(user1.getSupertokensUserId(), remaining.getSupertokensUserId());
+
+        // the sessions of the deleted login method are gone, the linked login method's are kept
+        assertSessionRevoked(process.getProcess(), session1);
+        assertNotNull(Session.getSession(process.getProcess(), session2.session.handle));
+        // data shared by the remaining linked accounts is kept
+        assertEquals(metadata, UserMetadata.getUserMetadata(process.getProcess(), primaryId));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue7_deletePrimaryLoginMethodRevokesItsSessions() throws Exception {
+        deletePrimaryLoginMethodRevokesItsSessions(false);
+    }
+
+    @Test
+    public void testIssue24_deleteMappedPrimaryLoginMethodRevokesItsSessions() throws Exception {
+        deletePrimaryLoginMethodRevokesItsSessions(true);
     }
 
     @Test

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
+
 ## [12.3.1]
 
 ### Security
