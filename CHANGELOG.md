@@ -13,7 +13,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   concurrent requests can no longer reuse a code or exceed `totp_max_attempts`.
 - TOTP: replay protection and the attempt limit use the user's used codes across all tenants of the app, matching
   the app-wide scope of TOTP devices. A code used in one tenant is rejected in the user's other tenants, and failed
-  attempts count towards one limit per user.
+  attempts count towards one limit per user. `totp_max_attempts` and `totp_rate_limit_cooldown_sec` are still read
+  from the config of the tenant the request is made to, and are applied to the user's failures across all tenants
+  of the app (if tenants of one app set different values, the requesting tenant's values decide).
 - TOTP: `/recipe/totp/device/verify` checks the code (with rate limiting and replay protection) also when the device
   is already verified. It returns `INVALID_TOTP_ERROR` / `LIMIT_REACHED_ERROR` for a wrong code, and
   `OK` with `wasAlreadyVerified: true` only for a valid code.
