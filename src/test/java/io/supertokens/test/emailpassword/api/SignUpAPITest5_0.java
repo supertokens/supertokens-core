@@ -25,6 +25,12 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.thirdparty.ThirdParty;
@@ -228,12 +234,20 @@ public class SignUpAPITest5_0 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.ACCOUNT_LINKING});
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        // A tenant of this app with a custom (non built-in) third-party provider
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                new ThirdPartyConfig.Provider("corp-idp", "Corp IdP", null, null, null, null, null,
+                                        null, null, null, null, null, null, null)}),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
 
         // A third-party style placeholder whose third-party user does not exist (yet) is not verified
         assertSignUpVerified(process, "victimtwitterid.twitter@stfakeemail.supertokens.com", false);
@@ -263,6 +277,20 @@ public class SignUpAPITest5_0 {
         UserIdMapping.createUserIdMapping(process.getProcess(), phoneUserWithChosenId.getSupertokensUserId(),
                 "victimtwitterid3.twitter", null, false);
         assertSignUpVerified(process, "victimtwitterid3.twitter@stfakeemail.supertokens.com", false);
+        // ... also for other built-in provider ids (matched by prefix, like the SDKs do) and for a provider configured
+        // in a tenant of the app
+        AuthRecipeUserInfo phoneUserWithGithubShapedId = createPhoneOnlyUser(process, "+442071838756");
+        UserIdMapping.createUserIdMapping(process.getProcess(), phoneUserWithGithubShapedId.getSupertokensUserId(),
+                "jane.github", null, false);
+        assertSignUpVerified(process, "jane.github@stfakeemail.supertokens.com", false);
+        AuthRecipeUserInfo phoneUserWithWorkspacesShapedId = createPhoneOnlyUser(process, "+442071838757");
+        UserIdMapping.createUserIdMapping(process.getProcess(),
+                phoneUserWithWorkspacesShapedId.getSupertokensUserId(), "12345.google-workspaces", null, false);
+        assertSignUpVerified(process, "12345.google-workspaces@stfakeemail.supertokens.com", false);
+        AuthRecipeUserInfo phoneUserWithCustomProviderShapedId = createPhoneOnlyUser(process, "+442071838758");
+        UserIdMapping.createUserIdMapping(process.getProcess(),
+                phoneUserWithCustomProviderShapedId.getSupertokensUserId(), "alice.Corp-IdP", null, false);
+        assertSignUpVerified(process, "alice.Corp-IdP@stfakeemail.supertokens.com", false);
         // ... and an external id without that shape, whose user has an email, is refused too
         UserIdMapping.createUserIdMapping(process.getProcess(),
                 EmailPassword.signUp(process.getProcess(), "handle@example.com", "validPass123")
@@ -292,6 +320,12 @@ public class SignUpAPITest5_0 {
         UserIdMapping.createUserIdMapping(process.getProcess(), mappedPhoneOnlyUser.getSupertokensUserId(),
                 "ExtUser-AbC", null, false);
         assertSignUpVerified(process, "ExtUser-AbC@stfakeemail.supertokens.com", true);
+
+        // ... and when that mapped external id contains a '.' but is not a third-party placeholder shape
+        AuthRecipeUserInfo dottedPhoneOnlyUser = createPhoneOnlyUser(process, "+442071838759");
+        UserIdMapping.createUserIdMapping(process.getProcess(), dottedPhoneOnlyUser.getSupertokensUserId(),
+                "john.doe", null, false);
+        assertSignUpVerified(process, "john.doe@stfakeemail.supertokens.com", true);
 
         // ... but not for the same external id with a different case, which is not a user id of this app
         AuthRecipeUserInfo mappedPhoneOnlyUser2 = createPhoneOnlyUser(process, "+442071838755");

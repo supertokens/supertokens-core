@@ -20,7 +20,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -42,6 +44,7 @@ import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenExceptio
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -63,6 +66,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
@@ -77,6 +81,11 @@ import io.supertokens.auditlog.UnauditedTransaction;
 public class EmailPassword {
 
     private static final String SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN = "@stfakeemail.supertokens.com";
+
+    // Prefixes of the built-in third-party provider ids of the backend SDKs (a thirdPartyId starting with one of
+    // these selects that built-in provider, e.g. "google-workspaces" or "github-enterprise").
+    private static final String[] BUILT_IN_THIRD_PARTY_ID_PREFIXES = {"active-directory", "apple", "bitbucket",
+            "boxy-saml", "discord", "facebook", "github", "gitlab", "google", "linkedin", "okta", "saml", "twitter"};
 
     public static class ImportUserResponse {
         public boolean didUserAlreadyExist;
@@ -145,6 +154,9 @@ public class EmailPassword {
         EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        // Read before the transaction from the in-memory tenant configs; only needed for a dotted placeholder.
+        Set<String> configuredThirdPartyIds = mayHaveThirdPartyPlaceholderShape(email)
+                ? getConfiguredThirdPartyIdsLowerCase(appIdentifier, main) : new HashSet<>();
 
         while (true) {
             String userId = Utils.getUUID();
@@ -160,7 +172,7 @@ public class EmailPassword {
                         // Checked before the new user is inserted, so the new user's own id can never match.
                         boolean isPlaceholderEmailOfUserWithoutEmail =
                                 isPlaceholderEmailOfUserWithoutEmail_Transaction(storage, con, appIdentifier, email,
-                                        emailAsProvided);
+                                        emailAsProvided, configuredThirdPartyIds);
                         AuthRecipeUserInfo user = epStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
                                 hashedPassword, timeJoined);
                         if (isPlaceholderEmailOfUserWithoutEmail) {
@@ -205,15 +217,16 @@ public class EmailPassword {
      * user id mapping) and neither that user nor any login method of its primary user has an email.
      * It returns false (the new login method is created unverified) for everything else, in particular:
      * - addresses on {@code *.fakeemail.com},
-     * - local parts that contain a '.', which is the shape of third-party placeholders
-     *   ({@code <thirdPartyUserId>.<thirdPartyId>}); the SDKs' own placeholder for SuperTokens user ids never has one,
+     * - local parts with the shape of a third-party placeholder ({@code <thirdPartyUserId>.<thirdPartyId>}), where
+     *   the part after a '.' is a built-in provider id of the SDKs or a thirdPartyId configured in a tenant of the app,
      * - local parts that are not the id of an existing user, or whose user already has an email (the SDKs only
      *   generate this placeholder for users without one).
      */
     private static boolean isPlaceholderEmailOfUserWithoutEmail_Transaction(Storage storage,
                                                                             TransactionConnection con,
                                                                             AppIdentifier appIdentifier,
-                                                                            String email, String emailAsProvided)
+                                                                            String email, String emailAsProvided,
+                                                                            Set<String> configuredThirdPartyIds)
             throws StorageQueryException {
         if (!email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN)) {
             return false;
@@ -234,8 +247,8 @@ public class EmailPassword {
         UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) storage;
         List<AuthRecipeUserInfo> matchedUsers = new ArrayList<>();
         for (String candidate : candidateUserIds) {
-            if (candidate.isEmpty() || candidate.contains(".")) {
-                // a '.' in the local part is the third-party placeholder shape; never auto-verified
+            if (candidate.isEmpty() || hasThirdPartyPlaceholderShape(candidate, configuredThirdPartyIds)) {
+                // third-party placeholders are never auto-verified
                 return false;
             }
             AuthRecipeUserInfo userBySuperTokensId = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
@@ -266,6 +279,50 @@ public class EmailPassword {
             }
         }
         return true;
+    }
+
+    private static boolean mayHaveThirdPartyPlaceholderShape(String email) {
+        return email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN) &&
+                email.substring(0, email.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length()).contains(".");
+    }
+
+    private static Set<String> getConfiguredThirdPartyIdsLowerCase(AppIdentifier appIdentifier, Main main) {
+        Set<String> result = new HashSet<>();
+        // In-memory snapshot of the tenant configs (no DB read or refresh on the sign-up path).
+        for (TenantConfig tenantConfig : MultitenancyHelper.getInstance(main).getAllTenants()) {
+            if (!tenantConfig.tenantIdentifier.toAppIdentifier().equals(appIdentifier)
+                    || tenantConfig.thirdPartyConfig == null) {
+                continue;
+            }
+            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                if (provider != null && provider.thirdPartyId != null) {
+                    result.add(provider.thirdPartyId.toLowerCase());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * True if the local part looks like {@code <thirdPartyUserId>.<thirdPartyId>}: the text after some '.' starts
+     * with a built-in provider id prefix of the SDKs, or equals a thirdPartyId configured in a tenant of the app.
+     * Compared case-insensitively, since the email is lower-cased on sign-up.
+     */
+    private static boolean hasThirdPartyPlaceholderShape(String localPart, Set<String> configuredThirdPartyIds) {
+        int dot = localPart.indexOf('.');
+        while (dot >= 0) {
+            String suffix = localPart.substring(dot + 1).toLowerCase();
+            if (configuredThirdPartyIds.contains(suffix)) {
+                return true;
+            }
+            for (String prefix : BUILT_IN_THIRD_PARTY_ID_PREFIXES) {
+                if (suffix.startsWith(prefix)) {
+                    return true;
+                }
+            }
+            dot = localPart.indexOf('.', dot + 1);
+        }
+        return false;
     }
 
     @TestOnly
