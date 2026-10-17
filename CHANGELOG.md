@@ -49,6 +49,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SAML callback: on SP-initiated logins the AuthnRequest ID must also appear as the `InResponseTo` of the authenticating assertion's bearer `SubjectConfirmationData`, not only on the Response.
 - SAML callback: an SP-initiated response with no known ACS URL to pin `Destination`/`Recipient` to is rejected.
 - SAML clients: an update that omits `acsURLs` keeps the client's current ACS allow-list instead of clearing it; send `acsURLs: []` to clear it.
+- Email-password sign-up no longer marks every placeholder-looking email as verified. It now auto-verifies only
+  `<userId>@stfakeemail.supertokens.com` where `<userId>` is the id (or mapped external id) of an existing user of the
+  same app with no email on any login method of the user or of its primary user, and does not have the third-party
+  placeholder shape `<x>.<thirdPartyId>` (a built-in provider id of the SDKs, or a provider configured in a tenant of
+  the app). This is the placeholder the backend SDKs generate when a user without an email adds a password factor.
+  Other addresses on `@stfakeemail.supertokens.com` (including third-party placeholders
+  `<thirdPartyUserId>.<thirdPartyId>@...`) and addresses ending in `.fakeemail.com` are created unverified. Existing verification state is not changed.
+  The backend SDKs still predict sign-up verification with the old suffix rule (`isFakeEmail`); until they adopt
+  the narrowed rule, a session sign-up with such an address can create an email-password user that then fails to
+  link to the session user (`EMAIL_VERIFICATION_REQUIRED`).
 
 ## [12.3.1]
 

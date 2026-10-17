@@ -83,7 +83,7 @@ public class SignUpAPI extends WebserverAPI {
                     tenantIdentifier, getVersionFromRequest(req));
 
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
-                    password);
+                    password, email);
 
             // No activity event on sign-up: the in-transaction user_creation lifecycle event already records
             // this as activity and the last-active fold reads it. That event is written via
