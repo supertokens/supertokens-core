@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- TOTP: verifications of the same user are serialised (a per-user lock is taken before the used codes are read), so
+  concurrent requests can no longer reuse a code or exceed `totp_max_attempts`.
+- TOTP: replay protection and the attempt limit use the user's used codes across all tenants of the app, matching
+  the app-wide scope of TOTP devices. A code used in one tenant is rejected in the user's other tenants, and failed
+  attempts count towards one limit per user.
+- TOTP: `/recipe/totp/device/verify` checks the code (with rate limiting and replay protection) also when the device
+  is already verified. It returns `INVALID_TOTP_ERROR` / `LIMIT_REACHED_ERROR` for a wrong code, and
+  `OK` with `wasAlreadyVerified: true` only for a valid code.
+
 ## [12.3.1]
 
 ### Security
