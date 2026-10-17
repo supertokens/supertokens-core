@@ -207,9 +207,13 @@ public class WebAuthN {
         String credentialId = getAttestedCredentialId(credentialsDataJson, verifiedRegistrationData);
         // Credential ids must be unique within the app, across relying party ids: sign in looks a credential up
         // by id alone. The same id under another relying party id is rejected like at sign-up; a duplicate under
-        // the same relying party id is left to the primary key, which reports DuplicateCredentialException.
+        // the same relying party id keeps its previous status (DuplicateCredentialException), independent of how
+        // the storage reports the primary key conflict.
         WebAuthNStoredCredential existing = loadCredentialByIdInApp(storage, tenantIdentifier, credentialId);
-        if (existing != null && !Objects.equals(existing.rpId, generatedOptions.relyingPartyId)) {
+        if (existing != null) {
+            if (Objects.equals(existing.rpId, generatedOptions.relyingPartyId)) {
+                throw new DuplicateCredentialException();
+            }
             throw new WebauthNVerificationFailedException("Credential already registered");
         }
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(

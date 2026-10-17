@@ -17,6 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changes
 
 - In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
+- In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
 
 ## [12.3.1]
 

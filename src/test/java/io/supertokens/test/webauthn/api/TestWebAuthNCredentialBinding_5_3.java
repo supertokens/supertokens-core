@@ -217,7 +217,8 @@ public class TestWebAuthNCredentialBinding_5_3 {
         assertEquals(registerResp.toString(), "Credential already registered",
                 registerResp.get("reason").getAsString());
 
-        // a duplicate under the same relying party id keeps its previous status (primary key conflict)
+        // a duplicate under the same relying party id keeps its previous status, on every storage
+        // (including the in-memory db, whose primary key error mapping is not involved any more)
         JsonObject victimOptionsAgain = registerOptions(main, tenant, "victim@example.com", RP_ID, ORIGIN);
         JsonObject sameRpResp = registerCredential(main, tenant,
                 victimOptionsAgain.get("webauthnGeneratedOptionsId").getAsString(),
