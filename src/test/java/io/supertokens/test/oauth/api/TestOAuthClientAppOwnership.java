@@ -102,8 +102,12 @@ public class TestOAuthClientAppOwnership {
         FlowState flow = startAuthFlow(main, client);
 
         JsonObject response = acceptLoginRequest(main, OTHER_APP_BASE, flow.loginChallenge, "attacker-chosen-user");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        assertChallengeNotFound(response);
         assertNull(response.get("redirectTo"));
+
+        // the response is the same as for a challenge that does not exist
+        assertEquals(acceptLoginRequest(main, OTHER_APP_BASE, flow.loginChallenge + "extras", "someuserid"),
+                response);
 
         // the challenge is untouched and can still be completed by the app that owns the client
         response = acceptLoginRequest(main, PUBLIC_APP_BASE, flow.loginChallenge, "someuserid");
@@ -128,7 +132,7 @@ public class TestOAuthClientAppOwnership {
                 OTHER_APP_BASE + "/recipe/oauth/auth/requests/login/reject?loginChallenge="
                         + URLEncoder.encode(flow.loginChallenge, StandardCharsets.UTF_8),
                 new JsonObject(), 5000, 20000, null, SemVer.v5_2.get(), "");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        assertChallengeNotFound(response);
 
         // the challenge was not rejected
         response = acceptLoginRequest(main, PUBLIC_APP_BASE, flow.loginChallenge, "someuserid");
@@ -152,7 +156,7 @@ public class TestOAuthClientAppOwnership {
 
         JsonObject response = acceptConsentRequest(main, OTHER_APP_BASE, flow.consentChallenge,
                 "attacker-chosen-user");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        assertChallengeNotFound(response);
         assertNull(response.get("redirectTo"));
 
         response = acceptConsentRequest(main, PUBLIC_APP_BASE, flow.consentChallenge, "someuserid");
@@ -178,7 +182,7 @@ public class TestOAuthClientAppOwnership {
                 OTHER_APP_BASE + "/recipe/oauth/auth/requests/consent/reject?consentChallenge="
                         + URLEncoder.encode(flow.consentChallenge, StandardCharsets.UTF_8),
                 new JsonObject(), 5000, 20000, null, SemVer.v5_2.get(), "");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        assertChallengeNotFound(response);
 
         // the challenge was not rejected
         response = acceptConsentRequest(main, PUBLIC_APP_BASE, flow.consentChallenge, "someuserid");
@@ -206,8 +210,15 @@ public class TestOAuthClientAppOwnership {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 OTHER_APP_BASE + "/recipe/oauth/auth/requests/consent", queryParams, 5000, 20000, null,
                 SemVer.v5_2.get(), "");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        assertChallengeNotFound(response);
         assertNull(response.get("subject"));
+
+        // the response is the same as for a challenge that does not exist
+        Map<String, String> unknownChallengeParams = new HashMap<>();
+        unknownChallengeParams.put("consentChallenge", flow.consentChallenge + "extras");
+        assertEquals(HttpRequestForTesting.sendGETRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/auth/requests/consent", unknownChallengeParams, 5000, 20000, null,
+                SemVer.v5_2.get(), ""), response);
 
         response = HttpRequestForTesting.sendGETRequest(main, "",
                 PUBLIC_APP_BASE + "/recipe/oauth/auth/requests/consent", queryParams, 5000, 20000, null,
@@ -238,7 +249,8 @@ public class TestOAuthClientAppOwnership {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 OTHER_APP_BASE + "/recipe/oauth/tokens/revoke", revokeBody, 5000, 20000, null,
                 SemVer.v5_2.get(), "");
-        assertEquals("CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+        // reported as OK: this app has no such client, so it has no tokens of it to revoke
+        assertEquals("OK", response.get("status").getAsString());
 
         Thread.sleep(1000);
 
@@ -251,6 +263,42 @@ public class TestOAuthClientAppOwnership {
                 PUBLIC_APP_BASE + "/recipe/oauth/tokens/revoke", revokeBody, 5000, 20000, null,
                 SemVer.v5_2.get(), "");
         assertEquals("OK", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRevokeTokenWithClientOfOtherAppRejected() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        JsonObject client = createAuthCodeClient(main, PUBLIC_APP_BASE);
+        FlowState flow = startAuthFlow(main, client);
+        continueToConsent(main, flow);
+        JsonObject tokens = finishFlowAndGetTokens(main, client, flow);
+        String refreshToken = tokens.get("refresh_token").getAsString();
+
+        JsonObject revokeBody = new JsonObject();
+        revokeBody.addProperty("token", refreshToken);
+        revokeBody.addProperty("client_id", client.get("clientId").getAsString());
+        revokeBody.addProperty("client_secret", client.get("clientSecret").getAsString());
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/token/revoke", revokeBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        // reported like an unknown client
+        assertEquals("OAUTH_ERROR", response.get("status").getAsString());
+        assertEquals("invalid_client", response.get("error").getAsString());
+        assertEquals(401, response.get("statusCode").getAsInt());
+
+        Thread.sleep(1000);
+
+        // the refresh token was not revoked
+        JsonObject refreshResponse = refreshTokens(main, client, refreshToken);
+        assertEquals("OK", refreshResponse.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -638,6 +686,14 @@ public class TestOAuthClientAppOwnership {
                 appBase + "/recipe/oauth/auth/requests/consent/accept?consentChallenge="
                         + URLEncoder.encode(consentChallenge, StandardCharsets.UTF_8),
                 body, 5000, 20000, null, SemVer.v5_2.get(), "");
+    }
+
+    // the OAUTH_ERROR the OAuth provider returns for an unknown login/consent challenge
+    private static void assertChallengeNotFound(JsonObject response) {
+        assertEquals("OAUTH_ERROR", response.get("status").getAsString());
+        assertEquals("Not Found", response.get("error").getAsString());
+        assertEquals("Unable to locate the requested resource", response.get("errorDescription").getAsString());
+        assertEquals(404, response.get("statusCode").getAsInt());
     }
 
     private static Map<String, String> queryOfRedirect(String redirectTo) throws Exception {

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
+import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -62,7 +63,8 @@ public class OAuthGetAuthConsentRequestAPI extends WebserverAPI {
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);
         } catch (OAuthClientNotFoundException e) {
-            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+            // reported like an unknown challenge, so that challenges of other apps cannot be told apart
+            OAuthProxyHelper.handleOAuthAPIException(resp, OAuth.newChallengeNotFoundException());
         }
     }
 }

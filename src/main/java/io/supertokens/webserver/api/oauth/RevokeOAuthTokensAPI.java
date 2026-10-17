@@ -12,9 +12,11 @@ import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -43,6 +45,18 @@ public class RevokeOAuthTokensAPI extends WebserverAPI {
 
             OAuth.revokeTokensForClientId(main, appIdentifier, storage, clientId);
 
+            try {
+                StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
+            } catch (OAuthClientNotFoundException e) {
+                // This app has no such client (it may belong to another app that uses the same OAuth provider),
+                // so there are no tokens of it to revoke in this app. The OAuth provider is not called, since that
+                // would delete the tokens of the other app's client.
+                JsonObject finalResponse = new JsonObject();
+                finalResponse.addProperty("status", "OK");
+                super.sendJsonResponse(200, finalResponse, resp);
+                return;
+            }
+
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("client_id", clientId);
 
@@ -50,7 +64,7 @@ public class RevokeOAuthTokensAPI extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
-                clientId, // clientIdToCheck
+                clientId, // clientIdToCheck (already checked above, kept as a safeguard)
                 "/admin/oauth2/tokens", // proxyPath
                 true, // proxyToAdmin
                 false, // camelToSnakeCaseConversion

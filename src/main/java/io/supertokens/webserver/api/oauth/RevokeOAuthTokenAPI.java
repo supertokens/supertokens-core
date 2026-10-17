@@ -9,6 +9,8 @@ import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -131,11 +133,20 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     formFields.put("client_secret", clientSecret);
                 }
 
+                try {
+                    StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
+                } catch (OAuthClientNotFoundException e) {
+                    // the client may belong to another app that uses the same OAuth provider. This is reported
+                    // like an unknown client, as the OAuth provider would.
+                    OAuthProxyHelper.handleOAuthAPIException(resp, OAuth.newInvalidClientException());
+                    return;
+                }
+
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
-                    clientId, //clientIdToCheck
+                    clientId, //clientIdToCheck (already checked above, kept as a safeguard)
                     "/oauth2/revoke", // path
                     false, // proxyToAdmin
                     false, // camelToSnakeCaseConversion

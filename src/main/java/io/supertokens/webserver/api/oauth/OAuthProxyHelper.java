@@ -107,8 +107,8 @@ public class OAuthProxyHelper {
 
     /**
      * Makes sure that the login/consent challenge in queryParams belongs to an OAuth client of this app.
-     * Returns false (after sending CLIENT_NOT_FOUND_ERROR or OAUTH_ERROR) if it does not, or if the challenge
-     * could not be resolved.
+     * Returns false (after sending an OAUTH_ERROR, the same as for an unknown challenge) if it does not, or if
+     * the challenge could not be resolved.
      */
     public static boolean checkChallengeBelongsToApp(Main main, HttpServletResponse resp, AppIdentifier appIdentifier,
                                                      Storage storage, String challengeRequestPath,
@@ -117,8 +117,6 @@ public class OAuthProxyHelper {
         try {
             OAuth.checkChallengeBelongsToApp(main, appIdentifier, storage, challengeRequestPath, queryParams);
             return true;
-        } catch (OAuthClientNotFoundException e) {
-            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
             handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {

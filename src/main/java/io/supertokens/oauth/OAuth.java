@@ -269,21 +269,44 @@ public class OAuth {
     }
 
     /**
+     * The error the OAuth provider returns for a login/consent challenge it does not know. A challenge whose client
+     * belongs to another app is reported with the same error, so that it is indistinguishable from an unknown one.
+     */
+    public static OAuthAPIException newChallengeNotFoundException() {
+        return new OAuthAPIException("Not Found", "Unable to locate the requested resource", 404);
+    }
+
+    /**
+     * The error the OAuth provider returns when client authentication fails (e.g. unknown client). A client of
+     * another app is reported with the same error.
+     */
+    public static OAuthAPIException newInvalidClientException() {
+        return new OAuthAPIException("invalid_client",
+                "Client authentication failed (e.g., unknown client, no client authentication included, or " +
+                        "unsupported authentication method).", 401);
+    }
+
+    /**
      * Fetches a login or consent request from the OAuth provider (challengeRequestPath is
      * /admin/oauth2/auth/requests/login or /admin/oauth2/auth/requests/consent) and makes sure that the OAuth
      * client of the request belongs to the given app. This must be called before a caller supplied challenge
      * is accepted or rejected, since the OAuth provider may be shared between apps.
      *
-     * @throws OAuthClientNotFoundException if the client of the request is not a client of this app
-     * @throws OAuthAPIException            if the OAuth provider returns an error for the challenge
+     * @throws OAuthAPIException if the OAuth provider returns an error for the challenge, or (with the same
+     *                           error as for an unknown challenge) if its client is not a client of this app
      */
     public static void checkChallengeBelongsToApp(Main main, AppIdentifier appIdentifier, Storage storage,
                                                   String challengeRequestPath, Map<String, String> queryParams)
-            throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException,
-            FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
-        HttpRequestForOAuthProvider.Response response = doOAuthProxyGET(main, appIdentifier, storage,
-                null, // the client is not known yet, it is checked below
-                challengeRequestPath, true, true, queryParams, new HashMap<>());
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException,
+            InvalidConfigException, IOException, OAuthAPIException {
+        HttpRequestForOAuthProvider.Response response;
+        try {
+            response = doOAuthProxyGET(main, appIdentifier, storage,
+                    null, // the client is not known yet, it is checked below
+                    challengeRequestPath, true, true, queryParams, new HashMap<>());
+        } catch (OAuthClientNotFoundException e) {
+            throw newChallengeNotFoundException();
+        }
 
         String clientId = null;
         if (response.jsonResponse != null && response.jsonResponse.isJsonObject()) {
@@ -297,10 +320,14 @@ public class OAuth {
         }
 
         if (clientId == null) {
-            throw new OAuthClientNotFoundException();
+            throw newChallengeNotFoundException();
         }
 
-        StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId); // may throw OAuthClientNotFoundException
+        try {
+            StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
+        } catch (OAuthClientNotFoundException e) {
+            throw newChallengeNotFoundException();
+        }
     }
 
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
