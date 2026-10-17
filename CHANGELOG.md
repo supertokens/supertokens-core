@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- The API-key check now fails closed when the app in the request path does not resolve: it is enforced against the nearest existing ancestor (the connection URI domain's public app, then the base config) instead of being skipped. With `api_keys` or `supertokens_saas_secret` configured there, a request for an unknown app without a valid key now gets `401 Invalid API key`, the same as a request with a wrong key, instead of reaching the handler. IP allow/deny rules fall back the same way.
+- Multitenancy: the in-memory set of connection URI domains is rebuilt into a new set and published in one step, so requests served while a tenant is created or updated no longer see a connection URI domain as temporarily missing.
+- Multitenancy: the refresh that runs after a tenant/app/connection URI domain create or update only takes the config of the changed tenant (and the tenants inheriting from it) from the database. A config change of another tenant that is already in the database but not yet loaded (e.g. an `api_keys` rotation made through another core instance) is no longer recorded as loaded without being applied, so the next refresh still applies it.
+
 ## [12.3.1]
 
 ### Security
