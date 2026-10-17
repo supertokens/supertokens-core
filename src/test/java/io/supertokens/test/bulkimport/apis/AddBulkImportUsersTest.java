@@ -629,6 +629,15 @@ public class AddBulkImportUsersTest {
                     + "\"email\":\"janedoe@example.com\",\"passwordHash\":\"" + passwordHash
                     + "\",\"hashingAlgorithm\":\"bcrypt\",\"tenantIds\":[]}]}").getAsJsonObject();
 
+            // a login method with an invalid recipeId is not parsed: the index still refers to the request
+            JsonObject userWithInvalidRecipeFirst = parser.parse("{\"loginMethods\":[{\"recipeId\":\"foo\"},"
+                    + "{\"recipeId\":\"emailpassword\",\"email\":\"jim@example.com\",\"plainTextPassword\":\""
+                    + plainTextPassword + "\",\"tenantIds\":[]}]}").getAsJsonObject();
+            JsonArray usersWithInvalidRecipeFirst = new JsonArray();
+            usersWithInvalidRecipeFirst.add(userWithInvalidRecipeFirst);
+            JsonObject bulkRequestWithInvalidRecipeFirst = new JsonObject();
+            bulkRequestWithInvalidRecipeFirst.add("users", usersWithInvalidRecipeFirst);
+
             JsonArray users = new JsonArray();
             users.add(userWithPlainTextPassword);
             users.add(userWithPasswordHash);
@@ -643,7 +652,8 @@ public class AddBulkImportUsersTest {
             for (String[] endpointAndBody : new String[][]{
                     {"http://localhost:3567/bulk-import/users", bulkRequest.toString()},
                     {"http://localhost:3567/bulk-import/import", userWithPlainTextPassword.toString()},
-                    {"http://localhost:3567/bulk-import/import", userWithPasswordHash.toString()}}) {
+                    {"http://localhost:3567/bulk-import/import", userWithPasswordHash.toString()},
+                    {"http://localhost:3567/bulk-import/users", bulkRequestWithInvalidRecipeFirst.toString()}}) {
                 try {
                     HttpRequestForTesting.sendJsonPOSTRequest(main, "", endpointAndBody[0],
                             parser.parse(endpointAndBody[1]).getAsJsonObject(), 1000, 1000, null,
@@ -658,12 +668,16 @@ public class AddBulkImportUsersTest {
             // The error structure is unchanged; the login method is referred to by index and recipe
             assertTrue(responses.get(0), responses.get(0).contains("{\"error\":\"" + genericErrMsg
                     + "\",\"users\":[{\"index\":0,\"errors\":[\"TOTP secretKey is too long. Max length is 256.\","
-                    + "\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]},"
-                    + "{\"index\":1,\"errors\":[\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}]}"));
+                    + "\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]},"
+                    + "{\"index\":1,\"errors\":[\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}]}"));
             assertTrue(responses.get(1), responses.get(1).contains("{\"errors\":[\"TOTP secretKey is too long. "
-                    + "Max length is 256.\",\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}"));
+                    + "Max length is 256.\",\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}"));
             assertTrue(responses.get(2), responses.get(2).contains(
-                    "{\"errors\":[\"LoginMethod at index 0 (recipeId: emailpassword) has no tenantId\"]}"));
+                    "{\"errors\":[\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}"));
+
+            assertTrue(responses.get(3), responses.get(3).contains(
+                    "\"LoginMethod at loginMethods[1] (recipeId: emailpassword) has no tenantId\""));
+            assertFalse(responses.get(3), responses.get(3).contains("loginMethods[0] (recipeId"));
 
             // the errors are logged by the webserver: neither the logs nor the exported log events contain secrets
             String exported = otel.getAllExportedText();
@@ -690,6 +704,25 @@ public class AddBulkImportUsersTest {
                     BulkImport.redactTotpSecrets(
                             "Batch entry 0 INSERT ... VALUES ('userId', 'd1', 'TOTPSECRETVALUEFORTEST') was aborted",
                             List.of(device)));
+            // a secret that is a prefix of another one does not leave the rest of the longer one behind,
+            // whatever the order of the devices
+            TOTPDevice shortDevice = new TOTPDevice("userId", "d2", "JBSWY3DP", 30, 1, true, 0);
+            TOTPDevice longDevice = new TOTPDevice("userId", "d3", "JBSWY3DPEHPK3PXP", 30, 1, true, 0);
+            String batchMessage = "Batch entry 1 VALUES ('JBSWY3DPEHPK3PXP') and ('JBSWY3DP') was aborted";
+            for (List<TOTPDevice> devices : List.of(List.of(shortDevice, longDevice),
+                    List.of(longDevice, shortDevice))) {
+                assertEquals("Batch entry 1 VALUES ('<redacted>') and ('<redacted>') was aborted",
+                        BulkImport.redactTotpSecrets(batchMessage, devices));
+            }
+            // secrets rendered as escaped SQL literals are redacted too
+            TOTPDevice quotedDevice = new TOTPDevice("userId", "d4", "SECRET'WITHQUOTE", 30, 1, true, 0);
+            assertEquals("VALUES ('<redacted>')",
+                    BulkImport.redactTotpSecrets("VALUES ('SECRET''WITHQUOTE')", List.of(quotedDevice)));
+            // too short to be redacted safely: the message is dropped instead of being mangled or leaking it
+            TOTPDevice tinyDevice = new TOTPDevice("userId", "d5", "A1", 30, 1, true, 0);
+            assertEquals(BulkImport.TOTP_DEVICE_ERROR_DETAILS_OMITTED,
+                    BulkImport.redactTotpSecrets("Batch entry 1 VALUES ('A1') was aborted",
+                            List.of(longDevice, tinyDevice)));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

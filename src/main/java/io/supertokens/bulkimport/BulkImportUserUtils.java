@@ -66,11 +66,16 @@ public class BulkImportUserUtils {
                 JsonObject.class, errors, ".");
         List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
-        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode);
+        // Position of each parsed login method in the request's loginMethods array (login methods with an invalid
+        // recipeId are not parsed, so the position in the parsed list can differ)
+        Map<LoginMethod, Integer> requestIndexByLoginMethod = new IdentityHashMap<>();
+        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode,
+                requestIndexByLoginMethod);
 
         externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
 
-        validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
+        validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods,
+                requestIndexByLoginMethod, errors);
 
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
@@ -150,7 +155,7 @@ public class BulkImportUserUtils {
     }
 
     private List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            List<String> errors, IDMode idMode)
+            List<String> errors, IDMode idMode, Map<LoginMethod, Integer> requestIndexByLoginMethod)
             throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT,
                 true, JsonArray.class, errors, ".");
@@ -174,8 +179,9 @@ public class BulkImportUserUtils {
 
         List<LoginMethod> loginMethods = new ArrayList<>();
 
-        for (JsonElement jsonLoginMethod : jsonLoginMethods) {
-            JsonObject jsonLoginMethodObj = jsonLoginMethod.getAsJsonObject();
+        for (int requestIndex = 0; requestIndex < jsonLoginMethods.size(); requestIndex++) {
+            JsonObject jsonLoginMethodObj = jsonLoginMethods.get(requestIndex).getAsJsonObject();
+            int parsedLoginMethodsBefore = loginMethods.size();
 
             String recipeId = parseAndValidateFieldType(jsonLoginMethodObj, "recipeId", ValueType.STRING, true,
                     String.class, errors, " for a loginMethod.");
@@ -259,6 +265,9 @@ public class BulkImportUserUtils {
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
                         timeJoinedInMSSinceEpoch, email, null, null, null,
                         null, null, phoneNumber, supertokensUserId));
+            }
+            if (loginMethods.size() > parsedLoginMethodsBefore) {
+                requestIndexByLoginMethod.put(loginMethods.get(loginMethods.size() - 1), requestIndex);
             }
         }
         return loginMethods;
@@ -545,7 +554,8 @@ public class BulkImportUserUtils {
     }
 
     private void validateTenantIdsForRoleAndLoginMethods(Main main, AppIdentifier appIdentifier,
-            List<UserRole> userRoles, List<LoginMethod> loginMethods, List<String> errors)
+            List<UserRole> userRoles, List<LoginMethod> loginMethods,
+            Map<LoginMethod, Integer> requestIndexByLoginMethod, List<String> errors)
             throws TenantOrAppNotFoundException {
         if (loginMethods == null) {
             return;
@@ -565,13 +575,13 @@ public class BulkImportUserUtils {
 
         // Now validate that all the tenants share the same storage
         String commonTenantUserPoolId = null;
-        for (int loginMethodIndex = 0; loginMethodIndex < loginMethods.size(); loginMethodIndex++) {
-            LoginMethod loginMethod = loginMethods.get(loginMethodIndex);
+        for (LoginMethod loginMethod : loginMethods) {
             if (loginMethod.tenantIds == null || loginMethod.tenantIds.isEmpty()) {
-                // The login method is referred to by its position and recipe: serialising it would put its
-                // credentials (plainTextPassword, passwordHash) into the error message, responses and logs.
-                errors.add("LoginMethod at index " + loginMethodIndex + " (recipeId: " + loginMethod.recipeId
-                        + ") has no tenantId");
+                // The login method is referred to by its position in the request and its recipe: serialising it
+                // would put its credentials (plainTextPassword, passwordHash) into the error message, responses
+                // and logs.
+                errors.add("LoginMethod at loginMethods[" + requestIndexByLoginMethod.get(loginMethod)
+                        + "] (recipeId: " + loginMethod.recipeId + ") has no tenantId");
                 continue;
             }
             for (String tenantId : loginMethod.tenantIds) {
