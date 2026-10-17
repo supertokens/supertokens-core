@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- User roles: `POST /recipe/user/role/remove` and `GET /recipe/role/users` now check that the role exists in the app's public tenant storage (where roles are stored), as `PUT /recipe/user/role` already did, and remove or list the user-role mappings in the tenant's own storage. Previously both returned `UNKNOWN_ROLE_ERROR` for tenants on a separate database, so a role could not be revoked from a single user there. Removing a user's role also deletes the mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
+
 ## [12.3.1]
 
 ### Security

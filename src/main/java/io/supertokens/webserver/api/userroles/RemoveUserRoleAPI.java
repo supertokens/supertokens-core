@@ -65,7 +65,7 @@ public class RemoveUserRoleAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            boolean didUserHaveRole = UserRoles.removeUserRole(tenantIdentifier, storage, userId, role);
+            boolean didUserHaveRole = UserRoles.removeUserRole(main, tenantIdentifier, storage, userId, role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
