@@ -21,6 +21,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - OpenTelemetry: method spans (`@WithinOtelSpan`) no longer export raw argument and return values. Only the type is recorded, plus the value for an allow-list of non-sensitive types (tenant/app identifiers, booleans, numbers, enums); configs (database credentials, `api_keys`, `supertokens_saas_secret`), strings and other objects are recorded by type only, and exceptions by type without their message.
 - Bulk import: validation errors no longer embed the login method (including `plainTextPassword` / `passwordHash`) or the TOTP `secretKey`. A login method without a tenant is now reported as `LoginMethod at loginMethods[<i>] (recipeId: <recipe>) has no tenantId` (`<i>` is the position in the request's `loginMethods` array), and an over-long TOTP secret as `TOTP secretKey is too long. Max length is 256.`. TOTP secrets are also removed from the stored `E036` database error message (if a secret is too short to remove safely, the database error details are omitted).
 - Dashboard: `GET /recipe/dashboard/tenant/core-config` no longer returns secret config values, whether or not the core runs in SaaS mode. `firebase_password_hashing_signer_key` is no longer listed (like `api_keys`); database password fields (e.g. `postgresql_password`) are returned as `********`, and passwords inside connection URIs or connection attributes are replaced with `********`.
+- WebAuthn: the stored credential id is taken from the verified attestation; a registration whose `id` or `rawId` differs from it is rejected (`INVALID_CREDENTIALS_ERROR`), and a credential id already registered in the app under another relying party id cannot be registered again (sign-up and credential register both return `INVALID_AUTHENTICATOR_ERROR` with reason "Credential already registered"; a duplicate under the same relying party id still returns `CREDENTIAL_ALREADY_EXISTS_ERROR` from credential register).
+- WebAuthn: sign-in returns the owner of the stored credential whose public key verified the assertion, and only accepts a credential registered for the relying party id of the sign-in options.
+- WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
+- WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
+
+### Changes
+
+- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the WebAuthn credential lookups by id. The PostgreSQL plugin adds the same index (plugin 9.9.2).
+- In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
 
 ## [12.3.1]
 
