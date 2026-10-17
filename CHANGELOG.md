@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Multitenancy: a CDI 5.0 tenant create/update no longer turns a login method that is enabled only for `requiredSecondaryFactors` into a first factor. When such an update would leave `firstFactors` unset (for example enabling `emailPassword` on a tenant whose only enabled method is a required passwordless second factor, or sending `firstFactors: null`), the core now stores `firstFactors` explicitly with only the login methods the caller sees as enabled or enables in that call, so the result no longer depends on the order of the calls. Tenants already stored with the wider configuration are not changed; re-apply their `firstFactors` to tighten them.
+
 ## [12.3.1]
 
 ### Security
