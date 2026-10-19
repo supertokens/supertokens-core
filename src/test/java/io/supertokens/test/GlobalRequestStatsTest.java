@@ -33,6 +33,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -197,6 +199,70 @@ public class GlobalRequestStatsTest {
         } catch (HttpResponseException e) {
             assertEquals(404, e.statusCode);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    private static final String API_KEY = "adslfkj398erchpsodihfp3w9q8ehcpioh";
+    private static final String SAAS_SECRET = "abctijenbogweg=-2438243u98-abctijenbocdsfcegweg=-2438243u98ef23c";
+
+    // GET with the given api-key header (none if null); returns the status code.
+    private static int statusWithApiKey(TestingProcess process, String url, String apiKey) throws Exception {
+        Map<String, String> headers = new HashMap<>();
+        if (apiKey != null) {
+            headers.put("api-key", apiKey);
+        }
+        try {
+            HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "", url, null, headers, 2000,
+                    2000, null, Utils.getCdiVersionStringLatestForTests(), "");
+            return 200;
+        } catch (HttpResponseException e) {
+            return e.statusCode;
+        }
+    }
+
+    // The counts span every CUD and app, so when supertokens_saas_secret is set only that secret unlocks them: an
+    // app's api key is not enough, also not through an /appid-<x>/ prefix the core does not know.
+    @Test
+    public void testRequiresSaaSSecretWhenConfigured() throws Exception {
+        Utils.setValueInConfig("admin_port", adminPort + "");
+        Utils.setValueInConfig("api_keys", API_KEY);
+        Utils.setValueInConfig("supertokens_saas_secret", SAAS_SECRET);
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String url = admin + "/global-request-stats";
+        String unknownAppUrl = admin + "/appid-doesnotexist/global-request-stats";
+        assertEquals(401, statusWithApiKey(process, url, null));
+        assertEquals(401, statusWithApiKey(process, url, API_KEY));
+        assertEquals(401, statusWithApiKey(process, unknownAppUrl, null));
+        assertEquals(401, statusWithApiKey(process, unknownAppUrl, API_KEY));
+        assertEquals(200, statusWithApiKey(process, url, SAAS_SECRET));
+        assertEquals(200, statusWithApiKey(process, unknownAppUrl, SAAS_SECRET));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // Without supertokens_saas_secret the base config's api_keys are required, whatever app the path names: an
+    // unknown /appid-<x>/ prefix used to skip the api-key check entirely.
+    @Test
+    public void testRequiresBaseApiKeyWithoutSaaSSecret() throws Exception {
+        Utils.setValueInConfig("admin_port", adminPort + "");
+        Utils.setValueInConfig("api_keys", API_KEY);
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String url = admin + "/global-request-stats";
+        String unknownAppUrl = admin + "/appid-doesnotexist/global-request-stats";
+        assertEquals(401, statusWithApiKey(process, url, null));
+        assertEquals(401, statusWithApiKey(process, url, "wrong-key-wrong-key-wrong-key"));
+        assertEquals(401, statusWithApiKey(process, unknownAppUrl, null));
+        assertEquals(200, statusWithApiKey(process, url, API_KEY));
+        assertEquals(200, statusWithApiKey(process, unknownAppUrl, API_KEY));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

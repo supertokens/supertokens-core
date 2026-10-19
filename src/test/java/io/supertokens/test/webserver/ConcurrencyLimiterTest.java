@@ -35,6 +35,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.ConcurrencyLimiter;
+import io.supertokens.webserver.GlobalRequestStats;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -63,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -225,6 +227,86 @@ public class ConcurrencyLimiterTest {
 
         assertEquals(200, filler.get(20, TimeUnit.SECONDS).status);
         ex.shutdown();
+        stop(process);
+    }
+
+    // ----- the /livez liveness probe is never capped either, also on the main port (admin_port unset) -----
+    @Test
+    public void testLivezIsExemptFromTheCap() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> filler = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        assertEquals(429, get(port, SLOW_PATH + "?ms=4000").status);
+        assertEquals(200, get(port, "/livez").status);
+
+        assertEquals(200, filler.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- requests on the admin connector skip the limiter entirely: never capped and never counted -----
+    @Test
+    public void testAdminConnectorRequestsSkipTheLimiter() throws Exception {
+        int adminPort = TestingProcessManager.getFreePort();
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("admin_port", adminPort + "");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        registerSlowServlet(process, SLOW_PATH + "-admin", WebserverAPI.RouteScope.ADMIN_ONLY);
+        int port = corePort();
+
+        ExecutorService ex = Executors.newFixedThreadPool(2);
+        Future<Resp> filler = ex.submit(() -> get(port, SLOW_PATH + "?ms=6000"));
+        waitForGlobalInFlight(process, 1, 15000);
+        // the CUD is at its cap and the pool counts as saturated, so the main port rejects
+        assertEquals(429, get(port, SLOW_PATH + "?ms=10").status);
+
+        // ...but the admin connector still serves the liveness probe and any other admin route
+        assertEquals(200, get(adminPort, "/livez").status);
+        Future<Resp> adminSlow = ex.submit(() -> get(adminPort, SLOW_PATH + "-admin?ms=2000"));
+        Thread.sleep(1000);
+        assertFalse(adminSlow.isDone());
+        // an admin request in flight does not count toward the main pool's saturation
+        assertEquals(1, ConcurrencyLimiter.getGlobalInFlightForTesting(process.getProcess()));
+        assertEquals(200, adminSlow.get(20, TimeUnit.SECONDS).status);
+
+        assertEquals(200, filler.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- a 429 from the cap is counted in the process-global /global-request-stats 4xx bucket -----
+    @Test
+    public void testCapRejectionIsCountedInGlobalRequestStats() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> filler = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+        assertEquals(429, get(port, SLOW_PATH + "?ms=4000").status);
+        assertEquals(200, filler.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+
+        JsonObject stats = GlobalRequestStats.getInstance(process.getProcess()).getStats();
+        assertEquals(1, stats.get("4xx").getAsLong());
+        assertEquals(1, stats.get("2xx").getAsLong());
+        assertEquals(2, stats.get("total").getAsLong());
+
         stop(process);
     }
 
@@ -612,10 +694,20 @@ public class ConcurrencyLimiterTest {
     }
 
     private void registerSlowServlet(TestingProcessManager.TestingProcess process) {
+        registerSlowServlet(process, SLOW_PATH, WebserverAPI.RouteScope.DATA_PLANE);
+    }
+
+    private void registerSlowServlet(TestingProcessManager.TestingProcess process, String path,
+                                     WebserverAPI.RouteScope routeScope) {
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             @Override
             public String getPath() {
-                return SLOW_PATH;
+                return path;
+            }
+
+            @Override
+            public RouteScope getRouteScope() {
+                return routeScope;
             }
 
             @Override

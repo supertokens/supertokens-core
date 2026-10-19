@@ -26,6 +26,7 @@ import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.session.Session;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
@@ -97,10 +98,10 @@ public class OAuthRefreshConnectionOwnershipTest {
     /**
      * Craft a minimal well-formed JWT that the OAuth provider would return as an access token. The non-rotating refresh
      * handler re-signs it with the Core signing keys ({@code OAuthToken.reSignToken} decodes without verifying),
-     * so the signature here is arbitrary. Deliberately carries no {@code sessionHandle} so the best-effort
-     * {@code updateLastActive} side-call (which may target another storage) is not exercised.
+     * so the signature here is arbitrary. Carries a {@code sessionHandle} only when one is given, which is what
+     * triggers the best-effort {@code updateLastActive} side-call (which may target another storage).
      */
-    private static String fakeProviderAccessToken() {
+    private static String fakeProviderAccessToken(String sessionHandle) {
         long now = System.currentTimeMillis() / 1000L;
         JsonObject header = new JsonObject();
         header.addProperty("typ", "JWT");
@@ -114,6 +115,9 @@ public class OAuthRefreshConnectionOwnershipTest {
         payload.addProperty("iat", now);
         payload.addProperty("exp", now + 3600);
         payload.addProperty("scp", "openid offline_access");
+        if (sessionHandle != null) {
+            payload.addProperty("sessionHandle", sessionHandle);
+        }
         Base64.Encoder enc = Base64.getUrlEncoder().withoutPadding();
         String h = enc.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
         String p = enc.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
@@ -123,12 +127,16 @@ public class OAuthRefreshConnectionOwnershipTest {
 
     /** Deterministic provider stub for introspect + exchange, driven by request path (no HTTP, no released con). */
     private static OAuth.DoOAuthProxyFormPOSTTestHook providerStub() {
+        return providerStub(null);
+    }
+
+    private static OAuth.DoOAuthProxyFormPOSTTestHook providerStub(String sessionHandle) {
         long exp = System.currentTimeMillis() / 1000L + 3600;
         return (path, proxyToAdmin, formFields) -> {
             JsonObject json = new JsonObject();
             if (path.equals("/oauth2/token")) {
                 // Token exchange → access-token / refresh-token pair.
-                json.addProperty("access_token", fakeProviderAccessToken());
+                json.addProperty("access_token", fakeProviderAccessToken(sessionHandle));
                 json.addProperty("refresh_token", "ory_rt_rotated_0001");
                 json.addProperty("expires_in", 3600);
                 json.addProperty("token_type", "bearer");
@@ -223,6 +231,53 @@ public class OAuthRefreshConnectionOwnershipTest {
         } finally {
             OAuth.doOAuthProxyFormPOSTTestHook = null;
             ConnectionPool.stopBorrowTracking();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * An access token that carries a {@code sessionHandle} makes the handler record the user's activity, which reads
+     * the session and its user-id mapping. Those reads borrow their own connections, so they must not run while the
+     * transaction connection is held.
+     */
+    @Test
+    public void nonRotatingRefresh_withSessionHandle_holdsExactlyOneConnection() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // The borrow gauge instruments the in-memory pool only; on another storage it would read 0.
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+
+        Main main = process.getProcess();
+        AppIdentifier appIdentifier = process.getAppForTesting().toAppIdentifier();
+        seedStorage(main, appIdentifier, true /* warm signing keys */);
+        String sessionHandle = Session.createNewSession(main, "someuserid", new JsonObject(),
+                new JsonObject()).session.handle;
+
+        OAuth.doOAuthProxyFormPOSTTestHook = providerStub(sessionHandle);
+        // Warn mode for the nested-acquisition guard: in its default throwing mode the nested read would fail
+        // before it is counted, and updateLastActive swallows that failure, so the peak would read 1 anyway.
+        ConnectionPool.setThrowOnNestedAcquisition(false);
+        try {
+            ConnectionPool.startBorrowTracking(false /* peak gauge only, do not enforce */);
+            JsonObject response = OAuthAPIHelper.token(main, refreshRequestBody());
+            ConnectionPool.stopBorrowTracking();
+
+            assertEquals("OK", response.get("status").getAsString());
+            int peak = ConnectionPool.getPeakConcurrentConnectionsPerThread();
+            assertEquals("recording the session's last-active time must not borrow a second DB connection while the"
+                    + " transaction connection is held (peak was " + peak + ")", 1, peak);
+        } finally {
+            OAuth.doOAuthProxyFormPOSTTestHook = null;
+            ConnectionPool.stopBorrowTracking();
+            ConnectionPool.setThrowOnNestedAcquisition(true);
         }
 
         process.kill();
