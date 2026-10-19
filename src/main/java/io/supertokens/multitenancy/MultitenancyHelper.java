@@ -405,11 +405,12 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         TenantConfig[] filtered = filterTenantConfigsForLoadOnlyCUD(inputTenantConfigs, loadOnlyCUD,
                 droppedTenantConfigs);
 
+        Set<String> currentlyLoadedCUDs = getCurrentlyLoadedConnectionUriDomains();
         for (TenantConfig dropped : droppedTenantConfigs) {
             // Only a CUD that is *currently loaded* (has live resources in the distributor) is worth
             // shouting about: replaceResourcesWithResourceKey is about to wipe its resources, which would
             // otherwise surface as a log-free TenantOrAppNotFoundException on every request for that CUD.
-            if (isConnectionUriDomainCurrentlyLoaded(dropped.tenantIdentifier.getConnectionUriDomain())) {
+            if (currentlyLoadedCUDs.contains(dropped.tenantIdentifier.getConnectionUriDomain())) {
                 Logging.error(main, dropped.tenantIdentifier,
                         "supertokens_saas_load_only_cud is set to '" + loadOnlyCUD + "', which excludes the "
                                 + "previously-loaded connectionUriDomain '"
@@ -450,17 +451,17 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return filtered.toArray(new TenantConfig[0]);
     }
 
-    private boolean isConnectionUriDomainCurrentlyLoaded(String connectionUriDomain) {
+    // Built once per refresh, so the drop check above is one set lookup per dropped tenant rather than a scan of
+    // every loaded tenant (this runs under the ResourceDistributor lock).
+    private Set<String> getCurrentlyLoadedConnectionUriDomains() {
+        Set<String> result = new HashSet<>();
         TenantConfig[] currentlyLoaded = this.tenantConfigs;
-        if (currentlyLoaded == null) {
-            return false;
-        }
-        for (TenantConfig tenantConfig : currentlyLoaded) {
-            if (tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(connectionUriDomain)) {
-                return true;
+        if (currentlyLoaded != null) {
+            for (TenantConfig tenantConfig : currentlyLoaded) {
+                result.add(tenantConfig.tenantIdentifier.getConnectionUriDomain());
             }
         }
-        return false;
+        return result;
     }
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {

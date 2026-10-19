@@ -265,7 +265,12 @@ public class CoreConfig {
     @ConfigDescription(
             "The port for a second webserver connector that serves liveness and control-plane routes from a thread " +
                     "pool separate from the data-plane pool. When set to null, the admin connector is disabled and " +
-                    "all routes are served on the main port exactly as before. (Default: null)")
+                    "all routes are served on the main port exactly as before. The admin port is NOT a separate " +
+                    "trust boundary: it applies the same 'api_keys' and IP-allow rules as the main port, binds the " +
+                    "same 'host', and has no credential of its own. It carries sensitive routes (e.g. '/ee/license', " +
+                    "which sets the license key, and '/global-request-stats'), so it is meant for the orchestrator / " +
+                    "control plane and should not be exposed beyond the network boundary your liveness check and " +
+                    "control plane already live in. (Default: null)")
     private Integer admin_port = null;
 
     @EnvName("ADMIN_MAX_SERVER_POOL_SIZE")
@@ -1121,7 +1126,10 @@ public class CoreConfig {
             if (admin_port < 1 || admin_port > 65535) {
                 throw new InvalidConfigException("'admin_port' must be between 1 and 65535 inclusive.");
             }
-            if (admin_port == port) {
+            // Compare against the effective port: the CLI port override is only applied further down.
+            Integer cliPortOverride = CLIOptions.get(main).getPort();
+            int effectivePort = cliPortOverride != null ? cliPortOverride : port;
+            if (admin_port == effectivePort) {
                 throw new InvalidConfigException("'admin_port' must be different from 'port'.");
             }
             if (admin_max_server_pool_size <= 0) {

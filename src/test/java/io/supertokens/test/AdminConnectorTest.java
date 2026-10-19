@@ -261,11 +261,13 @@ public class AdminConnectorTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    // Setting admin_port equal to the main port is rejected at startup.
+    // Setting admin_port equal to the main port is rejected at startup. The main port is the one the CLI sets
+    // (the harness always passes one), which overrides the config.yaml port, so that is the one compared against.
     @Test
     public void testAdminPortSameAsMainPortIsRejected() throws Exception {
-        Utils.setValueInConfig("admin_port", "3567");
-        String[] args = {"../"};
+        int port = TestingProcessManager.getFreePort();
+        Utils.setValueInConfig("admin_port", port + "");
+        String[] args = {"../", "port=" + port};
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         io.supertokens.ProcessState.EventAndException e =
                 process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);

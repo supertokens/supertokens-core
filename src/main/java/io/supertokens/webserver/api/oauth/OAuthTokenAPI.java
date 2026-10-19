@@ -394,6 +394,8 @@ public class OAuthTokenAPI extends WebserverAPI {
             throws IOException, ServletException {
 
         final JsonObject[] finalResponse = {null};
+        // Session handle from the re-signed access token, for the best-effort updateLastActive after the commit.
+        final String[] sessionHandleForLastActive = {null};
 
         // Pre-warm the signing-key caches OUTSIDE the transaction so that token re-signing and JWT payload
         // verification inside the transaction below are served from cache and never borrow a second pool
@@ -500,11 +502,12 @@ public class OAuthTokenAPI extends WebserverAPI {
                             jti = atPayload.get("jti").getAsString();
                             if (atPayload.has("sessionHandle")) {
                                 sessionHandle = atPayload.get("sessionHandle").getAsString();
-                                // Best-effort side work that may target a DIFFERENT tenant's storage/pool than
-                                // the one holding `con`; it must NOT be threaded onto `con` (that would run it
-                                // against the wrong storage). Leave it as a separate call — do not "helpfully"
-                                // fold it into the transaction (PLAN-017 §5.4).
-                                updateLastActive(appIdentifier, sessionHandle);
+                                // updateLastActive is best-effort side work that may target a DIFFERENT
+                                // tenant's storage/pool than the one holding `con`, so it must NOT be threaded
+                                // onto `con` (that would run it against the wrong storage). Its reads would
+                                // borrow a second connection while `con` is held, so it runs after the commit,
+                                // below (PLAN-017 §5.4).
+                                sessionHandleForLastActive[0] = sessionHandle;
                             }
                         } catch (TryRefreshTokenException e) {
                             Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
@@ -627,6 +630,9 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         // Send response only if the transaction committed (null = error already sent by proxyFormPOST)
         if (finalResponse[0] != null) {
+            if (sessionHandleForLastActive[0] != null) {
+                updateLastActive(appIdentifier, sessionHandleForLastActive[0]);
+            }
             super.sendJsonResponse(200, finalResponse[0], resp);
         }
     }
