@@ -484,11 +484,22 @@ public abstract class WebserverAPI extends HttpServlet {
             HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
             BadPermissionException {
+        return enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                isCallFromAuthRecipeAPI, false);
+    }
+
+    // ignoreUserIdMappingOptOut: see StorageLayer.findStorageAndUserIdMappingForUser. Only for the remove-mapping
+    // and delete-user APIs.
+    protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+            HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI,
+            boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
+            BadPermissionException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
             return StorageLayer.findStorageAndUserIdMappingForUser(
-                    main, appIdentifier, storages, userId, userIdType);
+                    main, appIdentifier, storages, userId, userIdType, ignoreUserIdMappingOptOut);
         } catch (UnknownUserIdException e) {
             if (isCallFromAuthRecipeAPI) {
                 throw e;

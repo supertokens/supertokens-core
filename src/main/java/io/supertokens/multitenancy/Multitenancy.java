@@ -306,30 +306,63 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    // disable_user_id_mapping hides existing mappings, so it can only be turned on for an app that has none. Apps
-    // where it is already on were checked when it was turned on, and mapping creation is rejected since then.
+    // disable_user_id_mapping hides existing mappings, so it can only be on for an app whose databases have none.
+    // The check runs against the database each prospective config selects, not the one currently loaded, so it
+    // also covers an app that moves to another database while the flag is on. An app that keeps its database
+    // and already has the flag on was checked when the flag was turned on, and mapping creation is rejected
+    // since then.
     private static void assertNoUserIdMappingsWhereMappingGetsDisabled(Main main,
                                                                        Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
-        Set<AppIdentifier> checkedApps = new HashSet<>();
+        Set<String> checked = new HashSet<>();
         for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
             JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
             if (disabled == null || disabled.isJsonNull() || !disabled.getAsBoolean()) {
                 continue;
             }
-            AppIdentifier appIdentifier = entry.getKey().toAppIdentifier();
-            if (!checkedApps.add(appIdentifier) || UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+            TenantIdentifier tenantIdentifier = entry.getKey();
+            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+            String userPoolId = StorageLayer.getNewStorageInstance(main, entry.getValue(), tenantIdentifier, true)
+                    .getUserPoolId();
+            if (!checked.add(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId() + "|"
+                    + userPoolId)) {
                 continue;
             }
-            try {
-                if (UserIdMapping.hasUserIdMappings(main, appIdentifier)) {
-                    throw new InvalidConfigException(
-                            "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
-                }
-            } catch (TenantOrAppNotFoundException e) {
-                // the app is being created, so it has no users yet
+            if (UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)
+                    && userPoolId.equals(currentUserPoolId(main, tenantIdentifier))) {
+                continue;
+            }
+            Storage storage = findLoadedStorageForUserPool(main, userPoolId);
+            if (storage == null) {
+                // Checking a database this core has not loaded would mean initialising it here.
+                throw new InvalidConfigException("disable_user_id_mapping cannot be on while the app moves to a "
+                        + "database that is not loaded yet: add the database with disable_user_id_mapping off, "
+                        + "then turn it on");
+            }
+            if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
+                throw new InvalidConfigException(
+                        "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
             }
         }
+    }
+
+    private static String currentUserPoolId(Main main, TenantIdentifier tenantIdentifier) {
+        try {
+            return StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
+        } catch (TenantOrAppNotFoundException e) {
+            return null; // the tenant is being created
+        }
+    }
+
+    private static Storage findLoadedStorageForUserPool(Main main, String userPoolId) {
+        for (ResourceDistributor.SingletonResource resource : main.getResourceDistributor()
+                .getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY).values()) {
+            Storage storage = ((StorageLayer) resource).getUnderlyingStorage();
+            if (storage.getUserPoolId().equals(userPoolId)) {
+                return storage;
+            }
+        }
+        return null;
     }
 
     /**

@@ -503,6 +503,23 @@ public class UserIdMapping {
         return readUserIdMapping(appIdentifier, storage, userId, userIdType);
     }
 
+    // Ignores disable_user_id_mapping. Only for paths that must still find a mapping created before the opt-out
+    // (or by a core that had not refreshed its config yet): removing mappings, deleting users and revoking
+    // sessions on link/unlink. Everything else reads through getUserIdMapping, which skips the lookup.
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+            AppIdentifier appIdentifier, Storage storage, String userId, UserIdType userIdType)
+            throws StorageQueryException {
+        return readUserIdMapping(appIdentifier, storage, userId, userIdType);
+    }
+
+    // Transaction variant of getUserIdMappingIgnoringOptOut, with the same restriction on where to use it.
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+            TransactionConnection con, AppIdentifier appIdentifier, Storage storage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        return readUserIdMapping(con, appIdentifier, storage, userId, userIdType);
+    }
+
     // A single read, so it runs as a plain autocommit read: wrapping it in a transaction only adds round trips.
     // Ignores disable_user_id_mapping, so removal can still find mappings created before the opt-out.
     private static io.supertokens.pluginInterface.useridmapping.UserIdMapping readUserIdMapping(
@@ -554,6 +571,13 @@ public class UserIdMapping {
         if (isUserIdMappingDisabled(main, appIdentifier)) {
             return null;
         }
+        return readUserIdMapping(con, appIdentifier, storage, userId, userIdType);
+    }
+
+    private static io.supertokens.pluginInterface.useridmapping.UserIdMapping readUserIdMapping(
+            TransactionConnection con, AppIdentifier appIdentifier, Storage storage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
         UserIdMappingSQLStorage uidMappingStorage =
                 (UserIdMappingSQLStorage) storage;
 

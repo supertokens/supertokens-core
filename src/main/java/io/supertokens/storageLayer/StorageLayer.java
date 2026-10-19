@@ -588,6 +588,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
             UserIdType userIdType) throws StorageQueryException, UnknownUserIdException {
+        return findStorageAndUserIdMappingForUser(main, appIdentifier, storages, userId, userIdType, false);
+    }
+
+    // ignoreUserIdMappingOptOut: find mappings even when disable_user_id_mapping is on. Only for removing a
+    // mapping or deleting a user, which must still see a mapping created before the opt-out.
+    public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
+            Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
+            UserIdType userIdType, boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException, UnknownUserIdException {
 
         if (storages.length == 0) {
             throw new IllegalStateException("should never come here");
@@ -602,9 +611,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (userIdType == UserIdType.SUPERTOKENS) {
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                            appIdentifier, storage,
-                            userId, userIdType);
+                    UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                            ignoreUserIdMappingOptOut);
 
                     return new StorageAndUserIdMapping(storage, mapping);
                 }
@@ -615,9 +623,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         } else if (userIdType == UserIdType.EXTERNAL) {
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                        appIdentifier, storage,
-                        userId, userIdType);
+                UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                        ignoreUserIdMappingOptOut);
 
                 if (mapping != null) {
                     return new StorageAndUserIdMapping(storage, mapping);
@@ -630,9 +637,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             // look for the user in auth recipes as supertokens user id
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                            appIdentifier, storage,
-                            userId, userIdType);
+                    UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                            ignoreUserIdMappingOptOut);
 
                     return new StorageAndUserIdMapping(storage, mapping);
                 }
@@ -640,9 +646,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
             // Look for user in auth recipes using user id mapping
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                        appIdentifier, storage,
-                        userId, userIdType);
+                UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                        ignoreUserIdMappingOptOut);
 
                 if (mapping != null) {
                     return new StorageAndUserIdMapping(storage, mapping);
@@ -664,6 +669,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         } else {
             throw new IllegalStateException("should never come here");
         }
+    }
+
+    private static UserIdMapping readMapping(Main main, AppIdentifier appIdentifier, Storage storage, String userId,
+                                             UserIdType userIdType, boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException {
+        if (ignoreUserIdMappingOptOut) {
+            return io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage,
+                    userId, userIdType);
+        }
+        return io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId,
+                userIdType);
     }
 
     public static List<StorageAndUserIdMapping> findStorageAndUserIdMappingForBulkUserImport(

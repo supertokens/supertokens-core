@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
@@ -28,6 +29,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.session.Session;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -49,6 +51,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.usermetadata.UserMetadata;
 import jakarta.servlet.ServletException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -178,6 +181,94 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // A mapping left over from the config refresh window can be removed over the API by its external id, with
+    // userIdType EXTERNAL, ANY, or none (the SDK default, which the core treats as ANY).
+    @Test
+    public void leftoverMappingIsRemovableByItsExternalIdOverTheApi() throws Exception {
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+
+        for (String userIdType : new String[]{"EXTERNAL", "ANY", null}) {
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), "external-id");
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("userId", "external-id");
+            if (userIdType != null) {
+                remove.addProperty("userIdType", userIdType);
+            }
+            JsonObject response = postOk(process, "/recipe/userid/map/remove", remove, "useridmapping");
+            assertTrue(String.valueOf(userIdType), response.get("didMappingExist").getAsBoolean());
+            assertFalse(String.valueOf(userIdType),
+                    StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).hasUserIdMappings(app));
+        }
+
+        stop(process);
+    }
+
+    // Deleting a user with a leftover mapping also deletes what is stored under the external id: its sessions
+    // (so their refresh tokens stop working) and its metadata. Works by either id.
+    @Test
+    public void deletingAUserRemovesSessionsAndMetadataStoredUnderALeftoverMapping() throws Exception {
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        for (boolean deleteByExternalId : new boolean[]{false, true}) {
+            String externalId = "external-id-" + deleteByExternalId;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, externalId + "@example.com", "password123");
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), externalId);
+            createSession(process, externalId);
+            JsonObject metadata = new JsonObject();
+            metadata.addProperty("key", "value");
+            UserMetadata.updateUserMetadata(main, externalId, metadata);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("userId", deleteByExternalId ? externalId : user.getSupertokensUserId());
+            postOk(process, "/user/remove", remove, null);
+
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+            assertEquals(0, UserMetadata.getUserMetadata(main, externalId).entrySet().size());
+            assertFalse(StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).hasUserIdMappings(app));
+        }
+
+        stop(process);
+    }
+
+    // Linking a user with a leftover mapping revokes its sessions, which are stored under the external id.
+    @Test
+    public void linkingAUserRevokesSessionsStoredUnderALeftoverMapping() throws Exception {
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        plantLeftoverMapping(main, app, user.getSupertokensUserId(), "external-id");
+        createSession(process, "external-id");
+        assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, user.getSupertokensUserId(), primary.getSupertokensUserId());
+
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        stop(process);
+    }
+
     @Test
     public void cannotBeEnabledForAnAppWithMappings() throws Exception {
         String[] args = {"../"};
@@ -218,6 +309,38 @@ public class DisableUserIdMappingTest {
 
         // other apps are unaffected
         assertFalse(UserIdMapping.isUserIdMappingDisabled(main, process.getAppForTesting().toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // The check runs against the database the new config selects. A database this core has not loaded can't be
+    // checked without initialising it, so the flag can't be on in the update that moves the app there.
+    @Test
+    public void cannotKeepTheFlagOnWhileMovingToADatabaseThatIsNotLoaded() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database to move to
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+
+        TenantConfig moved = appConfig(a1, true);
+        moved.coreConfig.addProperty("postgresql_database_name", "st_disable_uidm_not_loaded");
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, moved, false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping cannot be on while the app moves to a database that is not loaded "
+                    + "yet: add the database with disable_user_id_mapping off, then turn it on", e.getMessage());
+        }
 
         stop(process);
     }
@@ -381,6 +504,13 @@ public class DisableUserIdMappingTest {
         T result = call.call();
         counts.put(request, Start.getUserIdMappingCallCountForTesting());
         return result;
+    }
+
+    // Writes a mapping straight to the storage, as a core that had not yet picked up disable_user_id_mapping would.
+    private static void plantLeftoverMapping(Main main, AppIdentifier app, String superTokensUserId,
+                                             String externalUserId) throws Exception {
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+                .createUserIdMapping(app, superTokensUserId, externalUserId, null);
     }
 
     private static TenantConfig appConfig(TenantIdentifier app, boolean disableUserIdMapping) {

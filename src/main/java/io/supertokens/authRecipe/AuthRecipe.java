@@ -158,8 +158,8 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
                 }
 
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                main, con, appIdentifier, authRecipeStorage,
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(
+                                con, appIdentifier, authRecipeStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
                 String resultUserId = mappingResult == null ? recipeUserId : mappingResult.externalUserId;
 
@@ -434,8 +434,8 @@ public class AuthRecipe {
 
             if (!result.wasAlreadyLinked) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                main, appIdentifier, authRecipeStorage,
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(
+                                appIdentifier, authRecipeStorage,
                                 _recipeUserId, UserIdType.SUPERTOKENS);
                 // finally, we revoke all sessions of the recipeUser Id cause their user ID has changed.
                 Session.revokeAllSessionsForUser(main, appIdentifier, authRecipeStorage,
@@ -932,8 +932,8 @@ public class AuthRecipe {
             } else {
                 // this is always type supertokens user ID cause it's from a user from the database.
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                main, con,
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(
+                                con,
                                 appIdentifier,
                                 storage,
                                 userToDelete.getSupertokensUserId(), UserIdType.SUPERTOKENS);
@@ -973,8 +973,8 @@ public class AuthRecipe {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
                         lM.getSupertokensUserId().equals(
                                 userIdToDeleteForAuthRecipe) ? userIdMapping :
-                                io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                        main, con,
+                                io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(
+                                        con,
                                         appIdentifier,
                                         storage,
                                         lM.getSupertokensUserId(), UserIdType.SUPERTOKENS);
@@ -988,7 +988,7 @@ public class AuthRecipe {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
-        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, appIdentifier,
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier,
                 storage, userId, UserIdType.ANY);
 
         deleteUser(main, appIdentifier, storage, userId, removeAllLinkedAccounts, mapping);
@@ -999,7 +999,7 @@ public class AuthRecipe {
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = ResourceDistributor.getAppForTesting().toAppIdentifier();
-        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, appIdentifier,
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier,
                 storage, userId, UserIdType.ANY);
 
         deleteUser(main, appIdentifier, storage, userId, mapping);
@@ -1008,7 +1008,7 @@ public class AuthRecipe {
     @TestOnly
     public static void deleteUser(Main main, AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
-        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, appIdentifier,
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier,
                 storage, userId, UserIdType.ANY);
 
         deleteUser(main, appIdentifier, storage, userId, mapping);
