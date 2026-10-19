@@ -575,10 +575,15 @@ public class CoreConfig {
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
-            "If true, the core skips all user id mapping lookups for this app and rejects creating user id mappings " +
-                    "or updating their externalUserIdInfo; removing mappings is still allowed. It cannot be turned " +
-                    "on while the app has user id mappings. Cores pick up config changes on their next refresh, so " +
-                    "stop creating mappings before turning this on. (Default: false)")
+            "If true, neither the core nor the storage reads user id mappings for this app, and the core " +
+                    "rejects creating user id mappings, updating their externalUserIdInfo and bulk-importing " +
+                    "users with an externalUserId; removing mappings is still allowed. It cannot be turned on " +
+                    "while the app has user id mappings, and while it is on the app can't move to, or add a " +
+                    "tenant on, a database the core hasn't loaded yet (turn it off, make the change, then turn it " +
+                    "back on). Cores pick up config changes on their next refresh, so stop creating mappings " +
+                    "before turning this on: a mapping created meanwhile is ignored, and data stored under its " +
+                    "external id (sessions, TOTP devices, metadata, roles) no longer applies to the user. " +
+                    "(Default: false)")
     private boolean disable_user_id_mapping = false;
 
     @EnvName("OTEL_COLLECTOR_CONNECTION_URI")

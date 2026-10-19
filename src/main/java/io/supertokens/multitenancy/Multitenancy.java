@@ -247,14 +247,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             TenantIdentifier targetTenantIdentifier = targetTenantConfig.tenantIdentifier;
             boolean hasAffectedDescendants = !targetTenantIdentifier.equals(TenantIdentifier.BASE_TENANT) &&
                     targetTenantIdentifier.getTenantId()
-                    .equals(TenantIdentifier.DEFAULT_TENANT_ID) && Arrays.stream(existingTenants).anyMatch(tenant -> {
-                TenantIdentifier tenantIdentifier = tenant.tenantIdentifier;
-                return !tenantIdentifier.equals(targetTenantIdentifier) &&
-                        tenantIdentifier.getConnectionUriDomain()
-                                .equals(targetTenantIdentifier.getConnectionUriDomain()) &&
-                        (targetTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) ||
-                                tenantIdentifier.getAppId().equals(targetTenantIdentifier.getAppId()));
-            });
+                    .equals(TenantIdentifier.DEFAULT_TENANT_ID) && Arrays.stream(existingTenants).anyMatch(tenant ->
+                    !tenant.tenantIdentifier.equals(targetTenantIdentifier) &&
+                            inheritsConfigFrom(tenant.tenantIdentifier, targetTenantIdentifier));
 
             Map<TenantIdentifier, JsonObject> changedConfigs = new HashMap<>();
             if (hasAffectedDescendants) {
@@ -266,7 +261,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                 Config.getBaseConfigAsJsonObject(main));
                 Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
                 for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry : normalisedConfigs.entrySet()) {
-                    changedConfigs.put(entry.getKey().getTenantIdentifier(), entry.getValue());
+                    // tenants outside the target's app/CUD keep their effective config
+                    if (inheritsConfigFrom(entry.getKey().getTenantIdentifier(), targetTenantIdentifier)) {
+                        changedConfigs.put(entry.getKey().getTenantIdentifier(), entry.getValue());
+                    }
                 }
             } else {
                 // A leaf tenant update cannot change another tenant's effective config.
@@ -306,14 +304,36 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
+    // Whether the tenant is the target or one of its descendants in the config hierarchy (the target being an app's
+    // or CUD's public tenant).
+    private static boolean inheritsConfigFrom(TenantIdentifier tenant, TenantIdentifier target) {
+        return tenant.getConnectionUriDomain().equals(target.getConnectionUriDomain()) &&
+                (target.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) ||
+                        tenant.getAppId().equals(target.getAppId()));
+    }
+
     // disable_user_id_mapping hides existing mappings, so it can only be on for an app whose databases have none.
     // The check runs against the database each prospective config selects, not the one currently loaded, so it
     // also covers an app that moves to another database while the flag is on. An app that already has the flag on
     // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
-    // flag was turned on, and mapping creation is rejected since then.
+    // flag was turned on, and mapping creation is rejected since then. An app being created has no mappings yet.
     private static void assertNoUserIdMappingsWhereMappingGetsDisabled(Main main,
                                                                        Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
+        // one pass over the loaded storages: user pools per app, and a loaded storage per user pool
+        Map<TenantIdentifier, String> loadedTenantUserPools = new HashMap<>();
+        Map<AppIdentifier, Set<String>> appUserPools = new HashMap<>();
+        Map<String, Storage> loadedStorages = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resource : main
+                .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY).entrySet()) {
+            Storage storage = ((StorageLayer) resource.getValue()).getUnderlyingStorage();
+            TenantIdentifier tenantIdentifier = resource.getKey().getTenantIdentifier();
+            loadedTenantUserPools.put(tenantIdentifier, storage.getUserPoolId());
+            appUserPools.computeIfAbsent(tenantIdentifier.toAppIdentifier(), k -> new HashSet<>())
+                    .add(storage.getUserPoolId());
+            loadedStorages.putIfAbsent(storage.getUserPoolId(), storage);
+        }
+
         Set<String> checked = new HashSet<>();
         for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
             JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
@@ -328,13 +348,22 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     + userPoolId)) {
                 continue;
             }
+            Set<String> currentUserPools = appUserPools.get(appIdentifier);
             boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
-            if (alreadyDisabled && appUsesUserPool(main, appIdentifier, userPoolId)) {
+            if (alreadyDisabled && currentUserPools != null && currentUserPools.contains(userPoolId)) {
                 continue;
             }
-            Storage storage = findLoadedStorageForUserPool(main, userPoolId);
+            Storage storage = loadedStorages.get(userPoolId);
             if (storage == null) {
+                if (currentUserPools == null) {
+                    continue; // the app is being created, so the database has no mappings for it
+                }
                 // Checking a database this core has not loaded would mean initialising it here.
+                if (!loadedTenantUserPools.containsKey(tenantIdentifier)) {
+                    throw new InvalidConfigException("disable_user_id_mapping cannot be on while a tenant is added "
+                            + "on a database that is not loaded yet: turn disable_user_id_mapping off for the app, "
+                            + "add the tenant, then turn it back on");
+                }
                 throw new InvalidConfigException("disable_user_id_mapping cannot be on while the app moves to a "
                         + "database that is not loaded yet: add the database with disable_user_id_mapping off, "
                         + "then turn it on");
@@ -346,32 +375,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         : "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
             }
         }
-    }
-
-    // Whether one of the app's existing tenants already uses the user pool. A new tenant has no storage of its own
-    // yet, so it is compared against the databases the app already uses.
-    private static boolean appUsesUserPool(Main main, AppIdentifier appIdentifier, String userPoolId) {
-        try {
-            for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
-                if (storage.getUserPoolId().equals(userPoolId)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (TenantOrAppNotFoundException e) {
-            return false; // the app is being created
-        }
-    }
-
-    private static Storage findLoadedStorageForUserPool(Main main, String userPoolId) {
-        for (ResourceDistributor.SingletonResource resource : main.getResourceDistributor()
-                .getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY).values()) {
-            Storage storage = ((StorageLayer) resource).getUnderlyingStorage();
-            if (storage.getUserPoolId().equals(userPoolId)) {
-                return storage;
-            }
-        }
-        return null;
     }
 
     /**

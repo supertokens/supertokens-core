@@ -496,6 +496,68 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // A new app has no mappings anywhere, so it can be created on a database this core hasn't loaded with the flag
+    // on (e.g. inherited from config.yaml).
+    @Test
+    public void creatingAnAppOnADatabaseThatIsNotLoadedWorksWithTheFlagOn() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "newdb", null);
+        TenantConfig config = appConfig(a1, true);
+        // a pool number no other test uses, so the database is not loaded
+        StorageLayer.getBaseStorage(main).modifyConfigToAddANewUserPoolForTesting(config.coreConfig, 41);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, config, false);
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An existing app can't be checked on a database this core hasn't loaded, so a new tenant there is rejected
+    // while the flag is on, with a message that says how to add it.
+    @Test
+    public void addingATenantOnADatabaseThatIsNotLoadedIsRejectedWhileTheFlagIsOn() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("postgresql_database_name", "st_disable_uidm_not_loaded");
+        TenantIdentifier t1 = new TenantIdentifier(null, a1.getAppId(), "t1");
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(t1, new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping cannot be on while a tenant is added on a database that is not "
+                    + "loaded yet: turn disable_user_id_mapping off for the app, add the tenant, then turn it back "
+                    + "on", e.getMessage());
+        }
+        assertNull(Multitenancy.getTenantInfo(main, t1));
+
+        stop(process);
+    }
+
     @Test
     public void startupCheckFailsForAppsWithMappingsWhenTheBaseConfigDisablesMapping() throws Exception {
         String[] args = {"../"};
