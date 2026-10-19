@@ -38,8 +38,11 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -55,7 +58,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 /**
- * Unit tests for the two helpers behind {@code StorageLayer.initStoragesInParallel}: the executor it runs on
+ * Unit tests for {@code StorageLayer.initStoragesInParallel} and the helpers behind it: the executor it runs on
  * and the bounded wait it uses. Lives in the {@code io.supertokens.storageLayer} package to reach the
  * package-private helpers.
  */
@@ -82,6 +85,15 @@ public class StorageInitAwaitTest {
         return tenants;
     }
 
+    /** Start times for {@code count} futures whose tasks are all running already. */
+    private static AtomicLongArray startedNow(int count) {
+        AtomicLongArray startedAtNanos = new AtomicLongArray(count);
+        for (int i = 0; i < count; i++) {
+            startedAtNanos.set(i, System.nanoTime());
+        }
+        return startedAtNanos;
+    }
+
     /**
      * Runs {@code tasks} blocking tasks on the executor and returns the distinct threads they ran on.
      */
@@ -104,11 +116,11 @@ public class StorageInitAwaitTest {
     }
 
     @Test
-    public void executorIsAPoolOfDaemonPlatformThreadsWithOnePerStorage() throws Exception {
-        // a fixed pool spawns one worker per submitted task up to its size, so with one thread per storage every
-        // task starts right away and none is still queued when awaitStorageInit gives up
+    public void executorIsABoundedPoolOfDaemonPlatformThreads() throws Exception {
+        // a fixed pool spawns one worker per submitted task up to its size, so 69 tasks on a pool for 69 storages
+        // show its bound
         Set<Thread> threads = threadsUsedBy(StorageLayer.newStorageInitExecutor(69), 69);
-        assertEquals(69, threads.size());
+        assertEquals(StorageLayer.STORAGE_INIT_MAX_PARALLELISM, threads.size());
         for (Thread t : threads) {
             // platform threads: a virtual thread parked inside a synchronized section (the plugins' pool init)
             // pins its carrier, which is what hung boot with the previous virtual-thread executor
@@ -118,10 +130,40 @@ public class StorageInitAwaitTest {
             assertTrue(t.getName(), t.getName().startsWith("storage-init-"));
         }
 
-        // the pool is sized to the storages
+        // fewer storages than the bound: no idle threads
         assertEquals(3, threadsUsedBy(StorageLayer.newStorageInitExecutor(3), 10).size());
         // degenerate input never yields an unusable executor
         assertEquals(1, threadsUsedBy(StorageLayer.newStorageInitExecutor(0), 2).size());
+    }
+
+    @Test
+    public void addingAThreadStartsTheNextQueuedTask() throws Exception {
+        ThreadPoolExecutor executor = StorageLayer.newStorageInitExecutor(2);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger started = new AtomicInteger();
+        CountDownLatch thirdStarted = new CountDownLatch(1);
+        try {
+            for (int i = 0; i < 3; i++) {
+                executor.execute(() -> {
+                    if (started.incrementAndGet() == 3) {
+                        thirdStarted.countDown();
+                    }
+                    try {
+                        release.await();
+                    } catch (InterruptedException ignored) {
+                    }
+                });
+            }
+            // both threads are taken by blocked tasks, so the third stays queued
+            assertFalse(thirdStarted.await(500, TimeUnit.MILLISECONDS));
+
+            StorageLayer.addStorageInitThread(executor);
+            assertTrue(thirdStarted.await(10, TimeUnit.SECONDS));
+            assertEquals(3, executor.getMaximumPoolSize());
+        } finally {
+            release.countDown();
+            executor.shutdown();
+        }
     }
 
     @Test
@@ -141,7 +183,8 @@ public class StorageInitAwaitTest {
         CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS).execute(() -> late.complete(null));
 
         long start = System.nanoTime();
-        assertTrue(StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture, 5, 10));
+        assertTrue(StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture,
+                startedNow(futures.size()), () -> {}, 5, 10));
         assertTrue("must return as soon as the futures finish, not after the progress interval",
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) < 4000);
         assertNull(ProcessState.getInstance(process.getProcess())
@@ -165,9 +208,12 @@ public class StorageInitAwaitTest {
         futures.add(straggler);
         tenantsPerFuture.add(tenants("stuck"));
 
-        // progress report every second, give up after two: two progress ticks, the second past the deadline
+        // progress report every second, give up after two: two progress ticks, the second past the straggler's
+        // own time limit
+        AtomicInteger stragglersReported = new AtomicInteger();
         long start = System.nanoTime();
-        assertFalse(StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture, 1, 2));
+        assertFalse(StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture,
+                startedNow(futures.size()), stragglersReported::incrementAndGet, 1, 2));
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
         assertTrue("gave up too early: " + elapsedMillis + "ms", elapsedMillis >= 2000);
         assertTrue("gave up too late: " + elapsedMillis + "ms", elapsedMillis < 10000);
@@ -177,8 +223,55 @@ public class StorageInitAwaitTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
         assertFalse(straggler.isDone());
         assertFalse(straggler.isCancelled());
+        // reported once, so the caller adds exactly one thread for it
+        assertEquals(1, stragglersReported.get());
 
         straggler.complete(null);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void awaitKeepsWaitingWhileAStorageHasNotStartedAndTimesEachStorageFromItsOwnStart() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
+        CompletableFuture<Void> stuck = new CompletableFuture<>();
+        futures.add(stuck);
+        tenantsPerFuture.add(tenants("stuck"));
+        CompletableFuture<Void> queued = new CompletableFuture<>();
+        futures.add(queued);
+        tenantsPerFuture.add(tenants("queued"));
+        AtomicLongArray startedAtNanos = startedNow(2);
+        startedAtNanos.set(1, StorageLayer.STORAGE_INIT_NOT_STARTED);
+
+        // the stuck storage passes its 1s limit on the first ticks, but the queued one has not started, so the
+        // wait goes on
+        AtomicInteger stragglersReported = new AtomicInteger();
+        long start = System.nanoTime();
+        CompletableFuture<Boolean> result = CompletableFuture.supplyAsync(
+                () -> StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture, startedAtNanos,
+                        stragglersReported::incrementAndGet, 1, 1));
+        Thread.sleep(3500);
+        assertFalse("must not continue boot while a storage has not started", result.isDone());
+        assertEquals(1, stragglersReported.get());
+
+        // the queued storage starts 3.5s in and gets its own 1s from there (a single deadline for all storages
+        // would have given up on it before it started); it finishes within it
+        startedAtNanos.set(1, System.nanoTime());
+        Thread.sleep(500);
+        queued.complete(null);
+        assertFalse(result.get(10, TimeUnit.SECONDS));
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) >= 4000);
+        assertEquals("only the stuck storage is a straggler", 1, stragglersReported.get());
+        assertNotNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
+        assertFalse(stuck.isDone());
+
+        stuck.complete(null);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -196,7 +289,8 @@ public class StorageInitAwaitTest {
         tenantsPerFuture.add(tenants("t1"));
 
         try {
-            StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture, 5, 10);
+            StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture,
+                    startedNow(futures.size()), () -> {}, 5, 10);
             fail("an unexpected task failure must still crash startup");
         } catch (CompletionException e) {
             assertSame(cause, e.getCause());
@@ -226,7 +320,8 @@ public class StorageInitAwaitTest {
         // allOf never completes while the straggler runs, so the failure must surface on a progress tick instead
         // of being dropped when the timeout is hit
         try {
-            StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture, 1, 2);
+            StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture,
+                    startedNow(futures.size()), () -> {}, 1, 2);
             fail("a task failure must still crash startup while another storage is initialising");
         } catch (CompletionException e) {
             assertSame(cause, e.getCause());
@@ -287,13 +382,44 @@ public class StorageInitAwaitTest {
     }
 
     @Test
-    public void everyStorageHasStartedInitialisingWhenTheTimeoutIsHit() throws Exception {
+    public void queuedStoragesAreNotGivenUpOnBeforeTheyStart() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        // more storages than the 16 threads the executor used to be capped at, all stuck in init
-        int storageCount = 20;
+        // one storage more than the executor has threads. Each takes 1.5s against a 2s limit, so the last one
+        // only starts 1.5s in and finishes 3s in, past a single 2s deadline for all storages.
+        int storageCount = StorageLayer.STORAGE_INIT_MAX_PARALLELISM + 1;
+        AtomicInteger finished = new AtomicInteger();
+        Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        for (int i = 0; i < storageCount; i++) {
+            Storage storage = mock(Storage.class);
+            doAnswer(invocation -> {
+                Thread.sleep(1500);
+                finished.incrementAndGet();
+                return null;
+            }).when(storage).initStorage(anyBoolean(), any());
+            storagesToInit.put(storage, new HashSet<>(tenants("t" + i)));
+        }
+
+        StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 2);
+
+        assertEquals(storageCount, finished.get());
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void wedgedStoragesDoNotKeepQueuedStoragesFromStarting() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // more storages than the executor has threads, all wedged in init: the first ones take every thread
+        int storageCount = StorageLayer.STORAGE_INIT_MAX_PARALLELISM + 4;
         AtomicInteger started = new AtomicInteger();
         CountDownLatch release = new CountDownLatch(1);
         Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
@@ -308,10 +434,12 @@ public class StorageInitAwaitTest {
         }
 
         try {
-            StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 2);
+            // each straggler reported frees room for a queued storage, so boot still continues, once every
+            // storage has started and run out its own limit
+            Future<?> boot = CompletableFuture.runAsync(
+                    () -> StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 1));
+            boot.get(30, TimeUnit.SECONDS);
 
-            // a storage whose task was still queued at the deadline would have no pool at all, and its queries
-            // would fail instead of waiting in the plugin's pool-initialisation guard
             assertEquals(storageCount, started.get());
             assertNotNull(ProcessState.getInstance(process.getProcess())
                     .getLastEventByName(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
