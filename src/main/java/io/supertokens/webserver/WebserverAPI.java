@@ -474,10 +474,18 @@ public abstract class WebserverAPI extends HttpServlet {
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
+        return getStorageAndUserIdMappingForTenantSpecificApi(req, userId, userIdType, false);
+    }
+
+    // ignoreUserIdMappingOptOut: see StorageLayer.findStorageAndUserIdMappingForUser. Only for the API that removes
+    // a user from a tenant.
+    protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
+            HttpServletRequest req, String userId, UserIdType userIdType, boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
         return StorageLayer.findStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
-                userIdType);
+                userIdType, ignoreUserIdMappingOptOut);
     }
 
     protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(

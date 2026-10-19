@@ -253,6 +253,36 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // Removing a user with a leftover mapping from a tenant also deletes the sessions stored under the external id
+    // in that tenant. Works by either id.
+    @Test
+    public void disassociatingAUserRemovesSessionsStoredUnderALeftoverMapping() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        for (boolean removeByExternalId : new boolean[]{false, true}) {
+            String externalId = "external-id-" + removeByExternalId;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, externalId + "@example.com", "password123");
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), externalId);
+            createSession(process, externalId);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("recipeUserId", removeByExternalId ? externalId : user.getSupertokensUserId());
+            JsonObject response = postOk(process, "/recipe/multitenancy/tenant/user/remove", remove,
+                    "multitenancy");
+
+            assertTrue(String.valueOf(removeByExternalId), response.get("wasAssociated").getAsBoolean());
+            assertEquals(String.valueOf(removeByExternalId), 0,
+                    Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+        }
+
+        stop(process);
+    }
+
     @Test
     public void cannotBeEnabledForAnAppWithMappings() throws Exception {
         String[] args = {"../"};
