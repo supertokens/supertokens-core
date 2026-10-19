@@ -24,7 +24,6 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.signingkeys.JWTSigningKey;
@@ -195,7 +194,8 @@ public class OAuthRefreshConnectionOwnershipTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        // The borrow gauge instruments the in-memory pool only; on another storage it would read 0.
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -239,7 +239,8 @@ public class OAuthRefreshConnectionOwnershipTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        // The borrow gauge instruments the in-memory pool only; on another storage it would read 0.
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -283,7 +284,8 @@ public class OAuthRefreshConnectionOwnershipTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        // The borrow gauge instruments the in-memory pool only; on another storage it would read 0.
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -334,7 +336,8 @@ public class OAuthRefreshConnectionOwnershipTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        // The borrow gauge instruments the in-memory pool only; on another storage it would read 0.
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
         FeatureFlagTestContent.getInstance(process.getProcess())
