@@ -82,7 +82,9 @@ public class TransactionCountBaselineTest {
         // warm-up: the first session creates the signing keys
         createSession(process, userId);
 
-        JsonObject session = baseline.measure("session create", Snapshot.of(0, 0, 2),
+        // the session row is inserted in a transaction under the user lock that account link/unlink take
+        // (GHSA-2pc4-vw9j-454c); the session_create activity row is an autocommit write after it
+        JsonObject session = baseline.measure("session create", Snapshot.of(1, 1, 1),
                 () -> createSession(process, userId));
         String handle = session.getAsJsonObject("session").get("handle").getAsString();
 
