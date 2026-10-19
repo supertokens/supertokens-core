@@ -2666,13 +2666,35 @@ public class Start
         throw new UnsupportedOperationException("'addRolesToUsers_Transaction' is not supported for in-memory db");
     }
 
-    // Counts every call core makes into the user id mapping storage, so tests can assert that a request with
-    // disable_user_id_mapping on never asks for a mapping. Queries the storage runs internally (e.g. the
-    // email-verification lookup during user hydration) are not counted.
+    // Counts every call core makes into the user id mapping storage, and every userid_mapping read the storage makes
+    // on its own (user hydration, session lookup, WebAuthn user queries), so tests can assert that a request with
+    // disable_user_id_mapping on never reads a mapping.
     private static final AtomicLong userIdMappingCallCount = new AtomicLong();
 
-    private static void countUserIdMappingCall() {
+    public static void countUserIdMappingCall() {
         userIdMappingCallCount.incrementAndGet();
+    }
+
+    // Apps with disable_user_id_mapping on, as core last told this storage. The queries that read userid_mapping on
+    // their own skip that read for these apps.
+    private volatile Set<AppIdentifier> appsWithUserIdMappingDisabled = Set.of();
+
+    @Override
+    public void setAppsWithUserIdMappingDisabled(Set<AppIdentifier> appIdentifiers) {
+        this.appsWithUserIdMappingDisabled = Set.copyOf(appIdentifiers);
+    }
+
+    public boolean isUserIdMappingDisabled(AppIdentifier appIdentifier) {
+        return appsWithUserIdMappingDisabled.contains(appIdentifier);
+    }
+
+    // Whether a query the storage runs on its own should read userid_mapping for this app. Counts the read.
+    public boolean readsUserIdMappingFor(AppIdentifier appIdentifier) {
+        if (isUserIdMappingDisabled(appIdentifier)) {
+            return false;
+        }
+        countUserIdMappingCall();
+        return true;
     }
 
     @TestOnly

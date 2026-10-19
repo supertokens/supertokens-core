@@ -554,7 +554,6 @@ public class WebAuthNQueries {
 
             String webauthnUsersTable = getConfig(start).getWebAuthNUsersTable();
             String credentialTable = getConfig(start).getWebAuthNCredentialsTable();
-            String userIdMappingTable = getConfig(start).getUserIdMappingTable();
             String emailVerificationTable = getConfig(start).getEmailVerificationTable();
 
             String tenantJoin = readNew
@@ -567,14 +566,16 @@ public class WebAuthNQueries {
                       + " ON webauthn.app_id = all_users.app_id"
                       + " AND webauthn.user_id = all_users.user_id ";
 
+            boolean readMapping = start.readsUserIdMappingFor(appIdentifier);
             String queryAll = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
-                    "credentials.id as credential_id, email_verification.email as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                    "credentials.id as credential_id, email_verification.email as email_verified, " +
+                    externalUserIdColumn(readMapping) + " as external_user_id," +
                     "all_users.tenant_id as tenant_id " +
                     "FROM " + webauthnUsersTable + " as webauthn " +
                     tenantJoin +
                     "LEFT JOIN " + credentialTable + " as credentials ON webauthn.user_id = credentials.user_id " +
-                    "LEFT JOIN " + userIdMappingTable + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
-                    "LEFT JOIN " + emailVerificationTable + " as email_verification ON webauthn.app_id = email_verification.app_id AND (user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id OR webauthn.user_id = email_verification.user_id) " +
+                    userIdMappingJoin(start, readMapping) +
+                    "LEFT JOIN " + emailVerificationTable + " as email_verification ON webauthn.app_id = email_verification.app_id AND " + emailVerificationUserMatch(readMapping) + " " +
                     " AND email_verification.email = webauthn.email " +
                     "WHERE webauthn.app_id = ? AND webauthn.user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) + ")";
 
@@ -612,6 +613,26 @@ public class WebAuthNQueries {
         return Collections.emptyList();
     }
 
+    // The user id mapping parts of the WebAuthn user queries. An app with disable_user_id_mapping on (readMapping
+    // false) gets no userid_mapping join: no external user id, and email verification matched by the user id only.
+    private static String externalUserIdColumn(boolean readMapping) {
+        return readMapping ? "user_id_mapping.external_user_id" : "NULL";
+    }
+
+    private static String userIdMappingJoin(Start start, boolean readMapping) {
+        if (!readMapping) {
+            return "";
+        }
+        return "LEFT JOIN " + getConfig(start).getUserIdMappingTable() + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id ";
+    }
+
+    private static String emailVerificationUserMatch(boolean readMapping) {
+        if (!readMapping) {
+            return "webauthn.user_id = email_verification.user_id";
+        }
+        return "(user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id OR webauthn.user_id = email_verification.user_id)";
+    }
+
     public static AuthRecipeUserInfo getUserInfoByCredentialId_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String credentialId)
             throws SQLException, StorageQueryException {
 
@@ -628,14 +649,16 @@ public class WebAuthNQueries {
                   + " ON webauthn.app_id = all_users.app_id"
                   + " AND webauthn.user_id = all_users.user_id ";
 
+        boolean readMapping = start.readsUserIdMappingFor(tenantIdentifier.toAppIdentifier());
         String QUERY = "SELECT webauthn.user_id as user_id, webauthn.email as email, webauthn.time_joined as time_joined, " +
-                "credentials.id as credential_id, email_verification.email as email_verified, user_id_mapping.external_user_id as external_user_id," +
+                "credentials.id as credential_id, email_verification.email as email_verified, " +
+                externalUserIdColumn(readMapping) + " as external_user_id," +
                 "all_users.tenant_id as tenant_id " +
                 "FROM " + getConfig(start).getWebAuthNUsersTable() + " as webauthn " +
                 tenantJoin +
                 "LEFT JOIN " + getConfig(start).getWebAuthNCredentialsTable() + " as credentials ON webauthn.user_id = credentials.user_id " +
-                "LEFT JOIN " + getConfig(start).getUserIdMappingTable() + " as user_id_mapping ON webauthn.user_id = user_id_mapping.supertokens_user_id " +
-                "LEFT JOIN " + getConfig(start).getEmailVerificationTable() + " as email_verification ON webauthn.app_id = email_verification.app_id AND (user_id_mapping.external_user_id = email_verification.user_id OR user_id_mapping.supertokens_user_id = email_verification.user_id OR webauthn.user_id = email_verification.user_id)" +
+                userIdMappingJoin(start, readMapping) +
+                "LEFT JOIN " + getConfig(start).getEmailVerificationTable() + " as email_verification ON webauthn.app_id = email_verification.app_id AND " + emailVerificationUserMatch(readMapping) +
                 " AND email_verification.email = webauthn.email " +
                 // Require the credential owner to be a member of the REQUESTED tenant (all_users is the
                 // membership row, legacy or migrated). Without this, a passkey registered in another

@@ -39,6 +39,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
@@ -345,6 +346,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     Storage s = ((StorageLayer) resources.get(key)).storage;
                     storagesToInit.computeIfAbsent(s, k -> new HashSet<>()).add(key.getTenantIdentifier());
                 }
+                setAppsWithUserIdMappingDisabled(main, resources);
 
                 return null;
             });
@@ -421,6 +423,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                     }
                 }
+                setAppsWithUserIdMappingDisabled(main,
+                        main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY));
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
@@ -428,6 +432,29 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         initStoragesInParallel(main, storagesToInit);
+    }
+
+    // Tells every loaded storage which of the apps it serves have disable_user_id_mapping on, so it skips the
+    // userid_mapping reads it makes on its own (user hydration, session lookup, WebAuthn user queries) for them.
+    // Every path that loads storages loads the config first, so the flag read here is the one the new storages serve.
+    private static void setAppsWithUserIdMappingDisabled(Main main,
+                                                         Map<ResourceDistributor.KeyClass,
+                                                                 ResourceDistributor.SingletonResource> resources) {
+        Map<Storage, Set<AppIdentifier>> disabledAppsPerStorage = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                resources.entrySet()) {
+            Set<AppIdentifier> disabledApps = disabledAppsPerStorage.computeIfAbsent(
+                    ((StorageLayer) entry.getValue()).storage, k -> new HashSet<>());
+            AppIdentifier appIdentifier = entry.getKey().getTenantIdentifier().toAppIdentifier();
+            if (io.supertokens.useridmapping.UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+                disabledApps.add(appIdentifier);
+            }
+        }
+        for (Map.Entry<Storage, Set<AppIdentifier>> entry : disabledAppsPerStorage.entrySet()) {
+            if (entry.getKey() instanceof UserIdMappingStorage userIdMappingStorage) {
+                userIdMappingStorage.setAppsWithUserIdMappingDisabled(entry.getValue());
+            }
+        }
     }
 
     public static Storage getBaseStorage(Main main) {

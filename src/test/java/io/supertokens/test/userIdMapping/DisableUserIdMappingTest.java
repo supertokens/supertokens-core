@@ -25,6 +25,7 @@ import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
@@ -108,9 +109,9 @@ public class DisableUserIdMappingTest {
             return;
         }
 
-        // these make no user id mapping lookup in core even with mapping enabled
-        Set<String> noLookup = Set.of("email-password sign-up", "session verify (checkDatabase)", "session remove",
-                "user roles add", "user roles get", "webauthn sign-up");
+        // these read no user id mapping, in core or in the storage, even with mapping enabled
+        Set<String> noLookup = Set.of("session verify (checkDatabase)", "session remove", "user roles add",
+                "user roles get");
         Map<String, Long> counts = countUserIdMappingCallsPerRequest(process);
         for (Map.Entry<String, Long> entry : counts.entrySet()) {
             assertEquals(entry.getKey(), !noLookup.contains(entry.getKey()), entry.getValue() > 0);
@@ -281,6 +282,75 @@ public class DisableUserIdMappingTest {
         }
 
         stop(process);
+    }
+
+    // The storage also skips the userid_mapping reads it makes on its own. A leftover mapping shows it: the storage
+    // would otherwise use it to find email verification stored under the external id (user hydration, also of
+    // WebAuthn users, and WebAuthn sign-in) and to report the external id as the session's user id (refresh).
+    // Clearing the storage's set of opted-out apps brings those reads back.
+    @Test
+    public void storageSkipsItsOwnUserIdMappingReadsForTheApp() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        String userId = emailPasswordSignUp(process, "user@example.com").get("id").getAsString();
+        plantLeftoverMapping(main, app, userId, "external-id");
+        EmailVerification.verifyEmail(main,
+                EmailVerification.generateEmailVerificationToken(main, "external-id", "user@example.com"));
+        JsonObject session = createSession(process, userId);
+        JsonObject webAuthnUser = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(main,
+                "wa-user@example.com");
+        String webAuthnUserId = webAuthnUser.getAsJsonObject("user").get("id").getAsString();
+        plantLeftoverMapping(main, app, webAuthnUserId, "wa-external-id");
+        EmailVerification.verifyEmail(main,
+                EmailVerification.generateEmailVerificationToken(main, "wa-external-id", "wa-user@example.com"));
+
+        List<String> skipped = readsAffectedByTheLeftoverMappings(process, userId, session, webAuthnUser);
+        System.out.println("[storage-reads] flag on: " + skipped);
+        assertEquals(List.of("false", userId, "false", "false"), skipped);
+
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).setAppsWithUserIdMappingDisabled(Set.of());
+        List<String> read = readsAffectedByTheLeftoverMappings(process, userId, session, webAuthnUser);
+        System.out.println("[storage-reads] storage set cleared: " + read);
+        assertEquals(List.of("true", "external-id", "true", "true"), read);
+
+        stop(process);
+    }
+
+    // Whether the email-password user's email is verified, the user id of its refreshed session, and whether the
+    // WebAuthn user's email is verified, when loaded by id and as returned by its sign-in.
+    private static List<String> readsAffectedByTheLeftoverMappings(TestingProcessManager.TestingProcess process,
+                                                                   String userId, JsonObject session,
+                                                                   JsonObject webAuthnUser) throws Exception {
+        String verified = isEmailVerified(getUserById(process, userId));
+
+        JsonObject body = new JsonObject();
+        body.addProperty("refreshToken", session.getAsJsonObject("refreshToken").get("token").getAsString());
+        body.addProperty("enableAntiCsrf", false);
+        body.addProperty("useDynamicSigningKey", true);
+        JsonObject refreshed = postOk(process, "/recipe/session/refresh", body, "session");
+        session.add("refreshToken", refreshed.get("refreshToken"));
+        String sessionUserId = refreshed.getAsJsonObject("session").get("userId").getAsString();
+
+        String webAuthnVerified = isEmailVerified(
+                getUserById(process, webAuthnUser.getAsJsonObject("user").get("id").getAsString()));
+        JsonObject signIn = io.supertokens.test.webauthn.Utils.signInWithUser(process.getProcess(), webAuthnUser);
+        assertEquals("OK", signIn.get("status").getAsString());
+        String signInVerified = isEmailVerified(signIn.getAsJsonObject("user"));
+
+        return List.of(verified, sessionUserId, webAuthnVerified, signInVerified);
+    }
+
+    private static JsonObject getUserById(TestingProcessManager.TestingProcess process, String userId)
+            throws Exception {
+        Map<String, String> byUserId = new HashMap<>();
+        byUserId.put("userId", userId);
+        return get(process, "/user/id", byUserId, null).getAsJsonObject("user");
+    }
+
+    private static String isEmailVerified(JsonObject user) {
+        return user.getAsJsonArray("loginMethods").get(0).getAsJsonObject().get("verified").getAsString();
     }
 
     @Test
