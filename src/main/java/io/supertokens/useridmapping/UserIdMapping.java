@@ -69,6 +69,15 @@ public class UserIdMapping {
         }
     }
 
+    // With disable_user_id_mapping on, a user whose mapping is left over from before the opt-out can have data under
+    // both ids: under the external id from before the opt-out, and under the SuperTokens id after it (reads no
+    // longer return the external id). Paths that delete or revoke a user's data by the mapped id use this to clean
+    // up the SuperTokens id as well.
+    public static boolean alsoCleanUpSuperTokensUserId(Main main, AppIdentifier appIdentifier,
+                                                       String cleanedUpUserId, String superTokensUserId) {
+        return !cleanedUpUserId.equals(superTokensUserId) && isUserIdMappingDisabled(main, appIdentifier);
+    }
+
     public static void assertUserIdMappingEnabled(Main main, AppIdentifier appIdentifier) throws ServletException {
         if (isUserIdMappingDisabled(main, appIdentifier)) {
             throw new ServletException(new WebserverAPI.BadRequestException(USER_ID_MAPPING_DISABLED_MESSAGE));

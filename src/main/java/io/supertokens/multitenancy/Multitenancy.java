@@ -308,9 +308,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     // disable_user_id_mapping hides existing mappings, so it can only be on for an app whose databases have none.
     // The check runs against the database each prospective config selects, not the one currently loaded, so it
-    // also covers an app that moves to another database while the flag is on. An app that keeps its database
-    // and already has the flag on was checked when the flag was turned on, and mapping creation is rejected
-    // since then.
+    // also covers an app that moves to another database while the flag is on. An app that already has the flag on
+    // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
+    // flag was turned on, and mapping creation is rejected since then.
     private static void assertNoUserIdMappingsWhereMappingGetsDisabled(Main main,
                                                                        Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
@@ -328,8 +328,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     + userPoolId)) {
                 continue;
             }
-            if (UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)
-                    && userPoolId.equals(currentUserPoolId(main, tenantIdentifier))) {
+            boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
+            if (alreadyDisabled && appUsesUserPool(main, appIdentifier, userPoolId)) {
                 continue;
             }
             Storage storage = findLoadedStorageForUserPool(main, userPoolId);
@@ -340,17 +340,26 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         + "then turn it on");
             }
             if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
-                throw new InvalidConfigException(
-                        "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
+                throw new InvalidConfigException(alreadyDisabled
+                        ? "disable_user_id_mapping is on, but the database this config selects has user id mappings "
+                        + "for the app: remove them first"
+                        : "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
             }
         }
     }
 
-    private static String currentUserPoolId(Main main, TenantIdentifier tenantIdentifier) {
+    // Whether one of the app's existing tenants already uses the user pool. A new tenant has no storage of its own
+    // yet, so it is compared against the databases the app already uses.
+    private static boolean appUsesUserPool(Main main, AppIdentifier appIdentifier, String userPoolId) {
         try {
-            return StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
+            for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
+                if (storage.getUserPoolId().equals(userPoolId)) {
+                    return true;
+                }
+            }
+            return false;
         } catch (TenantOrAppNotFoundException e) {
-            return null; // the tenant is being created
+            return false; // the app is being created
         }
     }
 
@@ -674,6 +683,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage,
                 externalUserId == null ? userId : externalUserId);
         finalDidExist = finalDidExist || didExist;
+        if (externalUserId != null && UserIdMapping.alsoCleanUpSuperTokensUserId(main,
+                tenantIdentifier.toAppIdentifier(), externalUserId, userId)) {
+            didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage, userId);
+            finalDidExist = finalDidExist || didExist;
+        }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         UserLockingStorage userLockingStorage = (UserLockingStorage) storage;

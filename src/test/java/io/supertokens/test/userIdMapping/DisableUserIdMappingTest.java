@@ -288,6 +288,47 @@ public class DisableUserIdMappingTest {
     // would otherwise use it to find email verification stored under the external id (user hydration, also of
     // WebAuthn users, and WebAuthn sign-in) and to report the external id as the session's user id (refresh).
     // Clearing the storage's set of opted-out apps brings those reads back.
+    // With a leftover mapping, sessions can exist under both ids: under the external id from before the opt-out and
+    // under the SuperTokens id from after it (sign-in no longer returns the external id). Deleting, linking and
+    // removing the user from a tenant clear both.
+    @Test
+    public void sessionsUnderBothIdsOfALeftoverMappingAreRemoved() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                        new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+
+        for (String action : new String[]{"delete", "link", "disassociate"}) {
+            String externalId = "external-id-" + action;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, action + "@example.com", "password123");
+            String superTokensId = user.getSupertokensUserId();
+            plantLeftoverMapping(main, app, superTokensId, externalId);
+            createSession(process, externalId);
+            createSession(process, superTokensId);
+
+            if (action.equals("delete")) {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("userId", superTokensId);
+                postOk(process, "/user/remove", remove, null);
+            } else if (action.equals("link")) {
+                AuthRecipe.linkAccounts(main, superTokensId, primary.getSupertokensUserId());
+            } else {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("recipeUserId", superTokensId);
+                postOk(process, "/recipe/multitenancy/tenant/user/remove", remove, "multitenancy");
+            }
+
+            assertEquals(action, 0, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+            assertEquals(action, 0, Session.getAllNonExpiredSessionHandlesForUser(main, superTokensId).length);
+        }
+
+        stop(process);
+    }
+
     @Test
     public void storageSkipsItsOwnUserIdMappingReadsForTheApp() throws Exception {
         TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
@@ -393,6 +434,32 @@ public class DisableUserIdMappingTest {
 
         // other apps are unaffected
         assertFalse(UserIdMapping.isUserIdMappingDisabled(main, process.getAppForTesting().toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An app that already has the flag on isn't re-checked when it gets a new tenant on a database it already uses,
+    // so a leftover mapping doesn't block creating tenants.
+    @Test
+    public void creatingATenantInAnAppWithTheFlagOnIgnoresLeftoverMappings() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+        Storage a1Storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, a1Storage, main, "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(a1Storage)
+                .createUserIdMapping(a1.toAppIdentifier(), user.getSupertokensUserId(), "external-id", null);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, a1.getAppId(), "t1");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(t1, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, new JsonObject()), false);
+        assertNotNull(Multitenancy.getTenantInfo(main, t1));
 
         stop(process);
     }

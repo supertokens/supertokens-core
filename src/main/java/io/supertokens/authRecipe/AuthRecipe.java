@@ -170,6 +170,10 @@ public class AuthRecipe {
                 // revokeAllSessionsForUser below still runs for its cross-tenant enumeration and events.
                 ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
                         .deleteSessionsOfUser_Transaction(con, appIdentifier, resultUserId);
+                if (alsoCleanUpSuperTokensUserId(main, appIdentifier, resultUserId, recipeUserId)) {
+                    ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
+                            .deleteSessionsOfUser_Transaction(con, appIdentifier, recipeUserId);
+                }
 
                 if (lockedRecipeUser.getPrimaryUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
@@ -229,6 +233,9 @@ public class AuthRecipe {
                 }
             });
             Session.revokeAllSessionsForUser(main, appIdentifier, storage, res.userId, false);
+            if (alsoCleanUpSuperTokensUserId(main, appIdentifier, res.userId, recipeUserId)) {
+                Session.revokeAllSessionsForUser(main, appIdentifier, storage, recipeUserId, false);
+            }
             return res.wasLinked;
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownUserIdException) {
@@ -438,8 +445,11 @@ public class AuthRecipe {
                                 appIdentifier, authRecipeStorage,
                                 _recipeUserId, UserIdType.SUPERTOKENS);
                 // finally, we revoke all sessions of the recipeUser Id cause their user ID has changed.
-                Session.revokeAllSessionsForUser(main, appIdentifier, authRecipeStorage,
-                        mappingResult == null ? _recipeUserId : mappingResult.externalUserId, false);
+                String sessionUserId = mappingResult == null ? _recipeUserId : mappingResult.externalUserId;
+                Session.revokeAllSessionsForUser(main, appIdentifier, authRecipeStorage, sessionUserId, false);
+                if (alsoCleanUpSuperTokensUserId(main, appIdentifier, sessionUserId, _recipeUserId)) {
+                    Session.revokeAllSessionsForUser(main, appIdentifier, authRecipeStorage, _recipeUserId, false);
+                }
             }
 
             return result;
@@ -957,11 +967,13 @@ public class AuthRecipe {
                     !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()));
 
             if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
-                deleteNonAuthRecipeUser(con, appIdentifier, storage, userIdToDeleteForNonAuthRecipeForRecipeUserId);
+                deleteNonAuthRecipeUser(main, con, appIdentifier, storage,
+                        userIdToDeleteForNonAuthRecipeForRecipeUserId, userIdToDeleteForAuthRecipe);
             }
 
             if (primaryUserIdToDeleteNonAuthRecipe != null) {
-                deleteNonAuthRecipeUser(con, appIdentifier, storage, primaryUserIdToDeleteNonAuthRecipe);
+                deleteNonAuthRecipeUser(main, con, appIdentifier, storage, primaryUserIdToDeleteNonAuthRecipe,
+                        userToDelete.getSupertokensUserId());
 
                 // this is only done to also delete the user ID mapping in case it exists, since we do not delete in the
                 // previous call to deleteAuthRecipeUser above.
@@ -1012,6 +1024,22 @@ public class AuthRecipe {
                 storage, userId, UserIdType.ANY);
 
         deleteUser(main, appIdentifier, storage, userId, mapping);
+    }
+
+    private static boolean alsoCleanUpSuperTokensUserId(Main main, AppIdentifier appIdentifier,
+                                                        String cleanedUpUserId, String superTokensUserId) {
+        return io.supertokens.useridmapping.UserIdMapping.alsoCleanUpSuperTokensUserId(main, appIdentifier,
+                cleanedUpUserId, superTokensUserId);
+    }
+
+    // userId is the external id if the user has a mapping, else superTokensUserId.
+    private static void deleteNonAuthRecipeUser(Main main, TransactionConnection con, AppIdentifier appIdentifier,
+                                                Storage storage, String userId, String superTokensUserId)
+            throws StorageQueryException {
+        deleteNonAuthRecipeUser(con, appIdentifier, storage, userId);
+        if (alsoCleanUpSuperTokensUserId(main, appIdentifier, userId, superTokensUserId)) {
+            deleteNonAuthRecipeUser(con, appIdentifier, storage, superTokensUserId);
+        }
     }
 
     private static void deleteNonAuthRecipeUser(TransactionConnection con, AppIdentifier appIdentifier,
