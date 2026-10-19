@@ -87,7 +87,6 @@ public class DisableUserIdMappingTest {
 
     @Test
     public void requestsDoNotLookUpUserIdMappingsWhenDisabled() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
         TestingProcessManager.TestingProcess process = startInMemory(true);
         if (process == null) {
             return;
@@ -122,10 +121,7 @@ public class DisableUserIdMappingTest {
 
     @Test
     public void creatingAndUpdatingMappingsIsRejectedWhenDisabled() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         String userId = emailPasswordSignUp(process, "user@example.com").get("id").getAsString();
 
         JsonObject mapping = new JsonObject();
@@ -161,10 +157,7 @@ public class DisableUserIdMappingTest {
     // still be removed.
     @Test
     public void mappingCreatedBeforeTheOptOutIsHiddenButRemovable() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         Main main = process.getProcess();
         AppIdentifier app = process.getAppForTesting().toAppIdentifier();
         AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
@@ -185,10 +178,7 @@ public class DisableUserIdMappingTest {
     // userIdType EXTERNAL, ANY, or none (the SDK default, which the core treats as ANY).
     @Test
     public void leftoverMappingIsRemovableByItsExternalIdOverTheApi() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         Main main = process.getProcess();
         AppIdentifier app = process.getAppForTesting().toAppIdentifier();
         AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
@@ -214,10 +204,7 @@ public class DisableUserIdMappingTest {
     // (so their refresh tokens stop working) and its metadata. Works by either id.
     @Test
     public void deletingAUserRemovesSessionsAndMetadataStoredUnderALeftoverMapping() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         Main main = process.getProcess();
         AppIdentifier app = process.getAppForTesting().toAppIdentifier();
 
@@ -246,12 +233,9 @@ public class DisableUserIdMappingTest {
     // Linking a user with a leftover mapping revokes its sessions, which are stored under the external id.
     @Test
     public void linkingAUserRevokesSessionsStoredUnderALeftoverMapping() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         Main main = process.getProcess();
         AppIdentifier app = process.getAppForTesting().toAppIdentifier();
 
@@ -347,8 +331,17 @@ public class DisableUserIdMappingTest {
 
     @Test
     public void startupCheckFailsForAppsWithMappingsWhenTheBaseConfigDisablesMapping() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
         String[] args = {"../"};
+        // config.yaml turns the flag on for every app. On a shared test database, other tests' apps with mappings
+        // would fail this startup, so the test needs the in-memory storage's fresh database.
+        TestingProcessManager.TestingProcess probe = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(probe.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        boolean inMemory = StorageLayer.isInMemDb(probe.getProcess());
+        stop(probe);
+        if (!inMemory) {
+            return;
+        }
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         // without mappings, the core starts
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -357,9 +350,12 @@ public class DisableUserIdMappingTest {
 
         // The in-memory database does not survive a restart, so plant a mapping behind the core's back and run the
         // check that startup runs.
-        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
-        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
-        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+        // An isolated process serves only the base app (getAppForTesting may name a shared-process test app).
+        TenantIdentifier tenant = TenantIdentifier.BASE_TENANT;
+        AppIdentifier app = tenant.toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, storage, main, "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(storage)
                 .createUserIdMapping(app, user.getSupertokensUserId(), "external-id", null);
         try {
             UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
@@ -374,10 +370,7 @@ public class DisableUserIdMappingTest {
 
     @Test
     public void bulkImportRejectsExternalUserIdsWhenDisabled() throws Exception {
-        Utils.setValueInConfig("disable_user_id_mapping", "true");
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
         Main main = process.getProcess();
         AppIdentifier app = process.getAppForTesting().toAppIdentifier();
         List<BulkImportUser> users = BulkImportTestUtils.generateBulkImportUserWithRoles(1, List.of("public"), 0,
@@ -531,11 +524,20 @@ public class DisableUserIdMappingTest {
         }
     }
 
-    // disable_user_id_mapping in config.yaml only takes effect in a process of its own: the shared test process
-    // keeps the base config it started with.
-    private static TestingProcessManager.TestingProcess startInMemory(boolean isolated) throws Exception {
+    // Turns disable_user_id_mapping on for the test's own app. Setting it in config.yaml would turn it on for every
+    // app, and on a shared test database the startup check would then trip over other tests' apps with mappings.
+    private static TestingProcessManager.TestingProcess startWithUserIdMappingDisabled() throws Exception {
         String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = isolated ? TestingProcessManager.startIsolatedProcess(args)
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), appConfig(process.getAppForTesting(), true),
+                false);
+        return process;
+    }
+
+    private static TestingProcessManager.TestingProcess startInMemory(boolean disableUserIdMapping) throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = disableUserIdMapping ? startWithUserIdMappingDisabled()
                 : TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         if (!(StorageLayer.getStorage(process.getProcess()) instanceof Start)) {
