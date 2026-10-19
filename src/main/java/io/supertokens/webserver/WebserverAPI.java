@@ -37,6 +37,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.api.core.HelloAPI;
+import io.supertokens.webserver.api.core.LivezAPI;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -218,7 +219,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return RouteScope.DATA_PLANE;
     }
 
-    private String getApiKeyFromRequest(HttpServletRequest req) {
+    protected String getApiKeyFromRequest(HttpServletRequest req) {
         String apiKey = req.getHeader("api-key");
 
         if (apiKey == null) {
@@ -563,6 +564,11 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
+    private boolean isOnAdminConnector(HttpServletRequest req) {
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        return baseConfig.isAdminConnectorEnabled() && req.getLocalPort() == baseConfig.getAdminPort();
+    }
+
     private void serviceRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         TenantIdentifier tenantIdentifier = null;
         ConcurrencyLimiter limiter = null;
@@ -572,27 +578,32 @@ public abstract class WebserverAPI extends HttpServlet {
 
             // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. This runs
             // before the IP filter and API-key check so a rejected request does not spend a thread on those or
-            // on any DB work. The real /hello liveness probe is never capped, but is still counted so it
-            // contributes to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
+            // on any DB work. Requests on the admin connector skip the limiter entirely: they run on their own
+            // thread pool, so they neither count toward the main pool's saturation nor get capped. On the main
+            // connector the liveness probes (/hello, /livez) are never capped, but are still counted so they
+            // contribute to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
             // /.well-known/jwks.json) is counted and capped. If the CUD is unknown, we skip the limiter and let
             // the existing 400 path below handle the missing tenant.
-            try {
-                int limit = (this instanceof HelloAPI)
-                        ? 0
-                        : Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
-                int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
-                limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
-                if (!limiter.tryAcquire(limit, saturationThreshold)) {
-                    // counters were already rolled back by tryAcquire; nothing to release. onRejected records the
-                    // rejection for observability (RequestStats counter, ProcessState, one rate-limited WARN).
-                    limiter.onRejected(main, tenantIdentifier);
-                    resp.setHeader("Retry-After", "1");
-                    sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
-                    return;
+            if (!isOnAdminConnector(req)) {
+                try {
+                    int limit = (this instanceof HelloAPI || this instanceof LivezAPI)
+                            ? 0
+                            : Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
+                    int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
+                    limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
+                    if (!limiter.tryAcquire(limit, saturationThreshold)) {
+                        // counters were already rolled back by tryAcquire; nothing to release. onRejected records
+                        // the rejection for observability (RequestStats counter, ProcessState, one rate-limited
+                        // WARN).
+                        limiter.onRejected(main, tenantIdentifier);
+                        resp.setHeader("Retry-After", "1");
+                        sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
+                        return;
+                    }
+                    acquired = true;
+                } catch (TenantOrAppNotFoundException e) {
+                    // unknown CUD: skip the limiter; the request continues and hits the existing 400 path
                 }
-                acquired = true;
-            } catch (TenantOrAppNotFoundException e) {
-                // unknown CUD: skip the limiter; the request continues and hits the existing 400 path
             }
 
             if (!this.checkIPAccess(req, resp)) {
@@ -669,15 +680,18 @@ public abstract class WebserverAPI extends HttpServlet {
             if (acquired) {
                 limiter.release();
             }
+            if (tenantIdentifier != null) {
+                // Process-global, per-status-class counts (across all apps). Counted here, in the finally, so the
+                // early returns above (429 cap rejection, IP-filter denial, the pre-3.0 CDI tenant 404) are
+                // counted too. Keyed at the base tenant so it never throws for an unknown app. Requests that fail
+                // tenant resolution (tenantIdentifier == null) are intentionally not counted here.
+                GlobalRequestStats.getInstance(main).incrementForStatus(resp.getStatus());
+            }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
                 false);
 
         if (tenantIdentifier != null) {
-            // Process-global, per-status-class counts (across all apps). Independent of the per-app RequestStats
-            // below; keyed at the base tenant so it never throws for an unknown app. Requests that fail tenant
-            // resolution (tenantIdentifier == null) are intentionally not counted here.
-            GlobalRequestStats.getInstance(main).incrementForStatus(resp.getStatus());
             try {
                 RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
             } catch (TenantOrAppNotFoundException e) {

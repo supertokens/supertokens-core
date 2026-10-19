@@ -18,6 +18,8 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.webserver.GlobalRequestStats;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -25,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Admin-only endpoint exposing the process-global, per-status-class request counts held by
@@ -34,8 +37,13 @@ import java.io.IOException;
  * <p>The {@code ADMIN_ONLY} scope is only enforced when the admin connector is enabled ({@code admin_port} set):
  * then this endpoint is served on the admin port and returns 404 on the main port. In the default
  * single-connector topology ({@code admin_port} unset) the port gate is inert, so this endpoint is served on the
- * main data-plane port, guarded only by the usual api-key / IP-allow rules (i.e. open on a core with no
- * {@code api_keys}). {@code ADMIN_ONLY} is a port-routing classification, not a standalone authentication guarantee.
+ * main data-plane port. {@code ADMIN_ONLY} is a port-routing classification, not a standalone authentication
+ * guarantee, so the endpoint carries its own credential check (see {@link #checkAPIKey}).
+ *
+ * <p>Auth: the counts span every connection URI domain and app on the core, so an app's own api key must not
+ * unlock them. When {@code supertokens_saas_secret} is set, only that secret is accepted. Otherwise the key must
+ * be one of the base config's {@code api_keys}, whatever {@code /appid-<x>/} prefix the request carries. With
+ * neither configured the endpoint is open, like every other API on a core without {@code api_keys}.
  *
  * <p>Note for consumers: the counts are process-global across <em>both</em> connectors and include admin-plane
  * traffic (e.g. liveness/stats polls), and {@code total} counts every request while the buckets cover only
@@ -67,7 +75,34 @@ public class GlobalRequestStatsAPI extends WebserverAPI {
     }
 
     @Override
+    protected boolean checkAPIKey(HttpServletRequest req) {
+        // Not the default per-app check: that accepts any app's own key, and is skipped entirely for an unknown
+        // /appid-<x>/ prefix. doGet checks the core-wide credential instead.
+        return false;
+    }
+
+    private void assertCoreWideCredential(HttpServletRequest req) throws ServletException {
+        String apiKey = getApiKeyFromRequest(req);
+        if (apiKey != null) {
+            apiKey = apiKey.trim();
+        }
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        String superTokensSaaSSecret = baseConfig.getSuperTokensSaaSSecret();
+        if (superTokensSaaSSecret != null) {
+            if (!superTokensSaaSSecret.equals(apiKey)) {
+                throw new ServletException(new APIKeyUnauthorisedException());
+            }
+            return;
+        }
+        String[] keys = baseConfig.getAPIKeys();
+        if (keys != null && (apiKey == null || !Arrays.asList(keys).contains(apiKey))) {
+            throw new ServletException(new APIKeyUnauthorisedException());
+        }
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        assertCoreWideCredential(req);
         JsonObject stats = GlobalRequestStats.getInstance(main).getStats();
         stats.addProperty("status", "OK");
         super.sendJsonResponse(200, stats, resp);
