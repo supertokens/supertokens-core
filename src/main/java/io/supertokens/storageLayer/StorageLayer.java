@@ -713,13 +713,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return allMappingsFromAllStorages;
     }
 
-    /**
-     * Upper bound on the number of storages {@link #initStoragesInParallel} initialises at the same time. Boot
-     * has tens of short, blocking tasks (TCP connect + DDL), so a small pool is all the parallelism that pays
-     * off, and the bound also caps the connection burst sent at a database many tenants share.
-     */
-    static final int STORAGE_INIT_MAX_PARALLELISM = 16;
-
     /** How often (seconds) the storages still initialising are reported while boot waits for them. */
     static final long STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS = 60;
 
@@ -731,7 +724,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     static final long STORAGE_INIT_TIMEOUT_SECONDS = 600;
 
     /**
-     * The executor {@link #initStoragesInParallel} runs on: a fixed pool of daemon platform threads.
+     * The executor {@link #initStoragesInParallel} runs on: a fixed pool of daemon platform threads, one per
+     * storage.
+     *
+     * <p>One per storage, so every init task starts as soon as it is submitted. A task still queued when
+     * {@link #awaitStorageInit} gives up would leave its storage with no connection pool at all, and its queries
+     * would fail instead of waiting for the pool to come up. This is the same connection burst the previous
+     * virtual-thread-per-task executor sent.
      *
      * <p>Platform threads, deliberately. This used to be a virtual-thread-per-task executor, and on JDK 21 a
      * virtual thread that parks inside a {@code synchronized} section is pinned to its carrier. The plugins'
@@ -744,7 +743,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      */
     static ExecutorService newStorageInitExecutor(int storageCount) {
         AtomicInteger threadNumber = new AtomicInteger();
-        return Executors.newFixedThreadPool(Math.max(1, Math.min(storageCount, STORAGE_INIT_MAX_PARALLELISM)),
+        return Executors.newFixedThreadPool(Math.max(1, storageCount),
                 runnable -> {
                     Thread thread = new Thread(runnable, "storage-init-" + threadNumber.incrementAndGet());
                     thread.setDaemon(true);
@@ -758,17 +757,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * stragglers are reported as an error, {@link ProcessState.PROCESS_STATE#STORAGE_INIT_TIMED_OUT} is
      * recorded and the method returns so boot can continue without them. Stragglers are neither cancelled nor
      * interrupted (one may be mid-DDL): one that eventually finishes is fully usable, and until then queries
-     * against it wait in the plugin's own pool-initialisation guard rather than failing.
+     * against it wait in the plugin's own pool-initialisation guard rather than failing. That holds because
+     * every task is already running by then (see {@link #newStorageInitExecutor}).
      *
-     * <p>Continuing without the stragglers can never leave the core without a working base tenant: the base
-     * tenant's storage is initialised (and schema-verified) <em>synchronously</em> in {@code Main.init}
-     * (via {@code StorageLayer.getBaseStorage(main).initStorage(...)}) before {@code loadStorageLayer} ever
-     * reaches this parallel path, and a base-storage failure crashes startup there rather than reaching here.
-     * Only secondary tenant storages can time out on this path, so the base tenant and every tenant that did
-     * finish stay fully functional.
+     * <p>Continuing without the stragglers can never leave the core without a working base tenant: none of
+     * these futures is the base tenant's storage, which {@link #initStoragesInParallel} initialises on the
+     * calling thread, outside this timeout.
      *
      * <p>An unexpected exception from a task is rethrown as a {@link CompletionException}, exactly as the
-     * previous {@code CompletableFuture.join()} did, so such a failure still crashes startup.
+     * previous {@code CompletableFuture.join()} did, so such a failure still crashes startup. That includes a
+     * task that failed while another storage is still initialising: failed futures are checked on every
+     * progress tick, so the failure is not lost when the timeout is hit.
      *
      * @param tenantsPerFuture the tenants of the storage behind the future at the same index, for the reports
      * @return {@code true} if every future finished, {@code false} if the timeout was hit
@@ -783,6 +782,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 all.get(progressIntervalSeconds, TimeUnit.SECONDS);
                 return true;
             } catch (TimeoutException e) {
+                // allOf only completes once every future is done, so a task that already failed would otherwise
+                // stay unnoticed while another one is still running.
+                for (CompletableFuture<Void> future : futures) {
+                    if (future.isCompletedExceptionally()) {
+                        future.join(); // throws the task's failure as a CompletionException
+                    }
+                }
                 List<List<TenantIdentifier>> stillInitialising = new ArrayList<>();
                 for (int i = 0; i < futures.size(); i++) {
                     if (!futures.get(i).isDone()) {
@@ -813,9 +819,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     /**
-     * Initializes each storage's connection pool concurrently on the bounded pool of platform threads from
+     * Initializes each storage's connection pool concurrently on the pool of platform threads from
      * {@link #newStorageInitExecutor} (see there for why not virtual threads), waiting with
      * {@link #awaitStorageInit} so that a storage that never finishes cannot hang boot.
+     *
+     * <p>The base tenant's storage is the exception: it is initialised on the calling thread, with no timeout,
+     * while the others initialise in parallel. Boot never continues without it. {@code Main.init} closes the
+     * base storage and re-initialises it through this path, and the feature flags and signing keys loaded right
+     * after need it.
      *
      * <p>This method MUST be called outside any ResourceDistributor lock. {@code initStorage()}
      * opens TCP connections to the database and runs DDL (CREATE TABLE IF NOT EXISTS). That
@@ -832,11 +843,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * prevent other tenants from working, matching the original sequential behaviour.
      * {@code DbInitException} is the only checked exception either method declares;
      * {@code initFileLogging} declares none. Anything else (e.g. a {@link RuntimeException}
-     * from log file setup) is propagated by {@code awaitStorageInit} as a
-     * {@code CompletionException} and crashes startup — same as the original sequential
-     * code, where such an exception would have escaped the for-loop unhandled.
+     * from log file setup) is propagated (by {@code awaitStorageInit} as a
+     * {@code CompletionException}, or directly for the base storage) and crashes startup —
+     * same as the original sequential code, where such an exception would have escaped the
+     * for-loop unhandled.
      */
     private static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
+        initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
+                STORAGE_INIT_TIMEOUT_SECONDS);
+    }
+
+    // Package-private with the wait bounds as parameters so tests can use short ones.
+    static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit,
+                                       long progressIntervalSeconds, long timeoutSeconds) {
         if (storagesToInit.isEmpty()) {
             return;
         }
@@ -844,47 +863,66 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         String errorLogPath = Config.getBaseConfig(main).getErrorLogPath(main);
         TelemetryProvider telemetry = TelemetryProvider.getInstance(main);
 
-        ExecutorService executor = newStorageInitExecutor(storagesToInit.size());
+        Storage baseStorage = null;
+        Map<Storage, Set<TenantIdentifier>> otherStorages = new HashMap<>();
+        for (Map.Entry<Storage, Set<TenantIdentifier>> entry : storagesToInit.entrySet()) {
+            if (entry.getValue().contains(TenantIdentifier.BASE_TENANT)) {
+                baseStorage = entry.getKey();
+            } else {
+                otherStorages.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        ExecutorService executor = newStorageInitExecutor(otherStorages.size());
         try {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
-            for (Map.Entry<Storage, Set<TenantIdentifier>> entry : storagesToInit.entrySet()) {
+            for (Map.Entry<Storage, Set<TenantIdentifier>> entry : otherStorages.entrySet()) {
                 Storage storage = entry.getKey();
                 List<TenantIdentifier> tenants = new ArrayList<>(entry.getValue());
                 tenantsPerFuture.add(tenants);
-                futures.add(CompletableFuture.runAsync(() -> {
-                    try {
-                        storage.initStorage(false, tenants);
-                        storage.initFileLogging(infoLogPath, errorLogPath, telemetry);
-                    } catch (DbInitException e) {
-                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
-                        return;
-                    }
-                    // Schema verification runs once per storage (the plugin caches a success), so this is a
-                    // no-op for already-verified pools on refresh. A tenant mismatch never takes the core down:
-                    // in strict mode (schema_check_strict_mode, the default) the storage refuses all queries
-                    // until a re-verification passes (retrySchemaVerification runs one every minute, so the
-                    // storage resumes within a minute of the migration being applied); in non-strict mode it
-                    // stays fully in use and only queries touching the missing schema fail (with a hint).
-                    try {
-                        storage.verifySchema(Config.getBaseConfig(main).getSchemaCheckStrictMode());
-                    } catch (SchemaMismatchException e) {
-                        Logging.error(main, TenantIdentifier.BASE_TENANT,
-                                "Schema verification failed for storage of tenants " + tenants + ": "
-                                        + e.getMessage(), true, e);
-                        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
-                    } catch (StorageQueryException e) {
-                        Logging.error(main, TenantIdentifier.BASE_TENANT,
-                                "Could not verify schema for storage of tenants " + tenants, false, e);
-                    }
-                }, executor));
+                futures.add(CompletableFuture.runAsync(
+                        () -> initStorage(main, storage, tenants, infoLogPath, errorLogPath, telemetry), executor));
             }
-            awaitStorageInit(main, futures, tenantsPerFuture, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
-                    STORAGE_INIT_TIMEOUT_SECONDS);
+            // The base storage runs here, while the others run on the executor. It is not covered by the timeout
+            // below: boot must not continue without it.
+            if (baseStorage != null) {
+                initStorage(main, baseStorage, new ArrayList<>(storagesToInit.get(baseStorage)), infoLogPath,
+                        errorLogPath, telemetry);
+            }
+            awaitStorageInit(main, futures, tenantsPerFuture, progressIntervalSeconds, timeoutSeconds);
         } finally {
             // no shutdownNow(): a straggler may be mid-DDL and must not be interrupted. The threads are daemon, so
             // they never keep the JVM alive; the pool simply exits once its queue drains.
             executor.shutdown();
+        }
+    }
+
+    private static void initStorage(Main main, Storage storage, List<TenantIdentifier> tenants, String infoLogPath,
+                                    String errorLogPath, TelemetryProvider telemetry) {
+        try {
+            storage.initStorage(false, tenants);
+            storage.initFileLogging(infoLogPath, errorLogPath, telemetry);
+        } catch (DbInitException e) {
+            Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+            return;
+        }
+        // Schema verification runs once per storage (the plugin caches a success), so this is a
+        // no-op for already-verified pools on refresh. A tenant mismatch never takes the core down:
+        // in strict mode (schema_check_strict_mode, the default) the storage refuses all queries
+        // until a re-verification passes (retrySchemaVerification runs one every minute, so the
+        // storage resumes within a minute of the migration being applied); in non-strict mode it
+        // stays fully in use and only queries touching the missing schema fail (with a hint).
+        try {
+            storage.verifySchema(Config.getBaseConfig(main).getSchemaCheckStrictMode());
+        } catch (SchemaMismatchException e) {
+            Logging.error(main, TenantIdentifier.BASE_TENANT,
+                    "Schema verification failed for storage of tenants " + tenants + ": "
+                            + e.getMessage(), true, e);
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SCHEMA_MISMATCH, e);
+        } catch (StorageQueryException e) {
+            Logging.error(main, TenantIdentifier.BASE_TENANT,
+                    "Could not verify schema for storage of tenants " + tenants, false, e);
         }
     }
 
