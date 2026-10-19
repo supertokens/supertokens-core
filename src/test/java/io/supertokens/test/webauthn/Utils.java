@@ -140,7 +140,7 @@ public class Utils {
         return response;
     }
 
-    private static JsonObject signIn(Main main, String optionsId, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput> credential)
+    public static JsonObject signIn(Main main, String optionsId, PublicKeyCredential<AuthenticatorAssertionResponse, AuthenticationExtensionClientOutput> credential)
             throws HttpResponseException, IOException {
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("webauthnGeneratedOptionsId",optionsId);

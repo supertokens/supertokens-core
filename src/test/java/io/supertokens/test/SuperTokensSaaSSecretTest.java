@@ -445,7 +445,8 @@ public class SuperTokensSaaSSecretTest {
             "oauth_provider_url_configured_in_oauth_provider",
             "saml_legacy_acs_url",
             "activity_log_retention_days",
-            "activity_log_throttle_enabled"
+            "activity_log_throttle_enabled",
+            "max_concurrent_requests_per_cud"
     };
     private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new Object[]{
             "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1",
@@ -458,7 +459,10 @@ public class SuperTokensSaaSSecretTest {
             // equal to the base default so the CUD-level not-conflicting check passes for apps under the base CUD
             31,
             // equal to the base default so the CUD-level not-conflicting check passes for apps under the base CUD
-            true
+            true,
+            // equal to the base default (0 = no cap) so the CUD-level not-conflicting check passes, and 0 is a
+            // valid value regardless of max_server_pool_size
+            0
     };
 
     @Test
