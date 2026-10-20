@@ -268,6 +268,77 @@ public class ConcurrencyLimiterTest {
         stop(process);
     }
 
+    // ----- the rejection WARN for an unknown tenant segment reports the cap that was actually enforced (read
+    // from the CUD's base tenant), not 0 from a failed lookup of the unknown tenant -----
+    @Test
+    public void testRejectionWarnForUnknownTenantSegmentReportsTheEnforcedCap() throws Exception {
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        // the first rejection on this CUD, so it is the one that gets the WARN
+        assertEquals(429, get(port, "/ghosttenant/.well-known/jwks.json").status);
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+
+        File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+        int enforcedCapWarns = 0;
+        int zeroCapWarns = 0;
+        try (Scanner scanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (!line.contains(process.getProcess().getProcessId())) {
+                    continue;
+                }
+                if (line.contains("Concurrent request cap (1) reached")) {
+                    enforcedCapWarns++;
+                }
+                if (line.contains("Concurrent request cap (0) reached")) {
+                    zeroCapWarns++;
+                }
+            }
+        }
+        assertEquals(0, zeroCapWarns);
+        assertEquals(1, enforcedCapWarns);
+
+        stop(process);
+    }
+
+    // ----- a rejection for an app that does not exist under a real CUD is still counted in /requests/stats,
+    // against the CUD's base app, rather than being dropped by the failed app lookup -----
+    @Test
+    public void testRejectionForUnknownAppUnderAKnownCudIsCounted() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        assertEquals(429, get(port, "/appid-ghostapp/.well-known/jwks.json").status);
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        waitForGlobalInFlight(process, 0, 15000);
+        ex.shutdown();
+
+        assertEquals(1, getRequestStats(process).get("concurrentRequestsRejected").getAsLong());
+
+        stop(process);
+    }
+
     // ----- test 6: the real /hello liveness probe is never capped, even while the CUD is saturated -----
     @Test
     public void testHelloIsExemptFromTheCap() throws Exception {

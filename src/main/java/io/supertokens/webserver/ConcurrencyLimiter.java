@@ -19,7 +19,6 @@ package io.supertokens.webserver;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -130,21 +129,27 @@ public class ConcurrencyLimiter extends ResourceDistributor.SingletonResource {
      * state, and logs a single WARN — but at most once per CUD per {@link #WARN_INTERVAL_MILLIS}, because a
      * saturated tenant is rejected on every request and would otherwise flood the log. This is best-effort and
      * never throws, so it can never interfere with sending the 429 to the client.
+     * <p>
+     * {@code limit} is the cap that was just enforced (read by the caller from the CUD's base tenant), so the WARN
+     * reports it even when {@code tenantIdentifier} names a tenant or app that does not exist under the CUD. For
+     * such an unknown app the rejection is counted against the CUD's base app instead of being dropped.
      */
-    public void onRejected(Main main, TenantIdentifier tenantIdentifier) {
+    public void onRejected(Main main, TenantIdentifier tenantIdentifier, int limit) {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CONCURRENT_REQUEST_LIMIT_HIT, null);
         try {
             RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).incrementConcurrentRequestsRejected();
         } catch (TenantOrAppNotFoundException e) {
-            // the app was removed between acquiring and rejecting; nothing to count for it
+            // the path names an app that does not exist under this (real) CUD; count it against the CUD's base app
+            try {
+                RequestStats.getInstance(main,
+                                new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null)
+                                        .toAppIdentifier())
+                        .incrementConcurrentRequestsRejected();
+            } catch (TenantOrAppNotFoundException e2) {
+                // the CUD was removed between acquiring and rejecting; nothing to count for it
+            }
         }
         if (shouldWarnNow(System.currentTimeMillis())) {
-            int limit;
-            try {
-                limit = Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
-            } catch (TenantOrAppNotFoundException e) {
-                limit = 0; // config vanished mid-request; still worth a WARN, just without the exact cap
-            }
             String cud = tenantIdentifier.getConnectionUriDomain();
             Logging.warn(main, tenantIdentifier, "Concurrent request cap (" + limit + ") reached for "
                     + (cud == null ? "" : cud) + "; rejecting with 429");

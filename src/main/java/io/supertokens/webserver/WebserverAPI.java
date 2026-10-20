@@ -611,7 +611,7 @@ public abstract class WebserverAPI extends HttpServlet {
                         // counters were already rolled back by tryAcquire; nothing to release. onRejected records
                         // the rejection for observability (RequestStats counter, ProcessState, one rate-limited
                         // WARN).
-                        limiter.onRejected(main, tenantIdentifier);
+                        limiter.onRejected(main, tenantIdentifier, limit);
                         resp.setHeader("Retry-After", "1");
                         sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
                         return;
