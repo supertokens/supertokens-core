@@ -82,7 +82,11 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     // (generateKeysForSupportedAlgos calls getInstance internally)
                     main.getResourceDistributor().setResource(app, RESOURCE_KEY, jwtSigningKey);
                     newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), jwtSigningKey);
-                    jwtSigningKey.generateKeysForSupportedAlgos(main);
+                    // Querying a storage that is still initialising would wait for it (see
+                    // StorageLayer.isStorageStillInitialising); the keys are then created on first use.
+                    if (!StorageLayer.isStorageStillInitialising(main, app)) {
+                        jwtSigningKey.generateKeysForSupportedAlgos(main);
+                    }
                 } catch (Exception e) {
                     Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
                     // continue loading other resources
@@ -139,6 +143,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public List<JWTSigningKeyInfo> getAllSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
+        // a static legacy access token signing key moves into these keys, so move it before reading them
+        AccessTokenSigningKey.getInstance(appIdentifier, main).ensureLegacyKeyTransferred();
         JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(
                 this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
@@ -184,6 +190,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {
+        // a static legacy access token signing key becomes an RS256 key here; move it before deciding whether one
+        // has to be generated
+        AccessTokenSigningKey.getInstance(appIdentifier, main).ensureLegacyKeyTransferred();
         JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(
                 this.appIdentifier.getAsPublicTenantIdentifier(), main);
 

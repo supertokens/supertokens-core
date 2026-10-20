@@ -16,6 +16,7 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -157,10 +158,22 @@ public class OAuthQueries {
 
     public static OAuthClient getOAuthClientById(Start start, String clientId, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
+        // Borrow a pool connection and delegate to the connection-scoped twin below, so the query and its
+        // result mapping live in exactly one place.
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            return getOAuthClientById(start, con, clientId, appIdentifier);
+        }
+    }
+
+    // Transaction-aware twin of getOAuthClientById: same read run on the caller's connection instead of
+    // borrowing a new one from the pool.
+    public static OAuthClient getOAuthClientById(Start start, Connection con, String clientId,
+                                                 AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT client_secret, is_client_credentials_only, enable_refresh_token_rotation FROM " + Config.getConfig(start).getOAuthClientsTable() +
             " WHERE client_id = ? AND app_id = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, clientId);
             pst.setString(2, appIdentifier.getAppId());
         }, (result) -> {
@@ -536,9 +549,21 @@ public class OAuthQueries {
 
     public static boolean isOAuthSessionExistsByGID(Start start, AppIdentifier appIdentifier, String gid)
             throws SQLException, StorageQueryException {
+        // Borrow a pool connection and delegate to the connection-scoped twin below, so the query and its
+        // result mapping live in exactly one place (mirrors QueryExecutorTemplate#execute(Start, ...)).
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            return isOAuthSessionExistsByGID(start, con, appIdentifier, gid);
+        }
+    }
+
+    // Connection-scoped variant of the above: runs the existence check on the caller's already-open
+    // transaction connection instead of borrowing a new one from the pool (see OAuthSQLStorage
+    // #isOAuthTokenRevokedByGID_Transaction).
+    public static boolean isOAuthSessionExistsByGID(Start start, Connection con, AppIdentifier appIdentifier, String gid)
+            throws SQLException, StorageQueryException {
         String SELECT = "SELECT count(*) FROM " + Config.getConfig(start).getOAuthSessionsTable()
                 + " WHERE app_id = ? and gid = ?;";
-        return execute(start, SELECT, pst -> {
+        return execute(con, SELECT, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, gid);
         }, result -> {

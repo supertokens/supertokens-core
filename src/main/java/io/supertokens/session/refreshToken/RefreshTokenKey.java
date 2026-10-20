@@ -53,6 +53,10 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
             TenantOrAppNotFoundException {
         this.main = main;
         this.appIdentifier = appIdentifier;
+        if (StorageLayer.isStorageStillInitialising(main, appIdentifier)) {
+            // querying a storage that is still initialising would wait for it; getKey() loads the key on first use
+            return;
+        }
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {

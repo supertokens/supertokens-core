@@ -44,6 +44,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.filters.RemoteAddrFilter;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -57,7 +58,29 @@ public abstract class WebserverAPI extends HttpServlet {
     private static final long serialVersionUID = 1L;
     protected final Main main;
     public static final Set<SemVer> supportedVersions = new HashSet<>();
+    // Test-only hook around every request, called on the servlet thread that handles it; null outside tests.
+    private static volatile RequestObserver requestObserver = null;
     private String rid;
+
+    /**
+     * Determines which webserver connector(s) a route is served on when the admin connector is enabled
+     * (see {@code admin_port} in {@link CoreConfig}). When the admin connector is disabled every route is
+     * served on the single main connector regardless of scope, i.e. exactly as before this classification
+     * existed. {@code ADMIN_PREFERRED} is a permanent, first-class state (a route may stay dual forever) and
+     * is NOT a temporary step toward {@code ADMIN_ONLY}.
+     *
+     * <p>This is a port-routing classification, not an authentication mechanism. In particular, with the admin
+     * connector disabled an {@code ADMIN_ONLY} route is served on the main port, guarded only by the usual
+     * api-key / IP-allow rules — so {@code ADMIN_ONLY} on its own is not a hard access guarantee.
+     */
+    public enum RouteScope {
+        // Served only on the main (data-plane) port; rejected with 404 on the admin port.
+        DATA_PLANE,
+        // Served only on the admin port; rejected with 404 on the main port.
+        ADMIN_ONLY,
+        // Served on both the main and the admin port.
+        ADMIN_PREFERRED
+    }
 
     static {
         supportedVersions.add(SemVer.v2_7);
@@ -186,7 +209,15 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private String getApiKeyFromRequest(HttpServletRequest req) {
+    /**
+     * The connector scope for this route. Defaults to {@link RouteScope#DATA_PLANE}; the few admin/control-plane
+     * routes override this. Consulted by {@link PathRouter} only when the admin connector is enabled.
+     */
+    public RouteScope getRouteScope() {
+        return RouteScope.DATA_PLANE;
+    }
+
+    protected String getApiKeyFromRequest(HttpServletRequest req) {
         String apiKey = req.getHeader("api-key");
 
         if (apiKey == null) {
@@ -204,7 +235,12 @@ public abstract class WebserverAPI extends HttpServlet {
         return apiKey;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
+    /**
+     * @return true if the key check ran against an existing app's config (the request is authenticated for that
+     * app, or the app has no API key configured), false if the app or CUD does not exist, in which case nothing
+     * was checked
+     */
+    private boolean assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
         try {
             String apiKey = getApiKeyFromRequest(req);
 
@@ -227,7 +263,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     isAuthorised = isAuthorised || key.equals(apiKey);
                 }
                 if (isAuthorised) {
-                    return;
+                    return true;
                 }
             }
 
@@ -240,7 +276,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     throw new ServletException(new APIKeyUnauthorisedException());
                 }
                 if (apiKey.equals(superTokensSaaSSecret)) {
-                    return;
+                    return true;
                 }
             }
 
@@ -248,11 +284,13 @@ public abstract class WebserverAPI extends HttpServlet {
             if (superTokensSaaSSecret != null || keys != null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
+            return true;
         } catch (TenantOrAppNotFoundException e) {
             // The app/CUD does not exist, so there is no api_keys config to enforce and no app
             // to operate on — let the app-specific handler return its "app not found" (400).
             // (For an unknown *tenant* under a real app the key IS enforced: the lookup above
             // resolves the app's public tenant, so we never reach here in that case.)
+            return false;
         }
     }
 
@@ -518,9 +556,29 @@ public abstract class WebserverAPI extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        RequestObserver observer = requestObserver;
+        if (observer == null) {
+            serviceRequest(req, resp);
+            return;
+        }
+        observer.onRequestStart(req);
+        try {
+            serviceRequest(req, resp);
+        } finally {
+            observer.onRequestEnd(req);
+        }
+    }
 
+    private boolean isOnAdminConnector(HttpServletRequest req) {
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        return baseConfig.isAdminConnectorEnabled() && req.getLocalPort() == baseConfig.getAdminPort();
+    }
 
+    private void serviceRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         TenantIdentifier tenantIdentifier = null;
+        ConcurrencyLimiter limiter = null;
+        boolean acquired = false;
+        boolean acquiredGlobalOnly = false;
         try {
             tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
 
@@ -529,8 +587,50 @@ public abstract class WebserverAPI extends HttpServlet {
                 return;
             }
 
+            boolean authenticatedForAnExistingApp = false;
             if (this.checkAPIKey(req)) {
-                assertThatAPIKeyCheckPasses(req);
+                authenticatedForAnExistingApp = assertThatAPIKeyCheckPasses(req);
+            }
+
+            // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. The CUD comes
+            // from the Host header, which any client sets, so a request is charged to a CUD's quota only once it
+            // has passed the API-key check for an app that exists under that CUD. Everything else on the main
+            // connector (routes without an API-key check such as /hello, /livez, /.well-known/jwks.json and the
+            // not-found handler; paths naming an app that does not exist; unknown CUDs) is only counted toward
+            // the process-wide saturation and is never capped: otherwise unauthenticated traffic, e.g. slow
+            // request bodies, could fill a chosen CUD's quota and get its real traffic 429'd. IP-denied requests
+            // were answered, and requests failing the key check have thrown, before this point. Both checks only
+            // read the in-memory config, so a capped request is still rejected before any DB work. The cap is a CUD-level setting,
+            // so it is read from the CUD's base tenant: an unknown tenant segment under a real app is still
+            // capped. Requests on the admin connector skip the limiter entirely: they run on their own thread
+            // pool, so they neither count toward the main pool's saturation nor get capped.
+            if (!isOnAdminConnector(req)) {
+                if (!authenticatedForAnExistingApp) {
+                    ConcurrencyLimiter.acquireGlobalOnly(main);
+                    acquiredGlobalOnly = true;
+                } else {
+                    try {
+                        TenantIdentifier cudBaseTenant =
+                                new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null);
+                        int limit = Config.getConfig(cudBaseTenant, main).getMaxConcurrentRequestsPerCud();
+                        int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
+                        limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
+                        if (!limiter.tryAcquire(limit, saturationThreshold)) {
+                            // counters were already rolled back by tryAcquire; nothing to release. onRejected
+                            // records the rejection for observability (RequestStats counter, ProcessState, one
+                            // rate-limited WARN).
+                            limiter.onRejected(main, tenantIdentifier, limit);
+                            resp.setHeader("Retry-After", "1");
+                            sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
+                            return;
+                        }
+                        acquired = true;
+                    } catch (TenantOrAppNotFoundException e) {
+                        // the CUD was removed since the key check (no base tenant): count it toward saturation only
+                        ConcurrencyLimiter.acquireGlobalOnly(main);
+                        acquiredGlobalOnly = true;
+                    }
+                }
             }
 
             SemVer version = getVersionFromRequest(req);
@@ -592,6 +692,21 @@ public abstract class WebserverAPI extends HttpServlet {
                 String msg = e.toString();
                 msg = maskDBPassword(msg);
                 sendTextResponse(500, msg, resp);
+            }
+        } finally {
+            // release on every exit path (incl. QuitProgramException and the 500 fallback) if we acquired
+            if (acquired) {
+                limiter.release();
+            }
+            if (acquiredGlobalOnly) {
+                ConcurrencyLimiter.releaseGlobalOnly(main);
+            }
+            if (tenantIdentifier != null) {
+                // Process-global, per-status-class counts (across all apps). Counted here, in the finally, so the
+                // early returns above (429 cap rejection, IP-filter denial, the pre-3.0 CDI tenant 404) are
+                // counted too. Keyed at the base tenant so it never throws for an unknown app. Requests that fail
+                // tenant resolution (tenantIdentifier == null) are intentionally not counted here.
+                GlobalRequestStats.getInstance(main).incrementForStatus(resp.getStatus());
             }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
@@ -675,6 +790,22 @@ public abstract class WebserverAPI extends HttpServlet {
         public BadRequestException(String msg) {
             super(msg);
         }
+    }
+
+    // Observes the start and end of each request on the servlet thread that handles it, e.g. so a test can measure
+    // per-thread state for exactly one API call.
+    public interface RequestObserver {
+        void onRequestStart(HttpServletRequest req);
+
+        void onRequestEnd(HttpServletRequest req);
+    }
+
+    // Installs the observer for requests that start from now on (null removes it) and returns the previous one.
+    @TestOnly
+    public static RequestObserver setRequestObserverForTesting(RequestObserver observer) {
+        RequestObserver previous = requestObserver;
+        requestObserver = observer;
+        return previous;
     }
 
     protected static class APIKeyUnauthorisedException extends Exception {
