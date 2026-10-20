@@ -32,6 +32,9 @@ public interface EEFeatureFlagInterface {
     @TestOnly
     void updateEnabledFeaturesValueReadFromDbTime(long newTime);
 
+    @TestOnly
+    long getEnabledFeaturesValueReadFromDbTime();
+
     void constructor(Main main, AppIdentifier appIdentifier);
 
     EE_FEATURES[] getEnabledFeatures() throws StorageQueryException, TenantOrAppNotFoundException;

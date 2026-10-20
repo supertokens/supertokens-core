@@ -102,6 +102,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     @Override
+    @TestOnly
+    public long getEnabledFeaturesValueReadFromDbTime() {
+        return this.enabledFeaturesValueReadFromDbTime;
+    }
+
+    @Override
     public void constructor(Main main, AppIdentifier appIdentifier) {
         this.main = main;
         this.appIdentifier = appIdentifier;
@@ -620,7 +626,15 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                     .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB);
             if (keyValueInfo == null) {
                 //Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "No feature flag set in db");
-                return new EE_FEATURES[]{};
+                // Cache the absent row the same way a present one is cached: without this, every feature
+                // check re-reads key_value while no FEATURE_FLAG row exists yet - for a fresh install until
+                // the first EELicenseCheck run, and for an app created at runtime until its next run, since
+                // 12.4.0 the constructor no longer syncs. The next successful sync writes the row and
+                // setEnabledEEFeaturesInDb refreshes this cache right away, so the negative answer never
+                // outlives it.
+                this.enabledFeaturesFromDb = new EE_FEATURES[]{};
+                this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+                return this.enabledFeaturesFromDb;
             }
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();

@@ -1283,6 +1283,71 @@ public class EETest extends Mockito {
     }
 
     @Test
+    public void missingFeatureFlagRowIsCachedLikeAPresentOne() throws Exception {
+        long t0 = System.currentTimeMillis();
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
+        // no license key is set and no sync has run yet (the constructor no longer syncs), so
+        // there is no FEATURE_FLAG row in key_value yet
+        EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(featuresFromDb.length, 0);
+
+        // the absent-row answer must be cached like a present-row answer is, so that feature
+        // checks until the next sync do not query key_value on every request
+        long cachedAt = FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .getEnabledFeaturesValueReadFromDbTime();
+        Assert.assertTrue(cachedAt >= t0);
+
+        // once the cache window has passed, the row is read and the negative answer cached again
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
+        long readAgainAt = System.currentTimeMillis();
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+        long recachedAt = FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .getEnabledFeaturesValueReadFromDbTime();
+        Assert.assertTrue(recachedAt >= readAgainAt);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void settingALicenseKeyRefreshesTheCachedMissingFeatureFlagRow() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
+        // the row is absent, so the first read caches the negative answer
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+        // a sync that writes the row (the same path PUT /ee/license takes) must make the new
+        // features visible right away, without waiting for the cache window to pass
+        FeatureFlag.getInstance(process.main)
+                .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
+
+        EE_FEATURES[] featuresAfterSync = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(featuresAfterSync.length, 1);
+        Assert.assertEquals(featuresAfterSync[0], EE_FEATURES.TEST);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void gettingInvalidFeatureFlagShouldIgnoreItFromDb() throws Exception {
         String[] args = {"../../"};
 
