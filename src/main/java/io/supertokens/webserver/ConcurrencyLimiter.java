@@ -118,6 +118,20 @@ public class ConcurrencyLimiter extends ResourceDistributor.SingletonResource {
         globalInFlight.decrementAndGet();
     }
 
+    /**
+     * Counts a request toward the process-wide in-flight total only: it adds to the saturation that gates every
+     * CUD's cap, but is charged to no CUD's quota and is never rejected. Used for requests that have not proved
+     * they belong to the CUD named by their Host header (see {@code WebserverAPI.serviceRequest}). The caller MUST
+     * call {@link #releaseGlobalOnly} in a finally.
+     */
+    public static void acquireGlobalOnly(Main main) {
+        getGlobalCounter(main).incrementAndGet();
+    }
+
+    public static void releaseGlobalOnly(Main main) {
+        getGlobalCounter(main).decrementAndGet();
+    }
+
     public int inFlight() {
         return inFlight.get();
     }
@@ -131,15 +145,16 @@ public class ConcurrencyLimiter extends ResourceDistributor.SingletonResource {
      * never throws, so it can never interfere with sending the 429 to the client.
      * <p>
      * {@code limit} is the cap that was just enforced (read by the caller from the CUD's base tenant), so the WARN
-     * reports it even when {@code tenantIdentifier} names a tenant or app that does not exist under the CUD. For
-     * such an unknown app the rejection is counted against the CUD's base app instead of being dropped.
+     * reports it even when {@code tenantIdentifier} names a tenant that does not exist under its app. Only requests
+     * authenticated for an existing app are charged to a CUD's quota, so the request's app exists here; the
+     * fallback to the CUD's base app only covers an app removed while the request was in flight.
      */
     public void onRejected(Main main, TenantIdentifier tenantIdentifier, int limit) {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CONCURRENT_REQUEST_LIMIT_HIT, null);
         try {
             RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).incrementConcurrentRequestsRejected();
         } catch (TenantOrAppNotFoundException e) {
-            // the path names an app that does not exist under this (real) CUD; count it against the CUD's base app
+            // the app was removed while the request was in flight; count it against the CUD's base app
             try {
                 RequestStats.getInstance(main,
                                 new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null)

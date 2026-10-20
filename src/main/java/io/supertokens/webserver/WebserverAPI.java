@@ -36,8 +36,6 @@ import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.api.core.HelloAPI;
-import io.supertokens.webserver.api.core.LivezAPI;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -237,7 +235,12 @@ public abstract class WebserverAPI extends HttpServlet {
         return apiKey;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
+    /**
+     * @return true if the key check ran against an existing app's config (the request is authenticated for that
+     * app, or the app has no API key configured), false if the app or CUD does not exist, in which case nothing
+     * was checked
+     */
+    private boolean assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
         try {
             String apiKey = getApiKeyFromRequest(req);
 
@@ -260,7 +263,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     isAuthorised = isAuthorised || key.equals(apiKey);
                 }
                 if (isAuthorised) {
-                    return;
+                    return true;
                 }
             }
 
@@ -273,7 +276,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     throw new ServletException(new APIKeyUnauthorisedException());
                 }
                 if (apiKey.equals(superTokensSaaSSecret)) {
-                    return;
+                    return true;
                 }
             }
 
@@ -281,11 +284,13 @@ public abstract class WebserverAPI extends HttpServlet {
             if (superTokensSaaSSecret != null || keys != null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
+            return true;
         } catch (TenantOrAppNotFoundException e) {
             // The app/CUD does not exist, so there is no api_keys config to enforce and no app
             // to operate on — let the app-specific handler return its "app not found" (400).
             // (For an unknown *tenant* under a real app the key IS enforced: the lookup above
             // resolves the app's public tenant, so we never reach here in that case.)
+            return false;
         }
     }
 
@@ -573,6 +578,7 @@ public abstract class WebserverAPI extends HttpServlet {
         TenantIdentifier tenantIdentifier = null;
         ConcurrencyLimiter limiter = null;
         boolean acquired = false;
+        boolean acquiredGlobalOnly = false;
         try {
             tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
 
@@ -581,45 +587,49 @@ public abstract class WebserverAPI extends HttpServlet {
                 return;
             }
 
+            boolean authenticatedForAnExistingApp = false;
             if (this.checkAPIKey(req)) {
-                assertThatAPIKeyCheckPasses(req);
+                authenticatedForAnExistingApp = assertThatAPIKeyCheckPasses(req);
             }
 
-            // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. This runs
-            // after the IP filter and API-key check, so a request is only charged to a CUD's quota once it is
-            // allowed in for that CUD: the CUD comes from the Host header, and charging first would let
-            // unauthenticated or IP-denied traffic fill another tenant's quota. Both checks only read the
-            // in-memory config, so a capped request is still rejected before any DB work. Requests on the admin
-            // connector skip the limiter entirely: they run on their own
-            // thread pool, so they neither count toward the main pool's saturation nor get capped. On the main
-            // connector the liveness probes (/hello, /livez) are never capped, but are still counted so they
-            // contribute to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
-            // /.well-known/jwks.json) is counted and capped. The cap is a CUD-level setting, so it is read from
-            // the CUD's base tenant, not the request's tenant: a path naming a tenant or app that does not exist
-            // under a real CUD is still capped and counted. Only if the CUD itself is unknown do we skip the
-            // limiter and let the existing 400 path below handle it.
+            // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. The CUD comes
+            // from the Host header, which any client sets, so a request is charged to a CUD's quota only once it
+            // has passed the API-key check for an app that exists under that CUD. Everything else on the main
+            // connector (routes without an API-key check such as /hello, /livez, /.well-known/jwks.json and the
+            // not-found handler; paths naming an app that does not exist; unknown CUDs) is only counted toward
+            // the process-wide saturation and is never capped: otherwise unauthenticated traffic, e.g. slow
+            // request bodies, could fill a chosen CUD's quota and get its real traffic 429'd. IP-denied requests
+            // were answered, and requests failing the key check have thrown, before this point. Both checks only
+            // read the in-memory config, so a capped request is still rejected before any DB work. The cap is a CUD-level setting,
+            // so it is read from the CUD's base tenant: an unknown tenant segment under a real app is still
+            // capped. Requests on the admin connector skip the limiter entirely: they run on their own thread
+            // pool, so they neither count toward the main pool's saturation nor get capped.
             if (!isOnAdminConnector(req)) {
-                try {
-                    TenantIdentifier cudBaseTenant =
-                            new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null);
-                    int limit = (this instanceof HelloAPI || this instanceof LivezAPI)
-                            ? 0
-                            : Config.getConfig(cudBaseTenant, main).getMaxConcurrentRequestsPerCud();
-                    int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
-                    limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
-                    if (!limiter.tryAcquire(limit, saturationThreshold)) {
-                        // counters were already rolled back by tryAcquire; nothing to release. onRejected records
-                        // the rejection for observability (RequestStats counter, ProcessState, one rate-limited
-                        // WARN).
-                        limiter.onRejected(main, tenantIdentifier, limit);
-                        resp.setHeader("Retry-After", "1");
-                        sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
-                        return;
+                if (!authenticatedForAnExistingApp) {
+                    ConcurrencyLimiter.acquireGlobalOnly(main);
+                    acquiredGlobalOnly = true;
+                } else {
+                    try {
+                        TenantIdentifier cudBaseTenant =
+                                new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null);
+                        int limit = Config.getConfig(cudBaseTenant, main).getMaxConcurrentRequestsPerCud();
+                        int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
+                        limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
+                        if (!limiter.tryAcquire(limit, saturationThreshold)) {
+                            // counters were already rolled back by tryAcquire; nothing to release. onRejected
+                            // records the rejection for observability (RequestStats counter, ProcessState, one
+                            // rate-limited WARN).
+                            limiter.onRejected(main, tenantIdentifier, limit);
+                            resp.setHeader("Retry-After", "1");
+                            sendTextResponse(429, "Too many concurrent requests for this tenant", resp);
+                            return;
+                        }
+                        acquired = true;
+                    } catch (TenantOrAppNotFoundException e) {
+                        // the CUD was removed since the key check (no base tenant): count it toward saturation only
+                        ConcurrencyLimiter.acquireGlobalOnly(main);
+                        acquiredGlobalOnly = true;
                     }
-                    acquired = true;
-                } catch (TenantOrAppNotFoundException e) {
-                    // unknown CUD (no base tenant): there is no limiter to charge; the request continues and
-                    // hits the existing 400 path
                 }
             }
 
@@ -687,6 +697,9 @@ public abstract class WebserverAPI extends HttpServlet {
             // release on every exit path (incl. QuitProgramException and the 500 fallback) if we acquired
             if (acquired) {
                 limiter.release();
+            }
+            if (acquiredGlobalOnly) {
+                ConcurrencyLimiter.releaseGlobalOnly(main);
             }
             if (tenantIdentifier != null) {
                 // Process-global, per-status-class counts (across all apps). Counted here, in the finally, so the
