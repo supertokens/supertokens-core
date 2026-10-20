@@ -262,12 +262,16 @@ public class CoreConfig {
     @NotConflictingInConnectionUriDomain
     @JsonProperty
     @ConfigDescription(
-            "Maximum number of requests from one connection URI domain that may be in flight at the same time (i.e. "
-                    + "how many of the max_server_pool_size threads one tenant may hold). This is a fair-share rule, "
-                    + "enforced only while the request pool is saturated (see concurrency_cap_reserved_pool_percent): "
-                    + "a connection URI domain over its cap then gets HTTP 429 immediately instead of a thread; below "
-                    + "that, no request is ever rejected. Must be the same for all apps/tenants under a connection URI "
-                    + "domain and cannot exceed max_server_pool_size. 0 disables the cap. (Default: 0)")
+            "Maximum number of requests from one connection URI domain that may be in flight at the "
+                    + "same time. Only requests that pass the API-key check for an app that exists under the "
+                    + "domain count toward it; requests to routes without an API-key check (e.g. /hello, "
+                    + "/livez, /.well-known/jwks.json) and requests naming an app that does not exist only add "
+                    + "to the pool's saturation and are never capped. This is a fair-share rule, enforced only "
+                    + "while the request pool is saturated (see concurrency_cap_reserved_pool_percent): a "
+                    + "connection URI domain over its cap then gets HTTP 429 immediately instead of a thread; "
+                    + "below that, no request is ever rejected. Must be the same for all apps/tenants under a "
+                    + "connection URI domain and cannot exceed max_server_pool_size. 0 disables the cap. "
+                    + "(Default: 0)")
     private int max_concurrent_requests_per_cud = 0;
 
     @EnvName("CONCURRENCY_CAP_RESERVED_POOL_PERCENT")
