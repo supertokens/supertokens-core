@@ -576,9 +576,21 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
 
+            if (!this.checkIPAccess(req, resp)) {
+                // IP access denied and the filter has already sent the response
+                return;
+            }
+
+            if (this.checkAPIKey(req)) {
+                assertThatAPIKeyCheckPasses(req);
+            }
+
             // Per-CUD in-flight concurrency cap, enforced only while the request pool is saturated. This runs
-            // before the IP filter and API-key check so a rejected request does not spend a thread on those or
-            // on any DB work. Requests on the admin connector skip the limiter entirely: they run on their own
+            // after the IP filter and API-key check, so a request is only charged to a CUD's quota once it is
+            // allowed in for that CUD: the CUD comes from the Host header, and charging first would let
+            // unauthenticated or IP-denied traffic fill another tenant's quota. Both checks only read the
+            // in-memory config, so a capped request is still rejected before any DB work. Requests on the admin
+            // connector skip the limiter entirely: they run on their own
             // thread pool, so they neither count toward the main pool's saturation nor get capped. On the main
             // connector the liveness probes (/hello, /livez) are never capped, but are still counted so they
             // contribute to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
@@ -604,15 +616,6 @@ public abstract class WebserverAPI extends HttpServlet {
                 } catch (TenantOrAppNotFoundException e) {
                     // unknown CUD: skip the limiter; the request continues and hits the existing 400 path
                 }
-            }
-
-            if (!this.checkIPAccess(req, resp)) {
-                // IP access denied and the filter has already sent the response
-                return;
-            }
-
-            if (this.checkAPIKey(req)) {
-                assertThatAPIKeyCheckPasses(req);
             }
 
             SemVer version = getVersionFromRequest(req);

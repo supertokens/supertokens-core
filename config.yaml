@@ -69,10 +69,10 @@ core_config_version: 0
 # waited for. Must be >= 1.
 # storage_init_timeout_seconds:
 
-# (OPTIONAL | Default: 16) int value. How many tenant storages (connection pools) the core initialises at the same
-# time at startup. A higher value starts many tenant databases faster, a lower one sends fewer connections at once to
-# a database many tenants share. A storage still initialising after storage_init_timeout_seconds gets one more
-# thread, so the next one can start. Must be >= 1.
+# (OPTIONAL | Default: 16) int value. How many tenant storages (connection pools) the core initialises at the same time
+# at startup. A higher value starts many tenant databases faster, a lower one sends fewer connections at once to a
+# database many tenants share. Each storage still initialising after storage_init_timeout_seconds lets one more storage
+# start, so while such storages are still running, more than this many can be initialising. Must be >= 1.
 # storage_init_parallelism:
 
 
@@ -119,7 +119,7 @@ core_config_version: 0
 # max_server_pool_size:
 
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 0) integer value. Maximum number of requests from one connection URI
+# (OPTIONAL | Default: 0) integer value. Maximum number of requests from one connection URI
 # domain that may be in flight at the same time (i.e. how many of the max_server_pool_size threads one tenant may
 # hold). This is a fair-share rule, enforced only while the request pool is saturated (see
 # concurrency_cap_reserved_pool_percent): a connection URI domain over its cap then gets HTTP 429 immediately instead
@@ -270,11 +270,11 @@ core_config_version: 0
 # by a periodic cleanup. Must be the same for all apps/tenants under a connection URI domain.
 # activity_log_retention_days:
 
-# (OPTIONAL | Default: true) boolean value. If true, throttled activity events (token_refresh, session_create,
-# oauth_token_exchange, oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5
-# minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out are never
-# throttled. Set to false to record every activity event as its own row (a complete audit trail) at the cost of
-# that write volume. Must be the same for all apps/tenants under a connection URI domain.
+# (OPTIONAL | Default: true) boolean value. If true, throttled activity events (token_refresh, oauth_token_exchange,
+# oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 minutes, so a burst of
+# refreshes does not turn into a per-request insert. sign_in, session_create and sign_out are never throttled. Set to
+# false to record every activity event as its own row (a complete audit trail) at the cost of that write volume. Must be
+# the same for all apps/tenants under a connection URI domain.
 # activity_log_throttle_enabled:
 
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a webauthn

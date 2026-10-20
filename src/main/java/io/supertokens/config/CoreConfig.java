@@ -154,8 +154,9 @@ public class CoreConfig {
     @ConfigDescription(
             "How many tenant storages (connection pools) the core initialises at the same time at startup. A higher "
                     + "value starts many tenant databases faster, a lower one sends fewer connections at once to a "
-                    + "database many tenants share. A storage still initialising after storage_init_timeout_seconds "
-                    + "gets one more thread, so the next one can start. Must be >= 1. (Default: 16)")
+                    + "database many tenants share. Each storage still initialising after "
+                    + "storage_init_timeout_seconds lets one more storage start, so while such storages are still "
+                    + "running, more than this many can be initialising. Must be >= 1. (Default: 16)")
     private int storage_init_parallelism = 16;
 
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
@@ -577,10 +578,10 @@ public class CoreConfig {
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If true, throttled activity events (token_refresh, session_create, oauth_token_exchange, " +
-                    "oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 " +
-                    "minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out " +
-                    "are never throttled. Set to false to record every activity event as its own row (a complete " +
+            "If true, throttled activity events (token_refresh, oauth_token_exchange, oauth_authorize) are " +
+                    "collapsed to at most one activity_log write per (app, user) every 5 minutes, so a burst of " +
+                    "refreshes does not turn into a per-request insert. sign_in, session_create and sign_out are " +
+                    "never throttled. Set to false to record every activity event as its own row (a complete " +
                     "audit trail) at the cost of that write volume. Must be the same for all apps/tenants under a " +
                     "connection URI domain. (Default: true)")
     private boolean activity_log_throttle_enabled = true;
