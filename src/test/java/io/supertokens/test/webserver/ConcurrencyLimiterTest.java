@@ -243,6 +243,31 @@ public class ConcurrencyLimiterTest {
         stop(process);
     }
 
+    // ----- the cap is a CUD-level setting: a path naming a tenant that does not exist under the CUD (handlers
+    // such as /.well-known/jwks.json ignore the tenant segment) is still capped and counted -----
+    @Test
+    public void testUnknownTenantSegmentUnderAKnownCudIsStillCapped() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        // take the CUD's only slot
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        Resp ghost = get(port, "/ghosttenant/.well-known/jwks.json");
+        assertEquals(429, ghost.status);
+        assertEquals(1, ConcurrencyLimiter.getGlobalInFlightForTesting(process.getProcess()));
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+        stop(process);
+    }
+
     // ----- test 6: the real /hello liveness probe is never capped, even while the CUD is saturated -----
     @Test
     public void testHelloIsExemptFromTheCap() throws Exception {

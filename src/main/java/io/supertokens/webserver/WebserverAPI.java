@@ -594,13 +594,17 @@ public abstract class WebserverAPI extends HttpServlet {
             // thread pool, so they neither count toward the main pool's saturation nor get capped. On the main
             // connector the liveness probes (/hello, /livez) are never capped, but are still counted so they
             // contribute to saturation like any other request; everything else (incl. NotFoundOrHelloAPI and
-            // /.well-known/jwks.json) is counted and capped. If the CUD is unknown, we skip the limiter and let
-            // the existing 400 path below handle the missing tenant.
+            // /.well-known/jwks.json) is counted and capped. The cap is a CUD-level setting, so it is read from
+            // the CUD's base tenant, not the request's tenant: a path naming a tenant or app that does not exist
+            // under a real CUD is still capped and counted. Only if the CUD itself is unknown do we skip the
+            // limiter and let the existing 400 path below handle it.
             if (!isOnAdminConnector(req)) {
                 try {
+                    TenantIdentifier cudBaseTenant =
+                            new TenantIdentifier(tenantIdentifier.getConnectionUriDomain(), null, null);
                     int limit = (this instanceof HelloAPI || this instanceof LivezAPI)
                             ? 0
-                            : Config.getConfig(tenantIdentifier, main).getMaxConcurrentRequestsPerCud();
+                            : Config.getConfig(cudBaseTenant, main).getMaxConcurrentRequestsPerCud();
                     int saturationThreshold = Config.getBaseConfig(main).getConcurrencyCapSaturationThreshold();
                     limiter = ConcurrencyLimiter.getInstance(main, tenantIdentifier);
                     if (!limiter.tryAcquire(limit, saturationThreshold)) {
@@ -614,7 +618,8 @@ public abstract class WebserverAPI extends HttpServlet {
                     }
                     acquired = true;
                 } catch (TenantOrAppNotFoundException e) {
-                    // unknown CUD: skip the limiter; the request continues and hits the existing 400 path
+                    // unknown CUD (no base tenant): there is no limiter to charge; the request continues and
+                    // hits the existing 400 path
                 }
             }
 
