@@ -163,6 +163,7 @@ runs:
       uses: docker/build-push-action@v7
       with:
         push: true
+        pull: true
         context: ./supertokens-root
         file: ./supertokens-root/supertokens-postgresql-plugin/.github/helpers/docker/Dockerfile
         platforms: linux/amd64,linux/arm64

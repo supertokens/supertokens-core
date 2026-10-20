@@ -20,8 +20,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.config.Config;
+import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.multitenancy.MultitenancyHelper;
+import io.supertokens.output.Logging;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -44,12 +49,14 @@ import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class FeatureFlagTest {
 
@@ -878,7 +885,7 @@ public class FeatureFlagTest {
     }
 
     @Test
-    public void testNetworkCallIsMadeInCoreInit() throws Exception {
+    public void testNetworkCallIsMadeByCronAfterCoreInitNotDuringBoot() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -901,10 +908,23 @@ public class FeatureFlagTest {
         process.kill(false);
 
 
-        // Restart core and check if the call was made during init
-        process = TestingProcessManager.startIsolatedProcess(args);
+        // Restart core. The license sync no longer runs synchronously in EEFeatureFlag's constructor on the
+        // boot thread; the EELicenseCheck cron performs it shortly after startup instead. Pin the cron's
+        // (jittered) initial delay to 10s via the CronTaskTest initial-wait seam so this is deterministic. We
+        // pin the initial wait rather than the interval so the "no call within 1000ms" window below has a wide
+        // (~10s), boot-order-independent margin, and the daily interval stays untouched (the cron won't loop).
+        process = TestingProcessManager.startIsolatedProcess(args, false);
+        // EELicenseCheck.RESOURCE_KEY lives in the ee module, which is not on this (core) test's compile
+        // classpath, so refer to it by its literal resource-key string.
+        CronTaskTest.getInstance(process.getProcess())
+                .setInitialWaitTimeInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 10);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // No synchronous license-server call during boot...
+        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+        // ...but the cron performs it once its initial delay elapses.
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
         process.kill();
@@ -975,8 +995,12 @@ public class FeatureFlagTest {
 
             process.kill(false);
 
-            // Restart core and check if the call was made during init
-            process = TestingProcessManager.startIsolatedProcess(args);
+            // Restart core. The license sync (and its usage-stats report) now runs on the EELicenseCheck
+            // cron shortly after startup rather than synchronously in EEFeatureFlag's constructor, so pin
+            // the cron's initial delay to 1s and read the stats off that call.
+            process = TestingProcessManager.startIsolatedProcess(args, false);
+            CronTaskTest.getInstance(process.getProcess())
+                    .setIntervalInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck", 1);
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
             ProcessState.EventAndException event = process.checkOrWaitForEvent(
@@ -1034,6 +1058,106 @@ public class FeatureFlagTest {
         assertEquals("public", publicTenantStat.get("tenantId").getAsString());
         assertEquals(2,
                 publicTenantStat.get("public").getAsJsonObject().get("numberOfSAMLClients").getAsInt());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Regression for #1423 (PLAN-013 unit 1): a per-app FeatureFlag construction failure during a
+    // resource reload must keep that app's previous resource instead of dropping it. Before the fix,
+    // replaceResourcesWithResourceKey wiped the app's resource and every later /ee/license call and
+    // feature gate threw TenantOrAppNotFoundException.
+    @Test
+    public void constructionFailureKeepsPreviousResourceAndLicenseStillWorks() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AppIdentifier baseApp = new AppIdentifier(null, null);
+
+        // the base app's FeatureFlag resource is loaded at boot
+        FeatureFlag before = FeatureFlag.getInstance(main, baseApp);
+        assertNotNull(before);
+
+        // arm the hook so reconstructing the base app's FeatureFlag throws (with a null-message exception)
+        FeatureFlagTestContent.getInstance(main).setKeyValue(
+                FeatureFlagTestContent.FAIL_CONSTRUCTOR_FOR_APPS,
+                new HashSet<>(Arrays.asList(baseApp.getAppId())));
+
+        // trigger a reload that touches the base app -> construction throws for it
+        MultitenancyHelper.getInstance(main).forceReloadAllResources(
+                Arrays.asList(baseApp.getAsPublicTenantIdentifier()));
+
+        // the previous resource must still be present (not wiped) and be the SAME instance
+        FeatureFlag after = FeatureFlag.getInstance(main, baseApp); // must NOT throw TenantOrAppNotFoundException
+        assertSame(before, after);
+
+        // /ee/license-backed calls keep working (no TenantOrAppNotFoundException)
+        after.getPaidFeatureStats();
+        after.getEnabledFeatures();
+
+        // once the failure clears, a reload reconstructs a fresh instance
+        FeatureFlagTestContent.getInstance(main).setKeyValue(
+                FeatureFlagTestContent.FAIL_CONSTRUCTOR_FOR_APPS, new HashSet<String>());
+        MultitenancyHelper.getInstance(main).forceReloadAllResources(
+                Arrays.asList(baseApp.getAsPublicTenantIdentifier()));
+        FeatureFlag reloaded = FeatureFlag.getInstance(main, baseApp);
+        assertNotSame(before, reloaded);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Regression for #1423 (PLAN-013 unit 1): Logging.error must not swallow a null-message exception
+    // (the 4-arg overload used to NPE on err.trim() inside catch(NullPointerException), logging
+    // nothing). The 5-arg overload must log the exception's class name + stack trace when the message
+    // is null.
+    @Test
+    public void nullMessageExceptionIsLoggedWithStackTraceAndNotSwallowed() throws Exception {
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        // The error log file is shared/appended across isolated test processes, so only scan the
+        // bytes appended by this test (past the current end of file).
+        File errorLog = new File(Config.getConfig(main).getErrorLogPath(main));
+        long offset = errorLog.exists() ? errorLog.length() : 0;
+
+        // 5-arg overload: an exception whose getMessage() is null must still be logged, with its
+        // class name (fallback) and stack trace, instead of being swallowed.
+        RuntimeException nullMsgException = new RuntimeException();
+        assertNull(nullMsgException.getMessage());
+        Logging.error(main, new TenantIdentifier(null, null, null), null, false, nullMsgException);
+
+        // 4-arg overload: a null message must not NPE-and-swallow; it should still log a line for
+        // the (distinctive) tenant.
+        Logging.error(main, new TenantIdentifier(null, "nullmsg4argapp", null), null, false);
+
+        boolean sawStackTrace = false;
+        boolean saw4ArgTenant = false;
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(errorLog, "r")) {
+            raf.seek(offset);
+            String line;
+            while ((line = raf.readLine()) != null) {
+                if (line.contains("java.lang.RuntimeException")) {
+                    sawStackTrace = true;
+                }
+                if (line.contains("nullmsg4argapp")) {
+                    saw4ArgTenant = true;
+                }
+            }
+        }
+        assertTrue("null-message exception should be logged with its class name / stack trace",
+                sawStackTrace);
+        assertTrue("null message (4-arg) should still be logged, not swallowed", saw4ArgTenant);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

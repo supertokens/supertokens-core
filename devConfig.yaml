@@ -64,6 +64,18 @@ core_config_version: 0
 # are not served. If false, mismatches are only logged and just the queries touching the missing schema fail.
 # schema_check_strict_mode:
 
+# (OPTIONAL | Default: 120) int value. How long (seconds) the core waits at startup for a tenant storage to
+# initialise, counted from when its own initialisation starts. A storage that takes longer is logged as an error
+# and startup continues without it, while it keeps initialising in the background. The base storage is always
+# waited for. Must be >= 1.
+# storage_init_timeout_seconds:
+
+# (OPTIONAL | Default: 16) int value. How many tenant storages (connection pools) the core initialises at the same time
+# at startup. A higher value starts many tenant databases faster, a lower one sends fewer connections at once to a
+# database many tenants share. Each storage still initialising after storage_init_timeout_seconds lets one more storage
+# start, so while such storages are still running, more than this many can be initialising. Must be >= 1.
+# storage_init_parallelism:
+
 
 
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
@@ -106,6 +118,51 @@ core_config_version: 0
 
 # (OPTIONAL | Default: 10) integer value. Sets the max thread pool size for incoming http server requests.
 # max_server_pool_size:
+
+
+# (OPTIONAL | Default: 0) integer value. Maximum number of requests from one connection URI domain that may be in flight
+# at the same time. Only requests that pass the API-key check for an app that exists under the domain count toward it;
+# requests to routes without an API-key check (e.g. /hello, /livez, /.well-known/jwks.json) and requests naming an app
+# that does not exist only add to the pool's saturation and are never capped. Requests on the admin port (admin_port)
+# bypass both the cap and the saturation count. This is a fair-share rule, enforced only while the request pool is
+# saturated (see concurrency_cap_reserved_pool_percent): a connection URI domain over its cap then gets HTTP 429
+# immediately instead of a thread; below that, no request is ever rejected. Must be the same for all apps/tenants under
+# a connection URI domain and cannot exceed max_server_pool_size. 0 disables the cap.
+# max_concurrent_requests_per_cud:
+
+
+# (OPTIONAL | Default: 25) integer value. Share of max_server_pool_size (percent) kept free for connection URI
+# domains under their max_concurrent_requests_per_cud. The per-tenant cap is only enforced once the pool has fewer
+# free threads than this; below that, tenants may exceed their cap. 100 keeps no headroom, so the cap is always
+# enforced (a hard cap). Must be between 1 and 100.
+# concurrency_cap_reserved_pool_percent:
+
+
+# (OPTIONAL | Default: null) integer value. The port for a second webserver connector that serves liveness and
+# control-plane routes from a thread pool separate from the data-plane pool. When set to null, the admin connector
+# is disabled and all routes are served on the main port exactly as before.
+# The admin port is NOT a separate trust boundary: it applies the same 'api_keys' and IP-allow rules as the main
+# port, binds the same 'host', and has no credential of its own. It carries sensitive routes (e.g. '/ee/license',
+# which sets the license key, and '/global-request-stats'), so it is meant for the orchestrator / control plane
+# and should not be exposed beyond the network boundary your liveness check and control plane already live in.
+# admin_port:
+
+
+# (OPTIONAL | Default: 5) integer value. Sets the max thread pool size for requests to the admin connector. Only
+# used when admin_port is set.
+# admin_max_server_pool_size:
+
+
+# (OPTIONAL | Default: null) comma separated string values. Comma-separated list of API paths to serve only on the
+# admin port, overriding their compiled-in route scope (e.g. '/ee/license'). Each entry must match a known API path,
+# and admin_port must be set.
+# admin_only_paths:
+
+
+# (OPTIONAL | Default: null) comma separated string values. Comma-separated list of API paths to serve on both the
+# admin and main ports, overriding their compiled-in route scope. Each entry must match a known API path, and
+# admin_port must be set.
+# admin_preferred_paths:
 
 
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an
@@ -214,11 +271,11 @@ bcrypt_log_rounds: 4
 # by a periodic cleanup. Must be the same for all apps/tenants under a connection URI domain.
 # activity_log_retention_days:
 
-# (OPTIONAL | Default: true) boolean value. If true, throttled activity events (token_refresh, session_create,
-# oauth_token_exchange, oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5
-# minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out are never
-# throttled. Set to false to record every activity event as its own row (a complete audit trail) at the cost of
-# that write volume. Must be the same for all apps/tenants under a connection URI domain.
+# (OPTIONAL | Default: true) boolean value. If true, throttled activity events (token_refresh, oauth_token_exchange,
+# oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 minutes, so a burst of
+# refreshes does not turn into a per-request insert. sign_in, session_create and sign_out are never throttled. Set to
+# false to record every activity event as its own row (a complete audit trail) at the cost of that write volume. Must be
+# the same for all apps/tenants under a connection URI domain.
 # activity_log_throttle_enabled:
 
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a webauthn

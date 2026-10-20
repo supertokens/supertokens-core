@@ -18,8 +18,6 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
-import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -28,7 +26,6 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -40,7 +37,6 @@ import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -111,23 +107,6 @@ public class SessionAPI extends WebserverAPI {
                     tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
                     useStaticSigningKey, accessTokenValidity);
-
-            if (storage.getType() == STORAGE_TYPE.SQL) {
-                try {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                            io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                    tenantIdentifier.toAppIdentifier(), storage,
-                                    sessionInfo.session.userId, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main,
-                                userIdMapping.superTokensUserId, ActivityEventType.SESSION_CREATE);
-                    } else {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main,
-                                sessionInfo.session.userId, ActivityEventType.SESSION_CREATE);
-                    }
-                } catch (StorageQueryException ignored) {
-                }
-            }
 
             JsonObject result = sessionInfo.toJsonObject();
 
