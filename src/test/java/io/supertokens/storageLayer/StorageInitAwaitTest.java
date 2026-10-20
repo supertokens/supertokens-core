@@ -120,8 +120,8 @@ public class StorageInitAwaitTest {
     public void executorIsABoundedPoolOfDaemonPlatformThreads() throws Exception {
         // a fixed pool spawns one worker per submitted task up to its size, so 69 tasks on a pool for 69 storages
         // show its bound
-        Set<Thread> threads = threadsUsedBy(StorageLayer.newStorageInitExecutor(69), 69);
-        assertEquals(StorageLayer.STORAGE_INIT_MAX_PARALLELISM, threads.size());
+        Set<Thread> threads = threadsUsedBy(StorageLayer.newStorageInitExecutor(69, 16), 69);
+        assertEquals(16, threads.size());
         for (Thread t : threads) {
             // platform threads: a virtual thread parked inside a synchronized section (the plugins' pool init)
             // pins its carrier, which is what hung boot with the previous virtual-thread executor
@@ -132,14 +132,14 @@ public class StorageInitAwaitTest {
         }
 
         // fewer storages than the bound: no idle threads
-        assertEquals(3, threadsUsedBy(StorageLayer.newStorageInitExecutor(3), 10).size());
+        assertEquals(3, threadsUsedBy(StorageLayer.newStorageInitExecutor(3, 16), 10).size());
         // degenerate input never yields an unusable executor
-        assertEquals(1, threadsUsedBy(StorageLayer.newStorageInitExecutor(0), 2).size());
+        assertEquals(1, threadsUsedBy(StorageLayer.newStorageInitExecutor(0, 16), 2).size());
     }
 
     @Test
     public void addingAThreadStartsTheNextQueuedTask() throws Exception {
-        ThreadPoolExecutor executor = StorageLayer.newStorageInitExecutor(2);
+        ThreadPoolExecutor executor = StorageLayer.newStorageInitExecutor(2, 16);
         CountDownLatch release = new CountDownLatch(1);
         AtomicInteger started = new AtomicInteger();
         CountDownLatch thirdStarted = new CountDownLatch(1);
@@ -390,7 +390,7 @@ public class StorageInitAwaitTest {
 
         // one storage more than the executor has threads. Each takes 1.5s against a 2s limit, so the last one
         // only starts 1.5s in and finishes 3s in, past a single 2s deadline for all storages.
-        int storageCount = StorageLayer.STORAGE_INIT_MAX_PARALLELISM + 1;
+        int storageCount = Config.getBaseConfig(process.getProcess()).getStorageInitParallelism() + 1;
         AtomicInteger finished = new AtomicInteger();
         Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
         for (int i = 0; i < storageCount; i++) {
@@ -420,7 +420,7 @@ public class StorageInitAwaitTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // more storages than the executor has threads, all wedged in init: the first ones take every thread
-        int storageCount = StorageLayer.STORAGE_INIT_MAX_PARALLELISM + 4;
+        int storageCount = Config.getBaseConfig(process.getProcess()).getStorageInitParallelism() + 4;
         AtomicInteger started = new AtomicInteger();
         CountDownLatch release = new CountDownLatch(1);
         Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
@@ -527,6 +527,63 @@ public class StorageInitAwaitTest {
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals("Provided storage_init_timeout_seconds must be >= 1", e.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void parallelismIsReadFromStorageInitParallelism() throws Exception {
+        Utils.setValueInConfig("storage_init_parallelism", "2");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(2, Config.getBaseConfig(process.getProcess()).getStorageInitParallelism());
+
+        AtomicInteger started = new AtomicInteger();
+        CountDownLatch release = new CountDownLatch(1);
+        Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        for (int i = 0; i < 3; i++) {
+            Storage storage = mock(Storage.class);
+            doAnswer(invocation -> {
+                started.incrementAndGet();
+                release.await();
+                return null;
+            }).when(storage).initStorage(anyBoolean(), any());
+            storagesToInit.put(storage, new HashSet<>(tenants("t" + i)));
+        }
+
+        try {
+            // a limit far beyond the test, so no straggler adds a thread: only the configured 2 run
+            Future<?> boot = CompletableFuture.runAsync(
+                    () -> StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 60));
+            Thread.sleep(1000);
+            assertEquals(2, started.get());
+
+            release.countDown();
+            boot.get(10, TimeUnit.SECONDS);
+            assertEquals(3, started.get());
+        } finally {
+            release.countDown();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void storageInitParallelismDefaultsTo16AndMustBePositive() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(16, Config.getBaseConfig(process.getProcess()).getStorageInitParallelism());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        Utils.setValueInConfig("storage_init_parallelism", "0");
+        process = TestingProcessManager.startIsolatedProcess(args);
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("Provided storage_init_parallelism must be >= 1", e.exception.getCause().getMessage());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

@@ -69,6 +69,12 @@ core_config_version: 0
 # waited for. Must be >= 1.
 # storage_init_timeout_seconds:
 
+# (OPTIONAL | Default: 16) int value. How many tenant storages (connection pools) the core initialises at the same
+# time at startup. A higher value starts many tenant databases faster, a lower one sends fewer connections at once to
+# a database many tenants share. A storage still initialising after storage_init_timeout_seconds gets one more
+# thread, so the next one can start. Must be >= 1.
+# storage_init_parallelism:
+
 
 
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password

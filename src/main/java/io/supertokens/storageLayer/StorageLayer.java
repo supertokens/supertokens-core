@@ -717,19 +717,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     /** How often (seconds) the storages still initialising are reported while boot waits for them. */
     static final long STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS = 60;
 
-    /**
-     * Upper bound on the number of storages {@link #initStoragesInParallel} initialises at the same time. Boot
-     * has tens of short, blocking tasks (TCP connect + DDL), so a small pool is all the parallelism that pays
-     * off, and the bound also caps the connection burst sent at a database many tenants share.
-     */
-    static final int STORAGE_INIT_MAX_PARALLELISM = 16;
-
     /** Marks a storage whose init task has not started yet in the start times {@link #awaitStorageInit} reads. */
     static final long STORAGE_INIT_NOT_STARTED = Long.MIN_VALUE;
 
     /**
      * The executor {@link #initStoragesInParallel} runs on: a fixed pool of daemon platform threads, at most
-     * {@link #STORAGE_INIT_MAX_PARALLELISM} of them. With more storages than threads, the rest queue and start
+     * {@code maxParallelism} of them (storage_init_parallelism). Boot has tens of short, blocking tasks (TCP
+     * connect + DDL), so a small pool is all the parallelism that pays off, and the bound also caps the connection
+     * burst sent at a database many tenants share. With more storages than threads, the rest queue and start
      * as threads free up. {@link #awaitStorageInit} keeps waiting while any of them is still queued, and adds a
      * thread for each straggler it reports (see {@link #addStorageInitThread}), so the queue keeps draining.
      *
@@ -742,10 +737,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * threads cannot be wedged that way, whatever the plugin or its libraries lock on. Daemon, so a straggler
      * left behind by {@link #awaitStorageInit} never keeps the JVM alive.
      */
-    static ThreadPoolExecutor newStorageInitExecutor(int storageCount) {
+    static ThreadPoolExecutor newStorageInitExecutor(int storageCount, int maxParallelism) {
         AtomicInteger threadNumber = new AtomicInteger();
         return (ThreadPoolExecutor) Executors.newFixedThreadPool(
-                Math.max(1, Math.min(storageCount, STORAGE_INIT_MAX_PARALLELISM)),
+                Math.max(1, Math.min(storageCount, maxParallelism)),
                 runnable -> {
                     Thread thread = new Thread(runnable, "storage-init-" + threadNumber.incrementAndGet());
                     thread.setDaemon(true);
@@ -914,7 +909,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Config.getBaseConfig(main).getStorageInitTimeoutSeconds());
     }
 
-    // Package-private with the wait bounds as parameters so tests can use short ones.
+    // Package-private with the wait bounds as parameters so tests can use short ones. The number of storages
+    // initialised at once is still read from storage_init_parallelism.
     static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit,
                                        long progressIntervalSeconds, long timeoutSeconds) {
         if (storagesToInit.isEmpty()) {
@@ -943,7 +939,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             return;
         }
 
-        ThreadPoolExecutor executor = newStorageInitExecutor(otherStorages.size());
+        ThreadPoolExecutor executor = newStorageInitExecutor(otherStorages.size(),
+                Config.getBaseConfig(main).getStorageInitParallelism());
         try {
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();

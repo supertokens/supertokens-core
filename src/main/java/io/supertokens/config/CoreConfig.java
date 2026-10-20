@@ -148,6 +148,16 @@ public class CoreConfig {
                     + "always waited for. Must be >= 1. (Default: 120)")
     private int storage_init_timeout_seconds = 120;
 
+    @EnvName("STORAGE_INIT_PARALLELISM")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How many tenant storages (connection pools) the core initialises at the same time at startup. A higher "
+                    + "value starts many tenant databases faster, a lower one sends fewer connections at once to a "
+                    + "database many tenants share. A storage still initialising after storage_init_timeout_seconds "
+                    + "gets one more thread, so the next one can start. Must be >= 1. (Default: 16)")
+    private int storage_init_parallelism = 16;
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -786,6 +796,10 @@ public class CoreConfig {
         return storage_init_timeout_seconds;
     }
 
+    public int getStorageInitParallelism() {
+        return storage_init_parallelism;
+    }
+
     public long getPasswordResetTokenLifetime() {
         return password_reset_token_lifetime;
     }
@@ -1304,6 +1318,10 @@ public class CoreConfig {
 
         if (storage_init_timeout_seconds < 1) {
             throw new InvalidConfigException("Provided storage_init_timeout_seconds must be >= 1");
+        }
+
+        if (storage_init_parallelism < 1) {
+            throw new InvalidConfigException("Provided storage_init_parallelism must be >= 1");
         }
 
         if (bulk_migration_parallelism < 1) {
