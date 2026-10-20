@@ -52,6 +52,7 @@ import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -721,6 +722,42 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     static final long STORAGE_INIT_NOT_STARTED = Long.MIN_VALUE;
 
     /**
+     * The storages whose init task {@link #initStoragesInParallel} has submitted and that have not finished it yet
+     * (queued, still initialising, or a straggler boot continued past). Compared by identity: no storage overrides
+     * equals.
+     */
+    private static final Set<Storage> STORAGES_STILL_INITIALISING = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Whether the storage of the given app's public tenant is still initialising. Resources built for every app
+     * right after the storages are loaded (the signing keys) check this and skip their construction-time
+     * prefetch for such an app: querying the storage would wait for its pool initialisation (the PostgreSQL
+     * plugin's pool-init lock), so boot would block on exactly the straggler {@link #awaitStorageInit} let it
+     * continue past. They load on first use instead.
+     */
+    public static boolean isStorageStillInitialising(Main main, AppIdentifier appIdentifier) {
+        try {
+            return STORAGES_STILL_INITIALISING.contains(getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
+        } catch (TenantOrAppNotFoundException e) {
+            return false;
+        }
+    }
+
+    @TestOnly
+    static boolean isStorageStillInitialising(Storage storage) {
+        return STORAGES_STILL_INITIALISING.contains(storage);
+    }
+
+    @TestOnly
+    public static void setStorageStillInitialisingForTesting(Storage storage, boolean stillInitialising) {
+        if (stillInitialising) {
+            STORAGES_STILL_INITIALISING.add(storage);
+        } else {
+            STORAGES_STILL_INITIALISING.remove(storage);
+        }
+    }
+
+    /**
      * The executor {@link #initStoragesInParallel} runs on: a fixed pool of daemon platform threads, at most
      * {@code maxParallelism} of them (storage_init_parallelism). Boot has tens of short, blocking tasks (TCP
      * connect + DDL), so a small pool is all the parallelism that pays off, and the bound also caps the connection
@@ -775,8 +812,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * <p>Stragglers are neither cancelled nor interrupted (one may be mid-DDL). Each one left behind is inside
      * its {@code initStorage} call, and one that eventually finishes is usable. What its queries do until then
      * is up to the plugin: the PostgreSQL plugin registers the pool before it connects, so they wait on its
-     * pool initialisation. Resources loaded once boot continues (feature flags, signing keys) are not reloaded
-     * when a straggler finishes.
+     * pool initialisation. Boot itself does not wait for a straggler afterwards: the per-app signing-key resources
+     * skip their construction-time prefetch while the app's storage is still initialising (see
+     * {@link #isStorageStillInitialising(Main, AppIdentifier)}) and load on first use, and feature flags only read the storage on first
+     * use anyway, so neither needs reloading when the straggler finishes. Requests and cron runs that need the
+     * straggler before it finishes wait for it.
      *
      * <p>A storage is reported as soon as it reaches its limit, not on the next progress log: the wait wakes up at
      * whichever comes first, so a limit shorter than the progress interval is still kept.
@@ -953,9 +993,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 List<TenantIdentifier> tenants = new ArrayList<>(entry.getValue());
                 int index = futures.size();
                 tenantsPerFuture.add(tenants);
+                // from submission, so a queued storage counts too; removed however the task ends
+                STORAGES_STILL_INITIALISING.add(storage);
                 futures.add(CompletableFuture.runAsync(() -> {
-                    startedAtNanos.set(index, System.nanoTime());
-                    initStorage(main, storage, tenants, infoLogPath, errorLogPath, telemetry);
+                    try {
+                        startedAtNanos.set(index, System.nanoTime());
+                        initStorage(main, storage, tenants, infoLogPath, errorLogPath, telemetry);
+                    } finally {
+                        STORAGES_STILL_INITIALISING.remove(storage);
+                    }
                 }, executor));
             }
             awaitStorageInit(main, futures, tenantsPerFuture, startedAtNanos, () -> addStorageInitThread(executor),

@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -584,6 +585,56 @@ public class StorageInitAwaitTest {
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals("Provided storage_init_parallelism must be >= 1", e.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void aStorageCountsAsStillInitialisingUntilItsInitEndsHoweverItEnds() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Storage slow = mock(Storage.class);
+        doAnswer(invocation -> {
+            started.countDown();
+            release.await();
+            return null;
+        }).when(slow).initStorage(anyBoolean(), any());
+        Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        storagesToInit.put(slow, new HashSet<>(tenants("slow")));
+
+        try {
+            // a short limit, so the call returns while the storage is still initialising, as boot does
+            CompletableFuture.runAsync(
+                    () -> StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 1))
+                    .get(10, TimeUnit.SECONDS);
+            assertTrue(started.await(10, TimeUnit.SECONDS));
+            assertTrue(StorageLayer.isStorageStillInitialising(slow));
+        } finally {
+            release.countDown();
+        }
+        long deadline = System.currentTimeMillis() + 10000;
+        while (StorageLayer.isStorageStillInitialising(slow) && System.currentTimeMillis() < deadline) {
+            Thread.sleep(20);
+        }
+        assertFalse(StorageLayer.isStorageStillInitialising(slow));
+
+        // a failed init is not left marked either
+        Storage failing = mock(Storage.class);
+        doThrow(new IllegalStateException("boom")).when(failing).initFileLogging(any(), any(), any());
+        Map<Storage, Set<TenantIdentifier>> failingToInit = new HashMap<>();
+        failingToInit.put(failing, new HashSet<>(tenants("failing")));
+        try {
+            StorageLayer.initStoragesInParallel(process.getProcess(), failingToInit, 1, 60);
+            fail("an unexpected init failure must still fail startup");
+        } catch (CompletionException e) {
+            assertEquals("boom", e.getCause().getMessage());
+        }
+        assertFalse(StorageLayer.isStorageStillInitialising(failing));
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
