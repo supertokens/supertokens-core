@@ -16,12 +16,22 @@
 
 package io.supertokens.test.session;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
@@ -128,6 +138,44 @@ public class DeferredSigningKeyLoadingTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void noSigningKeyIsCreatedForANewAppWhileItsStorageIsStillInitialising() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[]{"../"});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        FeatureFlagTestContent.getInstance(main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        // the new app shares the base storage, so marking that storage covers it
+        Storage storage = StorageLayer.getStorage(main);
+        AppIdentifier app = new AppIdentifier(null, "deferredkeys" + System.nanoTime());
+
+        StorageLayer.setStorageStillInitialisingForTesting(storage, true);
+        try {
+            // creating the app loads its per-app resources, as startup or a tenant refresh does
+            Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantIdentifier(null, null, null),
+                    new TenantConfig(app.getAsPublicTenantIdentifier(), new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null,
+                            new JsonObject()));
+            // no key of any kind was created, so the storage was not queried for one
+            assertEquals(0, countAccessTokenSigningKeys((SessionSQLStorage) storage, app));
+            assertEquals(0, countJWTSigningKeys((JWTRecipeSQLStorage) storage, app));
+        } finally {
+            StorageLayer.setStorageStillInitialisingForTesting(storage, false);
+        }
+
+        // first use, once the storage is ready, creates both
+        assertEquals(2, SigningKeys.getInstance(app, main).getAllKeys().size());
+        assertEquals(1, countAccessTokenSigningKeys((SessionSQLStorage) storage, app));
+        assertEquals(1, countJWTSigningKeys((JWTRecipeSQLStorage) storage, app));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static int countJWTSigningKeys(JWTRecipeSQLStorage storage, AppIdentifier app) throws Exception {
+        return storage.startTransaction(con -> storage.getJWTSigningKeys_Transaction(app, con).size());
     }
 
     private static int countAccessTokenSigningKeys(SessionSQLStorage storage, AppIdentifier app) throws Exception {
