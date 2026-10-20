@@ -718,13 +718,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     static final long STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS = 60;
 
     /**
-     * How long (seconds) a single storage may initialise, counted from when its init task starts, before it is
-     * reported as a straggler. Generous on purpose: a legitimate first-boot migration on a large table can take
-     * minutes. The bound exists to turn a silent hang into a diagnosable log line, not to race migrations.
-     */
-    static final long STORAGE_INIT_TIMEOUT_SECONDS = 600;
-
-    /**
      * Upper bound on the number of storages {@link #initStoragesInParallel} initialises at the same time. Boot
      * has tens of short, blocking tasks (TCP connect + DDL), so a small pool is all the parallelism that pays
      * off, and the bound also caps the connection burst sent at a database many tenants share.
@@ -790,10 +783,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * pool initialisation. Resources loaded once boot continues (feature flags, signing keys) are not reloaded
      * when a straggler finishes.
      *
+     * <p>A storage is reported as soon as it reaches its limit, not on the next progress log: the wait wakes up at
+     * whichever comes first, so a limit shorter than the progress interval is still kept.
+     *
      * <p>An unexpected exception from a task is rethrown as a {@link CompletionException}, exactly as the
      * previous {@code CompletableFuture.join()} did, so such a failure still crashes startup. That includes a
-     * task that failed while another storage is still initialising: failed futures are checked on every
-     * progress tick.
+     * task that failed while another storage is still initialising: failed futures are checked every time the
+     * wait wakes up.
      *
      * @param tenantsPerFuture the tenants of the storage behind the future at the same index, for the reports
      * @param startedAtNanos   the {@link System#nanoTime()} at which the task behind the future at the same index
@@ -805,10 +801,25 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                     Runnable onStraggler, long progressIntervalSeconds, long timeoutSeconds) {
         CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         long timeoutNanos = TimeUnit.SECONDS.toNanos(timeoutSeconds);
+        long progressIntervalNanos = TimeUnit.SECONDS.toNanos(progressIntervalSeconds);
         boolean[] reported = new boolean[futures.size()];
+        long nextProgressLogAt = System.nanoTime() + progressIntervalNanos;
         while (true) {
+            // Wake up for the next progress log or the next storage to reach its limit, whichever is first. A
+            // queued storage has its whole limit ahead of it once it starts, so the limit bounds the wait for it.
+            long waitNanos = nextProgressLogAt - System.nanoTime();
+            for (int i = 0; i < futures.size(); i++) {
+                if (reported[i] || futures.get(i).isDone()) {
+                    continue;
+                }
+                long startedAt = startedAtNanos.get(i);
+                long untilLimit = startedAt == STORAGE_INIT_NOT_STARTED
+                        ? timeoutNanos
+                        : startedAt + timeoutNanos - System.nanoTime();
+                waitNanos = Math.min(waitNanos, untilLimit);
+            }
             try {
-                all.get(progressIntervalSeconds, TimeUnit.SECONDS);
+                all.get(Math.max(waitNanos, 0), TimeUnit.NANOSECONDS);
                 return true;
             } catch (TimeoutException e) {
                 // allOf only completes once every future is done, so a task that already failed would otherwise
@@ -853,9 +864,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT, null);
                     return false;
                 }
-                Logging.warn(main, TenantIdentifier.BASE_TENANT,
-                        "Still waiting for " + (stillInitialising.size() + queued) + " storage(s) to initialise ("
-                                + queued + " not started yet; tenants initialising: " + stillInitialising + ")");
+                if (now - nextProgressLogAt >= 0) {
+                    Logging.warn(main, TenantIdentifier.BASE_TENANT,
+                            "Still waiting for " + (stillInitialising.size() + queued) + " storage(s) to initialise ("
+                                    + queued + " not started yet; tenants initialising: " + stillInitialising + ")");
+                    nextProgressLogAt = now + progressIntervalNanos;
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
@@ -895,9 +909,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * same as the original sequential code, where such an exception would have escaped the
      * for-loop unhandled.
      */
-    private static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
+    static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
         initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
-                STORAGE_INIT_TIMEOUT_SECONDS);
+                Config.getBaseConfig(main).getStorageInitTimeoutSeconds());
     }
 
     // Package-private with the wait bounds as parameters so tests can use short ones.

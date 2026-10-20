@@ -17,6 +17,7 @@
 package io.supertokens.storageLayer;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager;
@@ -447,6 +448,85 @@ public class StorageInitAwaitTest {
             release.countDown();
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void awaitReportsAStorageAtItsLimitEvenWhenTheProgressIntervalIsLonger() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
+        CompletableFuture<Void> straggler = new CompletableFuture<>();
+        futures.add(straggler);
+        tenantsPerFuture.add(tenants("stuck"));
+
+        // a 1s limit with the progress log only every 60s: the storage is given up on at its limit, not at the
+        // first progress log
+        long start = System.nanoTime();
+        assertFalse(StorageLayer.awaitStorageInit(process.getProcess(), futures, tenantsPerFuture,
+                startedNow(futures.size()), () -> {}, 60, 1));
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        assertTrue("gave up too early: " + elapsedMillis + "ms", elapsedMillis >= 1000);
+        assertTrue("waited for the progress interval instead of the limit: " + elapsedMillis + "ms",
+                elapsedMillis < 10000);
+        assertNotNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
+
+        straggler.complete(null);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void timeoutIsReadFromStorageInitTimeoutSeconds() throws Exception {
+        Utils.setValueInConfig("storage_init_timeout_seconds", "1");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(1, Config.getBaseConfig(process.getProcess()).getStorageInitTimeoutSeconds());
+
+        CountDownLatch release = new CountDownLatch(1);
+        Storage stuck = mock(Storage.class);
+        doAnswer(invocation -> {
+            release.await();
+            return null;
+        }).when(stuck).initStorage(anyBoolean(), any());
+        Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        storagesToInit.put(stuck, new HashSet<>(tenants("stuck")));
+
+        try {
+            // the overload boot uses: the configured 1s limit, with the real 60s progress interval
+            Future<?> boot = CompletableFuture.runAsync(
+                    () -> StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit));
+            boot.get(10, TimeUnit.SECONDS);
+            assertNotNull(ProcessState.getInstance(process.getProcess())
+                    .getLastEventByName(ProcessState.PROCESS_STATE.STORAGE_INIT_TIMED_OUT));
+        } finally {
+            release.countDown();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void storageInitTimeoutSecondsDefaultsTo120AndMustBePositive() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(120, Config.getBaseConfig(process.getProcess()).getStorageInitTimeoutSeconds());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        Utils.setValueInConfig("storage_init_timeout_seconds", "0");
+        process = TestingProcessManager.startIsolatedProcess(args);
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("Provided storage_init_timeout_seconds must be >= 1", e.exception.getCause().getMessage());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

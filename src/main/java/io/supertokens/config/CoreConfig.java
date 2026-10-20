@@ -138,6 +138,16 @@ public class CoreConfig {
                     + "schema fail. (Default: true)")
     private boolean schema_check_strict_mode = true;
 
+    @EnvName("STORAGE_INIT_TIMEOUT_SECONDS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How long (seconds) the core waits at startup for a tenant storage to initialise, counted from when its "
+                    + "own initialisation starts. A storage that takes longer is logged as an error and startup "
+                    + "continues without it, while it keeps initialising in the background. The base storage is "
+                    + "always waited for. Must be >= 1. (Default: 120)")
+    private int storage_init_timeout_seconds = 120;
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -772,6 +782,10 @@ public class CoreConfig {
         return schema_check_strict_mode;
     }
 
+    public int getStorageInitTimeoutSeconds() {
+        return storage_init_timeout_seconds;
+    }
+
     public long getPasswordResetTokenLifetime() {
         return password_reset_token_lifetime;
     }
@@ -1286,6 +1300,10 @@ public class CoreConfig {
                 throw new InvalidConfigException(
                         "supertokens_min_cdi_version cannot be greater than supertokens_max_cdi_version");
             }
+        }
+
+        if (storage_init_timeout_seconds < 1) {
+            throw new InvalidConfigException("Provided storage_init_timeout_seconds must be >= 1");
         }
 
         if (bulk_migration_parallelism < 1) {

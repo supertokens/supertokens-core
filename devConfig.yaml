@@ -64,6 +64,12 @@ core_config_version: 0
 # are not served. If false, mismatches are only logged and just the queries touching the missing schema fail.
 # schema_check_strict_mode:
 
+# (OPTIONAL | Default: 120) int value. How long (seconds) the core waits at startup for a tenant storage to
+# initialise, counted from when its own initialisation starts. A storage that takes longer is logged as an error
+# and startup continues without it, while it keeps initialising in the background. The base storage is always
+# waited for. Must be >= 1.
+# storage_init_timeout_seconds:
+
 
 
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
