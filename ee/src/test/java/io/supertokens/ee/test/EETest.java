@@ -1284,7 +1284,6 @@ public class EETest extends Mockito {
 
     @Test
     public void missingFeatureFlagRowIsCachedLikeAPresentOne() throws Exception {
-        long t0 = System.currentTimeMillis();
         String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -1296,7 +1295,11 @@ public class EETest extends Mockito {
         }
 
         // no license key is set and no sync has run yet (the constructor no longer syncs), so
-        // there is no FEATURE_FLAG row in key_value yet
+        // there is no FEATURE_FLAG row in key_value yet. Neutralize whatever a boot-time caller
+        // may have cached first, so the assertion below is about this read, not the boot.
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(-1);
+        long t0 = System.currentTimeMillis();
         EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
         Assert.assertEquals(featuresFromDb.length, 0);
 
