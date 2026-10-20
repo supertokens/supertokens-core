@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import OAuth2Provider from 'supertokens-node/recipe/oauth2provider';
 
 import {
+  measureRepeated,
   measureTime,
   runStep,
   getCheckpoint,
@@ -436,7 +437,12 @@ export const measureOAuthPaths = async (deployment: any, store: OAuthStore): Pro
   // seeded oauth_sessions volume (survey O1). ---
   if (sampleToken) {
     await runStep(() =>
-      measureTime('OAuth token introspection', async () => {
+      // Repeated: a pure read against the seeded oauth_sessions volume, and
+      // the one OAuth step that is both cheap and free of side effects.
+      // Issuance and both revokes are left as single samples — repeating them
+      // would mint or revoke hundreds of tokens and perturb the burst-accuracy
+      // assertion that runs after them.
+      measureRepeated('OAuth token introspection', async () => {
         await OAuth2Provider.validateOAuth2AccessToken(sampleToken!, undefined, true);
       })
     );

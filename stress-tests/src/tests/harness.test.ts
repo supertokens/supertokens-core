@@ -16,9 +16,17 @@ process.env.STRESS_TEST_STEP_BUDGETS_MS = JSON.stringify({
   'ok-step': 60_000,
   'enforce-off-step': 40,
   'walk-timeout-step': 60,
+  'repeat-step': 60_000,
+  'repeat-index-step': 60_000,
+  'repeat-slow-step': 60_000,
+  'repeat-abort-step': 300,
 });
+// Keep the repeat windows short enough for a unit test — the production target
+// is 10s per step, which is not something a test suite should sit through.
+process.env.STRESS_TEST_REPEAT_TARGET_MS = '200';
 
 import {
+  measureRepeated,
   measureTime,
   runStep,
   StatsCollector,
@@ -82,6 +90,8 @@ const stat = (title: string) =>
   StatsCollector.getInstance()
     .getStats()
     .find((m) => m.title === title);
+
+const repeatInfo = (title: string) => StatsCollector.getInstance().getRepeatInfo(title);
 
 // --- pagination-walk completeness / non-termination guards -----------------
 
@@ -161,6 +171,73 @@ test('STRESS_TEST_ENFORCE_BUDGETS=false disables the hard timeout', async () => 
   } finally {
     delete process.env.STRESS_TEST_ENFORCE_BUDGETS;
   }
+});
+
+// --- repeated measurement ---------------------------------------------------
+
+test('measureRepeated records a per-operation mean, not the total window', async () => {
+  let calls = 0;
+  await measureRepeated('repeat-step', async () => {
+    calls++;
+    await delay(2);
+  });
+  const m = stat('repeat-step');
+  const info = repeatInfo('repeat-step');
+  assert.ok(m, 'recorded a measurement');
+  assert.ok(info && info.iterations > 1, `repeated more than once (got ${info?.iterations})`);
+  // The whole point: the recorded time is per-op, so it stays near the 2ms
+  // operation even though the window ran for ~200ms.
+  assert.ok(m!.timeMs < 50, `per-op mean stayed per-op (got ${m!.timeMs}ms)`);
+  assert.ok(info!.totalMs >= 100, `total window was recorded (got ${info!.totalMs}ms)`);
+  assert.ok(info!.p95Ms > 0, 'p95 is computed after the window ran, not before it');
+  // Calibration ops are unmeasured but real, so the work ran more often than
+  // the recorded iteration count.
+  assert.ok(calls > info!.iterations, 'calibration ops ran and were not counted');
+});
+
+test('measureRepeated passes a distinct iteration index to the work function', async () => {
+  const seen: number[] = [];
+  await measureRepeated('repeat-index-step', async (i) => {
+    seen.push(i);
+    await delay(2);
+  });
+  const measured = seen.filter((i) => i >= 0);
+  assert.deepStrictEqual(
+    measured,
+    measured.map((_, n) => n),
+    'measured iterations are indexed 0..n-1 so work can vary its input'
+  );
+  assert.ok(
+    seen.some((i) => i < 0),
+    'calibration ops are handed negative indices so they are distinguishable'
+  );
+});
+
+test('measureRepeated falls back to a single sample for an operation that is already slow', async () => {
+  await measureRepeated('repeat-slow-step', async () => {
+    await delay(250); // longer than the 200ms target window
+  });
+  const m = stat('repeat-slow-step');
+  assert.ok(m, 'recorded a measurement');
+  assert.strictEqual(repeatInfo('repeat-slow-step'), undefined, 'not marked as repeated');
+  assert.ok(m!.timeMs >= 200, 'recorded the single observation, not a mean');
+});
+
+test('a repeated step that blows its budget mid-window still fails at the budget', async () => {
+  // 300ms budget, ~10ms per op after a fast calibration, then the op becomes
+  // pathologically slow: the window must be cut off by the budget rather than
+  // running out its planned iteration count.
+  let n = 0;
+  await assert.rejects(
+    () =>
+      measureRepeated('repeat-abort-step', async () => {
+        n++;
+        await delay(n > 5 ? 400 : 1);
+      }),
+    (err: unknown) => err instanceof StepTimeoutError
+  );
+  const m = stat('repeat-abort-step');
+  assert.ok(m && m.timedOut === true, 'recorded as timed out at its budget');
 });
 
 // --- richer completeness diagnostics (issue #1346) -------------------------
