@@ -863,6 +863,66 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // A background refresh runs one exact count: the shadow audit checks the count the refresh just took instead
+    // of running a second one. Two refreshes, so the second audit has a window to compare (the first only seeds).
+    @Test
+    public void backgroundRefreshAndItsShadowAuditShareOneExactCount() throws Exception {
+        String[] args = {"../"};
+        Utils.setValueInConfig("disable_telemetry", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+        AtomicInteger exactCounts = new AtomicInteger();
+        Storage storage = countingStorage(StorageLayer.getStorage(process.getProcess()), exactCounts,
+                new CountDownLatch(1), new CountDownLatch(0));
+
+        // Prime: one exact count.
+        assertEquals(3, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
+        assertEquals(1, exactCounts.get());
+
+        // First refresh: one exact count, which also seeds the audit snapshot.
+        Thread.sleep(5);
+        approximateUserCount.expireEntryForTesting(tenant);
+        assertEquals(3, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
+        waitForRefreshToFinish(approximateUserCount, tenant);
+        assertEquals(2, exactCounts.get());
+
+        // Second refresh, with a ledgered sign-up in its window: one exact count, and the audit matches.
+        EmailPassword.signUp(process.getProcess(), "later@example.com", "password");
+        Thread.sleep(5);
+        approximateUserCount.expireEntryForTesting(tenant);
+        assertEquals(4, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
+        waitForRefreshToFinish(approximateUserCount, tenant);
+        assertNotNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, 5000));
+        assertNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY, 100));
+        assertEquals(3, exactCounts.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static void waitForRefreshToFinish(ApproximateUserCount approximateUserCount, TenantIdentifier tenant)
+            throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 10000;
+        while (approximateUserCount.isRefreshingForTesting(tenant)) {
+            assertTrue("background refresh did not finish", System.currentTimeMillis() < deadline);
+            Thread.sleep(10);
+        }
+    }
+
     // Wraps the real storage, counting the exact tenant counts (getUsersCount(TenantIdentifier, ...)) and holding
     // the first one until releaseCount opens. Every other call goes straight to the real storage.
     private static Storage countingStorage(Storage delegate, AtomicInteger exactCounts,

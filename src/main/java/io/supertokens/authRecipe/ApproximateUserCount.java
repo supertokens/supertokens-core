@@ -270,12 +270,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         try {
             REFRESH_EXECUTOR.submit(() -> {
                 try {
-                    entries.put(tenantId, computeAnchor(authRecipeStorage, tenantIdentifier));
+                    CachedAnchor fresh = computeAnchor(authRecipeStorage, tenantIdentifier);
+                    entries.put(tenantId, fresh);
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
                     // The slow exact recompute this refresh performs doubles as a correctness audit of the
-                    // lifecycle-event ledger (PLAN-010 decision 4). Kept entirely separate from serving.
-                    runShadowAudit(main, tenantIdentifier, storage);
+                    // lifecycle-event ledger (PLAN-010 decision 4): the audit checks this same count rather than
+                    // running its own. Kept entirely separate from serving.
+                    runShadowAudit(main, tenantIdentifier, storage, fresh);
                 } catch (Exception e) {
                     // Keep serving the existing (stale) entry; the next request retries the refresh.
                     ProcessState.getInstance(main).addState(
@@ -291,20 +293,20 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     }
 
     /**
-     * The shadow audit (PLAN-010 unit 3), run once per successful background refresh. Reads the fresh exact
-     * tenant count and the lifecycle events committed since the previous refresh, and checks that the count
+     * The shadow audit (PLAN-010 unit 3), run once per successful background refresh. Takes the exact tenant
+     * count that refresh just computed ({@code fresh}, with the snapshot time it is as-of), reads the lifecycle
+     * events committed since the previous refresh, and checks that the count
      * moved by exactly the folded delta (see {@link CountShadowAudit}). Best-effort and observational only:
      * any failure here is swallowed so it can never disturb serving or the refresh that just succeeded, and a
      * discrepancy is logged, never served — the fresh exact count already won.
      */
-    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
+    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage, CachedAnchor fresh) {
         String tenantId = tenantIdentifier.getTenantId();
         try {
             if (!(storage instanceof ActivityLogStorage)) {
                 return; // storage keeps no lifecycle-event ledger, so there is nothing to fold against
             }
             ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
-            AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
             // Known boundary limitation (observational only): the window below filters events on their
             // emit-time created_at (stamped at the start of the mutating txn), whereas freshExactCount and the
@@ -316,8 +318,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             // because a robust fix needs an as-of-time exact count we do not have (and gating on persistence
             // across refreshes would also mask genuine one-time missed emits, which produce the same single
             // self-healing discrepancy). Tracked as a soak follow-up.
-            long snapshotMs = System.currentTimeMillis();
-            long freshExactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
+            // computeAnchor takes snapshotMs before its count, the same boundary discipline as the audit window.
+            long snapshotMs = fresh.snapshotMs;
+            long freshExactCount = fresh.exactCount;
 
             AuditSnapshot previous = auditSnapshots.get(tenantId);
             // Advance the snapshot regardless, so the next refresh's window starts where this one ends.
@@ -471,8 +474,15 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // tenant and comparing against the previous snapshot on later calls - so tests can exercise the audit's
     // real storage reads and fold deterministically, without driving the background refresh executor (which
     // staleEntryTriggersBackgroundRefresh already covers). Not a runtime entry point; mirrors
-    // expireEntryForTesting.
-    public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
-        runShadowAudit(main, tenantIdentifier, storage);
+    // expireEntryForTesting. Takes its own exact count, as the refresh would, without touching the served anchor.
+    public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage)
+            throws StorageQueryException {
+        runShadowAudit(main, tenantIdentifier, storage,
+                computeAnchor(StorageUtils.getAuthRecipeStorage(storage), tenantIdentifier));
+    }
+
+    // Test-only seam: whether a background refresh (and its shadow audit) is still running for a tenant.
+    public boolean isRefreshingForTesting(TenantIdentifier tenantIdentifier) {
+        return refreshing.contains(tenantIdentifier.getTenantId());
     }
 }

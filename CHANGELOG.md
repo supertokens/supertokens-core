@@ -11,6 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The license-usage sync, and telemetry for single-tenant apps, use the cached user count; telemetry for multi-tenant apps still runs a full app-wide count.
 - Single-tenant telemetry `usersCount` now counts the tenant's users, leaving out users that belong to no tenant.
 - After a restart, concurrent first user-count requests for a tenant share one full count.
+- The user-count cache's background refresh runs one full count instead of two: its consistency audit reuses the refresh's count.
 
 ## [12.4.0]
 
