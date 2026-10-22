@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -36,6 +35,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -596,16 +596,17 @@ public class FeatureFlagTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // The license-usage sync reads each tenant's user count from the shared ApproximateUserCount cache instead of
-    // running its own exact count; users added after the cache is primed are still counted.
+    // The license-usage stats report each tenant's exact user count, stored in the database and shared by every core
+    // for up to StoredUsersCount.MAX_AGE_MS: a sign-up shows once the stored count is too old to reuse.
     @Test
-    public void multitenantStatsUseTheCachedUserCount() throws Exception {
+    public void multitenantStatsUseTheStoredUserCount() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) { // the in-memory db counts directly, stores nothing
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
             return;
@@ -622,10 +623,16 @@ public class FeatureFlagTest {
         EmailPassword.signUp(t0, storage, process.getProcess(), "user2@example.com", "password");
 
         assertEquals(2, getTenantUsersCountStat(process, "t0"));
-        assertTrue(ApproximateUserCount.getInstance(process.getProcess(), t0.toAppIdentifier())
-                .hasAnchorForTesting(t0));
+        KeyValueInfo stored = storage.getKeyValue(t0, "TENANT_USERS_COUNT");
+        assertNotNull(stored);
+        assertEquals("2", stored.value);
 
+        // Within the max age the stored count is reported
         EmailPassword.signUp(t0, storage, process.getProcess(), "user3@example.com", "password");
+        assertEquals(2, getTenantUsersCountStat(process, "t0"));
+
+        // Once it is too old, the tenant is counted again
+        storage.setKeyValue(t0, "TENANT_USERS_COUNT", new KeyValueInfo("2", 0));
         assertEquals(3, getTenantUsersCountStat(process, "t0"));
 
         process.kill();

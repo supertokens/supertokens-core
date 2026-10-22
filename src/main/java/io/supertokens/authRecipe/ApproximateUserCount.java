@@ -103,8 +103,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
 
     // Per-tenant locks for the synchronous re-anchors (the first-request prime, a burst or corrupt-ledger
-    // re-anchor, a background task's refresh), so callers that need one at the same time (the startup telemetry
-    // ping, the license-usage sync, /users/count) wait for one exact count instead of each running their own.
+    // re-anchor), so concurrent /users/count requests that need one wait for one exact count instead of each
+    // running their own.
     private final ConcurrentHashMap<String, ReentrantLock> anchorLocks = new ConcurrentHashMap<>();
 
     // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
@@ -217,26 +217,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long snapshotMs = System.currentTimeMillis();
         long exactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
         return new CachedAnchor(exactCount, snapshotMs, System.currentTimeMillis());
-    }
-
-    /**
-     * Count for periodic background tasks (the license-usage sync, the telemetry ping). They run once a day, so
-     * they nearly always find the anchor past its TTL; on serve()'s stale-while-revalidate path that would cost a
-     * background refresh plus its shadow-audit recount for every tenant, every day. Instead a stale or missing
-     * anchor is replaced synchronously with one exact count (single-flighted with the other re-anchors) and that
-     * count is served. A fresh anchor is served as usual.
-     */
-    public ApproximateCountResult serveForBackgroundTask(Main main, TenantIdentifier tenantIdentifier,
-                                                         Storage storage) throws StorageQueryException {
-        if (storage instanceof ActivityLogStorage) {
-            CachedAnchor cachedAnchor = entries.get(tenantIdentifier.getTenantId());
-            if (cachedAnchor == null || System.currentTimeMillis() - cachedAnchor.computedAt >= REFRESH_TTL_MS) {
-                CachedAnchor reAnchored = reAnchor(StorageUtils.getAuthRecipeStorage(storage), tenantIdentifier,
-                        cachedAnchor);
-                return new ApproximateCountResult(reAnchored.exactCount, true, reAnchored.snapshotMs);
-            }
-        }
-        return serve(main, tenantIdentifier, storage);
     }
 
     // Single-flighted synchronous re-anchor: only one caller per tenant runs the exact count, the others wait for

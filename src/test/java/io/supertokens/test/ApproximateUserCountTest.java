@@ -688,15 +688,13 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Single-flighted prime: callers that find no anchor for a tenant at the same time (on a fresh core: the
-    // telemetry ping, the license-usage sync, /users/count) must run one exact count between them, not one each.
+    // Single-flighted prime: concurrent /users/count requests that find no anchor for a tenant must run one exact
+    // count between them, not one each.
     // The storage is wrapped so the first exact count blocks until every caller has had time to reach serve();
     // without the per-tenant lock each of them would run its own count.
     @Test
     public void concurrentFirstRequestsRunOneExactCount() throws Exception {
         String[] args = {"../"};
-        // Telemetry would otherwise prime the public tenant's anchor at startup, before the test gets to it.
-        Utils.setValueInConfig("disable_telemetry", "true");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -748,61 +746,11 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // The daily license sync and telemetry ping (serveForBackgroundTask) nearly always find the anchor past its
-    // TTL. They must replace it with one synchronous exact count, not take serve()'s stale path, which would add
-    // a background refresh and its shadow-audit recount for every tenant, every day.
-    @Test
-    public void backgroundTaskOnStaleAnchorRunsOneExactCount() throws Exception {
-        String[] args = {"../"};
-        Utils.setValueInConfig("disable_telemetry", "true");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        for (int i = 0; i < 3; i++) {
-            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
-        }
-
-        TenantIdentifier tenant = process.getAppForTesting();
-        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
-                tenant.toAppIdentifier());
-        AtomicInteger exactCounts = new AtomicInteger();
-        Storage storage = countingStorage(StorageLayer.getStorage(process.getProcess()), exactCounts,
-                new CountDownLatch(1), new CountDownLatch(0));
-
-        // First sync primes the anchor with one exact count.
-        assertEquals(3, approximateUserCount.serveForBackgroundTask(process.getProcess(), tenant, storage).count);
-        assertEquals(1, exactCounts.get());
-
-        // A day later: the anchor is stale and a user was added since.
-        EmailPassword.signUp(process.getProcess(), "later@example.com", "password");
-        Thread.sleep(5);
-        approximateUserCount.expireEntryForTesting(tenant);
-
-        assertEquals(4, approximateUserCount.serveForBackgroundTask(process.getProcess(), tenant, storage).count);
-        assertEquals(2, exactCounts.get());
-        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
-                1000));
-
-        // The re-anchor is fresh: /users/count-style serving folds off it without another count or refresh.
-        assertEquals(4, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
-        assertEquals(2, exactCounts.get());
-        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
-                1000));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
     // A synchronous re-anchor forced by the fold (a corrupt ledger payload here; a burst over the cap takes the
     // same path) is single-flighted too: concurrent callers that hit it run one exact count between them.
     @Test
     public void concurrentReAnchorsRunOneExactCount() throws Exception {
         String[] args = {"../"};
-        Utils.setValueInConfig("disable_telemetry", "true");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
