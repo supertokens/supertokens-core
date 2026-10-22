@@ -65,7 +65,7 @@ public final class StoredUsersCount {
             for (Storage storage : storages) {
                 if (storage instanceof UsersCountCacheStorage
                         && storage.getUserPoolId().equals(publicTenantStorage.getUserPoolId())) {
-                    count += ((UsersCountCacheStorage) storage).getOrComputeAppUsersCount(appIdentifier, MAX_AGE_MS)
+                    count += ((UsersCountCacheStorage) storage).getOrComputeAppUsersCount(appIdentifier, null, MAX_AGE_MS)
                             .count;
                 } else {
                     count += StorageUtils.getAuthRecipeStorage(storage).getUsersCount(appIdentifier, null);
@@ -96,7 +96,7 @@ public final class StoredUsersCount {
         lock.lock();
         try {
             if (storage instanceof UsersCountCacheStorage) {
-                return ((UsersCountCacheStorage) storage).getOrComputeTenantUsersCount(tenantIdentifier,
+                return ((UsersCountCacheStorage) storage).getOrComputeTenantUsersCount(tenantIdentifier, null,
                         Math.min(maxAgeMs, MAX_AGE_MS));
             }
             long countedAtMs = System.currentTimeMillis();
