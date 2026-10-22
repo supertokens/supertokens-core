@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.authRecipe.ApproximateUserCount;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.EmailPassword;
@@ -28,6 +28,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -419,10 +420,9 @@ public class TelemetryTest extends Mockito {
         assertTrue("initial wait is not jittered", seen.size() > 1);
     }
 
-    // A single-tenant app's telemetry user count is read from the shared ApproximateUserCount cache, not a
-    // separate exact count.
+    // Telemetry's usersCount is stored in the database (shared by every core using it) and is the app-wide count.
     @Test
-    public void singleTenantUsersCountComesFromTheCachedCount() throws Exception {
+    public void usersCountIsStoredInTheDatabase() throws Exception {
         String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
@@ -438,28 +438,80 @@ public class TelemetryTest extends Mockito {
         EmailPassword.signUp(process.getProcess(), "user1@example.com", "password123");
         EmailPassword.signUp(process.getProcess(), "user2@example.com", "password123");
 
-        // Restart so the startup ping runs against an empty cache
+        // Restart so the startup ping counts the two users
+        expireStoredUsersCount(process);
         process.kill(false);
         process = TestingProcessManager.startIsolatedProcess(args, false);
         ByteArrayOutputStream output = mockTelemetryRequest(process);
-
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
         JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
         assertEquals(2, telemetryData.get("usersCount").getAsLong());
-
-        TenantIdentifier publicTenant = TenantIdentifier.BASE_TENANT;
-        assertTrue(ApproximateUserCount.getInstance(process.getProcess(), publicTenant.toAppIdentifier())
-                .hasAnchorForTesting(publicTenant));
+        KeyValueInfo stored = StorageLayer.getBaseStorage(process.getProcess())
+                .getKeyValue(TenantIdentifier.BASE_TENANT, "APP_USERS_COUNT");
+        assertNotNull(stored);
+        assertEquals("2", stored.value);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    // With several tenants, telemetry keeps the exact app-level count: a user shared by two tenants is counted
-    // once, where adding up the per-tenant counts would count them twice.
+    // A single-tenant app reports the same app-wide count as a multi-tenant one: users left without a tenant (here
+    // by deleting the tenant they were in) are still counted.
+    @Test
+    public void singleTenantAppCountsUsersWithoutATenant() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) { // no telemetry is sent on the in-memory db
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            return;
+        }
+
+        TenantIdentifier publicTenant = TenantIdentifier.BASE_TENANT;
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), publicTenant,
+                new TenantConfig(t1, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        EmailPassword.signUp(process.getProcess(), "public@example.com", "password123");
+        EmailPassword.signUp(t1, StorageLayer.getStorage(t1, process.getProcess()), process.getProcess(),
+                "t1@example.com", "password123");
+        Multitenancy.deleteTenant(t1, process.getProcess());
+
+        AppIdentifier app = publicTenant.toAppIdentifier();
+        long appWideCount = AuthRecipe.getUsersCountAcrossAllTenants(app,
+                StorageLayer.getStoragesForApp(process.getProcess(), app), null);
+
+        // Restart so the startup ping runs with only the public tenant left
+        expireStoredUsersCount(process);
+        process.kill(false);
+        process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        ByteArrayOutputStream output = mockTelemetryRequest(process);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
+        assertEquals(1, Multitenancy.getAllTenantsForApp(app, process.getProcess()).length);
+
+        JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
+        assertEquals(appWideCount, telemetryData.get("usersCount").getAsLong());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // With several tenants the count is still app-wide: a user shared by two tenants is counted once, where adding
+    // up the per-tenant counts would count them twice.
     @Test
     public void multiTenantUsersCountCountsSharedUsersOnce() throws Exception {
         String[] args = {"../"};
@@ -489,6 +541,7 @@ public class TelemetryTest extends Mockito {
                 StorageLayer.getStorage(t1, process.getProcess()), shared.getSupertokensUserId());
 
         // Restart so the startup ping runs with both tenants loaded
+        expireStoredUsersCount(process);
         process.kill(false);
         process = TestingProcessManager.startIsolatedProcess(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -504,6 +557,13 @@ public class TelemetryTest extends Mockito {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    // The first run's startup ping stored the app's count (0 users) moments ago; make it too old to reuse, so the
+    // restarted process's ping counts the users the test created.
+    private static void expireStoredUsersCount(TestingProcess process) throws Exception {
+        StorageLayer.getBaseStorage(process.getProcess()).setKeyValue(TenantIdentifier.BASE_TENANT,
+                "APP_USERS_COUNT", new KeyValueInfo("0", 0));
     }
 
     // Points the telemetry request of a not-yet-started process at a mock connection and returns what it sends.

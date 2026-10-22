@@ -21,8 +21,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.authRecipe.ApproximateUserCount;
-import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -34,10 +32,11 @@ import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.authRecipe.AppUsersCountCacheStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -46,13 +45,21 @@ import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Telemetry extends CronTask {
 
     // Initial delay before the first ping: 60s + up to 60s of jitter, i.e. a value in [60, 120) seconds.
     static final int INITIAL_WAIT_TIME_SECONDS_BASE = 60;
     static final int INITIAL_WAIT_TIME_SECONDS_JITTER = 60;
+
+    // How old a stored app user count may be before telemetry counts again. Telemetry is the basis for billing, so
+    // the reported count is never older than this.
+    static final long APP_USERS_COUNT_MAX_AGE_MS = 10 * 60 * 1000L;
+
+    private final ConcurrentHashMap<String, ReentrantLock> usersCountLocks = new ConcurrentHashMap<>();
 
     public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
@@ -225,18 +232,27 @@ public class Telemetry extends CronTask {
         return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
     }
 
-    // For a single-tenant app, report that tenant's cached ApproximateUserCount (shared with the license-usage sync
-    // and /users/count) instead of running another exact count. This is the users of the app's only tenant: it
-    // leaves out users that belong to no tenant (left behind by a deleted tenant, or removed from public), which
-    // the app-level count includes. Apps with more tenants keep the exact app-level count: adding up per-tenant
-    // counts would count a user who belongs to several tenants more than once.
+    // The app-wide count of distinct users, whatever the number of tenants. Where the storage supports it the count
+    // is stored in the database and reused by every core while younger than APP_USERS_COUNT_MAX_AGE_MS, and a
+    // database lock makes cores that start together wait for one count instead of each running their own. The
+    // per-app JVM lock keeps this core's threads from queueing on that database lock with a connection each.
     private long getUsersCount(AppIdentifier app, Storage[] storages) throws Exception {
-        TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(app, main);
-        if (tenants.length == 1) {
-            TenantIdentifier tenant = tenants[0].tenantIdentifier;
-            return ApproximateUserCount.getInstance(main, app)
-                    .serveForBackgroundTask(main, tenant, StorageLayer.getStorage(tenant, main)).count;
+        ReentrantLock lock = usersCountLocks.computeIfAbsent(
+                app.getConnectionUriDomain() + "~" + app.getAppId(), k -> new ReentrantLock());
+        lock.lock();
+        try {
+            long count = 0;
+            for (Storage storage : storages) {
+                if (storage instanceof AppUsersCountCacheStorage) {
+                    count += ((AppUsersCountCacheStorage) storage).getOrComputeAppUsersCount(app,
+                            APP_USERS_COUNT_MAX_AGE_MS);
+                } else {
+                    count += StorageUtils.getAuthRecipeStorage(storage).getUsersCount(app, null);
+                }
+            }
+            return count;
+        } finally {
+            lock.unlock();
         }
-        return AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null);
     }
 }

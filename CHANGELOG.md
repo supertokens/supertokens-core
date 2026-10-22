@@ -8,8 +8,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.4.1]
 
 - Delays the startup telemetry ping by 60-120s (jittered) so cores starting together don't count users at the same time.
-- The license-usage sync, and telemetry for single-tenant apps, use the cached user count; telemetry for multi-tenant apps still runs a full app-wide count.
-- Single-tenant telemetry `usersCount` now counts the tenant's users, leaving out users that belong to no tenant.
+- Requires plugin interface 11.1.
+- Telemetry's app-wide `usersCount` is stored in the database and reused by all cores for up to 10 minutes; cores that need it at the same time wait for one count instead of each running their own.
+- The license-usage sync uses the cached per-tenant user count.
 - After a restart, concurrent first user-count requests for a tenant share one full count.
 
 ## [12.4.0]
