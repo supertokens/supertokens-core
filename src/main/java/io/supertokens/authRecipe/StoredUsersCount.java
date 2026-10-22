@@ -19,6 +19,7 @@ package io.supertokens.authRecipe;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.UsersCountCacheStorage;
+import io.supertokens.pluginInterface.authRecipe.UsersCountSnapshot;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -59,7 +60,8 @@ public final class StoredUsersCount {
             long count = 0;
             for (Storage storage : storages) {
                 if (storage instanceof UsersCountCacheStorage) {
-                    count += ((UsersCountCacheStorage) storage).getOrComputeAppUsersCount(appIdentifier, MAX_AGE_MS);
+                    count += ((UsersCountCacheStorage) storage).getOrComputeAppUsersCount(appIdentifier, MAX_AGE_MS)
+                            .count;
                 } else {
                     count += StorageUtils.getAuthRecipeStorage(storage).getUsersCount(appIdentifier, null);
                 }
@@ -75,14 +77,26 @@ public final class StoredUsersCount {
      */
     public static long getTenantUsersCount(TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
+        return getTenantUsersCountSnapshot(tenantIdentifier, storage, MAX_AGE_MS).count;
+    }
+
+    /**
+     * The tenant's distinct user count with the time it was counted and whether this call counted it. A stored count
+     * is reused only if younger than {@code maxAgeMs} (at most {@link #MAX_AGE_MS}); 0 forces a new count.
+     */
+    public static UsersCountSnapshot getTenantUsersCountSnapshot(TenantIdentifier tenantIdentifier, Storage storage,
+                                                                 long maxAgeMs) throws StorageQueryException {
         ReentrantLock lock = LOCKS.computeIfAbsent("tenant~" + tenantIdentifier.getConnectionUriDomain() + "~"
                 + tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId(), k -> new ReentrantLock());
         lock.lock();
         try {
             if (storage instanceof UsersCountCacheStorage) {
-                return ((UsersCountCacheStorage) storage).getOrComputeTenantUsersCount(tenantIdentifier, MAX_AGE_MS);
+                return ((UsersCountCacheStorage) storage).getOrComputeTenantUsersCount(tenantIdentifier,
+                        Math.min(maxAgeMs, MAX_AGE_MS));
             }
-            return StorageUtils.getAuthRecipeStorage(storage).getUsersCount(tenantIdentifier, null);
+            long countedAtMs = System.currentTimeMillis();
+            return new UsersCountSnapshot(StorageUtils.getAuthRecipeStorage(storage).getUsersCount(tenantIdentifier,
+                    null), countedAtMs, true);
         } finally {
             lock.unlock();
         }

@@ -26,6 +26,8 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
@@ -811,10 +813,144 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Wraps the real storage, counting the exact tenant counts (getUsersCount(TenantIdentifier, ...)) and holding
-    // the first one until releaseCount opens. Every other call goes straight to the real storage.
+    // A failed anchor count is shared too: callers waiting on it get its failure instead of each running the count
+    // again in turn (which on a count that outlasts its timeout made the k-th caller fail after k timeouts).
+    @Test
+    public void failedCountIsSharedWithEveryWaiter() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+        AtomicInteger countRequests = new AtomicInteger();
+        CountDownLatch countStarted = new CountDownLatch(1);
+        Storage failing = interceptingStorage(StorageLayer.getStorage(process.getProcess()), () -> {
+            countRequests.incrementAndGet();
+            countStarted.countDown();
+            Thread.sleep(500); // the other callers queue up meanwhile
+            throw new StorageQueryException(new java.sql.SQLException("simulated count timeout"));
+        });
+
+        int callers = 4;
+        ExecutorService pool = Executors.newFixedThreadPool(callers);
+        try {
+            List<Future<Long>> results = new ArrayList<>();
+            for (int i = 0; i < callers; i++) {
+                results.add(pool.submit(() -> approximateUserCount.serve(process.getProcess(), tenant, failing).count));
+            }
+            assertTrue(countStarted.await(10, TimeUnit.SECONDS));
+
+            long start = System.currentTimeMillis();
+            for (Future<Long> result : results) {
+                try {
+                    result.get(10, TimeUnit.SECONDS);
+                    fail("the count failed, so every caller must fail");
+                } catch (java.util.concurrent.ExecutionException e) {
+                    assertTrue(e.getCause() instanceof StorageQueryException);
+                }
+            }
+            // all of them fail with the one count, not one after another
+            assertTrue(System.currentTimeMillis() - start < 2000);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertEquals(1, countRequests.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The shadow audit runs only on refreshes that counted anew. A refresh that reuses the stored count (one counted
+    // less than 10 minutes ago, possibly by another core) is skipped, so every audit window ends at a count taken
+    // for it.
+    @Test
+    public void shadowAuditRunsOnlyOnNewCounts() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) { // the in-memory db stores no count, so always counts
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+
+        // Prime (counts and stores 3), then two refreshes that both reuse the stored count: if those were audited,
+        // the second would compare against the first and report a match.
+        assertEquals(3, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
+        for (int i = 0; i < 2; i++) {
+            refresh(approximateUserCount, process, tenant, storage);
+        }
+        assertNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, 100));
+
+        // Two refreshes that count anew (the stored count made too old first), with a ledgered sign-up between
+        // them: the first seeds the audit, the second checks the window and matches.
+        expireStoredCount(storage, tenant);
+        refresh(approximateUserCount, process, tenant, storage);
+        EmailPassword.signUp(process.getProcess(), "later@example.com", "password");
+        Thread.sleep(5);
+        expireStoredCount(storage, tenant);
+        refresh(approximateUserCount, process, tenant, storage);
+        assertNotNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, 5000));
+        assertNull(process.checkOrWaitForEvent(
+                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY, 100));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Makes the cached anchor stale, serves once to start the background refresh, and waits for it (and its audit).
+    private static void refresh(ApproximateUserCount approximateUserCount, TestingProcessManager.TestingProcess process,
+                                TenantIdentifier tenant, Storage storage) throws Exception {
+        Thread.sleep(5);
+        approximateUserCount.expireEntryForTesting(tenant);
+        approximateUserCount.serve(process.getProcess(), tenant, storage);
+        long deadline = System.currentTimeMillis() + 10000;
+        while (approximateUserCount.isCountingForTesting(tenant)) {
+            assertTrue("background refresh did not finish", System.currentTimeMillis() < deadline);
+            Thread.sleep(10);
+        }
+    }
+
+    private static void expireStoredCount(Storage storage, TenantIdentifier tenant) throws Exception {
+        storage.setKeyValue(tenant, "TENANT_USERS_COUNT", new KeyValueInfo("0", 0));
+    }
+
+    // Wraps the real storage, counting the tenant count requests (getOrComputeTenantUsersCount, or getUsersCount(tenant)
+    // on a storage without the stored-count capability) and holding the first one until releaseCount opens. Every
+    // other call goes straight to the real storage.
     private static Storage countingStorage(Storage delegate, AtomicInteger exactCounts,
                                            CountDownLatch firstCountStarted, CountDownLatch releaseCount) {
+        return interceptingStorage(delegate, () -> {
+            if (exactCounts.incrementAndGet() == 1) {
+                firstCountStarted.countDown();
+                assertTrue(releaseCount.await(10, TimeUnit.SECONDS));
+            }
+        });
+    }
+
+    private interface CountHook {
+        void run() throws Exception;
+    }
+
+    private static Storage interceptingStorage(Storage delegate, CountHook onTenantCount) {
         Set<Class<?>> interfaces = new LinkedHashSet<>();
         for (Class<?> c = delegate.getClass(); c != null; c = c.getSuperclass()) {
             for (Class<?> i : c.getInterfaces()) {
@@ -825,12 +961,11 @@ public class ApproximateUserCountTest {
         }
         return (Storage) Proxy.newProxyInstance(delegate.getClass().getClassLoader(),
                 interfaces.toArray(new Class<?>[0]), (proxy, method, methodArgs) -> {
-                    if (method.getName().equals("getUsersCount") && methodArgs != null
-                            && methodArgs[0] instanceof TenantIdentifier) {
-                        if (exactCounts.incrementAndGet() == 1) {
-                            firstCountStarted.countDown();
-                            assertTrue(releaseCount.await(10, TimeUnit.SECONDS));
-                        }
+                    boolean tenantCount = methodArgs != null && methodArgs[0] instanceof TenantIdentifier
+                            && (method.getName().equals("getOrComputeTenantUsersCount")
+                            || method.getName().equals("getUsersCount"));
+                    if (tenantCount) {
+                        onTenantCount.run();
                     }
                     try {
                         return method.invoke(delegate, methodArgs);

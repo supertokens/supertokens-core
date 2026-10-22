@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.authRecipe.UsersCountSnapshot;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -40,11 +41,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Serving path for the tenant user count (PLAN-009 skeleton, PLAN-010 units "ledger-fold" and "default-flip").
@@ -67,8 +71,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * regardless, so the anchor is re-computed immediately and the fresh exact count served — the semantically
  * correct response to mass mutation.
  * <p>
- * The cache is per-instance and per-(app, tenant); there is no cross-instance coordination. A core restart
- * drops the cache, so the first request per tenant after a restart pays the synchronous anchor cost again.
+ * The served anchors are cached per instance and per (app, tenant). The exact counts behind them come from
+ * {@link StoredUsersCount}: stored in the database and reused by every core for up to 10 minutes, with one core
+ * counting while the others wait. So a restarted core usually starts from a stored count instead of running its
+ * own, and within a core the tenant's anchor counts are single-flighted (one in flight, joined by every caller).
  * <p>
  * Accuracy: exact modulo ledger completeness (the invariant the shadow audit gates on). The only residual lag
  * is the emit-time/commit-time boundary artifact documented on the shadow audit, which self-heals at the next
@@ -88,24 +94,25 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private static final CountDeltaInterpreter INTERPRETER = new CountDeltaInterpreter(
             CountDeltaInterpreter.DEFAULT_BURST_CAP);
 
-    // Shared daemon pool for background anchor refreshes across every app/tenant. Kept small: refreshes are
-    // infrequent (one per tenant per TTL) and single-flighted, so a couple of workers is plenty.
-    private static final ExecutorService REFRESH_EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "approximate-user-count-refresh");
+    // Pool that runs the anchor counts (the first-request prime, a burst or corrupt-ledger re-anchor, the background
+    // refresh). Counts are single-flighted per tenant, so a tenant has at most one count running; a cached pool, so a
+    // slow count on one tenant never queues another tenant's count behind it.
+    private static final ExecutorService COUNT_EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "approximate-user-count-anchor");
         t.setDaemon(true);
         return t;
     });
 
+    // How long a request waits for an anchor count before failing - the bound the pool's 60s socket timeout used to
+    // put on a synchronous count. The count keeps running past it and stores its anchor for the requests after.
+    private static final long ANCHOR_WAIT_MS = 60 * 1000L;
+
     // Cache keyed by tenant id within this per-app resource.
     private final ConcurrentHashMap<String, CachedAnchor> entries = new ConcurrentHashMap<>();
 
-    // Tenant ids with an in-flight background refresh - the single-flight guard.
-    private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
-
-    // Per-tenant locks for the synchronous re-anchors (the first-request prime, a burst or corrupt-ledger
-    // re-anchor), so concurrent /users/count requests that need one wait for one exact count instead of each
-    // running their own.
-    private final ConcurrentHashMap<String, ReentrantLock> anchorLocks = new ConcurrentHashMap<>();
+    // The in-flight anchor count per tenant. Every caller that needs a new anchor while one is being counted joins it,
+    // so one count runs and all of them get its anchor - or its failure, instead of each retrying it in turn.
+    private final ConcurrentHashMap<String, CompletableFuture<CachedAnchor>> inFlight = new ConcurrentHashMap<>();
 
     // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
     // the delta folded from the lifecycle events in the window since the last refresh. Purely observational -
@@ -162,9 +169,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long now = System.currentTimeMillis();
         CachedAnchor cachedAnchor = entries.get(tenantId);
         if (cachedAnchor == null) {
-            // First request for this tenant: compute the exact anchor synchronously so subsequent requests fold
-            // off a cheap event window instead of recomputing the exact count.
-            cachedAnchor = reAnchor(authRecipeStorage, tenantIdentifier, null);
+            // First request for this tenant: get the exact anchor before serving so subsequent requests fold off a
+            // cheap event window instead of recomputing the exact count.
+            cachedAnchor = awaitAnchor(main, tenantIdentifier, storage, 0);
         } else if (now - cachedAnchor.computedAt >= REFRESH_TTL_MS) {
             // Stale: refresh the anchor in the background (single-flight) and keep folding off the current one.
             triggerRefresh(main, tenantIdentifier, storage);
@@ -180,8 +187,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         if (windowEvents.size() > INTERPRETER.getBurstCap()) {
             // Burst (bulk import / mass deletion): folding is slow and pointless because the anchor is far
-            // behind regardless, so re-anchor immediately and serve the fresh exact count.
-            CachedAnchor reAnchored = reAnchor(authRecipeStorage, tenantIdentifier, cachedAnchor);
+            // behind regardless, so re-anchor immediately and serve an exact count taken after the burst.
+            CachedAnchor reAnchored = awaitAnchor(main, tenantIdentifier, storage, newestEventTime(windowEvents));
             return new ApproximateCountResult(reAnchored.exactCount, true, reAnchored.snapshotMs);
         }
 
@@ -199,92 +206,152 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             Logging.warn(main, tenantIdentifier, "Approximate user count fold aborted for tenant " + tenantId
                     + " due to an unparseable lifecycle event payload; serving the fresh exact count instead: "
                     + e.getMessage());
-            CachedAnchor reAnchored = reAnchor(authRecipeStorage, tenantIdentifier, cachedAnchor);
+            CachedAnchor reAnchored = awaitAnchor(main, tenantIdentifier, storage, newestEventTime(windowEvents));
             return new ApproximateCountResult(reAnchored.exactCount, true, reAnchored.snapshotMs);
         }
     }
 
+    private static long newestEventTime(List<AuditLogEvent> events) {
+        long newest = 0;
+        for (AuditLogEvent event : events) {
+            newest = Math.max(newest, event.createdAt);
+        }
+        return newest;
+    }
+
     /**
-     * Computes a fresh anchor: the exact tenant user count paired with the snapshot time bounding the fold
-     * window it will be carried forward by. {@code snapshotMs} is captured before the exact-count read so a
-     * mutation committing after the read is folded (its created_at is at or after snapshotMs) rather than lost —
-     * the same boundary discipline the shadow audit uses. A mutation whose transaction straddles snapshotMs
-     * (created_at before, commit after) is the one documented boundary artifact; it self-heals at the next
+     * Gets an anchor: the tenant's exact user count paired with the snapshot time bounding the fold window it will be
+     * carried forward by. The count comes from {@link StoredUsersCount}, so it is shared by every core through the
+     * database, and a stored count is reused only if younger than {@code maxAgeMs}. {@code snapshotMs} is the time
+     * the count started, so a mutation committing after it is folded (its created_at is at or after snapshotMs)
+     * rather than lost - the same boundary discipline the shadow audit uses. A mutation whose transaction straddles
+     * snapshotMs (created_at before, commit after) is the one documented boundary artifact; it self-heals at the next
      * refresh.
      */
-    private CachedAnchor computeAnchor(AuthRecipeSQLStorage authRecipeStorage, TenantIdentifier tenantIdentifier)
+    private CachedAnchor computeAnchor(Storage storage, TenantIdentifier tenantIdentifier, long maxAgeMs)
             throws StorageQueryException {
-        long snapshotMs = System.currentTimeMillis();
-        long exactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
-        return new CachedAnchor(exactCount, snapshotMs, System.currentTimeMillis());
+        UsersCountSnapshot count = StoredUsersCount.getTenantUsersCountSnapshot(tenantIdentifier, storage, maxAgeMs);
+        return new CachedAnchor(count.count, count.countedAtMs, System.currentTimeMillis(), count.newlyCounted);
     }
 
-    // Single-flighted synchronous re-anchor: only one caller per tenant runs the exact count, the others wait for
-    // it and reuse the anchor it stores. `seen` is the anchor the caller found (null if none): if the cached
-    // anchor has changed since, another caller already re-anchored and that result is reused. On a large tenant
-    // the exact count is expensive (minutes on millions of users), so concurrent counts are what this avoids.
-    private CachedAnchor reAnchor(AuthRecipeSQLStorage authRecipeStorage, TenantIdentifier tenantIdentifier,
-                                  CachedAnchor seen) throws StorageQueryException {
-        String tenantId = tenantIdentifier.getTenantId();
-        ReentrantLock lock = anchorLocks.computeIfAbsent(tenantId, k -> new ReentrantLock());
-        lock.lock();
-        try {
-            CachedAnchor current = entries.get(tenantId);
-            if (current != null && current != seen) {
+    /**
+     * Returns an anchor counted at or after {@code notBeforeMs} (0: any), waiting at most {@link #ANCHOR_WAIT_MS}. It
+     * reuses the cached anchor if that is recent enough, else joins the tenant's in-flight count, else starts one; a
+     * joined count that turns out older than needed (it was started for an earlier bound) is followed by one more.
+     * A failed count fails every caller waiting on it.
+     */
+    private CachedAnchor awaitAnchor(Main main, TenantIdentifier tenantIdentifier, Storage storage, long notBeforeMs)
+            throws StorageQueryException {
+        long deadline = System.currentTimeMillis() + ANCHOR_WAIT_MS;
+        while (true) {
+            CachedAnchor current = entries.get(tenantIdentifier.getTenantId());
+            if (current != null && current.snapshotMs >= notBeforeMs) {
                 return current;
             }
-            CachedAnchor fresh = computeAnchor(authRecipeStorage, tenantIdentifier);
-            entries.put(tenantId, fresh);
-            return fresh;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private void triggerRefresh(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
-        String tenantId = tenantIdentifier.getTenantId();
-        if (!refreshing.add(tenantId)) {
-            return; // a refresh for this tenant is already in flight
-        }
-        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        try {
-            REFRESH_EXECUTOR.submit(() -> {
-                try {
-                    entries.put(tenantId, computeAnchor(authRecipeStorage, tenantIdentifier));
-                    ProcessState.getInstance(main).addState(
-                            ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
-                    // The slow exact recompute this refresh performs doubles as a correctness audit of the
-                    // lifecycle-event ledger (PLAN-010 decision 4). Kept entirely separate from serving.
-                    runShadowAudit(main, tenantIdentifier, storage);
-                } catch (Exception e) {
-                    // Keep serving the existing (stale) entry; the next request retries the refresh.
-                    ProcessState.getInstance(main).addState(
-                            ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_FAILED, e);
-                } finally {
-                    refreshing.remove(tenantId);
+            CompletableFuture<CachedAnchor> count = startOrJoinCount(main, tenantIdentifier, storage, notBeforeMs,
+                    false);
+            CachedAnchor anchor;
+            try {
+                anchor = count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof StorageQueryException) {
+                    throw (StorageQueryException) cause;
                 }
-            });
-        } catch (RuntimeException e) {
-            // e.g. the executor rejected the task - don't leave the single-flight guard stuck.
-            refreshing.remove(tenantId);
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                }
+                throw new StorageQueryException(cause instanceof Exception ? (Exception) cause : e);
+            } catch (TimeoutException e) {
+                throw new StorageQueryException(new TimeoutException("Gave up waiting for the user count of tenant "
+                        + tenantIdentifier.getTenantId() + " after " + ANCHOR_WAIT_MS
+                        + "ms; it is still being counted and later requests will use it"));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new StorageQueryException(e);
+            }
+            if (anchor.snapshotMs >= notBeforeMs) {
+                return anchor;
+            }
         }
     }
 
     /**
-     * The shadow audit (PLAN-010 unit 3), run once per successful background refresh. Reads the fresh exact
-     * tenant count and the lifecycle events committed since the previous refresh, and checks that the count
+     * The tenant's in-flight anchor count, starting one on {@link #COUNT_EXECUTOR} if there is none. A new count reuses
+     * a stored count only if it was counted at or after {@code notBeforeMs}. A count started by the background refresh
+     * ({@code refresh}) reports completion and, if it actually counted (not a reused stored count), runs the shadow
+     * audit against it.
+     */
+    private CompletableFuture<CachedAnchor> startOrJoinCount(Main main, TenantIdentifier tenantIdentifier,
+                                                             Storage storage, long notBeforeMs, boolean refresh) {
+        String tenantId = tenantIdentifier.getTenantId();
+        CompletableFuture<CachedAnchor> started = new CompletableFuture<>();
+        CompletableFuture<CachedAnchor> running = inFlight.putIfAbsent(tenantId, started);
+        if (running != null) {
+            return running;
+        }
+        long maxAgeMs = notBeforeMs <= 0 ? StoredUsersCount.MAX_AGE_MS
+                : Math.max(0, System.currentTimeMillis() - notBeforeMs + 1);
+        try {
+            COUNT_EXECUTOR.execute(() -> {
+                CachedAnchor anchor;
+                try {
+                    anchor = computeAnchor(storage, tenantIdentifier, maxAgeMs);
+                    // keep whichever anchor is newer (an equal snapshot is the same count, re-dated)
+                    entries.merge(tenantId, anchor, (old, fresh) -> fresh.snapshotMs >= old.snapshotMs ? fresh : old);
+                } catch (Throwable e) {
+                    // removed before completing, so a woken waiter that needs another count starts a new one
+                    inFlight.remove(tenantId, started);
+                    started.completeExceptionally(e);
+                    if (refresh) {
+                        // keep serving the existing (stale) entry; the next request retries the refresh
+                        ProcessState.getInstance(main).addState(
+                                ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_FAILED,
+                                e instanceof Exception ? (Exception) e : new RuntimeException(e));
+                    }
+                    return;
+                }
+                if (refresh) {
+                    ProcessState.getInstance(main).addState(
+                            ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
+                    if (anchor.newlyCounted) {
+                        // The exact recount this refresh performed doubles as a correctness audit of the
+                        // lifecycle-event ledger (PLAN-010 decision 4). A reused stored count is skipped, so every
+                        // audit window ends at a count taken for it. Runs before the count is released (it is a
+                        // bounded event-window read), so audits of one tenant never overlap; it never throws.
+                        runShadowAudit(main, tenantIdentifier, storage, anchor);
+                    }
+                }
+                inFlight.remove(tenantId, started);
+                started.complete(anchor);
+            });
+        } catch (RejectedExecutionException e) {
+            inFlight.remove(tenantId, started);
+            started.completeExceptionally(e);
+        }
+        return started;
+    }
+
+    // Stale anchor: count a new one in the background (joining any count already in flight) and keep serving.
+    private void triggerRefresh(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
+        startOrJoinCount(main, tenantIdentifier, storage, 0, true);
+    }
+
+    /**
+     * The shadow audit (PLAN-010 unit 3), run after a background refresh that counted anew. Takes that refresh's
+     * exact tenant count ({@code fresh}, with the time it was counted), reads the lifecycle events committed since
+     * the previous audited count, and checks that the count
      * moved by exactly the folded delta (see {@link CountShadowAudit}). Best-effort and observational only:
      * any failure here is swallowed so it can never disturb serving or the refresh that just succeeded, and a
      * discrepancy is logged, never served — the fresh exact count already won.
      */
-    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
+    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage, CachedAnchor fresh) {
         String tenantId = tenantIdentifier.getTenantId();
         try {
             if (!(storage instanceof ActivityLogStorage)) {
                 return; // storage keeps no lifecycle-event ledger, so there is nothing to fold against
             }
             ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
-            AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
             // Known boundary limitation (observational only): the window below filters events on their
             // emit-time created_at (stamped at the start of the mutating txn), whereas freshExactCount and the
@@ -296,8 +363,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             // because a robust fix needs an as-of-time exact count we do not have (and gating on persistence
             // across refreshes would also mask genuine one-time missed emits, which produce the same single
             // self-healing discrepancy). Tracked as a soak follow-up.
-            long snapshotMs = System.currentTimeMillis();
-            long freshExactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
+            long snapshotMs = fresh.snapshotMs;
+            long freshExactCount = fresh.exactCount;
 
             AuditSnapshot previous = auditSnapshots.get(tenantId);
             // Advance the snapshot regardless, so the next refresh's window starts where this one ends.
@@ -409,12 +476,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private static class CachedAnchor {
         final long exactCount;
         final long snapshotMs; // the epoch-ms snapshot the exact count is as-of; fold window lower bound (excl.)
-        final long computedAt;
+        final long computedAt; // when this core got the anchor; drives the refresh TTL
+        final boolean newlyCounted; // the count was run for this anchor, not reused from the stored count
 
-        CachedAnchor(long exactCount, long snapshotMs, long computedAt) {
+        CachedAnchor(long exactCount, long snapshotMs, long computedAt, boolean newlyCounted) {
             this.exactCount = exactCount;
             this.snapshotMs = snapshotMs;
             this.computedAt = computedAt;
+            this.newlyCounted = newlyCounted;
         }
     }
 
@@ -438,21 +507,27 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // this only lets tests exercise the stale-while-revalidate path without waiting out the real TTL.
     public void expireEntryForTesting(TenantIdentifier tenantIdentifier) {
         entries.computeIfPresent(tenantIdentifier.getTenantId(),
-                (k, e) -> new CachedAnchor(e.exactCount, e.snapshotMs, 0));
+                (k, e) -> new CachedAnchor(e.exactCount, e.snapshotMs, 0, e.newlyCounted));
     }
 
-    // Test-only seam: whether a tenant has a cached anchor, so tests can check which callers (the telemetry ping,
-    // the license-usage sync) go through this cache instead of running their own exact count.
+    // Test-only seam: whether a tenant has a cached anchor.
     public boolean hasAnchorForTesting(TenantIdentifier tenantIdentifier) {
         return entries.containsKey(tenantIdentifier.getTenantId());
+    }
+
+    // Test-only seam: whether an anchor count (and, for a refresh, its shadow audit) is still running for a tenant.
+    public boolean isCountingForTesting(TenantIdentifier tenantIdentifier) {
+        return inFlight.containsKey(tenantIdentifier.getTenantId());
     }
 
     // Test-only seam: runs one shadow-audit pass synchronously - seeding the snapshot on the first call for a
     // tenant and comparing against the previous snapshot on later calls - so tests can exercise the audit's
     // real storage reads and fold deterministically, without driving the background refresh executor (which
     // staleEntryTriggersBackgroundRefresh already covers). Not a runtime entry point; mirrors
-    // expireEntryForTesting.
-    public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
-        runShadowAudit(main, tenantIdentifier, storage);
+    // expireEntryForTesting. Takes a new exact count, as a refresh that counts would, without touching the served
+    // anchor.
+    public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage)
+            throws StorageQueryException {
+        runShadowAudit(main, tenantIdentifier, storage, computeAnchor(storage, tenantIdentifier, 0));
     }
 }
