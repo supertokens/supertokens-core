@@ -225,16 +225,17 @@ public class Telemetry extends CronTask {
         return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
     }
 
-    // For a single-tenant app the tenant count is the app count, so read it from the cached ApproximateUserCount
-    // (shared with the license-usage sync and /users/count) instead of running another exact count. Apps with
-    // more tenants keep the exact app-level count: adding up per-tenant counts would count a user who belongs to
-    // several tenants more than once.
+    // For a single-tenant app, report that tenant's cached ApproximateUserCount (shared with the license-usage sync
+    // and /users/count) instead of running another exact count. This is the users of the app's only tenant: it
+    // leaves out users that belong to no tenant (left behind by a deleted tenant, or removed from public), which
+    // the app-level count includes. Apps with more tenants keep the exact app-level count: adding up per-tenant
+    // counts would count a user who belongs to several tenants more than once.
     private long getUsersCount(AppIdentifier app, Storage[] storages) throws Exception {
         TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(app, main);
         if (tenants.length == 1) {
             TenantIdentifier tenant = tenants[0].tenantIdentifier;
             return ApproximateUserCount.getInstance(main, app)
-                    .serve(main, tenant, StorageLayer.getStorage(tenant, main)).count;
+                    .serveForBackgroundTask(main, tenant, StorageLayer.getStorage(tenant, main)).count;
         }
         return AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null);
     }

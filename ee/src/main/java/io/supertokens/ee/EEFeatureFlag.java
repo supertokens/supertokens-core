@@ -257,7 +257,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 // every sync: on a large tenant the exact count is expensive, and every core runs this
                 // shortly after it starts.
                 long usersCount = ApproximateUserCount.getInstance(main, this.appIdentifier)
-                        .serve(main, tenantConfig.tenantIdentifier, storage).count;
+                        .serveForBackgroundTask(main, tenantConfig.tenantIdentifier, storage).count;
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

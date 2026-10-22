@@ -748,6 +748,121 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // The daily license sync and telemetry ping (serveForBackgroundTask) nearly always find the anchor past its
+    // TTL. They must replace it with one synchronous exact count, not take serve()'s stale path, which would add
+    // a background refresh and its shadow-audit recount for every tenant, every day.
+    @Test
+    public void backgroundTaskOnStaleAnchorRunsOneExactCount() throws Exception {
+        String[] args = {"../"};
+        Utils.setValueInConfig("disable_telemetry", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+        AtomicInteger exactCounts = new AtomicInteger();
+        Storage storage = countingStorage(StorageLayer.getStorage(process.getProcess()), exactCounts,
+                new CountDownLatch(1), new CountDownLatch(0));
+
+        // First sync primes the anchor with one exact count.
+        assertEquals(3, approximateUserCount.serveForBackgroundTask(process.getProcess(), tenant, storage).count);
+        assertEquals(1, exactCounts.get());
+
+        // A day later: the anchor is stale and a user was added since.
+        EmailPassword.signUp(process.getProcess(), "later@example.com", "password");
+        Thread.sleep(5);
+        approximateUserCount.expireEntryForTesting(tenant);
+
+        assertEquals(4, approximateUserCount.serveForBackgroundTask(process.getProcess(), tenant, storage).count);
+        assertEquals(2, exactCounts.get());
+        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
+                1000));
+
+        // The re-anchor is fresh: /users/count-style serving folds off it without another count or refresh.
+        assertEquals(4, approximateUserCount.serve(process.getProcess(), tenant, storage).count);
+        assertEquals(2, exactCounts.get());
+        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED,
+                1000));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A synchronous re-anchor forced by the fold (a corrupt ledger payload here; a burst over the cap takes the
+    // same path) is single-flighted too: concurrent callers that hit it run one exact count between them.
+    @Test
+    public void concurrentReAnchorsRunOneExactCount() throws Exception {
+        String[] args = {"../"};
+        Utils.setValueInConfig("disable_telemetry", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+        assertEquals(3, approximateUserCount.serve(process.getProcess(), tenant,
+                StorageLayer.getStorage(process.getProcess())).count);
+
+        // Valid JSON with the wrong shape, so parsing the fold window fails and serve() re-anchors (see
+        // apiApproximateReAnchorsOnCorruptLedgerPayload).
+        Thread.sleep(5);
+        AuditLogEvent corrupt = new AuditLogEvent(tenant.getAppId(), null, "recipe-user", "recipe-user",
+                LifecycleEventType.USER_DELETION.getValue(), "success", null, null,
+                System.currentTimeMillis(), "{\"schemaVersion\":1,\"type\":\"user_deletion\"}");
+        ((ActivityLogStorage) StorageLayer.getStorage(process.getProcess())).createActivityLogEntry(tenant, corrupt);
+        Thread.sleep(5);
+
+        AtomicInteger exactCounts = new AtomicInteger();
+        CountDownLatch firstCountStarted = new CountDownLatch(1);
+        CountDownLatch releaseCount = new CountDownLatch(1);
+        Storage storage = countingStorage(StorageLayer.getStorage(process.getProcess()), exactCounts,
+                firstCountStarted, releaseCount);
+
+        int callers = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(callers);
+        try {
+            List<Future<Long>> results = new ArrayList<>();
+            for (int i = 0; i < callers; i++) {
+                results.add(pool.submit(
+                        () -> approximateUserCount.serve(process.getProcess(), tenant, storage).count));
+            }
+
+            assertTrue(firstCountStarted.await(10, TimeUnit.SECONDS));
+            // Give the other callers time to reach the re-anchor while the first count is still running.
+            Thread.sleep(500);
+            releaseCount.countDown();
+
+            for (Future<Long> result : results) {
+                assertEquals(3L, (long) result.get(10, TimeUnit.SECONDS));
+            }
+        } finally {
+            releaseCount.countDown();
+            pool.shutdownNow();
+        }
+
+        assertEquals(1, exactCounts.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // Wraps the real storage, counting the exact tenant counts (getUsersCount(TenantIdentifier, ...)) and holding
     // the first one until releaseCount opens. Every other call goes straight to the real storage.
     private static Storage countingStorage(Storage delegate, AtomicInteger exactCounts,

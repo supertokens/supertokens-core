@@ -7,7 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.4.1]
 
-- Fixes database CPU spikes when many cores start at once: the startup telemetry ping is delayed by 60-120s (jittered), and it and the license-usage sync read the cached user count instead of each running a full count.
+- Delays the startup telemetry ping by 60-120s (jittered) so cores starting together don't count users at the same time.
+- The license-usage sync, and telemetry for single-tenant apps, use the cached user count; telemetry for multi-tenant apps still runs a full app-wide count.
+- Single-tenant telemetry `usersCount` now counts the tenant's users, leaving out users that belong to no tenant.
+- After a restart, concurrent first user-count requests for a tenant share one full count.
 
 ## [12.4.0]
 
