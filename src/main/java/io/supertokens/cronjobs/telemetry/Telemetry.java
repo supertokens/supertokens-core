@@ -217,6 +217,11 @@ public class Telemetry extends CronTask {
         // The first ping (the server start event) used to go out immediately, so every core that started ran a
         // full user count at once - a fleet rollout stacked them on the database. It is jittered, and starts
         // after EELicenseCheck's first run (30-60s) so the user count that sync primes is reused here.
+        return getJitteredInitialWaitTimeSeconds();
+    }
+
+    // A value in [60, 120) seconds. Public so tests can check the range without turning Main.isTesting off.
+    public static int getJitteredInitialWaitTimeSeconds() {
         return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
     }
 

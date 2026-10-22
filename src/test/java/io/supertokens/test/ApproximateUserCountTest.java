@@ -39,7 +39,20 @@ import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -673,5 +686,94 @@ public class ApproximateUserCountTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Single-flighted prime: callers that find no anchor for a tenant at the same time (on a fresh core: the
+    // telemetry ping, the license-usage sync, /users/count) must run one exact count between them, not one each.
+    // The storage is wrapped so the first exact count blocks until every caller has had time to reach serve();
+    // without the per-tenant lock each of them would run its own count.
+    @Test
+    public void concurrentFirstRequestsRunOneExactCount() throws Exception {
+        String[] args = {"../"};
+        // Telemetry would otherwise prime the public tenant's anchor at startup, before the test gets to it.
+        Utils.setValueInConfig("disable_telemetry", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            EmailPassword.signUp(process.getProcess(), "seed" + i + "@example.com", "password" + i);
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        ApproximateUserCount approximateUserCount = ApproximateUserCount.getInstance(process.getProcess(),
+                tenant.toAppIdentifier());
+        assertFalse(approximateUserCount.hasAnchorForTesting(tenant));
+
+        AtomicInteger exactCounts = new AtomicInteger();
+        CountDownLatch firstCountStarted = new CountDownLatch(1);
+        CountDownLatch releaseCount = new CountDownLatch(1);
+        Storage storage = countingStorage(StorageLayer.getStorage(process.getProcess()), exactCounts,
+                firstCountStarted, releaseCount);
+
+        int callers = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(callers);
+        try {
+            List<Future<Long>> results = new ArrayList<>();
+            for (int i = 0; i < callers; i++) {
+                results.add(pool.submit(
+                        () -> approximateUserCount.serve(process.getProcess(), tenant, storage).count));
+            }
+
+            assertTrue(firstCountStarted.await(10, TimeUnit.SECONDS));
+            // Give the other callers time to reach the prime while the first count is still running.
+            Thread.sleep(500);
+            releaseCount.countDown();
+
+            for (Future<Long> result : results) {
+                assertEquals(3L, (long) result.get(10, TimeUnit.SECONDS));
+            }
+        } finally {
+            releaseCount.countDown();
+            pool.shutdownNow();
+        }
+
+        assertEquals(1, exactCounts.get());
+        assertTrue(approximateUserCount.hasAnchorForTesting(tenant));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Wraps the real storage, counting the exact tenant counts (getUsersCount(TenantIdentifier, ...)) and holding
+    // the first one until releaseCount opens. Every other call goes straight to the real storage.
+    private static Storage countingStorage(Storage delegate, AtomicInteger exactCounts,
+                                           CountDownLatch firstCountStarted, CountDownLatch releaseCount) {
+        Set<Class<?>> interfaces = new LinkedHashSet<>();
+        for (Class<?> c = delegate.getClass(); c != null; c = c.getSuperclass()) {
+            for (Class<?> i : c.getInterfaces()) {
+                if (Modifier.isPublic(i.getModifiers())) {
+                    interfaces.add(i);
+                }
+            }
+        }
+        return (Storage) Proxy.newProxyInstance(delegate.getClass().getClassLoader(),
+                interfaces.toArray(new Class<?>[0]), (proxy, method, methodArgs) -> {
+                    if (method.getName().equals("getUsersCount") && methodArgs != null
+                            && methodArgs[0] instanceof TenantIdentifier) {
+                        if (exactCounts.incrementAndGet() == 1) {
+                            firstCountStarted.countDown();
+                            assertTrue(releaseCount.await(10, TimeUnit.SECONDS));
+                        }
+                    }
+                    try {
+                        return method.invoke(delegate, methodArgs);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                });
     }
 }

@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -593,6 +594,54 @@ public class FeatureFlagTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The license-usage sync reads each tenant's user count from the shared ApproximateUserCount cache instead of
+    // running its own exact count; users added after the cache is primed are still counted.
+    @Test
+    public void multitenantStatsUseTheCachedUserCount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+            return;
+        }
+
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        TenantIdentifier t0 = new TenantIdentifier(null, null, "t0");
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                new TenantConfig(t0, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        Storage storage = StorageLayer.getStorage(t0, process.getProcess());
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user1@example.com", "password");
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user2@example.com", "password");
+
+        assertEquals(2, getTenantUsersCountStat(process, "t0"));
+        assertTrue(ApproximateUserCount.getInstance(process.getProcess(), t0.toAppIdentifier())
+                .hasAnchorForTesting(t0));
+
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user3@example.com", "password");
+        assertEquals(3, getTenantUsersCountStat(process, "t0"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static long getTenantUsersCountStat(TestingProcessManager.TestingProcess process, String tenantId)
+            throws Exception {
+        JsonArray tenantStats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats()
+                .get(EE_FEATURES.MULTI_TENANCY.toString()).getAsJsonObject().get("tenants").getAsJsonArray();
+        for (JsonElement tenantStat : tenantStats) {
+            if (tenantStat.getAsJsonObject().get("tenantId").getAsString().equals(tenantId)) {
+                return tenantStat.getAsJsonObject().get("usersCount").getAsLong();
+            }
+        }
+        throw new AssertionError("no multi_tenancy stats for tenant " + tenantId);
     }
 
     @Test

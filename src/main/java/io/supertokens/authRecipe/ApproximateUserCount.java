@@ -442,6 +442,12 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 (k, e) -> new CachedAnchor(e.exactCount, e.snapshotMs, 0));
     }
 
+    // Test-only seam: whether a tenant has a cached anchor, so tests can check which callers (the telemetry ping,
+    // the license-usage sync) go through this cache instead of running their own exact count.
+    public boolean hasAnchorForTesting(TenantIdentifier tenantIdentifier) {
+        return entries.containsKey(tenantIdentifier.getTenantId());
+    }
+
     // Test-only seam: runs one shadow-audit pass synchronously - seeding the snapshot on the first call for a
     // tenant and comparing against the previous snapshot on later calls - so tests can exercise the audit's
     // real storage reads and fold deterministically, without driving the background refresh executor (which
