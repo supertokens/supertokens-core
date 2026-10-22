@@ -94,14 +94,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private static final CountDeltaInterpreter INTERPRETER = new CountDeltaInterpreter(
             CountDeltaInterpreter.DEFAULT_BURST_CAP);
 
-    // Pool that runs the anchor counts (the first-request prime, a burst or corrupt-ledger re-anchor, the background
-    // refresh). Counts are single-flighted per tenant, so a tenant has at most one count running; a cached pool, so a
-    // slow count on one tenant never queues another tenant's count behind it.
-    private static final ExecutorService COUNT_EXECUTOR = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "approximate-user-count-anchor");
-        t.setDaemon(true);
-        return t;
-    });
+    // Pools that run the anchor counts. Each count holds a database connection while it runs, which can be minutes on
+    // a large tenant, so they are bounded: a read across many tenants queues their counts instead of starting one per
+    // tenant and taking the user pool's connections from the rest of the core. Background refreshes run at most 2 at a
+    // time (as before); the counts a request waits for (the first-request prime, a burst or corrupt-ledger re-anchor)
+    // at most 4, on their own pool so a backlog of refreshes never holds them up. Counts are single-flighted per
+    // tenant, so a queue holds at most one count per tenant.
+    private static final ExecutorService REFRESH_EXECUTOR = newCountExecutor(2, "approximate-user-count-refresh");
+    private static final ExecutorService REQUEST_COUNT_EXECUTOR = newCountExecutor(4, "approximate-user-count-anchor");
 
     // How long a request waits for an anchor count before failing - the bound the pool's 60s socket timeout used to
     // put on a synchronous count. The count keeps running past it and stores its anchor for the requests after.
@@ -125,6 +125,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private final ConcurrentHashMap<String, AuditSnapshot> auditSnapshots = new ConcurrentHashMap<>();
 
     private ApproximateUserCount() {
+    }
+
+    private static ExecutorService newCountExecutor(int threads, String name) {
+        return Executors.newFixedThreadPool(threads, r -> {
+            Thread t = new Thread(r, name);
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     public static ApproximateUserCount getInstance(Main main, AppIdentifier appIdentifier)
@@ -277,10 +285,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     }
 
     /**
-     * The tenant's in-flight anchor count, starting one on {@link #COUNT_EXECUTOR} if there is none. A new count reuses
-     * a stored count only if it was counted at or after {@code notBeforeMs}. A count started by the background refresh
-     * ({@code refresh}) reports completion and, if it actually counted (not a reused stored count), runs the shadow
-     * audit against it.
+     * The tenant's in-flight anchor count, starting one if there is none: on {@link #REFRESH_EXECUTOR} for the
+     * background refresh, else on {@link #REQUEST_COUNT_EXECUTOR}. A new count reuses a stored count only if it was
+     * counted at or after {@code notBeforeMs}. A count started by the background refresh ({@code refresh}) reports
+     * completion and, if it actually counted (not a reused stored count), runs the shadow audit against it.
      */
     private CompletableFuture<CachedAnchor> startOrJoinCount(Main main, TenantIdentifier tenantIdentifier,
                                                              Storage storage, long notBeforeMs, boolean refresh) {
@@ -293,7 +301,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long maxAgeMs = notBeforeMs <= 0 ? StoredUsersCount.MAX_AGE_MS
                 : Math.max(0, System.currentTimeMillis() - notBeforeMs + 1);
         try {
-            COUNT_EXECUTOR.execute(() -> {
+            (refresh ? REFRESH_EXECUTOR : REQUEST_COUNT_EXECUTOR).execute(() -> {
                 CachedAnchor anchor;
                 try {
                     anchor = computeAnchor(storage, tenantIdentifier, maxAgeMs);
