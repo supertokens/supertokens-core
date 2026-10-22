@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.ApproximateUserCount;
+import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
+import io.supertokens.config.Config;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -91,34 +93,41 @@ public class UsersCountAPI extends WebserverAPI {
 
         try {
             long count;
-            // Whether the served value came from a cached anchor snapshot. Stays false when we compute exact -
-            // which the ledger-served path only ever falls back to for the shapes it does not cover
-            // (all-tenants, or a recipe-filtered count), so the client still learns it got a fresh number.
-            boolean approximate = false;
-            long asOf = System.currentTimeMillis();
+            boolean approximate;
+            long asOf;
 
-            if (includeAllTenants) {
-                AppIdentifier appIdentifier = getAppIdentifier(req);
-                Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
-
-                count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifier, storages, recipeIdsEnum);
-
-            } else {
-                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-                Storage storage = getTenantStorage(req);
-
-                // The anchor + fold contract counts every user in the tenant; a recipe-id filter has no
-                // ledger-fold equivalent, so fall back to an exact recompute in that case.
-                if (ledgerServed && recipeIdsEnum.length == 0) {
-                    ApproximateUserCount.ApproximateCountResult foldResult = ApproximateUserCount
-                            .getInstance(main, getAppIdentifier(req)).serve(main, tenantIdentifier, storage);
-                    count = foldResult.count;
-                    approximate = foldResult.approximate;
-                    asOf = foldResult.asOf;
+            // Every shape goes through the one user-count pipeline. Unfiltered counts on CDI 5.7+ (or 5.6 with the
+            // opt-in) are the shared full count plus the lifecycle events since it; a recipe filter has no event rules
+            // and an older CDI promises an exact count, so those get the shared full count as is (at most
+            // users_count_max_age_ms old), with approximate/asOf telling a 5.6+ client how old it is.
+            RECIPE_ID[] recipes = recipeIdsEnum.length == 0 ? null : recipeIdsEnum;
+            boolean withEvents = ledgerServed && recipes == null;
+            long waitMs = Config.getBaseConfig(main).getUsersCountRequestWaitMs();
+            ApproximateUserCount.ApproximateCountResult served;
+            try {
+                if (includeAllTenants) {
+                    AppIdentifier appIdentifier = getAppIdentifier(req);
+                    enforcePublicTenantAndGetAllStoragesForApp(req);
+                    ApproximateUserCount counts = ApproximateUserCount.getInstance(main, appIdentifier);
+                    served = withEvents ? counts.serveApp(main, null, waitMs)
+                            : counts.serveAppStoredExact(main, recipes, waitMs);
                 } else {
-                    count = AuthRecipe.getUsersCountForTenant(tenantIdentifier, storage, recipeIdsEnum);
+                    TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                    getTenantStorage(req);
+                    ApproximateUserCount counts = ApproximateUserCount.getInstance(main, getAppIdentifier(req));
+                    served = withEvents ? counts.serveTenant(main, tenantIdentifier, null, waitMs)
+                            : counts.serveTenantStoredExact(main, tenantIdentifier, recipes, waitMs);
                 }
+            } catch (UsersCountNotReadyException e) {
+                // the count keeps running and serves the retry
+                resp.setHeader("Retry-After",
+                        Integer.toString(Config.getBaseConfig(main).getUsersCountRetryAfterSeconds()));
+                sendTextResponse(503, "The user count is being computed; try again later.", resp);
+                return;
             }
+            count = served.count;
+            approximate = served.approximate;
+            asOf = served.asOf;
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);

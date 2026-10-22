@@ -7,10 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.4.1]
 
-- Delays the startup telemetry ping by 60-120s (jittered) so cores starting together don't count users at the same time.
 - Requires plugin interface 11.1.
-- Telemetry's app-wide `usersCount` and the license-usage sync's per-tenant user counts are stored in the database and reused by all cores for up to 10 minutes; cores that need a count at the same time wait for one count instead of each running their own. A user pool that doesn't hold the app's public tenant has its part of the app count counted directly.
-- `/users/count`'s cached count starts from the same stored tenant count; requests that need a new count share one in-flight count, including its failure, and wait for it at most 60s. A core runs at most 4 of these counts at once, plus at most 2 background refreshes.
+- One pipeline for every user count (telemetry `usersCount`, the license-usage stats, `/users/count`): a full count stored in the database and shared by all cores for up to `users_count_max_age_ms` (one core counts, the others wait), plus the sign-ups, deletions and links logged since; a bulk import rolls the count forward instead of triggering a new full count.
+- Telemetry's `usersCount` is the app-wide count for every app, whatever its number of tenants.
+- `/users/count` answers 503 with `Retry-After` when its count is still being computed after `users_count_request_wait_ms`; recipe-filtered counts, and counts on CDI versions before 5.6's opt-in, are the shared full count (at most `users_count_max_age_ms` old).
+- A failed count serves the last stored count; a failed telemetry ping or license sync is retried within minutes instead of the next day.
+- Delays the startup telemetry ping by 60-120s (jittered).
+- New config: `users_count_max_age_ms`, `users_count_request_wait_ms`, `users_count_retry_after_seconds`.
 
 ## [12.4.0]
 

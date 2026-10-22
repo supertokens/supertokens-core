@@ -19,7 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.StoredUsersCount;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -27,9 +27,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.UsersCountCacheStorage;
-import io.supertokens.pluginInterface.authRecipe.UsersCountSnapshot;
-import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -38,14 +35,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.lang.reflect.Proxy;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class StoredUsersCountTest {
+public class AppUsersCountAcrossUserPoolsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -62,23 +55,9 @@ public class StoredUsersCountTest {
         Utils.reset();
     }
 
-    // The plugin stores the app count on the app's public tenant, which exists only in the user pool that holds that
-    // tenant. Another user pool of the app (holding only some of its other tenants) can't store it - the write fails
-    // its foreign key to the tenants table - so that pool is counted directly, without the stored count.
-    @Test
-    public void appCountIsStoredOnlyInThePublicTenantsUserPool() throws Exception {
-        AppIdentifier app = new AppIdentifier(null, "a1");
-        List<String> storedCountCalls = new ArrayList<>();
-        Storage publicPool = fakeStorage("pool-public", 5, 7, storedCountCalls);
-        Storage otherPool = fakeStorage("pool-other", 3, 4, storedCountCalls);
-
-        assertEquals(5 + 4, StoredUsersCount.getAppUsersCount(app, new Storage[]{otherPool, publicPool},
-                publicPool));
-        assertEquals(List.of("pool-public"), storedCountCalls);
-    }
-
-    // The same against a real storage: an app with a tenant in a second user pool (a separate database on
-    // Postgres) gets its app-wide count, the same as AuthRecipe.getUsersCountAcrossAllTenants.
+    // An app with a tenant in a second user pool (a separate database on Postgres) gets its app-wide count, the same
+    // as AuthRecipe.getUsersCountAcrossAllTenants. Each pool stores its part of the count on a tenant of the app that
+    // exists in that database: the public tenant in the first, t1 in the second (which has no public tenant of a1).
     @Test
     public void appCountWithATenantInAnotherUserPool() throws Exception {
         String[] args = {"../"};
@@ -122,50 +101,16 @@ public class StoredUsersCountTest {
         Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), app);
         assertEquals(2, storages.length);
         assertEquals(AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null),
-                StoredUsersCount.getAppUsersCount(app, storages, publicStorage));
-        assertEquals(3, StoredUsersCount.getAppUsersCount(app, storages, publicStorage));
+                ApproximateUserCount.getInstance(process.getProcess(), app)
+                        .serveApp(process.getProcess(), null, Long.MAX_VALUE).count);
+        assertEquals(3, ApproximateUserCount.getInstance(process.getProcess(), app)
+                .serveApp(process.getProcess(), null, Long.MAX_VALUE).count);
         if (publicStorage instanceof UsersCountCacheStorage) {
-            // the public tenant's pool stored its part of the count (the other pool's two users are counted directly)
             assertEquals("1", publicStorage.getKeyValue(a1Public, "APP_USERS_COUNT").value);
+            assertEquals("2", t1Storage.getKeyValue(a1t1, "APP_USERS_COUNT").value);
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    // A storage in user pool poolId whose stored app count is storedCount and whose direct app count is directCount.
-    // Storing the app count fails unless it is the app's public tenant's pool, as the plugin's foreign key does.
-    private static Storage fakeStorage(String poolId, long storedCount, long directCount,
-                                       List<String> storedCountCalls) {
-        return (Storage) Proxy.newProxyInstance(StoredUsersCountTest.class.getClassLoader(),
-                new Class<?>[]{UsersCountCacheStorage.class, AuthRecipeSQLStorage.class}, (proxy, method, args) -> {
-                    switch (method.getName()) {
-                        case "getType":
-                            return STORAGE_TYPE.SQL;
-                        case "getUserPoolId":
-                            return poolId;
-                        case "getOrComputeAppUsersCount":
-                            storedCountCalls.add(poolId);
-                            if (!poolId.equals("pool-public")) {
-                                throw new StorageQueryException(new SQLException(
-                                        "insert or update on table \"key_value\" violates foreign key constraint"));
-                            }
-                            return new UsersCountSnapshot(storedCount, System.currentTimeMillis(), true);
-                        case "getUsersCount":
-                            if (args[0] instanceof AppIdentifier) {
-                                return directCount;
-                            }
-                            break;
-                        case "hashCode":
-                            return System.identityHashCode(proxy);
-                        case "equals":
-                            return proxy == args[0];
-                        case "toString":
-                            return "fakeStorage(" + poolId + ")";
-                        default:
-                            break;
-                    }
-                    throw new UnsupportedOperationException(method.getName());
-                });
     }
 }

@@ -596,8 +596,8 @@ public class FeatureFlagTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // The license-usage stats report each tenant's exact user count, stored in the database and shared by every core
-    // for up to StoredUsersCount.MAX_AGE_MS: a sign-up shows once the stored count is too old to reuse.
+    // The license-usage stats come from the user-count pipeline: the tenant's full count, stored in the database and
+    // shared by every core, plus the lifecycle events since it - so a sign-up shows at once, without a new full count.
     @Test
     public void multitenantStatsUseTheStoredUserCount() throws Exception {
         String[] args = {"../"};
@@ -627,13 +627,10 @@ public class FeatureFlagTest {
         assertNotNull(stored);
         assertEquals("2", stored.value);
 
-        // Within the max age the stored count is reported
+        // A sign-up is added from the lifecycle events; the stored full count is not redone
         EmailPassword.signUp(t0, storage, process.getProcess(), "user3@example.com", "password");
-        assertEquals(2, getTenantUsersCountStat(process, "t0"));
-
-        // Once it is too old, the tenant is counted again
-        storage.setKeyValue(t0, "TENANT_USERS_COUNT", new KeyValueInfo("2", 0));
         assertEquals(3, getTenantUsersCountStat(process, "t0"));
+        assertEquals("2", storage.getKeyValue(t0, "TENANT_USERS_COUNT").value);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

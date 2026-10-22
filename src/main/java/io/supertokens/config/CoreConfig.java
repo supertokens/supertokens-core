@@ -285,6 +285,33 @@ public class CoreConfig {
                     + "cap is always enforced (a hard cap). Must be between 1 and 100. (Default: 25)")
     private int concurrency_cap_reserved_pool_percent = 25;
 
+    @EnvName("USERS_COUNT_MAX_AGE_MS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How old, in milliseconds, a full user count may be before it is counted again. User counts (telemetry, " +
+                    "license usage, /users/count) are the last full count plus the sign-ups, deletions and links " +
+                    "logged since; the full count is shared by every core through the database and redone once it " +
+                    "is older than this. (Default: 600000)")
+    private long users_count_max_age_ms = 600000;
+
+    @EnvName("USERS_COUNT_REQUEST_WAIT_MS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How long, in milliseconds, a /users/count request waits for a full user count that is still running " +
+                    "before it is answered with 503 and a Retry-After header. The count keeps running and serves " +
+                    "the retry. (Default: 5000)")
+    private long users_count_request_wait_ms = 5000;
+
+    @EnvName("USERS_COUNT_RETRY_AFTER_SECONDS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "The Retry-After value, in seconds, of the 503 a /users/count request gets while its user count is still " +
+                    "being computed. (Default: 10)")
+    private int users_count_retry_after_seconds = 10;
+
     @EnvName("SUPERTOKENS_ADMIN_PORT")
     @ConfigYamlOnly
     @JsonProperty
@@ -872,6 +899,18 @@ public class CoreConfig {
         return host;
     }
 
+    public long getUsersCountMaxAgeMs() {
+        return users_count_max_age_ms;
+    }
+
+    public long getUsersCountRequestWaitMs() {
+        return users_count_request_wait_ms;
+    }
+
+    public int getUsersCountRetryAfterSeconds() {
+        return users_count_retry_after_seconds;
+    }
+
     public int getMaxThreadPoolSize() {
         return max_server_pool_size;
     }
@@ -1129,6 +1168,16 @@ public class CoreConfig {
 
         if (totp_rate_limit_cooldown_sec <= 0) {
             throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
+        }
+
+        if (users_count_max_age_ms <= 0) {
+            throw new InvalidConfigException("'users_count_max_age_ms' must be > 0");
+        }
+        if (users_count_request_wait_ms < 0) {
+            throw new InvalidConfigException("'users_count_request_wait_ms' must be >= 0");
+        }
+        if (users_count_retry_after_seconds <= 0) {
+            throw new InvalidConfigException("'users_count_retry_after_seconds' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {

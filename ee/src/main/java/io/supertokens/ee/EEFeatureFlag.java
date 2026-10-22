@@ -10,7 +10,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import io.supertokens.authRecipe.StoredUsersCount;
+import io.supertokens.authRecipe.ApproximateUserCount;
+import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -253,10 +254,15 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                // Exact count, stored in the database and shared by every core for up to
-                // StoredUsersCount.MAX_AGE_MS: on a large tenant the count is expensive, and every core runs this
-                // shortly after it starts.
-                long usersCount = StoredUsersCount.getTenantUsersCount(tenantConfig.tenantIdentifier, storage);
+                // From the user-count pipeline: the tenant's full count, shared by every core through the database,
+                // plus the lifecycle events since it.
+                long usersCount;
+                try {
+                    usersCount = ApproximateUserCount.getInstance(main, this.appIdentifier)
+                            .serveTenant(main, tenantConfig.tenantIdentifier, null, Long.MAX_VALUE).count;
+                } catch (UsersCountNotReadyException e) {
+                    throw new IllegalStateException("an unbounded wait cannot run out", e);
+                }
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

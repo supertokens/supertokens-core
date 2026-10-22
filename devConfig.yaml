@@ -137,6 +137,21 @@ core_config_version: 0
 # enforced (a hard cap). Must be between 1 and 100.
 # concurrency_cap_reserved_pool_percent:
 
+# (OPTIONAL | Default: 600000) long value. How old, in milliseconds, a full user count may be before it is counted
+# again. User counts (telemetry, license usage, /users/count) are the last full count plus the sign-ups, deletions and
+# links logged since; the full count is shared by every core through the database and redone once it is older than
+# this.
+# users_count_max_age_ms:
+
+# (OPTIONAL | Default: 5000) long value. How long, in milliseconds, a /users/count request waits for a full user count
+# that is still running before it is answered with 503 and a Retry-After header. The count keeps running and serves
+# the retry.
+# users_count_request_wait_ms:
+
+# (OPTIONAL | Default: 10) integer value. The Retry-After value, in seconds, of the 503 a /users/count request gets
+# while its user count is still being computed.
+# users_count_retry_after_seconds:
+
 
 # (OPTIONAL | Default: null) integer value. The port for a second webserver connector that serves liveness and
 # control-plane routes from a thread pool separate from the data-plane pool. When set to null, the admin connector

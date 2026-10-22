@@ -23,24 +23,32 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.auditlog.lifecycle.InvalidLifecycleEventPayloadException;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
+import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
+import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.authRecipe.UsersCountCacheStorage;
 import io.supertokens.pluginInterface.authRecipe.UsersCountSnapshot;
-import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.telemetry.TelemetryProvider;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -49,82 +57,71 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Serving path for the tenant user count (PLAN-009 skeleton, PLAN-010 units "ledger-fold" and "default-flip").
- * As of "default-flip" this is the default single-tenant, unfiltered count path - the {@code allowApproximate}
- * request parameter is a vestigial no-op; the slow exact recompute survives only as the background anchor
- * refresh (which doubles as the shadow audit).
- * Holds a per-tenant in-memory anchor {@code {exactCount, snapshotMs, computedAt}} — the exact count taken at
- * {@code snapshotMs} — and serves {@code exactCount + fold(lifecycle events in (snapshotMs, now])} at request
- * time (single-digit ms), refreshing the anchor in the background with stale-while-revalidate semantics.
+ * The one pipeline for user counts: telemetry's {@code usersCount}, the license-usage stats and {@code /users/count}
+ * all go through {@link #serveApp} / {@link #serveTenant} (per app resource).
  * <p>
- * The delta is folded from the lifecycle-event ledger by the shared {@link CountDeltaInterpreter}, replacing
- * PLAN-009's joined-since query. That query could only see creations; the ledger records every count-affecting
- * mutation, so the served value is now exact for deletions, account linking and unlinking too — a silent
- * accuracy upgrade with no API surface change. This is the same {@code anchor + fold} arithmetic the
- * {@link CountShadowAudit shadow audit} continuously checks against a fresh exact recompute, so the audit
- * directly validates what is served.
+ * <b>Layer 1, the stored exact count</b> ({@link UsersCountCacheStorage}): a full count, stored in the database and
+ * reused by every core while younger than {@code users_count_max_age_ms}; one core counts while the others wait for
+ * it. A storage without that capability (the in-memory db) is counted directly.
  * <p>
- * <b>Burst cap.</b> If the window since the anchor holds more than {@link CountDeltaInterpreter#getBurstCap()}
- * events (a bulk import or mass deletion), folding is slow and pointless because the anchor is far behind
- * regardless, so the anchor is re-computed immediately and the fresh exact count served — the semantically
- * correct response to mass mutation.
+ * <b>Layer 2, anchors</b>: per user pool, one anchor per scope {@code {count, snapshotMs}} taken from layer 1. Getting a
+ * new anchor is single-flighted per scope (one in-flight count, joined by every caller, which gets its result or its
+ * failure). Background refreshes and the counts a caller waits for run on separate, bounded pools.
  * <p>
- * The served anchors are cached per instance and per (app, tenant). The exact counts behind them come from
- * {@link StoredUsersCount}: stored in the database and reused by every core for up to 10 minutes, with one core
- * counting while the others wait. So a restarted core usually starts from a stored count instead of running its
- * own, and within a core the tenant's anchor counts are single-flighted (one in flight, joined by every caller).
+ * <b>Layer 3, the lifecycle events since the anchor</b>: the served count is the anchor plus the delta of the
+ * lifecycle events logged after it ({@link CountDeltaInterpreter}): per tenant, the events that change that tenant;
+ * for the app, the events that create, remove, merge or split a user group. A user pool's events are read once and
+ * shared by all its scopes for a short while. When the events after the oldest anchor no longer fit one read (a bulk
+ * import), every anchor of the pool is rolled forward to (nearly) now instead of being re-counted, so a burst costs
+ * one read of its events, not a full count. A recipe-filtered count has no event rules, so it is served from layer 1
+ * as is.
  * <p>
- * Accuracy: exact modulo ledger completeness (the invariant the shadow audit gates on). The only residual lag
- * is the emit-time/commit-time boundary artifact documented on the shadow audit, which self-heals at the next
- * anchor refresh. This is not a statistical estimate and has no error margin.
+ * An anchor older than the max age keeps serving while a background refresh gets a new one; a refresh that counted
+ * anew is checked by the {@link CountShadowAudit shadow audit} against the previous count plus the events between
+ * them. A count that fails (or backs off after another core's failure) falls back to the last good anchor, or the last
+ * count stored in the database, marked stale; only with neither does the caller get the failure.
+ * <p>
+ * Accuracy: exact modulo ledger completeness (what the shadow audit checks). Events are stamped when their
+ * transaction starts and can commit a little later, so an anchor is never rolled closer than
+ * {@link #ROLL_MARGIN_MS} to now, and a mutation straddling a full count's snapshot self-heals at the next count.
  */
 public class ApproximateUserCount extends ResourceDistributor.SingletonResource {
 
     public static final String RESOURCE_KEY = "io.supertokens.authRecipe.ApproximateUserCount";
 
-    // Entries older than this trigger a background refresh; the stale entry keeps being served until the
-    // refresh completes (stale-while-revalidate). A constant for now (not configurable), per the design.
-    private static final long REFRESH_TTL_MS = 10 * 60 * 1000L; // 10 minutes
+    // Events read per page. A pool's events after its oldest anchor that do not fit one page are rolled into the
+    // anchors instead of being re-read by every call. Matches the shadow audit's burst cap.
+    private static volatile int pageSize = CountDeltaInterpreter.DEFAULT_BURST_CAP;
 
-    // The read-side fold of lifecycle events into per-tenant count deltas, and the burst-cap policy. Shares the
-    // interpreter's default cap with the shadow audit so serving and its audit re-anchor on the same threshold;
-    // making the cap configurable is a follow-up the interpreter's Javadoc anticipates.
-    private static final CountDeltaInterpreter INTERPRETER = new CountDeltaInterpreter(
-            CountDeltaInterpreter.DEFAULT_BURST_CAP);
+    // An anchor is never rolled forward closer than this to now: an event is stamped when its transaction starts
+    // and may commit a little later, after a roll-forward that already passed its time.
+    static final long ROLL_MARGIN_MS = 10_000;
+    private static volatile long rollMarginMs = ROLL_MARGIN_MS;
+
+    // A user pool's event read is reused by the calls within this long (the license sync reads every tenant of an app
+    // back to back), so they share one read instead of one each.
+    private static final long WINDOW_SHARE_MS = 1_000;
 
     // Pools that run the anchor counts. Each count holds a database connection while it runs, which can be minutes on
     // a large tenant, so they are bounded: a read across many tenants queues their counts instead of starting one per
     // tenant and taking the user pool's connections from the rest of the core. Background refreshes run at most 2 at a
-    // time (as before); the counts a request waits for (the first-request prime, a burst or corrupt-ledger re-anchor)
-    // at most 4, on their own pool so a backlog of refreshes never holds them up. Counts are single-flighted per
-    // tenant, so a queue holds at most one count per tenant.
-    private static final ExecutorService REFRESH_EXECUTOR = newCountExecutor(2, "approximate-user-count-refresh");
-    private static final ExecutorService REQUEST_COUNT_EXECUTOR = newCountExecutor(4, "approximate-user-count-anchor");
+    // time; the counts a caller waits for at most 4, on their own pool so a backlog of refreshes never holds them up.
+    // Counts are single-flighted per scope, so a queue holds at most one count per scope.
+    private static final ExecutorService REFRESH_EXECUTOR = newCountExecutor(2, "user-count-refresh");
+    private static final ExecutorService REQUEST_COUNT_EXECUTOR = newCountExecutor(4, "user-count-anchor");
 
-    // How long a request waits for an anchor count before failing - the bound the pool's 60s socket timeout used to
-    // put on a synchronous count. The count keeps running past it and stores its anchor for the requests after.
-    private static final long ANCHOR_WAIT_MS = 60 * 1000L;
-
-    // Cache keyed by tenant id within this per-app resource.
-    private final ConcurrentHashMap<String, CachedAnchor> entries = new ConcurrentHashMap<>();
-
-    // The in-flight anchor count per tenant. Every caller that needs a new anchor while one is being counted joins it,
-    // so one count runs and all of them get its anchor - or its failure, instead of each retrying it in turn.
-    private final ConcurrentHashMap<String, CompletableFuture<CachedAnchor>> inFlight = new ConcurrentHashMap<>();
-
-    // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
-    // the delta folded from the lifecycle events in the window since the last refresh. Purely observational -
-    // it never affects the value served (the fresh exact count always wins). The burst cap matches the
-    // interpreter's default; the serving path (a later unit) is where it becomes configurable.
     private static final CountShadowAudit SHADOW_AUDIT = new CountShadowAudit(CountDeltaInterpreter.DEFAULT_BURST_CAP);
 
-    // Per-tenant audit snapshot {exact count, snapshot time} from the last refresh, so the next refresh knows
-    // the window's lower bound and the count to advance from. Separate from the served anchor cache above.
-    private final ConcurrentHashMap<String, AuditSnapshot> auditSnapshots = new ConcurrentHashMap<>();
+    private final AppIdentifier appIdentifier;
 
-    private ApproximateUserCount() {
+    // per user pool (storage.getUserPoolId())
+    private final ConcurrentHashMap<String, PoolState> pools = new ConcurrentHashMap<>();
+
+    private ApproximateUserCount(AppIdentifier appIdentifier) {
+        this.appIdentifier = appIdentifier;
     }
 
     private static ExecutorService newCountExecutor(int threads, String name) {
@@ -148,120 +145,170 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
             return (ApproximateUserCount) main.getResourceDistributor()
                     .setResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY,
-                            new ApproximateUserCount());
+                            new ApproximateUserCount(appIdentifier));
         }
     }
 
+    // ---- entry points ----
+
     /**
-     * Serves the approximate user count for {@code tenantIdentifier} as {@code exactCount + fold(lifecycle
-     * events since the anchor snapshot)}. On the very first request for a tenant (no anchor) the exact count is
-     * computed synchronously to prime the anchor; afterwards each request folds the cheap event window over the
-     * cached exact count, and a stale anchor triggers a background refresh while the current one keeps serving.
-     * A window over the burst cap re-anchors immediately instead of folding.
+     * The app's distinct user count across all its user pools, restricted to {@code recipes} if given. Waits at most
+     * {@code waitMs} for a count that is still running.
+     */
+    public ApproximateCountResult serveApp(Main main, @Nullable RECIPE_ID[] recipes, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
+        return serveApp(main, StorageLayer.getStoragesForApp(main, appIdentifier), recipes, false, waitMs);
+    }
+
+    /**
+     * The tenant's distinct user count, restricted to {@code recipes} if given. Waits at most {@code waitMs} for a
+     * count that is still running.
+     */
+    public ApproximateCountResult serveTenant(Main main, TenantIdentifier tenantIdentifier,
+                                              @Nullable RECIPE_ID[] recipes, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
+        return serve(main, StorageLayer.getStorage(tenantIdentifier, main), Scope.tenant(tenantIdentifier, recipes),
+                false, waitMs);
+    }
+
+    /**
+     * The stored exact count of the app (layer 1 only, no events added): for callers whose contract is an exact
+     * count, such as /users/count on CDI versions before the ledger-served count.
+     */
+    public ApproximateCountResult serveAppStoredExact(Main main, @Nullable RECIPE_ID[] recipes, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
+        return serveApp(main, StorageLayer.getStoragesForApp(main, appIdentifier), recipes, true, waitMs);
+    }
+
+    /**
+     * The stored exact count of the tenant (layer 1 only, no events added); see {@link #serveAppStoredExact}.
+     */
+    public ApproximateCountResult serveTenantStoredExact(Main main, TenantIdentifier tenantIdentifier,
+                                                         @Nullable RECIPE_ID[] recipes, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
+        return serve(main, StorageLayer.getStorage(tenantIdentifier, main), Scope.tenant(tenantIdentifier, recipes),
+                true, waitMs);
+    }
+
+    /**
+     * The tenant count on the given storage (the tenant's user pool), waiting without limit. For tests that wrap the
+     * storage, and callers that already hold it.
      */
     public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
-        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        String tenantId = tenantIdentifier.getTenantId();
-
-        if (!(storage instanceof ActivityLogStorage)) {
-            // No lifecycle-event ledger to fold against (no SQL storage in the fleet is in this state). Serve
-            // the exact count directly rather than an approximation we cannot bring up to date. This is a
-            // freshly-computed exact count as of now, so approximate is false (matching the contract: the
-            // caller reports false when it serves exact).
-            return new ApproximateCountResult(authRecipeStorage.getUsersCount(tenantIdentifier, null), false,
-                    System.currentTimeMillis());
-        }
-        ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
-
-        long now = System.currentTimeMillis();
-        CachedAnchor cachedAnchor = entries.get(tenantId);
-        if (cachedAnchor == null) {
-            // First request for this tenant: get the exact anchor before serving so subsequent requests fold off a
-            // cheap event window instead of recomputing the exact count.
-            cachedAnchor = awaitAnchor(main, tenantIdentifier, storage, 0);
-        } else if (now - cachedAnchor.computedAt >= REFRESH_TTL_MS) {
-            // Stale: refresh the anchor in the background (single-flight) and keep folding off the current one.
-            triggerRefresh(main, tenantIdentifier, storage);
-        }
-
-        // Fetch the lifecycle events committed since the anchor snapshot, app-scoped (BRIN-friendly created_at
-        // scan over an append-only table), bounded to burstCap+1 rows so a burst is detected without
-        // materialising all of it. The window is half-open (snapshotMs, now]: the anchor already reflects
-        // everything up to and including snapshotMs.
-        List<AuditLogEvent> windowEvents = activityLogStorage.getActivityLogEntriesForApp(
-                tenantIdentifier.toAppIdentifier(), CountShadowAudit.LIFECYCLE_EVENT_TYPES,
-                cachedAnchor.snapshotMs, now, INTERPRETER.getBurstCap() + 1);
-
-        if (windowEvents.size() > INTERPRETER.getBurstCap()) {
-            // Burst (bulk import / mass deletion): folding is slow and pointless because the anchor is far
-            // behind regardless, so re-anchor immediately and serve an exact count taken after the burst.
-            CachedAnchor reAnchored = awaitAnchor(main, tenantIdentifier, storage, newestEventTime(windowEvents));
-            return new ApproximateCountResult(reAnchored.exactCount, true, reAnchored.snapshotMs);
-        }
-
         try {
-            List<LifecycleEventPayload> payloads = new ArrayList<>(windowEvents.size());
-            for (AuditLogEvent event : windowEvents) {
-                payloads.add(LifecycleEventPayload.fromJson(event.payload));
+            return serve(main, storage, Scope.tenant(tenantIdentifier, null), false, Long.MAX_VALUE);
+        } catch (UsersCountNotReadyException e) {
+            throw new IllegalStateException("an unbounded wait cannot run out", e);
+        }
+    }
+
+    ApproximateCountResult serveApp(Main main, Storage[] storages, @Nullable RECIPE_ID[] recipes,
+                                    boolean storedExact, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException {
+        long count = 0;
+        long asOf = Long.MAX_VALUE;
+        boolean stale = false;
+        for (Storage storage : storages) {
+            ApproximateCountResult part = serve(main, storage, Scope.app(recipes), storedExact, waitMs);
+            count += part.count;
+            asOf = Math.min(asOf, part.asOf);
+            stale |= part.stale;
+        }
+        return new ApproximateCountResult(count, true, asOf == Long.MAX_VALUE ? System.currentTimeMillis() : asOf,
+                stale);
+    }
+
+    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, boolean storedExact, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException {
+        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
+        PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
+        boolean withEvents = !storedExact && scope.recipes == null && storage instanceof ActivityLogStorage;
+
+        Anchor anchor = pool.anchors.get(scope.key);
+        if (anchor == null) {
+            anchor = awaitAnchor(main, pool, storage, scope, 0, deadline);
+        } else if (isStale(main, anchor)) {
+            startOrJoinCount(main, pool, storage, scope, 0, true);
+        }
+        if (anchor.fallback || !withEvents) {
+            return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
+        }
+
+        ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
+        for (int attempt = 0; ; attempt++) {
+            Window window = window(pool, activityLogStorage, anchor.snapshotMs, deadline, attempt > 0);
+            Anchor current = pool.anchors.get(scope.key);
+            if (current != null && current.snapshotMs >= anchor.snapshotMs) {
+                anchor = current; // rolled forward (or re-counted) meanwhile
             }
-            long delta = CountDeltaInterpreter.computeDeltaForTenant(payloads, tenantId);
-            return new ApproximateCountResult(cachedAnchor.exactCount + delta, true, now);
-        } catch (InvalidLifecycleEventPayloadException e) {
-            // A stored payload does not parse against the schema — a ledger-integrity problem, not a serving
-            // input we can fold. Never serve a value derived from a corrupt ledger: re-anchor to the fresh
-            // exact count and surface the problem (the shadow audit will flag the same window on its next pass).
-            Logging.warn(main, tenantIdentifier, "Approximate user count fold aborted for tenant " + tenantId
-                    + " due to an unparseable lifecycle event payload; serving the fresh exact count instead: "
-                    + e.getMessage());
-            CachedAnchor reAnchored = awaitAnchor(main, tenantIdentifier, storage, newestEventTime(windowEvents));
-            return new ApproximateCountResult(reAnchored.exactCount, true, reAnchored.snapshotMs);
+            if (window != null && anchor.snapshotMs < window.fromExclusive) {
+                // a new count replaced this anchor during a roll-forward, so it is older than the shared window
+                if (attempt < 3) {
+                    continue;
+                }
+                return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
+            }
+            Long forceNotBefore = null;
+            if (window == null) {
+                // more events after the anchor than one roll-forward could take (an extreme burst): count after them
+                forceNotBefore = System.currentTimeMillis() - rollMarginMs;
+            } else if (window.corruptAt != null && window.corruptAt > anchor.snapshotMs) {
+                // A lifecycle payload that does not parse cannot be applied. Never serve a value derived from a corrupt
+                // ledger: get a count taken after it (the shadow audit flags the same window on its next pass).
+                Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(), "User count of " + scope
+                        + ": an unparseable lifecycle event payload at " + window.corruptAt
+                        + "; serving a count taken after it instead");
+                forceNotBefore = window.corruptAt;
+            }
+            if (forceNotBefore != null) {
+                if (attempt > 0) {
+                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
+                }
+                anchor = awaitAnchor(main, pool, storage, scope, forceNotBefore, deadline);
+                if (anchor.fallback) {
+                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
+                }
+                continue;
+            }
+            return new ApproximateCountResult(anchor.count + window.deltaAfter(anchor.snapshotMs, scope), true,
+                    window.toInclusive, false);
         }
     }
 
-    private static long newestEventTime(List<AuditLogEvent> events) {
-        long newest = 0;
-        for (AuditLogEvent event : events) {
-            newest = Math.max(newest, event.createdAt);
-        }
-        return newest;
+    // ---- layer 2: anchors ----
+
+    private static boolean isStale(Main main, Anchor anchor) {
+        return anchor.forceStale
+                || System.currentTimeMillis() - anchor.countedMs >= Config.getBaseConfig(main).getUsersCountMaxAgeMs();
     }
 
     /**
-     * Gets an anchor: the tenant's exact user count paired with the snapshot time bounding the fold window it will be
-     * carried forward by. The count comes from {@link StoredUsersCount}, so it is shared by every core through the
-     * database, and a stored count is reused only if younger than {@code maxAgeMs}. {@code snapshotMs} is the time
-     * the count started, so a mutation committing after it is folded (its created_at is at or after snapshotMs)
-     * rather than lost - the same boundary discipline the shadow audit uses. A mutation whose transaction straddles
-     * snapshotMs (created_at before, commit after) is the one documented boundary artifact; it self-heals at the next
-     * refresh.
+     * An anchor counted at or after {@code notBeforeMs} (0: any): the cached one if recent enough, else the scope's
+     * in-flight count (joined or started). A joined count that turns out older than needed is followed by one more.
+     * A failed count falls back to the last good anchor, or to the last count stored in the database (marked
+     * {@code fallback}); with neither, its failure is thrown.
      */
-    private CachedAnchor computeAnchor(Storage storage, TenantIdentifier tenantIdentifier, long maxAgeMs)
-            throws StorageQueryException {
-        UsersCountSnapshot count = StoredUsersCount.getTenantUsersCountSnapshot(tenantIdentifier, storage, maxAgeMs);
-        return new CachedAnchor(count.count, count.countedAtMs, System.currentTimeMillis(), count.newlyCounted);
-    }
-
-    /**
-     * Returns an anchor counted at or after {@code notBeforeMs} (0: any), waiting at most {@link #ANCHOR_WAIT_MS}. It
-     * reuses the cached anchor if that is recent enough, else joins the tenant's in-flight count, else starts one; a
-     * joined count that turns out older than needed (it was started for an earlier bound) is followed by one more.
-     * A failed count fails every caller waiting on it.
-     */
-    private CachedAnchor awaitAnchor(Main main, TenantIdentifier tenantIdentifier, Storage storage, long notBeforeMs)
-            throws StorageQueryException {
-        long deadline = System.currentTimeMillis() + ANCHOR_WAIT_MS;
+    private Anchor awaitAnchor(Main main, PoolState pool, Storage storage, Scope scope, long notBeforeMs,
+                               long deadline) throws StorageQueryException, UsersCountNotReadyException {
         while (true) {
-            CachedAnchor current = entries.get(tenantIdentifier.getTenantId());
-            if (current != null && current.snapshotMs >= notBeforeMs) {
+            Anchor current = pool.anchors.get(scope.key);
+            if (current != null && current.snapshotMs >= notBeforeMs && current.countedMs >= notBeforeMs) {
                 return current;
             }
-            CompletableFuture<CachedAnchor> count = startOrJoinCount(main, tenantIdentifier, storage, notBeforeMs,
-                    false);
-            CachedAnchor anchor;
+            CompletableFuture<Anchor> count = startOrJoinCount(main, pool, storage, scope, notBeforeMs, false);
+            Anchor anchor;
             try {
-                anchor = count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                if (deadline == Long.MAX_VALUE) {
+                    anchor = count.get();
+                } else {
+                    anchor = count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                }
             } catch (ExecutionException e) {
+                Anchor fallback = fallback(pool, storage, scope);
+                if (fallback != null) {
+                    return fallback;
+                }
                 Throwable cause = e.getCause();
                 if (cause instanceof StorageQueryException) {
                     throw (StorageQueryException) cause;
@@ -271,48 +318,66 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 }
                 throw new StorageQueryException(cause instanceof Exception ? (Exception) cause : e);
             } catch (TimeoutException e) {
-                throw new StorageQueryException(new TimeoutException("Gave up waiting for the user count of tenant "
-                        + tenantIdentifier.getTenantId() + " after " + ANCHOR_WAIT_MS
-                        + "ms; it is still being counted and later requests will use it"));
+                throw new UsersCountNotReadyException("The user count of " + scope + " is still being computed");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new StorageQueryException(e);
             }
-            if (anchor.snapshotMs >= notBeforeMs) {
+            if (anchor.countedMs >= notBeforeMs) {
                 return anchor;
             }
         }
     }
 
+    // The last good anchor of the scope, or else the last count stored in the database, marked as a fallback.
+    @Nullable
+    private Anchor fallback(PoolState pool, Storage storage, Scope scope) {
+        Anchor cached = pool.anchors.get(scope.key);
+        if (cached != null) {
+            return cached;
+        }
+        if (!(storage instanceof UsersCountCacheStorage)) {
+            return null;
+        }
+        try {
+            UsersCountCacheStorage cacheStorage = (UsersCountCacheStorage) storage;
+            UsersCountSnapshot stored = scope.tenantId == null
+                    ? cacheStorage.getStoredAppUsersCount(appIdentifier, scope.recipes)
+                    : cacheStorage.getStoredTenantUsersCount(scope.tenantIdentifier(appIdentifier), scope.recipes);
+            return stored == null ? null : Anchor.fallback(stored);
+        } catch (StorageQueryException e) {
+            return null;
+        }
+    }
+
     /**
-     * The tenant's in-flight anchor count, starting one if there is none: on {@link #REFRESH_EXECUTOR} for the
-     * background refresh, else on {@link #REQUEST_COUNT_EXECUTOR}. A new count reuses a stored count only if it was
-     * counted at or after {@code notBeforeMs}. A count started by the background refresh ({@code refresh}) reports
-     * completion and, if it actually counted (not a reused stored count), runs the shadow audit against it.
+     * The scope's in-flight count, starting one if there is none. It reuses a stored count only if it was counted at
+     * or after {@code notBeforeMs}. A count started by the background refresh ({@code refresh}) runs on the refresh
+     * pool, reports completion and, if it actually counted, runs the shadow audit against it before it is released.
      */
-    private CompletableFuture<CachedAnchor> startOrJoinCount(Main main, TenantIdentifier tenantIdentifier,
-                                                             Storage storage, long notBeforeMs, boolean refresh) {
-        String tenantId = tenantIdentifier.getTenantId();
-        CompletableFuture<CachedAnchor> started = new CompletableFuture<>();
-        CompletableFuture<CachedAnchor> running = inFlight.putIfAbsent(tenantId, started);
+    private CompletableFuture<Anchor> startOrJoinCount(Main main, PoolState pool, Storage storage, Scope scope,
+                                                       long notBeforeMs, boolean refresh) {
+        CompletableFuture<Anchor> started = new CompletableFuture<>();
+        CompletableFuture<Anchor> running = pool.inFlight.putIfAbsent(scope.key, started);
         if (running != null) {
             return running;
         }
-        long maxAgeMs = notBeforeMs <= 0 ? StoredUsersCount.MAX_AGE_MS
-                : Math.max(0, System.currentTimeMillis() - notBeforeMs + 1);
+        long configuredMaxAge = Config.getBaseConfig(main).getUsersCountMaxAgeMs();
+        long maxAgeMs = notBeforeMs <= 0 ? configuredMaxAge
+                : Math.max(0, Math.min(configuredMaxAge, System.currentTimeMillis() - notBeforeMs + 1));
         try {
             (refresh ? REFRESH_EXECUTOR : REQUEST_COUNT_EXECUTOR).execute(() -> {
-                CachedAnchor anchor;
+                Anchor anchor;
                 try {
-                    anchor = computeAnchor(storage, tenantIdentifier, maxAgeMs);
-                    // keep whichever anchor is newer (an equal snapshot is the same count, re-dated)
-                    entries.merge(tenantId, anchor, (old, fresh) -> fresh.snapshotMs >= old.snapshotMs ? fresh : old);
+                    anchor = count(storage, scope, maxAgeMs).forScope(scope,
+                            scope.recipes == null && storage instanceof ActivityLogStorage);
+                    pool.anchors.merge(scope.key, anchor, Anchor::newer);
                 } catch (Throwable e) {
                     // removed before completing, so a woken waiter that needs another count starts a new one
-                    inFlight.remove(tenantId, started);
+                    pool.inFlight.remove(scope.key, started);
                     started.completeExceptionally(e);
                     if (refresh) {
-                        // keep serving the existing (stale) entry; the next request retries the refresh
+                        // keep serving the existing (stale) anchor; the next call retries the refresh
                         ProcessState.getInstance(main).addState(
                                 ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_FAILED,
                                 e instanceof Exception ? (Exception) e : new RuntimeException(e));
@@ -322,113 +387,230 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 if (refresh) {
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
-                    if (anchor.newlyCounted) {
-                        // The exact recount this refresh performed doubles as a correctness audit of the
-                        // lifecycle-event ledger (PLAN-010 decision 4). A reused stored count is skipped, so every
-                        // audit window ends at a count taken for it. Runs before the count is released (it is a
-                        // bounded event-window read), so audits of one tenant never overlap; it never throws.
-                        runShadowAudit(main, tenantIdentifier, storage, anchor);
-                    }
                 }
-                inFlight.remove(tenantId, started);
+                if (anchor.newlyCounted && scope.recipes == null && storage instanceof ActivityLogStorage) {
+                    // The exact recount doubles as a correctness audit of the lifecycle-event ledger (PLAN-010
+                    // decision 4). A reused stored count is skipped, so every audit window ends at a count taken for
+                    // it. Runs before the count is released, so audits of one scope never overlap; it never throws.
+                    runShadowAudit(main, pool, (ActivityLogStorage) storage, scope, anchor);
+                }
+                pool.inFlight.remove(scope.key, started);
                 started.complete(anchor);
             });
         } catch (RejectedExecutionException e) {
-            inFlight.remove(tenantId, started);
+            pool.inFlight.remove(scope.key, started);
             started.completeExceptionally(e);
         }
         return started;
     }
 
-    // Stale anchor: count a new one in the background (joining any count already in flight) and keep serving.
-    private void triggerRefresh(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
-        startOrJoinCount(main, tenantIdentifier, storage, 0, true);
+    // Layer 1: the stored exact count (or a direct count on a storage without one).
+    private Anchor count(Storage storage, Scope scope, long maxAgeMs) throws StorageQueryException {
+        UsersCountSnapshot snapshot;
+        if (storage instanceof UsersCountCacheStorage) {
+            UsersCountCacheStorage cacheStorage = (UsersCountCacheStorage) storage;
+            snapshot = scope.tenantId == null
+                    ? cacheStorage.getOrComputeAppUsersCount(appIdentifier, scope.recipes, maxAgeMs)
+                    : cacheStorage.getOrComputeTenantUsersCount(scope.tenantIdentifier(appIdentifier), scope.recipes,
+                    maxAgeMs);
+        } else {
+            long countedAt = System.currentTimeMillis();
+            long count = scope.tenantId == null
+                    ? StorageUtils.getAuthRecipeStorage(storage).getUsersCount(appIdentifier, scope.recipes)
+                    : StorageUtils.getAuthRecipeStorage(storage).getUsersCount(scope.tenantIdentifier(appIdentifier),
+                    scope.recipes);
+            snapshot = new UsersCountSnapshot(count, countedAt, true);
+        }
+        return Anchor.counted(snapshot);
+    }
+
+    // ---- layer 3: the events since the anchors ----
+
+    /**
+     * The pool's lifecycle events after {@code fromMs}, read once and shared by the pool's calls for
+     * {@link #WINDOW_SHARE_MS}. If they don't fit one page, the pool's anchors are first rolled forward. Returns null if
+     * even that leaves too many events (more than a page logged within {@link #ROLL_MARGIN_MS}).
+     */
+    @Nullable
+    private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, long deadline, boolean reread)
+            throws StorageQueryException, UsersCountNotReadyException {
+        Window cached = pool.window;
+        if (!reread && cached != null && cached.fromExclusive <= fromMs
+                && System.currentTimeMillis() - cached.readAt < WINDOW_SHARE_MS) {
+            return cached;
+        }
+        lock(pool.windowLock, deadline);
+        try {
+            cached = pool.window;
+            if (!reread && cached != null && cached.fromExclusive <= fromMs
+                    && System.currentTimeMillis() - cached.readAt < WINDOW_SHARE_MS) {
+                return cached;
+            }
+            for (int roll = 0; roll < 3; roll++) {
+                long from = Math.min(fromMs, pool.oldestFoldedSnapshot());
+                long now = System.currentTimeMillis();
+                List<AuditLogEvent> events = storage.getActivityLogEntriesForApp(appIdentifier,
+                        CountShadowAudit.LIFECYCLE_EVENT_TYPES, from, now, pageSize + 1);
+                if (events.size() <= pageSize) {
+                    Window window = Window.of(from, now, events);
+                    pool.window = window;
+                    return window;
+                }
+                rollForward(pool, storage, now - rollMarginMs);
+                fromMs = Math.max(fromMs, now - rollMarginMs);
+            }
+            return null;
+        } finally {
+            pool.windowLock.unlock();
+        }
+    }
+
+    private static void lock(ReentrantLock lock, long deadline) throws UsersCountNotReadyException {
+        try {
+            if (deadline == Long.MAX_VALUE) {
+                lock.lockInterruptibly();
+            } else if (!lock.tryLock(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS)) {
+                throw new UsersCountNotReadyException("The user count is being brought up to date");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new UsersCountNotReadyException("Interrupted while waiting for the user count");
+        }
     }
 
     /**
-     * The shadow audit (PLAN-010 unit 3), run after a background refresh that counted anew. Takes that refresh's
-     * exact tenant count ({@code fresh}, with the time it was counted), reads the lifecycle events committed since
-     * the previous audited count, and checks that the count
-     * moved by exactly the folded delta (see {@link CountShadowAudit}). Best-effort and observational only:
-     * any failure here is swallowed so it can never disturb serving or the refresh that just succeeded, and a
-     * discrepancy is logged, never served — the fresh exact count already won.
+     * Applies the pool's lifecycle events up to {@code cutoffMs} to every event-folded anchor of the pool, reading
+     * them in pages, and moves each anchor to the cutoff. Stops before an event whose payload does not parse (it can
+     * only be passed by a new count) and before a page whose events all share one millisecond (it cannot be split).
+     * Called with the pool's window lock held.
      */
-    private void runShadowAudit(Main main, TenantIdentifier tenantIdentifier, Storage storage, CachedAnchor fresh) {
-        String tenantId = tenantIdentifier.getTenantId();
+    private void rollForward(PoolState pool, ActivityLogStorage storage, long cutoffMs)
+            throws StorageQueryException {
+        Map<String, Anchor> anchors = new HashMap<>();
+        for (Map.Entry<String, Anchor> e : pool.anchors.entrySet()) {
+            if (e.getValue().folded && e.getValue().snapshotMs < cutoffMs) {
+                anchors.put(e.getKey(), e.getValue());
+            }
+        }
+        if (anchors.isEmpty()) {
+            return;
+        }
+        Map<String, Long> deltas = new HashMap<>();
+        long from = Long.MAX_VALUE;
+        for (Anchor anchor : anchors.values()) {
+            from = Math.min(from, anchor.snapshotMs);
+        }
+        long rolledTo = cutoffMs;
+        pages:
+        while (from < cutoffMs) {
+            List<AuditLogEvent> page = storage.getActivityLogEntriesForApp(appIdentifier,
+                    CountShadowAudit.LIFECYCLE_EVENT_TYPES, from, cutoffMs, pageSize + 1);
+            List<AuditLogEvent> apply = page;
+            long next = cutoffMs;
+            if (page.size() > pageSize) {
+                // the page is cut at a millisecond boundary, so events sharing one millisecond stay together
+                long boundary = page.get(pageSize - 1).createdAt;
+                int end = pageSize;
+                while (end > 0 && page.get(end - 1).createdAt == boundary) {
+                    end--;
+                }
+                if (end == 0) {
+                    rolledTo = from; // a whole page in one millisecond: cannot be split, so stop here
+                    break;
+                }
+                apply = page.subList(0, end);
+                next = page.get(end - 1).createdAt;
+            }
+            for (AuditLogEvent event : apply) {
+                LifecycleEventPayload payload;
+                try {
+                    payload = LifecycleEventPayload.fromJson(event.payload);
+                } catch (InvalidLifecycleEventPayloadException e) {
+                    rolledTo = event.createdAt - 1; // only a new count can pass a corrupt event
+                    break pages;
+                }
+                Map<String, Long> tenantDeltas = CountDeltaInterpreter.tenantDeltasOf(payload);
+                long appDelta = CountDeltaInterpreter.appDeltaOf(payload);
+                for (Map.Entry<String, Anchor> e : anchors.entrySet()) {
+                    Anchor anchor = e.getValue();
+                    if (event.createdAt <= anchor.snapshotMs) {
+                        continue;
+                    }
+                    long delta = anchor.tenantId == null ? appDelta : tenantDeltas.getOrDefault(anchor.tenantId, 0L);
+                    if (delta != 0) {
+                        deltas.merge(e.getKey(), delta, Long::sum);
+                    }
+                }
+            }
+            from = next;
+        }
+        for (Map.Entry<String, Anchor> e : anchors.entrySet()) {
+            Anchor anchor = e.getValue();
+            if (rolledTo > anchor.snapshotMs) {
+                // only if no new count replaced it meanwhile
+                pool.anchors.replace(e.getKey(), anchor,
+                        anchor.rolledTo(anchor.count + deltas.getOrDefault(e.getKey(), 0L), rolledTo));
+            }
+        }
+        pool.window = null;
+    }
+
+    // ---- shadow audit ----
+
+    /**
+     * The shadow audit (PLAN-010 unit 3), run after a count that counted anew. Checks that the previous audited count
+     * of the scope plus the lifecycle events between the two counts equals the new count (see
+     * {@link CountShadowAudit}). Roll-forwards in between are covered, since the window runs from one real count to
+     * the next. Best-effort and observational only: any failure is swallowed, and a discrepancy is logged, never
+     * served.
+     */
+    private void runShadowAudit(Main main, PoolState pool, ActivityLogStorage storage, Scope scope, Anchor fresh) {
+        TenantIdentifier logTenant = scope.tenantId == null ? appIdentifier.getAsPublicTenantIdentifier()
+                : scope.tenantIdentifier(appIdentifier);
         try {
-            if (!(storage instanceof ActivityLogStorage)) {
-                return; // storage keeps no lifecycle-event ledger, so there is nothing to fold against
+            // Known boundary limitation (observational only): the window filters events on their emit-time
+            // created_at (stamped at the start of the mutating txn), whereas the count and the event row only become
+            // visible at commit. A txn straddling a count's snapshot can land on one side of the bound and its count
+            // effect on the other, yielding a one-time DISCREPANCY that is a boundary artifact, not a ledger bug (it
+            // self-heals in the adjacent window).
+            AuditSnapshot previous = pool.audits.put(scope.key, new AuditSnapshot(fresh.count, fresh.snapshotMs));
+            if (previous == null || previous.snapshotMs >= fresh.snapshotMs) {
+                return; // nothing to compare against yet: only seed
             }
-            ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
-
-            // Known boundary limitation (observational only): the window below filters events on their
-            // emit-time created_at (stamped at the start of the mutating txn), whereas freshExactCount and the
-            // event row only become visible at commit. A txn straddling snapshotMs can land its created_at on
-            // one side of the bound and its count effect on the other, yielding a one-time DISCREPANCY that is
-            // a boundary artifact, not a ledger bug (it self-heals as the misassigned mutation is folded in
-            // the adjacent window). Serving now uses this same anchor+fold model with the same no-margin
-            // window, so it carries the identical self-healing artifact; no analogous margin is applied here
-            // because a robust fix needs an as-of-time exact count we do not have (and gating on persistence
-            // across refreshes would also mask genuine one-time missed emits, which produce the same single
-            // self-healing discrepancy). Tracked as a soak follow-up.
-            long snapshotMs = fresh.snapshotMs;
-            long freshExactCount = fresh.exactCount;
-
-            AuditSnapshot previous = auditSnapshots.get(tenantId);
-            // Advance the snapshot regardless, so the next refresh's window starts where this one ends.
-            auditSnapshots.put(tenantId, new AuditSnapshot(freshExactCount, snapshotMs));
-            if (previous == null) {
-                return; // first refresh for this tenant: no prior snapshot to bound a window, only seed one
-            }
-
-            // cap + 1 so an over-cap window is detected from the row count without materialising all of it.
-            // Note the read is app-scoped (getActivityLogEntriesForApp filters on app_id, not tenant), so the
-            // burst cap bounds app-wide event volume, not this tenant's alone: on a busy multi-tenant app the
-            // app-wide window between two refreshes can exceed the cap and RE_ANCHOR a quiet tenant's audit,
-            // and each per-tenant refresh may fold up to burstCap app-wide rows. Tenant-scoping the read would
-            // tighten coverage but is a plugin-interface storage-contract change, deferred to a follow-up.
-            List<AuditLogEvent> windowEvents = activityLogStorage.getActivityLogEntriesForApp(
-                    tenantIdentifier.toAppIdentifier(), CountShadowAudit.LIFECYCLE_EVENT_TYPES,
-                    previous.snapshotMs, snapshotMs, SHADOW_AUDIT.getBurstCap() + 1);
-
-            CountShadowAudit.Result result = SHADOW_AUDIT.evaluate(tenantId, previous.exactCount,
-                    freshExactCount, windowEvents, previous.snapshotMs, snapshotMs);
-
+            List<AuditLogEvent> windowEvents = storage.getActivityLogEntriesForApp(appIdentifier,
+                    CountShadowAudit.LIFECYCLE_EVENT_TYPES, previous.snapshotMs, fresh.snapshotMs,
+                    SHADOW_AUDIT.getBurstCap() + 1);
+            CountShadowAudit.Result result = scope.tenantId == null
+                    ? SHADOW_AUDIT.evaluateApp(previous.count, fresh.count, windowEvents, previous.snapshotMs,
+                    fresh.snapshotMs)
+                    : SHADOW_AUDIT.evaluate(scope.tenantId, previous.count, fresh.count, windowEvents,
+                    previous.snapshotMs, fresh.snapshotMs);
             switch (result.status) {
                 case DISCREPANCY:
-                    reportDiscrepancy(main, tenantIdentifier, result);
+                    reportDiscrepancy(main, logTenant, result);
                     break;
                 case RE_ANCHOR_REQUIRED:
-                    // Window too large to fold; the fresh anchor has already re-based past it. Not a bug.
-                    Logging.debug(main, tenantIdentifier, "Count shadow audit skipped for tenant " + tenantId
-                            + ": burst window of " + result.eventCount + " events exceeds the fold cap.");
+                    Logging.debug(main, logTenant, "Count shadow audit skipped for " + scope + ": burst window of "
+                            + result.eventCount + " events exceeds the fold cap.");
                     break;
                 case MATCH:
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_MATCHED, null);
                     break;
                 default:
-                    // Future-proofing: a status added later must be handled explicitly, never fall through
-                    // to "matched" silently. Surfacing it as an audit failure (via the outer catch: FAILED
-                    // ProcessState + warn) makes the gap loud without disturbing serving.
                     throw new IllegalStateException("Unhandled shadow-audit status: " + result.status);
             }
         } catch (Exception e) {
-            // Observability, not correctness: never let an audit failure escape into the refresh path.
             ProcessState.getInstance(main).addState(
                     ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED, e);
-            Logging.warn(main, tenantIdentifier,
-                    "Count shadow audit failed for tenant " + tenantId + ": " + e.getMessage());
+            Logging.warn(main, logTenant, "Count shadow audit failed for " + scope + ": " + e.getMessage());
         }
     }
 
     /**
-     * Reports a shadow-audit discrepancy: a human-readable {@code warn} log with the full context the issue
-     * asks for (tenant, window bounds, event count, both values) plus a structured telemetry log event —
-     * the same message body carrying the individual fields as queryable attributes for alerting. The
-     * telemetry event is the only telemetry primitive the core exposes (no metric/counter API); it is
-     * emitted directly rather than only via {@code Logging.warn} so the discrepancy still reaches the
-     * collector when {@code warn} logging is turned down in config. The discrepant value is never served.
+     * Reports a shadow-audit discrepancy: a human-readable {@code warn} log with the full context (scope, window
+     * bounds, event count, both values) plus a structured telemetry log event carrying the same fields as queryable
+     * attributes. The discrepant value is never served.
      */
     private void reportDiscrepancy(Main main, TenantIdentifier tenantIdentifier, CountShadowAudit.Result result) {
         String message = "Count shadow audit discrepancy for tenant " + result.tenantId
@@ -466,76 +648,273 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_SHADOW_AUDIT_DISCREPANCY, null, data);
     }
 
-    // One audit snapshot for a tenant: the exact count taken at a background refresh and when it was taken.
-    // The next refresh reads the window since {@code snapshotMs} and checks the count moved by the folded
-    // delta. Deliberately independent of the served anchor, which is rebased/creations-only-exact.
-    private static class AuditSnapshot {
-        final long exactCount;
-        final long snapshotMs;
+    // ---- state ----
 
-        AuditSnapshot(long exactCount, long snapshotMs) {
-            this.exactCount = exactCount;
-            this.snapshotMs = snapshotMs;
+    // What is counted: the app (tenantId null) or one tenant, optionally restricted to recipes.
+    static final class Scope {
+        @Nullable
+        final String tenantId;
+        @Nullable
+        final RECIPE_ID[] recipes;
+        final String key;
+
+        private Scope(@Nullable String tenantId, @Nullable RECIPE_ID[] recipes) {
+            this.tenantId = tenantId;
+            this.recipes = normalise(recipes);
+            String suffix = this.recipes == null ? "" : "~" + String.join(",",
+                    Arrays.stream(this.recipes).map(RECIPE_ID::toString).toArray(String[]::new));
+            this.key = (tenantId == null ? "app" : "tenant:" + tenantId) + suffix;
+        }
+
+        static Scope app(@Nullable RECIPE_ID[] recipes) {
+            return new Scope(null, recipes);
+        }
+
+        static Scope tenant(TenantIdentifier tenantIdentifier, @Nullable RECIPE_ID[] recipes) {
+            return new Scope(tenantIdentifier.getTenantId(), recipes);
+        }
+
+        TenantIdentifier tenantIdentifier(AppIdentifier app) {
+            return new TenantIdentifier(app.getConnectionUriDomain(), app.getAppId(), tenantId);
+        }
+
+        @Nullable
+        private static RECIPE_ID[] normalise(@Nullable RECIPE_ID[] recipes) {
+            if (recipes == null || recipes.length == 0) {
+                return null;
+            }
+            TreeSet<RECIPE_ID> sorted = new TreeSet<>(Comparator.comparing(RECIPE_ID::toString));
+            sorted.addAll(Arrays.asList(recipes));
+            return sorted.toArray(new RECIPE_ID[0]);
+        }
+
+        @Override
+        public String toString() {
+            return key;
         }
     }
 
-    // One cached anchor for a tenant: the exact count, the snapshot time it was taken at (the exclusive lower
-    // bound of the fold window that carries it forward), and when it was computed (used to decide staleness).
-    private static class CachedAnchor {
-        final long exactCount;
-        final long snapshotMs; // the epoch-ms snapshot the exact count is as-of; fold window lower bound (excl.)
-        final long computedAt; // when this core got the anchor; drives the refresh TTL
-        final boolean newlyCounted; // the count was run for this anchor, not reused from the stored count
+    private static final class PoolState {
+        final ConcurrentHashMap<String, Anchor> anchors = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String, CompletableFuture<Anchor>> inFlight = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String, AuditSnapshot> audits = new ConcurrentHashMap<>();
+        final ReentrantLock windowLock = new ReentrantLock();
+        volatile Window window;
 
-        CachedAnchor(long exactCount, long snapshotMs, long computedAt, boolean newlyCounted) {
-            this.exactCount = exactCount;
+        long oldestFoldedSnapshot() {
+            long oldest = Long.MAX_VALUE;
+            for (Anchor anchor : anchors.values()) {
+                if (anchor.folded && !anchor.fallback) {
+                    oldest = Math.min(oldest, anchor.snapshotMs);
+                }
+            }
+            return oldest;
+        }
+    }
+
+    /**
+     * An anchor: the count as of {@code snapshotMs}. {@code countedMs} is the time of the full count it is built on
+     * (a roll-forward moves the snapshot, not the count time), which decides when it is stale.
+     */
+    private static final class Anchor {
+        final long count;
+        final long snapshotMs;
+        final long countedMs;
+        final boolean newlyCounted;
+        @Nullable
+        final String tenantId; // filled in for event-folded anchors (see folded)
+        final boolean folded;
+        final boolean fallback; // the last stored count, served because a new count failed
+        final boolean forceStale; // test seam
+
+        private Anchor(long count, long snapshotMs, long countedMs, boolean newlyCounted, @Nullable String tenantId,
+                       boolean folded, boolean fallback, boolean forceStale) {
+            this.count = count;
             this.snapshotMs = snapshotMs;
-            this.computedAt = computedAt;
+            this.countedMs = countedMs;
             this.newlyCounted = newlyCounted;
+            this.tenantId = tenantId;
+            this.folded = folded;
+            this.fallback = fallback;
+            this.forceStale = forceStale;
+        }
+
+        static Anchor counted(UsersCountSnapshot snapshot) {
+            return new Anchor(snapshot.count, snapshot.countedAtMs, snapshot.countedAtMs, snapshot.newlyCounted, null,
+                    false, false, false);
+        }
+
+        static Anchor fallback(UsersCountSnapshot stored) {
+            return new Anchor(stored.count, stored.countedAtMs, stored.countedAtMs, false, null, false, true, false);
+        }
+
+        Anchor forScope(Scope scope, boolean folded) {
+            return new Anchor(count, snapshotMs, countedMs, newlyCounted, scope.tenantId, folded, fallback,
+                    forceStale);
+        }
+
+        Anchor rolledTo(long newCount, long newSnapshotMs) {
+            return new Anchor(newCount, newSnapshotMs, countedMs, false, tenantId, folded, false, false);
+        }
+
+        Anchor stale() {
+            return new Anchor(count, snapshotMs, countedMs, newlyCounted, tenantId, folded, fallback, true);
+        }
+
+        // merge rule: a later full count wins; for the same count, the later snapshot (a roll-forward) wins
+        static Anchor newer(Anchor old, Anchor fresh) {
+            if (fresh.countedMs > old.countedMs) {
+                return fresh;
+            }
+            if (fresh.countedMs == old.countedMs && fresh.snapshotMs > old.snapshotMs) {
+                return fresh;
+            }
+            return old.forceStale && fresh.countedMs == old.countedMs ? fresh : old;
+        }
+    }
+
+    // A pool's parsed lifecycle events in (fromExclusive, toInclusive].
+    private static final class Window {
+        final long fromExclusive;
+        final long toInclusive;
+        final long readAt;
+        final long[] times; // per parsed event: its created_at
+        final List<Map<String, Long>> tenantDeltas;
+        final List<Long> appDeltas;
+        @Nullable
+        final Long corruptAt; // earliest unparseable event
+
+        private Window(long fromExclusive, long toInclusive, long[] times, List<Map<String, Long>> tenantDeltas,
+                       List<Long> appDeltas, @Nullable Long corruptAt) {
+            this.fromExclusive = fromExclusive;
+            this.toInclusive = toInclusive;
+            this.readAt = System.currentTimeMillis();
+            this.times = times;
+            this.tenantDeltas = tenantDeltas;
+            this.appDeltas = appDeltas;
+            this.corruptAt = corruptAt;
+        }
+
+        static Window of(long fromExclusive, long toInclusive, List<AuditLogEvent> events) {
+            List<Long> times = new ArrayList<>(events.size());
+            List<Map<String, Long>> tenantDeltas = new ArrayList<>(events.size());
+            List<Long> appDeltas = new ArrayList<>(events.size());
+            Long corruptAt = null;
+            for (AuditLogEvent event : events) {
+                try {
+                    LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
+                    times.add(event.createdAt);
+                    tenantDeltas.add(CountDeltaInterpreter.tenantDeltasOf(payload));
+                    appDeltas.add(CountDeltaInterpreter.appDeltaOf(payload));
+                } catch (InvalidLifecycleEventPayloadException e) {
+                    if (corruptAt == null || event.createdAt < corruptAt) {
+                        corruptAt = event.createdAt;
+                    }
+                }
+            }
+            return new Window(fromExclusive, toInclusive, times.stream().mapToLong(Long::longValue).toArray(),
+                    tenantDeltas, appDeltas, corruptAt);
+        }
+
+        long deltaAfter(long snapshotMs, Scope scope) {
+            long delta = 0;
+            for (int i = 0; i < times.length; i++) {
+                if (times[i] > snapshotMs) {
+                    delta += scope.tenantId == null ? appDeltas.get(i)
+                            : tenantDeltas.get(i).getOrDefault(scope.tenantId, 0L);
+                }
+            }
+            return delta;
+        }
+    }
+
+    // One audited full count of a scope: the next counted refresh checks the events since it.
+    private static final class AuditSnapshot {
+        final long count;
+        final long snapshotMs;
+
+        AuditSnapshot(long count, long snapshotMs) {
+            this.count = count;
+            this.snapshotMs = snapshotMs;
         }
     }
 
     public static class ApproximateCountResult {
-        // The served count: the anchor's exact count plus the delta folded from the lifecycle events since it.
+        // The served count: the anchor's count plus the delta of the lifecycle events since it.
         public final long count;
-        // Whether a cached snapshot was used (always true here; the caller reports false when it serves exact).
+        // Whether a cached count was used (always true here; the caller reports false when it serves exact).
         public final boolean approximate;
-        // The epoch-ms instant the served value is "as of" (the fold window's upper bound).
+        // The epoch-ms instant the served value is "as of".
         public final long asOf;
+        // A new count failed and this is the last count stored in the database.
+        public final boolean stale;
 
         public ApproximateCountResult(long count, boolean approximate, long asOf) {
+            this(count, approximate, asOf, false);
+        }
+
+        public ApproximateCountResult(long count, boolean approximate, long asOf, boolean stale) {
             this.count = count;
             this.approximate = approximate;
             this.asOf = asOf;
+            this.stale = stale;
         }
     }
 
-    // Test-only seam: ages the cached anchor for a tenant so the next serve() sees it as stale and triggers a
-    // background refresh. Does not exist as a runtime knob - the refresh TTL stays a constant per the design;
-    // this only lets tests exercise the stale-while-revalidate path without waiting out the real TTL.
+    // ---- test seams ----
+
+    // The events per page, and how close to now anchors are rolled; restore with resetForTesting().
+    public static void setPageSizeAndRollMarginForTesting(int events, long marginMs) {
+        pageSize = events;
+        rollMarginMs = marginMs;
+    }
+
+    public static void resetForTesting() {
+        pageSize = CountDeltaInterpreter.DEFAULT_BURST_CAP;
+        rollMarginMs = ROLL_MARGIN_MS;
+    }
+
+    // The tenant's anchor snapshot time on the given storage's pool, or -1.
+    public long anchorSnapshotForTesting(TenantIdentifier tenantIdentifier, Storage storage) {
+        PoolState pool = pools.get(storage.getUserPoolId());
+        Anchor anchor = pool == null ? null : pool.anchors.get(Scope.tenant(tenantIdentifier, null).key);
+        return anchor == null ? -1 : anchor.snapshotMs;
+    }
+
+    // Makes the tenant's cached anchors stale, so the next serve() triggers a background refresh.
     public void expireEntryForTesting(TenantIdentifier tenantIdentifier) {
-        entries.computeIfPresent(tenantIdentifier.getTenantId(),
-                (k, e) -> new CachedAnchor(e.exactCount, e.snapshotMs, 0, e.newlyCounted));
+        expireForTesting(Scope.tenant(tenantIdentifier, null).key);
     }
 
-    // Test-only seam: whether a tenant has a cached anchor.
+    // Makes the app's cached anchors stale, so the next serveApp() triggers a background refresh.
+    public void expireAppEntryForTesting() {
+        expireForTesting(Scope.app(null).key);
+    }
+
+    private void expireForTesting(String key) {
+        for (PoolState pool : pools.values()) {
+            pool.anchors.computeIfPresent(key, (k, anchor) -> anchor.stale());
+        }
+    }
+
+    // Whether the tenant has a cached anchor.
     public boolean hasAnchorForTesting(TenantIdentifier tenantIdentifier) {
-        return entries.containsKey(tenantIdentifier.getTenantId());
+        String key = Scope.tenant(tenantIdentifier, null).key;
+        return pools.values().stream().anyMatch(pool -> pool.anchors.containsKey(key));
     }
 
-    // Test-only seam: whether an anchor count (and, for a refresh, its shadow audit) is still running for a tenant.
+    // Whether an anchor count (and, for a refresh, its shadow audit) is still running for the tenant.
     public boolean isCountingForTesting(TenantIdentifier tenantIdentifier) {
-        return inFlight.containsKey(tenantIdentifier.getTenantId());
+        String key = Scope.tenant(tenantIdentifier, null).key;
+        return pools.values().stream().anyMatch(pool -> pool.inFlight.containsKey(key));
     }
 
-    // Test-only seam: runs one shadow-audit pass synchronously - seeding the snapshot on the first call for a
-    // tenant and comparing against the previous snapshot on later calls - so tests can exercise the audit's
-    // real storage reads and fold deterministically, without driving the background refresh executor (which
-    // staleEntryTriggersBackgroundRefresh already covers). Not a runtime entry point; mirrors
-    // expireEntryForTesting. Takes a new exact count, as a refresh that counts would, without touching the served
-    // anchor.
+    // Runs one shadow-audit pass for the tenant synchronously with a new full count, without touching the served
+    // anchor: seeds the snapshot on the first call and compares against it on later ones.
     public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
-        runShadowAudit(main, tenantIdentifier, storage, computeAnchor(storage, tenantIdentifier, 0));
+        Scope scope = Scope.tenant(tenantIdentifier, null);
+        PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
+        runShadowAudit(main, pool, (ActivityLogStorage) storage, scope, count(storage, scope, 0));
     }
 }
