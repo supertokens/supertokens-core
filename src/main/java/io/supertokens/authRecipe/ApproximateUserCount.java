@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Serving path for the tenant user count (PLAN-009 skeleton, PLAN-010 units "ledger-fold" and "default-flip").
@@ -104,7 +105,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // Per-tenant locks for the synchronous first-request prime, so callers that find no anchor at the same
     // time (the startup telemetry ping, the license-usage sync, /users/count) wait for one exact count
     // instead of each running their own.
-    private final ConcurrentHashMap<String, Object> primeLocks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReentrantLock> primeLocks = new ConcurrentHashMap<>();
 
     // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
     // the delta folded from the lifecycle events in the window since the last refresh. Purely observational -
@@ -226,7 +227,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private CachedAnchor primeAnchor(AuthRecipeSQLStorage authRecipeStorage, TenantIdentifier tenantIdentifier)
             throws StorageQueryException {
         String tenantId = tenantIdentifier.getTenantId();
-        synchronized (primeLocks.computeIfAbsent(tenantId, k -> new Object())) {
+        ReentrantLock lock = primeLocks.computeIfAbsent(tenantId, k -> new ReentrantLock());
+        lock.lock();
+        try {
             CachedAnchor existing = entries.get(tenantId);
             if (existing != null) {
                 return existing;
@@ -234,6 +237,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             CachedAnchor fresh = computeAnchor(authRecipeStorage, tenantIdentifier);
             entries.put(tenantId, fresh);
             return fresh;
+        } finally {
+            lock.unlock();
         }
     }
 
