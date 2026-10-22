@@ -248,21 +248,27 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         JsonArray tenantStats = new JsonArray();
 
         TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(this.appIdentifier, main);
+        // From the user-count pipeline: each tenant's full count, shared by every core through the database, plus
+        // the lifecycle events since it. Fetched for all tenants at once, so missing counts run concurrently and
+        // every tenant is served from one event read.
+        Map<String, ApproximateUserCount.ApproximateCountResult> usersCounts;
+        try {
+            List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
+            for (TenantConfig tenantConfig : tenantConfigs) {
+                tenantIdentifiers.add(tenantConfig.tenantIdentifier);
+            }
+            usersCounts = ApproximateUserCount.getInstance(main, this.appIdentifier)
+                    .serveTenants(main, tenantIdentifiers, Long.MAX_VALUE);
+        } catch (UsersCountNotReadyException e) {
+            throw new IllegalStateException("an unbounded wait cannot run out", e);
+        }
         for (TenantConfig tenantConfig : tenantConfigs) {
             JsonObject tenantStat = new JsonObject();
             tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                // From the user-count pipeline: the tenant's full count, shared by every core through the database,
-                // plus the lifecycle events since it.
-                long usersCount;
-                try {
-                    usersCount = ApproximateUserCount.getInstance(main, this.appIdentifier)
-                            .serveTenant(main, tenantConfig.tenantIdentifier, null, Long.MAX_VALUE).count;
-                } catch (UsersCountNotReadyException e) {
-                    throw new IllegalStateException("an unbounded wait cannot run out", e);
-                }
+                long usersCount = usersCounts.get(tenantConfig.tenantIdentifier.getTenantId()).count;
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

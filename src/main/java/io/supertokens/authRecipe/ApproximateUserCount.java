@@ -170,6 +170,51 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     }
 
     /**
+     * The counts of several tenants of this app at once, keyed by tenant id (the license-usage stats). Their missing
+     * counts run concurrently (on the bounded request pool) instead of one after another, and every tenant of a user
+     * pool is served from one event read, so the counts are consistent with each other.
+     */
+    public Map<String, ApproximateCountResult> serveTenants(Main main, List<TenantIdentifier> tenantIdentifiers,
+                                                            long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
+        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
+        long batchStart = System.currentTimeMillis();
+        List<CompletableFuture<Anchor>> pending = new ArrayList<>();
+        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
+            Scope scope = Scope.tenant(tenantIdentifier, null);
+            if (pool.anchors.get(scope.key) == null) {
+                pending.add(startOrJoinCount(main, pool, storage, scope, 0, false));
+            }
+        }
+        for (CompletableFuture<Anchor> count : pending) {
+            try {
+                if (deadline == Long.MAX_VALUE) {
+                    count.get();
+                } else {
+                    count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                }
+            } catch (ExecutionException e) {
+                // served below: its fallback, or its failure
+            } catch (TimeoutException e) {
+                throw new UsersCountNotReadyException("The user counts of the app's tenants are still being computed");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new StorageQueryException(e);
+            }
+        }
+        Map<String, ApproximateCountResult> results = new HashMap<>();
+        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
+            long remaining = deadline == Long.MAX_VALUE ? Long.MAX_VALUE
+                    : Math.max(0, deadline - System.currentTimeMillis());
+            results.put(tenantIdentifier.getTenantId(), serve(main, StorageLayer.getStorage(tenantIdentifier, main),
+                    Scope.tenant(tenantIdentifier, null), false, remaining, batchStart));
+        }
+        return results;
+    }
+
+    /**
      * The stored exact count of the app (layer 1 only, no events added): for callers whose contract is an exact
      * count, such as /users/count on CDI versions before the ledger-served count.
      */
@@ -219,6 +264,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     private ApproximateCountResult serve(Main main, Storage storage, Scope scope, boolean storedExact, long waitMs)
             throws StorageQueryException, UsersCountNotReadyException {
+        return serve(main, storage, scope, storedExact, waitMs, 0);
+    }
+
+    // reuseWindowReadAfter > 0: a shared event window read at or after this time is used as is (one consistent read
+    // for a batch); otherwise its tail is re-read.
+    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, boolean storedExact, long waitMs,
+                                         long reuseWindowReadAfter)
+            throws StorageQueryException, UsersCountNotReadyException {
         long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
         PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
         boolean withEvents = !storedExact && scope.recipes == null && storage instanceof ActivityLogStorage;
@@ -235,7 +288,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
         for (int attempt = 0; ; attempt++) {
-            Window window = window(pool, activityLogStorage, anchor.snapshotMs, deadline, attempt > 0);
+            Window window = window(pool, activityLogStorage, anchor.snapshotMs, deadline, attempt > 0,
+                    reuseWindowReadAfter);
             Anchor current = pool.anchors.get(scope.key);
             if (current != null && current.snapshotMs >= anchor.snapshotMs) {
                 anchor = current; // rolled forward (or re-counted) meanwhile
@@ -432,11 +486,15 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * too many events (more than a page logged within the roll margin).
      */
     @Nullable
-    private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, long deadline, boolean reread)
-            throws StorageQueryException, UsersCountNotReadyException {
+    private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, long deadline, boolean reread,
+                          long reuseReadAfter) throws StorageQueryException, UsersCountNotReadyException {
         lock(pool.windowLock, deadline);
         try {
             Window cached = pool.window;
+            if (!reread && reuseReadAfter > 0 && cached != null && cached.fromExclusive <= fromMs
+                    && cached.toInclusive >= reuseReadAfter) {
+                return cached; // read during this batch
+            }
             if (!reread && cached != null && cached.fromExclusive <= fromMs) {
                 long cut = Math.max(cached.fromExclusive, cached.toInclusive - rollMarginMs);
                 long now = System.currentTimeMillis();
