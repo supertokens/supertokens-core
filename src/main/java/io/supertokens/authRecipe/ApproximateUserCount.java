@@ -215,8 +215,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     }
 
     /**
-     * The stored exact count of the app (layer 1 only, no events added): for callers whose contract is an exact
-     * count, such as /users/count on CDI versions before the ledger-served count.
+     * The stored exact count of the app (layer 1 only, no events added): for a recipe-filtered count, which has no
+     * lifecycle-event rules.
      */
     public ApproximateCountResult serveAppStoredExact(Main main, @Nullable RECIPE_ID[] recipes, long waitMs)
             throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {

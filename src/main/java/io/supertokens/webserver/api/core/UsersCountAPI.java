@@ -96,38 +96,52 @@ public class UsersCountAPI extends WebserverAPI {
             boolean approximate;
             long asOf;
 
-            // Every shape goes through the one user-count pipeline. Unfiltered counts on CDI 5.7+ (or 5.6 with the
-            // opt-in) are the shared full count plus the lifecycle events since it; a recipe filter has no event rules
-            // and an older CDI promises an exact count, so those get the shared full count as is (at most
-            // users_count_max_age_ms old), with approximate/asOf telling a 5.6+ client how old it is.
             RECIPE_ID[] recipes = recipeIdsEnum.length == 0 ? null : recipeIdsEnum;
-            boolean withEvents = ledgerServed && recipes == null;
-            long waitMs = Config.getBaseConfig(main).getUsersCountRequestWaitMs();
-            ApproximateUserCount.ApproximateCountResult served;
-            try {
+            if (!ledgerServed) {
+                // Older CDI versions (below 5.6, or 5.6 without the opt-in) keep their released contract: an exact
+                // count on every request, with no approximate/asOf fields. Deliberately outside the user-count
+                // pipeline - old CDI behaviour is not changed.
                 if (includeAllTenants) {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
-                    enforcePublicTenantAndGetAllStoragesForApp(req);
-                    ApproximateUserCount counts = ApproximateUserCount.getInstance(main, appIdentifier);
-                    served = withEvents ? counts.serveApp(main, null, waitMs)
-                            : counts.serveAppStoredExact(main, recipes, waitMs);
+                    Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
+                    count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifier, storages, recipeIdsEnum);
                 } else {
-                    TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-                    getTenantStorage(req);
-                    ApproximateUserCount counts = ApproximateUserCount.getInstance(main, getAppIdentifier(req));
-                    served = withEvents ? counts.serveTenant(main, tenantIdentifier, null, waitMs)
-                            : counts.serveTenantStoredExact(main, tenantIdentifier, recipes, waitMs);
+                    count = AuthRecipe.getUsersCountForTenant(getTenantIdentifier(req), getTenantStorage(req),
+                            recipeIdsEnum);
                 }
-            } catch (UsersCountNotReadyException e) {
-                // the count keeps running and serves the retry
-                resp.setHeader("Retry-After",
-                        Integer.toString(Config.getBaseConfig(main).getUsersCountRetryAfterSeconds()));
-                sendTextResponse(503, "The user count is being computed; try again later.", resp);
-                return;
+                approximate = false;
+                asOf = System.currentTimeMillis();
+            } else {
+                // CDI 5.7+ (or 5.6 with the opt-in): the user-count pipeline. Unfiltered counts are the shared full
+                // count plus the lifecycle events since it; a recipe filter has no event rules, so it gets the shared
+                // full count as is (at most users_count_max_age_ms old), with approximate/asOf saying how old it is.
+                long waitMs = Config.getBaseConfig(main).getUsersCountRequestWaitMs();
+                ApproximateUserCount.ApproximateCountResult served;
+                try {
+                    if (includeAllTenants) {
+                        AppIdentifier appIdentifier = getAppIdentifier(req);
+                        enforcePublicTenantAndGetAllStoragesForApp(req);
+                        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, appIdentifier);
+                        served = recipes == null ? counts.serveApp(main, null, waitMs)
+                                : counts.serveAppStoredExact(main, recipes, waitMs);
+                    } else {
+                        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                        getTenantStorage(req);
+                        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, getAppIdentifier(req));
+                        served = recipes == null ? counts.serveTenant(main, tenantIdentifier, null, waitMs)
+                                : counts.serveTenantStoredExact(main, tenantIdentifier, recipes, waitMs);
+                    }
+                } catch (UsersCountNotReadyException e) {
+                    // the count keeps running and serves the retry
+                    resp.setHeader("Retry-After",
+                            Integer.toString(Config.getBaseConfig(main).getUsersCountRetryAfterSeconds()));
+                    sendTextResponse(503, "The user count is being computed; try again later.", resp);
+                    return;
+                }
+                count = served.count;
+                approximate = served.approximate;
+                asOf = served.asOf;
             }
-            count = served.count;
-            approximate = served.approximate;
-            asOf = served.asOf;
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
