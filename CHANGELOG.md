@@ -10,7 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Requires plugin interface 11.1.
 - One pipeline for user counts (telemetry `usersCount`, the license-usage stats, `/users/count` on CDI 5.7 or 5.6 with `allowApproximate`): a full count stored in the database and shared by all cores for up to `users_count_max_age_ms` (one core counts, the others wait), plus the sign-ups, deletions and links logged since; a bulk import rolls the count forward instead of triggering a new full count.
 - Telemetry's `usersCount` is the app-wide count for every app, whatever its number of tenants.
-- `/users/count` on CDI 5.7 (or 5.6 with `allowApproximate`) answers 503 with `Retry-After` when its count is still being computed after `users_count_request_wait_ms`; recipe-filtered counts there are the shared full count (at most `users_count_max_age_ms` old). Older CDI versions are unchanged: an exact count on every request.
+- `/users/count` on CDI 5.7 (or 5.6 with `allowApproximate`) answers 503 with `Retry-After` when its count is still being computed after `users_count_request_wait_ms`; recipe-filtered counts there are the stored exact count of the users with those recipes (at most `users_count_max_age_ms` old). Older CDI versions are unchanged: an exact count on every request.
 - A failed count serves the last stored count; a failed telemetry ping or license sync is retried within minutes instead of the next day.
 - Delays the startup telemetry ping by 60-120s (jittered).
 - New config: `users_count_max_age_ms`, `users_count_request_wait_ms`, `users_count_retry_after_seconds`.

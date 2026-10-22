@@ -113,8 +113,9 @@ public class UsersCountAPI extends WebserverAPI {
                 asOf = System.currentTimeMillis();
             } else {
                 // CDI 5.7+ (or 5.6 with the opt-in): the user-count pipeline. Unfiltered counts are the shared full
-                // count plus the lifecycle events since it; a recipe filter has no event rules, so it gets the shared
-                // full count as is (at most users_count_max_age_ms old), with approximate/asOf saying how old it is.
+                // count plus the lifecycle events since it. A recipe filter has no event rules, so it gets the stored
+                // exact count of the users with those recipes (one stored count per filter, at most
+                // users_count_max_age_ms old), with approximate/asOf saying how old it is.
                 long waitMs = Config.getBaseConfig(main).getUsersCountRequestWaitMs();
                 ApproximateUserCount.ApproximateCountResult served;
                 try {
