@@ -24,6 +24,7 @@ import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
 import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.cronjobs.RetrySoon;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -32,6 +33,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.UsersCountCacheStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -46,9 +48,14 @@ import org.junit.rules.TestRule;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -186,6 +193,182 @@ public class UserCountPipelineTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // A burst rolls every tenant's anchor (and the app's) forward to its exact count, each from its own snapshot.
+    @Test
+    public void aBurstRollsEveryTenantsAnchorToItsExactCount() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithLinkingAndTenants();
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier publicTenant = TenantIdentifier.BASE_TENANT;
+        TenantIdentifier[] tenants = {publicTenant, new TenantIdentifier(null, null, "t1"),
+                new TenantIdentifier(null, null, "t2"), new TenantIdentifier(null, null, "t3")};
+        for (int i = 1; i < tenants.length; i++) {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, publicTenant, new TenantConfig(tenants[i],
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null, new JsonObject()));
+        }
+        AppIdentifier app = publicTenant.toAppIdentifier();
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, app);
+        for (TenantIdentifier tenant : tenants) {
+            EmailPassword.signUp(tenant, StorageLayer.getStorage(tenant, main), main,
+                    "first-" + tenant.getTenantId() + "@example.com", "password");
+        }
+        assertCountsExact(main, counts, app, tenants[0], tenants[1], tenants[2]); // the anchors, all but t3's
+
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        for (int i = 0; i < 14; i++) {
+            TenantIdentifier tenant = tenants[(i * 7) % tenants.length];
+            EmailPassword.signUp(tenant, StorageLayer.getStorage(tenant, main), main,
+                    "burst" + i + "@example.com", "password");
+            if (i == 6) {
+                // t3's first anchor is newer than the others: rolling them must not apply its earlier events to it
+                assertEquals(AuthRecipe.getUsersCountForTenant(tenants[3], StorageLayer.getStorage(tenants[3], main),
+                        null), counts.serveTenant(main, tenants[3], null, Long.MAX_VALUE).count);
+            }
+        }
+        assertCountsExact(main, counts, app, tenants);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A roll-forward reads the burst in slices of about one page each: it never asks the database to sort the rest of
+    // the burst again for every page.
+    @Test
+    public void aRollForwardReadsTheBurstInPageSizedSlices() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        List<Object[]> reads = Collections.synchronizedList(new ArrayList<>());
+        Storage recording = interceptingStorage(storage, (method, methodArgs) -> {
+            if (method.equals("getActivityLogEntriesForApp")) {
+                reads.add(methodArgs);
+            }
+        });
+
+        EmailPassword.signUp(tenant, storage, main, "first@example.com", "password");
+        assertEquals(1, counts.serve(main, tenant, recording).count);
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        int burst = 60;
+        for (int i = 0; i < burst; i++) {
+            EmailPassword.signUp(tenant, storage, main, "burst" + i + "@example.com", "password");
+        }
+        reads.clear();
+        assertEquals(burst + 1, counts.serve(main, tenant, recording).count);
+
+        // the events each read's range holds, which the database sorts to return the first page of them
+        long sorted = 0;
+        for (Object[] read : reads) {
+            sorted += ((ActivityLogStorage) storage).getActivityLogEntriesForApp(tenant.toAppIdentifier(),
+                    (Set<String>) read[1], (long) read[2], (long) read[3], Integer.MAX_VALUE).size();
+        }
+        // the window's reads take the burst twice and the slices about twice more; reading the rest of the burst
+        // for every page is about burst^2 / (2 * page) = 600
+        assertTrue("events in the ranges read: " + sorted, sorted <= 6L * burst);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A roll-forward for a request with a deadline stops at the deadline (the request gets "try again later"), keeps
+    // what it rolled so far, and the retry carries on from there.
+    @Test
+    public void aRollForwardStopsAtTheDeadlineAndKeepsItsProgress() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        Storage slowReads = interceptingStorage(storage, (method, methodArgs) -> {
+            if (method.equals("getActivityLogEntriesForApp")) {
+                Thread.sleep(100);
+            }
+        });
+
+        EmailPassword.signUp(tenant, storage, main, "first@example.com", "password");
+        assertEquals(1, counts.serve(main, tenant, slowReads).count);
+        long primedSnapshot = counts.anchorSnapshotForTesting(tenant, storage);
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        for (int i = 0; i < 30; i++) {
+            EmailPassword.signUp(tenant, storage, main, "burst" + i + "@example.com", "password");
+        }
+
+        long start = System.currentTimeMillis();
+        try {
+            counts.serve(main, tenant, slowReads, 250);
+            fail("rolling 10 pages at 100ms a read does not fit 250ms");
+        } catch (UsersCountNotReadyException expected) {
+        }
+        long took = System.currentTimeMillis() - start;
+        assertTrue("held on past the deadline: " + took + "ms", took < 800);
+        assertTrue("kept what it rolled", counts.anchorSnapshotForTesting(tenant, storage) > primedSnapshot);
+        assertEquals(31, counts.serve(main, tenant, slowReads).count);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // An app count across several user pools starts every pool's missing count before waiting for any, so the first
+    // "try again later" already has all of them running.
+    @Test
+    public void anAppCountStartsEveryUserPoolsCountBeforeWaiting() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        if (storage.getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        EmailPassword.signUp(tenant, storage, main, "a@example.com", "password");
+        EmailPassword.signUp(tenant, storage, main, "b@example.com", "password");
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        CountDownLatch release = new CountDownLatch(1);
+        Set<String> counting = ConcurrentHashMap.newKeySet();
+        Storage[] pools = new Storage[3];
+        for (int i = 0; i < pools.length; i++) {
+            String poolId = "pool-" + i;
+            pools[i] = asUserPool(storage, poolId, (method, methodArgs) -> {
+                if (method.equals("getUsersCount") || method.equals("getOrComputeAppUsersCount")) {
+                    counting.add(poolId);
+                    release.await(10, TimeUnit.SECONDS);
+                }
+            });
+        }
+
+        try {
+            counts.serveAppForTesting(main, pools, 100);
+            fail("no pool's count is ready");
+        } catch (UsersCountNotReadyException expected) {
+        }
+        long deadline = System.currentTimeMillis() + 5000;
+        while (counting.size() < pools.length && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        assertEquals(Set.of("pool-0", "pool-1", "pool-2"), counting);
+
+        release.countDown();
+        assertEquals(6, counts.serveAppForTesting(main, pools, Long.MAX_VALUE).count);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // A /users/count request that cannot wait for a count still being computed gets 503 (with Retry-After); the
     // count keeps running and serves the retry.
     @Test
@@ -314,8 +497,21 @@ public class UserCountPipelineTest {
         void before(String method) throws Exception;
     }
 
+    private interface ArgsHook {
+        void before(String method, Object[] methodArgs) throws Exception;
+    }
+
     // Wraps the real storage, running the hook before every call; every call then goes to the real storage.
     private static Storage interceptingStorage(Storage delegate, Hook hook) {
+        return interceptingStorage(delegate, (method, methodArgs) -> hook.before(method));
+    }
+
+    private static Storage interceptingStorage(Storage delegate, ArgsHook hook) {
+        return asUserPool(delegate, null, hook);
+    }
+
+    // The same, presented as a user pool of its own (poolId, or the real storage's if null).
+    private static Storage asUserPool(Storage delegate, String poolId, ArgsHook hook) {
         Set<Class<?>> interfaces = new LinkedHashSet<>();
         for (Class<?> c = delegate.getClass(); c != null; c = c.getSuperclass()) {
             for (Class<?> i : c.getInterfaces()) {
@@ -326,7 +522,10 @@ public class UserCountPipelineTest {
         }
         return (Storage) Proxy.newProxyInstance(delegate.getClass().getClassLoader(),
                 interfaces.toArray(new Class<?>[0]), (proxy, method, methodArgs) -> {
-                    hook.before(method.getName());
+                    if (poolId != null && method.getName().equals("getUserPoolId")) {
+                        return poolId;
+                    }
+                    hook.before(method.getName(), methodArgs);
                     try {
                         return method.invoke(delegate, methodArgs);
                     } catch (InvocationTargetException e) {

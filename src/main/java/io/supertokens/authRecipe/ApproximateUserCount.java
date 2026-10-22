@@ -246,14 +246,35 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
     }
 
+    /**
+     * The tenant count on the given storage, waiting at most {@code waitMs} for a count or event read that is still
+     * running.
+     */
+    public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException {
+        return serve(main, storage, Scope.tenant(tenantIdentifier, null), false, waitMs);
+    }
+
+    // Starts the missing count of every user pool before waiting for any, and waits for them against one deadline,
+    // so a multi-pool app is not counted one pool per request (or per wait).
     ApproximateCountResult serveApp(Main main, Storage[] storages, @Nullable RECIPE_ID[] recipes,
                                     boolean storedExact, long waitMs)
             throws StorageQueryException, UsersCountNotReadyException {
+        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
+        Scope scope = Scope.app(recipes);
+        for (Storage storage : storages) {
+            PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
+            if (pool.anchors.get(scope.key) == null) {
+                startOrJoinCount(main, pool, storage, scope, 0, false);
+            }
+        }
         long count = 0;
         long asOf = Long.MAX_VALUE;
         boolean stale = false;
         for (Storage storage : storages) {
-            ApproximateCountResult part = serve(main, storage, Scope.app(recipes), storedExact, waitMs);
+            long remaining = deadline == Long.MAX_VALUE ? Long.MAX_VALUE
+                    : Math.max(0, deadline - System.currentTimeMillis());
+            ApproximateCountResult part = serve(main, storage, scope, storedExact, remaining);
             count += part.count;
             asOf = Math.min(asOf, part.asOf);
             stale |= part.stale;
@@ -518,7 +539,12 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     pool.window = window;
                     return window;
                 }
-                rollForward(pool, storage, now - rollMarginMs);
+                // the time the first page of events took: the size of the roll's first slice
+                long firstPageMs = events.get(pageSize - 1).createdAt - from;
+                if (!rollForward(pool, storage, now - rollMarginMs, firstPageMs, deadline)) {
+                    // the caller's deadline passed: what was rolled is kept, and the retry carries on from there
+                    throw new UsersCountNotReadyException("The user count is being brought up to date");
+                }
                 fromMs = Math.max(fromMs, now - rollMarginMs);
             }
             return null;
@@ -542,33 +568,50 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     /**
      * Applies the pool's lifecycle events up to {@code cutoffMs} to every event-folded anchor of the pool, reading
-     * them in pages, and moves each anchor to the cutoff. Stops before an event whose payload does not parse (it can
-     * only be passed by a new count) and before a page whose events all share one millisecond (it cannot be split).
-     * Called with the pool's window lock held.
+     * them in slices of about one page each, and moves each anchor to the cutoff. Stops before an event whose payload
+     * does not parse (it can only be passed by a new count) and before a page whose events all share one millisecond
+     * (it cannot be split). Also stops, after at least one slice, once {@code deadline} has passed: the anchors are
+     * then moved only as far as the events applied, and false is returned. Called with the pool's window lock held.
+     * <p>
+     * Each read covers a time slice sized from the previous one (about one page of events), not everything up to the
+     * cutoff: the database sorts all the events of a read's range to return its first page, so reading the rest of the
+     * burst for every page would sort the burst once per page. Each event touches only the anchors of the tenants it
+     * changes (and the app's), so the cost grows with the events, not with events times anchors.
      */
-    private void rollForward(PoolState pool, ActivityLogStorage storage, long cutoffMs)
-            throws StorageQueryException {
-        Map<String, Anchor> anchors = new HashMap<>();
+    private boolean rollForward(PoolState pool, ActivityLogStorage storage, long cutoffMs, long sliceMs,
+                                long deadline) throws StorageQueryException {
+        Anchor appAnchor = null;
+        Map<String, Anchor> tenantAnchors = new HashMap<>(); // by tenant id
+        Map<Anchor, String> keys = new HashMap<>();
         for (Map.Entry<String, Anchor> e : pool.anchors.entrySet()) {
-            if (e.getValue().folded && e.getValue().snapshotMs < cutoffMs) {
-                anchors.put(e.getKey(), e.getValue());
+            Anchor anchor = e.getValue();
+            if (anchor.folded && anchor.snapshotMs < cutoffMs) {
+                if (anchor.tenantId == null) {
+                    appAnchor = anchor;
+                } else {
+                    tenantAnchors.put(anchor.tenantId, anchor);
+                }
+                keys.put(anchor, e.getKey());
             }
         }
-        if (anchors.isEmpty()) {
-            return;
+        if (keys.isEmpty()) {
+            return true;
         }
-        Map<String, Long> deltas = new HashMap<>();
+        Map<Anchor, Long> deltas = new HashMap<>();
         long from = Long.MAX_VALUE;
-        for (Anchor anchor : anchors.values()) {
+        for (Anchor anchor : keys.keySet()) {
             from = Math.min(from, anchor.snapshotMs);
         }
         long rolledTo = cutoffMs;
+        boolean complete = true;
+        sliceMs = Math.max(1, sliceMs);
         pages:
         while (from < cutoffMs) {
+            long to = cutoffMs - from <= sliceMs ? cutoffMs : from + sliceMs;
             List<AuditLogEvent> page = storage.getActivityLogEntriesForApp(appIdentifier,
-                    CountShadowAudit.LIFECYCLE_EVENT_TYPES, from, cutoffMs, pageSize + 1);
+                    CountShadowAudit.LIFECYCLE_EVENT_TYPES, from, to, pageSize + 1);
             List<AuditLogEvent> apply = page;
-            long next = cutoffMs;
+            long next = to;
             if (page.size() > pageSize) {
                 // the page is cut at a millisecond boundary, so events sharing one millisecond stay together
                 long boundary = page.get(pageSize - 1).createdAt;
@@ -582,6 +625,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 }
                 apply = page.subList(0, end);
                 next = page.get(end - 1).createdAt;
+                sliceMs = Math.max(1, next - from); // the time that held one page
+            } else if (page.size() <= pageSize / 2) {
+                sliceMs = Math.min(sliceMs * 2, Long.MAX_VALUE / 4);
             }
             for (AuditLogEvent event : apply) {
                 LifecycleEventPayload payload;
@@ -591,30 +637,34 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     rolledTo = event.createdAt - 1; // only a new count can pass a corrupt event
                     break pages;
                 }
-                Map<String, Long> tenantDeltas = CountDeltaInterpreter.tenantDeltasOf(payload);
                 long appDelta = CountDeltaInterpreter.appDeltaOf(payload);
-                for (Map.Entry<String, Anchor> e : anchors.entrySet()) {
-                    Anchor anchor = e.getValue();
-                    if (event.createdAt <= anchor.snapshotMs) {
-                        continue;
-                    }
-                    long delta = anchor.tenantId == null ? appDelta : tenantDeltas.getOrDefault(anchor.tenantId, 0L);
-                    if (delta != 0) {
-                        deltas.merge(e.getKey(), delta, Long::sum);
+                if (appAnchor != null && appDelta != 0 && event.createdAt > appAnchor.snapshotMs) {
+                    deltas.merge(appAnchor, appDelta, Long::sum);
+                }
+                for (Map.Entry<String, Long> tenantDelta : CountDeltaInterpreter.tenantDeltasOf(payload).entrySet()) {
+                    Anchor anchor = tenantAnchors.get(tenantDelta.getKey());
+                    if (anchor != null && tenantDelta.getValue() != 0 && event.createdAt > anchor.snapshotMs) {
+                        deltas.merge(anchor, tenantDelta.getValue(), Long::sum);
                     }
                 }
             }
             from = next;
+            if (from < cutoffMs && deadline != Long.MAX_VALUE && System.currentTimeMillis() >= deadline) {
+                rolledTo = from; // every event up to here is applied
+                complete = false;
+                break;
+            }
         }
-        for (Map.Entry<String, Anchor> e : anchors.entrySet()) {
-            Anchor anchor = e.getValue();
+        for (Map.Entry<Anchor, String> e : keys.entrySet()) {
+            Anchor anchor = e.getKey();
             if (rolledTo > anchor.snapshotMs) {
                 // only if no new count replaced it meanwhile
-                pool.anchors.replace(e.getKey(), anchor,
-                        anchor.rolledTo(anchor.count + deltas.getOrDefault(e.getKey(), 0L), rolledTo));
+                pool.anchors.replace(e.getValue(), anchor,
+                        anchor.rolledTo(anchor.count + deltas.getOrDefault(anchor, 0L), rolledTo));
             }
         }
         pool.window = null;
+        return complete;
     }
 
     // ---- shadow audit ----
@@ -956,6 +1006,12 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     public static void resetForTesting() {
         pageSize = CountDeltaInterpreter.DEFAULT_BURST_CAP;
         rollMarginMs = ROLL_MARGIN_MS;
+    }
+
+    // The app count across the given storages (one per user pool), as for telemetry and /users/count.
+    public ApproximateCountResult serveAppForTesting(Main main, Storage[] storages, long waitMs)
+            throws StorageQueryException, UsersCountNotReadyException {
+        return serveApp(main, storages, null, false, waitMs);
     }
 
     // The tenant's anchor snapshot time on the given storage's pool, or -1.
