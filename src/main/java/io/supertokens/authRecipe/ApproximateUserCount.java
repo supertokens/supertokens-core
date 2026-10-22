@@ -73,8 +73,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p>
  * <b>Layer 3, the lifecycle events since the anchor</b>: the served count is the anchor plus the delta of the
  * lifecycle events logged after it ({@link CountDeltaInterpreter}): per tenant, the events that change that tenant;
- * for the app, the events that create, remove, merge or split a user group. A user pool's events are read once and
- * shared by all its scopes for a short while. When the events after the oldest anchor no longer fit one read (a bulk
+ * for the app, the events that create, remove, merge or split a user group. A user pool keeps one window of parsed
+ * events shared by all its scopes; each call re-reads only its last few seconds. When the events after the oldest
+ * anchor no longer fit one read (a bulk
  * import), every anchor of the pool is rolled forward to (nearly) now instead of being re-counted, so a burst costs
  * one read of its events, not a full count. A recipe-filtered count has no event rules, so it is served from layer 1
  * as is.
@@ -101,9 +102,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     static final long ROLL_MARGIN_MS = 10_000;
     private static volatile long rollMarginMs = ROLL_MARGIN_MS;
 
-    // A user pool's event read is reused by the calls within this long (the license sync reads every tenant of an app
-    // back to back), so they share one read instead of one each.
-    private static final long WINDOW_SHARE_MS = 1_000;
 
     // Pools that run the anchor counts. Each count holds a database connection while it runs, which can be minutes on
     // a large tenant, so they are bounded: a read across many tenants queues their counts instead of starting one per
@@ -427,24 +425,30 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // ---- layer 3: the events since the anchors ----
 
     /**
-     * The pool's lifecycle events after {@code fromMs}, read once and shared by the pool's calls for
-     * {@link #WINDOW_SHARE_MS}. If they don't fit one page, the pool's anchors are first rolled forward. Returns null if
-     * even that leaves too many events (more than a page logged within {@link #ROLL_MARGIN_MS}).
+     * The pool's lifecycle events after {@code fromMs} up to now, shared by all the pool's scopes. Each call re-reads
+     * only the tail of the shared window - the events after (its end minus {@link #ROLL_MARGIN_MS}), replacing the
+     * overlap so an event committed shortly after its timestamp is still picked up - instead of the whole window. If
+     * the events no longer fit one page, the pool's anchors are first rolled forward. Returns null if even that leaves
+     * too many events (more than a page logged within the roll margin).
      */
     @Nullable
     private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, long deadline, boolean reread)
             throws StorageQueryException, UsersCountNotReadyException {
-        Window cached = pool.window;
-        if (!reread && cached != null && cached.fromExclusive <= fromMs
-                && System.currentTimeMillis() - cached.readAt < WINDOW_SHARE_MS) {
-            return cached;
-        }
         lock(pool.windowLock, deadline);
         try {
-            cached = pool.window;
-            if (!reread && cached != null && cached.fromExclusive <= fromMs
-                    && System.currentTimeMillis() - cached.readAt < WINDOW_SHARE_MS) {
-                return cached;
+            Window cached = pool.window;
+            if (!reread && cached != null && cached.fromExclusive <= fromMs) {
+                long cut = Math.max(cached.fromExclusive, cached.toInclusive - rollMarginMs);
+                long now = System.currentTimeMillis();
+                List<AuditLogEvent> tail = storage.getActivityLogEntriesForApp(appIdentifier,
+                        CountShadowAudit.LIFECYCLE_EVENT_TYPES, cut, now, pageSize + 1);
+                if (tail.size() <= pageSize) {
+                    Window extended = cached.withTail(cut, now, tail);
+                    if (extended.size() <= pageSize) {
+                        pool.window = extended;
+                        return extended;
+                    }
+                }
             }
             for (int roll = 0; roll < 3; roll++) {
                 long from = Math.min(fromMs, pool.oldestFoldedSnapshot());
@@ -814,6 +818,28 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
             return new Window(fromExclusive, toInclusive, times.stream().mapToLong(Long::longValue).toArray(),
                     tenantDeltas, appDeltas, corruptAt);
+        }
+
+        int size() {
+            return times.length;
+        }
+
+        // this window's events up to and including cut, followed by the given (newly read) events in (cut, now]
+        Window withTail(long cut, long now, List<AuditLogEvent> tail) {
+            Window fresh = of(cut, now, tail);
+            int keep = 0;
+            while (keep < times.length && times[keep] <= cut) {
+                keep++;
+            }
+            long[] mergedTimes = new long[keep + fresh.times.length];
+            System.arraycopy(times, 0, mergedTimes, 0, keep);
+            System.arraycopy(fresh.times, 0, mergedTimes, keep, fresh.times.length);
+            List<Map<String, Long>> mergedTenantDeltas = new ArrayList<>(tenantDeltas.subList(0, keep));
+            mergedTenantDeltas.addAll(fresh.tenantDeltas);
+            List<Long> mergedAppDeltas = new ArrayList<>(appDeltas.subList(0, keep));
+            mergedAppDeltas.addAll(fresh.appDeltas);
+            Long corrupt = corruptAt != null && corruptAt <= cut ? corruptAt : fresh.corruptAt;
+            return new Window(fromExclusive, now, mergedTimes, mergedTenantDeltas, mergedAppDeltas, corrupt);
         }
 
         long deltaAfter(long snapshotMs, Scope scope) {
