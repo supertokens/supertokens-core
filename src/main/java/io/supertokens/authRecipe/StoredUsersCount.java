@@ -48,9 +48,13 @@ public final class StoredUsersCount {
 
     /**
      * The app's distinct user count across the given storages (the app's user pools), as
-     * {@link AuthRecipe#getUsersCountAcrossAllTenants} with no recipe filter.
+     * {@link AuthRecipe#getUsersCountAcrossAllTenants} with no recipe filter. {@code publicTenantStorage} is the
+     * storage of the app's public tenant.
+     * <p>
+     * The count is stored on the app's public tenant, which exists only in that tenant's user pool. Another user pool
+     * of the app holds only some of its other tenants and can't store it, so it is counted directly.
      */
-    public static long getAppUsersCount(AppIdentifier appIdentifier, Storage[] storages)
+    public static long getAppUsersCount(AppIdentifier appIdentifier, Storage[] storages, Storage publicTenantStorage)
             throws StorageQueryException {
         ReentrantLock lock = LOCKS.computeIfAbsent(
                 "app~" + appIdentifier.getConnectionUriDomain() + "~" + appIdentifier.getAppId(),
@@ -59,7 +63,8 @@ public final class StoredUsersCount {
         try {
             long count = 0;
             for (Storage storage : storages) {
-                if (storage instanceof UsersCountCacheStorage) {
+                if (storage instanceof UsersCountCacheStorage
+                        && storage.getUserPoolId().equals(publicTenantStorage.getUserPoolId())) {
                     count += ((UsersCountCacheStorage) storage).getOrComputeAppUsersCount(appIdentifier, MAX_AGE_MS)
                             .count;
                 } else {

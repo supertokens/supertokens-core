@@ -124,7 +124,8 @@ public class Telemetry extends CronTask {
 
                 // The app-wide count of distinct users, whatever the number of tenants; stored in the database and
                 // shared by every core for up to StoredUsersCount.MAX_AGE_MS
-                json.addProperty("usersCount", StoredUsersCount.getAppUsersCount(app, storages));
+                json.addProperty("usersCount", StoredUsersCount.getAppUsersCount(app, storages,
+                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main)));
             }
 
             { // Dashboard user emails
