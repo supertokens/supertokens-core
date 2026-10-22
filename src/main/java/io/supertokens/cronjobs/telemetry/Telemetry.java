@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
@@ -36,6 +37,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -44,8 +46,13 @@ import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Telemetry extends CronTask {
+
+    // Initial delay before the first ping: 60s + up to 60s of jitter, i.e. a value in [60, 120) seconds.
+    static final int INITIAL_WAIT_TIME_SECONDS_BASE = 60;
+    static final int INITIAL_WAIT_TIME_SECONDS_JITTER = 60;
 
     public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
@@ -117,8 +124,7 @@ public class Telemetry extends CronTask {
             { // Users count across all tenants
                 Storage[] storages = StorageLayer.getStoragesForApp(main, app);
 
-                json.addProperty("usersCount",
-                        AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null));
+                json.addProperty("usersCount", getUsersCount(app, storages));
             }
 
             { // Dashboard user emails
@@ -204,7 +210,27 @@ public class Telemetry extends CronTask {
 
     @Override
     public int getInitialWaitTimeSeconds() {
-        // We send a ping start one immediately (equal to sending server start event)
-        return 0;
+        if (Main.isTesting) {
+            Integer waitTime = CronTaskTest.getInstance(main).getInitialWaitTimeInSeconds(RESOURCE_KEY);
+            return waitTime != null ? waitTime : 0;
+        }
+        // The first ping (the server start event) used to go out immediately, so every core that started ran a
+        // full user count at once - a fleet rollout stacked them on the database. It is jittered, and starts
+        // after EELicenseCheck's first run (30-60s) so the user count that sync primes is reused here.
+        return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
+    }
+
+    // For a single-tenant app the tenant count is the app count, so read it from the cached ApproximateUserCount
+    // (shared with the license-usage sync and /users/count) instead of running another exact count. Apps with
+    // more tenants keep the exact app-level count: adding up per-tenant counts would count a user who belongs to
+    // several tenants more than once.
+    private long getUsersCount(AppIdentifier app, Storage[] storages) throws Exception {
+        TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(app, main);
+        if (tenants.length == 1) {
+            TenantIdentifier tenant = tenants[0].tenantIdentifier;
+            return ApproximateUserCount.getInstance(main, app)
+                    .serve(main, tenant, StorageLayer.getStorage(tenant, main)).count;
+        }
+        return AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null);
     }
 }

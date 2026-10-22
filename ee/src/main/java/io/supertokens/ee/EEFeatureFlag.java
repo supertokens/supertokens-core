@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -252,7 +253,11 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                long usersCount = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null);
+                // Cached count (shared with telemetry and /users/count) rather than a fresh exact count on
+                // every sync: on a large tenant the exact count is expensive, and every core runs this
+                // shortly after it starts.
+                long usersCount = ApproximateUserCount.getInstance(main, this.appIdentifier)
+                        .serve(main, tenantConfig.tenantIdentifier, storage).count;
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

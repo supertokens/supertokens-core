@@ -101,6 +101,11 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // Tenant ids with an in-flight background refresh - the single-flight guard.
     private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
 
+    // Per-tenant locks for the synchronous first-request prime, so callers that find no anchor at the same
+    // time (the startup telemetry ping, the license-usage sync, /users/count) wait for one exact count
+    // instead of each running their own.
+    private final ConcurrentHashMap<String, Object> primeLocks = new ConcurrentHashMap<>();
+
     // Shadow audit (PLAN-010 unit 3): once per background refresh, check that the exact count moved by exactly
     // the delta folded from the lifecycle events in the window since the last refresh. Purely observational -
     // it never affects the value served (the fresh exact count always wins). The burst cap matches the
@@ -158,8 +163,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         if (cachedAnchor == null) {
             // First request for this tenant: compute the exact anchor synchronously so subsequent requests fold
             // off a cheap event window instead of recomputing the exact count.
-            cachedAnchor = computeAnchor(authRecipeStorage, tenantIdentifier);
-            entries.put(tenantId, cachedAnchor);
+            cachedAnchor = primeAnchor(authRecipeStorage, tenantIdentifier);
         } else if (now - cachedAnchor.computedAt >= REFRESH_TTL_MS) {
             // Stale: refresh the anchor in the background (single-flight) and keep folding off the current one.
             triggerRefresh(main, tenantIdentifier, storage);
@@ -214,6 +218,23 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long snapshotMs = System.currentTimeMillis();
         long exactCount = authRecipeStorage.getUsersCount(tenantIdentifier, null);
         return new CachedAnchor(exactCount, snapshotMs, System.currentTimeMillis());
+    }
+
+    // Single-flighted first-request prime: only one caller per tenant runs the exact count, the others wait for
+    // it and reuse the anchor it stores. On a large tenant that count is expensive (minutes on millions of
+    // users), so concurrent primes on a freshly started core are what this avoids.
+    private CachedAnchor primeAnchor(AuthRecipeSQLStorage authRecipeStorage, TenantIdentifier tenantIdentifier)
+            throws StorageQueryException {
+        String tenantId = tenantIdentifier.getTenantId();
+        synchronized (primeLocks.computeIfAbsent(tenantId, k -> new Object())) {
+            CachedAnchor existing = entries.get(tenantId);
+            if (existing != null) {
+                return existing;
+            }
+            CachedAnchor fresh = computeAnchor(authRecipeStorage, tenantIdentifier);
+            entries.put(tenantId, fresh);
+            return fresh;
+        }
     }
 
     private void triggerRefresh(Main main, TenantIdentifier tenantIdentifier, Storage storage) {
