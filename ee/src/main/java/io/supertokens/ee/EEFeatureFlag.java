@@ -11,7 +11,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.authRecipe.ApproximateUserCount;
-import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -251,17 +250,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // From the user-count pipeline: each tenant's full count, shared by every core through the database, plus
         // the lifecycle events since it. Fetched for all tenants at once, so missing counts run concurrently and
         // every tenant is served from one event read.
-        Map<String, ApproximateUserCount.ApproximateCountResult> usersCounts;
-        try {
-            List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
-            for (TenantConfig tenantConfig : tenantConfigs) {
-                tenantIdentifiers.add(tenantConfig.tenantIdentifier);
-            }
-            usersCounts = ApproximateUserCount.getInstance(main, this.appIdentifier)
-                    .serveTenants(main, tenantIdentifiers, Long.MAX_VALUE);
-        } catch (UsersCountNotReadyException e) {
-            throw new IllegalStateException("an unbounded wait cannot run out", e);
+        List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            tenantIdentifiers.add(tenantConfig.tenantIdentifier);
         }
+        Map<String, ApproximateUserCount.ApproximateCountResult> usersCounts = ApproximateUserCount
+                .getInstance(main, this.appIdentifier).serveTenants(main, tenantIdentifiers);
         for (TenantConfig tenantConfig : tenantConfigs) {
             JsonObject tenantStat = new JsonObject();
             tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());

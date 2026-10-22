@@ -23,7 +23,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.authRecipe.ApproximateUserCount;
-import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.cronjobs.RetrySoon;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -129,12 +128,7 @@ public class Telemetry extends CronTask {
             { // Users count across all tenants
                 // The app-wide count of distinct users, whatever the number of tenants, from the user-count pipeline: the
                 // full count shared by every core through the database, plus the lifecycle events since it.
-                try {
-                    json.addProperty("usersCount", ApproximateUserCount.getInstance(main, app)
-                            .serveApp(main, null, Long.MAX_VALUE).count);
-                } catch (UsersCountNotReadyException e) {
-                    throw new IllegalStateException("an unbounded wait cannot run out", e);
-                }
+                json.addProperty("usersCount", ApproximateUserCount.getInstance(main, app).serveApp(main).count);
             }
 
             { // Dashboard user emails

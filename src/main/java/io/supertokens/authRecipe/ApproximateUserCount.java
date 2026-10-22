@@ -23,11 +23,9 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.auditlog.lifecycle.CountDeltaInterpreter;
 import io.supertokens.auditlog.lifecycle.InvalidLifecycleEventPayloadException;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
-import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
@@ -43,25 +41,21 @@ import io.supertokens.telemetry.TelemetryProvider;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * The one pipeline for user counts: telemetry's {@code usersCount}, the license-usage stats and {@code /users/count}
- * all go through {@link #serveApp} / {@link #serveTenant} (per app resource).
+ * The one pipeline for user counts: telemetry's {@code usersCount}, the license-usage stats and the unfiltered tenant
+ * count of {@code /users/count} on CDI 5.7 (or 5.6 with {@code allowApproximate}) go through {@link #serveApp} /
+ * {@link #serveTenant} / {@link #serveTenants} (per app resource). Callers wait for a count that is still running.
  * <p>
  * <b>Layer 1, the stored exact count</b> ({@link UsersCountCacheStorage}): a full count, stored in the database and
  * reused by every core while younger than {@code users_count_max_age_ms}; one core counts while the others wait for
@@ -77,8 +71,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * events shared by all its scopes; each call re-reads only its last few seconds. When the events after the oldest
  * anchor no longer fit one read (a bulk
  * import), every anchor of the pool is rolled forward to (nearly) now instead of being re-counted, so a burst costs
- * one read of its events, not a full count. A recipe-filtered count has no event rules, so it is served from layer 1
- * as is.
+ * one read of its events, not a full count.
  * <p>
  * An anchor older than the max age keeps serving while a background refresh gets a new one; a refresh that counted
  * anew is checked by the {@link CountShadowAudit shadow audit} against the previous count plus the events between
@@ -150,23 +143,18 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // ---- entry points ----
 
     /**
-     * The app's distinct user count across all its user pools, restricted to {@code recipes} if given. Waits at most
-     * {@code waitMs} for a count that is still running.
+     * The app's distinct user count across all its user pools. Waits for a count that is still running.
      */
-    public ApproximateCountResult serveApp(Main main, @Nullable RECIPE_ID[] recipes, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
-        return serveApp(main, StorageLayer.getStoragesForApp(main, appIdentifier), recipes, false, waitMs);
+    public ApproximateCountResult serveApp(Main main) throws StorageQueryException, TenantOrAppNotFoundException {
+        return serveApp(main, StorageLayer.getStoragesForApp(main, appIdentifier));
     }
 
     /**
-     * The tenant's distinct user count, restricted to {@code recipes} if given. Waits at most {@code waitMs} for a
-     * count that is still running.
+     * The tenant's distinct user count. Waits for a count that is still running.
      */
-    public ApproximateCountResult serveTenant(Main main, TenantIdentifier tenantIdentifier,
-                                              @Nullable RECIPE_ID[] recipes, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
-        return serve(main, StorageLayer.getStorage(tenantIdentifier, main), Scope.tenant(tenantIdentifier, recipes),
-                false, waitMs);
+    public ApproximateCountResult serveTenant(Main main, TenantIdentifier tenantIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        return serve(main, tenantIdentifier, StorageLayer.getStorage(tenantIdentifier, main));
     }
 
     /**
@@ -174,31 +162,23 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * counts run concurrently (on the bounded request pool) instead of one after another, and every tenant of a user
      * pool is served from one event read, so the counts are consistent with each other.
      */
-    public Map<String, ApproximateCountResult> serveTenants(Main main, List<TenantIdentifier> tenantIdentifiers,
-                                                            long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
-        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
+    public Map<String, ApproximateCountResult> serveTenants(Main main, List<TenantIdentifier> tenantIdentifiers)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         long batchStart = System.currentTimeMillis();
         List<CompletableFuture<Anchor>> pending = new ArrayList<>();
         for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
             PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
-            Scope scope = Scope.tenant(tenantIdentifier, null);
+            Scope scope = Scope.tenant(tenantIdentifier);
             if (pool.anchors.get(scope.key) == null) {
                 pending.add(startOrJoinCount(main, pool, storage, scope, 0, false));
             }
         }
         for (CompletableFuture<Anchor> count : pending) {
             try {
-                if (deadline == Long.MAX_VALUE) {
-                    count.get();
-                } else {
-                    count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
-                }
+                count.get();
             } catch (ExecutionException e) {
                 // served below: its fallback, or its failure
-            } catch (TimeoutException e) {
-                throw new UsersCountNotReadyException("The user counts of the app's tenants are still being computed");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new StorageQueryException(e);
@@ -206,62 +186,24 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
         Map<String, ApproximateCountResult> results = new HashMap<>();
         for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
-            long remaining = deadline == Long.MAX_VALUE ? Long.MAX_VALUE
-                    : Math.max(0, deadline - System.currentTimeMillis());
             results.put(tenantIdentifier.getTenantId(), serve(main, StorageLayer.getStorage(tenantIdentifier, main),
-                    Scope.tenant(tenantIdentifier, null), false, remaining, batchStart));
+                    Scope.tenant(tenantIdentifier), batchStart));
         }
         return results;
     }
 
     /**
-     * The stored exact count of the app (layer 1 only, no events added): for a recipe-filtered count, which has no
-     * lifecycle-event rules.
-     */
-    public ApproximateCountResult serveAppStoredExact(Main main, @Nullable RECIPE_ID[] recipes, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
-        return serveApp(main, StorageLayer.getStoragesForApp(main, appIdentifier), recipes, true, waitMs);
-    }
-
-    /**
-     * The stored exact count of the tenant (layer 1 only, no events added); see {@link #serveAppStoredExact}.
-     */
-    public ApproximateCountResult serveTenantStoredExact(Main main, TenantIdentifier tenantIdentifier,
-                                                         @Nullable RECIPE_ID[] recipes, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException, TenantOrAppNotFoundException {
-        return serve(main, StorageLayer.getStorage(tenantIdentifier, main), Scope.tenant(tenantIdentifier, recipes),
-                true, waitMs);
-    }
-
-    /**
-     * The tenant count on the given storage (the tenant's user pool), waiting without limit. For tests that wrap the
-     * storage, and callers that already hold it.
+     * The tenant count on the given storage (the tenant's user pool). For callers that already hold the storage, and
+     * tests that wrap it.
      */
     public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
-        try {
-            return serve(main, storage, Scope.tenant(tenantIdentifier, null), false, Long.MAX_VALUE);
-        } catch (UsersCountNotReadyException e) {
-            throw new IllegalStateException("an unbounded wait cannot run out", e);
-        }
+        return serve(main, storage, Scope.tenant(tenantIdentifier), System.currentTimeMillis());
     }
 
-    /**
-     * The tenant count on the given storage, waiting at most {@code waitMs} for a count or event read that is still
-     * running.
-     */
-    public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException {
-        return serve(main, storage, Scope.tenant(tenantIdentifier, null), false, waitMs);
-    }
-
-    // Starts the missing count of every user pool before waiting for any, and waits for them against one deadline,
-    // so a multi-pool app is not counted one pool per request (or per wait).
-    ApproximateCountResult serveApp(Main main, Storage[] storages, @Nullable RECIPE_ID[] recipes,
-                                    boolean storedExact, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException {
-        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
-        Scope scope = Scope.app(recipes);
+    ApproximateCountResult serveApp(Main main, Storage[] storages) throws StorageQueryException {
+        // Every user pool's missing count is started before any is awaited, so the pools count in parallel.
+        Scope scope = Scope.app();
         for (Storage storage : storages) {
             PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
             if (pool.anchors.get(scope.key) == null) {
@@ -272,9 +214,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long asOf = Long.MAX_VALUE;
         boolean stale = false;
         for (Storage storage : storages) {
-            long remaining = deadline == Long.MAX_VALUE ? Long.MAX_VALUE
-                    : Math.max(0, deadline - System.currentTimeMillis());
-            ApproximateCountResult part = serve(main, storage, scope, storedExact, remaining);
+            ApproximateCountResult part = serve(main, storage, scope, System.currentTimeMillis());
             count += part.count;
             asOf = Math.min(asOf, part.asOf);
             stale |= part.stale;
@@ -283,23 +223,16 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 stale);
     }
 
-    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, boolean storedExact, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException {
-        return serve(main, storage, scope, storedExact, waitMs, 0);
-    }
-
-    // reuseWindowReadAfter > 0: a shared event window read at or after this time is used as is (one consistent read
-    // for a batch); otherwise its tail is re-read.
-    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, boolean storedExact, long waitMs,
-                                         long reuseWindowReadAfter)
-            throws StorageQueryException, UsersCountNotReadyException {
-        long deadline = waitMs == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + waitMs;
+    // A shared event window read at or after reuseWindowReadAfter is used as is: a read made after the call started
+    // (so concurrent callers queued on the window lock share one tail read), or one consistent read for a batch.
+    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, long reuseWindowReadAfter)
+            throws StorageQueryException {
         PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
-        boolean withEvents = !storedExact && scope.recipes == null && storage instanceof ActivityLogStorage;
+        boolean withEvents = storage instanceof ActivityLogStorage;
 
         Anchor anchor = pool.anchors.get(scope.key);
         if (anchor == null) {
-            anchor = awaitAnchor(main, pool, storage, scope, 0, deadline);
+            anchor = awaitAnchor(main, pool, storage, scope, 0);
         } else if (isStale(main, anchor)) {
             startOrJoinCount(main, pool, storage, scope, 0, true);
         }
@@ -309,8 +242,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
         for (int attempt = 0; ; attempt++) {
-            Window window = window(pool, activityLogStorage, anchor.snapshotMs, deadline, attempt > 0,
-                    reuseWindowReadAfter);
+            Window window = window(pool, activityLogStorage, anchor.snapshotMs, attempt > 0, reuseWindowReadAfter);
             Anchor current = pool.anchors.get(scope.key);
             if (current != null && current.snapshotMs >= anchor.snapshotMs) {
                 anchor = current; // rolled forward (or re-counted) meanwhile
@@ -338,7 +270,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 if (attempt > 0) {
                     return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
                 }
-                anchor = awaitAnchor(main, pool, storage, scope, forceNotBefore, deadline);
+                anchor = awaitAnchor(main, pool, storage, scope, forceNotBefore);
                 if (anchor.fallback) {
                     return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
                 }
@@ -362,8 +294,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * A failed count falls back to the last good anchor, or to the last count stored in the database (marked
      * {@code fallback}); with neither, its failure is thrown.
      */
-    private Anchor awaitAnchor(Main main, PoolState pool, Storage storage, Scope scope, long notBeforeMs,
-                               long deadline) throws StorageQueryException, UsersCountNotReadyException {
+    private Anchor awaitAnchor(Main main, PoolState pool, Storage storage, Scope scope, long notBeforeMs)
+            throws StorageQueryException {
         while (true) {
             Anchor current = pool.anchors.get(scope.key);
             if (current != null && current.snapshotMs >= notBeforeMs && current.countedMs >= notBeforeMs) {
@@ -372,11 +304,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             CompletableFuture<Anchor> count = startOrJoinCount(main, pool, storage, scope, notBeforeMs, false);
             Anchor anchor;
             try {
-                if (deadline == Long.MAX_VALUE) {
-                    anchor = count.get();
-                } else {
-                    anchor = count.get(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
-                }
+                anchor = count.get();
             } catch (ExecutionException e) {
                 Anchor fallback = fallback(pool, storage, scope);
                 if (fallback != null) {
@@ -390,8 +318,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     throw (RuntimeException) cause;
                 }
                 throw new StorageQueryException(cause instanceof Exception ? (Exception) cause : e);
-            } catch (TimeoutException e) {
-                throw new UsersCountNotReadyException("The user count of " + scope + " is still being computed");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new StorageQueryException(e);
@@ -415,8 +341,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         try {
             UsersCountCacheStorage cacheStorage = (UsersCountCacheStorage) storage;
             UsersCountSnapshot stored = scope.tenantId == null
-                    ? cacheStorage.getStoredAppUsersCount(appIdentifier, scope.recipes)
-                    : cacheStorage.getStoredTenantUsersCount(scope.tenantIdentifier(appIdentifier), scope.recipes);
+                    ? cacheStorage.getStoredAppUsersCount(appIdentifier, null)
+                    : cacheStorage.getStoredTenantUsersCount(scope.tenantIdentifier(appIdentifier), null);
             return stored == null ? null : Anchor.fallback(stored);
         } catch (StorageQueryException e) {
             return null;
@@ -442,8 +368,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             (refresh ? REFRESH_EXECUTOR : REQUEST_COUNT_EXECUTOR).execute(() -> {
                 Anchor anchor;
                 try {
-                    anchor = count(storage, scope, maxAgeMs).forScope(scope,
-                            scope.recipes == null && storage instanceof ActivityLogStorage);
+                    anchor = count(storage, scope, maxAgeMs).forScope(scope, storage instanceof ActivityLogStorage);
                     pool.anchors.merge(scope.key, anchor, Anchor::newer);
                 } catch (Throwable e) {
                     // removed before completing, so a woken waiter that needs another count starts a new one
@@ -461,7 +386,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     ProcessState.getInstance(main).addState(
                             ProcessState.PROCESS_STATE.APPROXIMATE_USER_COUNT_REFRESH_COMPLETED, null);
                 }
-                if (anchor.newlyCounted && scope.recipes == null && storage instanceof ActivityLogStorage) {
+                if (anchor.newlyCounted && storage instanceof ActivityLogStorage) {
                     // The exact recount doubles as a correctness audit of the lifecycle-event ledger (PLAN-010
                     // decision 4). A reused stored count is skipped, so every audit window ends at a count taken for
                     // it. Runs before the count is released, so audits of one scope never overlap; it never throws.
@@ -483,15 +408,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         if (storage instanceof UsersCountCacheStorage) {
             UsersCountCacheStorage cacheStorage = (UsersCountCacheStorage) storage;
             snapshot = scope.tenantId == null
-                    ? cacheStorage.getOrComputeAppUsersCount(appIdentifier, scope.recipes, maxAgeMs)
-                    : cacheStorage.getOrComputeTenantUsersCount(scope.tenantIdentifier(appIdentifier), scope.recipes,
-                    maxAgeMs);
+                    ? cacheStorage.getOrComputeAppUsersCount(appIdentifier, null, maxAgeMs)
+                    : cacheStorage.getOrComputeTenantUsersCount(scope.tenantIdentifier(appIdentifier), null, maxAgeMs);
         } else {
             long countedAt = System.currentTimeMillis();
             long count = scope.tenantId == null
-                    ? StorageUtils.getAuthRecipeStorage(storage).getUsersCount(appIdentifier, scope.recipes)
+                    ? StorageUtils.getAuthRecipeStorage(storage).getUsersCount(appIdentifier, null)
                     : StorageUtils.getAuthRecipeStorage(storage).getUsersCount(scope.tenantIdentifier(appIdentifier),
-                    scope.recipes);
+                    null);
             snapshot = new UsersCountSnapshot(count, countedAt, true);
         }
         return Anchor.counted(snapshot);
@@ -507,9 +431,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * too many events (more than a page logged within the roll margin).
      */
     @Nullable
-    private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, long deadline, boolean reread,
-                          long reuseReadAfter) throws StorageQueryException, UsersCountNotReadyException {
-        lock(pool.windowLock, deadline);
+    private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, boolean reread,
+                          long reuseReadAfter) throws StorageQueryException {
+        try {
+            pool.windowLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageQueryException(e);
+        }
         try {
             Window cached = pool.window;
             if (!reread && reuseReadAfter > 0 && cached != null && cached.fromExclusive <= fromMs
@@ -541,10 +470,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 }
                 // the time the first page of events took: the size of the roll's first slice
                 long firstPageMs = events.get(pageSize - 1).createdAt - from;
-                if (!rollForward(pool, storage, now - rollMarginMs, firstPageMs, deadline)) {
-                    // the caller's deadline passed: what was rolled is kept, and the retry carries on from there
-                    throw new UsersCountNotReadyException("The user count is being brought up to date");
-                }
+                rollForward(pool, storage, now - rollMarginMs, firstPageMs);
                 fromMs = Math.max(fromMs, now - rollMarginMs);
             }
             return null;
@@ -553,33 +479,19 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
     }
 
-    private static void lock(ReentrantLock lock, long deadline) throws UsersCountNotReadyException {
-        try {
-            if (deadline == Long.MAX_VALUE) {
-                lock.lockInterruptibly();
-            } else if (!lock.tryLock(Math.max(0, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS)) {
-                throw new UsersCountNotReadyException("The user count is being brought up to date");
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new UsersCountNotReadyException("Interrupted while waiting for the user count");
-        }
-    }
-
     /**
      * Applies the pool's lifecycle events up to {@code cutoffMs} to every event-folded anchor of the pool, reading
      * them in slices of about one page each, and moves each anchor to the cutoff. Stops before an event whose payload
      * does not parse (it can only be passed by a new count) and before a page whose events all share one millisecond
-     * (it cannot be split). Also stops, after at least one slice, once {@code deadline} has passed: the anchors are
-     * then moved only as far as the events applied, and false is returned. Called with the pool's window lock held.
+     * (it cannot be split). Called with the pool's window lock held.
      * <p>
      * Each read covers a time slice sized from the previous one (about one page of events), not everything up to the
      * cutoff: the database sorts all the events of a read's range to return its first page, so reading the rest of the
      * burst for every page would sort the burst once per page. Each event touches only the anchors of the tenants it
      * changes (and the app's), so the cost grows with the events, not with events times anchors.
      */
-    private boolean rollForward(PoolState pool, ActivityLogStorage storage, long cutoffMs, long sliceMs,
-                                long deadline) throws StorageQueryException {
+    private void rollForward(PoolState pool, ActivityLogStorage storage, long cutoffMs, long sliceMs)
+            throws StorageQueryException {
         Anchor appAnchor = null;
         Map<String, Anchor> tenantAnchors = new HashMap<>(); // by tenant id
         Map<Anchor, String> keys = new HashMap<>();
@@ -595,7 +507,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
         }
         if (keys.isEmpty()) {
-            return true;
+            return;
         }
         Map<Anchor, Long> deltas = new HashMap<>();
         long from = Long.MAX_VALUE;
@@ -603,7 +515,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             from = Math.min(from, anchor.snapshotMs);
         }
         long rolledTo = cutoffMs;
-        boolean complete = true;
         sliceMs = Math.max(1, sliceMs);
         pages:
         while (from < cutoffMs) {
@@ -649,11 +560,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 }
             }
             from = next;
-            if (from < cutoffMs && deadline != Long.MAX_VALUE && System.currentTimeMillis() >= deadline) {
-                rolledTo = from; // every event up to here is applied
-                complete = false;
-                break;
-            }
         }
         for (Map.Entry<Anchor, String> e : keys.entrySet()) {
             Anchor anchor = e.getKey();
@@ -664,7 +570,6 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
         }
         pool.window = null;
-        return complete;
     }
 
     // ---- shadow audit ----
@@ -762,42 +667,27 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     // ---- state ----
 
-    // What is counted: the app (tenantId null) or one tenant, optionally restricted to recipes.
+    // What is counted: the app (tenantId null) or one tenant.
     static final class Scope {
         @Nullable
         final String tenantId;
-        @Nullable
-        final RECIPE_ID[] recipes;
         final String key;
 
-        private Scope(@Nullable String tenantId, @Nullable RECIPE_ID[] recipes) {
+        private Scope(@Nullable String tenantId) {
             this.tenantId = tenantId;
-            this.recipes = normalise(recipes);
-            String suffix = this.recipes == null ? "" : "~" + String.join(",",
-                    Arrays.stream(this.recipes).map(RECIPE_ID::toString).toArray(String[]::new));
-            this.key = (tenantId == null ? "app" : "tenant:" + tenantId) + suffix;
+            this.key = tenantId == null ? "app" : "tenant:" + tenantId;
         }
 
-        static Scope app(@Nullable RECIPE_ID[] recipes) {
-            return new Scope(null, recipes);
+        static Scope app() {
+            return new Scope(null);
         }
 
-        static Scope tenant(TenantIdentifier tenantIdentifier, @Nullable RECIPE_ID[] recipes) {
-            return new Scope(tenantIdentifier.getTenantId(), recipes);
+        static Scope tenant(TenantIdentifier tenantIdentifier) {
+            return new Scope(tenantIdentifier.getTenantId());
         }
 
         TenantIdentifier tenantIdentifier(AppIdentifier app) {
             return new TenantIdentifier(app.getConnectionUriDomain(), app.getAppId(), tenantId);
-        }
-
-        @Nullable
-        private static RECIPE_ID[] normalise(@Nullable RECIPE_ID[] recipes) {
-            if (recipes == null || recipes.length == 0) {
-                return null;
-            }
-            TreeSet<RECIPE_ID> sorted = new TreeSet<>(Comparator.comparing(RECIPE_ID::toString));
-            sorted.addAll(Arrays.asList(recipes));
-            return sorted.toArray(new RECIPE_ID[0]);
         }
 
         @Override
@@ -1008,27 +898,26 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         rollMarginMs = ROLL_MARGIN_MS;
     }
 
-    // The app count across the given storages (one per user pool), as for telemetry and /users/count.
-    public ApproximateCountResult serveAppForTesting(Main main, Storage[] storages, long waitMs)
-            throws StorageQueryException, UsersCountNotReadyException {
-        return serveApp(main, storages, null, false, waitMs);
+    // The app count across the given storages (one per user pool), as for telemetry.
+    public ApproximateCountResult serveAppForTesting(Main main, Storage[] storages) throws StorageQueryException {
+        return serveApp(main, storages);
     }
 
     // The tenant's anchor snapshot time on the given storage's pool, or -1.
     public long anchorSnapshotForTesting(TenantIdentifier tenantIdentifier, Storage storage) {
         PoolState pool = pools.get(storage.getUserPoolId());
-        Anchor anchor = pool == null ? null : pool.anchors.get(Scope.tenant(tenantIdentifier, null).key);
+        Anchor anchor = pool == null ? null : pool.anchors.get(Scope.tenant(tenantIdentifier).key);
         return anchor == null ? -1 : anchor.snapshotMs;
     }
 
     // Makes the tenant's cached anchors stale, so the next serve() triggers a background refresh.
     public void expireEntryForTesting(TenantIdentifier tenantIdentifier) {
-        expireForTesting(Scope.tenant(tenantIdentifier, null).key);
+        expireForTesting(Scope.tenant(tenantIdentifier).key);
     }
 
     // Makes the app's cached anchors stale, so the next serveApp() triggers a background refresh.
     public void expireAppEntryForTesting() {
-        expireForTesting(Scope.app(null).key);
+        expireForTesting(Scope.app().key);
     }
 
     private void expireForTesting(String key) {
@@ -1039,13 +928,13 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     // Whether the tenant has a cached anchor.
     public boolean hasAnchorForTesting(TenantIdentifier tenantIdentifier) {
-        String key = Scope.tenant(tenantIdentifier, null).key;
+        String key = Scope.tenant(tenantIdentifier).key;
         return pools.values().stream().anyMatch(pool -> pool.anchors.containsKey(key));
     }
 
     // Whether an anchor count (and, for a refresh, its shadow audit) is still running for the tenant.
     public boolean isCountingForTesting(TenantIdentifier tenantIdentifier) {
-        String key = Scope.tenant(tenantIdentifier, null).key;
+        String key = Scope.tenant(tenantIdentifier).key;
         return pools.values().stream().anyMatch(pool -> pool.inFlight.containsKey(key));
     }
 
@@ -1053,7 +942,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // anchor: seeds the snapshot on the first call and compares against it on later ones.
     public void runShadowAuditForTesting(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
-        Scope scope = Scope.tenant(tenantIdentifier, null);
+        Scope scope = Scope.tenant(tenantIdentifier);
         PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
         runShadowAudit(main, pool, (ActivityLogStorage) storage, scope, count(storage, scope, 0));
     }

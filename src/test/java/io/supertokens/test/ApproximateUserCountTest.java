@@ -401,10 +401,10 @@ public class ApproximateUserCountTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // A recipe-filtered count has no lifecycle-event rules, so it is the shared full count as is (at most
-    // users_count_max_age_ms old), reported as approximate with the time it was counted.
+    // A recipe-filtered count has no approximate equivalent, so the server falls back to exact and reports
+    // approximate=false (the param was set, so the fields are still present).
     @Test
-    public void apiApproximateWithRecipeFilterServesTheStoredFullCount() throws Exception {
+    public void apiApproximateWithRecipeFilterFallsBackToExact() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -423,7 +423,7 @@ public class ApproximateUserCountTest {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(2, response.get("count").getAsLong());
         assertTrue(response.has("approximate"));
-        assertTrue(response.get("approximate").getAsBoolean());
+        assertFalse(response.get("approximate").getAsBoolean());
         assertTrue(response.has("asOf"));
 
         process.kill();
@@ -431,9 +431,10 @@ public class ApproximateUserCountTest {
     }
 
     // On CDI 5.7 the additive approximate/asOf fields key purely on the CDI version, no longer on an
-    // allowApproximate opt-in. The all-tenants count (the app's full count plus the events since it) and a
-    // recipe-filtered count (the shared full count) are both served by the user-count pipeline, so they carry
-    // approximate=true + asOf even when the param is absent.
+    // allowApproximate opt-in. The exact-fallback shapes the ledger fold does not cover - an all-tenants
+    // count, or a recipe-filtered count - therefore carry approximate=false + asOf even when the param is
+    // absent. This pins that param-less contract for both fallback shapes on 5.7 (the recipe-filter case above
+    // still sends the param on 5.6, so it does not).
     @Test
     public void apiFallbackShapesCarryFieldsWithoutParamOn5_7() throws Exception {
         String[] args = {"../"};
@@ -447,7 +448,7 @@ public class ApproximateUserCountTest {
         EmailPassword.signUp(process.getProcess(), "user0@example.com", "password0");
         EmailPassword.signUp(process.getProcess(), "user1@example.com", "password1");
 
-        // All-tenants shape, no allowApproximate param: the app-wide count from the pipeline.
+        // All-tenants shape, no allowApproximate param: exact recompute, but the additive fields still appear.
         JsonObject allTenants = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users/count?includeAllTenants=true", null, 1000, 1000, null,
                 SemVer.v5_7.get(), "");
@@ -455,10 +456,10 @@ public class ApproximateUserCountTest {
         assertEquals("OK", allTenants.get("status").getAsString());
         assertEquals(2, allTenants.get("count").getAsLong());
         assertTrue(allTenants.has("approximate"));
-        assertTrue(allTenants.get("approximate").getAsBoolean());
+        assertFalse(allTenants.get("approximate").getAsBoolean());
         assertTrue(allTenants.has("asOf"));
 
-        // Recipe-filtered shape, no allowApproximate param: the shared full count.
+        // Recipe-filtered shape, no allowApproximate param: same param-less fallback contract.
         JsonObject recipeFiltered = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
                 SemVer.v5_7.get(), "");
@@ -466,7 +467,7 @@ public class ApproximateUserCountTest {
         assertEquals("OK", recipeFiltered.get("status").getAsString());
         assertEquals(2, recipeFiltered.get("count").getAsLong());
         assertTrue(recipeFiltered.has("approximate"));
-        assertTrue(recipeFiltered.get("approximate").getAsBoolean());
+        assertFalse(recipeFiltered.get("approximate").getAsBoolean());
         assertTrue(recipeFiltered.has("asOf"));
 
         process.kill();

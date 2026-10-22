@@ -102,9 +102,9 @@ public class AppUsersCountAcrossUserPoolsTest {
         assertEquals(2, storages.length);
         assertEquals(AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null),
                 ApproximateUserCount.getInstance(process.getProcess(), app)
-                        .serveApp(process.getProcess(), null, Long.MAX_VALUE).count);
+                        .serveApp(process.getProcess()).count);
         assertEquals(3, ApproximateUserCount.getInstance(process.getProcess(), app)
-                .serveApp(process.getProcess(), null, Long.MAX_VALUE).count);
+                .serveApp(process.getProcess()).count);
         if (publicStorage instanceof UsersCountCacheStorage) {
             assertEquals("1", publicStorage.getKeyValue(a1Public, "APP_USERS_COUNT").value);
             assertEquals("2", t1Storage.getKeyValue(a1t1, "APP_USERS_COUNT").value);

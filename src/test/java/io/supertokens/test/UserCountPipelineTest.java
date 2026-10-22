@@ -24,7 +24,6 @@ import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleEventPayload;
 import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.exception.UsersCountNotReadyException;
 import io.supertokens.cronjobs.RetrySoon;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -40,7 +39,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -53,8 +51,10 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -174,14 +174,14 @@ public class UserCountPipelineTest {
         ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
 
         EmailPassword.signUp(tenant, storage, main, "first@example.com", "password");
-        assertEquals(1, counts.serveTenant(main, tenant, null, Long.MAX_VALUE).count);
+        assertEquals(1, counts.serveTenant(main, tenant).count);
         long primedSnapshot = counts.anchorSnapshotForTesting(tenant, storage);
         KeyValueInfo stored = storage.getKeyValue(tenant, "TENANT_USERS_COUNT");
 
         for (int i = 0; i < 8; i++) {
             EmailPassword.signUp(tenant, storage, main, "burst" + i + "@example.com", "password");
         }
-        assertEquals(9, counts.serveTenant(main, tenant, null, Long.MAX_VALUE).count);
+        assertEquals(9, counts.serveTenant(main, tenant).count);
         assertEquals(9, AuthRecipe.getUsersCountForTenant(tenant, storage, null));
         assertTrue("the anchor was rolled forward", counts.anchorSnapshotForTesting(tenant, storage) > primedSnapshot);
         if (storage instanceof UsersCountCacheStorage) {
@@ -225,7 +225,7 @@ public class UserCountPipelineTest {
             if (i == 6) {
                 // t3's first anchor is newer than the others: rolling them must not apply its earlier events to it
                 assertEquals(AuthRecipe.getUsersCountForTenant(tenants[3], StorageLayer.getStorage(tenants[3], main),
-                        null), counts.serveTenant(main, tenants[3], null, Long.MAX_VALUE).count);
+                        null), counts.serveTenant(main, tenants[3]).count);
             }
         }
         assertCountsExact(main, counts, app, tenants);
@@ -279,51 +279,9 @@ public class UserCountPipelineTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // A roll-forward for a request with a deadline stops at the deadline (the request gets "try again later"), keeps
-    // what it rolled so far, and the retry carries on from there.
-    @Test
-    public void aRollForwardStopsAtTheDeadlineAndKeepsItsProgress() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        Main main = process.getProcess();
-        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-        TenantIdentifier tenant = process.getAppForTesting();
-        Storage storage = StorageLayer.getStorage(tenant, main);
-        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
-        Storage slowReads = interceptingStorage(storage, (method, methodArgs) -> {
-            if (method.equals("getActivityLogEntriesForApp")) {
-                Thread.sleep(100);
-            }
-        });
-
-        EmailPassword.signUp(tenant, storage, main, "first@example.com", "password");
-        assertEquals(1, counts.serve(main, tenant, slowReads).count);
-        long primedSnapshot = counts.anchorSnapshotForTesting(tenant, storage);
-        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
-        for (int i = 0; i < 30; i++) {
-            EmailPassword.signUp(tenant, storage, main, "burst" + i + "@example.com", "password");
-        }
-
-        long start = System.currentTimeMillis();
-        try {
-            counts.serve(main, tenant, slowReads, 250);
-            fail("rolling 10 pages at 100ms a read does not fit 250ms");
-        } catch (UsersCountNotReadyException expected) {
-        }
-        long took = System.currentTimeMillis() - start;
-        assertTrue("held on past the deadline: " + took + "ms", took < 800);
-        assertTrue("kept what it rolled", counts.anchorSnapshotForTesting(tenant, storage) > primedSnapshot);
-        assertEquals(31, counts.serve(main, tenant, slowReads).count);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    // An app count across several user pools starts every pool's missing count before waiting for any, so the first
-    // "try again later" already has all of them running.
+    // An app count across several user pools starts every pool's missing count before waiting for any, so the pools
+    // count in parallel: here every pool's count blocks until all three have started, which they only do if none is
+    // awaited before the others are started.
     @Test
     public void anAppCountStartsEveryUserPoolsCountBeforeWaiting() throws Exception {
         String[] args = {"../"};
@@ -338,42 +296,34 @@ public class UserCountPipelineTest {
         EmailPassword.signUp(tenant, storage, main, "a@example.com", "password");
         EmailPassword.signUp(tenant, storage, main, "b@example.com", "password");
         ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
-        CountDownLatch release = new CountDownLatch(1);
-        Set<String> counting = ConcurrentHashMap.newKeySet();
         Storage[] pools = new Storage[3];
+        CountDownLatch allCounting = new CountDownLatch(pools.length);
         for (int i = 0; i < pools.length; i++) {
-            String poolId = "pool-" + i;
-            pools[i] = asUserPool(storage, poolId, (method, methodArgs) -> {
+            pools[i] = asUserPool(storage, "pool-" + i, (method, methodArgs) -> {
                 if (method.equals("getUsersCount") || method.equals("getOrComputeAppUsersCount")) {
-                    counting.add(poolId);
-                    release.await(10, TimeUnit.SECONDS);
+                    allCounting.countDown();
+                    assertTrue("every pool's count was started", allCounting.await(10, TimeUnit.SECONDS));
                 }
             });
         }
 
+        ExecutorService caller = Executors.newSingleThreadExecutor();
         try {
-            counts.serveAppForTesting(main, pools, 100);
-            fail("no pool's count is ready");
-        } catch (UsersCountNotReadyException expected) {
+            Future<ApproximateUserCount.ApproximateCountResult> served = caller.submit(
+                    () -> counts.serveAppForTesting(main, pools));
+            assertEquals(6, served.get(20, TimeUnit.SECONDS).count);
+        } finally {
+            caller.shutdownNow();
         }
-        long deadline = System.currentTimeMillis() + 5000;
-        while (counting.size() < pools.length && System.currentTimeMillis() < deadline) {
-            Thread.sleep(10);
-        }
-        assertEquals(Set.of("pool-0", "pool-1", "pool-2"), counting);
-
-        release.countDown();
-        assertEquals(6, counts.serveAppForTesting(main, pools, Long.MAX_VALUE).count);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // A /users/count request that cannot wait for a count still being computed gets 503 (with Retry-After); the
-    // count keeps running and serves the retry.
+    // /users/count keeps its released contract: a request that finds no count yet waits for it and is answered with
+    // the count, never with "try again later".
     @Test
-    public void aRequestThatCannotWaitIsToldToTryAgainLater() throws Exception {
-        Utils.setValueInConfig("users_count_request_wait_ms", "0");
+    public void aRequestWaitsForACountThatIsStillRunning() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -384,27 +334,11 @@ public class UserCountPipelineTest {
         EmailPassword.signUp(main, "a@example.com", "password");
         EmailPassword.signUp(main, "b@example.com", "password");
 
-        try {
-            HttpRequestForTesting.sendGETRequest(main, "", "http://localhost:3567/users/count", null, 1000, 1000,
-                    null, SemVer.v5_7.get(), "");
-            fail("the first request has no count yet and may not wait for one");
-        } catch (HttpResponseException e) {
-            assertEquals(503, e.statusCode);
-        }
-
-        long deadline = System.currentTimeMillis() + 10000;
-        while (true) {
-            try {
-                JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                        "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v5_7.get(), "");
-                assertEquals(2, response.get("count").getAsLong());
-                break;
-            } catch (HttpResponseException e) {
-                assertEquals(503, e.statusCode);
-                assertTrue("the count never became ready", System.currentTimeMillis() < deadline);
-                Thread.sleep(50);
-            }
-        }
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "", "http://localhost:3567/users/count",
+                null, 1000, 10000, null, SemVer.v5_7.get(), "");
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(2, response.get("count").getAsLong());
+        assertTrue(response.get("approximate").getAsBoolean());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -475,11 +409,11 @@ public class UserCountPipelineTest {
                                           TenantIdentifier... tenants) throws Exception {
         Storage[] storages = StorageLayer.getStoragesForApp(main, app);
         assertEquals("app", AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null),
-                counts.serveApp(main, null, Long.MAX_VALUE).count);
+                counts.serveApp(main).count);
         for (TenantIdentifier tenant : tenants) {
             assertEquals(tenant.getTenantId(), AuthRecipe.getUsersCountForTenant(tenant,
                             StorageLayer.getStorage(tenant, main), null),
-                    counts.serveTenant(main, tenant, null, Long.MAX_VALUE).count);
+                    counts.serveTenant(main, tenant).count);
         }
     }
 
