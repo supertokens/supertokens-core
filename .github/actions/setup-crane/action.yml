@@ -1,0 +1,31 @@
+name: Set up crane
+description: >-
+  Installs a pinned, checksum-verified crane (go-containerregistry) on a Linux x86_64 runner.
+  crane copies images between registries byte-for-byte, so digests are preserved. It picks up
+  the registry logins done by docker/login-action and amazon-ecr-login.
+inputs:
+  version:
+    description: go-containerregistry release tag. Changing it means changing sha256 too.
+    required: false
+    default: v0.22.1
+  sha256:
+    description: sha256 of go-containerregistry_Linux_x86_64.tar.gz for that release (from its checksums.txt).
+    required: false
+    default: 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
+runs:
+  using: composite
+  steps:
+    - name: Install crane
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        SHA256: ${{ inputs.sha256 }}
+      run: |
+        set -euo pipefail
+        tmp="$(mktemp -d)"
+        curl -fsSL --retry 5 --retry-all-errors -o "$tmp/crane.tgz" \
+          "https://github.com/google/go-containerregistry/releases/download/${VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+        echo "${SHA256}  $tmp/crane.tgz" | sha256sum -c -
+        tar -xzf "$tmp/crane.tgz" -C "$tmp" crane
+        echo "$tmp" >> "$GITHUB_PATH"
+        "$tmp/crane" version

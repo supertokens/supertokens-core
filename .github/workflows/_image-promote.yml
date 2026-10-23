@@ -1,0 +1,124 @@
+name: Release – Promote image
+
+# Copies one image, pinned by digest, to the release repositories under the release tag set.
+# ECR is always a target: the managed fleet's task definitions pull from it. Docker Hub is the
+# public distribution and can be skipped (push-to-dockerhub: false). Tag set:
+# (<version> or <version>-canary; plus <major>.<minor>, <major>, latest as requested).
+# crane copies manifests byte-for-byte, so every tag ends up on exactly the source digest.
+# The version tag is immutable: re-promoting the same digest is a no-op, a different digest
+# fails unless force-retag is set.
+
+on:
+  workflow_call:
+    inputs:
+      source-image:
+        description: 'Image pinned by digest: <repo>@sha256:... (or give source-ecr-digest)'
+        type: string
+        required: false
+        default: ''
+      source-ecr-digest:
+        description: >-
+          Digest (sha256:...) of an image in our ECR repository. Use this instead of source-image
+          when the image is in ECR: the registry is a secret, and GitHub drops job outputs that
+          contain one, so callers pass the digest and the ref is rebuilt here.
+        type: string
+        required: false
+        default: ''
+      core-version:
+        type: string
+        required: true
+      is-canary:
+        type: boolean
+        required: true
+      is-latest-release:
+        type: boolean
+        required: true
+      is-latest-for-major:
+        type: boolean
+        required: true
+      push-to-dockerhub:
+        type: boolean
+        required: false
+        default: true
+      force-retag:
+        description: Allow moving an existing version tag to a different digest. Emergencies only.
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  promote:
+    name: Promote image
+    environment: publish
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout workflow sources
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Resolve source image
+        id: source
+        env:
+          SOURCE_IMAGE: ${{ inputs.source-image }}
+          ECR_DIGEST: ${{ inputs.source-ecr-digest }}
+          ECR_REPO: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
+        run: |
+          if [ -n "$SOURCE_IMAGE" ] && [ -n "$ECR_DIGEST" ]; then
+            echo "::error::Give either source-image or source-ecr-digest, not both"; exit 1
+          fi
+          if [ -n "$ECR_DIGEST" ]; then
+            if ! [[ "$ECR_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::source-ecr-digest must be sha256:<64 hex>, got '$ECR_DIGEST'"; exit 1
+            fi
+            echo "ref=$ECR_REPO@$ECR_DIGEST" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SOURCE_IMAGE" ]; then
+            echo "ref=$SOURCE_IMAGE" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::No source image: give source-image or source-ecr-digest"; exit 1
+          fi
+
+      - name: Set up crane
+        uses: ./.github/actions/setup-crane
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Promote to Docker Hub
+        if: inputs.push-to-dockerhub
+        env:
+          SOURCE: ${{ steps.source.outputs.ref }}
+          VERSION: ${{ inputs.core-version }}
+          IS_CANARY: ${{ inputs.is-canary }}
+          LATEST_FOR_MAJOR: ${{ inputs.is-latest-for-major }}
+          LATEST: ${{ inputs.is-latest-release }}
+          FORCE: ${{ inputs.force-retag }}
+        run: |
+          bash .github/helpers/promote-image.sh "$SOURCE" supertokens/supertokens-postgresql \
+            "$VERSION" "$IS_CANARY" "$LATEST_FOR_MAJOR" "$LATEST" "$FORCE"
+
+      - name: Promote to ECR
+        env:
+          SOURCE: ${{ steps.source.outputs.ref }}
+          TARGET: ${{ secrets.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}
+          VERSION: ${{ inputs.core-version }}
+          IS_CANARY: ${{ inputs.is-canary }}
+          LATEST_FOR_MAJOR: ${{ inputs.is-latest-for-major }}
+          LATEST: ${{ inputs.is-latest-release }}
+          FORCE: ${{ inputs.force-retag }}
+        run: |
+          bash .github/helpers/promote-image.sh "$SOURCE" "$TARGET" \
+            "$VERSION" "$IS_CANARY" "$LATEST_FOR_MAJOR" "$LATEST" "$FORCE"
