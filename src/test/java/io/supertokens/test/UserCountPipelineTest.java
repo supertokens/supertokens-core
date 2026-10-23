@@ -490,6 +490,54 @@ public class UserCountPipelineTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // More than a page of events in one millisecond (a bulk-import partition is stamped with one time) cannot be split
+    // into pages: the anchors before it are dropped and their scopes counted once after it, instead of every later
+    // call counting again.
+    @Test
+    public void aMillisecondHoldingMoreThanAPageIsCountedPastOnce() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        AtomicInteger tenantCounts = new AtomicInteger();
+        Storage counting = interceptingStorage(storage, (method, methodArgs) -> {
+            if ((method.equals("getOrComputeTenantUsersCount") || method.equals("getUsersCount"))
+                    && methodArgs[0] instanceof TenantIdentifier) {
+                tenantCounts.incrementAndGet();
+            }
+        });
+
+        EmailPassword.signUp(tenant, storage, main, "a@example.com", "password");
+        assertEquals(1, counts.serveApp(main).count); // the app's anchor: the pool's oldest
+        assertEquals(1, counts.serve(main, tenant, counting).count);
+
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        Thread.sleep(5);
+        long sameMs = System.currentTimeMillis();
+        for (int i = 0; i < 4; i++) { // one page + 1, all in one millisecond
+            ((ActivityLogStorage) storage).createActivityLogEntry(tenant, new AuditLogEvent(tenant.getAppId(), null,
+                    "u" + i, "u" + i, LifecycleEventType.USER_CREATION.getValue(), "success", null, null, sameMs,
+                    LifecycleEventPayload.forUserCreation("public").toJson()));
+        }
+        Thread.sleep(20);
+        counts.serve(main, tenant, counting);
+        int afterFirst = tenantCounts.get();
+        for (int i = 0; i < 2; i++) {
+            Thread.sleep(20);
+            counts.serve(main, tenant, counting);
+        }
+        assertEquals("counted past the burst once, not on every call", afterFirst, tenantCounts.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // The license stats' batch runs at most 2 of its counts at a time, so it never fills the request-count pool: a
     // request for a tenant without an anchor still gets its count started right away, instead of queueing behind
     // every tenant of the batch.

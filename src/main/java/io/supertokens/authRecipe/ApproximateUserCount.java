@@ -591,7 +591,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             from = Math.min(from, anchor.snapshotMs);
         }
         long rolledTo = cutoffMs;
-        Long corruptAt = null;
+        // An event no roll can pass (an unparseable payload, or a millisecond holding more than a page): the anchors
+        // before it are dropped, and their scopes are counted at or after dropFloor when next served.
+        Long dropBefore = null;
+        long dropFloor = 0;
         sliceMs = Math.max(1, sliceMs);
         pages:
         while (from < cutoffMs) {
@@ -608,7 +611,11 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     end--;
                 }
                 if (end == 0) {
-                    rolledTo = from; // a whole page in one millisecond: cannot be split, so stop here
+                    // a whole page in one millisecond (a bulk-import partition is stamped with one time): it cannot
+                    // be split into pages, so the anchors before it are dropped and counted after it
+                    dropBefore = boundary;
+                    dropFloor = boundary + 1;
+                    rolledTo = boundary - 1;
                     break;
                 }
                 apply = page.subList(0, end);
@@ -623,7 +630,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     payload = LifecycleEventPayload.fromJson(event.payload);
                 } catch (InvalidLifecycleEventPayloadException e) {
                     // only a new count can pass a corrupt event: the anchors before it are dropped below
-                    corruptAt = event.createdAt;
+                    dropBefore = event.createdAt;
+                    dropFloor = event.createdAt;
                     rolledTo = event.createdAt - 1;
                     break pages;
                 }
@@ -642,13 +650,13 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
         for (Map.Entry<Anchor, String> e : keys.entrySet()) {
             Anchor anchor = e.getKey();
-            if (corruptAt != null && anchor.snapshotMs < corruptAt) {
-                // An anchor before an unparseable event can never be rolled past it. Kept, it would stay the pool's
-                // oldest anchor - for good if its scope is not served again - and every window read would start
-                // before the event and give up. Dropped (only if no new count replaced it meanwhile), its scope
-                // gets a count taken after the event when it is next served.
+            if (dropBefore != null && anchor.snapshotMs < dropBefore) {
+                // An anchor before such an event can never be rolled past it. Kept, it would stay the pool's oldest
+                // anchor - for good if its scope is not served again - and every window read would start before the
+                // event and give up. Dropped (only if no new count replaced it meanwhile), its scope gets a count
+                // taken after the event when it is next served.
                 pool.anchors.remove(e.getValue(), anchor);
-                pool.droppedBeforeMs = Math.max(pool.droppedBeforeMs, corruptAt);
+                pool.droppedBeforeMs = Math.max(pool.droppedBeforeMs, dropFloor);
             } else if (rolledTo > anchor.snapshotMs) {
                 // only if no new count replaced it meanwhile
                 pool.anchors.replace(e.getValue(), anchor,
@@ -788,8 +796,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         final ConcurrentHashMap<String, AuditSnapshot> audits = new ConcurrentHashMap<>();
         final ReentrantLock windowLock = new ReentrantLock();
         volatile Window window;
-        // The latest unparseable event a roll-forward stopped at: the anchors before it were dropped, and a scope
-        // without an anchor is counted at or after it.
+        // Where the latest roll-forward that could not pass an event (an unparseable one, or a millisecond holding
+        // more than a page) dropped the anchors before it: a scope without an anchor is counted at or after this.
         volatile long droppedBeforeMs = 0;
 
         long oldestFoldedSnapshot() {
