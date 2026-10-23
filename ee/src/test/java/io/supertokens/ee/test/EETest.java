@@ -1309,14 +1309,22 @@ public class EETest extends Mockito {
                 .getEnabledFeaturesValueReadFromDbTime();
         Assert.assertTrue(cachedAt >= t0);
 
-        // once the cache window has passed, the row is read and the negative answer cached again
+        // a read inside the window must be answered from the cache, not the database: plant a
+        // row directly in key_value (bypassing setEnabledEEFeaturesInDb, so the cache is not
+        // refreshed) and check that the cached negative answer is still served, stamp untouched
+        StorageLayer.getStorage(process.main)
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo("[\"" + EE_FEATURES.TEST + "\"]"));
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .getEnabledFeaturesValueReadFromDbTime(), cachedAt);
+
+        // once the cache window has passed, the planted row is read and takes over the cache
         FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
                 .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
-        long readAgainAt = System.currentTimeMillis();
-        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
-        long recachedAt = FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
-                .getEnabledFeaturesValueReadFromDbTime();
-        Assert.assertTrue(recachedAt >= readAgainAt);
+        EE_FEATURES[] afterExpiry = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(afterExpiry.length, 1);
+        Assert.assertEquals(afterExpiry[0], EE_FEATURES.TEST);
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

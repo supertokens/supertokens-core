@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.4.0]
 
+- Feature checks cache the absent `FEATURE_FLAG` row like a present one, so an install whose license has not synced yet (a fresh boot before the first `EELicenseCheck` run, or an app created at runtime) no longer re-queries `key_value` on every feature check. The cache is coordinated with license syncs, so an in-flight read can no longer overwrite a fresher synced answer.
 - Requires plugin interface 11.0.
 - Hardening: the legacy SAML userinfo endpoint now rejects a malformed bearer token with a 400 instead of throwing on a token like `x.` (previously an unauthenticated 500), and parses the `<code>.<clientId>` token on the first dot only so a caller-supplied `clientId` that contains dots is preserved rather than truncated.
 - Hardening: the embedded Tomcat error valve no longer discloses the server build string or exception stack frames on connector-level errors.
