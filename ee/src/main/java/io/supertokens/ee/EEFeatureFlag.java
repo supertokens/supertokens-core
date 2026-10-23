@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -246,13 +247,22 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         JsonArray tenantStats = new JsonArray();
 
         TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(this.appIdentifier, main);
+        // From the user-count pipeline: each tenant's full count, shared by every core through the database, plus
+        // the lifecycle events since it. Fetched for all tenants at once, so missing counts run concurrently and
+        // every tenant is served from one event read.
+        List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            tenantIdentifiers.add(tenantConfig.tenantIdentifier);
+        }
+        Map<String, ApproximateUserCount.ApproximateCountResult> usersCounts = ApproximateUserCount
+                .getInstance(main, this.appIdentifier).serveTenants(main, tenantIdentifiers);
         for (TenantConfig tenantConfig : tenantConfigs) {
             JsonObject tenantStat = new JsonObject();
             tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                long usersCount = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null);
+                long usersCount = usersCounts.get(tenantConfig.tenantIdentifier.getTenantId()).count;
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

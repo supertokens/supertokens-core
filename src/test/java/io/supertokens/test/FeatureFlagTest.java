@@ -35,6 +35,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -593,6 +594,58 @@ public class FeatureFlagTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The license-usage stats come from the user-count pipeline: the tenant's full count, stored in the database and
+    // shared by every core, plus the lifecycle events since it - so a sign-up shows at once, without a new full count.
+    @Test
+    public void multitenantStatsUseTheStoredUserCount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) { // the in-memory db counts directly, stores nothing
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+            return;
+        }
+
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        TenantIdentifier t0 = new TenantIdentifier(null, null, "t0");
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                new TenantConfig(t0, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        Storage storage = StorageLayer.getStorage(t0, process.getProcess());
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user1@example.com", "password");
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user2@example.com", "password");
+
+        assertEquals(2, getTenantUsersCountStat(process, "t0"));
+        KeyValueInfo stored = storage.getKeyValue(t0, "TENANT_USERS_COUNT");
+        assertNotNull(stored);
+        assertEquals("2", stored.value);
+
+        // A sign-up is added from the lifecycle events; the stored full count is not redone
+        EmailPassword.signUp(t0, storage, process.getProcess(), "user3@example.com", "password");
+        assertEquals(3, getTenantUsersCountStat(process, "t0"));
+        assertEquals("2", storage.getKeyValue(t0, "TENANT_USERS_COUNT").value);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static long getTenantUsersCountStat(TestingProcessManager.TestingProcess process, String tenantId)
+            throws Exception {
+        JsonArray tenantStats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats()
+                .get(EE_FEATURES.MULTI_TENANCY.toString()).getAsJsonObject().get("tenants").getAsJsonArray();
+        for (JsonElement tenantStat : tenantStats) {
+            if (tenantStat.getAsJsonObject().get("tenantId").getAsString().equals(tenantId)) {
+                return tenantStat.getAsJsonObject().get("usersCount").getAsLong();
+            }
+        }
+        throw new AssertionError("no multi_tenancy stats for tenant " + tenantId);
     }
 
     @Test

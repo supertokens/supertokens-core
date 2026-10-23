@@ -139,6 +139,36 @@ public final class CountShadowAudit {
                 eventCount, windowFromExclusiveMs, windowToInclusiveMs);
     }
 
+    // The tenantId a Result carries for an app-level audit.
+    public static final String APP_SCOPE = "<app>";
+
+    /**
+     * The same check as {@link #evaluate} for the app-level count: the app's distinct user count must have moved by
+     * the app-level delta of the window ({@link CountDeltaInterpreter#appDeltaOf}). The result's tenantId is
+     * {@link #APP_SCOPE}.
+     */
+    public Result evaluateApp(long previousExactCount, long freshExactCount, List<AuditLogEvent> windowEvents,
+                              long windowFromExclusiveMs, long windowToInclusiveMs)
+            throws InvalidLifecycleEventPayloadException {
+        if (windowEvents == null) {
+            throw new IllegalArgumentException("windowEvents must not be null");
+        }
+        int eventCount = windowEvents.size();
+        if (eventCount > burstCap) {
+            return new Result(Status.RE_ANCHOR_REQUIRED, APP_SCOPE, previousExactCount, freshExactCount,
+                    0L, previousExactCount, eventCount, windowFromExclusiveMs, windowToInclusiveMs);
+        }
+        List<LifecycleEventPayload> payloads = new ArrayList<>(eventCount);
+        for (AuditLogEvent event : windowEvents) {
+            payloads.add(LifecycleEventPayload.fromJson(event.payload));
+        }
+        long foldedDelta = CountDeltaInterpreter.computeAppDelta(payloads);
+        long expectedCount = previousExactCount + foldedDelta;
+        Status status = expectedCount == freshExactCount ? Status.MATCH : Status.DISCREPANCY;
+        return new Result(status, APP_SCOPE, previousExactCount, freshExactCount, foldedDelta, expectedCount,
+                eventCount, windowFromExclusiveMs, windowToInclusiveMs);
+    }
+
     /** The outcome class of an audit window. */
     public enum Status {
         /** {@code previousExactCount + foldedDelta} equalled {@code freshExactCount}: ledger consistent. */

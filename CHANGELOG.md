@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.4.1]
+
+- Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
+- `/users/count` on CDI 5.7 (or 5.6 with `allowApproximate`) uses the same shared count for the unfiltered tenant count.
+- Telemetry's `usersCount` is the app-wide user count for every app.
+- A failed telemetry ping or license sync is retried within minutes instead of the next day.
+- The startup telemetry ping is delayed by 60-120s.
+- New config: `users_count_max_age_ms`.
+
 ## [12.4.0]
 
 - Requires plugin interface 11.0.

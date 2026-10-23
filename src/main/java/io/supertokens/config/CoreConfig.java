@@ -285,6 +285,21 @@ public class CoreConfig {
                     + "cap is always enforced (a hard cap). Must be between 1 and 100. (Default: 25)")
     private int concurrency_cap_reserved_pool_percent = 25;
 
+    @EnvName("USERS_COUNT_MAX_AGE_MS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How old, in milliseconds, a full user count may be before it is counted again. Telemetry's user " +
+                    "count, the license-usage stats and the unfiltered tenant count of /users/count on CDI 5.7 (or " +
+                    "5.6 with allowApproximate) are the last full count plus the sign-ups, deletions and links " +
+                    "logged since; the full count is shared by every core through the database and redone once it " +
+                    "is older than this, so a lower value means fresher counts but more full counts on the " +
+                    "database. While a burst (e.g. a bulk import) is being rolled into the count, /users/count gets the " +
+                    "count as of before it, with an older asOf. Other /users/count calls are exact counts and are " +
+                    "not affected. Only read from the " +
+                    "base config. (Default: 600000)")
+    private long users_count_max_age_ms = 600000;
+
     @EnvName("SUPERTOKENS_ADMIN_PORT")
     @ConfigYamlOnly
     @JsonProperty
@@ -872,6 +887,10 @@ public class CoreConfig {
         return host;
     }
 
+    public long getUsersCountMaxAgeMs() {
+        return users_count_max_age_ms;
+    }
+
     public int getMaxThreadPoolSize() {
         return max_server_pool_size;
     }
@@ -1129,6 +1148,10 @@ public class CoreConfig {
 
         if (totp_rate_limit_cooldown_sec <= 0) {
             throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
+        }
+
+        if (users_count_max_age_ms <= 0) {
+            throw new InvalidConfigException("'users_count_max_age_ms' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {
