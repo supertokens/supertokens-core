@@ -62,7 +62,7 @@ public class CredentialsRegisterAPI extends WebserverAPI {
 
             // useridmapping is not required to be called separately here because it is handled in the underlying parts
             WebauthNCredentialResponse savedCredential = WebAuthN
-                    .registerCredentials(storage, tenantIdentifier, recipeUserId,
+                    .registerCredentials(main, storage, tenantIdentifier, recipeUserId,
                             webauthnGeneratedOptionsId, credentialsData);
 
             JsonObject result = new JsonObject();

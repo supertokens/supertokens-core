@@ -194,7 +194,7 @@ public class BulkImport {
 
                     AuthRecipeUserInfo importedUser = AuthRecipe.getUserById(appIdentifier, bulkImportProxyStorage,
                             primaryLM.superTokensUserId);
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(appIdentifier,
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier,
                             bulkImportProxyStorage, new AuthRecipeUserInfo[] { importedUser });
 
                     return importedUser;
@@ -231,7 +231,7 @@ public class BulkImport {
             normalizeTimeJoinedForPrimaryUsers(appIdentifier, bulkImportProxyStorage, users);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Normalizing time joined for primary users DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings..");
-            createMultipleUserIdMapping(appIdentifier, users, allStoragesForApp);
+            createMultipleUserIdMapping(main, appIdentifier, users, allStoragesForApp);
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Creating user id mappings DONE");
             Logging.debug(main, TenantIdentifier.BASE_TENANT, "Verifying email addresses..");
             verifyMultipleEmailForAllLoginMethods(appIdentifier, bulkImportProxyStorage, users);
@@ -617,8 +617,24 @@ public class BulkImport {
         }
     }
 
-    public static void createMultipleUserIdMapping(AppIdentifier appIdentifier,
+    public static void createMultipleUserIdMapping(Main main, AppIdentifier appIdentifier,
                                            List<BulkImportUser> users, Storage[] storages) throws StorageTransactionLogicException {
+        // Users are validated when they are added, but the config can be turned on while they wait in the queue.
+        if (UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+            Map<String, Exception> errorsByUserId = new HashMap<>();
+            for (BulkImportUser user : users) {
+                if (user.externalUserId != null) {
+                    errorsByUserId.put(BulkImportUserUtils.getPrimaryLoginMethod(user).superTokensUserId,
+                            new Exception("E035: Cannot set externalUserId: "
+                                    + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE));
+                }
+            }
+            if (!errorsByUserId.isEmpty()) {
+                throw new StorageTransactionLogicException(
+                        new BulkImportBatchInsertException("translated", errorsByUserId));
+            }
+        }
+
         Map<String, String> superTokensUserIdToExternalUserId = new HashMap<>();
         for(BulkImportUser user: users) {
             if(user.externalUserId != null) {
@@ -630,7 +646,7 @@ public class BulkImport {
         try {
             if(!superTokensUserIdToExternalUserId.isEmpty()) {
                 UserIdMapping.createMultipleUserIdMappings(
-                        appIdentifier, storages,
+                        main, appIdentifier, storages,
                         superTokensUserIdToExternalUserId,
                         false, true);
             }

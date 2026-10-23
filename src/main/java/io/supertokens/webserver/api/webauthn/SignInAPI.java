@@ -70,8 +70,8 @@ public class SignInAPI extends WebserverAPI {
             // assertion twice per sign in (see supertokens-core#1195).
             boolean consumeOptions = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_5);
 
-            WebAuthNSignInUpResult signInResult = WebAuthN.signIn(storage, tenantIdentifier, webauthnGeneratedOptionsId,
-                    credentialsData, consumeOptions);
+            WebAuthNSignInUpResult signInResult = WebAuthN.signIn(main, storage, tenantIdentifier,
+                    webauthnGeneratedOptionsId, credentialsData, consumeOptions);
 
             if (signInResult == null) {
                 throw new WebauthNVerificationFailedException("WebAuthN sign in failed");

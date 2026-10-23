@@ -86,8 +86,10 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
+                    // Ignores disable_user_id_mapping: a mapping created before the opt-out must stay removable,
+                    // also by its external id.
                     this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
-                            true);
+                            true, true);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
                     getAppIdentifier(req),

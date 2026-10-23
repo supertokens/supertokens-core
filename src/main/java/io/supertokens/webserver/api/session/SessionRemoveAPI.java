@@ -136,7 +136,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 if (storage.getType() == STORAGE_TYPE.SQL) {
                     try {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
-                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                                 appIdentifier, storage, userId, UserIdType.ANY);
                         // Emit onto the storage sessions were just revoked on — the user's own storage,
                         // already resolved above (the app-specific user storage in the across-all-tenants

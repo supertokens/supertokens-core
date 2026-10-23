@@ -70,8 +70,10 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             String externalUserId = null;
 
+            // A mapping left over from before disable_user_id_mapping was turned on must still be found, so the
+            // sessions and roles stored under its external id are deleted with the user's tenant membership.
             StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
-                    req, userId, UserIdType.ANY);
+                    req, userId, UserIdType.ANY, true);
             if (storageAndUserIdMapping.userIdMapping != null) {
                 userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                 externalUserId = storageAndUserIdMapping.userIdMapping.externalUserId;

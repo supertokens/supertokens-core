@@ -238,7 +238,7 @@ public class Session {
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
+                    main, tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
             if (userIdMapping != null) {
                 recipeUserId = userIdMapping.superTokensUserId;
             }
@@ -247,7 +247,7 @@ public class Session {
             // The recipe user's external id is independent of account link/unlink, so resolve it before
             // the lock. It goes into the tokens and the session row.
             HashMap<String, String> recipeExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifier.toAppIdentifier(), storage,
+                    main, tenantIdentifier.toAppIdentifier(), storage,
                     new ArrayList<>(Arrays.asList(recipeUserIdSupertokens)));
             final String recipeUserIdExternal = recipeExternal.getOrDefault(recipeUserIdSupertokens,
                     recipeUserIdSupertokens);
@@ -311,7 +311,7 @@ public class Session {
 
             // External id for the primary user id resolved under the lock (may differ from the recipe id).
             HashMap<String, String> primaryExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifier.toAppIdentifier(), storage,
+                    main, tenantIdentifier.toAppIdentifier(), storage,
                     new ArrayList<>(Arrays.asList(primaryUserIdSupertokens)));
             primaryUserId = primaryExternal.getOrDefault(primaryUserIdSupertokens, primaryUserIdSupertokens);
 

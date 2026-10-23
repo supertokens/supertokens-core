@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.StorageAndUserIdMappingForBulkImport;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -27,10 +28,13 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -52,6 +56,71 @@ import java.util.stream.Collectors;
 import io.supertokens.auditlog.UnauditedTransaction;
 
 public class UserIdMapping {
+
+    public static final String USER_ID_MAPPING_DISABLED_MESSAGE = "user id mapping is disabled for this app";
+
+    // disable_user_id_mapping is @NotConflictingInApp, so the app's public tenant carries the app-wide value. An
+    // app that is not loaded falls back to "enabled": the lookups then run as they always did.
+    public static boolean isUserIdMappingDisabled(Main main, AppIdentifier appIdentifier) {
+        try {
+            return Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).isUserIdMappingDisabled();
+        } catch (TenantOrAppNotFoundException e) {
+            return false;
+        }
+    }
+
+    // With disable_user_id_mapping on, a user whose mapping is left over from before the opt-out can have data under
+    // both ids: under the external id from before the opt-out, and under the SuperTokens id after it (reads no
+    // longer return the external id). Paths that delete or revoke a user's data by the mapped id use this to clean
+    // up the SuperTokens id as well.
+    public static boolean alsoCleanUpSuperTokensUserId(Main main, AppIdentifier appIdentifier,
+                                                       String cleanedUpUserId, String superTokensUserId) {
+        return !cleanedUpUserId.equals(superTokensUserId) && isUserIdMappingDisabled(main, appIdentifier);
+    }
+
+    public static void assertUserIdMappingEnabled(Main main, AppIdentifier appIdentifier) throws ServletException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            throw new ServletException(new WebserverAPI.BadRequestException(USER_ID_MAPPING_DISABLED_MESSAGE));
+        }
+    }
+
+    public static boolean hasUserIdMappings(Main main, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
+            if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Startup counterpart of the config API check, for disable_user_id_mapping set in config.yaml / env. When the
+    // base config leaves it off, the flag can only have been turned on through the config API, which checked it.
+    public static void assertNoUserIdMappingsWhereDisabledByBaseConfig(Main main)
+            throws InvalidConfigException, StorageQueryException {
+        if (!Config.getBaseConfig(main).isUserIdMappingDisabled()) {
+            return;
+        }
+        Set<AppIdentifier> checkedApps = new HashSet<>();
+        List<String> appsWithMappings = new ArrayList<>();
+        for (TenantConfig tenantConfig : Multitenancy.getAllTenants(main)) {
+            AppIdentifier appIdentifier = tenantConfig.tenantIdentifier.toAppIdentifier();
+            if (!checkedApps.add(appIdentifier) || !isUserIdMappingDisabled(main, appIdentifier)) {
+                continue;
+            }
+            try {
+                if (hasUserIdMappings(main, appIdentifier)) {
+                    appsWithMappings.add(appIdentifier.toString());
+                }
+            } catch (TenantOrAppNotFoundException e) {
+                // deleted while we were checking
+            }
+        }
+        if (!appsWithMappings.isEmpty()) {
+            throw new InvalidConfigException("disable_user_id_mapping is enabled, but these apps have user id " +
+                    "mappings (connection uri domain | app id): " + String.join(", ", appsWithMappings));
+        }
+    }
 
     public static class UserIdBulkMappingResult {
         public String supertokensUserId;
@@ -75,12 +144,12 @@ public class UserIdMapping {
     }
 
     @TestOnly
-    public static void createUserIdMapping(AppIdentifier appIdentifier, Storage[] storages,
+    public static void createUserIdMapping(Main main, AppIdentifier appIdentifier, Storage[] storages,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws ServletException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException,
             StorageQueryException, TenantOrAppNotFoundException {
-        createUserIdMapping(appIdentifier, storages, superTokensUserId, externalUserId, externalUserIdInfo,
+        createUserIdMapping(main, appIdentifier, storages, superTokensUserId, externalUserId, externalUserIdInfo,
                 force, false);
     }
 
@@ -90,19 +159,21 @@ public class UserIdMapping {
                                            boolean force)
             throws ServletException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException,
             StorageQueryException, TenantOrAppNotFoundException {
-        createUserIdMapping(
+        createUserIdMapping(main,
                 new AppIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId()),
                 new Storage[]{storage}, supertokensUserId, externalUserId, externalUserIdInfo, force
         );
     }
 
-    public static void createUserIdMapping(AppIdentifier appIdentifier, Storage[] storages,
+    public static void createUserIdMapping(Main main, AppIdentifier appIdentifier, Storage[] storages,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force,
                                            boolean makeExceptionForEmailVerification)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
             TenantOrAppNotFoundException {
+
+        assertUserIdMappingEnabled(main, appIdentifier);
 
         // We first need to check if the external user id exists across all app storages because we do not want
         // 2 users from different user pool but same app to point to same external user id.
@@ -114,7 +185,7 @@ public class UserIdMapping {
         try { // with external id
             StorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.findStorageAndUserIdMappingForUser(
-                            appIdentifier, storages, externalUserId, UserIdType.EXTERNAL);
+                            main, appIdentifier, storages, externalUserId, UserIdType.EXTERNAL);
 
             if (mappingAndStorage.userIdMapping != null) {
                 throw new UserIdMappingAlreadyExistsException(
@@ -129,7 +200,7 @@ public class UserIdMapping {
         StorageAndUserIdMapping mappingAndStorage;
         try {
             mappingAndStorage = StorageLayer.findStorageAndUserIdMappingForUser(
-                    appIdentifier, storages, superTokensUserId, UserIdType.SUPERTOKENS);
+                    main, appIdentifier, storages, superTokensUserId, UserIdType.SUPERTOKENS);
         } catch (UnknownUserIdException e) {
             throw new UnknownSuperTokensUserIdException();
         }
@@ -191,7 +262,8 @@ public class UserIdMapping {
     }
 
     //support method for the primary intention of bulk importing users.
-    public static List<UserIdBulkMappingResult> createMultipleUserIdMappings(AppIdentifier appIdentifier, Storage[] storages,
+    public static List<UserIdBulkMappingResult> createMultipleUserIdMappings(Main main, AppIdentifier appIdentifier,
+                                           Storage[] storages,
                                            Map<String, String> superTokensUserIdToExternalUserId, boolean force,
                                            boolean makeExceptionForEmailVerification)
             throws StorageQueryException {
@@ -212,16 +284,16 @@ public class UserIdMapping {
         // with external id
         List<StorageAndUserIdMapping> mappingAndStorageWithExternal =
                 StorageLayer.findStorageAndUserIdMappingForBulkUserImport(
-                        appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.values()), UserIdType.EXTERNAL);
+                        main, appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.values()), UserIdType.EXTERNAL);
 
         // with supertokens id
         List<StorageAndUserIdMapping> mappingAndStorageWithSupertokens =
                 StorageLayer.findStorageAndUserIdMappingForBulkUserImport(
-                        appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.keySet()), UserIdType.SUPERTOKENS);
+                        main, appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.keySet()), UserIdType.SUPERTOKENS);
 
         //with external id treated as supertokens id - should not happen
         List<StorageAndUserIdMapping> mappingAndStoragesAsInvalid = StorageLayer.findStorageAndUserIdMappingForBulkUserImport(
-                appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.values()), UserIdType.SUPERTOKENS);
+                main, appIdentifier, storages, new ArrayList<>(superTokensUserIdToExternalUserId.values()), UserIdType.SUPERTOKENS);
 
         Map<String, List<String>> userIdsUsedInNonAuthRecipes =
                 storages[0].findNonAuthRecipesWhereForUserIdsUsed(appIdentifier, new ArrayList<>(superTokensUserIdToExternalUserId.keySet()));
@@ -410,16 +482,18 @@ public class UserIdMapping {
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            createUserIdMapping(ResourceDistributor.getAppForTesting().toAppIdentifier(), new Storage[]{storage}, superTokensUserId,
+            createUserIdMapping(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), new Storage[]{storage},
+                    superTokensUserId,
                     externalUserId, externalUserIdInfo, force, makeExceptionForEmailVerification);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static String getExternalUserId(AppIdentifier appIdentifier, Storage storage, String userId)
+    public static String getExternalUserId(Main main, AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifier, storage, userId, UserIdType.SUPERTOKENS);
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(main, appIdentifier,
+                storage, userId, UserIdType.SUPERTOKENS);
         if (mapping == null || mapping.externalUserId == null) {
             return userId;
         } else {
@@ -427,8 +501,37 @@ public class UserIdMapping {
         }
     }
 
-    // A single read, so it runs as a plain autocommit read: wrapping it in a transaction only adds round trips.
+    // Returns null without touching the database when user id mapping is disabled for the app.
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
+            Main main, AppIdentifier appIdentifier, Storage storage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            return null;
+        }
+        return readUserIdMapping(appIdentifier, storage, userId, userIdType);
+    }
+
+    // Ignores disable_user_id_mapping. Only for paths that must still find a mapping created before the opt-out
+    // (or by a core that had not refreshed its config yet): removing mappings, deleting users and revoking
+    // sessions on link/unlink. Everything else reads through getUserIdMapping, which skips the lookup.
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+            AppIdentifier appIdentifier, Storage storage, String userId, UserIdType userIdType)
+            throws StorageQueryException {
+        return readUserIdMapping(appIdentifier, storage, userId, userIdType);
+    }
+
+    // Transaction variant of getUserIdMappingIgnoringOptOut, with the same restriction on where to use it.
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+            TransactionConnection con, AppIdentifier appIdentifier, Storage storage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        return readUserIdMapping(con, appIdentifier, storage, userId, userIdType);
+    }
+
+    // A single read, so it runs as a plain autocommit read: wrapping it in a transaction only adds round trips.
+    // Ignores disable_user_id_mapping, so removal can still find mappings created before the opt-out.
+    private static io.supertokens.pluginInterface.useridmapping.UserIdMapping readUserIdMapping(
             AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
@@ -447,9 +550,12 @@ public class UserIdMapping {
 
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     public static List<io.supertokens.pluginInterface.useridmapping.UserIdMapping> getMultipleUserIdMapping(
-            AppIdentifier appIdentifier, Storage storage, List<String> userIds,
+            Main main, AppIdentifier appIdentifier, Storage storage, List<String> userIds,
             UserIdType userIdType)
             throws StorageQueryException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            return new ArrayList<>();
+        }
         UserIdMappingSQLStorage uidMappingStorage =
                 (UserIdMappingSQLStorage) storage;
 
@@ -467,8 +573,18 @@ public class UserIdMapping {
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
-            TransactionConnection con,
+            Main main, TransactionConnection con,
             AppIdentifier appIdentifier, Storage storage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            return null;
+        }
+        return readUserIdMapping(con, appIdentifier, storage, userId, userIdType);
+    }
+
+    private static io.supertokens.pluginInterface.useridmapping.UserIdMapping readUserIdMapping(
+            TransactionConnection con, AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
         UserIdMappingSQLStorage uidMappingStorage =
@@ -515,7 +631,8 @@ public class UserIdMapping {
             UserIdType userIdType)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUserIdMapping(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, userIdType);
+        return getUserIdMapping(main, ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId,
+                userIdType);
     }
 
     public static boolean deleteUserIdMapping(AppIdentifier appIdentifier, Storage storage, String userId,
@@ -525,7 +642,7 @@ public class UserIdMapping {
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
         // we need to check if db is in A3 or A4.
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifier,
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = readUserIdMapping(appIdentifier,
                 storage, userId, UserIdType.ANY);
         UserIdMappingStorage uidMappingStorage = StorageUtils.getUserIdMappingStorage(storage);
 
@@ -572,10 +689,11 @@ public class UserIdMapping {
                 ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userId, userIdType, force);
     }
 
-    public static boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, Storage storage,
+    public static boolean updateOrDeleteExternalUserIdInfo(Main main, AppIdentifier appIdentifier, Storage storage,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
-            throws StorageQueryException {
+            throws StorageQueryException, ServletException {
+        assertUserIdMappingEnabled(main, appIdentifier);
         UserIdMappingStorage uidMappingStorage = StorageUtils.getUserIdMappingStorage(storage);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -604,17 +722,22 @@ public class UserIdMapping {
     public static boolean updateOrDeleteExternalUserIdInfo(Main main,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
-            throws StorageQueryException {
+            throws StorageQueryException, ServletException {
         Storage storage = StorageLayer.getStorage(main);
-        return updateOrDeleteExternalUserIdInfo(ResourceDistributor.getAppForTesting().toAppIdentifier(), storage,
+        return updateOrDeleteExternalUserIdInfo(main, ResourceDistributor.getAppForTesting().toAppIdentifier(),
+                storage,
                 userId, userIdType, externalUserIdInfo);
     }
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(
+            Main main,
             AppIdentifier appIdentifier,
             Storage storage,
             ArrayList<String> userIds)
             throws StorageQueryException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            return new HashMap<>();
+        }
         // userIds are already filtered for a tenant
         return StorageUtils.getUserIdMappingStorage(storage).getUserIdMappingForSuperTokensIds(appIdentifier, userIds);
     }
@@ -624,7 +747,7 @@ public class UserIdMapping {
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUserIdMappingForSuperTokensUserIds(
+        return getUserIdMappingForSuperTokensUserIds(main,
                 ResourceDistributor.getAppForTesting().toAppIdentifier(), storage, userIds);
     }
 
@@ -698,17 +821,22 @@ public class UserIdMapping {
         return result;
     }
 
-    public static void populateExternalUserIdForUsers(AppIdentifier appIdentifier, Storage storage,
+    public static void populateExternalUserIdForUsers(Main main, AppIdentifier appIdentifier, Storage storage,
                                                       AuthRecipeUserInfo[] users)
             throws StorageQueryException {
-        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
+        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(main, appIdentifier, storage,
                 collectSuperTokensUserIds(users));
         applyExternalUserIds(users, userIdMappings);
     }
 
-    public static void populateExternalUserIdForUsers(TransactionConnection con, AppIdentifier appIdentifier,
-                                                      Storage storage, AuthRecipeUserInfo[] users)
+    public static void populateExternalUserIdForUsers(Main main, TransactionConnection con,
+                                                      AppIdentifier appIdentifier, Storage storage,
+                                                      AuthRecipeUserInfo[] users)
             throws StorageQueryException {
+        if (isUserIdMappingDisabled(main, appIdentifier)) {
+            applyExternalUserIds(users, new HashMap<>());
+            return;
+        }
         // userIds are already filtered for a tenant
         List<io.supertokens.pluginInterface.useridmapping.UserIdMapping> mappings =
                 ((UserIdMappingSQLStorage) storage).getMultipleUserIdMapping_Transaction(con, appIdentifier,

@@ -60,10 +60,12 @@ public class DeleteUserAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
+                    // Ignores disable_user_id_mapping: if a mapping created before the opt-out exists, deleting the
+                    // user must also delete the sessions, roles and metadata stored under its external id.
                     this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                            req, userId, UserIdType.ANY, true);
+                            req, userId, UserIdType.ANY, true, true);
 
-            AuthRecipe.deleteUser(getAppIdentifier(req), storageAndUserIdMapping.storage, userId,
+            AuthRecipe.deleteUser(main, getAppIdentifier(req), storageAndUserIdMapping.storage, userId,
                     removeAllLinkedAccounts,
                     storageAndUserIdMapping.userIdMapping);
         } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException |
