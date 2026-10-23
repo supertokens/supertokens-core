@@ -181,6 +181,11 @@ jobs:
   derive-db-migration-flag:
     name: Derive has-db-migration from migration manifest
     needs: release-shas
+    # Every job after release-shas states its condition on its needs' results: without one,
+    # GitHub skips a job when any upstream job was skipped, and prebuilt-image is skipped on
+    # every non-prebuilt release - which skipped the build and the tests while mark-as-passed
+    # (!failure()) still ran.
+    if: ${{ !cancelled() && needs.release-shas.result == 'success' }}
     uses: ./.github/workflows/_release-derive-db-migration.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -191,6 +196,7 @@ jobs:
 
   register-versions:
     needs: [ release-shas, derive-db-migration-flag ]
+    if: ${{ !cancelled() && needs.derive-db-migration-flag.result == 'success' }}
     uses: ./.github/workflows/_release-register-versions.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -203,7 +209,7 @@ jobs:
 
   test:
     # A prebuilt image was tested privately on exactly these commits (see its tests-run-id).
-    if: ${{ !inputs.prebuilt }}
+    if: ${{ !inputs.prebuilt && !cancelled() && needs.register-versions.result == 'success' }}
     needs: [ release-shas, register-versions ]
     uses: ./.github/workflows/_release-run-tests.yml
     with:
@@ -218,7 +224,7 @@ jobs:
   prebuilt-consistency:
     name: Check prebuilt migration flag
     needs: [ prebuilt-image, derive-db-migration-flag ]
-    if: inputs.prebuilt
+    if: ${{ inputs.prebuilt && !cancelled() && needs.prebuilt-image.result == 'success' && needs.derive-db-migration-flag.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Compare has-db-migration
@@ -233,7 +239,13 @@ jobs:
 
   mark-as-passed:
     needs: [ register-versions, test, derive-db-migration-flag, prebuilt-consistency ]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    # Only after the tests passed (or, for a prebuilt image, its consistency check): a release is
+    # never marked as passed with its tests skipped.
+    if: >-
+      ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure()
+      && needs.register-versions.result == 'success'
+      && ((!inputs.prebuilt && needs.test.result == 'success')
+      || (inputs.prebuilt && needs.prebuilt-consistency.result == 'success')) }}
     uses: ./.github/workflows/_release-mark-passed.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -400,7 +412,7 @@ jobs:
 
   # Builds once into the dev repo; stress tests and promotion then use that exact digest.
   build-docker:
-    if: ${{ !inputs.prebuilt }}
+    if: ${{ !inputs.prebuilt && !cancelled() && needs.derive-db-migration-flag.result == 'success' }}
     needs: [ release-shas, derive-db-migration-flag ]
     uses: ./.github/workflows/_image-build.yml
     with:
@@ -414,7 +426,7 @@ jobs:
     secrets: inherit
 
   stress-tests:
-    if: inputs.run-stress-tests && !inputs.prebuilt
+    if: ${{ inputs.run-stress-tests && !inputs.prebuilt && !cancelled() && needs.build-docker.result == 'success' }}
     needs: [ build-docker ]
     uses: ./.github/workflows/stress-tests.yml
     with:
@@ -422,7 +434,12 @@ jobs:
 
   release-docker:
     needs: [ build-docker, stress-tests, mark-as-passed, prebuilt-image ]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    # Only with an image to promote: the one built here, or the prebuilt one.
+    if: >-
+      ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure()
+      && needs.mark-as-passed.result == 'success'
+      && ((!inputs.prebuilt && needs.build-docker.result == 'success')
+      || (inputs.prebuilt && needs.prebuilt-image.result == 'success')) }}
     uses: ./.github/workflows/_image-promote.yml
     with:
       # Prebuilt: the version tag already exists in ECR on this digest, so ECR is a no-op check
@@ -438,7 +455,7 @@ jobs:
 
   add-release-tags:
     needs: [release-shas, release-docker, derive-db-migration-flag]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() && needs.release-docker.result == 'success' }}
     uses: ./.github/workflows/_release-add-tags.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -456,7 +473,7 @@ jobs:
 
   build-jars:
     needs: [add-release-tags]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() && !inputs.is-canary }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() && !inputs.is-canary && needs.add-release-tags.result == 'success' }}
     uses: ./.github/workflows/generate-jars.yml
     with:
       core-version: ${{ inputs.core-version }}
@@ -470,7 +487,7 @@ jobs:
   notify-slack:
     name: Notify Slack
     needs: [ add-release-tags, build-jars ]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() && needs.add-release-tags.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Post release notification on Slack channel

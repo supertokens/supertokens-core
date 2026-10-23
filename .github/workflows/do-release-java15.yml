@@ -433,7 +433,10 @@ jobs:
     name: Mark as passed (${{ matrix.plugin }})
     environment: publish
     needs: [ dependency-branches, register-plugin-version, test, derive-db-migration-flag ]
-    if: ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure() }}
+    # Only after the tests passed: a release is never marked as passed with its tests skipped.
+    if: >-
+      ${{ github.repository == 'supertokens/supertokens-core' && !cancelled() && !failure()
+      && needs.test.result == 'success' }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
