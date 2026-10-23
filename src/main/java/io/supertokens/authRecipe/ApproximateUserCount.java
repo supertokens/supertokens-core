@@ -210,7 +210,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     Thread.currentThread().interrupt();
                     throw new StorageQueryException(e);
                 }
-                CompletableFuture<Anchor> count = startOrJoinCount(main, pool, storage, scope, 0, false);
+                CompletableFuture<Anchor> count = startOrJoinCount(main, pool, storage, scope, pool.droppedBeforeMs, false);
                 count.whenComplete((anchor, failure) -> BATCH_COUNT_PERMITS.release());
                 pending.add(count);
             }
@@ -250,7 +250,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         for (Storage storage : storages) {
             PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
             if (pool.anchors.get(scope.key) == null) {
-                startOrJoinCount(main, pool, storage, scope, 0, false);
+                startOrJoinCount(main, pool, storage, scope, pool.droppedBeforeMs, false);
             }
         }
         long count = 0;
