@@ -515,8 +515,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
         try {
             Window cached = pool.window;
+            // Strictly after: a read whose end is the call's own start millisecond may have run before a write
+            // that committed in that millisecond, just before the call.
             if (!reread && reuseReadAfter > 0 && cached != null && cached.fromExclusive <= fromMs
-                    && cached.toInclusive >= reuseReadAfter) {
+                    && cached.toInclusive > reuseReadAfter) {
                 return cached; // read during this batch
             }
             if (!reread && cached != null && cached.fromExclusive <= fromMs) {
