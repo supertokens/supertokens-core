@@ -7,11 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.4.1]
 
-- Requires plugin interface 11.1.
-- One pipeline for user counts (telemetry `usersCount`, the license-usage stats, and the unfiltered tenant count `/users/count` already served this way on CDI 5.7 or 5.6 with `allowApproximate`): a full count stored in the database and shared by all cores for up to `users_count_max_age_ms` (one core counts, the others wait), plus the sign-ups, deletions and links logged since; a bulk import rolls the count forward instead of triggering a new full count, and a `/users/count` request made while that roll runs gets the count as of before the burst (its `asOf` says so).
-- Telemetry's `usersCount` is the app-wide count for every app, whatever its number of tenants.
-- A failed count serves the last stored count; a failed telemetry ping or license sync is retried within minutes instead of the next day.
-- Delays the startup telemetry ping by 60-120s (jittered).
+- Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
+- `/users/count` on CDI 5.7 (or 5.6 with `allowApproximate`) uses the same shared count for the unfiltered tenant count.
+- Telemetry's `usersCount` is the app-wide user count for every app.
+- A failed telemetry ping or license sync is retried within minutes instead of the next day.
+- The startup telemetry ping is delayed by 60-120s.
 - New config: `users_count_max_age_ms`.
 
 ## [12.4.0]
