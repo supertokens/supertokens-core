@@ -41,6 +41,8 @@ import io.supertokens.telemetry.TelemetryProvider;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -80,7 +84,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p>
  * Accuracy: exact modulo ledger completeness (what the shadow audit checks). Events are stamped when their
  * transaction starts and can commit a little later, so an anchor is never rolled closer than
- * {@link #ROLL_MARGIN_MS} to now, and a mutation straddling a full count's snapshot self-heals at the next count.
+ * {@link #ROLL_MARGIN_MS} to now, each call re-reads the events of that margin, and a mutation straddling a full
+ * count's snapshot self-heals at the next count. An event that commits more than the margin after its timestamp (for
+ * example the user imports of a bulk-import partition, committed with the claim of the whole chunk) can be missed
+ * until the scope's next full count, at most {@code users_count_max_age_ms} later.
+ * <p>
+ * A {@code /users/count} request does not wait behind another call's roll-forward of a burst: after
+ * {@link #REQUEST_WINDOW_WAIT_MS} it gets its own scope a new count instead, as a burst cost before the window was
+ * shared.
  */
 public class ApproximateUserCount extends ResourceDistributor.SingletonResource {
 
@@ -90,8 +101,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // anchors instead of being re-read by every call. Matches the shadow audit's burst cap.
     private static volatile int pageSize = CountDeltaInterpreter.DEFAULT_BURST_CAP;
 
-    // An anchor is never rolled forward closer than this to now: an event is stamped when its transaction starts
-    // and may commit a little later, after a roll-forward that already passed its time.
+    // An anchor is never rolled forward closer than this to now, and each call re-reads the events of this margin: an
+    // event is stamped when its transaction starts and may commit a little later, after a roll-forward or a read
+    // that already passed its time. One that commits later than this is only picked up by the next full count (see
+    // the class doc). Raising it makes every call's re-read larger.
     static final long ROLL_MARGIN_MS = 10_000;
     private static volatile long rollMarginMs = ROLL_MARGIN_MS;
 
@@ -103,6 +116,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // Counts are single-flighted per scope, so a queue holds at most one count per scope.
     private static final ExecutorService REFRESH_EXECUTOR = newCountExecutor(2, "user-count-refresh");
     private static final ExecutorService REQUEST_COUNT_EXECUTOR = newCountExecutor(4, "user-count-anchor");
+    // How many of the request pool's counts the batches of tenant counts (serveTenants) may hold at once, across all
+    // apps: a batch never fills the pool or queues its tenants in it, so a request for a tenant without an anchor
+    // never waits behind the counts of every tenant of an app (or, for a tenant in the batch, waits only for its own).
+    private static final Semaphore BATCH_COUNT_PERMITS = new Semaphore(2);
+
+    // How long a /users/count request waits for the pool's event window. Reading it takes milliseconds; a longer wait
+    // means another call is rolling a burst into the anchors, and the request gets its own scope a new count instead.
+    private static final long REQUEST_WINDOW_WAIT_MS = 2_000;
 
     private static final CountShadowAudit SHADOW_AUDIT = new CountShadowAudit(CountDeltaInterpreter.DEFAULT_BURST_CAP);
 
@@ -159,19 +180,39 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
     /**
      * The counts of several tenants of this app at once, keyed by tenant id (the license-usage stats). Their missing
-     * counts run concurrently (on the bounded request pool) instead of one after another, and every tenant of a user
-     * pool is served from one event read, so the counts are consistent with each other.
+     * counts run concurrently instead of one after another, but at most 2 at a time on the request pool (see
+     * {@link #BATCH_COUNT_PERMITS}), and every tenant of a user pool is served from one event read, so the counts are
+     * consistent with each other.
      */
     public Map<String, ApproximateCountResult> serveTenants(Main main, List<TenantIdentifier> tenantIdentifiers)
             throws StorageQueryException, TenantOrAppNotFoundException {
+        List<Storage> storages = new ArrayList<>(tenantIdentifiers.size());
+        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
+            storages.add(StorageLayer.getStorage(tenantIdentifier, main));
+        }
+        return serveTenants(main, tenantIdentifiers, storages);
+    }
+
+    // storages.get(i): the user pool of tenantIdentifiers.get(i)
+    private Map<String, ApproximateCountResult> serveTenants(Main main, List<TenantIdentifier> tenantIdentifiers,
+                                                             List<Storage> storages) throws StorageQueryException {
         long batchStart = System.currentTimeMillis();
         List<CompletableFuture<Anchor>> pending = new ArrayList<>();
-        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        for (int i = 0; i < tenantIdentifiers.size(); i++) {
+            TenantIdentifier tenantIdentifier = tenantIdentifiers.get(i);
+            Storage storage = storages.get(i);
             PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
             Scope scope = Scope.tenant(tenantIdentifier);
             if (pool.anchors.get(scope.key) == null) {
-                pending.add(startOrJoinCount(main, pool, storage, scope, 0, false));
+                try {
+                    BATCH_COUNT_PERMITS.acquire();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new StorageQueryException(e);
+                }
+                CompletableFuture<Anchor> count = startOrJoinCount(main, pool, storage, scope, 0, false);
+                count.whenComplete((anchor, failure) -> BATCH_COUNT_PERMITS.release());
+                pending.add(count);
             }
         }
         for (CompletableFuture<Anchor> count : pending) {
@@ -185,20 +226,22 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
         }
         Map<String, ApproximateCountResult> results = new HashMap<>();
-        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
-            results.put(tenantIdentifier.getTenantId(), serve(main, StorageLayer.getStorage(tenantIdentifier, main),
-                    Scope.tenant(tenantIdentifier), batchStart));
+        for (int i = 0; i < tenantIdentifiers.size(); i++) {
+            TenantIdentifier tenantIdentifier = tenantIdentifiers.get(i);
+            results.put(tenantIdentifier.getTenantId(), serve(main, storages.get(i), Scope.tenant(tenantIdentifier),
+                    batchStart, false));
         }
         return results;
     }
 
     /**
-     * The tenant count on the given storage (the tenant's user pool). For callers that already hold the storage, and
-     * tests that wrap it.
+     * The tenant count on the given storage (the tenant's user pool), for a request: it does not wait behind another
+     * call's roll-forward of the pool's events (see {@link #REQUEST_WINDOW_WAIT_MS}). For callers that already hold
+     * the storage, and tests that wrap it.
      */
     public ApproximateCountResult serve(Main main, TenantIdentifier tenantIdentifier, Storage storage)
             throws StorageQueryException {
-        return serve(main, storage, Scope.tenant(tenantIdentifier), System.currentTimeMillis());
+        return serve(main, storage, Scope.tenant(tenantIdentifier), System.currentTimeMillis(), true);
     }
 
     ApproximateCountResult serveApp(Main main, Storage[] storages) throws StorageQueryException {
@@ -214,7 +257,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         long asOf = Long.MAX_VALUE;
         boolean stale = false;
         for (Storage storage : storages) {
-            ApproximateCountResult part = serve(main, storage, scope, System.currentTimeMillis());
+            ApproximateCountResult part = serve(main, storage, scope, System.currentTimeMillis(), false);
             count += part.count;
             asOf = Math.min(asOf, part.asOf);
             stale |= part.stale;
@@ -224,9 +267,10 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     }
 
     // A shared event window read at or after reuseWindowReadAfter is used as is: a read made after the call started
-    // (so concurrent callers queued on the window lock share one tail read), or one consistent read for a batch.
-    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, long reuseWindowReadAfter)
-            throws StorageQueryException {
+    // (so concurrent callers queued on the window lock share one tail read), or one consistent read for a batch. A
+    // request waits for the window at most REQUEST_WINDOW_WAIT_MS; the background jobs wait for it.
+    private ApproximateCountResult serve(Main main, Storage storage, Scope scope, long reuseWindowReadAfter,
+                                         boolean request) throws StorageQueryException {
         PoolState pool = pools.computeIfAbsent(storage.getUserPoolId(), k -> new PoolState());
         boolean withEvents = storage instanceof ActivityLogStorage;
 
@@ -242,7 +286,23 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         ActivityLogStorage activityLogStorage = (ActivityLogStorage) storage;
         for (int attempt = 0; ; attempt++) {
-            Window window = window(pool, activityLogStorage, anchor.snapshotMs, attempt > 0, reuseWindowReadAfter);
+            Window window;
+            try {
+                window = window(pool, activityLogStorage, anchor.snapshotMs, attempt > 0, reuseWindowReadAfter,
+                        request ? REQUEST_WINDOW_WAIT_MS : Long.MAX_VALUE);
+            } catch (WindowBusyException e) {
+                // Another call is rolling a burst into the pool's anchors. Rather than wait for the whole burst, get
+                // this scope a count taken after it (single-flighted, as for a burst too big to roll) and serve that
+                // count as is if the window is still busy.
+                if (attempt > 0) {
+                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
+                }
+                anchor = awaitAnchor(main, pool, storage, scope, System.currentTimeMillis() - rollMarginMs);
+                if (anchor.fallback) {
+                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
+                }
+                continue;
+            }
             Anchor current = pool.anchors.get(scope.key);
             if (current != null && current.snapshotMs >= anchor.snapshotMs) {
                 anchor = current; // rolled forward (or re-counted) meanwhile
@@ -255,16 +315,18 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
             }
             Long forceNotBefore = null;
+            Long corruptAt = window == null ? null : window.lastCorruptAfter(anchor.snapshotMs);
             if (window == null) {
                 // more events after the anchor than one roll-forward could take (an extreme burst): count after them
                 forceNotBefore = System.currentTimeMillis() - rollMarginMs;
-            } else if (window.corruptAt != null && window.corruptAt > anchor.snapshotMs) {
+            } else if (corruptAt != null) {
                 // A lifecycle payload that does not parse cannot be applied. Never serve a value derived from a corrupt
-                // ledger: get a count taken after it (the shadow audit flags the same window on its next pass).
+                // ledger: get a count taken after the last such event (the shadow audit flags the same window on its
+                // next pass).
                 Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(), "User count of " + scope
-                        + ": an unparseable lifecycle event payload at " + window.corruptAt
+                        + ": an unparseable lifecycle event payload at " + corruptAt
                         + "; serving a count taken after it instead");
-                forceNotBefore = window.corruptAt;
+                forceNotBefore = corruptAt;
             }
             if (forceNotBefore != null) {
                 if (attempt > 0) {
@@ -428,13 +490,18 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
      * only the tail of the shared window - the events after (its end minus {@link #ROLL_MARGIN_MS}), replacing the
      * overlap so an event committed shortly after its timestamp is still picked up - instead of the whole window. If
      * the events no longer fit one page, the pool's anchors are first rolled forward. Returns null if even that leaves
-     * too many events (more than a page logged within the roll margin).
+     * too many events (more than a page logged within the roll margin). Throws {@link WindowBusyException} if
+     * another call holds the window for longer than {@code lockWaitMs}.
      */
     @Nullable
     private Window window(PoolState pool, ActivityLogStorage storage, long fromMs, boolean reread,
-                          long reuseReadAfter) throws StorageQueryException {
+                          long reuseReadAfter, long lockWaitMs) throws StorageQueryException, WindowBusyException {
         try {
-            pool.windowLock.lockInterruptibly();
+            if (lockWaitMs == Long.MAX_VALUE) {
+                pool.windowLock.lockInterruptibly();
+            } else if (!pool.windowLock.tryLock(lockWaitMs, TimeUnit.MILLISECONDS)) {
+                throw new WindowBusyException();
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new StorageQueryException(e);
@@ -783,25 +850,24 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         final long[] times; // per parsed event: its created_at
         final List<Map<String, Long>> tenantDeltas;
         final List<Long> appDeltas;
-        @Nullable
-        final Long corruptAt; // earliest unparseable event
+        final long[] corruptTimes; // the created_at of every unparseable event, ascending
 
         private Window(long fromExclusive, long toInclusive, long[] times, List<Map<String, Long>> tenantDeltas,
-                       List<Long> appDeltas, @Nullable Long corruptAt) {
+                       List<Long> appDeltas, long[] corruptTimes) {
             this.fromExclusive = fromExclusive;
             this.toInclusive = toInclusive;
             this.readAt = System.currentTimeMillis();
             this.times = times;
             this.tenantDeltas = tenantDeltas;
             this.appDeltas = appDeltas;
-            this.corruptAt = corruptAt;
+            this.corruptTimes = corruptTimes;
         }
 
         static Window of(long fromExclusive, long toInclusive, List<AuditLogEvent> events) {
             List<Long> times = new ArrayList<>(events.size());
             List<Map<String, Long>> tenantDeltas = new ArrayList<>(events.size());
             List<Long> appDeltas = new ArrayList<>(events.size());
-            Long corruptAt = null;
+            List<Long> corruptTimes = new ArrayList<>();
             for (AuditLogEvent event : events) {
                 try {
                     LifecycleEventPayload payload = LifecycleEventPayload.fromJson(event.payload);
@@ -809,13 +875,22 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                     tenantDeltas.add(CountDeltaInterpreter.tenantDeltasOf(payload));
                     appDeltas.add(CountDeltaInterpreter.appDeltaOf(payload));
                 } catch (InvalidLifecycleEventPayloadException e) {
-                    if (corruptAt == null || event.createdAt < corruptAt) {
-                        corruptAt = event.createdAt;
-                    }
+                    corruptTimes.add(event.createdAt);
                 }
             }
+            long[] sortedCorruptTimes = corruptTimes.stream().mapToLong(Long::longValue).toArray();
+            Arrays.sort(sortedCorruptTimes);
             return new Window(fromExclusive, toInclusive, times.stream().mapToLong(Long::longValue).toArray(),
-                    tenantDeltas, appDeltas, corruptAt);
+                    tenantDeltas, appDeltas, sortedCorruptTimes);
+        }
+
+        // the last unparseable event after snapshotMs, or null if there is none
+        @Nullable
+        Long lastCorruptAfter(long snapshotMs) {
+            if (corruptTimes.length == 0 || corruptTimes[corruptTimes.length - 1] <= snapshotMs) {
+                return null;
+            }
+            return corruptTimes[corruptTimes.length - 1];
         }
 
         int size() {
@@ -836,8 +911,15 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             mergedTenantDeltas.addAll(fresh.tenantDeltas);
             List<Long> mergedAppDeltas = new ArrayList<>(appDeltas.subList(0, keep));
             mergedAppDeltas.addAll(fresh.appDeltas);
-            Long corrupt = corruptAt != null && corruptAt <= cut ? corruptAt : fresh.corruptAt;
-            return new Window(fromExclusive, now, mergedTimes, mergedTenantDeltas, mergedAppDeltas, corrupt);
+            int keepCorrupt = 0;
+            while (keepCorrupt < corruptTimes.length && corruptTimes[keepCorrupt] <= cut) {
+                keepCorrupt++;
+            }
+            long[] mergedCorruptTimes = new long[keepCorrupt + fresh.corruptTimes.length];
+            System.arraycopy(corruptTimes, 0, mergedCorruptTimes, 0, keepCorrupt);
+            System.arraycopy(fresh.corruptTimes, 0, mergedCorruptTimes, keepCorrupt, fresh.corruptTimes.length);
+            return new Window(fromExclusive, now, mergedTimes, mergedTenantDeltas, mergedAppDeltas,
+                    mergedCorruptTimes);
         }
 
         long deltaAfter(long snapshotMs, Scope scope) {
@@ -849,6 +931,13 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 }
             }
             return delta;
+        }
+    }
+
+    // Another call held the pool's event window for longer than the caller waits (it is rolling a burst forward).
+    private static final class WindowBusyException extends Exception {
+        WindowBusyException() {
+            super(null, null, false, false);
         }
     }
 
@@ -901,6 +990,12 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     // The app count across the given storages (one per user pool), as for telemetry.
     public ApproximateCountResult serveAppForTesting(Main main, Storage[] storages) throws StorageQueryException {
         return serveApp(main, storages);
+    }
+
+    // The counts of the given tenants, all on the given storage, as for the license-usage stats.
+    public Map<String, ApproximateCountResult> serveTenantsForTesting(Main main, List<TenantIdentifier> tenants,
+                                                                      Storage storage) throws StorageQueryException {
+        return serveTenants(main, tenants, Collections.nCopies(tenants.size(), storage));
     }
 
     // The tenant's anchor snapshot time on the given storage's pool, or -1.

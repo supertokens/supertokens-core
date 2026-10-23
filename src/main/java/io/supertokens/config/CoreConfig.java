@@ -289,10 +289,13 @@ public class CoreConfig {
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
-            "How old, in milliseconds, a full user count may be before it is counted again. User counts (telemetry, " +
-                    "license usage, /users/count) are the last full count plus the sign-ups, deletions and links " +
+            "How old, in milliseconds, a full user count may be before it is counted again. Telemetry's user " +
+                    "count, the license-usage stats and the unfiltered tenant count of /users/count on CDI 5.7 (or " +
+                    "5.6 with allowApproximate) are the last full count plus the sign-ups, deletions and links " +
                     "logged since; the full count is shared by every core through the database and redone once it " +
-                    "is older than this. (Default: 600000)")
+                    "is older than this, so a lower value means fresher counts but more full counts on the " +
+                    "database. Other /users/count calls are exact counts and are not affected. Only read from the " +
+                    "base config. (Default: 600000)")
     private long users_count_max_age_ms = 600000;
 
     @EnvName("SUPERTOKENS_ADMIN_PORT")

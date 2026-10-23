@@ -33,6 +33,8 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
+import io.supertokens.pluginInterface.auditlog.LifecycleEventType;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.UsersCountCacheStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -47,6 +49,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -403,6 +406,181 @@ public class UserCountPipelineTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Every unparseable lifecycle event after a scope's anchor forces a new count, not only the pool's earliest one:
+    // the shared window starts at the app's (older) anchor, so after a recount past the first corrupt event a later
+    // one must still be caught.
+    @Test
+    public void everyUnparseableEventAfterTheAnchorForcesANewCount() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        AtomicInteger tenantCounts = new AtomicInteger();
+        Storage counting = interceptingStorage(storage, (method, methodArgs) -> {
+            if ((method.equals("getOrComputeTenantUsersCount") || method.equals("getUsersCount"))
+                    && methodArgs[0] instanceof TenantIdentifier) {
+                tenantCounts.incrementAndGet();
+            }
+        });
+
+        EmailPassword.signUp(tenant, storage, main, "a@example.com", "password");
+        counts.serveApp(main); // the app's anchor, older than every corrupt event below
+        assertEquals(1, counts.serve(main, tenant, counting).count);
+        assertEquals(1, tenantCounts.get());
+
+        insertUnparseableEvent(storage, tenant);
+        assertEquals(1, counts.serve(main, tenant, counting).count);
+        assertEquals("the first corrupt event forces a new count", 2, tenantCounts.get());
+
+        insertUnparseableEvent(storage, tenant);
+        assertEquals(1, counts.serve(main, tenant, counting).count);
+        assertEquals("a corrupt event after the new anchor forces another", 3, tenantCounts.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // The license stats' batch runs at most 2 of its counts at a time, so it never fills the request-count pool: a
+    // request for a tenant without an anchor still gets its count started right away, instead of queueing behind
+    // every tenant of the batch.
+    @Test
+    public void aBatchOfTenantCountsLeavesRoomForRequestCounts() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithLinkingAndTenants();
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier publicTenant = TenantIdentifier.BASE_TENANT;
+        List<TenantIdentifier> batch = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            TenantIdentifier tenant = new TenantIdentifier(null, null, "batch" + i);
+            Multitenancy.addNewOrUpdateAppOrTenant(main, publicTenant, new TenantConfig(tenant,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null, new JsonObject()));
+            batch.add(tenant);
+        }
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, publicTenant.toAppIdentifier());
+        AtomicInteger running = new AtomicInteger();
+        AtomicInteger maxRunning = new AtomicInteger();
+        CountDownLatch releaseBatch = new CountDownLatch(1);
+        Storage storage = interceptingStorage(StorageLayer.getStorage(main), (method, methodArgs) -> {
+            if ((method.equals("getOrComputeTenantUsersCount") || method.equals("getUsersCount"))
+                    && batch.contains(methodArgs[0])) {
+                maxRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
+                try {
+                    assertTrue(releaseBatch.await(30, TimeUnit.SECONDS));
+                } finally {
+                    running.decrementAndGet();
+                }
+            }
+        });
+
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> batchServed = callers.submit(() -> counts.serveTenantsForTesting(main, batch, storage));
+            waitFor(() -> running.get() >= 2);
+            Thread.sleep(500); // time for any batch count past the bound to start
+            assertEquals(2, maxRunning.get());
+
+            Future<Long> request = callers.submit(() -> counts.serve(main, publicTenant, storage).count);
+            assertEquals(AuthRecipe.getUsersCountForTenant(publicTenant, StorageLayer.getStorage(main), null),
+                    (long) request.get(10, TimeUnit.SECONDS));
+
+            releaseBatch.countDown();
+            batchServed.get(20, TimeUnit.SECONDS);
+        } finally {
+            releaseBatch.countDown();
+            callers.shutdownNow();
+        }
+        assertEquals(2, maxRunning.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A request doesn't wait behind another call's roll-forward of the shared window: it gets its own scope a new
+    // count instead, as a burst used to cost before the window was shared, and is served that count.
+    @Test
+    public void aRequestDoesNotWaitBehindAnotherScopesRollForward() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithLinkingAndTenants();
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier publicTenant = TenantIdentifier.BASE_TENANT;
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, publicTenant, new TenantConfig(t1,
+                new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                null, null, new JsonObject()));
+        Storage storage = StorageLayer.getStorage(main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, publicTenant.toAppIdentifier());
+        EmailPassword.signUp(publicTenant, storage, main, "p@example.com", "password");
+        EmailPassword.signUp(t1, storage, main, "t@example.com", "password");
+        assertEquals(1, counts.serve(main, publicTenant, storage).count);
+        assertEquals(1, counts.serve(main, t1, storage).count);
+
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        for (int i = 0; i < 8; i++) {
+            EmailPassword.signUp(publicTenant, storage, main, "burst" + i + "@example.com", "password");
+        }
+        CountDownLatch rolling = new CountDownLatch(1);
+        CountDownLatch releaseRoll = new CountDownLatch(1);
+        Storage slowRoll = interceptingStorage(storage, (method, methodArgs) -> {
+            if (method.equals("getActivityLogEntriesForApp") && Arrays.stream(Thread.currentThread().getStackTrace())
+                    .anyMatch(frame -> frame.getMethodName().equals("rollForward"))) {
+                rolling.countDown();
+                assertTrue(releaseRoll.await(30, TimeUnit.SECONDS));
+            }
+        });
+
+        ExecutorService callers = Executors.newFixedThreadPool(2);
+        try {
+            Future<Long> roller = callers.submit(() -> counts.serve(main, publicTenant, slowRoll).count);
+            assertTrue(rolling.await(10, TimeUnit.SECONDS));
+
+            Future<Long> request = callers.submit(() -> counts.serve(main, t1, storage).count);
+            assertEquals(1L, (long) request.get(15, TimeUnit.SECONDS));
+
+            releaseRoll.countDown();
+            assertEquals(9L, (long) roller.get(20, TimeUnit.SECONDS));
+        } finally {
+            releaseRoll.countDown();
+            callers.shutdownNow();
+        }
+        assertEquals(1, counts.serve(main, t1, storage).count);
+        assertEquals(9, counts.serve(main, publicTenant, storage).count);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // A lifecycle event of a valid type whose payload is valid JSON of the wrong shape (so it does not parse).
+    private static void insertUnparseableEvent(Storage storage, TenantIdentifier tenant) throws Exception {
+        Thread.sleep(5);
+        ((ActivityLogStorage) storage).createActivityLogEntry(tenant, new AuditLogEvent(tenant.getAppId(), null,
+                "recipe-user", "recipe-user", LifecycleEventType.USER_DELETION.getValue(), "success", null, null,
+                System.currentTimeMillis(), "{\"schemaVersion\":1,\"type\":\"user_deletion\"}"));
+        Thread.sleep(5);
+    }
+
+    private interface Condition {
+        boolean holds() throws Exception;
+    }
+
+    private static void waitFor(Condition condition) throws Exception {
+        long deadline = System.currentTimeMillis() + 10000;
+        while (!condition.holds()) {
+            assertTrue("condition not reached in time", System.currentTimeMillis() < deadline);
+            Thread.sleep(10);
+        }
     }
 
     private static void assertCountsExact(Main main, ApproximateUserCount counts, AppIdentifier app,
