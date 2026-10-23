@@ -90,8 +90,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * until the scope's next full count, at most {@code users_count_max_age_ms} later.
  * <p>
  * A {@code /users/count} request does not wait behind another call's roll-forward of a burst: after
- * {@link #REQUEST_WINDOW_WAIT_MS} it gets its own scope a new count instead, as a burst cost before the window was
- * shared.
+ * {@link #REQUEST_WINDOW_WAIT_MS} it is served its scope's anchor as is, marked stale, with the anchor's snapshot as
+ * its asOf.
  */
 public class ApproximateUserCount extends ResourceDistributor.SingletonResource {
 
@@ -122,7 +122,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
     private static final Semaphore BATCH_COUNT_PERMITS = new Semaphore(2);
 
     // How long a /users/count request waits for the pool's event window. Reading it takes milliseconds; a longer wait
-    // means another call is rolling a burst into the anchors, and the request gets its own scope a new count instead.
+    // means another call is rolling a burst into the anchors, and the request is served its anchor as is instead.
     private static final long REQUEST_WINDOW_WAIT_MS = 2_000;
 
     private static final CountShadowAudit SHADOW_AUDIT = new CountShadowAudit(CountDeltaInterpreter.DEFAULT_BURST_CAP);
@@ -291,17 +291,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 window = window(pool, activityLogStorage, anchor.snapshotMs, attempt > 0, reuseWindowReadAfter,
                         request ? REQUEST_WINDOW_WAIT_MS : Long.MAX_VALUE);
             } catch (WindowBusyException e) {
-                // Another call is rolling a burst into the pool's anchors. Rather than wait for the whole burst, get
-                // this scope a count taken after it (single-flighted, as for a burst too big to roll) and serve that
-                // count as is if the window is still busy.
-                if (attempt > 0) {
-                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, anchor.fallback);
+                // Another call is rolling a burst into the pool's anchors. Rather than wait for the whole burst, or
+                // start a full count of its own, the request is served its anchor as is, marked stale: asOf is the
+                // anchor's own snapshot, so the client sees how old the number is.
+                Anchor current = pool.anchors.get(scope.key);
+                if (current != null && current.snapshotMs >= anchor.snapshotMs) {
+                    anchor = current;
                 }
-                anchor = awaitAnchor(main, pool, storage, scope, System.currentTimeMillis() - rollMarginMs);
-                if (anchor.fallback) {
-                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
-                }
-                continue;
+                return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
             }
             Anchor current = pool.anchors.get(scope.key);
             if (current != null && current.snapshotMs >= anchor.snapshotMs) {

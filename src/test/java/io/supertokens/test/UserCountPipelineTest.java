@@ -506,8 +506,8 @@ public class UserCountPipelineTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // A request doesn't wait behind another call's roll-forward of the shared window: it gets its own scope a new
-    // count instead, as a burst used to cost before the window was shared, and is served that count.
+    // A request doesn't wait behind another call's roll-forward of the shared window, and doesn't start a full count
+    // of its own either: it is served its anchor as is, marked stale, with the anchor's snapshot as asOf.
     @Test
     public void aRequestDoesNotWaitBehindAnotherScopesRollForward() throws Exception {
         TestingProcessManager.TestingProcess process = startWithLinkingAndTenants();
@@ -546,8 +546,18 @@ public class UserCountPipelineTest {
             Future<Long> roller = callers.submit(() -> counts.serve(main, publicTenant, slowRoll).count);
             assertTrue(rolling.await(10, TimeUnit.SECONDS));
 
-            Future<Long> request = callers.submit(() -> counts.serve(main, t1, storage).count);
-            assertEquals(1L, (long) request.get(15, TimeUnit.SECONDS));
+            long t1Snapshot = counts.anchorSnapshotForTesting(t1, storage);
+            KeyValueInfo t1Stored = storage.getKeyValue(t1, "TENANT_USERS_COUNT");
+            Future<ApproximateUserCount.ApproximateCountResult> request = callers.submit(
+                    () -> counts.serve(main, t1, storage));
+            ApproximateUserCount.ApproximateCountResult served = request.get(15, TimeUnit.SECONDS);
+            assertEquals(1, served.count);
+            assertTrue("served as stale", served.stale);
+            assertEquals("asOf is the anchor's own snapshot", t1Snapshot, served.asOf);
+            if (storage instanceof UsersCountCacheStorage) {
+                assertEquals("no new full count", t1Stored.createdAtTime,
+                        storage.getKeyValue(t1, "TENANT_USERS_COUNT").createdAtTime);
+            }
 
             releaseRoll.countDown();
             assertEquals(9L, (long) roller.get(20, TimeUnit.SECONDS));
