@@ -302,8 +302,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             }
             Anchor current = pool.anchors.get(scope.key);
             if (current == null && attempt == 0) {
-                // the roll-forward dropped this scope's anchor (it was before an unparseable event): count again
-                anchor = awaitAnchor(main, pool, storage, scope, 0);
+                // the roll-forward dropped this scope's anchor (it was before an unparseable event): count again, after it
+                anchor = awaitAnchor(main, pool, storage, scope, pool.droppedBeforeMs);
                 if (anchor.fallback) {
                     return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
                 }
@@ -644,6 +644,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 // before the event and give up. Dropped (only if no new count replaced it meanwhile), its scope
                 // gets a count taken after the event when it is next served.
                 pool.anchors.remove(e.getValue(), anchor);
+                pool.droppedBeforeMs = Math.max(pool.droppedBeforeMs, corruptAt);
             } else if (rolledTo > anchor.snapshotMs) {
                 // only if no new count replaced it meanwhile
                 pool.anchors.replace(e.getValue(), anchor,
@@ -783,6 +784,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         final ConcurrentHashMap<String, AuditSnapshot> audits = new ConcurrentHashMap<>();
         final ReentrantLock windowLock = new ReentrantLock();
         volatile Window window;
+        // The latest unparseable event a roll-forward stopped at: the anchors before it were dropped, and a scope
+        // without an anchor is counted at or after it.
+        volatile long droppedBeforeMs = 0;
 
         long oldestFoldedSnapshot() {
             long oldest = Long.MAX_VALUE;
