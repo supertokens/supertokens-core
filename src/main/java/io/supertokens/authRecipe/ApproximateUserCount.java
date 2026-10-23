@@ -276,7 +276,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
 
         Anchor anchor = pool.anchors.get(scope.key);
         if (anchor == null) {
-            anchor = awaitAnchor(main, pool, storage, scope, 0);
+            // at or after the latest unparseable event the pool's roll-forward stopped at (0 if none): an older
+            // stored count could not be rolled past it
+            anchor = awaitAnchor(main, pool, storage, scope, pool.droppedBeforeMs);
         } else if (isStale(main, anchor)) {
             startOrJoinCount(main, pool, storage, scope, 0, true);
         }
