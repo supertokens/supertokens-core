@@ -92,6 +92,13 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
+    // Serialises the two writers of the enabled-features cache: a database read that is about
+    // to (re)fill it and a license sync that has just written a fresher answer. A read that started
+    // before a completed sync must not overwrite the synced features with its own (possibly
+    // absent-row) answer, so each writer only takes the cache when no sync has refreshed it since
+    // the read began.
+    private final Object enabledFeaturesCacheWriteLock = new Object();
+
     private Main main;
 
     private AppIdentifier appIdentifier;
@@ -100,6 +107,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     @TestOnly
     public void updateEnabledFeaturesValueReadFromDbTime(long newTime) {
         this.enabledFeaturesValueReadFromDbTime = newTime;
+    }
+
+    @Override
+    @TestOnly
+    public long getEnabledFeaturesValueReadFromDbTime() {
+        return this.enabledFeaturesValueReadFromDbTime;
     }
 
     @Override
@@ -616,8 +629,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
                 .setKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB,
                         new KeyValueInfo(json.toString()));
-        this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
-        this.enabledFeaturesFromDb = features;
+        synchronized (this.enabledFeaturesCacheWriteLock) {
+            this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+            this.enabledFeaturesFromDb = features;
+        }
     }
 
     private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache()
@@ -626,11 +641,24 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 || (System.currentTimeMillis()
                 - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
             //Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Reading feature flag from database");
+            long cacheStampAtReadStart = this.enabledFeaturesValueReadFromDbTime;
             KeyValueInfo keyValueInfo = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
                     .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB);
             if (keyValueInfo == null) {
                 //Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "No feature flag set in db");
-                return new EE_FEATURES[]{};
+                // Cache the absent row the same way a present one is cached: without this, every feature
+                // check re-reads key_value while no FEATURE_FLAG row exists yet - for a fresh install until
+                // the first EELicenseCheck run, and for an app created at runtime until its next run, since
+                // 12.4.0 the constructor no longer syncs. The next successful sync writes the row and
+                // setEnabledEEFeaturesInDb refreshes this cache right away, so the negative answer never
+                // outlives it.
+                synchronized (this.enabledFeaturesCacheWriteLock) {
+                    if (this.enabledFeaturesValueReadFromDbTime == cacheStampAtReadStart) {
+                        this.enabledFeaturesFromDb = new EE_FEATURES[]{};
+                        this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+                    }
+                }
+                return this.enabledFeaturesFromDb;
             }
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
@@ -640,8 +668,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                     enabledFeatures.add(feature);
                 }
             }
-            this.enabledFeaturesFromDb = enabledFeatures.toArray(EE_FEATURES[]::new);
-            this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+            synchronized (this.enabledFeaturesCacheWriteLock) {
+                if (this.enabledFeaturesValueReadFromDbTime == cacheStampAtReadStart) {
+                    this.enabledFeaturesFromDb = enabledFeatures.toArray(EE_FEATURES[]::new);
+                    this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+                }
+            }
         } else {
             //Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Returning feature flag from cache");
         }

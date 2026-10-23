@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.4.2]
+
+- Feature checks cache the absent `FEATURE_FLAG` row like a present one, so an install whose license has not synced yet (a fresh boot before the first `EELicenseCheck` run, or an app created at runtime) no longer re-queries `key_value` on every feature check. The cache is coordinated with license syncs, so an in-flight read can no longer overwrite a fresher synced answer.
+
 ## [12.4.1]
 
 - Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
