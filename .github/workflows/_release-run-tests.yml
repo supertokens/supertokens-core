@@ -17,6 +17,22 @@ on:
         type: boolean
         required: false
         default: false
+      plugin-interface-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-plugin-interface
+      postgresql-plugin-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-postgresql-plugin
+      java-version:
+        type: string
+        required: false
+        default: '21.0.7'
+      root-ref:
+        type: string
+        required: false
+        default: master
 
 env:
   total-runners: 6
@@ -47,10 +63,10 @@ jobs:
           - sqlite
           - postgresql
     steps:
-      - name: Set up JDK 21.0.7
+      - name: Set up JDK ${{ inputs.java-version }}
         uses: actions/setup-java@v5
         with:
-          java-version: 21.0.7
+          java-version: ${{ inputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
@@ -58,7 +74,7 @@ jobs:
         with:
           repository: supertokens/supertokens-root
           path: supertokens-root
-          ref: master
+          ref: ${{ inputs.root-ref }}
 
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
@@ -69,17 +85,19 @@ jobs:
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-plugin-interface
+          repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-postgresql-plugin
+          repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Load modules
         run: |
