@@ -294,7 +294,9 @@ public class CoreConfig {
                     "5.6 with allowApproximate) are the last full count plus the sign-ups, deletions and links " +
                     "logged since; the full count is shared by every core through the database and redone once it " +
                     "is older than this, so a lower value means fresher counts but more full counts on the " +
-                    "database. Other /users/count calls are exact counts and are not affected. Only read from the " +
+                    "database. While a burst (e.g. a bulk import) is being rolled into the count, /users/count gets the " +
+                    "count as of before it, with an older asOf. Other /users/count calls are exact counts and are " +
+                    "not affected. Only read from the " +
                     "base config. (Default: 600000)")
     private long users_count_max_age_ms = 600000;
 

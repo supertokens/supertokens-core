@@ -301,6 +301,14 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
             }
             Anchor current = pool.anchors.get(scope.key);
+            if (current == null && attempt == 0) {
+                // the roll-forward dropped this scope's anchor (it was before an unparseable event): count again
+                anchor = awaitAnchor(main, pool, storage, scope, 0);
+                if (anchor.fallback) {
+                    return new ApproximateCountResult(anchor.count, true, anchor.snapshotMs, true);
+                }
+                continue;
+            }
             if (current != null && current.snapshotMs >= anchor.snapshotMs) {
                 anchor = current; // rolled forward (or re-counted) meanwhile
             }
@@ -579,6 +587,7 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
             from = Math.min(from, anchor.snapshotMs);
         }
         long rolledTo = cutoffMs;
+        Long corruptAt = null;
         sliceMs = Math.max(1, sliceMs);
         pages:
         while (from < cutoffMs) {
@@ -609,7 +618,9 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
                 try {
                     payload = LifecycleEventPayload.fromJson(event.payload);
                 } catch (InvalidLifecycleEventPayloadException e) {
-                    rolledTo = event.createdAt - 1; // only a new count can pass a corrupt event
+                    // only a new count can pass a corrupt event: the anchors before it are dropped below
+                    corruptAt = event.createdAt;
+                    rolledTo = event.createdAt - 1;
                     break pages;
                 }
                 long appDelta = CountDeltaInterpreter.appDeltaOf(payload);
@@ -627,7 +638,13 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         }
         for (Map.Entry<Anchor, String> e : keys.entrySet()) {
             Anchor anchor = e.getKey();
-            if (rolledTo > anchor.snapshotMs) {
+            if (corruptAt != null && anchor.snapshotMs < corruptAt) {
+                // An anchor before an unparseable event can never be rolled past it. Kept, it would stay the pool's
+                // oldest anchor - for good if its scope is not served again - and every window read would start
+                // before the event and give up. Dropped (only if no new count replaced it meanwhile), its scope
+                // gets a count taken after the event when it is next served.
+                pool.anchors.remove(e.getValue(), anchor);
+            } else if (rolledTo > anchor.snapshotMs) {
                 // only if no new count replaced it meanwhile
                 pool.anchors.replace(e.getValue(), anchor,
                         anchor.rolledTo(anchor.count + deltas.getOrDefault(anchor, 0L), rolledTo));
@@ -956,7 +973,8 @@ public class ApproximateUserCount extends ResourceDistributor.SingletonResource 
         public final boolean approximate;
         // The epoch-ms instant the served value is "as of".
         public final long asOf;
-        // A new count failed and this is the last count stored in the database.
+        // The count is older than usual: a new count failed and this is the last count stored in the database, or
+        // another call was rolling a burst into the anchors and this is the anchor as is (asOf says how old).
         public final boolean stale;
 
         public ApproximateCountResult(long count, boolean approximate, long asOf) {

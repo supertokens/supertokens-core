@@ -448,6 +448,48 @@ public class UserCountPipelineTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // An unparseable event does not pin the pool's roll-forward: the anchors before it (here the app's, which is not
+    // served again for a while) are dropped instead of being kept just before it, so a later burst still rolls the
+    // other anchors forward instead of forcing a full count on every call.
+    @Test
+    public void anUnparseableEventDoesNotPinTheRollForward() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        ApproximateUserCount counts = ApproximateUserCount.getInstance(main, tenant.toAppIdentifier());
+        AtomicInteger tenantCounts = new AtomicInteger();
+        Storage counting = interceptingStorage(storage, (method, methodArgs) -> {
+            if ((method.equals("getOrComputeTenantUsersCount") || method.equals("getUsersCount"))
+                    && methodArgs[0] instanceof TenantIdentifier) {
+                tenantCounts.incrementAndGet();
+            }
+        });
+
+        EmailPassword.signUp(tenant, storage, main, "a@example.com", "password");
+        assertEquals(1, counts.serveApp(main).count); // the app's anchor, before the corrupt event
+        insertUnparseableEvent(storage, tenant);
+        assertEquals(1, counts.serve(main, tenant, counting).count); // counted after the corrupt event
+        int afterCorrupt = tenantCounts.get();
+
+        ApproximateUserCount.setPageSizeAndRollMarginForTesting(3, 0);
+        for (int i = 0; i < 8; i++) {
+            EmailPassword.signUp(tenant, storage, main, "burst" + i + "@example.com", "password");
+        }
+        assertEquals(9, counts.serve(main, tenant, counting).count);
+        assertEquals(9, counts.serve(main, tenant, counting).count);
+        assertEquals("the burst was rolled forward, not counted", afterCorrupt, tenantCounts.get());
+        assertEquals("the app's dropped anchor is counted again", 9, counts.serveApp(main).count);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // The license stats' batch runs at most 2 of its counts at a time, so it never fills the request-count pool: a
     // request for a tenant without an anchor still gets its count started right away, instead of queueing behind
     // every tenant of the batch.
