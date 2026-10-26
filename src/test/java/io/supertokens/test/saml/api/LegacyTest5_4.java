@@ -19,11 +19,7 @@ import org.junit.rules.TestRule;
 
 import com.google.gson.JsonObject;
 
-import org.apache.catalina.Valve;
-import org.apache.catalina.valves.ErrorReportValve;
-
 import io.supertokens.ProcessState;
-import io.supertokens.webserver.Webserver;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -31,6 +27,9 @@ import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.saml.MockSAML;
 import io.supertokens.test.saml.SAMLTestUtils;
 import io.supertokens.utils.SemVer;
+import org.apache.catalina.Valve;
+import org.apache.catalina.valves.ErrorReportValve;
+import io.supertokens.webserver.Webserver;
 
 public class LegacyTest5_4 {
 
@@ -633,40 +632,6 @@ public class LegacyTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Regression: a malformed bearer token must be rejected with a clean 400 INVALID_TOKEN_ERROR
-    // from an unauthenticated caller and must NOT surface an unhandled 500 (previously an
-    // ArrayIndexOutOfBoundsException from split()[1]). Covers the token shapes that fail the
-    // "<code>.<clientId>" guard: no dot at all ("no-dot-token"), an empty code (a leading "."
-    // or a lone "."), and an empty clientId (a trailing "abc."). "abc.." now parses to
-    // code="abc"/clientId="." and is rejected downstream as an invalid code — still a 400, never a 500.
-    @Test
-    public void testLegacyUserinfoMalformedTokenIsRejectedWithout500() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.SAML});
-
-        for (String malformed : new String[]{"abc.", ".", ".abc", "abc..", "no-dot-token"}) {
-            try {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Authorization", "Bearer " + malformed);
-                HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
-                        "http://localhost:3567/recipe/saml/legacy/userinfo", null, headers, 1000, 1000, null,
-                        SemVer.v5_4.get(), "saml");
-                fail("Expected a 400 for malformed token: \"" + malformed + "\"");
-            } catch (HttpResponseException e) {
-                assertEquals("token \"" + malformed + "\" must not cause a 500", 400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR", e.getMessage());
-            }
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
     @Test
     public void testLegacyUserinfoValidToken() throws Exception {
         String[] args = {"../"};
@@ -756,7 +721,38 @@ public class LegacyTest5_4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // ========== Code / token exchange hardening ===        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+    // ========== Code / token exchange hardening ==========
+
+    private static final String TOKEN_URL = "http://localhost:3567/recipe/saml/legacy/token";
+    private static final String USERINFO_URL = "http://localhost:3567/recipe/saml/legacy/userinfo";
+
+    private TestingProcessManager.TestingProcess startWithSAML() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+        return process;
+    }
+
+    private SAMLTestUtils.CreatedClientInfo createLegacyClient(TestingProcessManager.TestingProcess process,
+                                                               String idpEntityId) throws Exception {
+        return SAMLTestUtils.createClientWithGeneratedMetadata(
+                process,
+                TEST_REDIRECT_URI,
+                "http://localhost:3000/acs",
+                idpEntityId,
+                "https://mocksaml.com/api/saml/sso"
+        );
+    }
+
+    // Runs a legacy SP-initiated login through the callback and returns the code from the redirect.
+    private String loginAndGetCode(TestingProcessManager.TestingProcess process,
+                                   SAMLTestUtils.CreatedClientInfo clientInfo, String email) throws Exception {
+        String relayState = SAMLTestUtils.createLoginRequestAndGetRelayState(
+                process, clientInfo.clientId, clientInfo.defaultRedirectURI, clientInfo.acsURL, "test-state");
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
                 clientInfo.idpEntityId,
                 "https://saml.supertokens.com",
                 clientInfo.acsURL,
@@ -819,6 +815,40 @@ public class LegacyTest5_4 {
             assertEquals("for " + authorizationHeader, 400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR", e.getMessage());
         }
+    }
+
+    // Regression: a malformed bearer token must be rejected with a clean 400 INVALID_TOKEN_ERROR
+    // from an unauthenticated caller and must NOT surface an unhandled 500 (previously an
+    // ArrayIndexOutOfBoundsException from split()[1]). Covers the token shapes that fail the
+    // "<code>.<clientId>" guard: no dot at all ("no-dot-token"), an empty code (a leading "."
+    // or a lone "."), and an empty clientId (a trailing "abc."). "abc.." now parses to
+    // code="abc"/clientId="." and is rejected downstream as an invalid code — still a 400, never a 500.
+    @Test
+    public void testLegacyUserinfoMalformedTokenIsRejectedWithout500() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        for (String malformed : new String[]{"abc.", ".", ".abc", "abc..", "no-dot-token"}) {
+            try {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", "Bearer " + malformed);
+                HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
+                        "http://localhost:3567/recipe/saml/legacy/userinfo", null, headers, 1000, 1000, null,
+                        SemVer.v5_4.get(), "saml");
+                fail("Expected a 400 for malformed token: \"" + malformed + "\"");
+            } catch (HttpResponseException e) {
+                assertEquals("token \"" + malformed + "\" must not cause a 500", 400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: INVALID_TOKEN_ERROR", e.getMessage());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // A caller-supplied clientId may contain dots. The legacy access token is opaque (it no longer embeds the
