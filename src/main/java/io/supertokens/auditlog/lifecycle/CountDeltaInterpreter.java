@@ -148,6 +148,58 @@ public final class CountDeltaInterpreter {
         return computeDeltas(events).getOrDefault(tenantId, 0L);
     }
 
+    /**
+     * The per-tenant count deltas of one event (only the tenants it changes).
+     */
+    public static Map<String, Long> tenantDeltasOf(LifecycleEventPayload event) {
+        Map<String, Long> deltas = new HashMap<>();
+        applyEvent(event, deltas);
+        return deltas;
+    }
+
+    /**
+     * The app-level count delta of one event. The app count is the number of distinct user groups in the app, whatever
+     * tenants they are in, so only events that create, remove, merge or split a group change it:
+     * <ul>
+     *   <li>{@code USER_CREATION} / {@code USER_IMPORT}: {@code +1} (a new group);</li>
+     *   <li>{@code USER_GROUP_DELETION}: {@code -1} (the whole group is deleted);</li>
+     *   <li>{@code ACCOUNT_LINKING}: {@code -1} (emitted only when two groups merge);</li>
+     *   <li>{@code ACCOUNT_UNLINKING}: {@code +1} (emitted only when a member is freed into its own group);</li>
+     *   <li>{@code USER_DELETION}: {@code 0} (a member is deleted and its group survives);</li>
+     *   <li>{@code TENANT_ASSOCIATION} / {@code TENANT_DISASSOCIATION}: {@code 0} (tenant membership only).</li>
+     * </ul>
+     * Users without any tenant are part of the app count, and no event is needed when a tenant is deleted.
+     */
+    public static long appDeltaOf(LifecycleEventPayload event) {
+        switch (event.type) {
+            case USER_CREATION:
+            case USER_IMPORT:
+            case ACCOUNT_UNLINKING:
+                return 1;
+            case USER_GROUP_DELETION:
+            case ACCOUNT_LINKING:
+                return -1;
+            case USER_DELETION:
+            case TENANT_ASSOCIATION:
+            case TENANT_DISASSOCIATION:
+                return 0;
+            default:
+                // Unreachable: every LifecycleEventType is handled above.
+                throw new IllegalStateException("unhandled lifecycle event type: " + event.type);
+        }
+    }
+
+    /**
+     * The net app-level count delta of a window of events (see {@link #appDeltaOf}).
+     */
+    public static long computeAppDelta(List<LifecycleEventPayload> events) {
+        long delta = 0;
+        for (LifecycleEventPayload event : events) {
+            delta += appDeltaOf(event);
+        }
+        return delta;
+    }
+
     private static void applyEvent(LifecycleEventPayload event, Map<String, Long> deltas) {
         switch (event.type) {
             case USER_CREATION:

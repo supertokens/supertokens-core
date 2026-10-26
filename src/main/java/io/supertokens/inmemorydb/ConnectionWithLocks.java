@@ -28,6 +28,19 @@ public class ConnectionWithLocks implements Connection {
     private Connection con;
     private ConnectionPool connectionPool;
     private Set<String> lockedKeys = new HashSet<String>();
+    // Test-only (TransactionCounters): this transaction ran a write that its next commit makes durable.
+    private boolean pendingWrite = false;
+
+    void markPendingWrite() {
+        this.pendingWrite = true;
+    }
+
+    private void countCommitOfPendingWrite() {
+        if (this.pendingWrite) {
+            this.pendingWrite = false;
+            TransactionCounters.writingCommit();
+        }
+    }
 
     public synchronized void lock(String key) {
         if (!this.lockedKeys.contains(key)) {
@@ -70,7 +83,12 @@ public class ConnectionWithLocks implements Connection {
 
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
+        boolean commitsPending = autoCommit && !con.getAutoCommit();
         con.setAutoCommit(autoCommit);
+        if (commitsPending) {
+            // switching auto-commit back on commits the open transaction
+            countCommitOfPendingWrite();
+        }
     }
 
     @Override
@@ -82,6 +100,7 @@ public class ConnectionWithLocks implements Connection {
     public void commit() throws SQLException {
         try {
             con.commit();
+            countCommitOfPendingWrite();
         } finally {
             this.unlockAllLocks();
         }
@@ -90,6 +109,7 @@ public class ConnectionWithLocks implements Connection {
     @Override
     public void rollback() throws SQLException {
         try {
+            this.pendingWrite = false;
             con.rollback();
         } finally {
             this.unlockAllLocks();
@@ -102,6 +122,7 @@ public class ConnectionWithLocks implements Connection {
             con.close();
         } finally {
             this.unlockAllLocks();
+            ConnectionPool.onRelease(); // test-only borrow tracking (PLAN-017 / CORE-2); inert unless a test enabled it
         }
     }
 
@@ -203,6 +224,7 @@ public class ConnectionWithLocks implements Connection {
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
+        this.pendingWrite = false;
         con.rollback();
     }
 

@@ -113,8 +113,9 @@ public class ConfigMapper {
                 // Handle boolean conversion from strings like "true", "false"
                 return handleBooleanConversion(value, fieldName);
             }
-        } catch (NumberFormatException e) {
-            // do nothing, will fall into InvalidConfigException
+        } catch (NumberFormatException | UnsupportedOperationException | IllegalStateException e) {
+            // do nothing, will fall into InvalidConfigException. Gson throws UnsupportedOperationException /
+            // IllegalStateException when the value is a JSON object or array instead of a primitive.
         }
 
         // Throw an exception for unsupported conversions
