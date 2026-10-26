@@ -63,6 +63,7 @@ public interface QueryExecutorTemplate {
             }
             pst.executeBatch(); //for the possible remaining ones
         }
+        TransactionCounters.write(connection);
     }
 
     public static int update(Start start, String QUERY, PreparedStatementValueSetter setter)
@@ -76,7 +77,9 @@ public interface QueryExecutorTemplate {
             throws SQLException, StorageQueryException {
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             setter.setValues(pst);
-            return pst.executeUpdate();
+            int updated = pst.executeUpdate();
+            TransactionCounters.write(con);
+            return updated;
         }
     }
 

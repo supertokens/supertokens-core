@@ -1643,6 +1643,62 @@ try {
         });
     }
 
+    // Transaction variant of listPrimaryUserIdsByEmail that reuses the caller's connection instead of
+    // borrowing a fresh pooled connection (avoids nested same-pool acquisition). Same SQL as the non-tx form.
+    public static List<String> listPrimaryUserIdsByEmail_Transaction(Start start, Connection sqlCon,
+                                                                     TenantIdentifier tenantIdentifier, String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = ?"
+                + " AND rut.account_info_value = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, ACCOUNT_INFO_TYPE.EMAIL.toString());
+            pst.setString(4, email);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
+    }
+
+    // Transaction variant of listPrimaryUserIdsByPhoneNumber that reuses the caller's connection instead of
+    // borrowing a fresh pooled connection (avoids nested same-pool acquisition). Same SQL as the non-tx form.
+    public static List<String> listPrimaryUserIdsByPhoneNumber_Transaction(Start start, Connection sqlCon,
+                                                                           TenantIdentifier tenantIdentifier,
+                                                                           String phoneNumber)
+            throws SQLException, StorageQueryException {
+        // Phone number rows always have third_party_id = '' (Passwordless has no ThirdParty concept).
+        String QUERY = "SELECT DISTINCT auid.primary_or_recipe_user_id"
+                + " FROM " + Config.getConfig(start).getRecipeUserTenantsTable() + " rut"
+                + " JOIN " + Config.getConfig(start).getAppIdToUserIdTable() + " auid"
+                + " ON rut.app_id = auid.app_id AND rut.recipe_user_id = auid.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = ? AND rut.third_party_id = ''"
+                + " AND rut.account_info_value = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, ACCOUNT_INFO_TYPE.PHONE_NUMBER.toString());
+            pst.setString(4, phoneNumber);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("primary_or_recipe_user_id"));
+            }
+            return userIds;
+        });
+    }
+
     public static String getPrimaryUserIdByThirdPartyInfo(Start start, TenantIdentifier tenantIdentifier,
                                                            String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
