@@ -4228,6 +4228,18 @@ public class Start
     }
 
     @Override
+    public WebAuthNStoredCredential loadCredentialByIdInApp_Transaction(TenantIdentifier tenantIdentifier,
+                                                                        TransactionConnection con, String credentialId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return WebAuthNQueries.loadCredentialByIdInApp_Transaction(this, sqlCon, tenantIdentifier, credentialId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo signUpWithCredentialsRegister_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                                  String userId, String email, String relyingPartyId, WebAuthNStoredCredential credential)
             throws StorageQueryException, io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException, TenantOrAppNotFoundException,
