@@ -126,6 +126,28 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         ).collect(Collectors.toList());
     }
 
+    // Cache-only variant of getAllKeys for verifying a token inside a storage transaction: never triggers the
+    // rotation-window refresh in getDynamicKeys, so it acquires no DB connection on top of the one the
+    // caller's transaction already holds. The refresh happens at the caller's pre-transaction warm-up, where
+    // the thread holds no connection. Falls back to the refreshing path only when nothing is cached to serve.
+    public List<JWTSigningKeyInfo> getAllKeysWithoutRefresh()
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        List<KeyInfo> dynamic = null;
+        List<KeyInfo> cached = this.dynamicKeys;
+        if (cached != null) {
+            dynamic = cached.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())
+                    .collect(Collectors.toList());
+        }
+        if (dynamic == null || dynamic.isEmpty()) {
+            dynamic = getDynamicKeys();
+        }
+        return Stream.concat(
+                dynamic.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo),
+                getStaticKeys().stream()
+        ).collect(Collectors.toList());
+    }
+
     public List<KeyInfo> getDynamicKeys()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
@@ -319,6 +341,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     private void updateKeyCacheIfNotChangedLocked(List<JWTSigningKeyInfo> oldKeyInfo)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
+        // a static legacy key moves into the JWT signing keys read below, so move it before reading either kind
+        AccessTokenSigningKey.getInstance(appIdentifier, main).ensureLegacyKeyTransferred();
         if (this.dynamicKeys == null ||
                 // First we disregard expired keys - it doesn't matter if they were known or not
                 this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())

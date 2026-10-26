@@ -188,38 +188,35 @@ public class UserRoles {
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
     @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
-    public static boolean removeUserRole(TenantIdentifier tenantIdentifier, Storage storage, String userId,
+    public static boolean removeUserRole(Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
                                          String role)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException,
+            TenantOrAppNotFoundException {
+
+        // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
+        // We do this because it's not straight forward to replicate roles to all storages of an app
+        // The role existence check must resolve against the app (public tenant) storage, the same way
+        // addRoleToUser does, so that a role created and granted against the app storage can also be
+        // removed when the tenant is backed by its own storage.
+        Storage appStorage = StorageLayer.getStorage(
+                tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
+        if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
+            throw new UnknownRoleException();
+        }
 
         UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
 
-        try {
-            return userRolesStorage.startTransaction(con -> {
-
-                boolean doesRoleExist = userRolesStorage.doesRoleExist_Transaction(
-                        tenantIdentifier.toAppIdentifier(), con, role);
-
-                if (doesRoleExist) {
-                    return userRolesStorage.deleteRoleForUser_Transaction(tenantIdentifier, con, userId, role);
-                } else {
-                    throw new StorageTransactionLogicException(new UnknownRoleException());
-                }
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownRoleException) {
-                throw (UnknownRoleException) e.actualException;
-            }
-            throw e;
-        }
+        return userRolesStorage.startTransaction(con ->
+                userRolesStorage.deleteRoleForUser_Transaction(tenantIdentifier, con, userId, role));
     }
 
     @TestOnly
     public static boolean removeUserRole(Main main, String userId, String role)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException,
+            TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(main);
         return removeUserRole(
-                ResourceDistributor.getAppForTesting(), storage,
+                main, ResourceDistributor.getAppForTesting(), storage,
                 userId, role);
     }
 
