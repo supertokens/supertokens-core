@@ -76,8 +76,9 @@ public class SAMLCertificate extends ResourceDistributor.SingletonResource {
         this.main = main;
         this.appIdentifier = appIdentifier;
         try {
-            if (!Main.isTesting) {
-                // Creation of new certificate is slow, not really necessary to create one for each test
+            // Creation of new certificate is slow, not really necessary to create one for each test. Querying a
+            // storage that is still initialising would wait for it; getCertificate() loads it on first use.
+            if (!Main.isTesting && !StorageLayer.isStorageStillInitialising(main, appIdentifier)) {
                 this.getCertificate();
             }
         } catch (StorageQueryException | TenantOrAppNotFoundException | RuntimeException e) {
