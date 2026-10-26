@@ -32,6 +32,10 @@ on:
       postgresql-sha:
         type: string
         required: true
+      postgresql-plugin-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-postgresql-plugin
     outputs:
       has-db-migration:
         value: ${{ jobs.derive.outputs.has-db-migration }}
@@ -49,9 +53,9 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-postgresql-plugin
+          repository: ${{ inputs.postgresql-plugin-repo }}
           ref: ${{ inputs.postgresql-sha }}
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
           path: plugin
       - name: Checkout supertokens-core (for CHANGELOG.md)
         uses: actions/checkout@v5
