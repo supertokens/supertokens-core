@@ -1,0 +1,232 @@
+name: Release – Build image
+
+# Builds the core image once, at exact commits, and returns its digest. Everything downstream
+# (stress tests, promotion to Docker Hub / ECR) works on that digest, so what was tested is
+# byte-for-byte what ships.
+#
+# target: dockerhub-dev  -> supertokens/supertokens-dev-postgresql:<version>[-canary]-dev (normal releases)
+#         ecr            -> <ECR registry>/<vars.ECR_REPOSITORY>:<version>[-canary] (embargoed builds).
+#                           Runs in the `embargo` environment and refuses to overwrite an existing tag.
+
+on:
+  workflow_call:
+    inputs:
+      core-version:
+        type: string
+        required: true
+      is-canary:
+        type: boolean
+        required: false
+        default: false
+      core-sha:
+        type: string
+        required: true
+      plugin-interface-sha:
+        type: string
+        required: true
+      postgresql-sha:
+        type: string
+        required: true
+      target:
+        description: 'dockerhub-dev | ecr'
+        type: string
+        required: false
+        default: dockerhub-dev
+      plugin-interface-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-plugin-interface
+      postgresql-plugin-repo:
+        type: string
+        required: false
+        default: supertokens/supertokens-postgresql-plugin
+      java-version:
+        type: string
+        required: false
+        default: '21.0.7'
+      root-ref:
+        type: string
+        required: false
+        default: master
+      has-db-migration:
+        type: string
+        required: false
+        default: ''
+      tests-run-id:
+        type: string
+        required: false
+        default: ''
+      aws-role-arn:
+        description: 'ecr target: role to assume via OIDC. Empty = static AWS keys.'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      dev-tag:
+        description: Tag in the dev repo (dockerhub-dev target only).
+        value: ${{ jobs.dockerhub-dev.outputs.tag }}
+      digest:
+        value: ${{ jobs.dockerhub-dev.outputs.digest || jobs.ecr.outputs.digest }}
+      image-ref:
+        description: <repo>@<digest>, the input for stress tests and promotion.
+        value: ${{ jobs.dockerhub-dev.outputs.image-ref || jobs.ecr.outputs.image-ref }}
+
+jobs:
+  validate:
+    name: Validate build target
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check target
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          case "$TARGET" in
+            dockerhub-dev|ecr) ;;
+            *) echo "::error::Unknown target '$TARGET' (expected dockerhub-dev or ecr)"; exit 1 ;;
+          esac
+
+  dockerhub-dev:
+    name: Build image (Docker Hub dev)
+    needs: validate
+    if: inputs.target == 'dockerhub-dev'
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-ref: supertokens/supertokens-dev-postgresql@${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout workflow sources
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Compute image tag
+        id: tag
+        env:
+          VERSION: ${{ inputs.core-version }}
+          IS_CANARY: ${{ inputs.is-canary }}
+        run: |
+          if [ "$IS_CANARY" = "true" ]; then
+            echo "tag=$VERSION-canary-dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$VERSION-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: ./.github/actions/build-core-image
+        with:
+          core-version: ${{ inputs.core-version }}
+          core-sha: ${{ inputs.core-sha }}
+          plugin-interface-sha: ${{ inputs.plugin-interface-sha }}
+          postgresql-sha: ${{ inputs.postgresql-sha }}
+          plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
+          postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
+          java-version: ${{ inputs.java-version }}
+          root-ref: ${{ inputs.root-ref }}
+          image: supertokens/supertokens-dev-postgresql
+          tag: ${{ steps.tag.outputs.tag }}
+          has-db-migration: ${{ inputs.has-db-migration }}
+          tests-run-id: ${{ inputs.tests-run-id }}
+          # Only set in the security repo; lets the build read private plugin mirrors.
+          token: ${{ secrets.EMBARGO_REPO_TOKEN }}
+
+  ecr:
+    name: Build image (ECR)
+    needs: validate
+    if: inputs.target == 'ecr'
+    runs-on: ubuntu-22.04
+    # Gated environment: its protection rules decide who may push an image the fleet can run,
+    # and its name is part of the OIDC subject the push role trusts.
+    environment: embargo
+    # No job-level permissions on purpose: GitHub validates a called workflow's requested
+    # permissions against the caller's even for jobs that are skipped, so asking for
+    # id-token here would break every normal release. The embargo caller grants
+    # `id-token: write` on its calling job instead, and this job inherits it.
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image-ref: ${{ steps.repo.outputs.repo }}@${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout workflow sources
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github
+
+      - name: Compute image tag
+        id: tag
+        env:
+          VERSION: ${{ inputs.core-version }}
+          IS_CANARY: ${{ inputs.is-canary }}
+        run: |
+          if [ "$IS_CANARY" = "true" ]; then
+            echo "tag=$VERSION-canary" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        if: inputs.aws-role-arn != ''
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Configure AWS credentials (static keys)
+        if: inputs.aws-role-arn == ''
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Resolve repository
+        id: repo
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+        run: echo "repo=$REGISTRY/$REPOSITORY" >> "$GITHUB_OUTPUT"
+
+      # The version tag is what the fleet deploys; never replace it. A changed build gets a new
+      # patch version (or, before any rollout, the tag is deleted by hand first).
+      - name: Refuse to overwrite an existing tag
+        env:
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if out=$(aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$TAG" \
+                     --query 'imageDetails[0].imageDigest' --output text 2>&1); then
+            echo "::error::$REPOSITORY:$TAG already exists ($out). Use a new patch version."
+            exit 1
+          elif ! grep -q ImageNotFoundException <<<"$out"; then
+            echo "::error::Could not check $REPOSITORY:$TAG: $out"
+            exit 1
+          fi
+
+      - name: Build and push
+        id: build
+        uses: ./.github/actions/build-core-image
+        with:
+          core-version: ${{ inputs.core-version }}
+          core-sha: ${{ inputs.core-sha }}
+          plugin-interface-sha: ${{ inputs.plugin-interface-sha }}
+          postgresql-sha: ${{ inputs.postgresql-sha }}
+          plugin-interface-repo: ${{ inputs.plugin-interface-repo }}
+          postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
+          java-version: ${{ inputs.java-version }}
+          root-ref: ${{ inputs.root-ref }}
+          image: ${{ steps.repo.outputs.repo }}
+          tag: ${{ steps.tag.outputs.tag }}
+          has-db-migration: ${{ inputs.has-db-migration }}
+          tests-run-id: ${{ inputs.tests-run-id }}
+          # Only set in the security repo; lets the build read private plugin mirrors.
+          token: ${{ secrets.EMBARGO_REPO_TOKEN }}
