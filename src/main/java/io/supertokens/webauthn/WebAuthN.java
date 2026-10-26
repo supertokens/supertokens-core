@@ -329,9 +329,9 @@ public class WebAuthN {
                         RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialDataJson,
                                 generatedOptions);
                         String credentialId = getAttestedCredentialId(credentialDataJson, verifiedRegistrationData);
-                        // Credential ids must be unique within the app, across relying party ids: sign in looks a
-                        // credential up by id alone.
-                        if (webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId) != null) {
+                        // Credential ids stay unique within the app, across relying party ids, so one authenticator
+                        // credential is bound to one account (sign in itself is rp-scoped).
+                        if (webAuthNStorage.loadCredentialByIdInApp_Transaction(tenantIdentifier, con, credentialId) != null) {
                             throw new WebauthNVerificationFailedException("Credential already registered");
                         }
                         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
@@ -439,7 +439,7 @@ public class WebAuthN {
         try {
             return ((ActivityLogSQLStorage) storage).startAuditedTransaction(tenantIdentifier.toAppIdentifier(),
                     con -> AuditedResult.withoutAudit(
-                            webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId),
+                            webAuthNStorage.loadCredentialByIdInApp_Transaction(tenantIdentifier, con, credentialId),
                             "Read-only lookup of an existing credential id before registration; writes nothing."));
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e);

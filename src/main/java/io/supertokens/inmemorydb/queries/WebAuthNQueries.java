@@ -255,6 +255,24 @@ public class WebAuthNQueries {
         });
     }
 
+    public static WebAuthNStoredCredential loadCredentialByIdInApp_Transaction(Start start, Connection sqlConnection,
+                                                                               TenantIdentifier tenantIdentifier,
+                                                                               String credentialId)
+            throws SQLException, StorageQueryException {
+        // Any relying party: credential ids are only unique per (app_id, rp_id).
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
+                + " WHERE app_id = ? AND id = ? LIMIT 1";
+        return execute(sqlConnection, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, credentialId);
+        }, result -> {
+            if (result.next()) {
+                return WebAuthnStoredCredentialRowMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
     public static WebAuthNStoredCredential saveCredential(Start start, TenantIdentifier tenantIdentifier, WebAuthNStoredCredential credential)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getWebAuthNCredentialsTable()
