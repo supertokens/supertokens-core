@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.supertokens.authRecipe.ApproximateUserCount;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -82,7 +83,11 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     // works well enough anyway.
     private static final String LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE = "NOT_PRESENT";
 
-    private Boolean isLicenseKeyPresent = null;
+    // Starts as FALSE ("no license key confirmed present yet") rather than null: the boot-time
+    // constructor sync that used to set this on startup now runs on the EELicenseCheck cron shortly
+    // after boot, so this can be read before the first sync. FALSE (not null) keeps getIsLicenseKeyPresent()
+    // from NPE-ing on auto-unboxing and matches the value the old boot sync produced for a key-less core.
+    private Boolean isLicenseKeyPresent = Boolean.FALSE;
 
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
@@ -106,18 +111,16 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // returns the same instance from there on.
         Cronjobs.addCronjob(main, EELicenseCheck.init(main, StorageLayer.getTenantsWithUniqueUserPoolId(main)));
 
-        try {
-            this.syncFeatureFlagWithLicenseKey();
-        } catch (HttpResponseException | IOException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "API Error during constructor sync", false,
-                    e);
-            // server request failed. we ignore for now as later on it will sync up anyway.
-        } catch (InvalidLicenseKeyException ignored) {
-            // the license key that was in the db was invalid. If this error is thrown,
-            // it means that the key was removed from the db anyway.. so we can just ignore
-            // here.
-        } catch (Throwable ignored) {
-        }
+        // No license sync here on purpose. syncFeatureFlagWithLicenseKey() does synchronous DB stats
+        // queries + an HTTPS call to api.supertokens.com; running it in this constructor meant it ran on
+        // the boot thread (before the webserver was up) and under the global resource-distributor lock on
+        // every tenant/app reload. The EELicenseCheck cron performs the initial sync shortly after boot
+        // (jittered initial delay) and daily thereafter. Feature gating is unaffected in the meantime:
+        // enabled features remain available from the DB-persisted value of the last successful sync
+        // (getEnabledEEFeaturesFromDbOrCache), and PUT /ee/license still syncs inline. The one observable
+        // difference is timing of the paid-usage stats report that verifyLicenseKey sends: an app created
+        // or updated at runtime is only added to this cron's tenant list here, so its first stats report
+        // happens on the next cron tick instead of immediately in the (now removed) constructor sync.
     }
 
     @Override
@@ -244,13 +247,22 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         JsonArray tenantStats = new JsonArray();
 
         TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(this.appIdentifier, main);
+        // From the user-count pipeline: each tenant's full count, shared by every core through the database, plus
+        // the lifecycle events since it. Fetched for all tenants at once, so missing counts run concurrently and
+        // every tenant is served from one event read.
+        List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            tenantIdentifiers.add(tenantConfig.tenantIdentifier);
+        }
+        Map<String, ApproximateUserCount.ApproximateCountResult> usersCounts = ApproximateUserCount
+                .getInstance(main, this.appIdentifier).serveTenants(main, tenantIdentifiers);
         for (TenantConfig tenantConfig : tenantConfigs) {
             JsonObject tenantStat = new JsonObject();
             tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                long usersCount = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null);
+                long usersCount = usersCounts.get(tenantConfig.tenantIdentifier.getTenantId()).count;
                 boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions ||
                         ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;

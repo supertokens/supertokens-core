@@ -243,12 +243,6 @@ public class Start
     @Override
     public <T> T startTransaction(TransactionLogic<T> logic)
             throws StorageTransactionLogicException, StorageQueryException {
-        return startTransaction(logic, TransactionIsolationLevel.READ_COMMITTED);
-    }
-
-    @Override
-    public <T> T startTransaction(TransactionLogic<T> logic, TransactionIsolationLevel isolationLevel)
-            throws StorageTransactionLogicException, StorageQueryException {
         int tries = 0;
         while (true) {
             tries++;
@@ -279,7 +273,15 @@ public class Start
         try {
             con = ConnectionPool.getConnection(this);
             con.setAutoCommit(false);
-            return logic.mainLogicAndCommit(new TransactionConnection(con));
+            TransactionCounters.transactionOpened();
+            // Mark this thread as holding a connection from this pool for the duration of the callback, so a
+            // nested same-pool borrow (a helper not threading `con`) is caught by ConnectionPool's guard.
+            ConnectionPool.enterTransaction(this);
+            try {
+                return logic.mainLogicAndCommit(new TransactionConnection(con));
+            } finally {
+                ConnectionPool.exitTransaction(this);
+            }
         } catch (Exception e) {
             if (con != null) {
                 con.rollback();
@@ -354,7 +356,7 @@ public class Start
                 String errorMessage = e.getMessage();
                 SQLiteConfig config = Config.getConfig(this);
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         errorMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
@@ -634,7 +636,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -907,13 +909,13 @@ public class Start
                         new String[]{"app_id", "tenant_id", "recipe_id", "account_info_type", "third_party_id", "third_party_user_id", "account_info_value"})) {
                     throw new DuplicateEmailException();
 
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
                         new Object[]{tenantIdentifier.getAppId()})) {
                     throw new TenantOrAppNotFoundException(tenantIdentifier);
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -1108,7 +1110,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id"},
@@ -1143,7 +1145,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id"},
@@ -1505,14 +1507,14 @@ public class Start
                         new String[]{"app_id", "user_id"})) {
                     throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
 
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
                         new Object[]{tenantIdentifier.getAppId()})) {
                     throw new TenantOrAppNotFoundException(tenantIdentifier.toAppIdentifier());
 
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -1816,7 +1818,7 @@ public class Start
                     throw new DuplicateKeyIdException();
                 }
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
@@ -1840,28 +1842,53 @@ public class Start
             return false;
         }
 
-        StringBuilder QUERY = new StringBuilder();
-        QUERY.append("SELECT 1 FROM ").append(tableName).append(" WHERE ");
-        for (int i = 0; i < columnNames.length; i++) {
-            if (i > 0) {
-                QUERY.append(" AND ");
-            }
-            QUERY.append(columnNames[i] + " = ?");
-        }
-
         try {
-            return QueryExecutorTemplate.execute(this, QUERY.toString(), pst -> {
-                for (int i = 0; i < values.length; i++) {
-                    if (values[i] instanceof String) {
-                        pst.setString(i + 1, (String) values[i]);
-                    }
-                }
-            }, result -> {
-                return !result.next();
-            });
+            return QueryExecutorTemplate.execute(this, foreignKeyProbeQuery(tableName, columnNames),
+                    foreignKeyProbeSetter(values), result -> !result.next());
         } catch (SQLException | StorageQueryException queryException) {
             throw new RuntimeException(queryException);
         }
+    }
+
+    // Connection-taking variant of the above: runs the verification SELECT on the transaction connection
+    // already held by the caller instead of borrowing a second one from the in-memory pool. Called from the
+    // FK-conflict catch blocks of _Transaction write methods so that classification does not trip the nested
+    // same-pool acquisition guard (see ConnectionPool). Classification is identical to the no-connection
+    // form — the probe just reads through the caller's own connection.
+    private boolean isForeignKeyConstraintError(Connection con, String serverMessage, String tableName,
+                                                String[] columnNames, Object[] values) {
+        if (!serverMessage.contains("FOREIGN KEY constraint failed")) {
+            return false;
+        }
+
+        try {
+            return QueryExecutorTemplate.execute(con, foreignKeyProbeQuery(tableName, columnNames),
+                    foreignKeyProbeSetter(values), result -> !result.next());
+        } catch (SQLException | StorageQueryException queryException) {
+            throw new RuntimeException(queryException);
+        }
+    }
+
+    private static String foreignKeyProbeQuery(String tableName, String[] columnNames) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT 1 FROM ").append(tableName).append(" WHERE ");
+        for (int i = 0; i < columnNames.length; i++) {
+            if (i > 0) {
+                query.append(" AND ");
+            }
+            query.append(columnNames[i] + " = ?");
+        }
+        return query.toString();
+    }
+
+    private static PreparedStatementValueSetter foreignKeyProbeSetter(Object[] values) {
+        return pst -> {
+            for (int i = 0; i < values.length; i++) {
+                if (values[i] instanceof String) {
+                    pst.setString(i + 1, (String) values[i]);
+                }
+            }
+        };
     }
 
     private boolean isPrimaryKeyError(String serverMessage, String tableName, String[] columnNames) {
@@ -2214,7 +2241,7 @@ public class Start
                     throw new DuplicatePhoneNumberException();
                 }
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
@@ -2222,7 +2249,7 @@ public class Start
                     throw new TenantOrAppNotFoundException(tenantIdentifier.toAppIdentifier());
                 }
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -2354,7 +2381,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
@@ -2543,7 +2570,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
@@ -2568,7 +2595,7 @@ public class Start
             if (e instanceof SQLiteException) {
                 SQLiteConfig config = Config.getConfig(this);
                 String serverErrorMessage = e.getMessage();
-                if (isForeignKeyConstraintError(
+                if (isForeignKeyConstraintError(sqlCon,
                         serverErrorMessage,
                         config.getRolesTable(),
                         new String[]{"app_id", "role"},
@@ -2751,6 +2778,15 @@ public class Start
     }
 
     @Override
+    public boolean hasUserIdMappings(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return UserIdMappingQueries.hasUserIdMappings(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier appIdentifier,
                                                                      ArrayList<String> userIds)
             throws StorageQueryException {
@@ -2907,7 +2943,7 @@ public class Start
             SQLiteConfig config = Config.getConfig(this);
             String serverErrorMessage = throwables.getMessage();
 
-            if (isForeignKeyConstraintError(
+            if (isForeignKeyConstraintError(sqlCon,
                     serverErrorMessage,
                     config.getTenantsTable(),
                     new String[]{"app_id", "tenant_id"},
@@ -3233,7 +3269,7 @@ public class Start
             if (isPrimaryKeyError(e.getMessage(), Config.getConfig(this).getTotpUserDevicesTable(),
                     new String[]{"app_id", "user_id", "device_name"})) {
                 throw new DeviceAlreadyExistsException();
-            } else if (isForeignKeyConstraintError(
+            } else if (isForeignKeyConstraintError(sqlCon,
                     e.getMessage(),
                     Config.getConfig(this).getAppsTable(),
                     new String[]{"app_id"},
@@ -3381,14 +3417,14 @@ public class Start
                     new String[]{"app_id", "tenant_id", "user_id", "created_time_ms"})) {
                 throw new UsedCodeAlreadyExistsException();
 
-            } else if (isForeignKeyConstraintError(
+            } else if (isForeignKeyConstraintError(sqlCon,
                     e.getMessage(),
                     Config.getConfig(this).getTotpUsersTable(),
                     new String[]{"app_id", "user_id"},
                     new Object[]{tenantIdentifier.getAppId(), usedCodeObj.userId})) {
                 throw new UnknownTotpUserIdException();
 
-            } else if (isForeignKeyConstraintError(
+            } else if (isForeignKeyConstraintError(sqlCon,
                     e.getMessage(),
                     Config.getConfig(this).getTenantsTable(),
                     new String[]{"app_id", "tenant_id"},
@@ -3511,6 +3547,30 @@ public class Start
             Connection sqlCon = (Connection) con.getConnection();
             return GeneralQueries.listPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, appIdentifier,
                     thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(TenantIdentifier tenantIdentifier,
+                                                                    TransactionConnection con, String email)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.listPrimaryUsersByEmail_Transaction(this, sqlCon, tenantIdentifier, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(TenantIdentifier tenantIdentifier,
+                                                                          TransactionConnection con, String phoneNumber)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.listPrimaryUsersByPhoneNumber_Transaction(this, sqlCon, tenantIdentifier, phoneNumber);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3694,7 +3754,13 @@ public class Start
                                                                     AppIdentifier appIdentifier, List<String> userIds,
                                                                     boolean isSupertokensIds)
             throws StorageQueryException {
-        throw new UnsupportedOperationException("'getMultipleUserIdMapping_Transaction' is not supported for in-memory db");
+        try {
+            Connection sqlCon = (Connection) connection.getConnection();
+            return UserIdMappingQueries.getMultipleUserIdMapping_Transaction(this, sqlCon, appIdentifier, userIds,
+                    isSupertokensIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -4002,6 +4068,32 @@ public class Start
     }
 
     @Override
+    public OAuthClient getOAuthClientById_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                      String clientId)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        try {
+            OAuthClient client = OAuthQueries.getOAuthClientById(this, (Connection) con.getConnection(), clientId,
+                    appIdentifier);
+            if (client == null) {
+                throw new OAuthClientNotFoundException();
+            }
+            return client;
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isOAuthTokenRevokedByGID_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                        String gid) throws StorageQueryException {
+        try {
+            return !OAuthQueries.isOAuthSessionExistsByGID(this, (Connection) con.getConnection(), appIdentifier, gid);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public boolean isOAuthTokenRevokedByJTI(AppIdentifier appIdentifier, String gid, String jti)
             throws StorageQueryException {
         try {
@@ -4113,11 +4205,11 @@ public class Start
 
     @Override
     public WebAuthNStoredCredential loadCredentialById_Transaction(TenantIdentifier tenantIdentifier,
-                                                                  TransactionConnection con, String credentialId)
+                                                                  TransactionConnection con, String rpId, String credentialId)
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            return WebAuthNQueries.loadCredentialById_Transaction(this, sqlCon, tenantIdentifier, credentialId);
+            return WebAuthNQueries.loadCredentialById_Transaction(this, sqlCon, tenantIdentifier, rpId, credentialId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -4151,13 +4243,13 @@ public class Start
                         || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
                         new String[]{"app_id", "user_id"})) {
                     throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException();
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
                         new Object[]{tenantIdentifier.getAppId()})) {
                     throw new TenantOrAppNotFoundException(tenantIdentifier);
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -4200,13 +4292,13 @@ public class Start
                         || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
                         new String[]{"app_id", "user_id"})) {
                     throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateUserIdException();
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getAppsTable(),
                         new String[]{"app_id"},
                         new Object[]{tenantIdentifier.getAppId()})) {
                     throw new TenantOrAppNotFoundException(tenantIdentifier);
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         serverMessage,
                         config.getTenantsTable(),
                         new String[]{"app_id", "tenant_id"},
@@ -4235,11 +4327,11 @@ public class Start
 
     @Override
     public void updateCounter_Transaction(TenantIdentifier tenantIdentifier,
-                                                              TransactionConnection con, String credentialId,
+                                                              TransactionConnection con, String rpId, String credentialId,
                                                               long counter) throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, credentialId, counter);
+            WebAuthNQueries.updateCounter_Transaction(this, sqlCon, tenantIdentifier, rpId, credentialId, counter);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -4333,8 +4425,8 @@ public class Start
                                             String newEmail)
             throws StorageQueryException, UnknownUserIdException,
             DuplicateEmailException, EmailChangeNotAllowedException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            Connection sqlCon = (Connection) con.getConnection();
             MigrationMode mode = Config.getConfig(this).getMigrationMode();
             // Acquire lock to get LockedUser for the new API
             LockedUser lockedUser = UserLockingQueries.lockUser(this, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
@@ -4350,7 +4442,7 @@ public class Start
                 if (isUniqueConstraintError(errorMessage, config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "email"})) {
                     throw new DuplicateEmailException();
-                } else if (isForeignKeyConstraintError(
+                } else if (isForeignKeyConstraintError(sqlCon,
                         errorMessage,
                         config.getWebAuthNUserToTenantTable(),
                         new String[]{"app_id", "tenant_id", "user_id"},
