@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -230,13 +231,14 @@ public class WebAuthNQueries {
         });
     }
 
-    public static WebAuthNStoredCredential loadCredentialById_Transaction(Start start, Connection sqlConnection, TenantIdentifier tenantIdentifier, String credentialId)
+    public static WebAuthNStoredCredential loadCredentialById_Transaction(Start start, Connection sqlConnection, TenantIdentifier tenantIdentifier, String rpId, String credentialId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNCredentialsTable()
-                + " WHERE app_id = ? AND id = ?";
+                + " WHERE app_id = ? AND rp_id = ? AND id = ?";
         return execute(sqlConnection, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, credentialId);
+            pst.setString(2, rpId);
+            pst.setString(3, credentialId);
         }, result -> {
             if(result.next()){
                 return WebAuthnStoredCredentialRowMapper.getInstance().mapOrThrow(result); // we are expecting one or zero results
@@ -529,16 +531,10 @@ public class WebAuthNQueries {
 
     public static Collection<? extends LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
             throws StorageQueryException {
-        try {
-            return start.startTransaction(con -> {
-                Connection sqlConnection = (Connection) con.getConnection();
-                try {
-                    return getUsersInfoUsingIdList_Transaction(start, sqlConnection, ids, appIdentifier);
-                } catch (SQLException e) {
-                    throw new StorageQueryException(e);
-                }
-            });
-        } catch (StorageTransactionLogicException e) {
+        // Read-only, so plain autocommit reads on one connection, like the postgresql plugin.
+        try (Connection sqlConnection = ConnectionPool.getConnection(start)) {
+            return getUsersInfoUsingIdList_Transaction(start, sqlConnection, ids, appIdentifier);
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
@@ -693,16 +689,17 @@ public class WebAuthNQueries {
         });
     }
 
-    public static void updateCounter_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String credentialId, long counter)
+    public static void updateCounter_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String rpId, String credentialId, long counter)
             throws SQLException, StorageQueryException {
         String UPDATE = "UPDATE " + Config.getConfig(start).getWebAuthNCredentialsTable()
-                + " SET counter = ?, updated_at = ? WHERE app_id = ? AND id = ?";
+                + " SET counter = ?, updated_at = ? WHERE app_id = ? AND rp_id = ? AND id = ?";
 
         update(sqlCon, UPDATE, pst -> {
             pst.setLong(1, counter);
             pst.setLong(2, System.currentTimeMillis());
             pst.setString(3, tenantIdentifier.getAppId());
-            pst.setString(4, credentialId);
+            pst.setString(4, rpId);
+            pst.setString(5, credentialId);
         });
     }
 
