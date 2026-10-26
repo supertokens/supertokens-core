@@ -19,9 +19,9 @@ package io.supertokens.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.auditlog.AuditLog;
+import io.supertokens.ActiveUsers;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
-import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -53,7 +53,6 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.info.SessionInfo;
@@ -286,10 +285,10 @@ public class Session {
                         sessionStorage.createNewSession_Transaction(con, tenantIdentifier, sessionHandleF,
                                 recipeUserIdExternal, refreshTokenHash2, userDataInDatabaseF, refreshToken.expiry,
                                 userDataInJWTF, refreshToken.createdTime, useStaticKeyF);
-                        // Session creation emits its own session_created event (emitSessionCreatedEvent, below),
-                        // so the locked insert itself carries no audit event.
-                        return AuditedResult.withoutAudit(pid, "Session creation emits its own session_created "
-                                + "event; the locked insert serializes with account link/unlink "
+                        // Session creation writes its own session_create activity row (ActiveUsers.updateLastActive,
+                        // below), so the locked insert itself carries no audit event.
+                        return AuditedResult.withoutAudit(pid, "Session creation writes its own session_create "
+                                + "activity row; the locked insert serializes with account link/unlink "
                                 + "(GHSA-2pc4-vw9j-454c).");
                     } catch (UserNotFoundForLockingException | TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -320,8 +319,11 @@ public class Session {
                     recipeUserIdExternal, primaryUserId, Utils.hashSHA256(refreshToken.token), null, userDataInJWT,
                     antiCsrfToken, null, version, useStaticKey, true, accessTokenValidity); // fresh mint: apply jitter
 
-            emitSessionCreatedEvent(main, storage, tenantIdentifier, recipeUserIdExternal, primaryUserId,
-                    sessionHandle);
+            // The one activity row for this session (unthrottled): feeds the last-active fold and records the
+            // handle. SuperTokens (not external) ids: the fold credits primary_or_recipe_user_id and guards it
+            // against app_id_to_user_id, which holds SuperTokens ids.
+            ActiveUsers.updateLastActive(tenantIdentifier, storage, main, recipeUserIdSupertokens,
+                    primaryUserIdSupertokens, sessionHandle, ActivityEventType.SESSION_CREATE);
 
             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
                     refreshToken.createdTime);
@@ -346,7 +348,9 @@ public class Session {
                         Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
                         userDataInJWT, refreshToken.createdTime, useStaticKey);
 
-        emitSessionCreatedEvent(main, storage, tenantIdentifier, recipeUserId, primaryUserId, sessionHandle);
+        // The one activity row for this session (unthrottled): feeds the last-active fold and records the handle.
+        ActiveUsers.updateLastActive(tenantIdentifier, storage, main, recipeUserId, primaryUserId, sessionHandle,
+                ActivityEventType.SESSION_CREATE);
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
                 refreshToken.createdTime);
@@ -679,7 +683,7 @@ public class Session {
                              TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                }, SQLStorage.TransactionIsolationLevel.REPEATABLE_READ);
+                });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
                     throw (UnauthorisedException) e.actualException;
@@ -1548,20 +1552,5 @@ public class Session {
         }
 
         return parts[1];
-    }
-
-    private static void emitSessionCreatedEvent(Main main, Storage storage, TenantIdentifier tenantIdentifier,
-            String recipeUserId, String primaryUserId, String sessionHandle) {
-        AuditLog.emit(main, storage, tenantIdentifier, new AuditLogEvent(
-                tenantIdentifier.getAppId(),
-                tenantIdentifier.getTenantId(),
-                recipeUserId,
-                primaryUserId,
-                "session_created",
-                "success",
-                null,
-                sessionHandle,
-                System.currentTimeMillis(),
-                null));
     }
 }

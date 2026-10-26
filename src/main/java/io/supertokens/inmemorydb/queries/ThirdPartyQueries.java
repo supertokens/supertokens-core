@@ -514,6 +514,67 @@ public class ThirdPartyQueries {
         });
     }
 
+    // Transaction variant of getPrimaryUserIdUsingEmail that reuses the caller's connection instead of
+    // borrowing a fresh pooled connection (avoids nested same-pool acquisition). Same SQL as the non-tx form.
+    public static List<String> getPrimaryUserIdUsingEmail_Transaction(Start start, Connection sqlCon,
+                                                                      TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        if (Config.getConfig(start).getMigrationMode().readsFromNewTables()) {
+            return getPrimaryUserIdUsingEmail_Transaction_new(start, sqlCon, tenantIdentifier, email);
+        }
+        return getPrimaryUserIdUsingEmail_Transaction_legacy(start, sqlCon, tenantIdentifier, email);
+    }
+
+    private static List<String> getPrimaryUserIdUsingEmail_Transaction_legacy(Start start, Connection sqlCon,
+                                                                              TenantIdentifier tenantIdentifier,
+                                                                              String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " JOIN " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_tenants" +
+                " ON tp_tenants.app_id = all_users.app_id AND tp_tenants.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp_tenants.tenant_id = ? AND tp.email = ?";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
+        });
+    }
+
+    private static List<String> getPrimaryUserIdUsingEmail_Transaction_new(Start start, Connection sqlCon,
+                                                                           TenantIdentifier tenantIdentifier,
+                                                                           String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT a.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getRecipeUserTenantsTable() + " AS rut"
+                + " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS a"
+                + " ON rut.app_id = a.app_id AND rut.recipe_user_id = a.user_id"
+                + " WHERE rut.app_id = ? AND rut.tenant_id = ?"
+                + " AND rut.account_info_type = 'email' AND rut.account_info_value = ?"
+                + " AND rut.recipe_id = 'thirdparty'";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
+        });
+    }
+
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException, UnknownUserIdException {

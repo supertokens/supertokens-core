@@ -54,7 +54,20 @@ public class OAuthToken {
             @Nonnull Main main, @Nonnull String token)
             throws TenantOrAppNotFoundException, TryRefreshTokenException, StorageQueryException,
             UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
-        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(appIdentifier, main).getAllKeys();
+        return getPayloadFromJWTToken(appIdentifier, main, token, false);
+    }
+
+    // useCacheOnlySigningKeys: when true, verify against the in-memory key cache only and never refresh it, so
+    // a caller holding a transaction connection never borrows a second one (see
+    // SigningKeys#getAllKeysWithoutRefresh). The caller must have warmed the cache before opening its transaction.
+    public static JsonObject getPayloadFromJWTToken(AppIdentifier appIdentifier,
+            @Nonnull Main main, @Nonnull String token, boolean useCacheOnlySigningKeys)
+            throws TenantOrAppNotFoundException, TryRefreshTokenException, StorageQueryException,
+            UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        SigningKeys signingKeys = SigningKeys.getInstance(appIdentifier, main);
+        List<JWTSigningKeyInfo> keyInfoList = useCacheOnlySigningKeys
+                ? signingKeys.getAllKeysWithoutRefresh()
+                : signingKeys.getAllKeys();
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
         JWT.JWTPreParseInfo preParseJWTInfo = null;
@@ -93,6 +106,15 @@ public class OAuthToken {
     }
 
     public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+            JWTCreationException {
+        return reSignToken(appIdentifier, main, token, iss, payloadUpdate, atHash, tokenType, useDynamicSigningKey, retryCount, false);
+    }
+
+    // useCacheOnlySigningKey: when true, resolve the signing key from the in-memory cache only and never
+    // trigger a key-cache refresh/creation (which opens its own transaction). Callers that run inside an
+    // existing storage transaction pass true after pre-warming the caches while holding no connection, so
+    // signing never borrows a second pool connection.
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount, boolean useCacheOnlySigningKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
@@ -144,8 +166,12 @@ public class OAuthToken {
         JWTSigningKeyInfo keyToUse;
         if (useDynamicSigningKey) {
             keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(
-                    SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
+                    useCacheOnlySigningKey
+                            ? SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKeyWithoutRefresh()
+                            : SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
         } else {
+            // getStaticKeyForAlgorithm already serves a cached key DB-free when the cache is warm; the
+            // non-rotating refresh handler pre-warms it before opening the transaction.
             keyToUse = SigningKeys.getInstance(appIdentifier, main)
                     .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
         }

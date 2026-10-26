@@ -217,15 +217,12 @@ public class UserRoles {
 
     @TestOnly
     public static boolean removeUserRole(Main main, String userId, String role)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException,
+            TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(main);
-        try {
-            return removeUserRole(main,
-                    ResourceDistributor.getAppForTesting(), storage,
-                    userId, role);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        return removeUserRole(
+                main, ResourceDistributor.getAppForTesting(), storage,
+                userId, role);
     }
 
     // retrieve all roles associated with the user

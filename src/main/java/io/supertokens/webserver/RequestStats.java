@@ -25,6 +25,8 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public class RequestStats extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.webserver.RequestStats";
 
@@ -49,6 +51,9 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
     // array[249] contains stats for now - 1 minute
     private final double[] averageRequestsPerSecond;
     private final int[] peakRequestsPerSecond;
+
+    // number of requests for this app's CUD rejected with 429 by the ConcurrencyLimiter since process start
+    private final AtomicLong concurrentRequestsRejected = new AtomicLong(0);
 
     private RequestStats() {
         currentMinute = System.currentTimeMillis() / 60000;
@@ -123,7 +128,12 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public JsonObject getStats() {
+    // incremented by ConcurrencyLimiter.onRejected each time a request for this app's CUD is 429'd by the cap
+    public void incrementConcurrentRequestsRejected() {
+        concurrentRequestsRejected.incrementAndGet();
+    }
+
+    public JsonObject getStats(Main main, AppIdentifier appIdentifier) {
         this.updateRequestStats(false);
 
         JsonArray avgRps = new JsonArray();
@@ -141,6 +151,10 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
         result.addProperty("atMinute", atMinute);
         result.add("averageRequestsPerSecond", avgRps);
         result.add("peakRequestsPerSecond", peakRps);
+        // concurrency-cap observability: rejections since process start and current in-flight for this app's CUD
+        result.addProperty("concurrentRequestsRejected", concurrentRequestsRejected.get());
+        result.addProperty("concurrentRequestsInFlight",
+                ConcurrencyLimiter.getInFlightForCud(main, appIdentifier.getAsPublicTenantIdentifier()));
         return result;
     }
 }

@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.utils.ConfigMapper;
@@ -288,6 +289,28 @@ public class ConfigMapperTest {
                 fail();
             } catch (InvalidConfigException e) {
                 assertEquals(expectedErrorMessages[i], e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testObjectAndArrayValuesThrowInvalidConfigException() throws Exception {
+        String[] properties = new String[]{
+                "int_property", "long_property", "float_property", "double_property", "string_property",
+                "nullable_long_property"
+        };
+        String[] types = new String[]{"int", "long", "float", "double", "String", "Long"};
+
+        for (int i = 0; i < properties.length; i++) {
+            for (boolean useArray : new boolean[]{false, true}) {
+                JsonObject config = new JsonObject();
+                config.add(properties[i], useArray ? new JsonArray() : new JsonObject());
+                try {
+                    ConfigMapper.mapConfig(config, DummyConfig.class);
+                    fail();
+                } catch (InvalidConfigException e) {
+                    assertEquals("'" + properties[i] + "' must be of type " + types[i], e.getMessage());
+                }
             }
         }
     }
