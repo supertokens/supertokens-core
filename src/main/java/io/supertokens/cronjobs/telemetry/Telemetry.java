@@ -21,8 +21,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.authRecipe.ApproximateUserCount;
+import io.supertokens.cronjobs.RetrySoon;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.dashboard.Dashboard;
@@ -44,8 +45,13 @@ import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Telemetry extends CronTask {
+
+    // Initial delay before the first ping: 60s + up to 60s of jitter, i.e. a value in [60, 120) seconds.
+    static final int INITIAL_WAIT_TIME_SECONDS_BASE = 60;
+    static final int INITIAL_WAIT_TIME_SECONDS_JITTER = 60;
 
     public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
@@ -75,6 +81,11 @@ public class Telemetry extends CronTask {
 
     @Override
     protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        // a failed ping (e.g. a user count that could not be taken) is retried in a few minutes, not tomorrow
+        RetrySoon.run(main, "Telemetry", app, this::sendPing);
+    }
+
+    private void sendPing(AppIdentifier app) throws Exception {
         if (StorageLayer.isInMemDb(main) ||
                 Config.getConfig(app.getAsPublicTenantIdentifier(), main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user
@@ -115,10 +126,9 @@ public class Telemetry extends CronTask {
 
         if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
             { // Users count across all tenants
-                Storage[] storages = StorageLayer.getStoragesForApp(main, app);
-
-                json.addProperty("usersCount",
-                        AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null));
+                // The app-wide count of distinct users, whatever the number of tenants, from the user-count pipeline: the
+                // full count shared by every core through the database, plus the lifecycle events since it.
+                json.addProperty("usersCount", ApproximateUserCount.getInstance(main, app).serveApp(main).count);
             }
 
             { // Dashboard user emails
@@ -204,7 +214,19 @@ public class Telemetry extends CronTask {
 
     @Override
     public int getInitialWaitTimeSeconds() {
-        // We send a ping start one immediately (equal to sending server start event)
-        return 0;
+        if (Main.isTesting) {
+            Integer waitTime = CronTaskTest.getInstance(main).getInitialWaitTimeInSeconds(RESOURCE_KEY);
+            return waitTime != null ? waitTime : 0;
+        }
+        // The first ping (the server start event) used to go out immediately, so every core that started ran a
+        // full user count at once - a fleet rollout stacked them on the database. It is jittered, and starts
+        // after EELicenseCheck's first run (30-60s) so this core's two counts (the license sync's per-tenant counts
+        // and this app count) don't run at the same time. Both are shared across cores through the database.
+        return getJitteredInitialWaitTimeSeconds();
+    }
+
+    // A value in [60, 120) seconds. Public so tests can check the range without turning Main.isTesting off.
+    public static int getJitteredInitialWaitTimeSeconds() {
+        return INITIAL_WAIT_TIME_SECONDS_BASE + ThreadLocalRandom.current().nextInt(INITIAL_WAIT_TIME_SECONDS_JITTER);
     }
 }
