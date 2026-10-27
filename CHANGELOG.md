@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
+
 ## [11.4.8]
 
 - Prevents an app-scoped API key from updating its parent connectionUriDomain (GHSA-4rf2).
