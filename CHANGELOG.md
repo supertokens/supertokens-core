@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
+- The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
+
 ## [12.3.1]
 
 ### Security
