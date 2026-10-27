@@ -444,9 +444,18 @@ public class TestOAuthClientAppOwnership {
                     response.get("errorDescription").getAsString());
         }
 
-        JsonObject client = createClientCredentialsClient(main, OTHER_APP_BASE, "custom-client_1.0~x");
+        // random suffix and removal at the end: the OAuth provider can be shared between test runs
+        String safeClientId = "custom-client_1.0~" + java.util.UUID.randomUUID();
+        JsonObject client = createClientCredentialsClient(main, OTHER_APP_BASE, safeClientId);
         assertEquals("OK", client.get("status").getAsString());
-        assertEquals("custom-client_1.0~x", client.get("clientId").getAsString());
+        assertEquals(safeClientId, client.get("clientId").getAsString());
+
+        JsonObject removeBody = new JsonObject();
+        removeBody.addProperty("clientId", safeClientId);
+        JsonObject removeResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                OTHER_APP_BASE + "/recipe/oauth/clients/remove", removeBody, 5000, 20000, null,
+                SemVer.v5_2.get(), "");
+        assertEquals("OK", removeResponse.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
