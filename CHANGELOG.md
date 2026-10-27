@@ -36,7 +36,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - TOTP: `/recipe/totp/device/verify` checks the code (with rate limiting and replay protection) also when the device
   is already verified. It returns `INVALID_TOTP_ERROR` / `LIMIT_REACHED_ERROR` for a wrong code, and
   `OK` with `wasAlreadyVerified: true` only for a valid code.
-<<<<<<< HEAD
 - Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
 - Sessions: revoking or listing all sessions of a user with linked accounts now also covers sessions stored under the external (user id mapped) ids of the linked login methods, and accepts the external id of any login method of the account.
 - Dashboard: a sign-in that overlaps a password or email change of the dashboard user no longer leaves a session behind. After creating the session, sign-in re-checks that the credentials it verified are still current and removes the session otherwise.
@@ -68,10 +67,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changes
 
-- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the app-wide WebAuthn credential id lookup. The PostgreSQL plugin adds the same index (plugin 10.1.1). Requires plugin-interface `WebAuthNSQLStorage.loadCredentialByIdInApp_Transaction`.
+- Supports plugin interface 11.2.
+- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the app-wide WebAuthn credential id lookup. The PostgreSQL plugin adds the same index (plugin 10.2.0). Requires plugin-interface `WebAuthNSQLStorage.loadCredentialByIdInApp_Transaction`.
 - In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
-=======
->>>>>>> fix/I13-totp-serialisation
 
 ## [12.4.1]
 
