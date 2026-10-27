@@ -61,9 +61,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SAML codes are consumed with a single atomic `DELETE ... RETURNING` in the in-memory database too, so a code cannot be redeemed twice by concurrent requests.
 - Dashboard sign-in verifies the password before checking whether the account is suspended: a wrong password now returns `INVALID_CREDENTIALS_ERROR` for suspended accounts too (`USER_SUSPENDED_ERROR` is returned only for the correct password).
 - Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
-- User roles: `POST /recipe/user/role/remove` and `GET /recipe/role/users` now check that the role exists in the app's public tenant storage (where roles are stored), as `PUT /recipe/user/role` already did, and remove or list the user-role mappings in the tenant's own storage. Previously both returned `UNKNOWN_ROLE_ERROR` for tenants on a separate database, so a role could not be revoked from a single user there. Removing a user's role also deletes the mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
 
 - Multitenancy (with the plugin-interface release of this round): the CDI ≥ 5.1 / v2 tenant GET and list APIs no longer return a disabled login method's factor ids in `firstFactors`; a legacy tenant whose stored `firstFactors` only names disabled login methods is returned with `firstFactors: []`. Tenants written by current cores are unchanged.
+
+### Fixes
+
+- User roles: `GET /recipe/role/users` no longer returns `UNKNOWN_ROLE_ERROR` for an existing role on a tenant with its own database.
+- User roles: removing a user's role also deletes the user's mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
 
 ### Changes
 
