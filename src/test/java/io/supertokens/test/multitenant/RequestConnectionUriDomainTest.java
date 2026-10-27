@@ -353,4 +353,118 @@ public class RequestConnectionUriDomainTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    private static int postStatus(TestingProcessManager.TestingProcess process, String url, String apiKey)
+            throws Exception {
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", url, new JsonObject(), 2000, 2000,
+                    null, Utils.getCdiVersionStringLatestForTests(), apiKey, "");
+            return 200;
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            return e.statusCode;
+        }
+    }
+
+    @Test
+    public void testApiKeyCheckIsEnforcedWhenTheAppDoesNotResolve() throws Exception {
+        // security-audit #113: a request naming an app that does not resolve on its connection URI domain must be
+        // checked against the connection URI domain's (or the base) API keys instead of skipping the check
+        String baseKey = "baseApiKeyForTesting-0123456789";
+        String cudKey = "cudApiKeyForTesting-0123456789";
+        String[] args = {"../"};
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("api_keys", baseKey);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject cudConfig = new JsonObject();
+        cudConfig.add("api_keys", new JsonPrimitive(cudKey));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(cudConfig, 2);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        cudConfig), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", "a1", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        new JsonObject()), false);
+
+        // control: the app on its own connection URI domain
+        assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-a1/recipe/signin", null));
+        assertNotEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-a1/recipe/signin", cudKey));
+
+        // a1 does not exist on the base connection URI domain: the base keys are enforced
+        assertEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", null));
+        assertEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", cudKey));
+        assertNotEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", baseKey));
+
+        // an unknown app on the non-base connection URI domain: that domain's keys are enforced
+        assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", null));
+        assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", baseKey));
+        assertNotEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", cudKey));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testConnectionUriDomainSetIsReplacedNotModifiedOnRefresh() throws Exception {
+        // security-audit #113: requests read the set of connection URI domains without a lock, so a refresh must
+        // publish a new set instead of clearing and refilling the published one
+        String[] args = {"../"};
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject cudConfig = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(cudConfig, 2);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        cudConfig), false);
+
+        io.supertokens.multitenancy.MultitenancyHelper helper =
+                io.supertokens.multitenancy.MultitenancyHelper.getInstance(process.getProcess());
+        java.lang.reflect.Field field =
+                io.supertokens.multitenancy.MultitenancyHelper.class.getDeclaredField("dangerous_allCUDsFromDb");
+        field.setAccessible(true);
+
+        java.util.Set<String> beforeFullRefresh = (java.util.Set<String>) field.get(helper);
+        java.util.Set<String> contents = new java.util.HashSet<>(beforeFullRefresh);
+        helper.refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        java.util.Set<String> afterFullRefresh = (java.util.Set<String>) field.get(helper);
+        assertNotSame(beforeFullRefresh, afterFullRefresh);
+        assertEquals(contents, beforeFullRefresh);
+
+        // an update of an existing tenant (the refresh after a known tenant change, where a line has one)
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        cudConfig), false);
+        java.util.Set<String> afterUpdate = (java.util.Set<String>) field.get(helper);
+        assertNotSame(afterFullRefresh, afterUpdate);
+        assertEquals(contents, afterFullRefresh);
+        assertEquals(contents, afterUpdate);
+        assertTrue(helper.isConnectionUriDomainPresentInDb("127.0.0.1"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
