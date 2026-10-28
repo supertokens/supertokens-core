@@ -19,7 +19,10 @@ package io.supertokens.emailpassword;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -38,6 +41,7 @@ import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenExceptio
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -60,15 +64,25 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
 public class EmailPassword {
+
+    private static final String SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN = "@stfakeemail.supertokens.com";
+
+    // Prefixes of the built-in third-party provider ids of the backend SDKs (a thirdPartyId starting with one of
+    // these selects that built-in provider, e.g. "google-workspaces" or "github-enterprise").
+    private static final String[] BUILT_IN_THIRD_PARTY_ID_PREFIXES = {"active-directory", "apple", "bitbucket",
+            "boxy-saml", "discord", "facebook", "github", "gitlab", "google", "linkedin", "okta", "saml", "twitter"};
 
     public static class ImportUserResponse {
         public boolean didUserAlreadyExist;
@@ -110,6 +124,20 @@ public class EmailPassword {
                                             @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
+        return signUp(tenantIdentifier, storage, main, email, password, email);
+    }
+
+    /**
+     * @param email           the normalised email the user is created with
+     * @param emailAsProvided the email as sent by the caller, before normalisation. It is only used to match the
+     *                        local part of a placeholder email against an (external) user id, since user ids are
+     *                        case-sensitive while normalisation lower-cases the email.
+     */
+    public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                            @Nonnull String email, @Nonnull String password,
+                                            @Nullable String emailAsProvided)
+            throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
+            BadPermissionException {
 
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
@@ -119,6 +147,22 @@ public class EmailPassword {
         String hashedPassword = PasswordHashing.getInstance(main)
                 .createHashWithSalt(tenantIdentifier.toAppIdentifier(), password);
 
+        EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        // Read before the transaction from the in-memory tenant configs; only needed for a dotted placeholder.
+        Set<String> configuredThirdPartyIds = mayHaveThirdPartyPlaceholderShape(email)
+                ? getConfiguredThirdPartyIdsLowerCase(appIdentifier, main) : new HashSet<>();
+
+        // Checked before the new user is inserted, so the new user's own id can never match.
+        boolean isPlaceholderEmailOfUserWithoutEmail;
+        try {
+            isPlaceholderEmailOfUserWithoutEmail = evStorage.startTransaction(
+                    con -> isPlaceholderEmailOfUserWithoutEmail_Transaction(storage, con, appIdentifier, email,
+                            emailAsProvided, configuredThirdPartyIds));
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
+
         while (true) {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
@@ -127,12 +171,12 @@ public class EmailPassword {
                 AuthRecipeUserInfo newUser = StorageUtils.getEmailPasswordStorage(storage)
                         .signUp(tenantIdentifier, userId, email, hashedPassword, timeJoined);
 
-                if (Utils.isFakeEmail(email)) {
+                // Only the placeholder email of an existing user without any email is treated as pre-verified.
+                if (isPlaceholderEmailOfUserWithoutEmail) {
                     try {
-                        EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
                         evStorage.startTransaction(con -> {
                             try {
-                                evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                evStorage.updateIsEmailVerified_Transaction(appIdentifier, con,
                                         newUser.getSupertokensUserId(), email, true);
                                 evStorage.commitTransaction(con);
 
@@ -160,6 +204,121 @@ public class EmailPassword {
                 // we retry with a new userId (while loop)
             }
         }
+    }
+
+    /**
+     * Returns true only for the placeholder email the backend SDKs generate when a user that has no email address on
+     * any of its login methods adds a password factor: {@code <userId>@stfakeemail.supertokens.com}, where
+     * {@code <userId>} is the id of an existing user of this app (a SuperTokens user id, or an external user id from
+     * user id mapping) and neither that user nor any login method of its primary user has an email.
+     * It returns false (the new login method is created unverified) for everything else, in particular:
+     * - addresses on {@code *.fakeemail.com},
+     * - local parts with the shape of a third-party placeholder ({@code <thirdPartyUserId>.<thirdPartyId>}), where
+     *   the part after a '.' is a built-in provider id of the SDKs or a thirdPartyId configured in a tenant of the app,
+     * - local parts that are not the id of an existing user, or whose user already has an email (the SDKs only
+     *   generate this placeholder for users without one).
+     */
+    private static boolean isPlaceholderEmailOfUserWithoutEmail_Transaction(Storage storage,
+                                                                            TransactionConnection con,
+                                                                            AppIdentifier appIdentifier,
+                                                                            String email, String emailAsProvided,
+                                                                            Set<String> configuredThirdPartyIds)
+            throws StorageQueryException {
+        if (!email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN)) {
+            return false;
+        }
+        List<String> candidateUserIds = new ArrayList<>();
+        candidateUserIds.add(email.substring(0, email.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length()));
+        if (emailAsProvided != null && email.equals(Utils.normaliseEmail(emailAsProvided))) {
+            // user ids are case-sensitive, so also try the local part as the caller sent it
+            String trimmed = emailAsProvided.trim();
+            String localPartAsProvided = trimmed.substring(0,
+                    trimmed.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length());
+            if (!candidateUserIds.contains(localPartAsProvided)) {
+                candidateUserIds.add(localPartAsProvided);
+            }
+        }
+
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) storage;
+        List<AuthRecipeUserInfo> matchedUsers = new ArrayList<>();
+        for (String candidate : candidateUserIds) {
+            if (candidate.isEmpty() || hasThirdPartyPlaceholderShape(candidate, configuredThirdPartyIds)) {
+                // third-party placeholders are never auto-verified
+                return false;
+            }
+            AuthRecipeUserInfo userBySuperTokensId = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifier,
+                    con, candidate);
+            if (userBySuperTokensId != null) {
+                matchedUsers.add(userBySuperTokensId);
+            }
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                    userIdMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, candidate, false);
+            if (mapping != null) {
+                AuthRecipeUserInfo userByExternalId = authRecipeStorage.getPrimaryUserById_Transaction(
+                        appIdentifier, con, mapping.superTokensUserId);
+                if (userByExternalId != null) {
+                    matchedUsers.add(userByExternalId);
+                }
+            }
+        }
+        if (matchedUsers.isEmpty()) {
+            return false;
+        }
+        // Every user the local part refers to must be without any email, as the SDKs only generate this placeholder
+        // for such users; otherwise fail closed.
+        for (AuthRecipeUserInfo user : matchedUsers) {
+            for (LoginMethod loginMethod : user.loginMethods) {
+                if (loginMethod.email != null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean mayHaveThirdPartyPlaceholderShape(String email) {
+        return email.endsWith(SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN) &&
+                email.substring(0, email.length() - SUPERTOKENS_PLACEHOLDER_EMAIL_DOMAIN.length()).contains(".");
+    }
+
+    private static Set<String> getConfiguredThirdPartyIdsLowerCase(AppIdentifier appIdentifier, Main main) {
+        Set<String> result = new HashSet<>();
+        // In-memory snapshot of the tenant configs (no DB read or refresh on the sign-up path).
+        for (TenantConfig tenantConfig : MultitenancyHelper.getInstance(main).getAllTenants()) {
+            if (!tenantConfig.tenantIdentifier.toAppIdentifier().equals(appIdentifier)
+                    || tenantConfig.thirdPartyConfig == null) {
+                continue;
+            }
+            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                if (provider != null && provider.thirdPartyId != null) {
+                    result.add(provider.thirdPartyId.toLowerCase());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * True if the local part looks like {@code <thirdPartyUserId>.<thirdPartyId>}: the text after some '.' starts
+     * with a built-in provider id prefix of the SDKs, or equals a thirdPartyId configured in a tenant of the app.
+     * Compared case-insensitively, since the email is lower-cased on sign-up.
+     */
+    private static boolean hasThirdPartyPlaceholderShape(String localPart, Set<String> configuredThirdPartyIds) {
+        int dot = localPart.indexOf('.');
+        while (dot >= 0) {
+            String suffix = localPart.substring(dot + 1).toLowerCase();
+            if (configuredThirdPartyIds.contains(suffix)) {
+                return true;
+            }
+            for (String prefix : BUILT_IN_THIRD_PARTY_ID_PREFIXES) {
+                if (suffix.startsWith(prefix)) {
+                    return true;
+                }
+            }
+            dot = localPart.indexOf('.', dot + 1);
+        }
+        return false;
     }
 
     @TestOnly
