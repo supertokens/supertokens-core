@@ -98,30 +98,24 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> newResources =
+                        new HashMap<>();
                 for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(
-                                    app,
-                                    RESOURCE_KEY));
+                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
                     if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
-                        main.getResourceDistributor()
-                                .setResource(app,
-                                        RESOURCE_KEY,
-                                        resource);
+                        newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY), resource);
                     } else {
                         try {
-                            main.getResourceDistributor()
-                                    .setResource(
-                                            app,
-                                            RESOURCE_KEY,
-                                            new AccessTokenSigningKey(app, main));
+                            newResources.put(new ResourceDistributor.KeyClass(app, RESOURCE_KEY),
+                                    new AccessTokenSigningKey(app, main));
                         } catch (Exception e) {
                             Logging.error(main, app.getAsPublicTenantIdentifier(), e.getMessage(), false);
                             // continue loading other resources
                         }
                     }
                 }
+                main.getResourceDistributor().replaceResourcesWithResourceKey(RESOURCE_KEY, newResources);
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {

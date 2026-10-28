@@ -14,6 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The dashboard core-config API no longer returns secret config values.
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
+- Tenant configs, signing keys and feature flags are replaced in one step on a tenant refresh instead of being cleared and refilled, so a request can no longer read the base config while an app's config is missing.
 - OAuth provider proxy APIs only act on clients and login/consent challenges of the calling app; new client ids are limited to `[A-Za-z0-9._~-]`.
 - Third-party sign-in marks only the email the caller vouched for as verified, and only on the signing-in tenant's login method.
 - Bulk-import error messages no longer contain passwords, password hashes or TOTP secrets; OpenTelemetry spans no longer record argument or return values.
