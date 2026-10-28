@@ -1,16 +1,19 @@
 package io.supertokens.webserver.api.saml;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +30,8 @@ public class LegacyTokenAPI extends WebserverAPI {
         return "/recipe/saml/legacy/token";
     }
 
+    // Called by the relying party's OAuth client (for example the backend SDK's boxy-saml provider), which does
+    // not hold the core API key. The client authenticates with its client_id / client_secret instead.
     @Override
     protected boolean checkAPIKey(HttpServletRequest req) {
         return false;
@@ -49,23 +54,30 @@ public class LegacyTokenAPI extends WebserverAPI {
         }
 
         try {
-            SAMLClient client = SAML.getClient(
-                getTenantIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
-                clientId
-            );
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            SAMLClient client = SAML.getClient(tenantIdentifier, storage, clientId);
             if (client == null) {
                 throw new ServletException(new BadRequestException("Invalid client_id"));
             }
-            if (!Objects.equals(client.clientSecret, clientSecret)) {
+            if (!SAML.isClientSecretValid(client, clientSecret)) {
                 throw new ServletException(new BadRequestException("Invalid client_secret"));
+            }
+
+            // Redeem the code (single use, bound to this client) and issue a fresh access token for it.
+            String accessToken;
+            try {
+                accessToken = SAML.exchangeLegacyCodeForAccessToken(main, tenantIdentifier, storage, clientId, code);
+            } catch (InvalidCodeException e) {
+                throw new ServletException(new BadRequestException("Invalid code"));
             }
 
             JsonObject res = new JsonObject();
             res.addProperty("status", "OK");
-            res.addProperty("access_token", code + "." + clientId); // return code itself as access token
+            res.addProperty("access_token", accessToken);
             super.sendJsonResponse(200, res, resp);
-        } catch (TenantOrAppNotFoundException | StorageQueryException | BadPermissionException e) {
+        } catch (TenantOrAppNotFoundException | StorageQueryException | BadPermissionException |
+                 FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }
