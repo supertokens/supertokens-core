@@ -4508,7 +4508,8 @@ public class Start
                     samlClient.ssoLoginURL, samlClient.redirectURIs.toString(), samlClient.defaultRedirectURI,
                     samlClient.idpEntityId, samlClient.idpSigningCertificate, samlClient.allowIDPInitiatedLogin,
                     samlClient.enableRequestSigning,
-                    samlClient.acsURLs == null ? null : samlClient.acsURLs.toString());
+                    samlClient.acsURLs == null ? null : samlClient.acsURLs.toString(),
+                    samlClient.attributeMapping == null ? null : samlClient.attributeMapping.toString());
         } catch (SQLException e) {
             String errorMessage = e.getMessage();
             String table = io.supertokens.inmemorydb.config.Config.getConfig(this).getSAMLClientsTable();

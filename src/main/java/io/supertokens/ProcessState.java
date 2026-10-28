@@ -51,6 +51,16 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         return null;
     }
 
+    public synchronized List<EventAndException> getEventsByName(PROCESS_STATE processState) {
+        List<EventAndException> events = new ArrayList<>();
+        for (EventAndException e : history) {
+            if (e.state == processState) {
+                events.add(e);
+            }
+        }
+        return events;
+    }
+
     public synchronized void addState(PROCESS_STATE processState, Exception e) {
         addState(processState, e, null);
     }
@@ -122,7 +132,10 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         APPROXIMATE_USER_COUNT_SHADOW_AUDIT_FAILED,
         // A request was rejected with 429 by the per-CUD in-flight concurrency cap (the pool was saturated and
         // the connection URI domain was over its max_concurrent_requests_per_cud). Testing-only signal.
-        CONCURRENT_REQUEST_LIMIT_HIT
+        CONCURRENT_REQUEST_LIMIT_HIT,
+        // SAML userinfo for a client without an attribute mapping: the default-list resolution would have given a
+        // different id / sub or email than the built-in chain that was returned. Logged as a WARN line too.
+        SAML_ATTRIBUTE_MAPPING_COMPARISON_MISMATCH
     }
 
     public static class EventAndException {

@@ -18,6 +18,7 @@ package io.supertokens.test.saml.api;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -216,16 +217,21 @@ public class SAMLIdpInitiatedAcsURLsTest5_4 {
         String clientId = putClient(process, clientInput(null, km, true, acsList(ACS_URL)))
                 .get("clientId").getAsString();
 
-        // An update replaces the whole client, so omitting acsURLs would clear the list.
-        assertPutRejected(process, clientInput(clientId, km, true, null), ACS_REQUIRED_MESSAGE);
+        // Below CDI 5.8 leaving acsURLs out keeps the stored list, so the update goes through with it.
+        JsonObject kept = putClient(process, clientInput(clientId, km, true, null));
+        assertTrue(kept.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(acsList(ACS_URL), kept.get("acsURLs"));
+        // Sending an empty list does drop it, which IdP-initiated login does not allow.
         assertPutRejected(process, clientInput(clientId, km, true, new JsonArray()), ACS_REQUIRED_MESSAGE);
 
         JsonObject listed = getListedClient(process, clientId);
         assertTrue(listed.get("allowIDPInitiatedLogin").getAsBoolean());
         assertEquals(acsList(ACS_URL), listed.get("acsURLs"));
 
-        // Disabling IdP-initiated login lets the list go.
-        JsonObject updated = putClient(process, clientInput(clientId, km, false, null));
+        // Disabling IdP-initiated login lets the list go, when it is cleared explicitly.
+        JsonObject clearAcsURLs = clientInput(clientId, km, false, null);
+        clearAcsURLs.add("acsURLs", JsonNull.INSTANCE);
+        JsonObject updated = putClient(process, clearAcsURLs);
         assertFalse(updated.get("allowIDPInitiatedLogin").getAsBoolean());
         assertFalse(updated.has("acsURLs"));
 
