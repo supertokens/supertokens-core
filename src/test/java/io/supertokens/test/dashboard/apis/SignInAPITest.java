@@ -17,6 +17,7 @@
 package io.supertokens.test.dashboard.apis;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.PasswordHashing;
@@ -158,4 +159,91 @@ public class SignInAPITest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testIssue111_suspendedWrongPasswordIsInvalidCredentials() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+            Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", "password123");
+            Thread.sleep(10);
+        }
+
+        Thread.sleep(500);
+        // create a user above the free limit
+        String email = "suspended@example.com";
+        String password = "testPass123";
+
+        DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), email,
+                PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
+                System.currentTimeMillis());
+        ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .createNewDashboardUser(process.getAppForTesting().toAppIdentifier(), user);
+
+        // a wrong password for the suspended user is reported like any other wrong password
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("password", "wrongPassword");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                    SemVer.v2_18.get(), "dashboard");
+            assertEquals(1, response.entrySet().size());
+            assertEquals("INVALID_CREDENTIALS_ERROR", response.get("status").getAsString());
+        }
+
+        // the correct password still reports the suspension
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("password", password);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                    SemVer.v2_18.get(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals("OK", response.get("status").getAsString());
+            } else {
+                assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue111_unknownEmailSignInStillVerifiesPassword() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "testPass123");
+        ProcessState processState = ProcessState.getInstance(process.getProcess());
+        assertNull(processState.getLastEventByName(PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", "unknown@example.com");
+        requestBody.addProperty("password", "testPass123");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                SemVer.v2_18.get(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("INVALID_CREDENTIALS_ERROR", response.get("status").getAsString());
+        assertNotNull(processState.getLastEventByName(PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
 }
