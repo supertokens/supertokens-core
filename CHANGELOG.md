@@ -7,10 +7,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.0.12]
+
 ### Security
 
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
+- Dashboard core-config API no longer returns secret config values.
+- The tenant refresh after a tenant change no longer marks other tenants' unloaded config changes as applied.
+- OAuth2 provider APIs only act on OAuth clients of the calling app; client ids are validated and encoded.
+- Third-party sign-in updates only the signing-in recipe user's email and verifies only the vouched-for email.
+- Secrets are kept out of OpenTelemetry spans and bulk-import error messages.
+- WebAuthn credentials are bound to the attested id and relying party, register options use a random user handle, and recovery tokens are tenant-bound.
+- TOTP verification is serialised per user, uses app-wide used codes, and verify-device always checks the code.
+- Sessions and reset/recovery tokens no longer outlive changes to the account they were issued for.
+- SAML assertions are accepted only within a signed expiry window, and the consumed record is kept for that window.
+- Sign-up auto-verifies only the password-factor placeholder email of a user without email.
+- CDI 5.0 tenant updates no longer turn login methods enabled only for requiredSecondaryFactors into first factors.
+- Sign-in does the same password work for unknown accounts; dashboard suspension is reported only after a correct password.
+- The legacy SAML code/token exchange is single-use and bound to the client.
 
 ## [12.0.11]
 
