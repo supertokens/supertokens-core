@@ -237,7 +237,7 @@ public class VerifyTotpDeviceAPITest {
             assert res.get("status").getAsString().equals("OK");
             assert res.get("wasAlreadyVerified").getAsBoolean() == false;
 
-            // try again to verify the user with any code (valid/invalid)
+            // try again to verify the already verified device with an invalid code
             body.addProperty("totp", "mycode");
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
@@ -249,8 +249,8 @@ public class VerifyTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res2.get("status").getAsString().equals("OK");
-            assert res2.get("wasAlreadyVerified").getAsBoolean() == true;
+            assertEquals("INVALID_TOTP_ERROR", res2.get("status").getAsString());
+            assertNull(res2.get("wasAlreadyVerified"));
 
             // try again with unknown device
             body.addProperty("deviceName", "non-existent-device");
@@ -280,6 +280,94 @@ public class VerifyTotpDeviceAPITest {
                     "totp");
             assert res5.get("status").getAsString().equals("UNKNOWN_DEVICE_ERROR");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+    private JsonObject verifyDeviceRequest(TestingProcessManager.TestingProcess process, String userId,
+                                           String deviceName, String totp)
+            throws HttpResponseException, IOException {
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", userId);
+        body.addProperty("deviceName", deviceName);
+        body.addProperty("totp", totp);
+        return HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device/verify",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+    }
+
+    @Test
+    public void testIssue12_verifyDeviceAlreadyVerifiedRequiresValidCode() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("totp_max_attempts", "3");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
+
+        JsonObject createDeviceReq = new JsonObject();
+        createDeviceReq.addProperty("userId", "user-id");
+        createDeviceReq.addProperty("deviceName", "deviceName");
+        createDeviceReq.addProperty("period", 30);
+        createDeviceReq.addProperty("skew", 1);
+        JsonObject createDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device",
+                createDeviceReq,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+        assertEquals("OK", createDeviceRes.get("status").getAsString());
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", createDeviceRes.get("secret").getAsString(),
+                30, 1, false, System.currentTimeMillis());
+
+        // Verify the device:
+        String validCode = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+        JsonObject res = verifyDeviceRequest(process, "user-id", "deviceName", validCode);
+        assertEquals("OK", res.get("status").getAsString());
+        assertFalse(res.get("wasAlreadyVerified").getAsBoolean());
+
+        // The device is verified now. An invalid code is still rejected:
+        res = verifyDeviceRequest(process, "user-id", "deviceName", "mycode");
+        assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
+        assertNull(res.get("wasAlreadyVerified"));
+        assertEquals(1, res.get("currentNumberOfFailedAttempts").getAsInt());
+
+        // So is the code that was already used:
+        res = verifyDeviceRequest(process, "user-id", "deviceName", validCode);
+        assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
+        assertEquals(2, res.get("currentNumberOfFailedAttempts").getAsInt());
+
+        // A fresh valid code (the next one, accepted because skew = 1) is reported as already verified:
+        String nextValidCode = TOTPRecipeTest.generateTotpCode(process.getProcess(), device, 1);
+        res = verifyDeviceRequest(process, "user-id", "deviceName", nextValidCode);
+        assertEquals("OK", res.get("status").getAsString());
+        assertTrue(res.get("wasAlreadyVerified").getAsBoolean());
+
+        // The attempt limit also applies to an already verified device:
+        for (int i = 0; i < 3; i++) {
+            res = verifyDeviceRequest(process, "user-id", "deviceName", "wrong" + i);
+            assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
+        }
+        res = verifyDeviceRequest(process, "user-id", "deviceName", "wrong3");
+        assertEquals("LIMIT_REACHED_ERROR", res.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
