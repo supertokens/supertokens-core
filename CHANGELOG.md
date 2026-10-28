@@ -28,6 +28,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Sign-in does the same password work for unknown accounts; dashboard suspension is reported only after a correct password.
 - The legacy SAML code/token exchange is single-use and bound to the client.
 - WebAuthn: sign-in locks the sign-in options it consumes, so concurrent sign-ins with the same assertion can no longer both succeed.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 
 ## [12.0.11]
 
