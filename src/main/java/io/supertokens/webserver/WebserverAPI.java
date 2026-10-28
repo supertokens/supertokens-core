@@ -199,15 +199,6 @@ public abstract class WebserverAPI extends HttpServlet {
      * (connectionUriDomain, public, public) that is loaded, else the base config. A request naming an app or tenant
      * that does not resolve is held to the rules of its connection URI domain (or the base config), never to none.
      */
-    private boolean isAppLoaded(String connectionUriDomain, String appId) {
-        try {
-            Config.getConfig(new TenantIdentifier(connectionUriDomain, appId, null), this.main);
-            return true;
-        } catch (TenantOrAppNotFoundException e) {
-            return false;
-        }
-    }
-
     private CoreConfig getConfigForAccessCheck(String connectionUriDomain, String appId, String tenantId) {
         TenantIdentifier[] candidates = new TenantIdentifier[]{
                 new TenantIdentifier(connectionUriDomain, appId, tenantId),
@@ -264,12 +255,6 @@ public abstract class WebserverAPI extends HttpServlet {
 
             // if either were defined, and both failed, we throw an exception
             if (superTokensSaaSSecret != null || keys != null) {
-                throw new ServletException(new APIKeyUnauthorisedException());
-            }
-            // No key is configured on the app's ancestors. A request naming an app that does not exist on this core
-            // is still answered like a missing key, not with "app not found": otherwise, when only apps carry API
-            // keys, 401 (real app) vs 400 (unknown app) tells an unauthenticated caller which appIds exist.
-            if (!isAppLoaded(getConnectionUriDomain(req), getAppId(req))) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
         } catch (TenantOrAppNotFoundException e) {
