@@ -944,6 +944,56 @@ public class SAML {
                 new ByteArrayInputStream(certBytes));
     }
 
+    // Storage key prefix of an access token issued by the legacy token endpoint. Access tokens are stored in the
+    // same table as the codes minted by the callback; the prefix keeps the two apart, so a code is never accepted
+    // as an access token and an access token is never accepted as a code. ':' occurs neither in a code (a UUID)
+    // nor in an access token (base64url).
+    private static final String LEGACY_ACCESS_TOKEN_KEY_PREFIX = "legacy_access_token:";
+
+    private static final java.security.SecureRandom SECURE_RANDOM = new java.security.SecureRandom();
+
+    // Compares a presented client secret with the stored one in constant time. A client without a stored secret
+    // never authenticates.
+    public static boolean isClientSecretValid(SAMLClient client, String clientSecret) {
+        if (client == null || client.clientSecret == null || clientSecret == null) {
+            return false;
+        }
+        return java.security.MessageDigest.isEqual(
+                client.clientSecret.getBytes(StandardCharsets.UTF_8),
+                clientSecret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Legacy token endpoint: redeems a code minted by the callback for the (already authenticated) client and
+    // issues a fresh, random, single-use access token that carries the same claims. The code is consumed
+    // atomically, so it can be exchanged at most once, and only by the client it was issued to.
+    public static String exchangeLegacyCodeForAccessToken(Main main, TenantIdentifier tenantIdentifier, Storage storage,
+                                                          String clientId, String code)
+            throws TenantOrAppNotFoundException, StorageQueryException, InvalidCodeException,
+            FeatureNotEnabledException {
+        checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
+        if (code == null || code.startsWith(LEGACY_ACCESS_TOKEN_KEY_PREFIX)) {
+            throw new InvalidCodeException();
+        }
+
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, code);
+        if (claimsInfo == null || clientId == null || !clientId.equals(claimsInfo.clientId)) {
+            throw new InvalidCodeException();
+        }
+
+        byte[] random = new byte[32];
+        SECURE_RANDOM.nextBytes(random);
+        String accessToken = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+
+        CoreConfig config = Config.getConfig(tenantIdentifier, main);
+        samlStorage.saveSAMLClaims(tenantIdentifier, claimsInfo.clientId, LEGACY_ACCESS_TOKEN_KEY_PREFIX + accessToken,
+                claimsInfo.claims, config.getSAMLClaimsValidity());
+        return accessToken;
+    }
+
+    // accessToken is a code minted by the callback (isLegacy == false) or an access token issued by
+    // exchangeLegacyCodeForAccessToken (isLegacy == true). Either is consumed by this call.
     public static JsonObject getUserInfo(Main main, TenantIdentifier tenantIdentifier, Storage storage, String accessToken, String clientId, boolean isLegacy)
             throws TenantOrAppNotFoundException, StorageQueryException,
             StorageTransactionLogicException, InvalidCodeException, FeatureNotEnabledException {
@@ -952,7 +1002,12 @@ public class SAML {
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
-        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, accessToken);
+        if (accessToken == null || accessToken.startsWith(LEGACY_ACCESS_TOKEN_KEY_PREFIX)) {
+            throw new InvalidCodeException();
+        }
+        String storageKey = isLegacy ? LEGACY_ACCESS_TOKEN_KEY_PREFIX + accessToken : accessToken;
+
+        SAMLClaimsInfo claimsInfo = samlStorage.getSAMLClaimsAndRemoveCode(tenantIdentifier, storageKey);
         if (claimsInfo == null) {
             throw new InvalidCodeException();
         }
