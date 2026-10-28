@@ -3002,6 +3002,18 @@ public class Start
     }
 
     @Override
+    public TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(TransactionConnection con,
+                                                               AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getAllUsedCodesDescOrder_Transaction(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public int removeExpiredCodes(TenantIdentifier tenantIdentifier, long expiredBefore)
             throws StorageQueryException {
         try {
