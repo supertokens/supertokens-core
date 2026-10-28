@@ -1225,6 +1225,7 @@ public class Start
         }
     }
 
+    @Deprecated
     @Override
     public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                             String thirdPartyId, String thirdPartyUserId,
@@ -1233,6 +1234,24 @@ public class Start
         try {
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
                     thirdPartyUserId, newEmail);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                            String thirdPartyId, String userId, String thirdPartyUserId,
+                                            String newEmail)
+            throws StorageQueryException, io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            int updatedRows = ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, userId,
+                    thirdPartyId, thirdPartyUserId, newEmail);
+            if (updatedRows != 1) {
+                // userId does not hold this third party login method; nothing must be changed.
+                throw new io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException();
+            }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
