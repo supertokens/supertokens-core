@@ -25,6 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CDI 5.0 tenant updates no longer turn login methods enabled only for requiredSecondaryFactors into first factors.
 - Sign-in does the same password work for unknown accounts; dashboard suspension is reported only after a correct password.
 - The legacy SAML code/token exchange is single-use and bound to the client.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 
 ## [11.4.8]
 
