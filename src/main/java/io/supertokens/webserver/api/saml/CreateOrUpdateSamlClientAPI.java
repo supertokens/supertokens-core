@@ -29,8 +29,11 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.saml.SAMLClient;
 import io.supertokens.pluginInterface.saml.exception.DuplicateEntityIdException;
 import io.supertokens.saml.SAML;
+import io.supertokens.saml.SAMLAttributeMapping;
 import io.supertokens.saml.exceptions.IDPInitiatedLoginRequiresACSURLsException;
+import io.supertokens.saml.exceptions.InvalidAttributeMappingException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.saml.exceptions.SAMLClientFieldRequiredException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -62,10 +65,22 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
         }
 
-        // Optional ACS allow-list; absent = null = not configured (legacy behaviour preserved).
-        JsonArray acsURLs = InputParser.parseArrayOrThrowError(input, "acsURLs", true);
+        // Optional ACS allow-list and attribute mapping. Whether each key was sent is recorded separately from its
+        // value: once a client has either field set, an update must send it (null, [] or {} clear it).
+        boolean acsURLsPresent = input.has("acsURLs");
+        JsonArray acsURLs = input.has("acsURLs") && input.get("acsURLs").isJsonNull()
+                ? null
+                : InputParser.parseArrayOrThrowError(input, "acsURLs", true);
         if (acsURLs != null && acsURLs.size() > 0 && !SAML.hasACSURLs(acsURLs)) {
             throw new ServletException(new BadRequestException("acsURLs must only contain non-empty strings"));
+        }
+
+        boolean attributeMappingPresent = input.has("attributeMapping");
+        JsonObject attributeMapping;
+        try {
+            attributeMapping = SAMLAttributeMapping.parse(input.get("attributeMapping"));
+        } catch (InvalidAttributeMappingException e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         }
 
         String metadataXML = InputParser.parseStringOrThrowError(input, "metadataXML", false);
@@ -95,10 +110,13 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         try {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                     main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI,
-                    redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning, acsURLs);
+                    redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning, acsURLs, acsURLsPresent,
+                    attributeMapping, attributeMappingPresent);
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);
+        } catch (SAMLClientFieldRequiredException e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (IDPInitiatedLoginRequiresACSURLsException e) {
             throw new ServletException(new BadRequestException(
                     "acsURLs must contain at least one URL when allowIDPInitiatedLogin is true"));

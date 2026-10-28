@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.5.0]
+
+- Requires plugin interface 11.2 (and supertokens-postgresql-plugin 10.2). Adds CDI 5.8.
+- Adds an optional per-client SAML `attributeMapping` on `PUT /recipe/saml/clients`: for each of `userId`, `email`,
+  `firstName` and `lastName`, an ordered list of 1-10 assertion claim names (`NameID` is the Subject NameID).
+  Invalid mappings are rejected with a 400 naming the key. The PUT response and `GET /recipe/saml/clients/list`
+  return it when set. Accepted on every CDI version; documented in CDI 5.8.
+- Only clients **with** an `attributeMapping` use the new resolution in `/recipe/saml/legacy/userinfo` (`id`) and
+  `/recipe/saml/user` (`sub`): for each field, the client's list or else the default list (today's rules), taking the
+  first claim with a non-blank first value. For such clients an empty, whitespace-only or valueless NameID falls
+  through to the next claim instead of becoming the ID (or failing the request). `firstName` / `lastName` are
+  returned only when mapped and found. Clients **without** a mapping are unchanged and get exactly today's output;
+  core logs a WARN line (app, tenant, client, field and kind, never claim values) when the default lists would
+  have given them a different `id` / `sub` or `email`.
+- Behaviour change: once a SAML client has `acsURLs` or `attributeMapping` set, every update must send it — its
+  current value to keep it, or `null` (or `[]` / `{}`) to clear it. A PUT that leaves out a set `acsURLs` now
+  returns 400 instead of silently clearing the list. `acsURLs: null` is now accepted.
+- Behaviour change: a stored empty `acsURLs` (`[]`, which 12.3.1+ cores accepted when IdP-initiated login was off) is
+  now treated as not configured and left out of responses. SP-initiated logins for such a client previously all
+  failed with `INVALID_CLIENT`, because nothing can match an empty allow-list; they now succeed with no ACS
+  allow-list at authorize. The callback still pins the response to the ACS URL recorded at login, and IdP-initiated
+  login stays refused.
+- Changing `attributeMapping.userId` on a client that already has users changes those users' IDs.
+
+### Migration
+
+Adds the nullable `saml_clients.attribute_mapping` column. The supertokens-postgresql-plugin 10.2.0 adds it at
+startup (`ADD COLUMN IF NOT EXISTS`), so an in-place upgrade needs no manual step; large deployments can pre-apply
+`migration-scripts/v10.2.0.sql`. Additive and online-safe.
+
+```sql
+ALTER TABLE saml_clients ADD COLUMN IF NOT EXISTS attribute_mapping TEXT;
+```
+
 ## [12.4.1]
 
 - Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
