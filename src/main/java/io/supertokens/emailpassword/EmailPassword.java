@@ -532,6 +532,12 @@ public class EmailPassword {
         }
 
         if (user == null) {
+            // do the same password verification work as for an existing account
+            try {
+                PasswordHashing.getInstance(main).verifyPasswordWithDummyHash(tenantIdentifier.toAppIdentifier(),
+                        password);
+            } catch (Exception ignored) {
+            }
             throw new WrongCredentialsException();
         }
 
