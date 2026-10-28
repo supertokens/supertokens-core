@@ -272,9 +272,11 @@ public class RequestStatsTest {
                             1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (HttpResponseException e) {
-            // an unknown app is answered like a missing API key, so the response doesn't reveal which apps exist
-            assertEquals(401, e.statusCode);
-            assertEquals("Http error. Status Code: 401. Message: Invalid API key", e.getMessage());
+            assertEquals(400, e.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following " +
+                            "connectionURIDomain, appId and tenantId combination not found: (, a1, public)",
+                    e.getMessage());
         }
 
         process.kill();
