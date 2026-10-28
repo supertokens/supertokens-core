@@ -27,6 +27,8 @@ import com.webauthn4j.util.Base64UrlUtil;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.webauthn.slqStorage.WebAuthNSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -40,6 +42,11 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -175,6 +182,68 @@ public class TestSignInOptionsConsumption_5_5 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testConcurrentSignInWithSameOptionsDoesNotSucceedTwice() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        JsonObject user = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(main,
+                "consumerace@example.com");
+
+        String[] optionsIdHolder = new String[1];
+        JsonObject signInBody = createSignInRequestBody(main, user, optionsIdHolder);
+        String optionsId = optionsIdHolder[0];
+
+        WebAuthNSQLStorage storage = (WebAuthNSQLStorage) StorageLayer.getStorage(main);
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, null);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            CountDownLatch consumed = new CountDownLatch(1);
+            CountDownLatch release = new CountDownLatch(1);
+
+            // Plays the sign-in that wins: reads the options with the sign-in query, consumes them and keeps
+            // its transaction open until the other request has had time to run.
+            Future<?> first = executor.submit(() -> storage.startTransaction(con -> {
+                assertNotNull(storage.loadOptionsById_Transaction(tenantIdentifier, con, optionsId));
+                storage.removeOptions_Transaction(tenantIdentifier, con, optionsId);
+                consumed.countDown();
+                try {
+                    assertTrue(release.await(30, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
+                storage.commitTransaction(con);
+                return null;
+            }));
+            assertTrue(consumed.await(10, TimeUnit.SECONDS));
+
+            // The same assertion arrives while the first sign-in has not committed yet.
+            Future<JsonObject> second = executor.submit(() -> sendSignIn(main, signInBody, SemVer.v5_5, 30000));
+
+            // It must wait for the first one: with the options row locked it waits to read them. Without the
+            // lock it reads the uncommitted row, verifies and only waits for the row when it deletes it.
+            Thread.sleep(2000);
+            assertFalse(second.isDone());
+
+            release.countDown();
+            first.get(30, TimeUnit.SECONDS);
+
+            // The options were consumed by the first sign-in, so the second one must not succeed.
+            assertEquals("OPTIONS_NOT_FOUND_ERROR", second.get(30, TimeUnit.SECONDS).get("status").getAsString());
+        } finally {
+            executor.shutdownNow();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // Builds a sign-in request body for a fresh set of sign-in options, using the shared
     // emulated authenticator that registered the user's credential. The body is a plain
     // JsonObject so tests can replay the exact same serialized assertion.
@@ -210,9 +279,14 @@ public class TestSignInOptionsConsumption_5_5 {
     }
 
     private JsonObject sendSignIn(Main main, JsonObject body, SemVer cdiVersion) throws Exception {
+        return sendSignIn(main, body, cdiVersion, 1000);
+    }
+
+    private JsonObject sendSignIn(Main main, JsonObject body, SemVer cdiVersion, int readTimeoutMs)
+            throws Exception {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/webauthn/signin",
-                body, 10000, 1000, null, cdiVersion.get(), null);
+                body, 10000, readTimeoutMs, null, cdiVersion.get(), null);
     }
 
     private String getGeneratedOptions(Main main, String optionsId) throws Exception {

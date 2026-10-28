@@ -27,6 +27,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
 - WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
 - WebAuthn: credential register and email update return `UNKNOWN_USER_ID_ERROR` unless the user's WebAuthn login method is a member of the requested tenant.
+- WebAuthn: on CDI 5.5 and later, sign-in options are consumed by at most one sign-in also when several requests with the same assertion arrive at the same time. The options are locked when sign-in reads them, so a concurrent request waits and then gets `OPTIONS_NOT_FOUND_ERROR`; previously both could return `OK`. Fixed in the in-memory storage; the PostgreSQL plugin needs the matching release.
 
 - TOTP: verifications of the same user are serialised (a per-user lock is taken before the used codes are read), so
   concurrent requests can no longer reuse a code or exceed `totp_max_attempts`.
