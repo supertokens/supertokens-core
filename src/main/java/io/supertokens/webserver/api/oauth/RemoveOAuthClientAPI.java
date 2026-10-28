@@ -76,7 +76,7 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 appIdentifier,
                 storage,
                 null, // clientIdToCheck
-                "/admin/clients/" + clientId, // proxyPath
+                OAuth.getAdminClientPath(clientId), // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
