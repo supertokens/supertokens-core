@@ -24,6 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -745,7 +748,8 @@ public class BulkImport {
                 Totp.createDevices(main, appIdentifier, storage, devices);
             }
         } catch (StorageQueryException e) {
-            throw new StorageTransactionLogicException(new Exception("E036: " + e.getMessage()));
+            throw new StorageTransactionLogicException(
+                    new Exception("E036: " + redactTotpSecrets(e.getMessage(), devices)));
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E037: " + e.getMessage()));
         }
@@ -806,5 +810,42 @@ public class BulkImport {
             storage.close();
         }
         userPoolToStorageMap.clear();
+    }
+
+    // Below this length a secret cannot be removed from a message by substring replacement without also
+    // rewriting unrelated text, so the message is dropped instead.
+    private static final int MIN_TOTP_SECRET_LENGTH_FOR_REDACTION = 8;
+
+    public static final String TOTP_DEVICE_ERROR_DETAILS_OMITTED =
+            "Failed to create TOTP devices (details omitted as they may contain TOTP secrets)";
+
+    // Database errors for batch inserts can echo the inserted values. This message is stored as the bulk import
+    // user's error message and can be logged, so the TOTP secrets are removed from it.
+    public static String redactTotpSecrets(String message, List<TOTPDevice> devices) {
+        if (message == null) {
+            return null;
+        }
+        // The secrets as they may appear in the message: verbatim, or as an escaped SQL string literal
+        Set<String> secrets = new HashSet<>();
+        for (TOTPDevice device : devices) {
+            if (device.secretKey != null && !device.secretKey.isEmpty()) {
+                secrets.add(device.secretKey);
+                secrets.add(device.secretKey.replace("'", "''"));
+            }
+        }
+        if (secrets.isEmpty()) {
+            return message;
+        }
+        for (String secret : secrets) {
+            if (secret.length() < MIN_TOTP_SECRET_LENGTH_FOR_REDACTION) {
+                return TOTP_DEVICE_ERROR_DETAILS_OMITTED;
+            }
+        }
+        // Single pass, longest secrets first, so that a secret that is a substring of another one cannot leave
+        // parts of the longer one in the message
+        List<String> secretsLongestFirst = new ArrayList<>(secrets);
+        secretsLongestFirst.sort((a, b) -> Integer.compare(b.length(), a.length()));
+        String alternation = secretsLongestFirst.stream().map(Pattern::quote).collect(Collectors.joining("|"));
+        return Pattern.compile(alternation).matcher(message).replaceAll(Matcher.quoteReplacement("<redacted>"));
     }
 }
