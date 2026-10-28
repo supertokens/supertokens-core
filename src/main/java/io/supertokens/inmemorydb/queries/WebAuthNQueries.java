@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -679,6 +680,11 @@ public class WebAuthNQueries {
         // Tenant-scoped: the generated-options (challenge) table is keyed (app_id, tenant_id, id) and the
         // non-transactional loadOptionsById filters on tenant_id too. Sign-in uses this transactional path,
         // so it must not accept a challenge issued for another tenant. See GHSA-6v34-w48w-44rc.
+        // Row lock (the in-memory form of SELECT ... FOR UPDATE): sign-in consumes the options in this
+        // transaction, so concurrent sign-ins with the same options must queue here.
+        ((ConnectionWithLocks) sqlCon).lock(tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~"
+                + optionsId + Config.getConfig(start).getWebAuthNGeneratedOptionsTable());
+
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getWebAuthNGeneratedOptionsTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND id = ?";
         return execute(sqlCon, QUERY, pst -> {
