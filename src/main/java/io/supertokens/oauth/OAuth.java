@@ -48,6 +48,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -56,6 +57,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 public class OAuth {
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
@@ -266,6 +268,99 @@ public class OAuth {
         }
 
         return response;
+    }
+
+    private static final Pattern SAFE_CLIENT_ID = Pattern.compile("^[A-Za-z0-9._~-]+$");
+
+    /**
+     * Whether a caller chosen client id only uses characters that need no encoding (RFC 3986 unreserved
+     * characters), so that the id is the same in every place it appears (paths, form fields, Basic auth).
+     */
+    public static boolean isSafeClientId(String clientId) {
+        return clientId != null && SAFE_CLIENT_ID.matcher(clientId).matches();
+    }
+
+    /**
+     * The OAuth provider admin path of a client. The client id is percent-encoded as a single path segment, so
+     * that the OAuth provider resolves exactly the client whose app ownership was checked.
+     */
+    public static String getAdminClientPath(String clientId) {
+        return "/admin/clients/" + URLEncoder.encode(clientId, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    /**
+     * Whether a client object returned by the OAuth provider (after snake to camel case conversion) is the client
+     * with the given id.
+     */
+    public static boolean isResponseForClient(JsonElement clientResponse, String clientId) {
+        if (clientResponse == null || !clientResponse.isJsonObject()) {
+            return false;
+        }
+        JsonObject client = clientResponse.getAsJsonObject();
+        return client.has("clientId") && client.get("clientId").isJsonPrimitive()
+                && client.get("clientId").getAsString().equals(clientId);
+    }
+
+    /**
+     * The error the OAuth provider returns for a login/consent challenge it does not know. A challenge whose client
+     * belongs to another app is reported with the same error, so that it is indistinguishable from an unknown one.
+     */
+    public static OAuthAPIException newChallengeNotFoundException() {
+        return new OAuthAPIException("Not Found", "Unable to locate the requested resource", 404);
+    }
+
+    /**
+     * The error the OAuth provider returns when client authentication fails (e.g. unknown client). A client of
+     * another app is reported with the same error.
+     */
+    public static OAuthAPIException newInvalidClientException() {
+        return new OAuthAPIException("invalid_client",
+                "Client authentication failed (e.g., unknown client, no client authentication included, or " +
+                        "unsupported authentication method).", 401);
+    }
+
+    /**
+     * Fetches a login or consent request from the OAuth provider (challengeRequestPath is
+     * /admin/oauth2/auth/requests/login or /admin/oauth2/auth/requests/consent) and makes sure that the OAuth
+     * client of the request belongs to the given app. This must be called before a caller supplied challenge
+     * is accepted or rejected, since the OAuth provider may be shared between apps.
+     *
+     * @throws OAuthAPIException if the OAuth provider returns an error for the challenge, or (with the same
+     *                           error as for an unknown challenge) if its client is not a client of this app
+     */
+    public static void checkChallengeBelongsToApp(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                  String challengeRequestPath, Map<String, String> queryParams)
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException,
+            InvalidConfigException, IOException, OAuthAPIException {
+        HttpRequestForOAuthProvider.Response response;
+        try {
+            response = doOAuthProxyGET(main, appIdentifier, storage,
+                    null, // the client is not known yet, it is checked below
+                    challengeRequestPath, true, true, queryParams, new HashMap<>());
+        } catch (OAuthClientNotFoundException e) {
+            throw newChallengeNotFoundException();
+        }
+
+        String clientId = null;
+        if (response.jsonResponse != null && response.jsonResponse.isJsonObject()) {
+            JsonObject responseObject = response.jsonResponse.getAsJsonObject();
+            if (responseObject.has("client") && responseObject.get("client").isJsonObject()) {
+                JsonObject client = responseObject.getAsJsonObject("client");
+                if (client.has("clientId") && client.get("clientId").isJsonPrimitive()) {
+                    clientId = client.get("clientId").getAsString();
+                }
+            }
+        }
+
+        if (clientId == null) {
+            throw newChallengeNotFoundException();
+        }
+
+        try {
+            StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
+        } catch (OAuthClientNotFoundException e) {
+            throw newChallengeNotFoundException();
+        }
     }
 
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {

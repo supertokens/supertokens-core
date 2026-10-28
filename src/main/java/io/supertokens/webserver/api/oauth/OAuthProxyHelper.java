@@ -105,6 +105,26 @@ public class OAuthProxyHelper {
         return null;
     }
 
+    /**
+     * Makes sure that the login/consent challenge in queryParams belongs to an OAuth client of this app.
+     * Returns false (after sending an OAUTH_ERROR, the same as for an unknown challenge) if it does not, or if
+     * the challenge could not be resolved.
+     */
+    public static boolean checkChallengeBelongsToApp(Main main, HttpServletResponse resp, AppIdentifier appIdentifier,
+                                                     Storage storage, String challengeRequestPath,
+                                                     Map<String, String> queryParams)
+            throws IOException, ServletException {
+        try {
+            OAuth.checkChallengeBelongsToApp(main, appIdentifier, storage, challengeRequestPath, queryParams);
+            return true;
+        } catch (OAuthAPIException e) {
+            handleOAuthAPIException(resp, e);
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
+            throw new ServletException(e);
+        }
+        return false;
+    }
+
     public static Map<String, String> defaultGetQueryParamsFromRequest(HttpServletRequest req) {
         Map<String, String> queryParams = new HashMap<>();
 
@@ -114,7 +134,9 @@ public class OAuthProxyHelper {
             for (String queryParam : queryParamsParts) {
                 String[] keyValue = queryParam.split("=");
                 if (keyValue.length == 2) {
-                    queryParams.put(keyValue[0], URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
+                    // names are decoded like values, since HttpRequestForOAuthProvider encodes both
+                    queryParams.put(URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8),
+                            URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
                 }
             }
         }
