@@ -16,6 +16,8 @@ export const update_5 = (body, currentState) => {
 
     let firstFactors = currentState.firstFactors;
     let requiredSecondaryFactors = currentState.requiredSecondaryFactors;
+    // recipes a CDI 5.0 caller sees as enabled before this update
+    const enabledBefore = get_5(currentState);
 
     if (
         body.emailPasswordEnabled === true ||
@@ -244,6 +246,32 @@ export const update_5 = (body, currentState) => {
             if (factor === "thirdparty") {
                 newTenantState.thirdPartyEnabled = true;
             }
+        }
+    }
+
+    // With firstFactors === null every enabled recipe is a first factor. A recipe not enabled
+    // before this update (as seen in CDI 5.0) and not enabled by it is on only for
+    // requiredSecondaryFactors (or hidden by an empty firstFactors list), so it must not become
+    // a first factor: store firstFactors explicitly without it.
+    if (newTenantState.firstFactors === null) {
+        const emailPasswordNotRequested = newTenantState.emailPasswordEnabled &&
+            !enabledBefore.emailPasswordEnabled && body.emailPasswordEnabled !== true;
+        const passwordlessNotRequested = newTenantState.passwordlessEnabled &&
+            !enabledBefore.passwordlessEnabled && body.passwordlessEnabled !== true;
+        const thirdPartyNotRequested = newTenantState.thirdPartyEnabled &&
+            !enabledBefore.thirdPartyEnabled && body.thirdPartyEnabled !== true;
+        if (emailPasswordNotRequested || passwordlessNotRequested || thirdPartyNotRequested) {
+            let pinned = [];
+            if (newTenantState.emailPasswordEnabled && !emailPasswordNotRequested) {
+                pinned.push("emailpassword");
+            }
+            if (newTenantState.passwordlessEnabled && !passwordlessNotRequested) {
+                pinned.push("otp-phone", "otp-email", "link-phone", "link-email");
+            }
+            if (newTenantState.thirdPartyEnabled && !thirdPartyNotRequested) {
+                pinned.push("thirdparty");
+            }
+            newTenantState.firstFactors = pinned;
         }
     }
 
