@@ -327,6 +327,7 @@ public class CoreConfig {
     @EnvName("FIREBASE_PASSWORD_HASHING_SIGNER_KEY")
     @NotConflictingInApp
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription("The signer key used for firebase scrypt password hashing. (Default: null)")
     private String firebase_password_hashing_signer_key = null;
 
