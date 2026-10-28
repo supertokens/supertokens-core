@@ -3806,7 +3806,7 @@ public class Start
                 String serverMessage = e.getMessage();
 
                 if (isPrimaryKeyError(serverMessage, config.getWebAuthNCredentialsTable(),
-                        new String[]{"app_id", "user_id", "id"})) {
+                        new String[]{"app_id", "rp_id", "id"})) {
                     throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateCredentialException();
                 } else if (isForeignKeyConstraintError(
                         serverMessage,
