@@ -140,11 +140,14 @@ public class Dashboard {
             throws StorageQueryException, UserSuspendedException, TenantOrAppNotFoundException {
         DashboardUser user = StorageUtils.getDashboardStorage(storage)
                 .getDashboardUserByEmail(appIdentifier, email);
-        if (user != null) {
-            if (isUserSuspended(appIdentifier, storage, main, email, null)) {
-                throw new UserSuspendedException();
-            }
+        if (user == null) {
+            PasswordHashing.getInstance(main).verifyPasswordWithDummyHash(appIdentifier, password);
+        } else {
             if (PasswordHashing.getInstance(main).verifyPasswordWithHash(appIdentifier, password, user.passwordHash)) {
+                // suspension is only reported once the password is known to be correct
+                if (isUserSuspended(appIdentifier, storage, main, email, null)) {
+                    throw new UserSuspendedException();
+                }
                 Runnable beforeSessionCreate = signInBeforeSessionCreateHook;
                 if (beforeSessionCreate != null) {
                     beforeSessionCreate.run();
