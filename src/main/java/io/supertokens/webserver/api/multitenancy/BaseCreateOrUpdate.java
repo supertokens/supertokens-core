@@ -980,6 +980,36 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             }
         }
 
+        // An empty firstFactors list means "no login method" in CDI 5.0. If this update explicitly enables a
+        // recipe but ends with an empty list (e.g. because it also disabled the only recipe in the list), keep the
+        // explicitly enabled recipes as the first factors, as the reset at the top does for an empty list.
+        if (tenantConfig.firstFactors != null && tenantConfig.firstFactors.length == 0) {
+            Set<String> firstFactorsSet = new HashSet<>();
+            if (Boolean.TRUE.equals(emailPasswordEnabled) && tenantConfig.emailPasswordConfig.enabled) {
+                firstFactorsSet.add("emailpassword");
+            }
+            if (Boolean.TRUE.equals(thirdPartyEnabled) && tenantConfig.thirdPartyConfig.enabled) {
+                firstFactorsSet.add("thirdparty");
+            }
+            if (Boolean.TRUE.equals(passwordlessEnabled) && tenantConfig.passwordlessConfig.enabled) {
+                firstFactorsSet.add("otp-phone");
+                firstFactorsSet.add("otp-email");
+                firstFactorsSet.add("link-phone");
+                firstFactorsSet.add("link-email");
+            }
+            if (!firstFactorsSet.isEmpty()) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        firstFactorsSet.toArray(new String[0]),
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            }
+        }
+
         return tenantConfig;
     }
 
