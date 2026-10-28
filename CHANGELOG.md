@@ -12,7 +12,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
-- An unknown appId gets `401 Invalid API key` also when no API key is configured above the app, so the response no longer reveals which appIds exist.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
 - Dashboard: the core-config API no longer returns secret config values.
 - API keys: the tenant refresh after a create/update no longer drops pending config changes of other tenants (e.g. an `api_keys` rotation).
@@ -20,7 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Third-party sign-in: an email change only updates the signing-in recipe user, and `isVerified` verifies only the email sent.
 - Secrets are kept out of OpenTelemetry spans and bulk-import error messages.
 - WebAuthn: credentials and recovery tokens are bound to verified identifiers; register options use a random user handle.
-- WebAuthn credential register and email update require the user's WebAuthn login method to be in the requested tenant.
+- WebAuthn credential register and email update require the user to be a member of the requested tenant.
 - TOTP: verification is serialised per user, used codes are checked app-wide, and verify-device checks the code.
 - Sessions and password reset tokens end when the account they were issued for changes.
 - SAML: an assertion is accepted only until its signed expiry, and the consumed record is kept for that window.
