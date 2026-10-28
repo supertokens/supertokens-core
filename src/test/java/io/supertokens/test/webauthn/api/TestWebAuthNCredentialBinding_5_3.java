@@ -45,6 +45,7 @@ import com.webauthn4j.test.client.ClientPlatform;
 import com.webauthn4j.util.Base64UrlUtil;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -437,6 +438,23 @@ public class TestWebAuthNCredentialBinding_5_3 {
         assertEquals(sameTenant.toString(), "OK", sameTenant.get("status").getAsString());
         emailUpdate = updateEmail(main, t2, recipeUserId, "changed@example.com");
         assertEquals(emailUpdate.toString(), "OK", emailUpdate.get("status").getAsString());
+
+        // once the account is a member of public through a linked login method, both work through public too
+        // (the dashboard edits a user through the tenant it is viewing)
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(publicTenant, StorageLayer.getStorage(publicTenant, main),
+                main, "linked-in-public@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, publicTenant.toAppIdentifier(), StorageLayer.getStorage(publicTenant, main),
+                epUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, publicTenant.toAppIdentifier(), StorageLayer.getStorage(publicTenant, main),
+                recipeUserId, epUser.getSupertokensUserId());
+        emailUpdate = updateEmail(main, publicTenant, recipeUserId, "changed-via-public@example.com");
+        assertEquals(emailUpdate.toString(), "OK", emailUpdate.get("status").getAsString());
+        SoftwareAuthenticator thirdKey = new SoftwareAuthenticator(randomCredentialId());
+        publicOptions = registerOptions(main, publicTenant, "changed-via-public@example.com", RP_ID, ORIGIN);
+        JsonObject viaLinkedTenant = registerCredential(main, publicTenant,
+                publicOptions.get("webauthnGeneratedOptionsId").getAsString(),
+                thirdKey.register(publicOptions, ORIGIN), recipeUserId);
+        assertEquals(viaLinkedTenant.toString(), "OK", viaLinkedTenant.get("status").getAsString());
 
         stop(process);
     }
