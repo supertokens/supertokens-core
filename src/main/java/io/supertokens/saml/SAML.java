@@ -136,13 +136,24 @@ public class SAML {
             IDPInitiatedLoginRequiresACSURLsException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
 
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+        // acsURLs == null means the caller did not send the field: an update then keeps the client's current
+        // allow-list instead of silently dropping it. An empty list clears it.
+        if (acsURLs == null) {
+            SAMLClient existing = samlStorage.getSAMLClient(tenantIdentifier, clientId);
+            if (existing != null) {
+                acsURLs = existing.acsURLs;
+            }
+        } else if (acsURLs.size() == 0) {
+            acsURLs = null;
+        }
+
         // IdP-initiated login has no login-time ACS URL to pin the response to, so it is only allowed when the
         // client carries an ACS allow-list. Enforced on every create and update.
         if (allowIDPInitiatedLogin && !hasACSURLs(acsURLs)) {
             throw new IDPInitiatedLoginRequiresACSURLsException();
         }
-
-        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         var metadata = loadIdpMetadata(metadataXML);
         String idpSsoUrl = null;
@@ -508,9 +519,9 @@ public class SAML {
         }
 
         if (allowedAcs.isEmpty()) {
-            // Only an SP-initiated login started before the ACS URL was recorded, for a client without an
-            // allow-list. There is nothing to pin to.
-            return;
+            // Only an SP-initiated login whose relay state predates recording the ACS URL, for a client without
+            // an allow-list. There is nothing to pin the response to, so it is rejected.
+            throw new SAMLResponseVerificationFailedException();
         }
 
         String destination = trimToNull(response.getDestination());
@@ -550,18 +561,31 @@ public class SAML {
 
     /**
      * Binds the response to the login it claims to answer. On the SP-initiated path the response
-     * InResponseTo must equal the AuthnRequest ID we issued (and any SubjectConfirmationData InResponseTo
-     * present must be consistent). On the IdP-initiated path the response is unsolicited, so it must carry
-     * no InResponseTo at all; a present one signals a solicited response being smuggled through the
+     * InResponseTo must equal the AuthnRequest ID we issued, and so must the InResponseTo of the
+     * authenticating assertion's bearer SubjectConfirmationData (saml-profiles-2.0 section 4.1.4.2). The
+     * latter is inside the signed assertion, so the binding holds even when only assertions are signed and
+     * the Response wrapper (with its InResponseTo) is not. Any other SubjectConfirmationData InResponseTo
+     * present must be consistent. On the IdP-initiated path the response is unsolicited, so it must carry no
+     * InResponseTo at all; a present one signals a solicited response being smuggled through the
      * unauthenticated IdP-initiated branch.
      */
-    private static void validateResponseInResponseTo(Response response, SAMLRelayStateInfo relayStateInfo)
-            throws SAMLResponseVerificationFailedException {
+    private static void validateResponseInResponseTo(Response response, Assertion authenticatingAssertion,
+            SAMLRelayStateInfo relayStateInfo) throws SAMLResponseVerificationFailedException {
         String responseInResponseTo = trimToNull(response.getInResponseTo());
 
         if (relayStateInfo != null) {
             String expected = trimToNull(relayStateInfo.inResponseTo);
             if (expected == null || responseInResponseTo == null || !expected.equals(responseInResponseTo)) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+            boolean boundInAssertion = false;
+            for (SubjectConfirmationData scd : bearerSubjectConfirmationData(authenticatingAssertion)) {
+                if (expected.equals(trimToNull(scd.getInResponseTo()))) {
+                    boundInAssertion = true;
+                    break;
+                }
+            }
+            if (!boundInAssertion) {
                 throw new SAMLResponseVerificationFailedException();
             }
         } else if (responseInResponseTo != null) {
@@ -594,19 +618,26 @@ public class SAML {
      * already been consumed. Combined with the atomic insert-if-absent in storage, this makes each signed
      * assertion usable at most once and closes the IdP-initiated replay window (which has no RelayState to
      * consume). See GHSA-3r7x-rhvc-fw28.
+     *
+     * The consumed record is kept until the assertion's acceptance window (assertionAcceptedUntil, the same
+     * bound validateSamlResponseTimestamps enforces) has passed, plus the clock skew, so it can never be
+     * purged while the assertion would still be accepted.
      */
     private static void enforceAssertionSingleUse(TenantIdentifier tenantIdentifier, Storage storage,
-                                                  Response response, CoreConfig config)
+                                                  Response response)
             throws SAMLResponseVerificationFailedException, StorageQueryException {
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
-        long now = System.currentTimeMillis();
         for (Assertion assertion : response.getAssertions()) {
             String assertionId = trimToNull(assertion.getID());
             if (assertionId == null) {
                 // An assertion with no ID cannot be tracked for replay; fail closed rather than accept it.
                 throw new SAMLResponseVerificationFailedException();
             }
-            long expiresAt = assertionExpiry(assertion, now, config);
+            Instant acceptedUntil = assertionAcceptedUntil(assertion);
+            if (acceptedUntil == null) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+            long expiresAt = acceptedUntil.toEpochMilli() + SAML_CLOCK_SKEW_MILLIS;
             boolean fresh = samlStorage.markSAMLAssertionConsumed(tenantIdentifier, assertionId, expiresAt);
             if (!fresh) {
                 throw new SAMLResponseVerificationFailedException();
@@ -614,34 +645,54 @@ public class SAML {
         }
     }
 
+    // Tolerated clock difference between the IdP and this core (and between core instances sharing a database).
+    // It also bounds how old a signed Assertion IssueInstant may be.
+    private static final long SAML_CLOCK_SKEW_MILLIS = 300_000L;
+
+    private static List<SubjectConfirmationData> bearerSubjectConfirmationData(Assertion assertion) {
+        List<SubjectConfirmationData> result = new java.util.ArrayList<>();
+        if (assertion.getSubject() == null) {
+            return result;
+        }
+        for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+            if (SubjectConfirmation.METHOD_BEARER.equals(trimToNull(sc.getMethod()))
+                    && sc.getSubjectConfirmationData() != null) {
+                result.add(sc.getSubjectConfirmationData());
+            }
+        }
+        return result;
+    }
+
     /**
-     * The point after which a consumed-assertion row may be purged. Kept at least as long as the assertion
-     * could otherwise be validated, so a replay is caught while the assertion is still in-window. Prefers the
-     * assertion's own NotOnOrAfter bounds and falls back to the configured claims validity.
+     * The instant from which the assertion is no longer accepted: the earliest of its signed IssueInstant plus
+     * the clock skew, its Conditions NotOnOrAfter and every SubjectConfirmationData NotOnOrAfter. Returns null
+     * when the assertion has no IssueInstant, which is rejected. Both the timestamp validation and the
+     * retention of the consumed-assertion record use this one bound.
      */
-    private static long assertionExpiry(Assertion assertion, long now, CoreConfig config) {
-        Long notOnOrAfter = null;
-        if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
-            notOnOrAfter = assertion.getConditions().getNotOnOrAfter().toEpochMilli();
+    private static Instant assertionAcceptedUntil(Assertion assertion) {
+        Instant issueInstant = assertion.getIssueInstant();
+        if (issueInstant == null) {
+            return null;
+        }
+        Instant until = issueInstant.plusMillis(SAML_CLOCK_SKEW_MILLIS);
+        Conditions conditions = assertion.getConditions();
+        if (conditions != null && conditions.getNotOnOrAfter() != null
+                && conditions.getNotOnOrAfter().isBefore(until)) {
+            until = conditions.getNotOnOrAfter();
         }
         if (assertion.getSubject() != null) {
             for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
                 SubjectConfirmationData scd = sc.getSubjectConfirmationData();
-                if (scd != null && scd.getNotOnOrAfter() != null) {
-                    long v = scd.getNotOnOrAfter().toEpochMilli();
-                    if (notOnOrAfter == null || v > notOnOrAfter) {
-                        notOnOrAfter = v;
-                    }
+                if (scd != null && scd.getNotOnOrAfter() != null && scd.getNotOnOrAfter().isBefore(until)) {
+                    until = scd.getNotOnOrAfter();
                 }
             }
         }
-        if (notOnOrAfter == null || notOnOrAfter < now) {
-            return now + config.getSAMLClaimsValidity();
-        }
-        return notOnOrAfter;
+        return until;
     }
 
-    private static void validateSamlResponseTimestamps(Response samlResponse) throws SAMLResponseVerificationFailedException {
+    private static void validateSamlResponseTimestamps(Response samlResponse, Assertion authenticatingAssertion)
+            throws SAMLResponseVerificationFailedException {
         Instant now = Instant.now();
 
         // Validate response issue instant (should be recent)
@@ -653,20 +704,47 @@ public class SAML {
             }
         }
 
+        // The authenticating assertion must carry a bearer SubjectConfirmationData with a NotOnOrAfter that
+        // limits the window in which it can be delivered (saml-profiles-2.0 section 4.1.4.2).
+        boolean hasBearerExpiry = false;
+        for (SubjectConfirmationData scd : bearerSubjectConfirmationData(authenticatingAssertion)) {
+            if (scd.getNotOnOrAfter() != null) {
+                hasBearerExpiry = true;
+                break;
+            }
+        }
+        if (!hasBearerExpiry) {
+            throw new SAMLResponseVerificationFailedException();
+        }
+
         // Validate assertion timestamps
         for (Assertion assertion : samlResponse.getAssertions()) {
+            // The signed IssueInstant must be present and not in the future beyond the clock skew. Its age is
+            // bounded through assertionAcceptedUntil.
+            Instant issueInstant = assertion.getIssueInstant();
+            if (issueInstant == null || issueInstant.isAfter(now.plusMillis(SAML_CLOCK_SKEW_MILLIS))) {
+                throw new SAMLResponseVerificationFailedException();
+            }
+
             // Check NotBefore
             if (assertion.getConditions() != null && assertion.getConditions().getNotBefore() != null) {
                 if (now.isBefore(assertion.getConditions().getNotBefore())) {
                     throw new SAMLResponseVerificationFailedException();
                 }
             }
-
-            // Check NotOnOrAfter
-            if (assertion.getConditions() != null && assertion.getConditions().getNotOnOrAfter() != null) {
-                if (now.isAfter(assertion.getConditions().getNotOnOrAfter())) {
-                    throw new SAMLResponseVerificationFailedException();
+            if (assertion.getSubject() != null) {
+                for (SubjectConfirmation sc : assertion.getSubject().getSubjectConfirmations()) {
+                    SubjectConfirmationData scd = sc.getSubjectConfirmationData();
+                    if (scd != null && scd.getNotBefore() != null && now.isBefore(scd.getNotBefore())) {
+                        throw new SAMLResponseVerificationFailedException();
+                    }
                 }
+            }
+
+            // Check NotOnOrAfter (Conditions, SubjectConfirmationData and the IssueInstant age, combined)
+            Instant acceptedUntil = assertionAcceptedUntil(assertion);
+            if (acceptedUntil == null || !now.isBefore(acceptedUntil)) {
+                throw new SAMLResponseVerificationFailedException();
             }
         }
     }
@@ -729,7 +807,6 @@ public class SAML {
         } catch (SignatureException e) {
             throw new SAMLResponseVerificationFailedException();
         }
-        validateSamlResponseTimestamps(response);
 
         // Bind the response to this login and reject replays. On the SP-initiated path relayStateInfo
         // carries the AuthnRequest ID and ACS URL captured at login; on the IdP-initiated path it is null.
@@ -738,13 +815,14 @@ public class SAML {
         // so an assertion issued to a different audience cannot supply the identity while another assertion
         // satisfies the audience restriction. (GHSA-wfg2-vqfg-rqh6)
         Assertion authenticatingAssertion = selectAuthenticatingAssertion(response);
+        validateSamlResponseTimestamps(response, authenticatingAssertion);
         validateResponseDestinationAndRecipient(response, authenticatingAssertion, relayStateInfo, client.acsURLs);
-        validateResponseInResponseTo(response, relayStateInfo);
+        validateResponseInResponseTo(response, authenticatingAssertion, relayStateInfo);
         validateAssertionAudience(authenticatingAssertion, config.getSAMLSPEntityID());
 
         // Consume every assertion in the response exactly once. Done last, after all other checks pass,
         // so a rejected response never burns an assertion ID. (GHSA-3r7x-rhvc-fw28)
-        enforceAssertionSingleUse(tenantIdentifier, storage, response, config);
+        enforceAssertionSingleUse(tenantIdentifier, storage, response);
 
         var claims = extractAssertionClaims(authenticatingAssertion);
 
