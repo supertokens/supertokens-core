@@ -148,6 +148,42 @@ public class ApiKeyCheckForUnresolvedAppTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testUnknownAppIdIsUnauthorisedWhenOnlyAppsHaveKeys() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // no key on the base config; only app a1 has one
+        JsonObject appConfig = new JsonObject();
+        appConfig.add("api_keys", new JsonPrimitive(CUD_API_KEY));
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(),
+                new TenantConfig(new TenantIdentifier(null, "a1", null), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                        null, null, appConfig), false);
+
+        // control: the existing app with a key, called without it
+        HttpResponseException knownApp = getError(process, "http://localhost:3567/appid-a1/users/count", null);
+        assertEquals(401, knownApp.statusCode);
+
+        // an unknown app gets exactly the same answer, so the response does not tell which appIds exist
+        HttpResponseException unknownApp = getError(process, "http://localhost:3567/appid-ghost/users/count", null);
+        assertEquals(knownApp.statusCode, unknownApp.statusCode);
+        assertEquals(knownApp.getMessage(), unknownApp.getMessage());
+        assertEquals(401, getStatus(process, "http://localhost:3567/appid-ghost/users/count", CUD_API_KEY));
+        assertEquals(401, postStatus(process, "http://localhost:3567/appid-ghost/recipe/signin", null));
+
+        // apps without a key are unaffected
+        assertEquals(NO_ERROR, getStatus(process, "http://localhost:3567/users/count", null));
+        assertEquals(NO_ERROR, getStatus(process, "http://localhost:3567/appid-a1/users/count", CUD_API_KEY));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private void createCudWithApp(TestingProcessManager.TestingProcess process, JsonObject extraCudConfig)
             throws Exception {
         JsonObject cudConfig = new JsonObject();
