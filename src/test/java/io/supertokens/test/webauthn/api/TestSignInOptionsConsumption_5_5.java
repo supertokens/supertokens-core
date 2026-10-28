@@ -199,8 +199,9 @@ public class TestSignInOptionsConsumption_5_5 {
         JsonObject signInBody = createSignInRequestBody(main, user, optionsIdHolder);
         String optionsId = optionsIdHolder[0];
 
-        WebAuthNSQLStorage storage = (WebAuthNSQLStorage) StorageLayer.getStorage(main);
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, null);
+        // The API calls above run in the test's own app, so the direct storage calls must use it too.
+        TenantIdentifier tenantIdentifier = process.getAppForTesting();
+        WebAuthNSQLStorage storage = (WebAuthNSQLStorage) StorageLayer.getStorage(tenantIdentifier, main);
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
