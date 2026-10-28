@@ -309,6 +309,85 @@ public class DashboardTest {
     }
 
     @Test
+    public void testIssue16_dashboardSessionCreatedDuringPasswordChangeIsRevoked() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "password123";
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        // The credentials change (and its session revocation) completes after the sign-in verified the old
+        // password but before the sign-in inserts its session.
+        try {
+            Dashboard.setSignInBeforeSessionCreateHook(() -> {
+                try {
+                    Dashboard.updateUsersCredentialsWithUserId(process.getProcess(), user.userId, null,
+                            "newPassword123");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            String sessionId = Dashboard.signInDashboardUser(process.getProcess(), email, password);
+            assertNull(sessionId);
+        } finally {
+            Dashboard.setSignInBeforeSessionCreateHook(null);
+        }
+
+        assertEquals(0, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+
+        // signing in with the new password still works
+        String sessionId = Dashboard.signInDashboardUser(process.getProcess(), email, "newPassword123");
+        assertNotNull(sessionId);
+        assertTrue(Dashboard.isValidUserSession(process.getProcess(), sessionId));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue16_dashboardSessionCreatedDuringEmailChangeIsRevoked() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "password123";
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        try {
+            Dashboard.setSignInBeforeSessionCreateHook(() -> {
+                try {
+                    Dashboard.updateUsersCredentialsWithUserId(process.getProcess(), user.userId,
+                            "new@example.com", null);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            String sessionId = Dashboard.signInDashboardUser(process.getProcess(), email, password);
+            assertNull(sessionId);
+        } finally {
+            Dashboard.setSignInBeforeSessionCreateHook(null);
+        }
+
+        assertEquals(0, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testDashboardUsageStats() throws Exception {
 
         String[] args = {"../"};
