@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- WebAuthn: on CDI 5.5 and later, sign-in options are consumed by at most one sign-in also when several requests with the same assertion arrive at the same time. The options are locked when sign-in reads them, so a concurrent request waits and then gets `OPTIONS_NOT_FOUND_ERROR`; previously both could return `OK`. Fixed in the in-memory storage; the PostgreSQL plugin needs the matching release.
+
 ## [12.4.1]
 
 - Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
