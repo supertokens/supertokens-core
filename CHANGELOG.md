@@ -13,7 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - WebAuthn: sign-in returns the owner of the stored credential whose public key verified the assertion, and only accepts a credential registered for the relying party id of the sign-in options.
 - WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
 - WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
-- WebAuthn: credential register and email update return `UNKNOWN_USER_ID_ERROR` unless the user's WebAuthn login method is a member of the requested tenant.
+- WebAuthn: credential register and email update return `UNKNOWN_USER_ID_ERROR` unless the user is a member of the requested tenant.
 
 ### Changes
 
