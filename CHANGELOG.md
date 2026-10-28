@@ -26,6 +26,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multitenancy: CDI 5.0 tenant updates no longer make login methods enabled only for `requiredSecondaryFactors` first factors.
 - Sign-in does the same password-hashing work for unknown accounts; dashboard suspension is reported only after a correct password.
 - SAML legacy flow: the code/token exchange is client-bound and single-use, and userinfo accepts only issued access tokens.
+- WebAuthn: sign-in locks the sign-in options it consumes, so concurrent sign-ins with the same assertion can no longer both succeed.
 
 ## [12.1.2]
 
