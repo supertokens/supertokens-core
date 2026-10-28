@@ -205,6 +205,13 @@ public class WebAuthN {
                 generatedOptions);
 
         String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
+        // The credential is added to a webauthn login method of the tenant in the request, never to one that only
+        // exists in another tenant of the app (sign in checks the same membership).
+        AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
+                .getPrimaryUserById(tenantIdentifier.toAppIdentifier(), supertokensUserId);
+        if (!isWebAuthNLoginMethodOfTenant(user, supertokensUserId, tenantIdentifier)) {
+            throw new UnknownUserIdException();
+        }
         String credentialId = getAttestedCredentialId(credentialsDataJson, verifiedRegistrationData);
         // Credential ids must be unique within the app, across relying party ids: sign in looks a credential up
         // by id alone. The same id under another relying party id is rejected like at sign-up; a duplicate under
@@ -768,6 +775,19 @@ public class WebAuthN {
         return user != null && user.tenantIds != null && user.tenantIds.contains(tenantIdentifier.getTenantId());
     }
 
+    private static boolean isWebAuthNLoginMethodOfTenant(AuthRecipeUserInfo user, String recipeUserId,
+                                                         TenantIdentifier tenantIdentifier) {
+        if (user == null) {
+            return false;
+        }
+        for (LoginMethod lm : user.loginMethods) {
+            if (lm.recipeId == RECIPE_ID.WEBAUTHN && lm.getSupertokensUserId().equals(recipeUserId)) {
+                return lm.tenantIds != null && lm.tenantIds.contains(tenantIdentifier.getTenantId());
+            }
+        }
+        return false;
+    }
+
     private static long getRecoverAccountTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return Config.getConfig(tenantIdentifier, main).getWebauthnRecoverAccountTokenLifetime();
@@ -821,17 +841,8 @@ public class WebAuthN {
 
                 AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
                         .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userIdFromMapping);
-                if (user == null) {
-                    throw new StorageTransactionLogicException(new UnknownUserIdException());
-                }
-                boolean relevantLoginMethod = false;
-                for (LoginMethod lm : user.loginMethods) {
-                    if (lm.recipeId == RECIPE_ID.WEBAUTHN && lm.getSupertokensUserId().equals(userIdFromMapping)) {
-                        relevantLoginMethod = true;
-                        break;
-                    }
-                }
-                if (!relevantLoginMethod) {
+                // only a webauthn login method of the tenant in the request can have its email changed here
+                if (!isWebAuthNLoginMethodOfTenant(user, userIdFromMapping, tenantIdentifier)) {
                     throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
 
