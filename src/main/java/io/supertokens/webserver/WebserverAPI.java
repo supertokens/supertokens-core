@@ -274,8 +274,9 @@ public abstract class WebserverAPI extends HttpServlet {
      * so a request naming an unknown app still needs a valid key.
      *
      * @return true if the request is authenticated for an existing app (its key passed, or the app has no API key
-     * configured), false if the app or CUD does not exist on this core. In the latter case any key that passed was
-     * an ancestor's, and the request is not charged to a CUD's concurrency quota.
+     * configured), false if the app or CUD does not exist on this core and an ancestor's key passed; such a request
+     * is not charged to a CUD's concurrency quota. A request naming an unknown app with no ancestor key configured
+     * is rejected like a missing key.
      */
     private boolean assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
         boolean appExists = isAppLoaded(getConnectionUriDomain(req), getAppId(req));
@@ -322,7 +323,13 @@ public abstract class WebserverAPI extends HttpServlet {
             if (superTokensSaaSSecret != null || keys != null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
-            return appExists;
+            // No key is configured on the app's ancestors. A request naming an app that does not exist on this core
+            // is still answered like a missing key, not with "app not found": otherwise, when only apps carry API
+            // keys, 401 (real app) vs 400 (unknown app) tells an unauthenticated caller which appIds exist.
+            if (!appExists) {
+                throw new ServletException(new APIKeyUnauthorisedException());
+            }
+            return true;
         } catch (TenantOrAppNotFoundException e) {
             // only the base config is looked up here, and it always exists; never skip the check
             throw new ServletException(new APIKeyUnauthorisedException());
