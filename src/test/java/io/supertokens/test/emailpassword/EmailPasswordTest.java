@@ -1077,4 +1077,77 @@ public class EmailPasswordTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testIssue102_unknownUserSignInStillHashes() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "existing@example.com", "password");
+        ThirdParty.signInUp(process.getProcess(), "google", "user-google", "thirdparty@example.com");
+        ProcessState processState = ProcessState.getInstance(process.getProcess());
+
+        // email with no account at all
+        assertNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+        try {
+            EmailPassword.signIn(process.getProcess(), "unknown@example.com", "password");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        // email that only has a non-emailpassword login method
+        processState.clear();
+        try {
+            EmailPassword.signIn(process.getProcess(), "thirdparty@example.com", "password");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        // existing behaviour is unchanged
+        try {
+            EmailPassword.signIn(process.getProcess(), "existing@example.com", "wrongPassword");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(EmailPassword.signIn(process.getProcess(), "existing@example.com", "password"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue102_unknownUserSignInHashesWithConfiguredArgon2() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("password_hashing_alg", "ARGON2");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        ProcessState processState = ProcessState.getInstance(process.getProcess());
+        for (int i = 0; i < 2; i++) {
+            processState.clear();
+            try {
+                EmailPassword.signIn(process.getProcess(), "unknown@example.com", "password");
+                fail();
+            } catch (WrongCredentialsException ignored) {
+            }
+            assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON));
+            assertNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
