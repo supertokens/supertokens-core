@@ -24,6 +24,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Sign-up auto-verifies only the placeholder email of a user without email that adds a password.
 - CDI 5.0 tenant updates no longer make a recipe enabled only for requiredSecondaryFactors a first factor.
 - Sign-in does the same password-hashing work for unknown accounts, and dashboard suspension is reported only after a correct password.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 
 ## [11.1.4]
 
