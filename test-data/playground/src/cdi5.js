@@ -275,6 +275,24 @@ export const update_5 = (body, currentState) => {
         }
     }
 
+    // An empty firstFactors list means "no login method" in CDI 5.0: if this update explicitly
+    // enables a recipe but ends with an empty list, keep the explicitly enabled recipes as first factors.
+    if (newTenantState.firstFactors !== null && newTenantState.firstFactors.length === 0) {
+        let explicitlyEnabled = [];
+        if (body.emailPasswordEnabled === true && newTenantState.emailPasswordEnabled) {
+            explicitlyEnabled.push("emailpassword");
+        }
+        if (body.passwordlessEnabled === true && newTenantState.passwordlessEnabled) {
+            explicitlyEnabled.push("otp-phone", "otp-email", "link-phone", "link-email");
+        }
+        if (body.thirdPartyEnabled === true && newTenantState.thirdPartyEnabled) {
+            explicitlyEnabled.push("thirdparty");
+        }
+        if (explicitlyEnabled.length > 0) {
+            newTenantState.firstFactors = explicitlyEnabled;
+        }
+    }
+
     return newTenantState;
 };
 
