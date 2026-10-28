@@ -401,15 +401,19 @@ public class RequestConnectionUriDomainTest {
         assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-a1/recipe/signin", null));
         assertNotEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-a1/recipe/signin", cudKey));
 
-        // a1 does not exist on the base connection URI domain: the base keys are enforced
-        assertEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", null));
-        assertEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", cudKey));
-        assertNotEquals(401, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", baseKey));
+        // on this line service() resolves the app's storage before the IP and API-key checks, so an app that does
+        // not resolve is rejected with 400 whatever key is sent; the fail-closed check only matters when the app
+        // disappears between the two lookups (a refresh in progress)
 
-        // an unknown app on the non-base connection URI domain: that domain's keys are enforced
-        assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", null));
-        assertEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", baseKey));
-        assertNotEquals(401, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", cudKey));
+        // a1 does not exist on the base connection URI domain
+        assertEquals(400, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", null));
+        assertEquals(400, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", cudKey));
+        assertEquals(400, postStatus(process, "http://localhost:3567/appid-a1/recipe/signin", baseKey));
+
+        // an unknown app on the non-base connection URI domain
+        assertEquals(400, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", null));
+        assertEquals(400, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", baseKey));
+        assertEquals(400, postStatus(process, "http://127.0.0.1:3567/appid-ghost/recipe/signin", cudKey));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

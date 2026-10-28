@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
-- The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
+- The API-key and IP checks no longer skip enforcement when the app in the request path stops resolving during a tenant refresh; they fall back to the connection URI domain's config, then the base config.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
 
 ## [6.0.24]
