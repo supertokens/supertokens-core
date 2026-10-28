@@ -145,15 +145,46 @@ public class Dashboard {
                 throw new UserSuspendedException();
             }
             if (PasswordHashing.getInstance(main).verifyPasswordWithHash(appIdentifier, password, user.passwordHash)) {
+                Runnable beforeSessionCreate = signInBeforeSessionCreateHook;
+                if (beforeSessionCreate != null) {
+                    beforeSessionCreate.run();
+                }
                 // create a new session for the user
+                String sessionId;
                 try {
-                    return createSessionForDashboardUser(appIdentifier, storage, user);
+                    sessionId = createSessionForDashboardUser(appIdentifier, storage, user);
                 } catch (UserIdNotFoundException e) {
                     throw new IllegalStateException(e);
                 }
+                // The password was verified against a hash read before the session was inserted. If the user's
+                // credentials changed in between, the credential update's session revocation may have run before
+                // this insert and missed it. Re-read the user after the insert: a credential update that
+                // committed before the revocation listed the sessions is visible here, so either the revocation
+                // saw this session or this check sees the new credentials and removes it.
+                boolean credentialsUnchanged = false;
+                try {
+                    DashboardUser current = StorageUtils.getDashboardStorage(storage)
+                            .getDashboardUserByUserId(appIdentifier, user.userId);
+                    credentialsUnchanged = current != null && user.passwordHash.equals(current.passwordHash)
+                            && user.email.equals(current.email);
+                } finally {
+                    if (!credentialsUnchanged) {
+                        revokeSessionWithSessionId(appIdentifier, storage, sessionId);
+                    }
+                }
+                return credentialsUnchanged ? sessionId : null;
             }
         }
         return null;
+    }
+
+    // Test-only hook fired in signInDashboardUser after the password was verified and before the session row is
+    // inserted. Lets a test change the credentials at that exact point. Null in production.
+    private static volatile Runnable signInBeforeSessionCreateHook = null;
+
+    @TestOnly
+    public static void setSignInBeforeSessionCreateHook(Runnable hook) {
+        signInBeforeSessionCreateHook = hook;
     }
 
     @TestOnly
