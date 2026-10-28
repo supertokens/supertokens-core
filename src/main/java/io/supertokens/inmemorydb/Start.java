@@ -1256,8 +1256,12 @@ public class Start
                 AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                     ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             }
-            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
-                    thirdPartyUserId, newEmail);
+            int updatedRows = ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, userId,
+                    thirdPartyId, thirdPartyUserId, newEmail);
+            if (updatedRows != 1) {
+                // userId does not hold this third party login method; nothing must be changed.
+                throw new UnknownUserIdException();
+            }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
