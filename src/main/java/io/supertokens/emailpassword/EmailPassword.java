@@ -41,6 +41,7 @@ import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenExceptio
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.output.Logging;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -479,6 +480,14 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
+        AuthRecipeUserInfo tokenUser = email == null ? null
+                : AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
+        if (tokenUser != null && !isResetTokenEmailStillOnAccount(tokenUser, email)) {
+            // Kept issuing (no new status for this API), but the token will be rejected when consumed.
+            Logging.warn(main, tenantIdentifier, "Password reset token created for an email that does not belong "
+                    + "to any login method of the user; it will be rejected when consumed.");
+        }
+
         while (true) {
 
             // we first generate a password reset token
@@ -545,9 +554,19 @@ public class EmailPassword {
         }
 
         final String userId = resetInfo.userId;
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
 
         try {
             return epStorage.startTransaction(con -> {
+
+                // Lock the user before reading its tokens, in the same order as updateUsersEmailOrPassword, so a
+                // token is either consumed before a credential change or deleted by it.
+                try {
+                    lockingStorage.lockUser(tenantIdentifier.toAppIdentifier(), con, userId);
+                } catch (UserNotFoundForLockingException e) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
 
                 PasswordResetTokenInfo[] allTokens = epStorage.getAllPasswordResetTokenInfoForUser_Transaction(
                         tenantIdentifier.toAppIdentifier(), con,
@@ -570,6 +589,14 @@ public class EmailPassword {
                         userId);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    epStorage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                if (matchedToken.email != null && !isResetTokenEmailStillOnAccount(
+                        authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                userId), matchedToken.email)) {
+                    // the email the token was sent to no longer belongs to the account
                     epStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                 }
@@ -628,9 +655,19 @@ public class EmailPassword {
         }
 
         final String userId = resetInfo.userId;
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        UserLockingStorage lockingStorage = (UserLockingStorage) storage;
 
         try {
             return epStorage.startTransaction(con -> {
+
+                // Lock the user before reading its tokens, in the same order as updateUsersEmailOrPassword, so a
+                // token is either consumed before a credential change or deleted by it.
+                try {
+                    lockingStorage.lockUser(tenantIdentifier.toAppIdentifier(), con, userId);
+                } catch (UserNotFoundForLockingException e) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
 
                 PasswordResetTokenInfo[] allTokens = epStorage.getAllPasswordResetTokenInfoForUser_Transaction(
                         tenantIdentifier.toAppIdentifier(), con,
@@ -653,6 +690,14 @@ public class EmailPassword {
                         userId);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    epStorage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                if (matchedToken.email != null && !isResetTokenEmailStillOnAccount(
+                        authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                userId), matchedToken.email)) {
+                    // the email the token was sent to no longer belongs to the account
                     epStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                 }
@@ -683,6 +728,25 @@ public class EmailPassword {
             }
             throw e;
         }
+    }
+
+    // A reset token is bound to the email it was sent to: that email must still belong to the account. This is
+    // checked against every login method of the account, not only the email-password login method with the
+    // token's user id, because the SDKs also issue tokens for the primary user id with the email of another
+    // linked login method, to add an email-password login method with that email.
+    // Tokens issued before an email or password change of the email-password login method are deleted by that
+    // change (updateUsersEmailOrPassword).
+    private static boolean isResetTokenEmailStillOnAccount(AuthRecipeUserInfo user, String tokenEmail) {
+        if (user == null || tokenEmail == null) {
+            return false;
+        }
+        String email = Utils.normaliseEmail(tokenEmail);
+        for (LoginMethod lM : user.loginMethods) {
+            if (lM.email != null && email.equals(Utils.normaliseEmail(lM.email))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @TestOnly
@@ -751,6 +815,13 @@ public class EmailPassword {
                                 .createHashWithSalt(appIdentifier, password);
                         epStorage.updateUsersPassword_Transaction(appIdentifier, transaction, userId,
                                 hashedPassword);
+                    }
+
+                    if (email != null || password != null) {
+                        // Reset tokens issued before the change were sent to the previous email or meant to
+                        // replace the previous password; they must not outlive the change.
+                        epStorage.deleteAllPasswordResetTokensForUser_Transaction(appIdentifier, transaction,
+                                userId);
                     }
 
                     epStorage.commitTransaction(transaction);
