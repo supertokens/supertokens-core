@@ -34,6 +34,7 @@ import io.supertokens.saml.exceptions.IDPInitiatedLoginRequiresACSURLsException;
 import io.supertokens.saml.exceptions.InvalidAttributeMappingException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
 import io.supertokens.saml.exceptions.SAMLClientFieldRequiredException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -66,7 +67,8 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
         }
 
         // Optional ACS allow-list and attribute mapping. Whether each key was sent is recorded separately from its
-        // value: once a client has either field set, an update must send it (null, [] or {} clear it).
+        // value: once a client has either field set, an update at CDI 5.8 or newer must send it (null, [] or {}
+        // clear it); below 5.8 leaving it out keeps the stored value.
         boolean acsURLsPresent = input.has("acsURLs");
         JsonArray acsURLs = input.has("acsURLs") && input.get("acsURLs").isJsonNull()
                 ? null
@@ -111,7 +113,8 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             SAMLClient client = SAML.createOrUpdateSAMLClient(
                     main, getTenantIdentifier(req), getTenantStorage(req), clientId, clientSecret, defaultRedirectURI,
                     redirectURIs, metadataXML, allowIDPInitiatedLogin, enableRequestSigning, acsURLs, acsURLsPresent,
-                    attributeMapping, attributeMappingPresent);
+                    attributeMapping, attributeMappingPresent,
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_8));
             JsonObject res = client.toJson();
             res.addProperty("status", "OK");
             this.sendJsonResponse(200, res, resp);

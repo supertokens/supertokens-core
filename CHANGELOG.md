@@ -10,7 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Requires plugin interface 11.2 (and supertokens-postgresql-plugin 10.2). Adds CDI 5.8.
 - Adds an optional per-client SAML `attributeMapping` on `PUT /recipe/saml/clients`: for each of `userId`, `email`,
   `firstName` and `lastName`, an ordered list of 1-10 assertion claim names (`NameID` is the Subject NameID).
-  Invalid mappings are rejected with a 400 naming the key. The PUT response and `GET /recipe/saml/clients/list`
+  Invalid mappings are rejected with a 400 naming the key, including claim names with leading or trailing
+  whitespace (names match claims exactly). The PUT response and `GET /recipe/saml/clients/list`
   return it when set. Accepted on every CDI version; documented in CDI 5.8.
 - Only clients **with** an `attributeMapping` use the new resolution in `/recipe/saml/legacy/userinfo` (`id`) and
   `/recipe/saml/user` (`sub`): for each field, the client's list or else the default list (today's rules), taking the
@@ -19,9 +20,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   returned only when mapped and found. Clients **without** a mapping are unchanged and get exactly today's output;
   core logs a WARN line (app, tenant, client, field and kind, never claim values) when the default lists would
   have given them a different `id` / `sub` or `email`.
-- Behaviour change: once a SAML client has `acsURLs` or `attributeMapping` set, every update must send it — its
-  current value to keep it, or `null` (or `[]` / `{}`) to clear it. A PUT that leaves out a set `acsURLs` now
-  returns 400 instead of silently clearing the list. `acsURLs: null` is now accepted.
+- Behaviour change: once a SAML client has `acsURLs` or `attributeMapping` set, a PUT that leaves the key out no
+  longer clears it. From CDI 5.8 such a PUT returns 400: send the current value to keep it, or `null` (or `[]` /
+  `{}`) to clear it. Below CDI 5.8 (today's SDKs) the stored value is kept, so an omitted `acsURLs` keeps the
+  allow-list instead of silently clearing it, and updating a client with IdP-initiated login on no longer fails
+  for want of `acsURLs`. `acsURLs: null` is now accepted and clears the list on every CDI version.
 - Behaviour change: a stored empty `acsURLs` (`[]`, which 12.3.1+ cores accepted when IdP-initiated login was off) is
   now treated as not configured and left out of responses. SP-initiated logins for such a client previously all
   failed with `INVALID_CLIENT`, because nothing can match an empty allow-list; they now succeed with no ACS

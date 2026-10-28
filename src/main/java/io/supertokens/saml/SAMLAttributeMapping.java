@@ -103,6 +103,11 @@ public final class SAMLAttributeMapping {
                 if (s.trim().isEmpty()) {
                     throw new InvalidAttributeMappingException(field + " must not contain empty claim names");
                 }
+                // Names match claims exactly, so a padded name would be stored and then never match.
+                if (!s.equals(s.trim())) {
+                    throw new InvalidAttributeMappingException(
+                            field + " must not contain claim names with leading or trailing whitespace");
+                }
                 if (s.length() > MAX_CLAIM_NAME_LENGTH) {
                     throw new InvalidAttributeMappingException(
                             field + " must not contain claim names longer than " + MAX_CLAIM_NAME_LENGTH +

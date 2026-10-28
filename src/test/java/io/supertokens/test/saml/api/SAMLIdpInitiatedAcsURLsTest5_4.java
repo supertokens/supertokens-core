@@ -59,9 +59,6 @@ public class SAMLIdpInitiatedAcsURLsTest5_4 {
     private static final String ACS_REQUIRED_MESSAGE =
             "Http error. Status Code: 400. Message: acsURLs must contain at least one URL when " +
                     "allowIDPInitiatedLogin is true";
-    private static final String ACS_URLS_SET_MESSAGE =
-            "Http error. Status Code: 400. Message: acsURLs is set on this client: send its current value to " +
-                    "keep it, or null to clear it";
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -220,8 +217,11 @@ public class SAMLIdpInitiatedAcsURLsTest5_4 {
         String clientId = putClient(process, clientInput(null, km, true, acsList(ACS_URL)))
                 .get("clientId").getAsString();
 
-        // Once set, acsURLs must be sent on every update, so leaving it out is rejected first.
-        assertPutRejected(process, clientInput(clientId, km, true, null), ACS_URLS_SET_MESSAGE);
+        // Below CDI 5.8 leaving acsURLs out keeps the stored list, so the update goes through with it.
+        JsonObject kept = putClient(process, clientInput(clientId, km, true, null));
+        assertTrue(kept.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(acsList(ACS_URL), kept.get("acsURLs"));
+        // Sending an empty list does drop it, which IdP-initiated login does not allow.
         assertPutRejected(process, clientInput(clientId, km, true, new JsonArray()), ACS_REQUIRED_MESSAGE);
 
         JsonObject listed = getListedClient(process, clientId);

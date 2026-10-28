@@ -172,7 +172,7 @@ public class SAMLAttributeMappingResolverTest {
         assertNull(SAMLAttributeMapping.parse(null));
         assertNull(SAMLAttributeMapping.parse(JsonNull.INSTANCE));
         assertNull(SAMLAttributeMapping.parse(new JsonObject()));
-        JsonObject m = json("{\"userId\": [\" id \"], \"email\": [\"mail\"], \"firstName\": [\"fn\"], " +
+        JsonObject m = json("{\"userId\": [\"user id\"], \"email\": [\"mail\"], \"firstName\": [\"fn\"], " +
                 "\"lastName\": [\"ln\"]}");
         assertEquals(m, SAMLAttributeMapping.parse(m));
     }
@@ -191,6 +191,10 @@ public class SAMLAttributeMappingResolverTest {
                 {"{\"userId\": [true]}", "attributeMapping.userId must only contain strings"},
                 {"{\"userId\": [[\"id\"]]}", "attributeMapping.userId must only contain strings"},
                 {"{\"userId\": [\" \"]}", "attributeMapping.userId must not contain empty claim names"},
+                {"{\"userId\": [\"NameID \"]}",
+                        "attributeMapping.userId must not contain claim names with leading or trailing whitespace"},
+                {"{\"lastName\": [\"sn\", \"surname\\r\"]}",
+                        "attributeMapping.lastName must not contain claim names with leading or trailing whitespace"},
                 {"{\"userId\": [\"" + "x".repeat(513) + "\"]}",
                         "attributeMapping.userId must not contain claim names longer than 512 characters"},
         };

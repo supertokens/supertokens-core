@@ -157,8 +157,13 @@ public class SAMLAttributeMappingTest5_8 {
 
     private static void assertPutRejected(TestingProcessManager.TestingProcess process, JsonObject input,
                                           String expectedMessage) throws Exception {
+        assertPutRejected(process, input, expectedMessage, SemVer.v5_4.get());
+    }
+
+    private static void assertPutRejected(TestingProcessManager.TestingProcess process, JsonObject input,
+                                          String expectedMessage, String cdiVersion) throws Exception {
         try {
-            putClient(process, input);
+            putClient(process, input, cdiVersion);
             fail("expected the client write to be rejected: " + input);
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
@@ -378,6 +383,13 @@ public class SAMLAttributeMappingTest5_8 {
                 {"{\"lastName\": [{}]}", "attributeMapping.lastName must only contain strings"},
                 {"{\"userId\": [\"\"]}", "attributeMapping.userId must not contain empty claim names"},
                 {"{\"userId\": [\"id\", \"  \"]}", "attributeMapping.userId must not contain empty claim names"},
+                {"{\"userId\": [\" NameID\"]}",
+                        "attributeMapping.userId must not contain claim names with leading or trailing whitespace"},
+                {"{\"email\": [\"mail\", \"" + EMAIL_ADDRESS + "\\n\"]}",
+                        "attributeMapping.email must not contain claim names with leading or trailing whitespace"},
+                {"{\"firstName\": [\"\\tgivenName\"]}",
+                        "attributeMapping.firstName must not contain claim names with leading or trailing " +
+                                "whitespace"},
                 {"{\"email\": [\"" + tooLong + "\"]}",
                         "attributeMapping.email must not contain claim names longer than 512 characters"},
         };
@@ -394,7 +406,7 @@ public class SAMLAttributeMappingTest5_8 {
 
         // The limits themselves are accepted.
         JsonObject atLimits = json("{\"userId\": [\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\"]," +
-                "\"email\": [\"" + "a".repeat(512) + "\"]}");
+                "\"email\": [\"" + "a".repeat(512) + "\"], \"firstName\": [\"given name\"]}");
         JsonObject created = putClient(process, clientInput(null, km, false, ABSENT, atLimits));
         assertEquals(atLimits, created.get("attributeMapping"));
 
@@ -402,49 +414,69 @@ public class SAMLAttributeMappingTest5_8 {
     }
 
     // ── required once set ───────────────────────────────────────────────────
+    // From CDI 5.8 a set field must be sent on every update; below 5.8 leaving it out keeps the stored value.
+    // The other cells of the table are the same on every version.
 
     @Test
-    public void attributeMappingIsRequiredOnceSet() throws Exception {
+    public void attributeMappingIsRequiredOnceSetFromCdi5_8() throws Exception {
+        attributeMappingRequiredOnceSetTable(SemVer.v5_8.get());
+    }
+
+    @Test
+    public void attributeMappingIsKeptWhenLeftOutBelowCdi5_8() throws Exception {
+        attributeMappingRequiredOnceSetTable(SemVer.v5_4.get());
+    }
+
+    private void attributeMappingRequiredOnceSetTable(String cdi) throws Exception {
+        boolean strict = new SemVer(cdi).greaterThanOrEqualTo(SemVer.v5_8);
         TestingProcessManager.TestingProcess process = startWithSAML();
         MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
         JsonObject m1 = json("{\"userId\": [\"id\"]}");
         JsonObject m2 = json("{\"email\": [\"mail\", \"NameID\"]}");
 
         // Stored value: none (new client) — absent, null and {} all leave it unset; a value sets it.
-        String clientId = putClient(process, clientInput(null, km, false, ABSENT, ABSENT))
+        String clientId = putClient(process, clientInput(null, km, false, ABSENT, ABSENT), cdi)
                 .get("clientId").getAsString();
         assertFalse(getListedClient(process, clientId).has("attributeMapping"));
         // Stored value: none (never set) — absent / null / {} stay unset.
         for (JsonElement unset : new JsonElement[]{ABSENT, JsonNull.INSTANCE, new JsonObject()}) {
-            JsonObject resp = putClient(process, clientInput(clientId, km, false, ABSENT, unset));
+            JsonObject resp = putClient(process, clientInput(clientId, km, false, ABSENT, unset), cdi);
             assertFalse(resp.has("attributeMapping"));
             assertFalse(getListedClient(process, clientId).has("attributeMapping"));
         }
         JsonObject newWithNull = putClient(process, clientInput(null,
-                MockSAML.generateSelfSignedKeyMaterial(), false, ABSENT, JsonNull.INSTANCE));
+                MockSAML.generateSelfSignedKeyMaterial(), false, ABSENT, JsonNull.INSTANCE), cdi);
         assertEquals("OK", newWithNull.get("status").getAsString());
         assertFalse(newWithNull.has("attributeMapping"));
 
         // Stored value: none — a value sets it.
-        assertEquals(m1, putClient(process, clientInput(clientId, km, false, ABSENT, m1)).get("attributeMapping"));
+        assertEquals(m1,
+                putClient(process, clientInput(clientId, km, false, ABSENT, m1), cdi).get("attributeMapping"));
 
-        // Stored value: set — absent is a 400 and nothing changes.
-        assertPutRejected(process, clientInput(clientId, km, false, ABSENT, ABSENT), MAPPING_SET_MESSAGE);
+        // Stored value: set — absent is a 400 from 5.8 and keeps it below; either way the stored value stays.
+        if (strict) {
+            assertPutRejected(process, clientInput(clientId, km, false, ABSENT, ABSENT), MAPPING_SET_MESSAGE, cdi);
+        } else {
+            assertEquals(m1, putClient(process, clientInput(clientId, km, false, ABSENT, ABSENT), cdi)
+                    .get("attributeMapping"));
+        }
         assertEquals(m1, getListedClient(process, clientId).get("attributeMapping"));
 
         // Stored value: set — a value replaces it (as a whole).
-        assertEquals(m2, putClient(process, clientInput(clientId, km, false, ABSENT, m2)).get("attributeMapping"));
+        assertEquals(m2,
+                putClient(process, clientInput(clientId, km, false, ABSENT, m2), cdi).get("attributeMapping"));
         assertEquals(m2, getListedClient(process, clientId).get("attributeMapping"));
 
         // Stored value: set — null clears it, and afterwards absent is fine again.
-        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, JsonNull.INSTANCE))
+        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, JsonNull.INSTANCE), cdi)
                 .has("attributeMapping"));
         assertFalse(getListedClient(process, clientId).has("attributeMapping"));
-        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, ABSENT)).has("attributeMapping"));
+        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, ABSENT), cdi)
+                .has("attributeMapping"));
 
         // Stored value: set — {} clears it too.
-        putClient(process, clientInput(clientId, km, false, ABSENT, m1));
-        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, new JsonObject()))
+        putClient(process, clientInput(clientId, km, false, ABSENT, m1), cdi);
+        assertFalse(putClient(process, clientInput(clientId, km, false, ABSENT, new JsonObject()), cdi)
                 .has("attributeMapping"));
         assertFalse(getListedClient(process, clientId).has("attributeMapping"));
 
@@ -452,81 +484,161 @@ public class SAMLAttributeMappingTest5_8 {
     }
 
     @Test
-    public void acsURLsIsRequiredOnceSet() throws Exception {
+    public void acsURLsIsRequiredOnceSetFromCdi5_8() throws Exception {
+        acsURLsRequiredOnceSetTable(SemVer.v5_8.get());
+    }
+
+    @Test
+    public void acsURLsIsKeptWhenLeftOutBelowCdi5_8() throws Exception {
+        acsURLsRequiredOnceSetTable(SemVer.v5_4.get());
+    }
+
+    private void acsURLsRequiredOnceSetTable(String cdi) throws Exception {
+        boolean strict = new SemVer(cdi).greaterThanOrEqualTo(SemVer.v5_8);
         TestingProcessManager.TestingProcess process = startWithSAML();
         MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
 
         // Stored value: none — absent, null and [] all leave it unset.
-        String clientId = putClient(process, clientInput(null, km, false, ABSENT, ABSENT))
+        String clientId = putClient(process, clientInput(null, km, false, ABSENT, ABSENT), cdi)
                 .get("clientId").getAsString();
         for (JsonElement unset : new JsonElement[]{ABSENT, JsonNull.INSTANCE, new JsonArray()}) {
-            JsonObject resp = putClient(process, clientInput(clientId, km, false, unset, ABSENT));
+            JsonObject resp = putClient(process, clientInput(clientId, km, false, unset, ABSENT), cdi);
             assertFalse(resp.has("acsURLs"));
             assertFalse(getListedClient(process, clientId).has("acsURLs"));
         }
         JsonObject newWithNull = putClient(process, clientInput(null,
-                MockSAML.generateSelfSignedKeyMaterial(), false, JsonNull.INSTANCE, ABSENT));
+                MockSAML.generateSelfSignedKeyMaterial(), false, JsonNull.INSTANCE, ABSENT), cdi);
         assertEquals("OK", newWithNull.get("status").getAsString());
         assertFalse(newWithNull.has("acsURLs"));
 
         // Stored value: none — a value sets it.
         assertEquals(list(ACS_URL),
-                putClient(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT)).get("acsURLs"));
+                putClient(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT), cdi).get("acsURLs"));
 
-        // Stored value: set — absent used to clear the list; it is now a 400 and nothing changes.
-        assertPutRejected(process, clientInput(clientId, km, false, ABSENT, ABSENT), ACS_URLS_SET_MESSAGE);
+        // Stored value: set — absent used to clear the list. It is now a 400 from 5.8 and keeps the list below.
+        if (strict) {
+            assertPutRejected(process, clientInput(clientId, km, false, ABSENT, ABSENT), ACS_URLS_SET_MESSAGE, cdi);
+        } else {
+            assertEquals(list(ACS_URL),
+                    putClient(process, clientInput(clientId, km, false, ABSENT, ABSENT), cdi).get("acsURLs"));
+        }
         assertEquals(list(ACS_URL), getListedClient(process, clientId).get("acsURLs"));
 
         // Stored value: set — a value replaces it.
         String other = "http://localhost:3000/other-acs";
         assertEquals(list(other),
-                putClient(process, clientInput(clientId, km, false, list(other), ABSENT)).get("acsURLs"));
+                putClient(process, clientInput(clientId, km, false, list(other), ABSENT), cdi).get("acsURLs"));
 
         // Stored value: set — null clears it.
-        assertFalse(putClient(process, clientInput(clientId, km, false, JsonNull.INSTANCE, ABSENT))
+        assertFalse(putClient(process, clientInput(clientId, km, false, JsonNull.INSTANCE, ABSENT), cdi)
                 .has("acsURLs"));
         assertFalse(getListedClient(process, clientId).has("acsURLs"));
 
         // Stored value: set — [] clears it.
-        putClient(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT));
-        assertFalse(putClient(process, clientInput(clientId, km, false, new JsonArray(), ABSENT)).has("acsURLs"));
+        putClient(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT), cdi);
+        assertFalse(putClient(process, clientInput(clientId, km, false, new JsonArray(), ABSENT), cdi)
+                .has("acsURLs"));
         assertFalse(getListedClient(process, clientId).has("acsURLs"));
 
         stop(process);
     }
 
     @Test
-    public void bothFieldsAreCheckedIndependently() throws Exception {
+    public void bothFieldsAreCheckedIndependentlyFromCdi5_8() throws Exception {
         TestingProcessManager.TestingProcess process = startWithSAML();
         MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
         JsonObject mapping = json("{\"userId\": [\"id\"]}");
+        String cdi = SemVer.v5_8.get();
 
-        String clientId = putClient(process, clientInput(null, km, false, list(ACS_URL), mapping))
+        String clientId = putClient(process, clientInput(null, km, false, list(ACS_URL), mapping), cdi)
                 .get("clientId").getAsString();
 
-        assertPutRejected(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT), MAPPING_SET_MESSAGE);
-        assertPutRejected(process, clientInput(clientId, km, false, ABSENT, mapping), ACS_URLS_SET_MESSAGE);
+        assertPutRejected(process, clientInput(clientId, km, false, list(ACS_URL), ABSENT), MAPPING_SET_MESSAGE,
+                cdi);
+        assertPutRejected(process, clientInput(clientId, km, false, ABSENT, mapping), ACS_URLS_SET_MESSAGE, cdi);
 
-        JsonObject resent = putClient(process, clientInput(clientId, km, false, list(ACS_URL), mapping));
+        JsonObject resent = putClient(process, clientInput(clientId, km, false, list(ACS_URL), mapping), cdi);
         assertEquals(mapping, resent.get("attributeMapping"));
         assertEquals(list(ACS_URL), resent.get("acsURLs"));
 
         stop(process);
     }
 
+    /**
+     * What an SDK on CDI 5.4 sends: neither key. Both stored values are kept, and the rest of the client is
+     * updated.
+     */
     @Test
-    public void requiredOnceSetRunsBeforeTheIdpInitiatedAcsCheck() throws Exception {
+    public void bothFieldsAreKeptWhenLeftOutBelowCdi5_8() throws Exception {
         TestingProcessManager.TestingProcess process = startWithSAML();
         MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        JsonObject mapping = json("{\"userId\": [\"id\"]}");
+        String cdi = SemVer.v5_4.get();
 
-        String clientId = putClient(process, clientInput(null, km, true, list(ACS_URL), ABSENT))
+        String clientId = putClient(process, clientInput(null, km, false, list(ACS_URL), mapping), cdi)
+                .get("clientId").getAsString();
+
+        JsonObject sdkUpdate = clientInput(clientId, km, false, ABSENT, ABSENT);
+        sdkUpdate.addProperty("enableRequestSigning", false);
+        JsonObject updated = putClient(process, sdkUpdate, cdi);
+        assertEquals(mapping, updated.get("attributeMapping"));
+        assertEquals(list(ACS_URL), updated.get("acsURLs"));
+        assertFalse(updated.get("enableRequestSigning").getAsBoolean());
+
+        JsonObject listed = getListedClient(process, clientId);
+        assertEquals(mapping, listed.get("attributeMapping"));
+        assertEquals(list(ACS_URL), listed.get("acsURLs"));
+        assertFalse(listed.get("enableRequestSigning").getAsBoolean());
+
+        stop(process);
+    }
+
+    @Test
+    public void requiredOnceSetRunsBeforeTheIdpInitiatedAcsCheckFromCdi5_8() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String cdi = SemVer.v5_8.get();
+
+        String clientId = putClient(process, clientInput(null, km, true, list(ACS_URL), ABSENT), cdi)
                 .get("clientId").getAsString();
 
         // Leaving out a set acsURLs gets the required-once-set message ...
-        assertPutRejected(process, clientInput(clientId, km, true, ABSENT, ABSENT), ACS_URLS_SET_MESSAGE);
+        assertPutRejected(process, clientInput(clientId, km, true, ABSENT, ABSENT), ACS_URLS_SET_MESSAGE, cdi);
         // ... while sending [] or null with IdP-initiated login on keeps today's message.
-        assertPutRejected(process, clientInput(clientId, km, true, new JsonArray(), ABSENT), ACS_REQUIRED_MESSAGE);
-        assertPutRejected(process, clientInput(clientId, km, true, JsonNull.INSTANCE, ABSENT), ACS_REQUIRED_MESSAGE);
+        assertPutRejected(process, clientInput(clientId, km, true, new JsonArray(), ABSENT), ACS_REQUIRED_MESSAGE,
+                cdi);
+        assertPutRejected(process, clientInput(clientId, km, true, JsonNull.INSTANCE, ABSENT), ACS_REQUIRED_MESSAGE,
+                cdi);
+
+        JsonObject listed = getListedClient(process, clientId);
+        assertTrue(listed.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(list(ACS_URL), listed.get("acsURLs"));
+
+        stop(process);
+    }
+
+    /**
+     * Below 5.8 the stored acsURLs is carried forward before the IdP-initiated check, so an update that leaves it
+     * out passes that check (it failed with ACS_REQUIRED from 12.3.1 to 12.4).
+     */
+    @Test
+    public void leftOutAcsURLsIsKeptBeforeTheIdpInitiatedAcsCheckBelowCdi5_8() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithSAML();
+        MockSAML.KeyMaterial km = MockSAML.generateSelfSignedKeyMaterial();
+        String cdi = SemVer.v5_4.get();
+
+        String clientId = putClient(process, clientInput(null, km, true, list(ACS_URL), ABSENT), cdi)
+                .get("clientId").getAsString();
+
+        JsonObject updated = putClient(process, clientInput(clientId, km, true, ABSENT, ABSENT), cdi);
+        assertTrue(updated.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(list(ACS_URL), updated.get("acsURLs"));
+
+        // Sending [] or null with IdP-initiated login on still clears the list, so it is still refused.
+        assertPutRejected(process, clientInput(clientId, km, true, new JsonArray(), ABSENT), ACS_REQUIRED_MESSAGE,
+                cdi);
+        assertPutRejected(process, clientInput(clientId, km, true, JsonNull.INSTANCE, ABSENT), ACS_REQUIRED_MESSAGE,
+                cdi);
 
         JsonObject listed = getListedClient(process, clientId);
         assertTrue(listed.get("allowIDPInitiatedLogin").getAsBoolean());

@@ -134,13 +134,15 @@ public class SAML {
 
     /**
      * acsURLsPresent / attributeMappingPresent say whether the request carried the key at all (a JSON null counts
-     * as present). Once a client has a value for either field, every update must send it: null (or an empty value)
-     * clears it, and leaving it out throws SAMLClientFieldRequiredException.
+     * as present). null (or an empty value) clears a field. Leaving out a field the client has set depends on
+     * requireSetFields (true for requests at CDI 5.8 or newer): it throws SAMLClientFieldRequiredException when
+     * true, and keeps the stored value when false.
      */
     public static SAMLClient createOrUpdateSAMLClient(
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
             String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning,
-            JsonArray acsURLs, boolean acsURLsPresent, JsonObject attributeMapping, boolean attributeMappingPresent)
+            JsonArray acsURLs, boolean acsURLsPresent, JsonObject attributeMapping, boolean attributeMappingPresent,
+            boolean requireSetFields)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException,
             IDPInitiatedLoginRequiresACSURLsException, SAMLClientFieldRequiredException {
@@ -148,15 +150,22 @@ public class SAML {
 
         SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
-        // Required once set: checked before the IdP-initiated rule below, so leaving out a set acsURLs gets this
-        // message rather than that one. SAMLClient reads a stored empty value back as null, i.e. unset.
+        // Required once set (or, below CDI 5.8, kept when left out): handled before the IdP-initiated rule below,
+        // so leaving out a set acsURLs gets this message, or passes that rule with the stored list. SAMLClient reads
+        // a stored empty value back as null, i.e. unset.
         SAMLClient existing = samlStorage.getSAMLClient(tenantIdentifier, clientId);
         if (existing != null) {
             if (existing.acsURLs != null && !acsURLsPresent) {
-                throw new SAMLClientFieldRequiredException("acsURLs");
+                if (requireSetFields) {
+                    throw new SAMLClientFieldRequiredException("acsURLs");
+                }
+                acsURLs = existing.acsURLs;
             }
             if (existing.attributeMapping != null && !attributeMappingPresent) {
-                throw new SAMLClientFieldRequiredException("attributeMapping");
+                if (requireSetFields) {
+                    throw new SAMLClientFieldRequiredException("attributeMapping");
+                }
+                attributeMapping = existing.attributeMapping;
             }
         }
 
