@@ -5,77 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [12.4.2]
 
 ### Security
 
-- The API-key check now fails closed when the app in the request path does not resolve: it is enforced against the nearest existing ancestor (the connection URI domain's public app, then the base config) instead of being skipped. With `api_keys` or `supertokens_saas_secret` configured there, a request for an unknown app without a valid key now gets `401 Invalid API key`, the same as a request with a wrong key, instead of reaching the handler. IP allow/deny rules fall back the same way.
-- Multitenancy: the in-memory set of connection URI domains is rebuilt into a new set and published in one step, so requests served while a tenant is created or updated no longer see a connection URI domain as temporarily missing.
-- Multitenancy: the refresh that runs after a tenant/app/connection URI domain create or update only takes the config of the changed tenant (and the tenants inheriting from it) from the database. A config change of another tenant that is already in the database but not yet loaded (e.g. an `api_keys` rotation made through another core instance) is no longer recorded as loaded without being applied, so the next refresh still applies it.
-- OAuth2 provider: when several apps share one OAuth provider, the login/consent request APIs (get consent, accept/reject login, accept/reject consent) now resolve the challenge's OAuth client first. If it is not a client of the calling app, they return the same `OAUTH_ERROR` as for an unknown challenge (`Not Found`, status code 404) and do not forward the request. (`GET /recipe/oauth/auth/requests/login` keeps answering `CLIENT_NOT_FOUND_ERROR` in that case, as before.)
-- OAuth2 provider: `POST /recipe/oauth/token/revoke` returns the provider's `invalid_client` `OAUTH_ERROR` (401) for a client that is not in the calling app, and `POST /recipe/oauth/tokens/revoke` only revokes the calling app's tokens (it returns `OK` without calling the OAuth provider for a client that is not in the app). `GET /recipe/oauth/clients` returns `CLIENT_NOT_FOUND_ERROR` for such a client without calling the OAuth provider, and `POST /recipe/oauth/auth` returns `CLIENT_NOT_FOUND_ERROR` when `params.client_id` is missing.
-- OAuth2 provider: client ids are percent-encoded as a path segment in the OAuth provider's `/admin/clients/<id>` paths (get, update, remove, logout), and the client returned by the OAuth provider must have the checked id. `POST /recipe/oauth/clients` rejects a caller-chosen `clientId` that contains characters other than letters, digits and `. _ ~ -`. `POST` and `PUT /recipe/oauth/clients` reject a client id given under any other key spelling than `clientId` (e.g. `client_id`), and fields given in two spellings. Both answer with an `OAUTH_ERROR` (`invalid_client_metadata`, status code 400).
-- OAuth2 provider: parameter names (not only values) are URL-encoded in the requests sent to the OAuth provider. The client id from a Basic `Authorization` header is URL-decoded before the ownership check, and `POST /recipe/oauth/token` returns an `invalid_request` `OAUTH_ERROR` when that client id differs from a `client_id` in the body.
-- Third-party sign-in: an email change now only updates the recipe user of the signing-in tenant. Previously it also rewrote the email of every other user in the app with the same `thirdPartyId` and `thirdPartyUserId` (for example the same provider identity in another tenant), skipping their email-change checks. Fixed in the in-memory storage; the PostgreSQL plugin needs the matching release.
-- Third-party sign-in with `isVerified: true` now marks only the email sent in that request as verified, and only if it is still the login method's email, checked under the user lock. A concurrent sign-in that changed the email can no longer get its unverified email marked as verified. The CDI 2.7 sign-in path gets the same fix.
-- OpenTelemetry: method spans (`@WithinOtelSpan`) no longer export raw argument and return values. Only the type is recorded, plus the value for an allow-list of non-sensitive types (tenant/app identifiers, booleans, numbers, enums); configs (database credentials, `api_keys`, `supertokens_saas_secret`), strings and other objects are recorded by type only, and exceptions by type without their message.
-- Bulk import: validation errors no longer embed the login method (including `plainTextPassword` / `passwordHash`) or the TOTP `secretKey`. A login method without a tenant is now reported as `LoginMethod at loginMethods[<i>] (recipeId: <recipe>) has no tenantId` (`<i>` is the position in the request's `loginMethods` array), and an over-long TOTP secret as `TOTP secretKey is too long. Max length is 256.`. TOTP secrets are also removed from the stored `E036` database error message (if a secret is too short to remove safely, the database error details are omitted).
-- Dashboard: `GET /recipe/dashboard/tenant/core-config` no longer returns secret config values, whether or not the core runs in SaaS mode. `firebase_password_hashing_signer_key` is no longer listed (like `api_keys`); database password fields (e.g. `postgresql_password`) are returned as `********`, and passwords inside connection URIs or connection attributes are replaced with `********`.
-- WebAuthn: the stored credential id is taken from the verified attestation; a registration whose `id` or `rawId` differs from it is rejected (`INVALID_CREDENTIALS_ERROR`), and a credential id already registered in the app under another relying party id cannot be registered again (sign-up and credential register both return `INVALID_AUTHENTICATOR_ERROR` with reason "Credential already registered"; a duplicate under the same relying party id still returns `CREDENTIAL_ALREADY_EXISTS_ERROR` from credential register).
-- WebAuthn: sign-in returns the owner of the stored credential whose public key verified the assertion, and only accepts a credential registered for the relying party id of the sign-in options.
-- WebAuthn: register options use a random user handle, so the response no longer depends on whether the email belongs to an existing account and never contains an internal user id.
-- WebAuthn: account recovery tokens are only issued, read and consumed for users who are members of the requested tenant.
-- WebAuthn: credential register and email update return `UNKNOWN_USER_ID_ERROR` unless the user is a member of the requested tenant.
-- WebAuthn: on CDI 5.5 and later, sign-in options are consumed by at most one sign-in also when several requests with the same assertion arrive at the same time. The options are locked when sign-in reads them, so a concurrent request waits and then gets `OPTIONS_NOT_FOUND_ERROR`; previously both could return `OK`. Fixed in the in-memory storage; the PostgreSQL plugin needs the matching release.
-
-- TOTP: verifications of the same user are serialised (a per-user lock is taken before the used codes are read), so
-  concurrent requests can no longer reuse a code or exceed `totp_max_attempts`.
-- TOTP: replay protection and the attempt limit use the user's used codes across all tenants of the app, matching
-  the app-wide scope of TOTP devices. A code used in one tenant is rejected in the user's other tenants, and failed
-  attempts count towards one limit per user. `totp_max_attempts` and `totp_rate_limit_cooldown_sec` are still read
-  from the config of the tenant the request is made to, and are applied to the user's failures across all tenants
-  of the app (if tenants of one app set different values, the requesting tenant's values decide).
-- TOTP: `/recipe/totp/device/verify` checks the code (with rate limiting and replay protection) also when the device
-  is already verified. It returns `INVALID_TOTP_ERROR` / `LIMIT_REACHED_ERROR` for a wrong code, and
-  `OK` with `wasAlreadyVerified: true` only for a valid code.
-- Account linking: deleting a primary user's own login method while keeping its linked accounts (`removeAllLinkedAccounts=false`) now also deletes the sessions created with that login method, in the same transaction. Data shared with the remaining linked accounts (metadata, roles, TOTP) is kept.
-- Sessions: revoking or listing all sessions of a user with linked accounts now also covers sessions stored under the external (user id mapped) ids of the linked login methods, and accepts the external id of any login method of the account.
-- Dashboard: a sign-in that overlaps a password or email change of the dashboard user no longer leaves a session behind. After creating the session, sign-in re-checks that the credentials it verified are still current and removes the session otherwise.
-- Email password: changing a user's email or password now deletes the user's password reset tokens in the same transaction, and consuming a reset token (`POST /recipe/user/password/reset/token/consume`, and the older `POST /recipe/user/password/reset`) returns `RESET_PASSWORD_INVALID_TOKEN_ERROR` when the token's email is not the email of any login method of the account. This includes tokens created (`POST /recipe/user/password/reset/token`, e.g. through the SDKs' `createResetPasswordToken` / `createResetPasswordLink`) with an email the account never had: they are still issued, with a warning in the core log, but can no longer be consumed. Tokens issued for the primary user id with the email of another linked login method keep working.
-- WebAuthn: consuming a recover-account token returns `RECOVER_ACCOUNT_TOKEN_INVALID_ERROR` when the token's email is not the email of any login method of the account (same rule, including the creation-time log warning).
-- SAML callback: an assertion is accepted only within a window bounded by signed values. Its bearer `SubjectConfirmationData` must carry a `NotOnOrAfter`, which is now enforced (and `NotBefore`, if present). The `Assertion` `IssueInstant` must be present and at most 5 minutes old (allowing for clock skew). The consumed-assertion record is kept until that same window has passed, plus the clock skew, so it can no longer be purged while the assertion would still be accepted.
-- SAML callback: on SP-initiated logins the AuthnRequest ID must also appear as the `InResponseTo` of the authenticating assertion's bearer `SubjectConfirmationData`, not only on the Response.
-- SAML callback: an SP-initiated response with no known ACS URL to pin `Destination`/`Recipient` to is rejected.
-- SAML clients: an update that omits `acsURLs` keeps the client's current ACS allow-list instead of clearing it; send `acsURLs: []` to clear it.
-- Email-password sign-up no longer marks every placeholder-looking email as verified. It now auto-verifies only
-  `<userId>@stfakeemail.supertokens.com` where `<userId>` is the id (or mapped external id) of an existing user of the
-  same app with no email on any login method of the user or of its primary user, and does not have the third-party
-  placeholder shape `<x>.<thirdPartyId>` (a built-in provider id of the SDKs, or a provider configured in a tenant of
-  the app). This is the placeholder the backend SDKs generate when a user without an email adds a password factor.
-  Other addresses on `@stfakeemail.supertokens.com` (including third-party placeholders
-  `<thirdPartyUserId>.<thirdPartyId>@...`) and addresses ending in `.fakeemail.com` are created unverified. Existing verification state is not changed.
-  The backend SDKs still predict sign-up verification with the old suffix rule (`isFakeEmail`); until they adopt
-  the narrowed rule, a session sign-up with such an address can create an email-password user that then fails to
-  link to the session user (`EMAIL_VERIFICATION_REQUIRED`).
-- Multitenancy: the deprecated non-v2 create/update endpoints (`PUT /recipe/multitenancy/tenant`, `/recipe/multitenancy/app`, `/recipe/multitenancy/connectionuridomain`) called with cdi-version 5.0 or later no longer turn a login method that is enabled only for `requiredSecondaryFactors` into a first factor. When such an update would leave `firstFactors` unset (for example `emailPasswordEnabled: true` on a tenant whose only enabled method is a required passwordless second factor, or `firstFactors: null` sent with `requiredSecondaryFactors`), the core now stores `firstFactors` explicitly with only the login methods the caller sees as enabled or enables in that call, so the result no longer depends on the order of the calls. If such an update would end with an empty `firstFactors` list although it sets a `...Enabled: true` flag, the explicitly enabled login methods are kept as first factors. Tenant reads reflect the narrowed first factors: the v2 GET returns the explicit `firstFactors`, the CDI 5.0 GET includes `firstFactors`, and at CDI <= 4.0 a login method that is on only for `requiredSecondaryFactors` now shows `enabled: false`. Tenants already stored with the wider configuration are not changed; re-apply their `firstFactors` to tighten them.
-- SAML legacy flow: `POST /recipe/saml/legacy/token` now redeems the authorization code (single use, bound to the client it was issued to; an unknown, expired, already-used or other client's code returns `400 Invalid code`) and returns a fresh random opaque `access_token` instead of a value derived from the code. The client secret is compared in constant time.
-- SAML legacy flow: `GET /recipe/saml/legacy/userinfo` accepts only an access token issued by the token endpoint (single use, valid for `saml_claims_validity`); a code, or a malformed bearer value, returns `400 INVALID_TOKEN_ERROR` instead of claims or a `500`.
-- SAML codes are consumed with a single atomic `DELETE ... RETURNING` in the in-memory database too, so a code cannot be redeemed twice by concurrent requests.
-- Dashboard sign-in verifies the password before checking whether the account is suspended: a wrong password now returns `INVALID_CREDENTIALS_ERROR` for suspended accounts too (`USER_SUSPENDED_ERROR` is returned only for the correct password).
-- Dashboard and email-password sign-in verify the supplied password against a dummy hash (created once per hashing algorithm and cost parameters of the app's config) when no matching account exists, so unknown and existing accounts take a similar amount of work.
-
-- Multitenancy (with the plugin-interface release of this round): the CDI ≥ 5.1 / v2 tenant GET and list APIs no longer return a disabled login method's factor ids in `firstFactors`; a legacy tenant whose stored `firstFactors` only names disabled login methods is returned with `firstFactors: []`. Tenants written by current cores are unchanged.
+- API-key check: when the request's app doesn't resolve, the key is checked against the nearest existing ancestor instead of being skipped.
+- Multitenancy: the connection URI domain set is replaced atomically, and a tenant refresh no longer marks another tenant's unapplied config as loaded.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
+- Multitenancy (deprecated non-v2 create/update, CDI 5.0+): enabling a login method no longer turns a required secondary factor into a first factor.
+- OAuth2 provider: login/consent request, token revoke and client APIs only act on OAuth clients of the calling app.
+- OAuth2 provider: client ids are path-encoded towards the provider, limited to letters, digits and `. _ ~ -` at creation, and accepted only as `clientId`.
+- OAuth2 provider: parameter names are URL-encoded towards the provider; a Basic-auth client id must match the body's `client_id`.
+- Third-party sign-in: an email change only updates the recipe user of the signing-in tenant.
+- Third-party sign-in with `isVerified: true` only verifies the email of that request, checked under the user lock.
+- Email-password sign-up only auto-verifies the SDKs' `<userId>@stfakeemail.supertokens.com` placeholder of an existing user without an email.
+- Email password: an email or password change deletes the user's reset tokens; a reset token is only consumed for an email of the account.
+- WebAuthn: a recover-account token is only consumed for an email of the account.
+- WebAuthn: credential ids are taken from the verified attestation and are unique within the app.
+- WebAuthn: sign-in returns the owner of the verifying credential and only accepts credentials of the options' relying party id.
+- WebAuthn: register options use a random user handle.
+- WebAuthn: recovery tokens, credential register and email update require the user to be a member of the requested tenant.
+- WebAuthn (CDI 5.5+): concurrent sign-ins with the same options succeed at most once.
+- TOTP: verifications of a user are serialised; replay protection and the attempt limit apply across the app's tenants.
+- TOTP: `/recipe/totp/device/verify` checks the code also for an already verified device.
+- Account linking: deleting a primary user's own login method also deletes the sessions created with it.
+- Sessions: revoking or listing a linked user's sessions covers the external ids of all its login methods.
+- Dashboard: `GET /recipe/dashboard/tenant/core-config` no longer returns secret config values.
+- Dashboard: a sign-in that overlaps a password or email change no longer leaves a session behind.
+- Dashboard sign-in checks the password before the suspension.
+- Dashboard and email-password sign-in do the same hashing work for unknown accounts.
+- SAML callback: an assertion is only accepted within a window bounded by signed values, and its replay record outlives that window.
+- SAML callback: SP-initiated logins require the request id as the assertion's `InResponseTo` and a known ACS URL.
+- SAML clients: an update without `acsURLs` keeps the current ACS allow-list (`acsURLs: []` clears it).
+- SAML legacy flow: the token endpoint redeems a single-use, client-bound code for a random access token, and userinfo only accepts that token.
+- SAML codes are consumed atomically in the in-memory database.
+- OpenTelemetry: method spans no longer export argument and return values.
+- Bulk import: errors no longer contain passwords, password hashes or TOTP secrets.
 
 ### Fixes
 
 - User roles: `GET /recipe/role/users` no longer returns `UNKNOWN_ROLE_ERROR` for an existing role on a tenant with its own database.
-- User roles: removing a user's role also deletes the user's mapping when the role no longer exists (the response is still `UNKNOWN_ROLE_ERROR`).
+- User roles: removing a user's role also deletes the user's mapping when the role no longer exists.
 
 ### Changes
 
 - Supports plugin interface 11.2.
-- In-memory database: adds the index `webauthn_credentials_app_id_id_index` on `webauthn_credentials (app_id, id)` for the app-wide WebAuthn credential id lookup. The PostgreSQL plugin adds the same index (plugin 10.2.0). Requires plugin-interface `WebAuthNSQLStorage.loadCredentialByIdInApp_Transaction`.
-- In-memory database: a duplicate WebAuthn credential (same app, relying party id and credential id) is reported as a duplicate credential instead of a storage error.
+- Adds the index `webauthn_credentials (app_id, id)` for the app-wide WebAuthn credential lookup.
+- In-memory database: a duplicate WebAuthn credential is reported as a duplicate instead of a storage error.
+
+### Migration
+
+The index `webauthn_credentials_app_id_id_index` is created by the core at startup. Large PostgreSQL deployments can build it before upgrading with supertokens-postgresql-plugin 10.2.0's `migration-scripts/v10.2.0.sql` (`CREATE INDEX CONCURRENTLY`, run outside a transaction).
 
 ## [12.4.1]
 
