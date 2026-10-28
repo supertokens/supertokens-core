@@ -75,6 +75,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import io.supertokens.auditlog.UnauditedTransaction;
 
 public class WebAuthN {
@@ -90,21 +91,18 @@ public class WebAuthN {
         PublicKeyCredentialRpEntity relyingPartyEntity = new PublicKeyCredentialRpEntity(relyingPartyId,
                 relyingPartyName);
 
-        String id = null;
         while (true) {
             try {
                 String optionsId = Utils.getUUID();
 
-                AuthRecipeStorage authStorage = (AuthRecipeStorage) storage;
-                AuthRecipeUserInfo[] usersWithEmail = authStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
-                if (usersWithEmail.length > 0) {
-                    id = usersWithEmail[0].getSupertokensUserId();
-                } else {
-                    id = optionsId;
-                }
+                // The WebAuthn user handle is a fresh random value, independent of the options id and of any
+                // existing account. Register options are served to callers that are not signed in, so the
+                // handle must not depend on whether the email belongs to an existing user, and must never
+                // carry an internal user id. The core does not read the user handle back at sign in.
+                String userHandle = Utils.getUUID();
 
                 PublicKeyCredentialUserEntity userEntity = new PublicKeyCredentialUserEntity(
-                        id.getBytes(StandardCharsets.UTF_8), email, displayName);
+                        userHandle.getBytes(StandardCharsets.UTF_8), email, displayName);
 
                 Challenge challenge = getChallenge();
 
@@ -206,7 +204,18 @@ public class WebAuthN {
                 generatedOptions);
 
         String supertokensUserId = translateToInternalUserId(storage, tenantIdentifier, recipeUserId);
-        String credentialId = getCredentialId(credentialsDataJson);
+        String credentialId = getAttestedCredentialId(credentialsDataJson, verifiedRegistrationData);
+        // Credential ids must be unique within the app, across relying party ids: sign in looks a credential up
+        // by id alone. The same id under another relying party id is rejected like at sign-up; a duplicate under
+        // the same relying party id keeps its previous status (DuplicateCredentialException), independent of how
+        // the storage reports the primary key conflict.
+        WebAuthNStoredCredential existing = loadCredentialByIdInApp(storage, tenantIdentifier, credentialId);
+        if (existing != null) {
+            if (Objects.equals(existing.rpId, generatedOptions.relyingPartyId)) {
+                throw new DuplicateCredentialException();
+            }
+            throw new WebauthNVerificationFailedException("Credential already registered");
+        }
         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                 verifiedRegistrationData,
                 supertokensUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
@@ -316,9 +325,14 @@ public class WebAuthN {
                         }
 
                         CredentialsValidator.validateCredential(credentialDataJson);
-                        String credentialId = getCredentialId(credentialDataJson);
                         RegistrationData verifiedRegistrationData = verifyRegistrationData(credentialDataJson,
                                 generatedOptions);
+                        String credentialId = getAttestedCredentialId(credentialDataJson, verifiedRegistrationData);
+                        // Credential ids stay unique within the app, across relying party ids, so one authenticator
+                        // credential is bound to one account (sign in itself is rp-scoped).
+                        if (webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId) != null) {
+                            throw new WebauthNVerificationFailedException("Credential already registered");
+                        }
                         WebAuthNStoredCredential credentialToSave = WebauthMapper.mapRegistrationDataToStoredCredential(
                                 verifiedRegistrationData,
                                 recipeUserId, credentialId, generatedOptions.userEmail, generatedOptions.relyingPartyId,
@@ -367,6 +381,68 @@ public class WebAuthN {
             credentialId = credentialsJson.get("id").getAsString();
         }
         return credentialId;
+    }
+
+    /**
+     * The credential id of a registration is the one in the verified attestation's attested credential data
+     * (WebAuthn L3 §7.1). The client-supplied {@code id} and {@code rawId} must match it.
+     */
+    private static String getAttestedCredentialId(JsonObject credentialsJson, RegistrationData verifiedRegistrationData)
+            throws WebauthNInvalidFormatException {
+        if (verifiedRegistrationData.getAttestationObject() == null
+                || verifiedRegistrationData.getAttestationObject().getAuthenticatorData() == null
+                || verifiedRegistrationData.getAttestationObject().getAuthenticatorData()
+                .getAttestedCredentialData() == null) {
+            throw new WebauthNInvalidFormatException("attested credential data is missing");
+        }
+        byte[] attestedCredentialId = verifiedRegistrationData.getAttestationObject().getAuthenticatorData()
+                .getAttestedCredentialData().getCredentialId();
+        String attestedCredentialIdString = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(attestedCredentialId);
+        if (!attestedCredentialIdString.equals(getCredentialId(credentialsJson))) {
+            throw new WebauthNInvalidFormatException("credential id does not match the attested credential id");
+        }
+        validateRawIdMatchesId(credentialsJson, attestedCredentialId);
+        return attestedCredentialIdString;
+    }
+
+    private static void validateRawIdMatchesId(JsonObject credentialsJson, byte[] expectedId)
+            throws WebauthNInvalidFormatException {
+        if (!credentialsJson.has("rawId") || credentialsJson.get("rawId").isJsonNull()) {
+            return;
+        }
+        byte[] rawId;
+        try {
+            rawId = Base64.getUrlDecoder().decode(credentialsJson.get("rawId").getAsString());
+        } catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException e) {
+            throw new WebauthNInvalidFormatException("credential rawId has to be base64 url encoded");
+        }
+        if (!java.security.MessageDigest.isEqual(rawId, expectedId)) {
+            throw new WebauthNInvalidFormatException("credential rawId does not match the credential id");
+        }
+    }
+
+    private static void validateRawIdMatchesId(JsonObject credentialsJson) throws WebauthNInvalidFormatException {
+        byte[] id;
+        try {
+            id = Base64.getUrlDecoder().decode(getCredentialId(credentialsJson));
+        } catch (IllegalArgumentException e) {
+            throw new WebauthNInvalidFormatException("Credential ID has to be base64 url encoded");
+        }
+        validateRawIdMatchesId(credentialsJson, id);
+    }
+
+    private static WebAuthNStoredCredential loadCredentialByIdInApp(Storage storage, TenantIdentifier tenantIdentifier,
+                                                                    String credentialId) throws StorageQueryException {
+        WebAuthNSQLStorage webAuthNStorage = StorageUtils.getWebAuthNStorage(storage);
+        try {
+            return ((ActivityLogSQLStorage) storage).startAuditedTransaction(tenantIdentifier.toAppIdentifier(),
+                    con -> AuditedResult.withoutAudit(
+                            webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier, con, credentialId),
+                            "Read-only lookup of an existing credential id before registration; writes nothing."));
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @TestOnly
@@ -419,10 +495,16 @@ public class WebAuthN {
                     CredentialsValidator.validateCredential(credentialsData);
 
                     String credentialId = getCredentialId(credentialsData);
+                    validateRawIdMatchesId(credentialsData);
 
                     WebAuthNStoredCredential credential = webAuthNStorage.loadCredentialById_Transaction(tenantIdentifier,
                             con, credentialId);
                     if(credential==null) {
+                        throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
+                    }
+                    // A credential is scoped to the relying party it was registered for. A stored credential
+                    // of another relying party cannot be the one this assertion was made with.
+                    if (credential.rpId == null || !credential.rpId.equalsIgnoreCase(generatedOptions.relyingPartyId)) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
 
@@ -436,16 +518,30 @@ public class WebAuthN {
                         webAuthNStorage.removeOptions_Transaction(tenantIdentifier, con, webauthnGeneratedOptionsId);
                     }
 
-                    AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserByWebauthNCredentialId_Transaction(tenantIdentifier, con, credentialId);
+                    // Resolve the user from the owner of the credential row whose public key verified the
+                    // assertion, not from a second lookup by credential id, so the signed-in user is always the
+                    // owner of that key.
+                    AuthRecipeUserInfo fullyLoadedUserInfo = StorageUtils.getAuthRecipeStorage(storage)
+                            .getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, credential.userId);
                     if(fullyLoadedUserInfo == null) {
                         // this shouldn't ever happen!
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
+                    // The webauthn login method that owns the credential must be a member of the requested tenant.
+                    LoginMethod credentialOwner = null;
+                    for (LoginMethod lm : fullyLoadedUserInfo.loginMethods) {
+                        if (lm.recipeId == RECIPE_ID.WEBAUTHN && lm.getSupertokensUserId().equals(credential.userId)) {
+                            credentialOwner = lm;
+                            break;
+                        }
+                    }
+                    if (credentialOwner == null || credentialOwner.tenantIds == null
+                            || !credentialOwner.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
+                    }
 
-                    // Defense in depth (GHSA-6v34-w48w-44rc): the resolved credential owner must be a member of
-                    // the tenant this sign-in was requested for. The storage queries above already enforce tenant
-                    // membership; this recipe-layer check guards against any future storage path re-opening the
-                    // cross-tenant sign-in, independently of the backend.
+                    // Defense in depth: the resolved user must be a member of the tenant this sign-in was
+                    // requested for (implied by the login method check above).
                     if (fullyLoadedUserInfo.tenantIds == null
                             || !fullyLoadedUserInfo.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
@@ -543,7 +639,8 @@ public class WebAuthN {
 
         AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
 
-        if (user == null) {
+        // The user lookup is app-wide; the token is issued for this tenant, so the user must be a member of it.
+        if (!isMemberOfTenant(user, tenantIdentifier)) {
             throw new UnknownUserIdException();
         }
 
@@ -582,6 +679,13 @@ public class WebAuthN {
                     }
 
                     webauthnStorage.deleteAccountRecoveryTokenByEmail_Transaction(tenantIdentifier, con, recoveryTokenInfo.email);
+
+                    // The token is spent either way, but it only recovers a user who is a member of this tenant.
+                    AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById_Transaction(
+                            tenantIdentifier.toAppIdentifier(), con, recoveryTokenInfo.userId);
+                    if (!isMemberOfTenant(user, tenantIdentifier)) {
+                        return null;
+                    }
                 }
 
                 return recoveryTokenInfo;
@@ -620,13 +724,22 @@ public class WebAuthN {
                 throw new InvalidTokenException();
             }
 
-            return AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, tokenInfo.userId);
+            AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage,
+                    tokenInfo.userId);
+            if (!isMemberOfTenant(user, tenantIdentifier)) {
+                throw new InvalidTokenException();
+            }
+            return user;
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof StorageQueryException) {
                 throw (StorageQueryException) e.actualException;
             }
             throw new IllegalStateException(e.actualException);
         }
+    }
+
+    private static boolean isMemberOfTenant(AuthRecipeUserInfo user, TenantIdentifier tenantIdentifier) {
+        return user != null && user.tenantIds != null && user.tenantIds.contains(tenantIdentifier.getTenantId());
     }
 
     private static long getRecoverAccountTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
