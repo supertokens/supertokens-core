@@ -398,6 +398,49 @@ public class TestWebAuthNCredentialBinding_5_3 {
         stop(process);
     }
 
+    @Test
+    public void testCredentialRegisterAndEmailUpdateRequireTenantMembership() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcess();
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        Main main = process.getProcess();
+        TenantIdentifier publicTenant = process.getAppForTesting();
+        TenantIdentifier t2 = new TenantIdentifier(null, publicTenant.getAppId(), "t2");
+        TestMultitenancyAPIHelper.createTenant(main, publicTenant, "t2",
+                true, false, false, new JsonObject());
+
+        // a webauthn user of t2 only
+        SoftwareAuthenticator ownKey = new SoftwareAuthenticator(randomCredentialId());
+        JsonObject options = registerOptions(main, t2, "member-of-t2@example.com", RP_ID, ORIGIN);
+        JsonObject member = signUp(main, t2, options.get("webauthnGeneratedOptionsId").getAsString(),
+                ownKey.register(options, ORIGIN));
+        assertEquals(member.toString(), "OK", member.get("status").getAsString());
+        String recipeUserId = member.get("recipeUserId").getAsString();
+
+        // adding a passkey to that user through another tenant's path
+        SoftwareAuthenticator otherKey = new SoftwareAuthenticator(randomCredentialId());
+        JsonObject publicOptions = registerOptions(main, publicTenant, "member-of-t2@example.com", RP_ID, ORIGIN);
+        JsonObject crossTenant = registerCredential(main, publicTenant,
+                publicOptions.get("webauthnGeneratedOptionsId").getAsString(),
+                otherKey.register(publicOptions, ORIGIN), recipeUserId);
+        assertEquals(crossTenant.toString(), "UNKNOWN_USER_ID_ERROR", crossTenant.get("status").getAsString());
+
+        // changing that user's email through another tenant's path
+        JsonObject emailUpdate = updateEmail(main, publicTenant, recipeUserId, "changed@example.com");
+        assertEquals(emailUpdate.toString(), "UNKNOWN_USER_ID_ERROR", emailUpdate.get("status").getAsString());
+
+        // control: both work in the user's own tenant
+        JsonObject t2Options = registerOptions(main, t2, "member-of-t2@example.com", RP_ID, ORIGIN);
+        JsonObject sameTenant = registerCredential(main, t2, t2Options.get("webauthnGeneratedOptionsId").getAsString(),
+                otherKey.register(t2Options, ORIGIN), recipeUserId);
+        assertEquals(sameTenant.toString(), "OK", sameTenant.get("status").getAsString());
+        emailUpdate = updateEmail(main, t2, recipeUserId, "changed@example.com");
+        assertEquals(emailUpdate.toString(), "OK", emailUpdate.get("status").getAsString());
+
+        stop(process);
+    }
+
     // --- a software authenticator with a caller-chosen credential id ("none" attestation, ES256) ---
 
     private static byte[] randomCredentialId() {
@@ -539,6 +582,16 @@ public class TestWebAuthNCredentialBinding_5_3 {
         body.addProperty("recipeUserId", recipeUserId);
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenant, "/recipe/webauthn/user/credential/register"),
+                body, 10000, 10000, null, SemVer.v5_3.get(), "webauthn");
+    }
+
+    private static JsonObject updateEmail(Main main, TenantIdentifier tenant, String recipeUserId, String email)
+            throws HttpResponseException, IOException {
+        JsonObject body = new JsonObject();
+        body.addProperty("recipeUserId", recipeUserId);
+        body.addProperty("email", email);
+        return HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenant, "/recipe/webauthn/user/email"),
                 body, 10000, 10000, null, SemVer.v5_3.get(), "webauthn");
     }
 
