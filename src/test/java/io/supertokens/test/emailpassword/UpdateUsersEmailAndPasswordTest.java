@@ -18,6 +18,7 @@ package io.supertokens.test.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -190,6 +191,93 @@ public class UpdateUsersEmailAndPasswordTest {
             Assert.assertEquals(userInfo.getSupertokensUserId(), changedCredentialsUserInfo.getSupertokensUserId());
             Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.loginMethods[0].email);
             Assert.assertFalse(changedCredentialsUserInfo.loginMethods[0].verified);
+        });
+    }
+
+    @Test
+    public void testIssue101_resetTokenInvalidAfterEmailChange() throws Exception {
+        TestingProcessManager.withSharedProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "old.mail@example.com", "password");
+            String token = EmailPassword.generatePasswordResetToken(main, userInfo.getSupertokensUserId(),
+                    "old.mail@example.com");
+
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "new.mail@example.com",
+                    null);
+
+            try {
+                EmailPassword.consumeResetPasswordToken(main, token);
+                fail();
+            } catch (ResetPasswordInvalidTokenException ignored) {
+            }
+
+            // a token for the new email still works
+            String newToken = EmailPassword.generatePasswordResetToken(main, userInfo.getSupertokensUserId(),
+                    "new.mail@example.com");
+            EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(main,
+                    newToken);
+            Assert.assertEquals(userInfo.getSupertokensUserId(), result.userId);
+            Assert.assertEquals("new.mail@example.com", result.email);
+        });
+    }
+
+    @Test
+    public void testIssue101_resetTokenInvalidAfterPasswordChange() throws Exception {
+        TestingProcessManager.withSharedProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "pw.change@example.com", "password");
+            String token = EmailPassword.generatePasswordResetToken(main, userInfo.getSupertokensUserId(),
+                    "pw.change@example.com");
+
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), null, "newPassword");
+
+            try {
+                EmailPassword.consumeResetPasswordToken(main, token);
+                fail();
+            } catch (ResetPasswordInvalidTokenException ignored) {
+            }
+        });
+    }
+
+    @Test
+    public void testIssue101_resetTokenRejectedWhenEmailNoLongerBelongsToAccount() throws Exception {
+        TestingProcessManager.withSharedProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "current.mail@example.com", "password");
+            // a token whose email does not match the login method's current email
+            String token = EmailPassword.generatePasswordResetToken(main, userInfo.getSupertokensUserId(),
+                    "previous.mail@example.com");
+
+            try {
+                EmailPassword.consumeResetPasswordToken(main, token);
+                fail();
+            } catch (ResetPasswordInvalidTokenException ignored) {
+            }
+
+            // the deprecated reset API applies the same check
+            String token2 = EmailPassword.generatePasswordResetToken(main, userInfo.getSupertokensUserId(),
+                    "previous.mail@example.com");
+            try {
+                EmailPassword.resetPassword(main, token2, "newPassword");
+                fail();
+            } catch (ResetPasswordInvalidTokenException ignored) {
+            }
+            Assert.assertNotNull(EmailPassword.signIn(main, "current.mail@example.com", "password"));
         });
     }
 }
