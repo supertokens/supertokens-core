@@ -8,15 +8,24 @@ jobs:
     name: Dependency Branches
     runs-on: ubuntu-22.04
     outputs:
-      branches: ${{ steps.result.outputs.branches }}
+      branches: ${{ steps.mirror.outputs.branches || steps.result.outputs.branches }}
+      repos: ${{ steps.mirror.outputs.repos || '{"plugin-interface":"supertokens/supertokens-plugin-interface","postgresql":"supertokens/supertokens-postgresql-plugin"}' }}
 
     steps:
       - uses: actions/checkout@v5
       - uses: supertokens/get-core-dependencies-action@main
         id: result
+        if: github.repository != 'supertokens/supertokens-core-security'
         with:
           run-for: PR
           core-branch: ${{ github.head_ref }}
+      - name: Resolve dependency branches in the -security mirrors
+        id: mirror
+        if: github.repository == 'supertokens/supertokens-core-security'
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          GH_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
+        run: python3 .github/helpers/resolve-mirror-dependency-branches.py
 
   test:
     name: Unit tests
@@ -48,13 +57,17 @@ jobs:
           path: ./supertokens-root/supertokens-core
       - uses: actions/checkout@v5
         with:
-          repository: supertokens/supertokens-plugin-interface
+          repository: ${{ fromJson(needs.dependency-branches.outputs.repos)['plugin-interface'] }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: ./supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
       - uses: actions/checkout@v5
         if: matrix.plugin != 'sqlite'
         with:
-          repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
+          repository: ${{ fromJson(needs.dependency-branches.outputs.repos)[matrix.plugin] }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}
       - name: Load Modules
