@@ -61,6 +61,7 @@ jobs:
         with:
           path: supertokens-root/supertokens-core
           token: ${{ secrets.GH_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           ref: ${{ github.head_ref }}
 
       - name: Checkout supertokens-plugin-interface
@@ -70,6 +71,7 @@ jobs:
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
           token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
 
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v4
@@ -78,6 +80,7 @@ jobs:
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
           token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
 
       - name: Load modules
         run: |
@@ -109,8 +112,8 @@ jobs:
             # Stage any changed implementationDependencies.json files
             find . -name 'implementationDependencies.json' -not -path './.git/*' -exec git add {} +
 
-            if [ "$GITHUB_REPOSITORY" = "supertokens/supertokens-core-security" ] && [ "$repo_dir" != "supertokens-root/supertokens-core" ] && ! git diff --cached --quiet; then
-              echo "::error::implementationDependencies.json is out of date in $repo_dir. CI doesn't push to the plugin mirrors: regenerate it and commit it on that branch."
+            if [ "$GITHUB_REPOSITORY" = "supertokens/supertokens-core-security" ] && ! git diff --cached --quiet; then
+              echo "::error::implementationDependencies.json is out of date in $repo_dir. CI doesn't push in the -security mirrors: regenerate it and commit it on that branch."
               git diff --cached
               exit 1
             fi
@@ -182,7 +185,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ fromJson(needs.dependency-branches.outputs.repos)['plugin-interface'] }}
-          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
 
@@ -191,7 +195,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ fromJson(needs.dependency-branches.outputs.repos)['postgresql'] }}
-          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['postgresql'] }}
 
