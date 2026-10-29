@@ -234,6 +234,9 @@ public class EmailPassword {
                 epStorage.startTransaction(con -> {
                     epStorage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
                             finalLoginMethod.getSupertokensUserId(), passwordHash);
+                    // reset tokens issued before the import were meant to replace the previous password
+                    epStorage.deleteAllPasswordResetTokensForUser_Transaction(tenantIdentifier.toAppIdentifier(),
+                            con, finalLoginMethod.getSupertokensUserId());
                     return null;
                 });
                 response = new ImportUserResponse(true, userInfoToBeUpdated);
@@ -306,6 +309,9 @@ public class EmailPassword {
                     epStorage.startTransaction(con -> {
                         epStorage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                 finalLoginMethod.getSupertokensUserId(), passwordHash);
+                        // reset tokens issued before the import were meant to replace the previous password
+                        epStorage.deleteAllPasswordResetTokensForUser_Transaction(tenantIdentifier.toAppIdentifier(),
+                                con, finalLoginMethod.getSupertokensUserId());
                         return null;
                     });
                     return new ImportUserResponse(true, userInfoToBeUpdated);
