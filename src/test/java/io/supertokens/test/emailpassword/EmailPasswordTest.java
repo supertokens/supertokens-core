@@ -17,6 +17,7 @@
 package io.supertokens.test.emailpassword;
 
 import com.google.gson.JsonObject;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
@@ -30,6 +31,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -788,6 +790,72 @@ public class EmailPasswordTest {
             fail();
         } catch (ResetPasswordInvalidTokenException ignored) {
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testImportingAPasswordHashForAnExistingUserDeletesItsResetTokens() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "import@example.com", "password");
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.getSupertokensUserId(),
+                "import@example.com");
+
+        String hash = PasswordHashing.getInstance(process.getProcess())
+                .createHashWithSalt(process.getAppForTesting().toAppIdentifier(), "importedPassword");
+        EmailPassword.ImportUserResponse imported = EmailPassword.importUserWithPasswordHash(process.getProcess(),
+                "import@example.com", hash);
+        assertTrue(imported.didUserAlreadyExist);
+
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), token);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeprecatedResetPasswordRejectsATokenWhoseEmailIsNoLongerOnTheAccount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "old@example.com", "password");
+        String userId = user.getSupertokensUserId();
+
+        // a token for an email the account never had is not consumed by the pre-CDI-4.0 reset either
+        String foreignToken = EmailPassword.generatePasswordResetToken(main, userId, "nobody@example.com");
+        try {
+            EmailPassword.resetPassword(tenant, storage, main, foreignToken, "newPassword1");
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+        assertNotNull(EmailPassword.signIn(main, "old@example.com", "password"));
+
+        // a token for the account's email works
+        String token = EmailPassword.generatePasswordResetToken(main, userId, "old@example.com");
+        assertEquals(userId, EmailPassword.resetPassword(tenant, storage, main, token, "newPassword2"));
+        assertNotNull(EmailPassword.signIn(main, "old@example.com", "newPassword2"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
