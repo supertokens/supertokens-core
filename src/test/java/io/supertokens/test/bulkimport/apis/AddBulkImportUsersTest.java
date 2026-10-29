@@ -750,6 +750,27 @@ public class AddBulkImportUsersTest {
         }
     }
 
+    @Test
+    public void testRedactSqlLiteralsHandlesLongLiteralsLikeTheSqlLiteralRegex() {
+        // long literals do not overflow the stack
+        String longValue = "x".repeat(100_000);
+        assertEquals("VALUES ('<redacted>'), ('<redacted>')", BulkImport.redactSqlLiterals(
+                "VALUES ('" + longValue + "'), ('" + longValue.replace("x", "y''") + "')"));
+        assertEquals("('<redacted>''b", BulkImport.redactSqlLiterals("('" + "a''b".repeat(50_000)));
+
+        // escaped quotes are part of the literal
+        assertEquals("VALUES ('<redacted>')", BulkImport.redactSqlLiterals("VALUES ('it''s secret')"));
+
+        // the same text is replaced as by the SQL string literal regex
+        java.util.regex.Pattern sqlStringLiteral = java.util.regex.Pattern.compile("'(?:[^']|'')*'");
+        for (String message : new String[]{"'a''", "''", "''''", "'a'''", "x'''y", "'unterminated", "'a''b''c",
+                "a 'x' b 'y''z' c", "('u1'), ('o''brien@example.com')", "no literal", ""}) {
+            assertEquals(message, sqlStringLiteral.matcher(message).replaceAll(BulkImport.REDACTED_SQL_LITERAL),
+                    BulkImport.redactSqlLiterals(message));
+        }
+        assertNull(BulkImport.redactSqlLiterals(null));
+    }
+
     private String getResponseMessageFromError(String response) {
         return response.substring(response.indexOf("Message: ") + "Message: ".length());
     }
