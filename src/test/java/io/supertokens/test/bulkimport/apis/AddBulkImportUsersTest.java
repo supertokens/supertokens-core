@@ -724,6 +724,27 @@ public class AddBulkImportUsersTest {
                     BulkImport.redactTotpSecrets("Batch entry 1 VALUES ('A1') was aborted",
                             List.of(longDevice, tinyDevice)));
 
+            // any other stored, logged or returned bulk import error has all bound values of a failed batch removed
+            String hash = "$2a$10$abcdefghijklmnopqrstuuJ8J9l0bKXv1qQx2C7xQyE2m9nN0sP2e";
+            String pgBatchError = "Batch entry 0 INSERT INTO emailpassword_users (app_id, user_id, email, "
+                    + "password_hash, time_joined) VALUES (('public'), ('u1'), ('o''brien@example.com'), ('" + hash
+                    + "'), ('1700000000000'::int8)) was aborted: ERROR: duplicate key value violates unique "
+                    + "constraint. Call getNextException to see other errors in the batch.";
+            String redacted = BulkImport.redactSqlLiterals(pgBatchError);
+            assertFalse(redacted, redacted.contains(hash));
+            assertFalse(redacted, redacted.contains("brien@example.com"));
+            assertTrue(redacted, redacted.startsWith("Batch entry 0 INSERT INTO emailpassword_users"));
+            assertTrue(redacted, redacted.endsWith("Call getNextException to see other errors in the batch."));
+            assertEquals("E003: A user with email a@example.com already exists in emailpassword loginMethod.",
+                    BulkImport.redactSqlLiterals(
+                            "E003: A user with email a@example.com already exists in emailpassword loginMethod."));
+            assertNull(BulkImport.redactSqlLiterals(null));
+            // long inputs, including one with an unterminated literal, are handled in linear time
+            long start = System.nanoTime();
+            BulkImport.redactSqlLiterals("('" + "a''b".repeat(50_000));
+            BulkImport.redactSqlLiterals("('x'), ".repeat(50_000));
+            assertTrue(System.nanoTime() - start < 2_000_000_000L);
+
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
