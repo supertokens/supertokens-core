@@ -120,7 +120,7 @@ jobs:
           fi
 
       - name: Checkout core
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           ref: ${{ inputs.core-ref }}
@@ -188,13 +188,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK ${{ needs.resolve.outputs.java-version }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: ${{ needs.resolve.outputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: supertokens/supertokens-root
@@ -202,14 +202,14 @@ jobs:
           ref: ${{ needs.resolve.outputs.root-ref }}
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.resolve.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: ${{ inputs.plugin-interface-repo }}
@@ -218,7 +218,7 @@ jobs:
           token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}

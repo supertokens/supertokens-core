@@ -19,7 +19,7 @@ jobs:
       versions: ${{ steps.result.outputs.versions }}
       branches: ${{ steps.result.outputs.branches }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main
@@ -33,11 +33,11 @@ jobs:
     needs: [dependency-versions]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.11'
       - name: Run script
@@ -60,11 +60,11 @@ jobs:
             # - mongodb
       steps:
         - name: Checkout
-          uses: actions/checkout@v5
+          uses: actions/checkout@v5.1.0
           with:
             persist-credentials: false
         - name: Checkout
-          uses: actions/checkout@v5
+          uses: actions/checkout@v5.1.0
           with:
             persist-credentials: false
             path: ./supertokens-plugin
@@ -94,11 +94,11 @@ jobs:
     outputs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.11'
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
 

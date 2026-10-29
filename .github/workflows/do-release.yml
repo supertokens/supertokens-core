@@ -119,23 +119,23 @@ jobs:
       has-db-migration: ${{ steps.manifest.outputs.has-db-migration }}
     steps:
       - name: Checkout workflow sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           sparse-checkout: .github
 
       - name: Set up crane
-        uses: ./.github/actions/setup-crane
+        uses: $/.github/actions/setup-crane
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Read image manifest
         id: manifest
@@ -301,7 +301,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout supertokens-backend-apis
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           repository: supertokens/supertokens-backend-apis
           # dev is the integration branch backend-apis PRs target; it now
@@ -315,7 +315,7 @@ jobs:
           token: ${{ secrets.BACKEND_APIS_PR_KEY }}
           path: backend-apis
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ needs.release-shas.outputs.postgresql-sha }}
@@ -522,7 +522,7 @@ jobs:
         # The release itself succeeded at this point — a failed notification
         # must not fail the workflow. The step below leaves a memo instead.
         continue-on-error: true
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

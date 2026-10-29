@@ -74,13 +74,13 @@ jobs:
           - postgresql
     steps:
       - name: Set up JDK ${{ inputs.java-version }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: ${{ inputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: supertokens/supertokens-root
@@ -88,14 +88,14 @@ jobs:
           ref: ${{ inputs.root-ref }}
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ inputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: ${{ inputs.plugin-interface-repo }}
@@ -105,7 +105,7 @@ jobs:
 
       - name: Checkout supertokens-postgresql-plugin
         if: matrix.plugin == 'postgresql'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
@@ -156,7 +156,7 @@ jobs:
 
       # Pinned to main: v1-alpha.1 still uses the deprecated ::set-output, and
       # the v1 tag has a quoting bug that silently breaks exclude-glob.
-      - uses: chaosaffe/split-tests@60c0787d3abbde15fcd66c76a7b4e3d9d2baf5a3
+      - uses: scruplelesswizard/split-tests@60c0787d3abbde15fcd66c76a7b4e3d9d2baf5a3
         id: split-tests
         name: Split tests
         with:
@@ -191,7 +191,7 @@ jobs:
           ./test.sh
 
       - name: Publish test report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@v6.6.1
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

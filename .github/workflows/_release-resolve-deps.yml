@@ -36,7 +36,7 @@ jobs:
       plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
       postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main

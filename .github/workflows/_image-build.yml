@@ -108,7 +108,7 @@ jobs:
       image-ref: supertokens/supertokens-dev-postgresql@${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout workflow sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           sparse-checkout: .github
@@ -126,14 +126,14 @@ jobs:
           fi
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v4
+        uses: docker/login-action@v4.7.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
         id: build
-        uses: ./.github/actions/build-core-image
+        uses: $/.github/actions/build-core-image
         with:
           core-version: ${{ inputs.core-version }}
           core-sha: ${{ inputs.core-sha }}
@@ -167,7 +167,7 @@ jobs:
       image-ref: ${{ steps.repo.outputs.repo }}@${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout workflow sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           sparse-checkout: .github
@@ -186,14 +186,14 @@ jobs:
 
       - name: Configure AWS credentials (OIDC)
         if: inputs.aws-role-arn != ''
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Configure AWS credentials (static keys)
         if: inputs.aws-role-arn == ''
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -201,7 +201,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Resolve repository
         id: repo
@@ -228,7 +228,7 @@ jobs:
 
       - name: Build and push
         id: build
-        uses: ./.github/actions/build-core-image
+        uses: $/.github/actions/build-core-image
         with:
           core-version: ${{ inputs.core-version }}
           core-sha: ${{ inputs.core-sha }}

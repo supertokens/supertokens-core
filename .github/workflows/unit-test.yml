@@ -14,7 +14,7 @@ jobs:
       branches: ${{ steps.result.outputs.branches }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main
@@ -43,27 +43,27 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK 21.0.7
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: 21.0.7
           distribution: zulu
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: master
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           path: ./supertokens-root/supertokens-core
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: supertokens/supertokens-plugin-interface
           path: ./supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
         if: matrix.plugin != 'sqlite'
         with:
           persist-credentials: false
@@ -91,7 +91,7 @@ jobs:
           cd supertokens-root
           ./gradlew test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@v6.6.1
         if: always()
         with:
           report_paths: '**/build/test-results/test/TEST-*.xml'

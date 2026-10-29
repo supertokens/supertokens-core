@@ -59,7 +59,7 @@ jobs:
       sql-file: ${{ steps.derive.outputs.sql-file }}
     steps:
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
@@ -67,7 +67,7 @@ jobs:
           token: ${{ secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
           path: plugin
       - name: Checkout supertokens-core (for CHANGELOG.md)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
           ref: ${{ inputs.core-sha }}

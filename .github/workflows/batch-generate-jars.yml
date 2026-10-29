@@ -31,7 +31,7 @@ jobs:
       matrix: ${{ steps.parse.outputs.matrix }}
     steps:
       - name: Checkout workflow tooling
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           persist-credentials: false
 
