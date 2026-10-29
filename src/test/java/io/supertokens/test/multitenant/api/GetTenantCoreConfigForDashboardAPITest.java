@@ -210,6 +210,17 @@ public class GetTenantCoreConfigForDashboardAPITest {
                         "postgresql://user:pass@host:5432/db?application_name=svc@prod"));
         assertEquals("postgresql://host:5432/db#a:b@c",
                 GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("postgresql://host:5432/db#a:b@c"));
+        // a password containing '/', '?' or '#' is masked too (the user info then ends at the last '@')
+        assertEquals("postgresql://u:" + m + "@h/db",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("postgresql://u:pa/ss@h/db"));
+        assertEquals("postgresql://u:" + m + "@h:5432/db?sslmode=require",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
+                        "postgresql://u:p?a#s/s@h:5432/db?sslmode=require"));
+        // user info without a colon (e.g. a token) is masked as a whole
+        assertEquals("https://" + m + "@collector:4317",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("https://TOKEN@collector:4317"));
+        assertEquals("postgresql://" + m + "@host:5432/db",
+                GetTenantCoreConfigForDashboardAPI.maskCredentialsInString("postgresql://user@host:5432/db"));
         // very long values are not inspected but fully masked
         assertEquals(m, GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(
                 "password".repeat(GetTenantCoreConfigForDashboardAPI.MAX_INSPECTED_VALUE_LENGTH)));
@@ -222,7 +233,8 @@ public class GetTenantCoreConfigForDashboardAPITest {
         }
         assertTrue(System.nanoTime() - start < 5_000_000_000L);
         // values without credentials are unchanged
-        for (String unchanged : new String[]{"postgresql://user@host:5432/db", "postgresql://host:5432/db",
+        for (String unchanged : new String[]{"postgresql://host:5432/db", "postgresql://[::1]:5432/db?x=a@b",
+                "postgresql://host:/db?x=a@b",
                 "allowPublicKeyRetrieval=true", "localhost", "BCRYPT", ""}) {
             assertEquals(unchanged, GetTenantCoreConfigForDashboardAPI.maskCredentialsInString(unchanged));
         }

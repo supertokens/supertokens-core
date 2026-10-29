@@ -118,8 +118,10 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
         return maskSecretParams(maskUserInfoPassword(value));
     }
 
-    // scheme://user:password@host... -> scheme://user:********@host...
-    // Only the authority (after "://", up to the first '/', '?' or '#') is inspected.
+    // scheme://user:password@host... -> scheme://user:********@host..., scheme://token@host... -> scheme://********@host...
+    // The user info is looked for in the authority (after "://", up to the first '/', '?' or '#'). If that part has no
+    // '@' but reads "user:<not a port>", the password contains one of those characters, and the user info ends at the
+    // last '@' of the value (this may mask more than the password, never less).
     private static String maskUserInfoPassword(String value) {
         int schemeEnd = value.indexOf("://");
         if (schemeEnd < 0) {
@@ -136,13 +138,31 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
         }
         int userInfoEnd = value.lastIndexOf('@', authorityEnd - 1);
         if (userInfoEnd < authorityStart) {
-            return value;
+            int colon = value.indexOf(':', authorityStart);
+            if (colon < 0 || colon >= authorityEnd || value.charAt(authorityStart) == '['
+                    || isPort(value, colon + 1, authorityEnd)) {
+                return value;
+            }
+            userInfoEnd = value.lastIndexOf('@');
+            if (userInfoEnd < authorityEnd) {
+                return value;
+            }
         }
         int colon = value.indexOf(':', authorityStart);
         if (colon < 0 || colon > userInfoEnd) {
-            return value;
+            // user info without a password, e.g. a token: all of it is masked
+            return value.substring(0, authorityStart) + MASKED_VALUE + value.substring(userInfoEnd);
         }
         return value.substring(0, colon + 1) + MASKED_VALUE + value.substring(userInfoEnd);
+    }
+
+    private static boolean isPort(String value, int start, int end) {
+        for (int i = start; i < end; i++) {
+            if (!Character.isDigit(value.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isParamKeyBoundary(char c) {
