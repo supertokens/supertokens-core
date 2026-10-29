@@ -40,6 +40,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SAML legacy flow: the token endpoint redeems a single-use, client-bound code for a random access token, and userinfo only accepts that token.
 - SAML codes are consumed atomically in the in-memory database.
 - OpenTelemetry: method spans no longer export argument and return values.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
 - Bulk import: errors no longer contain passwords, password hashes or TOTP secrets.
 
 ### Fixes
