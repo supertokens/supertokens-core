@@ -37,6 +37,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   runner-indexes:
     name: Generate runner indexes
@@ -52,6 +55,10 @@ jobs:
           echo "json=${INDEX_JSON}" >> "$GITHUB_OUTPUT"
 
   test:
+    permissions:
+      contents: read
+      # The JUnit reporter publishes its check run.
+      checks: write
     name: "Tests (${{ matrix.plugin }}), runner #${{ matrix.runner-index }}"
     needs: runner-indexes
     runs-on: ubuntu-22.04

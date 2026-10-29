@@ -3,6 +3,11 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review, labeled, unlabeled ]
 
+permissions:
+  contents: read
+  # Both checks read the pull request through the job token.
+  pull-requests: read
+
 jobs:
   pr-title:
     name: Lint PR title

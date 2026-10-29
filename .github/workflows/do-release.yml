@@ -62,6 +62,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   # Fail fast on invalid input combinations before anything is registered
   # or published. Every other job depends on dependency-branches, so gating
@@ -208,6 +211,10 @@ jobs:
     secrets: inherit
 
   test:
+    permissions:
+      contents: read
+      # The called workflow's test job publishes a JUnit check run.
+      checks: write
     # A prebuilt image was tested privately on exactly these commits (see its tests-run-id).
     if: ${{ !inputs.prebuilt && !cancelled() && needs.register-versions.result == 'success' }}
     needs: [ release-shas, register-versions ]

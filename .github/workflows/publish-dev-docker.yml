@@ -6,6 +6,9 @@ on:
     tags:
       - 'dev-*'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-branches:
     name: Dependency Branches

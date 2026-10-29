@@ -71,6 +71,9 @@ on:
         description: <repo>@<digest>, the input for stress tests and promotion.
         value: ${{ jobs.dockerhub-dev.outputs.image-ref || jobs.ecr.outputs.image-ref }}
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate build target

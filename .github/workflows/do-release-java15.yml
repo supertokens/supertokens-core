@@ -55,6 +55,9 @@ on:
 env:
   total-runners: 6
 
+permissions:
+  contents: read
+
 jobs:
   # ── Validate inputs ───────────────────────────────────────────────
   # Fail fast on invalid input combinations before anything is registered
@@ -281,6 +284,10 @@ jobs:
           echo "json=${INDEX_JSON}" >> "$GITHUB_OUTPUT"
 
   test:
+    permissions:
+      contents: read
+      # The JUnit reporter publishes its check run.
+      checks: write
     name: Tests (${{ matrix.plugin }}) plugin, runner #${{ matrix.runner-index }}"
     needs: [ update-deps, register-core-version, runner-indexes ]
     runs-on: ubuntu-22.04

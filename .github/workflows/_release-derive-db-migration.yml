@@ -42,6 +42,9 @@ on:
       sql-file:
         value: ${{ jobs.derive.outputs.sql-file }}
 
+permissions:
+  contents: read
+
 jobs:
   derive:
     name: Derive has-db-migration from migration manifest

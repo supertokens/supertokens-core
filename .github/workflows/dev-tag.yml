@@ -7,6 +7,9 @@ on:
     tags:
     - 'dev-*'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-versions:
     name: Dependency Versions
@@ -70,6 +73,10 @@ jobs:
             cd supertokens-plugin
             python ../.github/helpers/register-new-plugin-version.py
   unit-tests:
+    permissions:
+      contents: read
+      # The called workflow's test job publishes a JUnit check run.
+      checks: write
     name: Run unit tests
     needs: [new-core-version, new-plugin-versions]
     uses: ./.github/workflows/unit-test.yml

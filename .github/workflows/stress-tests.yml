@@ -36,6 +36,9 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   stress-tests:
     runs-on: ubuntu-22.04

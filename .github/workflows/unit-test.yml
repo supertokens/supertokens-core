@@ -3,6 +3,9 @@ name: Unit Tests
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   dependency-branches:
     name: Dependency Branches
@@ -19,6 +22,10 @@ jobs:
           core-branch: ${{ github.head_ref }}
 
   test:
+    permissions:
+      contents: read
+      # The JUnit reporter publishes its check run.
+      checks: write
     name: Unit tests
     needs: dependency-branches
     strategy:

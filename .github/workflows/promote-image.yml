@@ -36,6 +36,9 @@ concurrency:
   group: promote-image-${{ inputs.core-version }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   lookup:
     name: Look up image in ECR

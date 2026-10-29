@@ -48,8 +48,7 @@ on:
         default: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   prepare:

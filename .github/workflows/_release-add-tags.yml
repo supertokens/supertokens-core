@@ -38,6 +38,9 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   add-release-tags:
     name: Add release tags

@@ -23,6 +23,9 @@ on:
         required: true
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
   dependency-branches:
     name: Dependency Branches
