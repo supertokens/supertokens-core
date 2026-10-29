@@ -300,7 +300,9 @@ public class OAuth {
      * characters), so that the id is the same in every place it appears (paths, form fields, Basic auth).
      */
     public static boolean isSafeClientId(String clientId) {
-        return clientId != null && SAFE_CLIENT_ID.matcher(clientId).matches();
+        // "." and ".." are dot-segments: the OAuth provider's router would resolve /admin/clients/.. to /admin
+        return clientId != null && SAFE_CLIENT_ID.matcher(clientId).matches() && !clientId.equals(".")
+                && !clientId.equals("..");
     }
 
     /**
@@ -364,17 +366,7 @@ public class OAuth {
             throw newChallengeNotFoundException();
         }
 
-        String clientId = null;
-        if (response.jsonResponse != null && response.jsonResponse.isJsonObject()) {
-            JsonObject responseObject = response.jsonResponse.getAsJsonObject();
-            if (responseObject.has("client") && responseObject.get("client").isJsonObject()) {
-                JsonObject client = responseObject.getAsJsonObject("client");
-                if (client.has("clientId") && client.get("clientId").isJsonPrimitive()) {
-                    clientId = client.get("clientId").getAsString();
-                }
-            }
-        }
-
+        String clientId = getChallengeClientId(response.jsonResponse);
         if (clientId == null) {
             throw newChallengeNotFoundException();
         }
@@ -384,6 +376,23 @@ public class OAuth {
         } catch (OAuthClientNotFoundException e) {
             throw newChallengeNotFoundException();
         }
+    }
+
+    /**
+     * The client id of a login/consent request returned by the OAuth provider (after snake to camel case
+     * conversion), or null if the response has none.
+     */
+    public static String getChallengeClientId(JsonElement challengeResponse) {
+        if (challengeResponse != null && challengeResponse.isJsonObject()) {
+            JsonObject responseObject = challengeResponse.getAsJsonObject();
+            if (responseObject.has("client") && responseObject.get("client").isJsonObject()) {
+                JsonObject client = responseObject.getAsJsonObject("client");
+                if (client.has("clientId") && client.get("clientId").isJsonPrimitive()) {
+                    return client.get("clientId").getAsString();
+                }
+            }
+        }
+        return null;
     }
 
     private static void checkNonSuccessResponse(HttpRequestForOAuthProvider.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
