@@ -73,6 +73,7 @@ jobs:
     name: Run unit tests
     needs: [new-core-version, new-plugin-versions]
     uses: ./.github/workflows/unit-test.yml
+    secrets: inherit
   wait-for-docker:
     name: Wait for Docker
     runs-on: ubuntu-latest
