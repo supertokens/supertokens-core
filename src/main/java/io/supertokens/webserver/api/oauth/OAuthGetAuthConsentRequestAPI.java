@@ -50,8 +50,10 @@ public class OAuthGetAuthConsentRequestAPI extends WebserverAPI {
 
             if (response != null) {
                 // the challenge may belong to a client of another app that uses the same OAuth provider
-                String clientId = response.jsonResponse.getAsJsonObject().get("client").getAsJsonObject()
-                        .get("clientId").getAsString();
+                String clientId = OAuth.getChallengeClientId(response.jsonResponse);
+                if (clientId == null) {
+                    throw new OAuthClientNotFoundException();
+                }
                 StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
 
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject().get("client").getAsJsonObject());
