@@ -19,6 +19,11 @@ name: Release – Derive has-db-migration
 
 on:
   workflow_call:
+    secrets:
+      EMBARGO_REPO_TOKEN:
+        required: false
+      GH_TOKEN:
+        required: false
     inputs:
       core-version:
         type: string

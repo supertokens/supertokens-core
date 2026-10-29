@@ -2,6 +2,9 @@ name: Release – Run tests
 
 on:
   workflow_call:
+    secrets:
+      EMBARGO_REPO_TOKEN:
+        required: false
     inputs:
       core-sha:
         type: string

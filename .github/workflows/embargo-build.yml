@@ -273,7 +273,9 @@ jobs:
       core-sha: ${{ needs.resolve.outputs.core-sha }}
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
       postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   test:
     permissions:
@@ -291,7 +293,8 @@ jobs:
       java-version: ${{ needs.resolve.outputs.java-version }}
       root-ref: ${{ needs.resolve.outputs.root-ref }}
       fast-release: ${{ inputs.fast-release }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   # Only after the tests pass on exactly these commits: the image records this run's id as
   # proof, and do-release (prebuilt) refuses images without it.
@@ -314,7 +317,11 @@ jobs:
       aws-role-arn: ${{ vars.EMBARGO_PUSH_ROLE_ARN }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
       tests-run-id: ${{ github.run_id }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   stress-tests:
     if: inputs.run-stress-tests

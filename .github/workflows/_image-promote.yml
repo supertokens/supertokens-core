@@ -10,6 +10,15 @@ name: Release – Promote image
 
 on:
   workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+      ECR_REGISTRY:
+        required: false
     inputs:
       source-image:
         description: 'Image pinned by digest: <repo>@sha256:... (or give source-ecr-digest)'

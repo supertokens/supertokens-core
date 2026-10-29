@@ -213,7 +213,9 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       core-sha: ${{ needs.update-deps.outputs.core-sha }}
       postgresql-sha: ${{ needs.update-deps.outputs.postgresql-sha }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   register-core-version:
     name: Register core version
@@ -513,7 +515,11 @@ jobs:
       java-version: '15'
       root-ref: for_jdk_15_releases
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   # ── Stress tests ──────────────────────────────────────────────────
   stress-tests:
@@ -537,7 +543,11 @@ jobs:
       is-latest-release: ${{ inputs.is-latest-release }}
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
       force-retag: ${{ inputs.force-retag }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
   # ── Tag all repos with release versions ───────────────────────────
   add-release-tags:
@@ -669,7 +679,10 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # ── Notify Slack about the successful release ─────────────────────
   notify-slack:

@@ -10,6 +10,15 @@ name: Release – Build image
 
 on:
   workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+      EMBARGO_REPO_TOKEN:
+        required: false
     inputs:
       core-version:
         type: string
