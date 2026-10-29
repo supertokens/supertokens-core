@@ -25,6 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CDI 5.0 tenant updates no longer make a recipe enabled only for requiredSecondaryFactors a first factor.
 - Sign-in does the same password-hashing work for unknown accounts, and dashboard suspension is reported only after a correct password.
 - Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
 
 ## [11.0.9]
 
