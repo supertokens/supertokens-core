@@ -125,14 +125,6 @@ public class WebAuthNQueries {
                 " (user_id);";
     }
 
-    // Credential lookups by id alone (sign in, and the app-wide uniqueness check at registration) cannot use
-    // the (app_id, rp_id, id) primary key.
-    public static String getQueryToCreateWebAuthNCredentialsAppIdIdIndex(Start start) {
-        return "CREATE INDEX IF NOT EXISTS webauthn_credentials_app_id_id_index ON " +
-                Config.getConfig(start).getWebAuthNCredentialsTable() +
-                " (app_id, id);";
-    }
-
     public static String getQueryToCreateWebAuthNAccountRecoveryTokenTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getWebAuthNAccountRecoveryTokenTable() + "(" +
                 " app_id VARCHAR(64) DEFAULT 'public' NOT NULL," +
