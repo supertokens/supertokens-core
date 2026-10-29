@@ -512,8 +512,9 @@ public class WebAuthN {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
                     // A credential is scoped to the relying party it was registered for. A stored credential
-                    // of another relying party cannot be the one this assertion was made with.
-                    if (credential.rpId == null || !credential.rpId.equalsIgnoreCase(generatedOptions.relyingPartyId)) {
+                    // of another relying party cannot be the one this assertion was made with. The rp id is compared
+                    // exactly, as at registration and in the authenticator's rpIdHash.
+                    if (!Objects.equals(credential.rpId, generatedOptions.relyingPartyId)) {
                         throw new StorageTransactionLogicException(new WebauthNCredentialNotExistsException());
                     }
 
