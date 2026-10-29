@@ -18,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - OAuth provider proxy APIs only act on clients and login/consent challenges of the calling app; new client ids are limited to `[A-Za-z0-9._~-]`.
 - Third-party sign-in marks only the email the caller vouched for as verified, and only on the signing-in tenant's login method.
 - Bulk-import error messages no longer contain passwords, password hashes or TOTP secrets; OpenTelemetry spans no longer record argument or return values.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
 - WebAuthn credentials are bound to the attested credential id and relying party, sign-in resolves the credential's owner, register options use a random user handle, and account recovery requires tenant membership.
 - WebAuthn credential register and email update require the user to be a member of the requested tenant.
 - TOTP verification is serialised per user, replay checks use the app-wide used codes, and verifying a device checks the code.
