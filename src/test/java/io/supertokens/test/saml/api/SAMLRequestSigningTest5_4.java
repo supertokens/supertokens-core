@@ -125,7 +125,7 @@ public class SAMLRequestSigningTest5_4 {
         loginBody.addProperty("state", "test-state-123");
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         assertEquals("OK", loginResp.get("status").getAsString());
 
@@ -218,7 +218,7 @@ public class SAMLRequestSigningTest5_4 {
         loginBody.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         assertEquals("OK", loginResp.get("status").getAsString());
 
@@ -278,7 +278,7 @@ public class SAMLRequestSigningTest5_4 {
         loginBody.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         assertEquals("OK", loginResp.get("status").getAsString());
 
@@ -348,7 +348,7 @@ public class SAMLRequestSigningTest5_4 {
         loginBody.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         String samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
         Document doc = parseXML(samlRequestXML);
@@ -370,7 +370,7 @@ public class SAMLRequestSigningTest5_4 {
 
         // Verify signing is now disabled
         loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
         doc = parseXML(samlRequestXML);
@@ -422,7 +422,7 @@ public class SAMLRequestSigningTest5_4 {
         loginBody.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         String samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
         Document doc = parseXML(samlRequestXML);
@@ -444,7 +444,7 @@ public class SAMLRequestSigningTest5_4 {
 
         // Verify signing is now enabled with non-empty values
         loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null,
                 SemVer.v5_4.get(), "saml");
         samlRequestXML = decodeSAMLRequest(extractSAMLRequest(loginResp.get("ssoRedirectURI").getAsString()));
         doc = parseXML(samlRequestXML);

@@ -231,7 +231,7 @@ public class SAMLConfigTest5_4 {
         // Get SP metadata and verify it contains the custom entity ID
         // The endpoint is /.well-known/sp-metadata and returns XML directly
         String metadataXML = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/.well-known/sp-metadata", null, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
 
         assertTrue("SP metadata should contain custom entity ID",
                 metadataXML.contains("entityID=\"" + customSpEntityId + "\""));
@@ -243,7 +243,7 @@ public class SAMLConfigTest5_4 {
         loginBody.addProperty("acsURL", clientInfo.acsURL);
 
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", loginBody, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", loginBody, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
 
         assertEquals("OK", loginResp.get("status").getAsString());
 
@@ -274,7 +274,7 @@ public class SAMLConfigTest5_4 {
 
         // Get SP metadata and verify it contains the default entity ID
         String metadataXML = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/.well-known/sp-metadata", null, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/.well-known/sp-metadata", null, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
 
         assertTrue("SP metadata should contain default entity ID",
                 metadataXML.contains("entityID=\"https://saml.supertokens.com\""));

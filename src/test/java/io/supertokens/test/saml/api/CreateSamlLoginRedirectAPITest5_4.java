@@ -60,7 +60,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                        "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -76,7 +76,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                        "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -92,7 +92,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                        "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -120,7 +120,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         body.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
         assertEquals("INVALID_CLIENT_ERROR", resp.get("status").getAsString());
 
         process.kill();
@@ -162,7 +162,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         body.addProperty("acsURL", "http://localhost:3000/acs");
 
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
         assertEquals("INVALID_CLIENT_ERROR", resp.get("status").getAsString());
 
         process.kill();
@@ -208,7 +208,7 @@ public class CreateSamlLoginRedirectAPITest5_4 {
         body.addProperty("state", "abc123");
 
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
 
         // Verify response structure
         assertEquals("OK", resp.get("status").getAsString());
