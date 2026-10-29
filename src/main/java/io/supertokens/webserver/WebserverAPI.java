@@ -464,6 +464,9 @@ public abstract class WebserverAPI extends HttpServlet {
                 assertThatAPIKeyCheckPasses(req);
             }
 
+            // an unknown tenant or app is reported (naming the request's tenant) before version or body handling
+            Config.getConfig(tenantIdentifier, main);
+
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
