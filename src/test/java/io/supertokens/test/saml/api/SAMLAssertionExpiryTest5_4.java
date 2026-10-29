@@ -336,7 +336,7 @@ public class SAMLAssertionExpiryTest5_4 {
         body.addProperty("redirectURI", DEFAULT_REDIRECT_URI);
         body.addProperty("acsURL", "http://localhost:3000/another-acs");
         JsonObject loginResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", body, 1000, SAMLTestUtils.SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
         assertEquals("INVALID_CLIENT_ERROR", loginResp.get("status").getAsString());
 
         // An explicit empty list clears it.
