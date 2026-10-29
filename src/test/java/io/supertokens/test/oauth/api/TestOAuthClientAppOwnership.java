@@ -706,8 +706,119 @@ public class TestOAuthClientAppOwnership {
         }
     }
 
+    @Test
+    public void testAlreadyHandledChallengesCanBeAcceptedOrRejectedAgain() throws Exception {
+        TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        // The OAuth provider of the test setup (Hydra 2.2) keeps no state for a login/consent challenge: it still
+        // returns it, and accepts or rejects it again, after the flow moved on. The ownership pre-check passes for
+        // the owning app, so core answers OK, as it did before the pre-check existed.
+        JsonObject client = createAuthCodeClient(main, PUBLIC_APP_BASE);
+        FlowState flow = startAuthFlow(main, client);
+        continueToConsent(main, flow);
+
+        JsonObject response = acceptLoginRequest(main, PUBLIC_APP_BASE, flow.loginChallenge, "someuserid");
+        assertEquals(response.toString(), "OK", response.get("status").getAsString());
+        assertNotNull(response.get("redirectTo"));
+        response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                PUBLIC_APP_BASE + "/recipe/oauth/auth/requests/login/reject?loginChallenge="
+                        + URLEncoder.encode(flow.loginChallenge, StandardCharsets.UTF_8),
+                new JsonObject(), 5000, 20000, null, SemVer.v5_2.get(), "");
+        assertEquals(response.toString(), "OK", response.get("status").getAsString());
+        assertNotNull(response.get("redirectTo"));
+
+        finishFlowAndGetTokens(main, client, flow);
+
+        response = acceptConsentRequest(main, PUBLIC_APP_BASE, flow.consentChallenge, "someuserid");
+        assertEquals(response.toString(), "OK", response.get("status").getAsString());
+        assertNotNull(response.get("redirectTo"));
+        response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                PUBLIC_APP_BASE + "/recipe/oauth/auth/requests/consent/reject?consentChallenge="
+                        + URLEncoder.encode(flow.consentChallenge, StandardCharsets.UTF_8),
+                new JsonObject(), 5000, 20000, null, SemVer.v5_2.get(), "");
+        assertEquals(response.toString(), "OK", response.get("status").getAsString());
+        assertNotNull(response.get("redirectTo"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testChallengeTheProviderReportsAsAlreadyHandledIsAnsweredFromTheOwnershipCheck() throws Exception {
+        // A provider that reports an already handled challenge (Hydra: 410 with the redirect to restart from) on
+        // the ownership pre-check GET: core answers with that error and never sends the accept/reject PUT.
+        // The provider's redirect_to is not passed on. (On this line the provider's error body must carry an
+        // "error" field; one without it is answered with a 500, as before.)
+        List<String> received = new ArrayList<>();
+        HttpServer provider = startMockProvider(received, 410,
+                "{\"error\":\"request_already_handled\",\"error_description\":\"The request was already handled\","
+                        + "\"redirect_to\":\"http://localhost:3001/auth/restart-the-flow\"}");
+        try {
+            TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+            if (process == null) {
+                return;
+            }
+            Main main = process.getProcess();
+            addAppUsingProvider(main, "mockapp", provider);
+            String mockAppBase = "http://localhost:3567/appid-mockapp";
+
+            String[][] calls = new String[][]{
+                    {"login/accept?loginChallenge=", "/admin/oauth2/auth/requests/login"},
+                    {"login/reject?loginChallenge=", "/admin/oauth2/auth/requests/login"},
+                    {"consent/accept?consentChallenge=", "/admin/oauth2/auth/requests/consent"},
+                    {"consent/reject?consentChallenge=", "/admin/oauth2/auth/requests/consent"}};
+            for (String[] call : calls) {
+                synchronized (received) {
+                    received.clear();
+                }
+                JsonObject body = new JsonObject();
+                if (call[0].startsWith("login/accept")) {
+                    body.addProperty("subject", "someuserid");
+                } else if (call[0].startsWith("consent/accept")) {
+                    body.addProperty("iss", "http://localhost:3001/auth");
+                    body.addProperty("tId", "public");
+                    body.addProperty("rsub", "someuserid");
+                    body.addProperty("sessionHandle", "session-handle");
+                    body.add("initialAccessTokenPayload", new JsonObject());
+                    body.add("initialIdTokenPayload", new JsonObject());
+                    body.add("grantScope", new JsonArray());
+                    body.add("grantAccessTokenAudience", new JsonArray());
+                }
+                JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                        mockAppBase + "/recipe/oauth/auth/requests/" + call[0] + "handled-challenge", body, 5000,
+                        20000, null, SemVer.v5_2.get(), "");
+
+                assertEquals(call[0] + " " + response, "OAUTH_ERROR", response.get("status").getAsString());
+                assertEquals(call[0], 410, response.get("statusCode").getAsInt());
+                assertEquals(call[0], "request_already_handled", response.get("error").getAsString());
+                assertEquals(call[0], "The request was already handled",
+                        response.get("errorDescription").getAsString());
+                assertNull(call[0], response.get("redirectTo"));
+                assertNull(call[0], response.get("redirect_to"));
+                synchronized (received) {
+                    assertEquals(call[0], List.of("GET " + call[1]), received);
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        } finally {
+            provider.stop(0);
+        }
+    }
+
     // An OAuth provider stand-in that records "METHOD path" of every request and answers 200 with the given body
     private static HttpServer startMockProvider(List<String> received, String responseBody) throws Exception {
+        return startMockProvider(received, 200, responseBody);
+    }
+
+    // An OAuth provider stand-in that records "METHOD path" of every request and answers with the given status/body
+    private static HttpServer startMockProvider(List<String> received, int status, String responseBody)
+            throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             synchronized (received) {
@@ -715,7 +826,7 @@ public class TestOAuthClientAppOwnership {
             }
             byte[] resp = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, resp.length);
+            exchange.sendResponseHeaders(status, resp.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(resp);
             }
