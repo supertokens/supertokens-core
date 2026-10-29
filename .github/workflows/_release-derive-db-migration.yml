@@ -56,6 +56,7 @@ jobs:
       - name: Checkout supertokens-postgresql-plugin
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
           ref: ${{ inputs.postgresql-sha }}
           token: ${{ secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
@@ -63,6 +64,7 @@ jobs:
       - name: Checkout supertokens-core (for CHANGELOG.md)
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           ref: ${{ inputs.core-sha }}
           path: core
       - name: Derive has-db-migration

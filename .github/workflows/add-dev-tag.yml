@@ -37,6 +37,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:
@@ -56,6 +58,7 @@ jobs:
           distribution: zulu
       - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: ./supertokens-root
           ref: master

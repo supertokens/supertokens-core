@@ -79,6 +79,7 @@ jobs:
       - name: Checkout supertokens-root
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: ${{ inputs.root-ref }}
@@ -86,12 +87,14 @@ jobs:
       - name: Checkout supertokens-core
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ inputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ inputs.plugin-interface-sha }}
@@ -101,6 +104,7 @@ jobs:
         if: matrix.plugin == 'postgresql'
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ inputs.postgresql-sha }}

@@ -101,6 +101,7 @@ jobs:
       - name: Checkout workflow sources
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           sparse-checkout: .github
 
       - name: Compute image tag
@@ -159,6 +160,7 @@ jobs:
       - name: Checkout workflow sources
         uses: actions/checkout@v5
         with:
+          persist-credentials: false
           sparse-checkout: .github
 
       - name: Compute image tag
