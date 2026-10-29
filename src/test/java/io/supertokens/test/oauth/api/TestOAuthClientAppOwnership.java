@@ -437,7 +437,8 @@ public class TestOAuthClientAppOwnership {
         JsonObject publicAppClient = createClientCredentialsClient(main, PUBLIC_APP_BASE, null);
         String alias = "stcl%5F" + publicAppClient.get("clientId").getAsString().substring("stcl_".length());
 
-        for (String clientId : new String[]{alias, "a/b", "a?b", "a#b", "a b", "a+b", "a:b", "a%2Fb", "a&b"}) {
+        for (String clientId : new String[]{alias, "a/b", "a?b", "a#b", "a b", "a+b", "a:b", "a%2Fb", "a&b", ".",
+                ".."}) {
             JsonObject response = createClientCredentialsClient(main, OTHER_APP_BASE, clientId);
             assertInvalidClientMetadata(response);
             assertEquals("clientId can only contain letters, digits and the characters . _ ~ -",
@@ -648,6 +649,94 @@ public class TestOAuthClientAppOwnership {
         String consentChallenge;
         JsonObject authRequestBody;
         List<String> cookies = new ArrayList<>();
+    }
+
+    @Test
+    public void testConsentRequestWithoutClientIsReportedAsNotFound() throws Exception {
+        List<String> received = new ArrayList<>();
+        HttpServer provider = startMockProvider(received, "{\"challenge\":\"some-challenge\"}");
+        try {
+            TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+            if (process == null) {
+                return;
+            }
+            Main main = process.getProcess();
+            addAppUsingProvider(main, "mockapp", provider);
+
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("consentChallenge", "some-challenge");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                    "http://localhost:3567/appid-mockapp/recipe/oauth/auth/requests/consent", queryParams, 5000,
+                    20000, null, SemVer.v5_2.get(), "");
+            assertChallengeNotFound(response);
+            assertEquals(1, received.size());
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        } finally {
+            provider.stop(0);
+        }
+    }
+
+    @Test
+    public void testRevokeTokensOfClientNotInTheAppIsNotForwarded() throws Exception {
+        List<String> received = new ArrayList<>();
+        HttpServer provider = startMockProvider(received, "{}");
+        try {
+            TestingProcessManager.TestingProcess process = startProcessWithTwoApps();
+            if (process == null) {
+                return;
+            }
+            Main main = process.getProcess();
+            addAppUsingProvider(main, "mockapp", provider);
+
+            JsonObject revokeBody = new JsonObject();
+            revokeBody.addProperty("client_id", "client-of-another-app");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                    "http://localhost:3567/appid-mockapp/recipe/oauth/tokens/revoke", revokeBody, 5000, 20000, null,
+                    SemVer.v5_2.get(), "");
+            assertEquals("OK", response.get("status").getAsString());
+            // the OAuth provider is never asked to revoke the tokens of a client the app does not have
+            assertEquals(received.toString(), 0, received.size());
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        } finally {
+            provider.stop(0);
+        }
+    }
+
+    // An OAuth provider stand-in that records "METHOD path" of every request and answers 200 with the given body
+    private static HttpServer startMockProvider(List<String> received, String responseBody) throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            synchronized (received) {
+                received.add(exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath());
+            }
+            byte[] resp = responseBody.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, resp.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(resp);
+            }
+        });
+        server.start();
+        return server;
+    }
+
+    private static void addAppUsingProvider(Main main, String appId, HttpServer provider) throws Exception {
+        String url = "http://127.0.0.1:" + provider.getAddress().getPort();
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("oauth_provider_public_service_url", url);
+        coreConfig.addProperty("oauth_provider_admin_service_url", url);
+        coreConfig.addProperty("oauth_provider_consent_login_base_url", "http://localhost:3001/auth");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(
+                new TenantIdentifier(null, appId, null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, coreConfig
+        ), false);
     }
 
     private TestingProcessManager.TestingProcess startProcessWithTwoApps() throws Exception {
