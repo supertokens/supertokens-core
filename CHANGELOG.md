@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - OAuth2 provider APIs only act on OAuth clients of the calling app; client ids are validated and encoded.
 - Third-party sign-in updates only the signing-in recipe user's email and verifies only the vouched-for email.
 - Secrets are kept out of OpenTelemetry spans and bulk-import error messages.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
 - WebAuthn credentials are bound to the attested id and relying party, register options use a random user handle, and recovery tokens are tenant-bound.
 - WebAuthn credential register and email update require the user to be a member of the requested tenant.
 - TOTP verification is serialised per user, uses app-wide used codes, and verify-device always checks the code.
