@@ -14,12 +14,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 - Multitenancy (deprecated non-v2 create/update, CDI 5.0+): enabling a login method no longer turns a required secondary factor into a first factor.
 - OAuth2 provider: login/consent request, token revoke and client APIs only act on OAuth clients of the calling app.
-- OAuth2 provider: client ids are path-encoded towards the provider, limited to letters, digits and `. _ ~ -` at creation, and accepted only as `clientId`.
+- OAuth2 provider: client ids are path-encoded towards the provider, limited to letters, digits and `. _ ~ -` (not `.` or `..`) at creation, and accepted only as `clientId`.
 - OAuth2 provider: parameter names are URL-encoded towards the provider; a Basic-auth client id must match the body's `client_id`.
 - Third-party sign-in: an email change only updates the recipe user of the signing-in tenant.
 - Third-party sign-in with `isVerified: true` only verifies the email of that request, checked under the user lock.
 - Email-password sign-up only auto-verifies the SDKs' `<userId>@stfakeemail.supertokens.com` placeholder of an existing user without an email.
-- Email password: an email or password change deletes the user's reset tokens; a reset token is only consumed for an email of the account.
+- Email password: an email or password change, or a password hash import, deletes the user's reset tokens; a reset token is only consumed for an email of the account.
 - WebAuthn: a recover-account token is only consumed for an email of the account.
 - WebAuthn: credential ids are taken from the verified attestation and are unique within the app.
 - WebAuthn: sign-in returns the owner of the verifying credential and only accepts credentials of the options' relying party id.
@@ -46,6 +46,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - User roles: `GET /recipe/role/users` no longer returns `UNKNOWN_ROLE_ERROR` for an existing role on a tenant with its own database.
 - User roles: removing a user's role also deletes the user's mapping when the role no longer exists.
+- Third-party sign-in no longer fails with a 500 when a primary user linked into the tenant has the same identity in another tenant.
 
 ### Changes
 
