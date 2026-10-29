@@ -15,6 +15,13 @@ public class SAMLTestUtils {
     // Matches the core's default saml_sp_entity_id. Tests that set it explicitly use this value.
     public static final String TEST_SP_ENTITY_ID = "https://saml.supertokens.com";
 
+    // Read timeout for requests that need the app's SP signing key (/recipe/saml/login with request signing,
+    // /.well-known/sp-metadata). Each test runs on a fresh app, so the first such request generates a 4096-bit
+    // RSA key pair inside a key_value transaction, which regularly takes several seconds on CI runners. With a
+    // 1s timeout the client gives up while the transaction still holds the key_value lock, and the next test's
+    // app cleanup on the shared process fails with SQLITE_LOCKED_SHAREDCACHE.
+    public static final int SP_KEY_READ_TIMEOUT_MS = 30000;
+
     public static void setSAMLSPEntityIdConfig() {
         try {
             Utils.setValueInConfig("saml_sp_entity_id", "\"" + TEST_SP_ENTITY_ID + "\"");
@@ -145,7 +152,7 @@ public class SAMLTestUtils {
         }
 
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
+                "http://localhost:3567/recipe/saml/login", body, 1000, SP_KEY_READ_TIMEOUT_MS, null, SemVer.v5_4.get(), "saml");
 
         String ssoRedirectURI = resp.get("ssoRedirectURI").getAsString();
         String relayState = extractQueryParam(ssoRedirectURI, "RelayState");
