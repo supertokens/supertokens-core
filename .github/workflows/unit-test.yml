@@ -58,14 +58,16 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ${{ fromJson(needs.dependency-branches.outputs.repos)['plugin-interface'] }}
-          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: ./supertokens-root/supertokens-plugin-interface
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)['plugin-interface'] }}
       - uses: actions/checkout@v5
         if: matrix.plugin != 'sqlite'
         with:
           repository: ${{ fromJson(needs.dependency-branches.outputs.repos)[matrix.plugin] }}
-          token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
+          token: ${{ github.repository == 'supertokens/supertokens-core-security' && secrets.EMBARGO_REPO_TOKEN || github.token }}
+          persist-credentials: ${{ github.repository != 'supertokens/supertokens-core-security' }}
           path: ./supertokens-root/supertokens-${{ matrix.plugin }}-plugin
           ref: ${{ fromJson(needs.dependency-branches.outputs.branches)[matrix.plugin] }}
       - name: Load Modules
