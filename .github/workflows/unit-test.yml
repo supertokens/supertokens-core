@@ -78,6 +78,8 @@ jobs:
           " > modules.txt
           cat modules.txt
           ./loadModules
+          # supertokens-root pins the Gradle daemon to -Xms12g, which these runners cannot commit
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g/' gradle.properties
       - name: Setup test env
         run: cd supertokens-root && ./utils/setupTestEnv --local
       - name: Start ${{ matrix.plugin }} server
