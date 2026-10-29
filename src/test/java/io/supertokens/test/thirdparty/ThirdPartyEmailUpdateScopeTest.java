@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -94,6 +95,85 @@ public class ThirdPartyEmailUpdateScopeTest {
         }
         fail("login method not found");
         return null;
+    }
+
+    private static TestingProcessManager.TestingProcess startWithLinking() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        return process;
+    }
+
+    @Test
+    public void testSignInPicksTheUserWithThisTenantsLoginMethodNotAPrimaryUserOfTheTenant() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithLinking();
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            process.kill();
+            return;
+        }
+        Main main = process.getProcess();
+        createTenant(main, T1);
+        createTenant(main, T2);
+        Storage storage = StorageLayer.getStorage(T1, main);
+
+        // identity X is primary user P in t1, and P becomes a member of t2 through a linked email-password user
+        ThirdParty.SignInUpResponse p = ThirdParty.signInUp(T1, storage, main, "oidc", "sub-x", "x@example.com",
+                false);
+        String primaryId = p.user.getSupertokensUserId();
+        AuthRecipe.createPrimaryUser(main, APP, storage, primaryId);
+        AuthRecipeUserInfo ep = EmailPassword.signUp(T2, storage, main, "other@example.com", "password123");
+        AuthRecipe.linkAccounts(main, APP, storage, ep.getSupertokensUserId(), primaryId);
+
+        // X signs in at t2: a separate user U, and every later sign in at t2 must keep finding U (not fail on P)
+        ThirdParty.SignInUpResponse u = ThirdParty.signInUp(T2, storage, main, "oidc", "sub-x", "x2@example.com",
+                false);
+        assertTrue(u.createdNewUser);
+        String uId = u.user.getSupertokensUserId();
+        for (String email : new String[]{"x2@example.com", "x2-new@example.com"}) {
+            ThirdParty.SignInUpResponse again = ThirdParty.signInUp(T2, storage, main, "oidc", "sub-x", email, false);
+            assertFalse(again.createdNewUser);
+            assertEquals(uId, again.user.getSupertokensUserId());
+        }
+        assertEquals("x2-new@example.com", thirdPartyLoginMethod(storage, uId).email);
+        assertEquals("x@example.com", thirdPartyLoginMethod(storage, primaryId).email);
+
+        process.kill();
+    }
+
+    @Test
+    public void testSignInUpdatesOnlyThisTenantsLinkedRecipeUserOfTheSameIdentity() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithLinking();
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            process.kill();
+            return;
+        }
+        Main main = process.getProcess();
+        createTenant(main, T1);
+        createTenant(main, T2);
+        Storage storage = StorageLayer.getStorage(T1, main);
+
+        // R1 (identity X, t1) is primary, R2 (identity X, t2) is linked to it
+        String r1 = ThirdParty.signInUp(T1, storage, main, "oidc", "sub-y", "y1@example.com", false)
+                .user.getSupertokensUserId();
+        AuthRecipe.createPrimaryUser(main, APP, storage, r1);
+        String r2 = ThirdParty.signInUp(T2, storage, main, "oidc", "sub-y", "y2@example.com", false)
+                .user.getSupertokensUserId();
+        AuthRecipe.linkAccounts(main, APP, storage, r2, r1);
+
+        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(T2, storage, main, "oidc", "sub-y",
+                "y2-new@example.com", true);
+        assertFalse(res.createdNewUser);
+        assertEquals(r1, res.user.getSupertokensUserId());
+        assertEquals("y2-new@example.com", thirdPartyLoginMethod(storage, r2).email);
+        assertEquals("y1@example.com", thirdPartyLoginMethod(storage, r1).email);
+        assertTrue(EmailVerification.isEmailVerified(APP, storage, r2, "y2-new@example.com"));
+        assertFalse(EmailVerification.isEmailVerified(APP, storage, r1, "y2-new@example.com"));
+
+        process.kill();
     }
 
     @Test

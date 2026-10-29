@@ -240,7 +240,7 @@ public class ThirdParty {
                         appIdentifier,
                         thirdPartyId, thirdPartyUserId);
                 for (AuthRecipeUserInfo user : usersFromDb) {
-                    if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                    if (hasThisTenantsLoginMethod(user, tenantIdentifier, thirdPartyId, thirdPartyUserId)) {
                         if (userFromDb != null) {
                             throw new IllegalStateException("Should never happen");
                         }
@@ -279,7 +279,7 @@ public class ThirdParty {
                                             con,
                                             thirdPartyId, thirdPartyUserId);
                             for (AuthRecipeUserInfo user : usersFromDb1) {
-                                if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                                if (hasThisTenantsLoginMethod(user, tenantIdentifier, thirdPartyId, thirdPartyUserId)) {
                                     if (userFromDb1 != null) {
                                         throw new IllegalStateException("Should never happen");
                                     }
@@ -351,6 +351,18 @@ public class ThirdParty {
         return loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
                 loginMethod.thirdParty.userId.equals(thirdPartyUserId) &&
                 loginMethod.tenantIds.contains(tenantIdentifier.getTenantId());
+    }
+
+    // A primary user is a member of every tenant of its login methods, so tenant membership alone also matches a
+    // primary user whose (thirdPartyId, thirdPartyUserId) login method belongs to another tenant.
+    private static boolean hasThisTenantsLoginMethod(AuthRecipeUserInfo user, TenantIdentifier tenantIdentifier,
+                                                     String thirdPartyId, String thirdPartyUserId) {
+        for (LoginMethod loginMethod : user.loginMethods) {
+            if (isThisTenantsLoginMethod(loginMethod, tenantIdentifier, thirdPartyId, thirdPartyUserId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
