@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.0.25]
+
 ### Security
 
 - The API-key and IP checks no longer skip enforcement when the app in the request path stops resolving during a tenant refresh; they fall back to the connection URI domain's config, then the base config.
