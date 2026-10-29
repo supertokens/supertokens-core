@@ -812,6 +812,21 @@ public class BulkImport {
         userPoolToStorageMap.clear();
     }
 
+    public static final String REDACTED_SQL_LITERAL = "'<redacted>'";
+
+    // A failed JDBC batch quotes the statement's bound values in its message ("Batch entry 0 INSERT ... VALUES
+    // (('<id>'), ('<email>'), ('<password hash>')) was aborted"). Every bulk import error that is stored, logged or
+    // returned goes through this, so none of those values (password hashes included) leave the core. Linear: the
+    // two alternatives of the group never start with the same character.
+    private static final java.util.regex.Pattern SQL_STRING_LITERAL = java.util.regex.Pattern.compile("'(?:[^']|'')*'");
+
+    public static String redactSqlLiterals(String message) {
+        if (message == null) {
+            return null;
+        }
+        return SQL_STRING_LITERAL.matcher(message).replaceAll(REDACTED_SQL_LITERAL);
+    }
+
     // Below this length a secret cannot be removed from a message by substring replacement without also
     // rewriting unrelated text, so the message is dropped instead.
     private static final int MIN_TOTP_SECRET_LENGTH_FOR_REDACTION = 8;
