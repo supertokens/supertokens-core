@@ -816,15 +816,42 @@ public class BulkImport {
 
     // A failed JDBC batch quotes the statement's bound values in its message ("Batch entry 0 INSERT ... VALUES
     // (('<id>'), ('<email>'), ('<password hash>')) was aborted"). Every bulk import error that is stored, logged or
-    // returned goes through this, so none of those values (password hashes included) leave the core. Linear: the
-    // two alternatives of the group never start with the same character.
-    private static final java.util.regex.Pattern SQL_STRING_LITERAL = java.util.regex.Pattern.compile("'(?:[^']|'')*'");
-
+    // returned goes through this, so none of those values (password hashes included) leave the core. Replaces what
+    // the regex '(?:[^']|'')*' matches, in one pass: java.util.regex recurses once per repetition of a group and
+    // overflows the stack on a long literal.
     public static String redactSqlLiterals(String message) {
         if (message == null) {
             return null;
         }
-        return SQL_STRING_LITERAL.matcher(message).replaceAll(REDACTED_SQL_LITERAL);
+        StringBuilder redacted = new StringBuilder(message.length());
+        int copiedUpTo = 0;
+        int start;
+        while ((start = message.indexOf('\'', copiedUpTo)) >= 0) {
+            int end = -1;
+            int lastEscapedQuote = -1;
+            for (int i = start + 1; i < message.length(); i++) {
+                if (message.charAt(i) != '\'') {
+                    continue;
+                }
+                if (i + 1 < message.length() && message.charAt(i + 1) == '\'') {
+                    lastEscapedQuote = i;
+                    i++;
+                    continue;
+                }
+                end = i;
+                break;
+            }
+            if (end < 0) {
+                // unterminated: like the regex, the literal ends at the last escaped quote, if there is one
+                if (lastEscapedQuote < 0) {
+                    break;
+                }
+                end = lastEscapedQuote;
+            }
+            redacted.append(message, copiedUpTo, start).append(REDACTED_SQL_LITERAL);
+            copiedUpTo = end + 1;
+        }
+        return redacted.append(message, copiedUpTo, message.length()).toString();
     }
 
     // Below this length a secret cannot be removed from a message by substring replacement without also
