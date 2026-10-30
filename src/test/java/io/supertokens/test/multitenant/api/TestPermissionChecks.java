@@ -465,7 +465,7 @@ public class TestPermissionChecks {
         StorageLayer.getStorage(base, main).modifyConfigToAddANewUserPoolForTesting(cudConfig, 1);
         TestMultitenancyAPIHelper.createConnectionUriDomain(main, base, "127.0.0.1", true, true, true, cudConfig);
 
-        // As the CUD's public app, send a v2 connectionUriDomain update that omits the identifier, so the
+        // As the CUD's public app, send a connectionUriDomain update that omits the identifier, so the
         // request targets the base tenant, and try to change its firstFactors.
         TenantIdentifier cudSource = new TenantIdentifier("127.0.0.1", null, null);
         JsonObject body = new JsonObject();
@@ -476,7 +476,7 @@ public class TestPermissionChecks {
         try {
             HttpRequestForTesting.sendJsonPUTRequest(main, "",
                     HttpRequestForTesting.getMultitenantUrl(cudSource,
-                            "/recipe/multitenancy/connectionuridomain/v2"),
+                            "/recipe/multitenancy/connectionuridomain"),
                     body, 1000, 2500, null, SemVer.v5_0.get(), "multitenancy");
             fail("app/CUD-scoped source updated the base tenant via an omitted identifier (GHSA-4rf2 variant 2)");
         } catch (HttpResponseException e) {
