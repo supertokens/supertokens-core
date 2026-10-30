@@ -62,7 +62,8 @@ public class CreateOrUpdateSamlClientAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("redirectURIs is required in the input"));
         }
 
-        // Optional ACS allow-list; absent = null = not configured (legacy behaviour preserved).
+        // Optional ACS allow-list. Absent: a new client has none and an update keeps the current list.
+        // An empty list clears it.
         JsonArray acsURLs = InputParser.parseArrayOrThrowError(input, "acsURLs", true);
         if (acsURLs != null && acsURLs.size() > 0 && !SAML.hasACSURLs(acsURLs)) {
             throw new ServletException(new BadRequestException("acsURLs must only contain non-empty strings"));

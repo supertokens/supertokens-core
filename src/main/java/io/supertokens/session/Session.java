@@ -1357,13 +1357,7 @@ public class Session {
         userIds.add(userId);
         if (fetchSessionsForAllLinkedAccounts) {
             if (storage.getType().equals(STORAGE_TYPE.SQL)) {
-                AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
-                        .getPrimaryUserById(appIdentifier, userId);
-                if (primaryUser != null) {
-                    for (LoginMethod lM : primaryUser.loginMethods) {
-                        userIds.add(lM.getSupertokensUserId());
-                    }
-                }
+                userIds.addAll(getSessionUserIdsOfAllLinkedAccounts(appIdentifier, storage, userId));
             }
         }
 
@@ -1391,13 +1385,7 @@ public class Session {
         Set<String> userIds = new HashSet<>();
         userIds.add(userId);
         if (fetchSessionsForAllLinkedAccounts) {
-            AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
-                    .getPrimaryUserById(tenantIdentifier.toAppIdentifier(), userId);
-            if (primaryUser != null) {
-                for (LoginMethod lM : primaryUser.loginMethods) {
-                    userIds.add(lM.getSupertokensUserId());
-                }
-            }
+            userIds.addAll(getSessionUserIdsOfAllLinkedAccounts(tenantIdentifier.toAppIdentifier(), storage, userId));
         }
         List<String> sessionHandles = new ArrayList<>();
         for (String currUserId : userIds) {
@@ -1405,6 +1393,37 @@ public class Session {
                     .getAllNonExpiredSessionHandlesForUser(tenantIdentifier, currUserId)));
         }
         return sessionHandles.toArray(new String[0]);
+    }
+
+    /**
+     * Returns every user id that sessions of the account containing userId can be stored under.
+     * Sessions are stored under the recipe user id of the login method they were created with, in its external
+     * form if that recipe user has a user id mapping. userId itself may be a SuperTokens id or an external id.
+     */
+    private static Set<String> getSessionUserIdsOfAllLinkedAccounts(AppIdentifier appIdentifier, Storage storage,
+                                                                    String userId)
+            throws StorageQueryException {
+        Set<String> userIds = new HashSet<>();
+        AuthRecipeStorage authRecipeStorage = (AuthRecipeStorage) storage;
+        AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, userId);
+        if (primaryUser == null) {
+            // userId may be the external id of a mapped user
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                    StorageUtils.getUserIdMappingStorage(storage).getUserIdMapping(appIdentifier, userId, false);
+            if (mapping != null) {
+                primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, mapping.superTokensUserId);
+            }
+        }
+        if (primaryUser != null) {
+            ArrayList<String> superTokensUserIds = new ArrayList<>();
+            for (LoginMethod lM : primaryUser.loginMethods) {
+                userIds.add(lM.getSupertokensUserId());
+                superTokensUserIds.add(lM.getSupertokensUserId());
+            }
+            userIds.addAll(UserIdMapping.getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
+                    superTokensUserIds).values());
+        }
+        return userIds;
     }
 
     @TestOnly

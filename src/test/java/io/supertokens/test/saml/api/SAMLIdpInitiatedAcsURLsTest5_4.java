@@ -216,16 +216,20 @@ public class SAMLIdpInitiatedAcsURLsTest5_4 {
         String clientId = putClient(process, clientInput(null, km, true, acsList(ACS_URL)))
                 .get("clientId").getAsString();
 
-        // An update replaces the whole client, so omitting acsURLs would clear the list.
-        assertPutRejected(process, clientInput(clientId, km, true, null), ACS_REQUIRED_MESSAGE);
+        // An empty acsURLs clears the list, which IdP-initiated login does not allow.
         assertPutRejected(process, clientInput(clientId, km, true, new JsonArray()), ACS_REQUIRED_MESSAGE);
 
         JsonObject listed = getListedClient(process, clientId);
         assertTrue(listed.get("allowIDPInitiatedLogin").getAsBoolean());
         assertEquals(acsList(ACS_URL), listed.get("acsURLs"));
 
+        // Omitting acsURLs on an update keeps the current list.
+        JsonObject kept = putClient(process, clientInput(clientId, km, true, null));
+        assertTrue(kept.get("allowIDPInitiatedLogin").getAsBoolean());
+        assertEquals(acsList(ACS_URL), kept.get("acsURLs"));
+
         // Disabling IdP-initiated login lets the list go.
-        JsonObject updated = putClient(process, clientInput(clientId, km, false, null));
+        JsonObject updated = putClient(process, clientInput(clientId, km, false, new JsonArray()));
         assertFalse(updated.get("allowIDPInitiatedLogin").getAsBoolean());
         assertFalse(updated.has("acsURLs"));
 

@@ -290,34 +290,80 @@ public class MultitenantAPITest {
         }
     }
 
+    private JsonObject validateTotpResponse(TenantIdentifier tenantIdentifier, String userId, String totp)
+            throws HttpResponseException, IOException {
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", userId);
+        body.addProperty("totp", totp);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/totp/verify"),
+                body,
+                1000,
+                1000,
+                null,
+                SemVer.v5_0.get(),
+                "totp");
+    }
+
     @Test
-    public void testSameCodeUsedOnDifferentTenantsIsAllowed() throws Exception {
+    public void testIssue109_usedCodeRejectedInOtherTenant() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        TenantIdentifier[] tenants = new TenantIdentifier[]{t2, t3};
-        int userCount = 1;
-        for (TenantIdentifier tenant1 : tenants) {
-            AuthRecipeUserInfo user = EmailPassword.signUp(
-                    tenant1, (StorageLayer.getStorage(tenant1, process.getProcess())), process.getProcess(),
-                    "test@example.com", "password1");
-            String userId = user.getSupertokensUserId();
+        // t2 and t3 share a user pool, so one user can be associated with both. The user's TOTP device is
+        // app-wide, so a code used in one of the tenants must not be accepted again in the other.
+        AuthRecipeUserInfo user = EmailPassword.signUp(
+                t2, (StorageLayer.getStorage(t2, process.getProcess())), process.getProcess(),
+                "test@example.com", "password1");
+        String userId = user.getSupertokensUserId();
+        Multitenancy.addUserIdToTenant(process.getProcess(), t3, StorageLayer.getStorage(t3, process.getProcess()),
+                userId);
 
-            JsonObject deviceResponse = createDevice(t1, userId);
-            String secretKey = deviceResponse.get("secret").getAsString();
-            TOTPDevice device = new TOTPDevice("user" + userCount, "d1", secretKey, 2, 1, true,
-                    System.currentTimeMillis());
-            String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
-            verifyDevice(tenant1, userId, validTotp);
+        // period 30 and skew 1, so the codes used below stay valid for the whole test
+        JsonObject createDeviceBody = new JsonObject();
+        createDeviceBody.addProperty("userId", userId);
+        createDeviceBody.addProperty("deviceName", "d1");
+        createDeviceBody.addProperty("skew", 1);
+        createDeviceBody.addProperty("period", 30);
+        JsonObject deviceResponse = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/totp/device"),
+                createDeviceBody,
+                1000,
+                1000,
+                null,
+                SemVer.v3_0.get(),
+                "totp");
+        assertEquals("OK", deviceResponse.get("status").getAsString());
+        String secretKey = deviceResponse.get("secret").getAsString();
+        TOTPDevice device = new TOTPDevice(userId, "d1", secretKey, 30, 1, true, System.currentTimeMillis());
+        String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+        verifyDevice(t2, userId, validTotp);
 
-            Thread.sleep(2500); // Wait for a new TOTP
-            String validTotp2 = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
-            for (TenantIdentifier tenant2 : tenants) {
-                validateTotp(tenant2, userId, validTotp2);
-            }
+        // The code used to verify the device in t2 is rejected in t3:
+        JsonObject res = validateTotpResponse(t3, userId, validTotp);
+        assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
 
-            userCount++;
+        // The next code (accepted because skew = 1) works in t3 ...
+        String validTotp2 = TOTPRecipeTest.generateTotpCode(process.getProcess(), device, 1);
+        validateTotp(t3, userId, validTotp2);
+        // ... and a code used in t3 is rejected in t2:
+        res = validateTotpResponse(t2, userId, validTotp2);
+        assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
+
+        // Failed attempts count towards one limit across the tenants (totp_max_attempts defaults to 5).
+        // 1 failed attempt so far (the replay just above), 4 more in t2, then the next one in t3 is limited:
+        for (int i = 0; i < 4; i++) {
+            res = validateTotpResponse(t2, userId, "wrong" + i);
+            assertEquals("INVALID_TOTP_ERROR", res.get("status").getAsString());
         }
+        res = validateTotpResponse(t3, userId, "wrong4");
+        assertEquals("LIMIT_REACHED_ERROR", res.get("status").getAsString());
+        assertEquals(5, res.get("currentNumberOfFailedAttempts").getAsInt());
     }
 }

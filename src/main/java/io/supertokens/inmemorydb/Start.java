@@ -1256,8 +1256,12 @@ public class Start
                 AccountInfoQueries.updateAccountInfo_Transaction(this, sqlCon, appIdentifier, lockedUser,
                     ACCOUNT_INFO_TYPE.EMAIL, newEmail);
             }
-            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
-                    thirdPartyUserId, newEmail);
+            int updatedRows = ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, appIdentifier, userId,
+                    thirdPartyId, thirdPartyUserId, newEmail);
+            if (updatedRows != 1) {
+                // userId does not hold this third party login method; nothing must be changed.
+                throw new UnknownUserIdException();
+            }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         } catch (PhoneNumberChangeNotAllowedException | DuplicatePhoneNumberException | DuplicateThirdPartyUserException e) {
@@ -3209,6 +3213,18 @@ public class Start
     }
 
     @Override
+    public TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(TransactionConnection con,
+                                                               AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getAllUsedCodesDescOrder_Transaction(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public int removeExpiredCodes(TenantIdentifier tenantIdentifier, long expiredBefore)
             throws StorageQueryException {
         try {
@@ -3819,7 +3835,7 @@ public class Start
                 String serverMessage = e.getMessage();
 
                 if (isPrimaryKeyError(serverMessage, config.getWebAuthNCredentialsTable(),
-                        new String[]{"app_id", "user_id", "id"})) {
+                        new String[]{"app_id", "rp_id", "id"})) {
                     throw new io.supertokens.pluginInterface.webauthn.exceptions.DuplicateCredentialException();
                 } else if (isForeignKeyConstraintError(
                         serverMessage,

@@ -347,6 +347,71 @@ public class MockSAML {
         return Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * The time and binding fields of a single-assertion Response, for tests that need an assertion an IdP could
+     * send but the default helpers do not produce (no SubjectConfirmationData NotOnOrAfter, an old IssueInstant,
+     * a Response InResponseTo without the matching SubjectConfirmationData InResponseTo, ...). A null Instant
+     * leaves the attribute out. Only the assertion is signed, so the Response wrapper is unsigned.
+     */
+    public static class AssertionSpec {
+        public String issuerEntityId;
+        public String audience;
+        public String acsUrl;
+        public String nameId = "user@example.com";
+        public String responseInResponseTo;
+        public String scdInResponseTo;
+        public Instant responseIssueInstant = Instant.now();
+        public Instant assertionIssueInstant = Instant.now();
+        public Instant conditionsNotBefore = Instant.now().minusSeconds(1);
+        public Instant conditionsNotOnOrAfter = Instant.now().plusSeconds(300);
+        public Instant scdNotBefore;
+        public Instant scdNotOnOrAfter = Instant.now().plusSeconds(300);
+        public String assertionId = randomId();
+
+        public AssertionSpec(String issuerEntityId, String audience, String acsUrl) {
+            this.issuerEntityId = issuerEntityId;
+            this.audience = audience;
+            this.acsUrl = acsUrl;
+        }
+    }
+
+    public static String generateSignedSAMLResponseBase64(AssertionSpec spec, KeyMaterial keyMaterial) {
+        Response response = build(Response.DEFAULT_ELEMENT_NAME);
+        response.setID(randomId());
+        response.setVersion(SAMLVersion.VERSION_20);
+        response.setIssueInstant(spec.responseIssueInstant);
+        response.setDestination(spec.acsUrl);
+        response.setInResponseTo(spec.responseInResponseTo);
+
+        Issuer issuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        issuer.setValue(spec.issuerEntityId);
+        response.setIssuer(issuer);
+
+        Status status = build(Status.DEFAULT_ELEMENT_NAME);
+        StatusCode statusCode = build(StatusCode.DEFAULT_ELEMENT_NAME);
+        statusCode.setValue(StatusCode.SUCCESS);
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        Instant authnInstant = spec.assertionIssueInstant != null ? spec.assertionIssueInstant : Instant.now();
+        Assertion assertion = buildAssertion(spec.issuerEntityId, spec.nameId, spec.audience, spec.acsUrl,
+                spec.scdInResponseTo, authnInstant, spec.scdNotOnOrAfter, true /* withConditions */);
+        assertion.setID(spec.assertionId);
+        assertion.setIssueInstant(spec.assertionIssueInstant);
+        SubjectConfirmationData scd = assertion.getSubject().getSubjectConfirmations().get(0)
+                .getSubjectConfirmationData();
+        scd.setNotOnOrAfter(spec.scdNotOnOrAfter);
+        scd.setNotBefore(spec.scdNotBefore);
+        assertion.getConditions().setNotBefore(spec.conditionsNotBefore);
+        assertion.getConditions().setNotOnOrAfter(spec.conditionsNotOnOrAfter);
+
+        signAssertion(assertion, keyMaterial);
+        response.getAssertions().add(assertion);
+
+        String xml = toXmlString(response);
+        return Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8));
+    }
+
     public static KeyInfo buildKeyInfoWithCert(X509Certificate cert) {
         // Ensure OpenSAML is initialized before using it
         SAMLBootstrap.initialize();
