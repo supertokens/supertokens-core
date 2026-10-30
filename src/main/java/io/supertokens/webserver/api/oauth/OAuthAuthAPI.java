@@ -87,6 +87,12 @@ public class OAuthAuthAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
+            if (queryParams.get("client_id") == null) {
+                // without a client_id there is no client whose app ownership could be checked
+                OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+                return;
+            }
+
             HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
