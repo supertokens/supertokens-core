@@ -66,11 +66,16 @@ public class BulkImportUserUtils {
                 JsonObject.class, errors, ".");
         List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
-        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode);
+        // Position of each parsed login method in the request's loginMethods array (login methods with an invalid
+        // recipeId are not parsed, so the position in the parsed list can differ)
+        Map<LoginMethod, Integer> requestIndexByLoginMethod = new IdentityHashMap<>();
+        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors, idMode,
+                requestIndexByLoginMethod);
 
         externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
 
-        validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
+        validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods,
+                requestIndexByLoginMethod, errors);
 
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
@@ -150,7 +155,7 @@ public class BulkImportUserUtils {
     }
 
     private List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            List<String> errors, IDMode idMode)
+            List<String> errors, IDMode idMode, Map<LoginMethod, Integer> requestIndexByLoginMethod)
             throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT,
                 true, JsonArray.class, errors, ".");
@@ -174,8 +179,9 @@ public class BulkImportUserUtils {
 
         List<LoginMethod> loginMethods = new ArrayList<>();
 
-        for (JsonElement jsonLoginMethod : jsonLoginMethods) {
-            JsonObject jsonLoginMethodObj = jsonLoginMethod.getAsJsonObject();
+        for (int requestIndex = 0; requestIndex < jsonLoginMethods.size(); requestIndex++) {
+            JsonObject jsonLoginMethodObj = jsonLoginMethods.get(requestIndex).getAsJsonObject();
+            int parsedLoginMethodsBefore = loginMethods.size();
 
             String recipeId = parseAndValidateFieldType(jsonLoginMethodObj, "recipeId", ValueType.STRING, true,
                     String.class, errors, " for a loginMethod.");
@@ -260,6 +266,9 @@ public class BulkImportUserUtils {
                         timeJoinedInMSSinceEpoch, email, null, null, null,
                         null, null, phoneNumber, supertokensUserId));
             }
+            if (loginMethods.size() > parsedLoginMethodsBefore) {
+                requestIndexByLoginMethod.put(loginMethods.get(loginMethods.size() - 1), requestIndex);
+            }
         }
         return loginMethods;
     }
@@ -302,7 +311,8 @@ public class BulkImportUserUtils {
         }
 
         if (secretKey.length() > 256) {
-            errors.add("TOTP secretKey " + secretKey + " is too long. Max length is 256.");
+            // The secret itself must never be part of an error message, as these end up in responses and logs
+            errors.add("TOTP secretKey is too long. Max length is 256.");
         }
 
         // We don't perform any normalisation on the secretKey in ImportTotpDeviceAPI.java
@@ -544,7 +554,8 @@ public class BulkImportUserUtils {
     }
 
     private void validateTenantIdsForRoleAndLoginMethods(Main main, AppIdentifier appIdentifier,
-            List<UserRole> userRoles, List<LoginMethod> loginMethods, List<String> errors)
+            List<UserRole> userRoles, List<LoginMethod> loginMethods,
+            Map<LoginMethod, Integer> requestIndexByLoginMethod, List<String> errors)
             throws TenantOrAppNotFoundException {
         if (loginMethods == null) {
             return;
@@ -566,7 +577,12 @@ public class BulkImportUserUtils {
         String commonTenantUserPoolId = null;
         for (LoginMethod loginMethod : loginMethods) {
             if (loginMethod.tenantIds == null || loginMethod.tenantIds.isEmpty()) {
-                errors.add("LoginMethod '" + loginMethod + "' has no tenantId");
+                // The login method is referred to by its position in the request and its recipe: serialising it
+                // would put its credentials (plainTextPassword, passwordHash) into the error message, responses
+                // and logs.
+                errors.add("LoginMethod at loginMethods[" + requestIndexByLoginMethod.get(loginMethod)
+                        + "] (recipeId: " + loginMethod.recipeId + ") has no tenantId");
+                continue;
             }
             for (String tenantId : loginMethod.tenantIds) {
                 TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),

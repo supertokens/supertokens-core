@@ -17,6 +17,7 @@
 package io.supertokens.test.emailpassword;
 
 import com.google.gson.JsonObject;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
@@ -30,6 +31,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -727,10 +729,133 @@ public class EmailPasswordTest {
                 signInUpResponse.user.getSupertokensUserId(),
                 "test@example.com");
 
+        // the login method with test@example.com was deleted by the unlink, so the account the token points to
+        // (the primary user id, whose remaining login method has test2@example.com) no longer has this email
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), token);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        // a token for an email the account still has works
+        String token2 = EmailPassword.generatePasswordResetToken(process.getProcess(),
+                signInUpResponse.user.getSupertokensUserId(),
+                "test2@example.com");
         EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.getProcess(),
-                token);
-        assert (res.email.equals("test@example.com"));
+                token2);
+        assert (res.email.equals("test2@example.com"));
         assert (res.userId.equals(signInUpResponse.user.getSupertokensUserId()));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue101_resetTokenForPrimaryIdWithLinkedLoginMethodEmailIsConsumable() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // primary created from an email-password user with a@example.com, linked third-party login method with the
+        // verified email b@example.com
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(process.getProcess(), "a@example.com", "password");
+        AuthRecipe.createPrimaryUser(process.getProcess(), epUser.getSupertokensUserId());
+        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
+                "b@example.com", true);
+        AuthRecipe.linkAccounts(process.getProcess(), tpUser.user.getSupertokensUserId(),
+                epUser.getSupertokensUserId());
+
+        // the SDK issues this token for the primary id with b@example.com, to add an email-password login method
+        // with that email
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), epUser.getSupertokensUserId(),
+                "b@example.com");
+        EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(
+                process.getProcess(), token);
+        assertEquals(epUser.getSupertokensUserId(), res.userId);
+        assertEquals("b@example.com", res.email);
+
+        // a token for an email that is on no login method of the account is rejected
+        String otherToken = EmailPassword.generatePasswordResetToken(process.getProcess(),
+                epUser.getSupertokensUserId(), "nobody@example.com");
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), otherToken);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testImportingAPasswordHashForAnExistingUserDeletesItsResetTokens() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "import@example.com", "password");
+        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.getSupertokensUserId(),
+                "import@example.com");
+
+        String hash = PasswordHashing.getInstance(process.getProcess())
+                .createHashWithSalt(process.getAppForTesting().toAppIdentifier(), "importedPassword");
+        EmailPassword.ImportUserResponse imported = EmailPassword.importUserWithPasswordHash(process.getProcess(),
+                "import@example.com", hash);
+        assertTrue(imported.didUserAlreadyExist);
+
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), token);
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeprecatedResetPasswordRejectsATokenWhoseEmailIsNoLongerOnTheAccount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "old@example.com", "password");
+        String userId = user.getSupertokensUserId();
+
+        // a token for an email the account never had is not consumed by the pre-CDI-4.0 reset either
+        String foreignToken = EmailPassword.generatePasswordResetToken(main, userId, "nobody@example.com");
+        try {
+            EmailPassword.resetPassword(tenant, storage, main, foreignToken, "newPassword1");
+            fail();
+        } catch (ResetPasswordInvalidTokenException ignored) {
+        }
+        assertNotNull(EmailPassword.signIn(main, "old@example.com", "password"));
+
+        // a token for the account's email works
+        String token = EmailPassword.generatePasswordResetToken(main, userId, "old@example.com");
+        assertEquals(userId, EmailPassword.resetPassword(tenant, storage, main, token, "newPassword2"));
+        assertNotNull(EmailPassword.signIn(main, "old@example.com", "newPassword2"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -1016,6 +1141,79 @@ public class EmailPasswordTest {
         }
 
         Multitenancy.deleteTenant(new TenantIdentifier(null, process.getAppForTesting().getAppId(), "t1"), process.getProcess());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue102_unknownUserSignInStillHashes() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "existing@example.com", "password");
+        ThirdParty.signInUp(process.getProcess(), "google", "user-google", "thirdparty@example.com");
+        ProcessState processState = ProcessState.getInstance(process.getProcess());
+
+        // email with no account at all
+        assertNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+        try {
+            EmailPassword.signIn(process.getProcess(), "unknown@example.com", "password");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        // email that only has a non-emailpassword login method
+        processState.clear();
+        try {
+            EmailPassword.signIn(process.getProcess(), "thirdparty@example.com", "password");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+        // existing behaviour is unchanged
+        try {
+            EmailPassword.signIn(process.getProcess(), "existing@example.com", "wrongPassword");
+            fail();
+        } catch (WrongCredentialsException ignored) {
+        }
+        assertNotNull(EmailPassword.signIn(process.getProcess(), "existing@example.com", "password"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIssue102_unknownUserSignInHashesWithConfiguredArgon2() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("password_hashing_alg", "ARGON2");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        ProcessState processState = ProcessState.getInstance(process.getProcess());
+        for (int i = 0; i < 2; i++) {
+            processState.clear();
+            try {
+                EmailPassword.signIn(process.getProcess(), "unknown@example.com", "password");
+                fail();
+            } catch (WrongCredentialsException ignored) {
+            }
+            assertNotNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON));
+            assertNull(processState.getLastEventByName(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

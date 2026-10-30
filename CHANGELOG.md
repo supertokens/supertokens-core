@@ -7,10 +7,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.0.10]
+
 ### Security
 
+- The dashboard core-config API no longer returns secret config values.
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
+- OAuth provider proxy APIs only act on clients and login/consent challenges of the calling app; new client ids are limited to `[A-Za-z0-9._~-]`.
+- Third-party sign-in marks only the email the caller vouched for as verified, and only on the signing-in tenant's login method.
+- Bulk-import error messages no longer contain passwords, password hashes or TOTP secrets.
+- WebAuthn credentials are bound to the attested credential id and relying party, sign-in resolves the credential's owner, register options use a random user handle, and account recovery requires tenant membership.
+- WebAuthn credential register and email update require the user to be a member of the requested tenant.
+- TOTP verification is serialised per user, replay checks use the app-wide used codes, and verifying a device checks the code.
+- Sessions and reset/recover-account tokens end when the account they were issued for changes.
+- Sign-up auto-verifies only the placeholder email of a user without email that adds a password.
+- CDI 5.0 tenant updates no longer make a recipe enabled only for requiredSecondaryFactors a first factor.
+- Sign-in does the same password-hashing work for unknown accounts, and dashboard suspension is reported only after a correct password.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
 
 ## [11.0.9]
 
