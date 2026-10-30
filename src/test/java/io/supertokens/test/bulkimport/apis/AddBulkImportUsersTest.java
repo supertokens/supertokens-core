@@ -26,6 +26,10 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.test.InMemoryOtelForTesting;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.bulkimport.BulkImportTestUtils;
@@ -596,6 +600,175 @@ public class AddBulkImportUsersTest {
 
     private void checkUserRoleFields(BulkImportUser.UserRole userRole, String objectType, List<String> expectedFields) {
         checkFields(userRole, objectType, expectedFields);
+    }
+
+    @Test
+    public void testIssue115_bulkImportErrorDoesNotContainPassword() throws Exception {
+        String plainTextPassword = "plainTextPasswordValueForTest123";
+        String passwordHash = "$2a$10$passwordHashValueForTest0123456789";
+        String totpSecret = "TOTPSECRETVALUEFORTEST" + "A".repeat(300);
+
+        try (InMemoryOtelForTesting otel = InMemoryOtelForTesting.install()) {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(
+                    new String[]{"../"});
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            Main main = process.getProcess();
+
+            if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+                process.kill();
+                return;
+            }
+            setFeatureFlags(main, new EE_FEATURES[]{EE_FEATURES.MFA});
+
+            JsonParser parser = new JsonParser();
+            JsonObject userWithPlainTextPassword = parser.parse("{\"totpDevices\":[{\"secretKey\":\"" + totpSecret
+                    + "\",\"deviceName\":\"d1\"}],\"loginMethods\":[{\"recipeId\":\"emailpassword\","
+                    + "\"email\":\"johndoe@example.com\",\"plainTextPassword\":\"" + plainTextPassword
+                    + "\",\"tenantIds\":[]}]}").getAsJsonObject();
+            JsonObject userWithPasswordHash = parser.parse("{\"loginMethods\":[{\"recipeId\":\"emailpassword\","
+                    + "\"email\":\"janedoe@example.com\",\"passwordHash\":\"" + passwordHash
+                    + "\",\"hashingAlgorithm\":\"bcrypt\",\"tenantIds\":[]}]}").getAsJsonObject();
+
+            // a login method with an invalid recipeId is not parsed: the index still refers to the request
+            JsonObject userWithInvalidRecipeFirst = parser.parse("{\"loginMethods\":[{\"recipeId\":\"foo\"},"
+                    + "{\"recipeId\":\"emailpassword\",\"email\":\"jim@example.com\",\"plainTextPassword\":\""
+                    + plainTextPassword + "\",\"tenantIds\":[]}]}").getAsJsonObject();
+            JsonArray usersWithInvalidRecipeFirst = new JsonArray();
+            usersWithInvalidRecipeFirst.add(userWithInvalidRecipeFirst);
+            JsonObject bulkRequestWithInvalidRecipeFirst = new JsonObject();
+            bulkRequestWithInvalidRecipeFirst.add("users", usersWithInvalidRecipeFirst);
+
+            JsonArray users = new JsonArray();
+            users.add(userWithPlainTextPassword);
+            users.add(userWithPasswordHash);
+            JsonObject bulkRequest = new JsonObject();
+            bulkRequest.add("users", users);
+
+            // the error log file is shared across runs: only look at what this test appends to it
+            java.io.File errorLogFile = new java.io.File(Config.getConfig(main).getErrorLogPath(main));
+            long errorLogOffset = errorLogFile.exists() ? errorLogFile.length() : 0;
+
+            List<String> responses = new java.util.ArrayList<>();
+            for (String[] endpointAndBody : new String[][]{
+                    {"http://localhost:3567/bulk-import/users", bulkRequest.toString()},
+                    {"http://localhost:3567/bulk-import/import", userWithPlainTextPassword.toString()},
+                    {"http://localhost:3567/bulk-import/import", userWithPasswordHash.toString()},
+                    {"http://localhost:3567/bulk-import/users", bulkRequestWithInvalidRecipeFirst.toString()}}) {
+                try {
+                    HttpRequestForTesting.sendJsonPOSTRequest(main, "", endpointAndBody[0],
+                            parser.parse(endpointAndBody[1]).getAsJsonObject(), 1000, 1000, null,
+                            Utils.getCdiVersionStringLatestForTests(), null);
+                    fail("The API should have thrown an error");
+                } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                    assertEquals(400, e.statusCode);
+                    responses.add(getResponseMessageFromError(e.getMessage()));
+                }
+            }
+
+            // The error structure is unchanged; the login method is referred to by index and recipe
+            assertTrue(responses.get(0), responses.get(0).contains("{\"error\":\"" + genericErrMsg
+                    + "\",\"users\":[{\"index\":0,\"errors\":[\"TOTP secretKey is too long. Max length is 256.\","
+                    + "\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]},"
+                    + "{\"index\":1,\"errors\":[\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}]}"));
+            assertTrue(responses.get(1), responses.get(1).contains("{\"errors\":[\"TOTP secretKey is too long. "
+                    + "Max length is 256.\",\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}"));
+            assertTrue(responses.get(2), responses.get(2).contains(
+                    "{\"errors\":[\"LoginMethod at loginMethods[0] (recipeId: emailpassword) has no tenantId\"]}"));
+
+            assertTrue(responses.get(3), responses.get(3).contains(
+                    "\"LoginMethod at loginMethods[1] (recipeId: emailpassword) has no tenantId\""));
+            assertFalse(responses.get(3), responses.get(3).contains("loginMethods[0] (recipeId"));
+
+            // the errors are logged by the webserver: neither the logs nor the exported log events contain secrets
+            String exported = otel.getAllExportedText();
+            assertTrue(exported.contains("API threw an exception: POST"));
+            List<String> logsAndResponses = new java.util.ArrayList<>(responses);
+            logsAndResponses.add(exported);
+            if (errorLogFile.exists()) {
+                byte[] errorLog = java.nio.file.Files.readAllBytes(errorLogFile.toPath());
+                String appendedErrorLog = new String(errorLog, (int) Math.min(errorLogOffset, errorLog.length),
+                        (int) (errorLog.length - Math.min(errorLogOffset, errorLog.length)),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(appendedErrorLog.contains("API threw an exception: POST"));
+                logsAndResponses.add(appendedErrorLog);
+            }
+            for (String text : logsAndResponses) {
+                assertFalse(text.contains(plainTextPassword));
+                assertFalse(text.contains(passwordHash));
+                assertFalse(text.contains("TOTPSECRETVALUEFORTEST"));
+            }
+
+            // Database errors for TOTP device inserts are stored and logged without the secrets
+            TOTPDevice device = new TOTPDevice("userId", "d1", "TOTPSECRETVALUEFORTEST", 30, 1, true, 0);
+            assertEquals("Batch entry 0 INSERT ... VALUES ('userId', 'd1', '<redacted>') was aborted",
+                    BulkImport.redactTotpSecrets(
+                            "Batch entry 0 INSERT ... VALUES ('userId', 'd1', 'TOTPSECRETVALUEFORTEST') was aborted",
+                            List.of(device)));
+            // a secret that is a prefix of another one does not leave the rest of the longer one behind,
+            // whatever the order of the devices
+            TOTPDevice shortDevice = new TOTPDevice("userId", "d2", "JBSWY3DP", 30, 1, true, 0);
+            TOTPDevice longDevice = new TOTPDevice("userId", "d3", "JBSWY3DPEHPK3PXP", 30, 1, true, 0);
+            String batchMessage = "Batch entry 1 VALUES ('JBSWY3DPEHPK3PXP') and ('JBSWY3DP') was aborted";
+            for (List<TOTPDevice> devices : List.of(List.of(shortDevice, longDevice),
+                    List.of(longDevice, shortDevice))) {
+                assertEquals("Batch entry 1 VALUES ('<redacted>') and ('<redacted>') was aborted",
+                        BulkImport.redactTotpSecrets(batchMessage, devices));
+            }
+            // secrets rendered as escaped SQL literals are redacted too
+            TOTPDevice quotedDevice = new TOTPDevice("userId", "d4", "SECRET'WITHQUOTE", 30, 1, true, 0);
+            assertEquals("VALUES ('<redacted>')",
+                    BulkImport.redactTotpSecrets("VALUES ('SECRET''WITHQUOTE')", List.of(quotedDevice)));
+            // too short to be redacted safely: the message is dropped instead of being mangled or leaking it
+            TOTPDevice tinyDevice = new TOTPDevice("userId", "d5", "A1", 30, 1, true, 0);
+            assertEquals(BulkImport.TOTP_DEVICE_ERROR_DETAILS_OMITTED,
+                    BulkImport.redactTotpSecrets("Batch entry 1 VALUES ('A1') was aborted",
+                            List.of(longDevice, tinyDevice)));
+
+            // any other stored, logged or returned bulk import error has all bound values of a failed batch removed
+            String hash = "$2a$10$abcdefghijklmnopqrstuuJ8J9l0bKXv1qQx2C7xQyE2m9nN0sP2e";
+            String pgBatchError = "Batch entry 0 INSERT INTO emailpassword_users (app_id, user_id, email, "
+                    + "password_hash, time_joined) VALUES (('public'), ('u1'), ('o''brien@example.com'), ('" + hash
+                    + "'), ('1700000000000'::int8)) was aborted: ERROR: duplicate key value violates unique "
+                    + "constraint. Call getNextException to see other errors in the batch.";
+            String redacted = BulkImport.redactSqlLiterals(pgBatchError);
+            assertFalse(redacted, redacted.contains(hash));
+            assertFalse(redacted, redacted.contains("brien@example.com"));
+            assertTrue(redacted, redacted.startsWith("Batch entry 0 INSERT INTO emailpassword_users"));
+            assertTrue(redacted, redacted.endsWith("Call getNextException to see other errors in the batch."));
+            assertEquals("E003: A user with email a@example.com already exists in emailpassword loginMethod.",
+                    BulkImport.redactSqlLiterals(
+                            "E003: A user with email a@example.com already exists in emailpassword loginMethod."));
+            assertNull(BulkImport.redactSqlLiterals(null));
+            // long inputs, including one with an unterminated literal, are handled in linear time
+            long start = System.nanoTime();
+            BulkImport.redactSqlLiterals("('" + "a''b".repeat(50_000));
+            BulkImport.redactSqlLiterals("('x'), ".repeat(50_000));
+            assertTrue(System.nanoTime() - start < 2_000_000_000L);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testRedactSqlLiteralsHandlesLongLiteralsLikeTheSqlLiteralRegex() {
+        // long literals do not overflow the stack
+        String longValue = "x".repeat(100_000);
+        assertEquals("VALUES ('<redacted>'), ('<redacted>')", BulkImport.redactSqlLiterals(
+                "VALUES ('" + longValue + "'), ('" + longValue.replace("x", "y''") + "')"));
+        assertEquals("('<redacted>''b", BulkImport.redactSqlLiterals("('" + "a''b".repeat(50_000)));
+
+        // escaped quotes are part of the literal
+        assertEquals("VALUES ('<redacted>')", BulkImport.redactSqlLiterals("VALUES ('it''s secret')"));
+
+        // the same text is replaced as by the SQL string literal regex
+        java.util.regex.Pattern sqlStringLiteral = java.util.regex.Pattern.compile("'(?:[^']|'')*'");
+        for (String message : new String[]{"'a''", "''", "''''", "'a'''", "x'''y", "'unterminated", "'a''b''c",
+                "a 'x' b 'y''z' c", "('u1'), ('o''brien@example.com')", "no literal", ""}) {
+            assertEquals(message, sqlStringLiteral.matcher(message).replaceAll(BulkImport.REDACTED_SQL_LITERAL),
+                    BulkImport.redactSqlLiterals(message));
+        }
+        assertNull(BulkImport.redactSqlLiterals(null));
     }
 
     private String getResponseMessageFromError(String response) {
