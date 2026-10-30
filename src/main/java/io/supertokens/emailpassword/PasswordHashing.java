@@ -33,6 +33,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class PasswordHashing extends ResourceDistributor.SingletonResource {
@@ -46,6 +47,11 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     private final Map<String, String> cachedPasswordHashForTesting = new HashMap<>();
     public static boolean bypassHashCachingInTesting = false;
+
+    // One dummy hash per hashing algorithm and cost parameters, used to do the same password verification
+    // work when a sign-in names an account that does not exist.
+    private static final String DUMMY_PASSWORD = "supertokens-dummy-password";
+    private final Map<String, String> dummyPasswordHashes = new ConcurrentHashMap<>();
 
     private PasswordHashing(Main main) {
         this.argon2BoundedQueue = new LinkedBlockingQueue<>(
@@ -190,6 +196,42 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
 
         return false;
+    }
+
+    /**
+     * Verifies the given password against a dummy hash created with the app's configured hashing algorithm and
+     * cost parameters, and discards the result. Sign-in paths call this when no account matches, so that the
+     * response takes about as long as a wrong password for an existing account.
+     */
+    public void verifyPasswordWithDummyHash(AppIdentifier appIdentifier, String password)
+            throws TenantOrAppNotFoundException {
+        verifyPasswordWithHash(appIdentifier, password, getDummyPasswordHash(appIdentifier));
+    }
+
+    private String getDummyPasswordHash(AppIdentifier appIdentifier) throws TenantOrAppNotFoundException {
+        CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
+        boolean argon2 = config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2;
+        int argon2Iterations = config.getArgon2Iterations();
+        int argon2MemoryKb = config.getArgon2MemoryKb();
+        int argon2Parallelism = config.getArgon2Parallelism();
+        int bcryptLogRounds = config.getBcryptLogRounds();
+        String key = argon2
+                ? "argon2:" + argon2Iterations + ":" + argon2MemoryKb + ":" + argon2Parallelism
+                : "bcrypt:" + bcryptLogRounds;
+
+        String hash = dummyPasswordHashes.get(key);
+        if (hash != null) {
+            return hash;
+        }
+        if (argon2) {
+            hash = withConcurrencyLimited(
+                    () -> argon2id.hash(argon2Iterations, argon2MemoryKb, argon2Parallelism,
+                            DUMMY_PASSWORD.toCharArray()), this.argon2BoundedQueue);
+        } else {
+            hash = BCrypt.hashpw(DUMMY_PASSWORD, BCrypt.gensalt(bcryptLogRounds));
+        }
+        String existing = dummyPasswordHashes.putIfAbsent(key, hash);
+        return existing != null ? existing : hash;
     }
 
     @TestOnly

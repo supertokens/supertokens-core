@@ -16,6 +16,8 @@ export const update_5 = (body, currentState) => {
 
     let firstFactors = currentState.firstFactors;
     let requiredSecondaryFactors = currentState.requiredSecondaryFactors;
+    // recipes a CDI 5.0 caller sees as enabled before this update
+    const enabledBefore = get_5(currentState);
 
     if (
         body.emailPasswordEnabled === true ||
@@ -244,6 +246,50 @@ export const update_5 = (body, currentState) => {
             if (factor === "thirdparty") {
                 newTenantState.thirdPartyEnabled = true;
             }
+        }
+    }
+
+    // With firstFactors === null every enabled recipe is a first factor. A recipe not enabled
+    // before this update (as seen in CDI 5.0) and not enabled by it is on only for
+    // requiredSecondaryFactors (or hidden by an empty firstFactors list), so it must not become
+    // a first factor: store firstFactors explicitly without it.
+    if (newTenantState.firstFactors === null) {
+        const emailPasswordNotRequested = newTenantState.emailPasswordEnabled &&
+            !enabledBefore.emailPasswordEnabled && body.emailPasswordEnabled !== true;
+        const passwordlessNotRequested = newTenantState.passwordlessEnabled &&
+            !enabledBefore.passwordlessEnabled && body.passwordlessEnabled !== true;
+        const thirdPartyNotRequested = newTenantState.thirdPartyEnabled &&
+            !enabledBefore.thirdPartyEnabled && body.thirdPartyEnabled !== true;
+        if (emailPasswordNotRequested || passwordlessNotRequested || thirdPartyNotRequested) {
+            let pinned = [];
+            if (newTenantState.emailPasswordEnabled && !emailPasswordNotRequested) {
+                pinned.push("emailpassword");
+            }
+            if (newTenantState.passwordlessEnabled && !passwordlessNotRequested) {
+                pinned.push("otp-phone", "otp-email", "link-phone", "link-email");
+            }
+            if (newTenantState.thirdPartyEnabled && !thirdPartyNotRequested) {
+                pinned.push("thirdparty");
+            }
+            newTenantState.firstFactors = pinned;
+        }
+    }
+
+    // An empty firstFactors list means "no login method" in CDI 5.0: if this update explicitly
+    // enables a recipe but ends with an empty list, keep the explicitly enabled recipes as first factors.
+    if (newTenantState.firstFactors !== null && newTenantState.firstFactors.length === 0) {
+        let explicitlyEnabled = [];
+        if (body.emailPasswordEnabled === true && newTenantState.emailPasswordEnabled) {
+            explicitlyEnabled.push("emailpassword");
+        }
+        if (body.passwordlessEnabled === true && newTenantState.passwordlessEnabled) {
+            explicitlyEnabled.push("otp-phone", "otp-email", "link-phone", "link-email");
+        }
+        if (body.thirdPartyEnabled === true && newTenantState.thirdPartyEnabled) {
+            explicitlyEnabled.push("thirdparty");
+        }
+        if (explicitlyEnabled.length > 0) {
+            newTenantState.firstFactors = explicitlyEnabled;
         }
     }
 

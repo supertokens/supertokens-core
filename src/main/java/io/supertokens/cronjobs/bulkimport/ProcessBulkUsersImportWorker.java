@@ -191,7 +191,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     Logging.error(main, null,
                             "We got an StorageQueryException while processing a bulk import user entry. It will be " +
                                     "retried again. Error Message: " +
-                                    e.getMessage(), true);
+                                    BulkImport.redactSqlLiterals(e.getMessage()), true);
                     return;
                 }
                 if (exception.actualException instanceof BulkImportBatchInsertException) {
@@ -199,7 +199,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                             bulkImportUserIdToErrorMessage);
                 } else {
                     //fail the whole batch
-                    errorMessage[0] = exception.actualException.getMessage();
+                    errorMessage[0] = BulkImport.redactSqlLiterals(exception.actualException.getMessage());
                     for (BulkImportUser user : usersBatch) {
                         bulkImportUserIdToErrorMessage.put(user.id, errorMessage[0]);
                     }
@@ -215,7 +215,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                 Logging.error(main, null,
                         "We got an error while processing a bulk import user entry. It will be " +
                                 "retried again. Error Message: " +
-                                e.getMessage(), true);
+                                BulkImport.redactSqlLiterals(e.getMessage()), true);
             }
         }
 
@@ -251,7 +251,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     id = userWithId.get().id;
                 }
             }
-            bulkImportUserIdToErrorMessage.put(id, userIndexToError.get(userid).getMessage());
+            bulkImportUserIdToErrorMessage.put(id, BulkImport.redactSqlLiterals(userIndexToError.get(userid).getMessage()));
         }
     }
 
