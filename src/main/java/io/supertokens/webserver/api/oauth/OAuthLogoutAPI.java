@@ -81,7 +81,7 @@ public class OAuthLogoutAPI extends WebserverAPI {
                     main, req, resp, 
                     appIdentifier, storage,
                     clientId, // clientIdToCheck
-                    "/admin/clients/" + clientId, // path
+                    OAuth.getAdminClientPath(clientId), // path
                     true, // proxyToAdmin
                     true, // camelToSnakeCaseConversion
                     new HashMap<>(), // queryParams
@@ -90,6 +90,11 @@ public class OAuthLogoutAPI extends WebserverAPI {
 
                 if (response == null) {
                     return; // proxy would have already responded
+                }
+
+                if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                    // the OAuth provider resolved a different client than the one checked above
+                    throw new OAuthClientNotFoundException();
                 }
 
                 String[] postLogoutRedirectUris = null;
