@@ -42,6 +42,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyImportUser;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
@@ -94,20 +95,13 @@ public class ThirdParty {
                 SignInUpResponse finalResponse = response;
                 EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
 
-                evStorage.startTransaction(con -> {
-                    try {
-                        // this assert is there cause this function should only be used for older CDIs in which
-                        // account linking was not available. So loginMethod length will always be 1.
-                        assert (finalResponse.user.loginMethods.length == 1);
-                        evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                finalResponse.user.getSupertokensUserId(), finalResponse.user.loginMethods[0].email,
-                                true);
-                        evStorage.commitTransaction(con);
-                        return null;
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                });
+                // this assert is there cause this function should only be used for older CDIs in which
+                // account linking was not available. So loginMethod length will always be 1.
+                assert (finalResponse.user.loginMethods.length == 1);
+                String recipeUserId = finalResponse.user.loginMethods[0].getSupertokensUserId();
+                evStorage.startTransaction(con -> markEmailVerifiedIfStillCurrent_Transaction(
+                        tenantIdentifier.toAppIdentifier(), storage, con, recipeUserId, thirdPartyId,
+                        thirdPartyUserId, email));
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
                     throw (TenantOrAppNotFoundException) e.actualException;
@@ -186,22 +180,18 @@ public class ThirdParty {
 
         if (isEmailVerified) {
             for (LoginMethod lM : response.user.loginMethods) {
-                if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) &&
-                        lM.thirdParty.userId.equals(thirdPartyUserId)) {
+                if (isThisTenantsLoginMethod(lM, tenantIdentifier, thirdPartyId, thirdPartyUserId)) {
                     try {
+                        // The caller vouched for `email` only. lM.email may have been re-read after the email update
+                        // transaction committed, so a concurrent sign in may have changed it in the meantime.
                         EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
-                        evStorage.startTransaction(con -> {
-                            try {
-                                evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                        lM.getSupertokensUserId(), lM.email, true);
-                                evStorage.commitTransaction(con);
-
-                                return null;
-                            } catch (TenantOrAppNotFoundException e) {
-                                throw new StorageTransactionLogicException(e);
-                            }
-                        });
-                        lM.setVerified();
+                        String recipeUserId = lM.getSupertokensUserId();
+                        boolean markedAsVerified = evStorage.startTransaction(
+                                con -> markEmailVerifiedIfStillCurrent_Transaction(tenantIdentifier.toAppIdentifier(),
+                                        storage, con, recipeUserId, thirdPartyId, thirdPartyUserId, email));
+                        if (markedAsVerified && email.equals(lM.email)) {
+                            lM.setVerified();
+                        }
                     } catch (StorageTransactionLogicException e) {
                         if (e.actualException instanceof TenantOrAppNotFoundException) {
                             throw (TenantOrAppNotFoundException) e.actualException;
@@ -263,8 +253,7 @@ public class ThirdParty {
 
                 LoginMethod lM = null;
                 for (LoginMethod loginMethod : userFromDb.loginMethods) {
-                    if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
-                            loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
+                    if (isThisTenantsLoginMethod(loginMethod, tenantIdentifier, thirdPartyId, thirdPartyUserId)) {
                         lM = loginMethod;
                         break;
                     }
@@ -305,8 +294,8 @@ public class ThirdParty {
 
                             LoginMethod lM1 = null;
                             for (LoginMethod loginMethod : userFromDb1.loginMethods) {
-                                if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
-                                        loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
+                                if (isThisTenantsLoginMethod(loginMethod, tenantIdentifier, thirdPartyId,
+                                        thirdPartyUserId)) {
                                     lM1 = loginMethod;
                                     break;
                                 }
@@ -351,6 +340,63 @@ public class ThirdParty {
             AuthRecipeUserInfo user = getUser(tenantIdentifier, storage, thirdPartyId, thirdPartyUserId);
             return new SignInUpResponse(false, user);
         }
+    }
+
+    /**
+     * The same (thirdPartyId, thirdPartyUserId) can belong to different recipe users in different tenants, and those
+     * may even be linked to the same primary user. Only the recipe user of the signing-in tenant may be touched.
+     */
+    private static boolean isThisTenantsLoginMethod(LoginMethod loginMethod, TenantIdentifier tenantIdentifier,
+                                                    String thirdPartyId, String thirdPartyUserId) {
+        return loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
+                loginMethod.thirdParty.userId.equals(thirdPartyUserId) &&
+                loginMethod.tenantIds.contains(tenantIdentifier.getTenantId());
+    }
+
+    /**
+     * Marks `email` as verified for the recipe user, but only if it is still the email of that user's third party
+     * login method. The user is locked first, so a concurrent email update for the same user cannot slip in between
+     * the check and the write. Returns whether the email was marked as verified. Commits the transaction.
+     */
+    private static boolean markEmailVerifiedIfStillCurrent_Transaction(AppIdentifier appIdentifier, Storage storage,
+                                                                       TransactionConnection con, String recipeUserId,
+                                                                       String thirdPartyId, String thirdPartyUserId,
+                                                                       String email)
+            throws StorageQueryException, StorageTransactionLogicException {
+        EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+        try {
+            ((UserLockingStorage) storage).lockUser(appIdentifier, con, recipeUserId);
+        } catch (UserNotFoundForLockingException e) {
+            // the user was deleted concurrently, there is nothing to verify
+            evStorage.commitTransaction(con);
+            return false;
+        }
+
+        AuthRecipeUserInfo user = StorageUtils.getAuthRecipeStorage(storage)
+                .getPrimaryUserById_Transaction(appIdentifier, con, recipeUserId);
+        String currentEmail = null;
+        if (user != null) {
+            for (LoginMethod lM : user.loginMethods) {
+                if (lM.getSupertokensUserId().equals(recipeUserId) && lM.thirdParty != null &&
+                        lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
+                    currentEmail = lM.email;
+                    break;
+                }
+            }
+        }
+
+        if (!email.equals(currentEmail)) {
+            evStorage.commitTransaction(con);
+            return false;
+        }
+
+        try {
+            evStorage.updateIsEmailVerified_Transaction(appIdentifier, con, recipeUserId, email, true);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+        evStorage.commitTransaction(con);
+        return true;
     }
 
     public static SignInUpResponse createThirdPartyUser(TenantIdentifier tenantIdentifier, Storage storage,
