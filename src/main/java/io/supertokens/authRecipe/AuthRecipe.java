@@ -948,6 +948,15 @@ public class AuthRecipe {
             if (userToDelete.getSupertokensUserId().equals(userIdToDeleteForAuthRecipe)) {
                 // this means we are deleting the primary user itself, but keeping other linked accounts
                 // so we keep the non auth recipe info of this user since other linked accounts can use it
+                // (metadata, roles, TOTP are keyed by the primary user id).
+                // Sessions are different: they are stored under the recipe user id of the login method they
+                // were created with, so the sessions under this id belong only to the login method being
+                // deleted. Remove them here, under the user lock taken above, so they stop being refreshable.
+                if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
+                    ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
+                            .deleteSessionsOfUser_Transaction(con, appIdentifier,
+                                    userIdToDeleteForNonAuthRecipeForRecipeUserId);
+                }
                 userIdToDeleteForNonAuthRecipeForRecipeUserId = null;
             }
         }

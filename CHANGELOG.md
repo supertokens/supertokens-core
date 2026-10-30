@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.4.2]
+
+### Security
+
+- API-key check: when the request's app doesn't resolve, the key is checked against the nearest existing ancestor instead of being skipped.
+- Multitenancy: the connection URI domain set is replaced atomically, and a tenant refresh no longer marks another tenant's unapplied config as loaded.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
+- Multitenancy (deprecated non-v2 create/update, CDI 5.0+): enabling a login method no longer turns a required secondary factor into a first factor.
+- OAuth2 provider: login/consent request, token revoke and client APIs only act on OAuth clients of the calling app.
+- OAuth2 provider: client ids are path-encoded towards the provider, limited to letters, digits and `. _ ~ -` (not `.` or `..`) at creation, and accepted only as `clientId`.
+- OAuth2 provider: parameter names are URL-encoded towards the provider; a Basic-auth client id must match the body's `client_id`.
+- Third-party sign-in: an email change only updates the recipe user of the signing-in tenant.
+- Third-party sign-in with `isVerified: true` only verifies the email of that request, checked under the user lock.
+- Email-password sign-up only auto-verifies the SDKs' `<userId>@stfakeemail.supertokens.com` placeholder of an existing user without an email.
+- Email password: an email or password change, or a password hash import, deletes the user's reset tokens; a reset token is only consumed for an email of the account.
+- WebAuthn: a recover-account token is only consumed for an email of the account.
+- WebAuthn: credential ids are taken from the verified attestation and are unique within the app.
+- WebAuthn: sign-in returns the owner of the verifying credential and only accepts credentials of the options' relying party id.
+- WebAuthn: register options use a random user handle.
+- WebAuthn: recovery tokens, credential register and email update require the user to be a member of the requested tenant.
+- WebAuthn (CDI 5.5+): concurrent sign-ins with the same options succeed at most once.
+- TOTP: verifications of a user are serialised; replay protection and the attempt limit apply across the app's tenants.
+- TOTP: `/recipe/totp/device/verify` checks the code also for an already verified device.
+- Account linking: deleting a primary user's own login method also deletes the sessions created with it.
+- Sessions: revoking or listing a linked user's sessions covers the external ids of all its login methods.
+- Dashboard: `GET /recipe/dashboard/tenant/core-config` no longer returns secret config values.
+- Dashboard: a sign-in that overlaps a password or email change no longer leaves a session behind.
+- Dashboard sign-in checks the password before the suspension.
+- Dashboard and email-password sign-in do the same hashing work for unknown accounts.
+- SAML callback: an assertion is only accepted within a window bounded by signed values, and its replay record outlives that window.
+- SAML callback: SP-initiated logins require the request id as the assertion's `InResponseTo` and a known ACS URL.
+- SAML clients: an update without `acsURLs` keeps the current ACS allow-list (`acsURLs: []` clears it).
+- SAML legacy flow: the token endpoint redeems a single-use, client-bound code for a random access token, and userinfo only accepts that token.
+- SAML codes are consumed atomically in the in-memory database.
+- OpenTelemetry: method spans no longer export argument and return values.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
+- Bulk import: errors no longer contain passwords, password hashes or TOTP secrets.
+
+### Fixes
+
+- User roles: `GET /recipe/role/users` no longer returns `UNKNOWN_ROLE_ERROR` for an existing role on a tenant with its own database.
+- User roles: removing a user's role also deletes the user's mapping when the role no longer exists.
+- Third-party sign-in no longer fails with a 500 when a primary user linked into the tenant has the same identity in another tenant.
+
+### Changes
+
+- Supports plugin interface 11.2.
+- Adds the index `webauthn_credentials (app_id, id)` for the app-wide WebAuthn credential lookup.
+- In-memory database: a duplicate WebAuthn credential is reported as a duplicate instead of a storage error.
+
+### Migration
+
+The index `webauthn_credentials_app_id_id_index` is created by the core at startup. Large PostgreSQL deployments can build it before upgrading with supertokens-postgresql-plugin 10.2.0's `migration-scripts/v10.2.0.sql` (`CREATE INDEX CONCURRENTLY`, run outside a transaction).
+
 ## [12.4.1]
 
 - Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
