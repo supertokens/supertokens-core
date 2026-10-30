@@ -9,6 +9,8 @@ import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -22,6 +24,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +107,13 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     if (parsedHeader.length != 2) {
                         throw new ServletException(new BadRequestException("authorizationHeader must contain clientId:clientSecret"));
                     }
-                    clientId = parsedHeader[0];
+                    try {
+                        // the OAuth provider URL-decodes the client id from the Basic auth header (RFC 6749,
+                        // section 2.3.1), so we do the same before checking that the client belongs to this app
+                        clientId = URLDecoder.decode(parsedHeader[0], StandardCharsets.UTF_8);
+                    } catch (RuntimeException e) {
+                        throw new ServletException(new BadRequestException("authorizationHeader is not valid"));
+                    }
                     clientSecret = parsedHeader[1];
                 } else {
                     clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
@@ -123,11 +133,20 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     formFields.put("client_secret", clientSecret);
                 }
 
+                try {
+                    StorageUtils.getOAuthStorage(storage).getOAuthClientById(appIdentifier, clientId);
+                } catch (OAuthClientNotFoundException e) {
+                    // the client may belong to another app that uses the same OAuth provider. This is reported
+                    // like an unknown client, as the OAuth provider would.
+                    OAuthProxyHelper.handleOAuthAPIException(resp, OAuth.newInvalidClientException());
+                    return;
+                }
+
                 HttpRequestForOAuthProvider.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
-                    null, //clientIdToCheck
+                    clientId, //clientIdToCheck (already checked above, kept as a safeguard)
                     "/oauth2/revoke", // path
                     false, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
