@@ -89,10 +89,11 @@ public class ImportUserAPI extends WebserverAPI {
         } catch (BulkImportBatchInsertException e) {
             JsonArray errors = new JsonArray();
             if(e.exceptionByUserId == null || e.exceptionByUserId.isEmpty()) {
-                errors.add(new JsonPrimitive(e.getMessage()));
+                errors.add(new JsonPrimitive(BulkImport.redactSqlLiterals(e.getMessage())));
             } else {
                 errors.addAll(
-                        e.exceptionByUserId.values().stream().map(exc -> exc.getMessage()).map(JsonPrimitive::new)
+                        e.exceptionByUserId.values().stream().map(exc -> BulkImport.redactSqlLiterals(exc.getMessage()))
+                                .map(JsonPrimitive::new)
                                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll)
                 );
             }
@@ -114,7 +115,7 @@ public class ImportUserAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         } catch (StorageQueryException storageQueryException){
             JsonArray errors = new JsonArray();
-            errors.add(new JsonPrimitive(storageQueryException.getMessage()));
+            errors.add(new JsonPrimitive(BulkImport.redactSqlLiterals(storageQueryException.getMessage())));
             JsonObject errorResponseJson = new JsonObject();
             errorResponseJson.add("errors", errors);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));

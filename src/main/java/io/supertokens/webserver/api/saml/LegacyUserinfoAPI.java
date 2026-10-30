@@ -27,6 +27,8 @@ public class LegacyUserinfoAPI extends WebserverAPI {
         return "/recipe/saml/legacy/userinfo";
     }
 
+    // Called by the relying party's OAuth client, which does not hold the core API key. The bearer access token
+    // issued by the legacy token endpoint (after client authentication) is the credential.
     @Override
     protected boolean checkAPIKey(HttpServletRequest req) {
         return false;
@@ -39,18 +41,18 @@ public class LegacyUserinfoAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("Authorization header is required"));
         }
 
-        String accessToken = authorizationHeader.substring("Bearer ".length());
+        String accessToken = authorizationHeader.substring("Bearer ".length()).trim();
 
-        if (!accessToken.contains(".")) {
+        // Only an access token issued by the legacy token endpoint is accepted (base64url, see
+        // SAML.exchangeLegacyCodeForAccessToken). Anything else is rejected without a lookup.
+        if (!isWellFormedAccessToken(accessToken)) {
             super.sendTextResponse(400, "INVALID_TOKEN_ERROR", resp);
             return;
         }
 
-        String clientId = accessToken.split("[.]")[1];
-        accessToken = accessToken.split("[.]")[0];
         try {
             JsonObject userInfo = SAML.getUserInfo(
-                main, getAppIdentifier(req).getAsPublicTenantIdentifier(), enforcePublicTenantAndGetPublicTenantStorage(req), accessToken, clientId, true
+                main, getAppIdentifier(req).getAsPublicTenantIdentifier(), enforcePublicTenantAndGetPublicTenantStorage(req), accessToken, null, true
             );
             super.sendJsonResponse(200, userInfo, resp);
         } catch (InvalidCodeException e) {
@@ -60,5 +62,20 @@ public class LegacyUserinfoAPI extends WebserverAPI {
                  StorageTransactionLogicException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
+    }
+
+    private static boolean isWellFormedAccessToken(String accessToken) {
+        if (accessToken.isEmpty() || accessToken.length() > 128) {
+            return false;
+        }
+        for (int i = 0; i < accessToken.length(); i++) {
+            char c = accessToken.charAt(i);
+            boolean ok = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'
+                    || c == '_';
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
     }
 }

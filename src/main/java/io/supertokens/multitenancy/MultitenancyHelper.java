@@ -63,11 +63,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         this.main = main;
         TenantConfig[] allTenantsFromDb = getAllTenantsFromDb();
         this.tenantConfigs = this.getFilteredTenantConfigs(allTenantsFromDb);
-        Set<String> cuds = new HashSet<>();
-        for (TenantConfig config : allTenantsFromDb) {
-            cuds.add(config.tenantIdentifier.getConnectionUriDomain());
-        }
-        this.dangerous_allCUDsFromDb = cuds;
+        this.dangerous_allCUDsFromDb = buildCUDSet(allTenantsFromDb);
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -150,11 +146,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     boolean sameNumberOfTenants =
                             filteredTenantsFromDb.length == this.tenantConfigs.length;
 
-                    Set<String> cuds = new HashSet<>();
-                    for (TenantConfig tenant : tenantsFromDb) {
-                        cuds.add(tenant.tenantIdentifier.getConnectionUriDomain());
-                    }
-                    this.dangerous_allCUDsFromDb = cuds;
+                    this.dangerous_allCUDsFromDb = buildCUDSet(tenantsFromDb);
                     this.tenantConfigs = filteredTenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
@@ -197,9 +189,6 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
                     TenantConfig[] filteredTenantsFromDb = this.getFilteredTenantConfigs(tenantsFromDb);
 
-                    boolean sameNumberOfTenants =
-                            filteredTenantsFromDb.length == this.tenantConfigs.length;
-
                     // Build set of existing tenant IDs for new-tenant detection
                     Set<TenantIdentifier> existingTenantIds = new HashSet<>();
                     for (TenantConfig tc : this.tenantConfigs) {
@@ -233,6 +222,37 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                             }
                         }
                     }
+                    Set<TenantIdentifier> affectedTenantIds = new HashSet<>(affectedTenants);
+
+                    // Only the affected tenants take their config from the DB; every other tenant that is
+                    // already loaded keeps its in-memory config, which is the one its resources were loaded
+                    // from. Taking the full DB list here would record a change to another tenant that is
+                    // already in the DB but not loaded yet (e.g. its own refresh is still waiting for the
+                    // lock, or it was made through another core instance) as applied without reloading it, so
+                    // neither its own refresh nor the full refresh would ever reload it. Such changes are left
+                    // for those refreshes, which then still see the difference. Tenants that are new in the DB
+                    // are added and tenants no longer in the DB are dropped (as before); in both cases the
+                    // tenant list changes, so the resources are reloaded below.
+                    Map<TenantIdentifier, TenantConfig> tenantsFromMemoryById = new HashMap<>();
+                    for (TenantConfig tc : this.tenantConfigs) {
+                        tenantsFromMemoryById.put(tc.tenantIdentifier, tc);
+                    }
+                    List<TenantConfig> mergedTenants = new ArrayList<>();
+                    for (TenantConfig tc : filteredTenantsFromDb) {
+                        TenantConfig fromMemory = tenantsFromMemoryById.get(tc.tenantIdentifier);
+                        if (fromMemory == null || affectedTenantIds.contains(tc.tenantIdentifier)) {
+                            mergedTenants.add(tc);
+                        } else {
+                            mergedTenants.add(fromMemory);
+                        }
+                    }
+                    TenantConfig[] newTenantConfigs = mergedTenants.toArray(new TenantConfig[0]);
+
+                    Set<TenantIdentifier> newTenantIds = new HashSet<>();
+                    for (TenantConfig tc : newTenantConfigs) {
+                        newTenantIds.add(tc.tenantIdentifier);
+                    }
+                    boolean sameTenants = newTenantIds.equals(existingTenantIds);
 
                     // For each affected tenant that already exists, check if its normalized
                     // config actually changed compared to the in-memory state.
@@ -243,24 +263,24 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     JsonObject baseConfig = Config.getBaseConfigAsJsonObject(main);
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
                     for (TenantIdentifier affected : affectedTenants) {
-                        if (existingTenantIds.contains(affected)) {
+                        if (existingTenantIds.contains(affected) && newTenantIds.contains(affected)) {
                             JsonObject normFromDb = Config.getNormalisedConfigForTenant(
-                                    affected, filteredTenantsFromDb, baseConfig);
+                                    affected, newTenantConfigs, baseConfig);
                             JsonObject normFromMemory = Config.getNormalisedConfigForTenant(
                                     affected, this.tenantConfigs, baseConfig);
                             if (!normFromDb.equals(normFromMemory)) {
                                 tenantsThatChanged.add(affected);
                             }
                         }
-                        // New tenants (not in existingTenantIds) are skipped here;
-                        // sameNumberOfTenants will be false, preventing early return.
+                        // New or removed tenants are skipped here;
+                        // sameTenants will be false, preventing early return.
                     }
 
                     // publish a new set in one write: request threads read it without a lock
                     this.dangerous_allCUDsFromDb = buildCUDSet(tenantsFromDb);
-                    this.tenantConfigs = filteredTenantsFromDb;
+                    this.tenantConfigs = newTenantConfigs;
 
-                    if (tenantsThatChanged.isEmpty() && sameNumberOfTenants) {
+                    if (tenantsThatChanged.isEmpty() && sameTenants) {
                         return tenantsThatChanged;
                     }
 

@@ -7,10 +7,29 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [12.2.2]
+
 ### Security
 
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
 - The in-memory set of connection URI domains is replaced in one step instead of being cleared and refilled, so a request served during a tenant refresh no longer sees an existing domain as missing.
+- Dashboard: the core-config API no longer returns secret config values.
+- API keys: the tenant refresh after a create/update no longer drops pending config changes of other tenants (e.g. an `api_keys` rotation).
+- OAuth2 provider: proxied requests are bound to the calling app's OAuth clients; client ids are limited to `[A-Za-z0-9._~-]`.
+- Third-party sign-in: an email change only updates the signing-in recipe user, and `isVerified` verifies only the email sent.
+- Secrets are kept out of OpenTelemetry spans and bulk-import error messages.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
+- WebAuthn: credentials and recovery tokens are bound to verified identifiers; register options use a random user handle.
+- WebAuthn credential register and email update require the user to be a member of the requested tenant.
+- TOTP: verification is serialised per user, used codes are checked app-wide, and verify-device checks the code.
+- Sessions and password reset tokens end when the account they were issued for changes.
+- SAML: an assertion is accepted only until its signed expiry, and the consumed record is kept for that window.
+- Email-password sign-up auto-verifies only the password-factor placeholder email of a user without an email.
+- Multitenancy: CDI 5.0 tenant updates no longer make login methods enabled only for `requiredSecondaryFactors` first factors.
+- Sign-in does the same password-hashing work for unknown accounts; dashboard suspension is reported only after a correct password.
+- SAML legacy flow: the code/token exchange is client-bound and single-use, and userinfo accepts only issued access tokens.
+- WebAuthn: sign-in locks the sign-in options it consumes, so concurrent sign-ins with the same assertion can no longer both succeed.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 
 ## [12.2.1]
 
