@@ -263,9 +263,12 @@ public class SAMLQueries {
     public static SAMLClaimsInfo getSAMLClaimsAndRemoveCode(Start start, TenantIdentifier tenantIdentifier, String code)
             throws StorageQueryException {
         String table = Config.getConfig(start).getSAMLClaimsTable();
-        String QUERY = "SELECT client_id, claims FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ? AND expires_at >= ?";
+        // Delete-on-read in a single atomic statement, so a code is redeemable at most once even when it is
+        // redeemed concurrently: only the caller whose DELETE removed the row gets the claims.
+        String QUERY = "DELETE FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ? AND expires_at >= ?"
+                + " RETURNING client_id, claims";
         try {
-            SAMLClaimsInfo claimsInfo = execute(start, QUERY, pst -> {
+            return execute(start, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, code);
@@ -278,16 +281,6 @@ public class SAMLQueries {
                 }
                 return null;
             });
-
-            if (claimsInfo != null) {
-                String DELETE = "DELETE FROM " + table + " WHERE app_id = ? AND tenant_id = ? AND code = ?";
-                update(start, DELETE, pst -> {
-                    pst.setString(1, tenantIdentifier.getAppId());
-                    pst.setString(2, tenantIdentifier.getTenantId());
-                    pst.setString(3, code);
-                });
-            }
-            return claimsInfo;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
