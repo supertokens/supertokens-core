@@ -56,17 +56,14 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     // when the core has `supertokens_saas_load_only_cud` set, the tenantConfigs array will be filtered
     // based on the config value. However, we need to keep all the list of CUDs from the db to be able
     // to check if the CUD is present in the DB or not, while processing the requests.
-    private final Set<String> dangerous_allCUDsFromDb = new HashSet<>();
+    private volatile Set<String> dangerous_allCUDsFromDb = new HashSet<>();
 
     private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
         TenantConfig[] allTenantsFromDb = getAllTenantsFromDb();
         this.tenantConfigs = this.getFilteredTenantConfigs(allTenantsFromDb);
-        this.dangerous_allCUDsFromDb.clear();
-
-        for (TenantConfig config : allTenantsFromDb) {
-            this.dangerous_allCUDsFromDb.add(config.tenantIdentifier.getConnectionUriDomain());
-        }
+        // publish a new set in one write: request threads read it without a lock
+        this.dangerous_allCUDsFromDb = buildCUDSet(allTenantsFromDb);
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -149,10 +146,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     boolean sameNumberOfTenants =
                             filteredTenantsFromDb.length == this.tenantConfigs.length;
 
-                    this.dangerous_allCUDsFromDb.clear();
-                    for (TenantConfig tenant : tenantsFromDb) {
-                        this.dangerous_allCUDsFromDb.add(tenant.tenantIdentifier.getConnectionUriDomain());
-                    }
+                    // publish a new set in one write: request threads read it without a lock
+                    this.dangerous_allCUDsFromDb = buildCUDSet(tenantsFromDb);
                     this.tenantConfigs = filteredTenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
@@ -273,6 +268,19 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         || tenantConfig.tenantIdentifier.getConnectionUriDomain()
                         .equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
                 .toArray(TenantConfig[]::new);
+    }
+
+    /**
+     * Builds a new set of the CUDs of the given tenants. It is published with a single assignment to the
+     * volatile dangerous_allCUDsFromDb and never modified afterwards, because request threads read it
+     * without a lock.
+     */
+    private static Set<String> buildCUDSet(TenantConfig[] tenants) {
+        Set<String> cuds = new HashSet<>();
+        for (TenantConfig tenant : tenants) {
+            cuds.add(tenant.tenantIdentifier.getConnectionUriDomain());
+        }
+        return Collections.unmodifiableSet(cuds);
     }
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {
