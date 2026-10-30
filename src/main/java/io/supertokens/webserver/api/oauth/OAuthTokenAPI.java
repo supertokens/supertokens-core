@@ -58,6 +58,8 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.net.URLDecoder;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -121,17 +123,32 @@ public class OAuthTokenAPI extends WebserverAPI {
         }
 
         Map<String, String> formFields = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
-            formFields.put(entry.getKey(), entry.getValue().getAsString());
+        String clientId;
+        try {
+            for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+                formFields.put(entry.getKey(), entry.getValue().getAsString());
+            }
+
+            if (authorizationHeader != null) {
+                String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
+                // the OAuth provider URL-decodes the client id from the Basic auth header (RFC 6749, section
+                // 2.3.1), so we do the same before checking that the client belongs to this app
+                clientId = URLDecoder.decode(parsedHeader[0], StandardCharsets.UTF_8);
+            } else {
+                clientId = formFields.get("client_id");
+            }
+        } catch (RuntimeException e) {
+            // non-primitive body values / malformed Basic auth header
+            throw new ServletException(new BadRequestException("malformed request body or authorization header"));
         }
 
-        String clientId;
-
-        if (authorizationHeader != null) {
-            String[] parsedHeader = Utils.convertFromBase64(authorizationHeader.replaceFirst("^Basic ", "").trim()).split(":");
-            clientId = parsedHeader[0];
-        } else {
-            clientId = formFields.get("client_id");
+        if (authorizationHeader != null && formFields.containsKey("client_id")
+                && !clientId.equals(formFields.get("client_id"))) {
+            // the client checked below must be the one the OAuth provider authenticates
+            OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException("invalid_request",
+                    "The client_id in the request body does not match the client in the Authorization header.",
+                    400));
+            return;
         }
 
         try {

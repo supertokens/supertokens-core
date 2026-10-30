@@ -7,9 +7,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [11.4.9]
+
 ### Security
 
 - The API-key and IP checks no longer skip enforcement when the app in the request path does not resolve; they fall back to the connection URI domain's config, then the base config.
+- Dashboard core-config API no longer returns secret config values.
+- OAuth2 provider APIs only act on OAuth clients of the calling app; client ids are validated and encoded.
+- Third-party sign-in updates only the signing-in recipe user's email and verifies only the vouched-for email.
+- Secrets are kept out of OpenTelemetry spans and bulk-import error messages.
+- OpenTelemetry: the optional Java agent (`--javaagent`) records request query strings (`url.query`), which can include recovery tokens; drop or redact `url.query` in your collector.
+- WebAuthn credentials are bound to the attested id and relying party, register options use a random user handle, and recovery tokens are tenant-bound.
+- WebAuthn credential register and email update require the user to be a member of the requested tenant.
+- TOTP verification is serialised per user, uses app-wide used codes, and verify-device always checks the code.
+- Sessions and reset/recovery tokens no longer outlive changes to the account they were issued for.
+- SAML assertions are accepted only within a signed expiry window, and the consumed record is kept for that window.
+- Sign-up auto-verifies only the password-factor placeholder email of a user without email.
+- CDI 5.0 tenant updates no longer turn login methods enabled only for requiredSecondaryFactors into first factors.
+- Sign-in does the same password work for unknown accounts; dashboard suspension is reported only after a correct password.
+- The legacy SAML code/token exchange is single-use and bound to the client.
+- Multitenancy: v2 tenant GET/list no longer return a disabled login method's factors in `firstFactors`.
 
 ## [11.4.8]
 

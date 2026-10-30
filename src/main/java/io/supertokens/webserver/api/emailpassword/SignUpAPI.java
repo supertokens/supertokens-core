@@ -83,7 +83,7 @@ public class SignUpAPI extends WebserverAPI {
                     tenantIdentifier, getVersionFromRequest(req));
 
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
-                    password);
+                    password, email);
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     user.getSupertokensUserId());

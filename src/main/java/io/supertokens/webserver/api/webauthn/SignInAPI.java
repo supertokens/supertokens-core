@@ -78,13 +78,10 @@ public class SignInAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("user", signInResult.userInfo.toJson(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_3)));
 
-            String credentialId = InputParser.parseStringOrThrowError(credentialsData, "id", false);
-
+            // the recipe user is the owner of the credential that verified the assertion
             for (LoginMethod loginMethod : signInResult.userInfo.loginMethods) {
                 if (loginMethod.recipeId.equals(RECIPE_ID.WEBAUTHN) &&
-                        loginMethod.webauthN != null &&
-                        loginMethod.webauthN.credentialIds != null &&
-                        loginMethod.webauthN.credentialIds.contains(credentialId)) {
+                        loginMethod.getSupertokensUserId().equals(signInResult.credential.userId)) {
                     result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                     break;
                 }
