@@ -81,6 +81,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 // Error codes ensure globally unique and identifiable errors in Bulk Import.
@@ -780,7 +782,8 @@ public class BulkImport {
                 Totp.createDevices(main, appIdentifier, storage, devices);
             }
         } catch (StorageQueryException e) {
-            throw new StorageTransactionLogicException(new Exception("E036: " + e.getMessage()));
+            throw new StorageTransactionLogicException(
+                    new Exception("E036: " + redactTotpSecrets(e.getMessage(), devices)));
         } catch (FeatureNotEnabledException e) {
             throw new StorageTransactionLogicException(new Exception("E037: " + e.getMessage()));
         }
@@ -841,5 +844,84 @@ public class BulkImport {
             storage.close();
         }
         userPoolToStorageMap.clear();
+    }
+
+    public static final String REDACTED_SQL_LITERAL = "'<redacted>'";
+
+    // A failed JDBC batch quotes the statement's bound values in its message ("Batch entry 0 INSERT ... VALUES
+    // (('<id>'), ('<email>'), ('<password hash>')) was aborted"). Every bulk import error that is stored, logged or
+    // returned goes through this, so none of those values (password hashes included) leave the core. Replaces what
+    // the regex '(?:[^']|'')*' matches, in one pass: java.util.regex recurses once per repetition of a group and
+    // overflows the stack on a long literal.
+    public static String redactSqlLiterals(String message) {
+        if (message == null) {
+            return null;
+        }
+        StringBuilder redacted = new StringBuilder(message.length());
+        int copiedUpTo = 0;
+        int start;
+        while ((start = message.indexOf('\'', copiedUpTo)) >= 0) {
+            int end = -1;
+            int lastEscapedQuote = -1;
+            for (int i = start + 1; i < message.length(); i++) {
+                if (message.charAt(i) != '\'') {
+                    continue;
+                }
+                if (i + 1 < message.length() && message.charAt(i + 1) == '\'') {
+                    lastEscapedQuote = i;
+                    i++;
+                    continue;
+                }
+                end = i;
+                break;
+            }
+            if (end < 0) {
+                // unterminated: like the regex, the literal ends at the last escaped quote, if there is one
+                if (lastEscapedQuote < 0) {
+                    break;
+                }
+                end = lastEscapedQuote;
+            }
+            redacted.append(message, copiedUpTo, start).append(REDACTED_SQL_LITERAL);
+            copiedUpTo = end + 1;
+        }
+        return redacted.append(message, copiedUpTo, message.length()).toString();
+    }
+
+    // Below this length a secret cannot be removed from a message by substring replacement without also
+    // rewriting unrelated text, so the message is dropped instead.
+    private static final int MIN_TOTP_SECRET_LENGTH_FOR_REDACTION = 8;
+
+    public static final String TOTP_DEVICE_ERROR_DETAILS_OMITTED =
+            "Failed to create TOTP devices (details omitted as they may contain TOTP secrets)";
+
+    // Database errors for batch inserts can echo the inserted values. This message is stored as the bulk import
+    // user's error message and can be logged, so the TOTP secrets are removed from it.
+    public static String redactTotpSecrets(String message, List<TOTPDevice> devices) {
+        if (message == null) {
+            return null;
+        }
+        // The secrets as they may appear in the message: verbatim, or as an escaped SQL string literal
+        Set<String> secrets = new HashSet<>();
+        for (TOTPDevice device : devices) {
+            if (device.secretKey != null && !device.secretKey.isEmpty()) {
+                secrets.add(device.secretKey);
+                secrets.add(device.secretKey.replace("'", "''"));
+            }
+        }
+        if (secrets.isEmpty()) {
+            return message;
+        }
+        for (String secret : secrets) {
+            if (secret.length() < MIN_TOTP_SECRET_LENGTH_FOR_REDACTION) {
+                return TOTP_DEVICE_ERROR_DETAILS_OMITTED;
+            }
+        }
+        // Single pass, longest secrets first, so that a secret that is a substring of another one cannot leave
+        // parts of the longer one in the message
+        List<String> secretsLongestFirst = new ArrayList<>(secrets);
+        secretsLongestFirst.sort((a, b) -> Integer.compare(b.length(), a.length()));
+        String alternation = secretsLongestFirst.stream().map(Pattern::quote).collect(Collectors.joining("|"));
+        return Pattern.compile(alternation).matcher(message).replaceAll(Matcher.quoteReplacement("<redacted>"));
     }
 }

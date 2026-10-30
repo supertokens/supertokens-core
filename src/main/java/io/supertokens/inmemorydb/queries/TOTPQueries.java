@@ -264,10 +264,9 @@ public class TOTPQueries {
     public static TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(Start start, Connection con,
                                                                       TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
-        // Take a lock based on the user id:
-        ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + userId +
-                        Config.getConfig(start).getTotpUsedCodesTable());
+        // Take a lock based on the user id. TOTP devices are app-wide, so the lock is app-wide too (the same key
+        // as the app-scoped read below):
+        lockUsedCodesOfUser(start, con, tenantIdentifier.toAppIdentifier(), userId);
 
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
@@ -276,6 +275,36 @@ public class TOTPQueries {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, userId);
+        }, result -> {
+            List<TOTPUsedCode> codes = new ArrayList<>();
+            while (result.next()) {
+                codes.add(TOTPUsedCodeRowMapper.getInstance().map(result));
+            }
+
+            return codes.toArray(TOTPUsedCode[]::new);
+        });
+    }
+
+    private static void lockUsedCodesOfUser(Start start, Connection con, AppIdentifier appIdentifier, String userId) {
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getTotpUsedCodesTable());
+    }
+
+    /**
+     * Query to get all used codes (expired/non-expired) of a user across all tenants of the app, in descending
+     * order of creation time. Takes a per-(app, user) lock, held until the transaction ends, before reading.
+     */
+    public static TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(Start start, Connection con,
+                                                                      AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
+        lockUsedCodesOfUser(start, con, appIdentifier, userId);
+
+        String QUERY = "SELECT * FROM " +
+                Config.getConfig(start).getTotpUsedCodesTable()
+                + " WHERE app_id = ? AND user_id = ? ORDER BY created_time_ms DESC;";
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
         }, result -> {
             List<TOTPUsedCode> codes = new ArrayList<>();
             while (result.next()) {

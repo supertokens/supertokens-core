@@ -222,8 +222,12 @@ public class Totp {
         try {
             totpSQLStorage.startTransaction(con -> {
                 try {
+                    // TOTP devices are app-wide, so the used codes (for replay protection and rate limiting) are
+                    // read across all tenants of the app. This call also takes a per-(app, user) lock that is
+                    // held until this transaction ends, so concurrent verifications of the same user are
+                    // serialised and each one sees the codes stored by the ones before it.
                     TOTPUsedCode[] usedCodes = totpSQLStorage.getAllUsedCodesDescOrder_Transaction(con,
-                            tenantIdentifier, userId);
+                            tenantIdentifier.toAppIdentifier(), userId);
 
                     // N represents # of invalid attempts that will trigger rate limiting:
                     int N = Config.getConfig(tenantIdentifier, main).getTotpMaxAttempts(); // (Default 5)
@@ -316,6 +320,12 @@ public class Totp {
                             : maxUsedCodeExpiry;
 
                     long now = System.currentTimeMillis();
+                    // Every attempt must be recorded, even when two of them land in the same millisecond. We hold
+                    // the user's lock and have read all their used codes, so storing this one strictly after the
+                    // newest of them keeps (user, created time) unique.
+                    if (usedCodes.length > 0 && usedCodes[0].createdTime >= now) {
+                        now = usedCodes[0].createdTime + 1;
+                    }
                     TOTPUsedCode newCode = new TOTPUsedCode(userId,
                             code,
                             isValid, now + 1000L * expireInSec, now);
@@ -381,8 +391,8 @@ public class Totp {
         TOTPDevice matchingDevice = null;
 
         // Here one race condition is that the same device
-        // is to be verified twice in parallel. In that case,
-        // both the API calls will return true, but that's okay.
+        // is to be verified twice in parallel (with two different valid codes).
+        // In that case, both the API calls will return true, but that's okay.
 
         // Check if the user has any devices:
         TOTPDevice[] devices = totpStorage.getDevices(tenantIdentifier.toAppIdentifier(), userId);
@@ -394,9 +404,6 @@ public class Totp {
         for (TOTPDevice device : devices) {
             if (device.deviceName.equals(deviceName)) {
                 matchingDevice = device;
-                if (device.verified) {
-                    return false; // Was already verified
-                }
                 break;
             }
         }
@@ -412,6 +419,8 @@ public class Totp {
         // verified in the devices table (because it was deleted/renamed). So the user
         // gets a UnknownDevceException.
         // This behaviour is okay so we can ignore it.
+        // The code is checked (with rate limiting and replay protection) even if the device is already
+        // verified, so that an OK response always means that a valid code was presented.
         try {
             checkAndStoreCode(tenantIdentifier, storage, main, userId, new TOTPDevice[]{matchingDevice}, code);
         } catch (UnknownTotpUserIdException e) {
@@ -419,6 +428,9 @@ public class Totp {
             throw new UnknownDeviceException();
         }
         // Will reach here only if the code is valid:
+        if (matchingDevice.verified) {
+            return false; // Was already verified
+        }
         totpStorage.markDeviceAsVerified(tenantIdentifier.toAppIdentifier(), userId, deviceName);
         return true; // Newly verified
     }
