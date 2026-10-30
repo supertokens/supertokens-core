@@ -120,8 +120,9 @@ jobs:
           fi
 
       - name: Checkout core
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           ref: ${{ inputs.core-ref }}
 
       - name: Check build.gradle and CHANGELOG
@@ -187,35 +188,39 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up JDK ${{ needs.resolve.outputs.java-version }}
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: ${{ needs.resolve.outputs.java-version }}
           distribution: zulu
 
       - name: Checkout supertokens-root
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           repository: supertokens/supertokens-root
           path: supertokens-root
           ref: ${{ needs.resolve.outputs.root-ref }}
 
       - name: Checkout supertokens-core
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           path: supertokens-root/supertokens-core
           ref: ${{ needs.resolve.outputs.core-sha }}
 
       - name: Checkout supertokens-plugin-interface
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           repository: ${{ inputs.plugin-interface-repo }}
           path: supertokens-root/supertokens-plugin-interface
           ref: ${{ needs.resolve.outputs.plugin-interface-sha }}
           token: ${{ secrets.EMBARGO_REPO_TOKEN || github.token }}
 
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
           path: supertokens-root/supertokens-postgresql-plugin
           ref: ${{ needs.resolve.outputs.postgresql-sha }}
@@ -268,9 +273,15 @@ jobs:
       core-sha: ${{ needs.resolve.outputs.core-sha }}
       postgresql-sha: ${{ needs.resolve.outputs.postgresql-sha }}
       postgresql-plugin-repo: ${{ inputs.postgresql-plugin-repo }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   test:
+    permissions:
+      contents: read
+      # The called workflow's test job publishes a JUnit check run.
+      checks: write
     needs: [ resolve, deps ]
     uses: ./.github/workflows/_release-run-tests.yml
     with:
@@ -282,7 +293,8 @@ jobs:
       java-version: ${{ needs.resolve.outputs.java-version }}
       root-ref: ${{ needs.resolve.outputs.root-ref }}
       fast-release: ${{ inputs.fast-release }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   # Only after the tests pass on exactly these commits: the image records this run's id as
   # proof, and do-release (prebuilt) refuses images without it.
@@ -305,7 +317,11 @@ jobs:
       aws-role-arn: ${{ vars.EMBARGO_PUSH_ROLE_ARN }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
       tests-run-id: ${{ github.run_id }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   stress-tests:
     if: inputs.run-stress-tests

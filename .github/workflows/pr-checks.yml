@@ -3,12 +3,17 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review, labeled, unlabeled ]
 
+permissions:
+  contents: read
+  # Both checks read the pull request through the job token.
+  pull-requests: read
+
 jobs:
   pr-title:
     name: Lint PR title
     runs-on: ubuntu-latest
     steps:
-    - uses: amannn/action-semantic-pull-request@v6
+    - uses: amannn/action-semantic-pull-request@v6.1.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -19,7 +24,9 @@ jobs:
     name: changelog
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v5.1.0
+      with:
+        persist-credentials: false
     - uses: dangoslen/changelog-enforcer@v3.7.0
       with:
         changeLogPath: 'CHANGELOG.md'

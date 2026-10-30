@@ -53,26 +53,26 @@ runs:
   using: composite
   steps:
     - name: Set up JDK
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@v5.7.0
       with:
         java-version: ${{ inputs.java-version }}
         distribution: zulu
 
     - name: Checkout supertokens-root
-      uses: actions/checkout@v5
+      uses: actions/checkout@v5.1.0
       with:
         repository: supertokens/supertokens-root
         path: supertokens-root
         ref: ${{ inputs.root-ref }}
 
     - name: Checkout supertokens-core
-      uses: actions/checkout@v5
+      uses: actions/checkout@v5.1.0
       with:
         path: supertokens-root/supertokens-core
         ref: ${{ inputs.core-sha }}
 
     - name: Checkout supertokens-plugin-interface
-      uses: actions/checkout@v5
+      uses: actions/checkout@v5.1.0
       with:
         repository: ${{ inputs.plugin-interface-repo }}
         path: supertokens-root/supertokens-plugin-interface
@@ -80,7 +80,7 @@ runs:
         token: ${{ inputs.token || github.token }}
 
     - name: Checkout supertokens-postgresql-plugin
-      uses: actions/checkout@v5
+      uses: actions/checkout@v5.1.0
       with:
         repository: ${{ inputs.postgresql-plugin-repo }}
         path: supertokens-root/supertokens-postgresql-plugin
@@ -153,14 +153,14 @@ runs:
         cat supertokens-postgresql-plugin/config.yaml >> config.yaml
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v4
+      uses: docker/setup-qemu-action@v4.4.0
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
+      uses: docker/setup-buildx-action@v4.4.1
 
     - name: Build and push image
       id: build
-      uses: docker/build-push-action@v7
+      uses: docker/build-push-action@v7.4.0
       with:
         push: true
         pull: true

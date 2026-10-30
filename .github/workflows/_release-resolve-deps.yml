@@ -2,6 +2,9 @@ name: Release – Resolve dependencies
 
 on:
   workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: false
     inputs:
       core-version:
         type: string
@@ -20,6 +23,9 @@ on:
       postgresql-sha:
         value: ${{ jobs.resolve.outputs.postgresql-sha }}
 
+permissions:
+  contents: read
+
 jobs:
   resolve:
     name: Resolve dependencies
@@ -30,7 +36,9 @@ jobs:
       plugin-interface-sha: ${{ steps.shas.outputs.plugin-interface }}
       postgresql-sha: ${{ steps.shas.outputs.postgresql }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main
         id: result
         with:

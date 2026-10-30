@@ -62,6 +62,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   # Fail fast on invalid input combinations before anything is registered
   # or published. Every other job depends on dependency-branches, so gating
@@ -94,7 +97,8 @@ jobs:
       core-version: ${{ inputs.core-version }}
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
-    secrets: inherit
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # Prebuilt (embargoed) releases: the image already exists in ECR under this version, built
   # and tested privately in supertokens-core-security. Its labels record the commits it was
@@ -115,22 +119,23 @@ jobs:
       has-db-migration: ${{ steps.manifest.outputs.has-db-migration }}
     steps:
       - name: Checkout workflow sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           sparse-checkout: .github
 
       - name: Set up crane
-        uses: ./.github/actions/setup-crane
+        uses: $/.github/actions/setup-crane
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Read image manifest
         id: manifest
@@ -192,7 +197,9 @@ jobs:
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       core-sha: ${{ needs.release-shas.outputs.core-sha }}
       postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   register-versions:
     needs: [ release-shas, derive-db-migration-flag ]
@@ -205,9 +212,14 @@ jobs:
       postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
-    secrets: inherit
+    secrets:
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   test:
+    permissions:
+      contents: read
+      # The called workflow's test job publishes a JUnit check run.
+      checks: write
     # A prebuilt image was tested privately on exactly these commits (see its tests-run-id).
     if: ${{ !inputs.prebuilt && !cancelled() && needs.register-versions.result == 'success' }}
     needs: [ release-shas, register-versions ]
@@ -217,7 +229,8 @@ jobs:
       plugin-interface-sha: ${{ needs.release-shas.outputs.plugin-interface-sha }}
       postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       fast-release: ${{ inputs.fast-release }}
-    secrets: inherit
+    secrets:
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   # Prebuilt: the migration flag derived here (from the same plugin commit) must match the
   # one recorded when the image was built.
@@ -253,7 +266,8 @@ jobs:
       release-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
       is-canary: ${{ inputs.is-canary }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
-    secrets: inherit
+    secrets:
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   # When this release ships a DB migration, open a PR against
   # supertokens-backend-apis that adds it to the CORE_MIGRATIONS registry —
@@ -287,7 +301,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout supertokens-backend-apis
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           repository: supertokens/supertokens-backend-apis
           # dev is the integration branch backend-apis PRs target; it now
@@ -301,7 +315,7 @@ jobs:
           token: ${{ secrets.BACKEND_APIS_PR_KEY }}
           path: backend-apis
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
           repository: supertokens/supertokens-postgresql-plugin
           ref: ${{ needs.release-shas.outputs.postgresql-sha }}
@@ -423,7 +437,11 @@ jobs:
       postgresql-sha: ${{ needs.release-shas.outputs.postgresql-sha }}
       target: dockerhub-dev
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      EMBARGO_REPO_TOKEN: ${{ secrets.EMBARGO_REPO_TOKEN }}
 
   stress-tests:
     if: ${{ inputs.run-stress-tests && !inputs.prebuilt && !cancelled() && needs.build-docker.result == 'success' }}
@@ -451,7 +469,11 @@ jobs:
       is-latest-release: ${{ inputs.is-latest-release }}
       is-latest-for-major: ${{ inputs.is-latest-for-major }}
       force-retag: ${{ inputs.force-retag }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
   add-release-tags:
     needs: [release-shas, release-docker, derive-db-migration-flag]
@@ -469,7 +491,9 @@ jobs:
       is-canary: ${{ inputs.is-canary }}
       is-latest-release: ${{ inputs.is-latest-release }}
       has-db-migration: ${{ needs.derive-db-migration-flag.outputs.has-db-migration == 'true' }}
-    secrets: inherit
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      SUPERTOKENS_API_KEY: ${{ secrets.SUPERTOKENS_API_KEY }}
 
   build-jars:
     needs: [add-release-tags]
@@ -480,7 +504,10 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # build-jars is skipped for canary releases; !failure() lets the
   # notification still fire in that case.
@@ -495,7 +522,7 @@ jobs:
         # The release itself succeeded at this point — a failed notification
         # must not fail the workflow. The step below leaves a memo instead.
         continue-on-error: true
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

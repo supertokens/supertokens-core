@@ -7,6 +7,9 @@ on:
     tags:
     - 'dev-*'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-versions:
     name: Dependency Versions
@@ -16,7 +19,9 @@ jobs:
       versions: ${{ steps.result.outputs.versions }}
       branches: ${{ steps.result.outputs.branches }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
+        with:
+          persist-credentials: false
       - uses: supertokens/get-core-dependencies-action@main
         with:
           run-for: PR
@@ -28,9 +33,11 @@ jobs:
     needs: [dependency-versions]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
+        with:
+          persist-credentials: false
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.11'
       - name: Run script
@@ -53,10 +60,13 @@ jobs:
             # - mongodb
       steps:
         - name: Checkout
-          uses: actions/checkout@v5
-        - name: Checkout
-          uses: actions/checkout@v5
+          uses: actions/checkout@v5.1.0
           with:
+            persist-credentials: false
+        - name: Checkout
+          uses: actions/checkout@v5.1.0
+          with:
+            persist-credentials: false
             path: ./supertokens-plugin
             repository: supertokens/supertokens-${{ matrix.plugin }}-plugin
             ref: ${{ fromJson(needs.dependency-versions.outputs.branches)[matrix.plugin] }}
@@ -70,6 +80,10 @@ jobs:
             cd supertokens-plugin
             python ../.github/helpers/register-new-plugin-version.py
   unit-tests:
+    permissions:
+      contents: read
+      # The called workflow's test job publishes a JUnit check run.
+      checks: write
     name: Run unit tests
     needs: [new-core-version, new-plugin-versions]
     uses: ./.github/workflows/unit-test.yml
@@ -80,11 +94,13 @@ jobs:
     outputs:
       tag: ${{ steps.set_tag.outputs.TAG }}
     steps:
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.11'
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Wait for Docker build
         env:
@@ -109,7 +125,7 @@ jobs:
     steps:
       - name: Mark plugin as passed
         if: matrix.plugin != 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)[matrix.plugin] != ''
-        uses: muhfaris/request-action@main
+        uses: muhfaris/request-action@v0.1.2
         with:
           url: https://api.supertokens.io/0/plugin
           method: PATCH
@@ -128,7 +144,7 @@ jobs:
             }
       - name: Mark core as passed
         if: matrix.plugin == 'sqlite' && fromJson(needs.dependency-versions.outputs.versions)['core'] != ''
-        uses: muhfaris/request-action@main
+        uses: muhfaris/request-action@v0.1.2
         with:
           url: https://api.supertokens.io/0/core
           method: PATCH

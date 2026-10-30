@@ -19,6 +19,11 @@ name: Release – Derive has-db-migration
 
 on:
   workflow_call:
+    secrets:
+      EMBARGO_REPO_TOKEN:
+        required: false
+      GH_TOKEN:
+        required: false
     inputs:
       core-version:
         type: string
@@ -42,6 +47,9 @@ on:
       sql-file:
         value: ${{ jobs.derive.outputs.sql-file }}
 
+permissions:
+  contents: read
+
 jobs:
   derive:
     name: Derive has-db-migration from migration manifest
@@ -51,15 +59,17 @@ jobs:
       sql-file: ${{ steps.derive.outputs.sql-file }}
     steps:
       - name: Checkout supertokens-postgresql-plugin
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           repository: ${{ inputs.postgresql-plugin-repo }}
           ref: ${{ inputs.postgresql-sha }}
           token: ${{ secrets.EMBARGO_REPO_TOKEN || secrets.GH_TOKEN || github.token }}
           path: plugin
       - name: Checkout supertokens-core (for CHANGELOG.md)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
         with:
+          persist-credentials: false
           ref: ${{ inputs.core-sha }}
           path: core
       - name: Derive has-db-migration

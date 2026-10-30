@@ -18,6 +18,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   # ── Parse the free-text version list into a JSON matrix ──────────────
   prepare:
@@ -28,7 +31,9 @@ jobs:
       matrix: ${{ steps.parse.outputs.matrix }}
     steps:
       - name: Checkout workflow tooling
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Parse versions into matrix
         id: parse
@@ -48,4 +53,7 @@ jobs:
       core-version: ${{ matrix.version }}
       java-version: ${{ inputs.java-version }}
       commit-to-github: ${{ inputs.commit-to-github }}
-    secrets: inherit
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}

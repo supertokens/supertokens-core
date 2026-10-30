@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 2 * * *'
 
+permissions:
+  contents: read
+
 jobs:
   container-scan:
     name: Scan SuperTokens PostgreSQL Container
@@ -17,7 +20,7 @@ jobs:
     steps:
       - name: Run Trivy vulnerability scanner
         id: container-scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         continue-on-error: true
         with:
           image-ref: supertokens/supertokens-postgresql:latest
@@ -28,7 +31,7 @@ jobs:
 
       - name: Upload scan results
         id: upload-scan-results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: container-scan-results
           path: trivy-results.json
@@ -108,7 +111,7 @@ jobs:
 
       - name: Post notification on Slack channel
         id: deployment_message
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.5
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
