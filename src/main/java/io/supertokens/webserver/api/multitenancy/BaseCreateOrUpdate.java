@@ -569,6 +569,12 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             }
         }
 
+        // Recipes that a CDI 5.0 caller sees as enabled before this update (used at the end to keep a recipe
+        // that is enabled only for requiredSecondaryFactors out of the first factors)
+        boolean emailPasswordWasEnabled = tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+        boolean thirdPartyWasEnabled = tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+        boolean passwordlessWasEnabled = tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+
         List<String> updateKeys = new ArrayList<>();
         List<Object> updateValues = new ArrayList<>();
 
@@ -931,6 +937,74 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                             tenantConfig.coreConfig
                     );
                 }
+            }
+        }
+
+        // With firstFactors == null every enabled recipe is a first factor. A recipe that a CDI 5.0 caller did not
+        // see as enabled before this update and that this update does not enable explicitly is on only for
+        // requiredSecondaryFactors (or is hidden by an empty firstFactors list), so it must not become a first
+        // factor: in that case store firstFactors explicitly without it.
+        if (tenantConfig.firstFactors == null) {
+            boolean emailPasswordNotRequested = tenantConfig.emailPasswordConfig.enabled &&
+                    !emailPasswordWasEnabled && !Boolean.TRUE.equals(emailPasswordEnabled);
+            boolean thirdPartyNotRequested = tenantConfig.thirdPartyConfig.enabled &&
+                    !thirdPartyWasEnabled && !Boolean.TRUE.equals(thirdPartyEnabled);
+            boolean passwordlessNotRequested = tenantConfig.passwordlessConfig.enabled &&
+                    !passwordlessWasEnabled && !Boolean.TRUE.equals(passwordlessEnabled);
+
+            if (emailPasswordNotRequested || thirdPartyNotRequested || passwordlessNotRequested) {
+                Set<String> firstFactorsSet = new HashSet<>();
+                if (tenantConfig.emailPasswordConfig.enabled && !emailPasswordNotRequested) {
+                    firstFactorsSet.add("emailpassword");
+                }
+                if (tenantConfig.thirdPartyConfig.enabled && !thirdPartyNotRequested) {
+                    firstFactorsSet.add("thirdparty");
+                }
+                if (tenantConfig.passwordlessConfig.enabled && !passwordlessNotRequested) {
+                    firstFactorsSet.add("otp-phone");
+                    firstFactorsSet.add("otp-email");
+                    firstFactorsSet.add("link-phone");
+                    firstFactorsSet.add("link-email");
+                }
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        firstFactorsSet.toArray(new String[0]),
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            }
+        }
+
+        // An empty firstFactors list means "no login method" in CDI 5.0. If this update explicitly enables a
+        // recipe but ends with an empty list (e.g. because it also disabled the only recipe in the list), keep the
+        // explicitly enabled recipes as the first factors, as the reset at the top does for an empty list.
+        if (tenantConfig.firstFactors != null && tenantConfig.firstFactors.length == 0) {
+            Set<String> firstFactorsSet = new HashSet<>();
+            if (Boolean.TRUE.equals(emailPasswordEnabled) && tenantConfig.emailPasswordConfig.enabled) {
+                firstFactorsSet.add("emailpassword");
+            }
+            if (Boolean.TRUE.equals(thirdPartyEnabled) && tenantConfig.thirdPartyConfig.enabled) {
+                firstFactorsSet.add("thirdparty");
+            }
+            if (Boolean.TRUE.equals(passwordlessEnabled) && tenantConfig.passwordlessConfig.enabled) {
+                firstFactorsSet.add("otp-phone");
+                firstFactorsSet.add("otp-email");
+                firstFactorsSet.add("link-phone");
+                firstFactorsSet.add("link-email");
+            }
+            if (!firstFactorsSet.isEmpty()) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        firstFactorsSet.toArray(new String[0]),
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
             }
         }
 

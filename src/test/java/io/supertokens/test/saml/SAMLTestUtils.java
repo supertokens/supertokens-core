@@ -57,14 +57,8 @@ public class SAMLTestUtils {
                                                                       String idpEntityId,
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin) throws Exception {
-        // IdP-initiated login requires an ACS allow-list, so default it to the client's ACS URL.
-        JsonArray acsURLs = null;
-        if (allowIDPInitiatedLogin) {
-            acsURLs = new JsonArray();
-            acsURLs.add(acsURL);
-        }
         return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
-                allowIDPInitiatedLogin, acsURLs);
+                allowIDPInitiatedLogin, defaultAcsURLs(acsURL, allowIDPInitiatedLogin), null);
     }
 
     public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
@@ -74,11 +68,49 @@ public class SAMLTestUtils {
                                                                       String idpSsoUrl,
                                                                       boolean allowIDPInitiatedLogin,
                                                                       JsonArray acsURLs) throws Exception {
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
+                allowIDPInitiatedLogin, acsURLs, null);
+    }
+
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin,
+                                                                      String requestedClientId) throws Exception {
+        return createClientWithGeneratedMetadata(process, defaultRedirectURI, acsURL, idpEntityId, idpSsoUrl,
+                allowIDPInitiatedLogin, defaultAcsURLs(acsURL, allowIDPInitiatedLogin), requestedClientId);
+    }
+
+    // IdP-initiated login requires an ACS allow-list, so default it to the client's ACS URL.
+    private static JsonArray defaultAcsURLs(String acsURL, boolean allowIDPInitiatedLogin) {
+        if (!allowIDPInitiatedLogin) {
+            return null;
+        }
+        JsonArray acsURLs = new JsonArray();
+        acsURLs.add(acsURL);
+        return acsURLs;
+    }
+
+    // requestedClientId != null forces a caller-supplied clientId (verbatim, dots allowed);
+    // null lets the core generate the usual "st_saml_<uuid>".
+    public static CreatedClientInfo createClientWithGeneratedMetadata(TestingProcessManager.TestingProcess process,
+                                                                      String defaultRedirectURI,
+                                                                      String acsURL,
+                                                                      String idpEntityId,
+                                                                      String idpSsoUrl,
+                                                                      boolean allowIDPInitiatedLogin,
+                                                                      JsonArray acsURLs,
+                                                                      String requestedClientId) throws Exception {
         MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
         String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, idpSsoUrl, keyMaterial.certificate);
         String metadataXMLBase64 = java.util.Base64.getEncoder().encodeToString(metadataXML.getBytes(StandardCharsets.UTF_8));
 
         JsonObject createClientInput = new JsonObject();
+        if (requestedClientId != null) {
+            createClientInput.addProperty("clientId", requestedClientId);
+        }
         createClientInput.addProperty("clientSecret", "secret");
         createClientInput.addProperty("defaultRedirectURI", defaultRedirectURI);
         JsonArray redirectURIs = new JsonArray();

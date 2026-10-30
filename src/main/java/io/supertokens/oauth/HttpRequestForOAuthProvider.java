@@ -25,13 +25,20 @@ public class HttpRequestForOAuthProvider {
     private static final int CONNECTION_TIMEOUT = 15000;
     private static final int READ_TIMEOUT = 15000;
 
+    // Both the names and the values are URL encoded, so that the parameters the OAuth provider parses are exactly
+    // the ones in the map (a name cannot smuggle in additional parameters).
+    private static String encodeParams(Map<String, String> params) {
+        return params.entrySet().stream()
+                .map(e -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8) + "="
+                        + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"));
+    }
+
     public static Response doGet(String url, Map<String, String> headers, Map<String, String> queryParams) throws IOException {
         if (queryParams == null) {
             queryParams = new HashMap<>();
         }
-        URL obj = new URL(url + "?" + queryParams.entrySet().stream()
-                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                .collect(Collectors.joining("&")));
+        URL obj = new URL(url + "?" + encodeParams(queryParams));
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setInstanceFollowRedirects(false); // Do not follow redirect
         con.setRequestMethod("GET");
@@ -62,9 +69,7 @@ public class HttpRequestForOAuthProvider {
             }
 
             try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
-                os.writeBytes(formFields.entrySet().stream()
-                        .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                        .collect(Collectors.joining("&")));
+                os.writeBytes(encodeParams(formFields));
             }
             return getResponse(con);
         } catch (FileNotFoundException e) {
@@ -102,9 +107,7 @@ public class HttpRequestForOAuthProvider {
             if (queryParams == null) {
                 queryParams = new HashMap<>();
             }
-            URL obj = new URL(url + "?" + queryParams.entrySet().stream()
-                    .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                    .collect(Collectors.joining("&")));
+            URL obj = new URL(url + "?" + encodeParams(queryParams));
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod("PUT");
             con.setConnectTimeout(CONNECTION_TIMEOUT);
@@ -133,9 +136,7 @@ public class HttpRequestForOAuthProvider {
                 queryParams = new HashMap<>();
             }
 
-            URL obj = new URL(url + "?" + queryParams.entrySet().stream()
-                    .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                    .collect(Collectors.joining("&")));
+            URL obj = new URL(url + "?" + encodeParams(queryParams));
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod("DELETE");
             con.setConnectTimeout(CONNECTION_TIMEOUT);
