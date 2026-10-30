@@ -630,7 +630,9 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                     .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB);
             if (keyValueInfo == null) {
                 //Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "No feature flag set in db");
-                return new EE_FEATURES[]{};
+                this.enabledFeaturesFromDb = new EE_FEATURES[]{};
+                this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+                return this.enabledFeaturesFromDb;
             }
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
