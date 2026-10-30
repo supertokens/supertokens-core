@@ -22,7 +22,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.crypto.BadPaddingException;
@@ -48,6 +50,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -55,6 +58,27 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
+    private static final String UNSAFE_CLIENT_ID_MESSAGE =
+            "clientId can only contain letters, digits and the characters . _ ~ -";
+
+    /**
+     * The input is sent to the OAuth provider with its keys converted from camel to snake case. Returns an error
+     * message if two keys would end up as the same key (the last one would silently win, e.g. clientId and
+     * client_id), or if the client id is given under any other key than clientId. Returns null otherwise.
+     */
+    private static String findConflictingKey(JsonObject input) {
+        Set<String> convertedKeys = new HashSet<>();
+        for (String key : input.keySet()) {
+            String convertedKey = Utils.camelCaseToSnakeCase(key);
+            if ("client_id".equals(convertedKey) && !"clientId".equals(key)) {
+                return "The client id must be given as clientId";
+            }
+            if (!convertedKeys.add(convertedKey)) {
+                return "The field " + key + " is given more than once (in different spellings)";
+            }
+        }
+        return null;
+    }
     @Override
     public String getPath() {
         return "/recipe/oauth/clients";
@@ -75,14 +99,18 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
-                null, // clientIdToCheck
-                "/admin/clients/" + clientId, // proxyPath
+                clientId, // clientIdToCheck
+                OAuth.getAdminClientPath(clientId), // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>()
             );
             if (response != null) {
+                if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                    // the OAuth provider resolved a different client than the one checked above
+                    throw new OAuthClientNotFoundException();
+                }
                 OAuthClient client = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 if (client.clientSecret != null) {
@@ -106,13 +134,32 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
+        // must run before the defaults below are added, so that they cannot be overridden by another spelling
+        String keyError = findConflictingKey(input);
+        if (keyError != null) {
+            OAuthProxyHelper.handleOAuthAPIException(resp,
+                    new OAuthAPIException("invalid_client_metadata", keyError, 400));
+            return;
+        }
+
         // Defaults that we require
         input.addProperty("accessTokenStrategy", "jwt");
         input.addProperty("skipConsent", true);
         input.addProperty("subjectType", "public");
 
+        String expectedClientId;
         if (!input.has("clientId")) {
-            input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+            expectedClientId = "stcl_" + UUID.randomUUID();
+            input.addProperty("clientId", expectedClientId);
+        } else {
+            expectedClientId = InputParser.parseStringOrThrowError(input, "clientId", false);
+            if (!OAuth.isSafeClientId(expectedClientId)) {
+                // the id is used in OAuth provider paths, form fields and Basic auth headers, so it must not need
+                // any encoding (otherwise it could alias the client of another app)
+                OAuthProxyHelper.handleOAuthAPIException(resp,
+                        new OAuthAPIException("invalid_client_metadata", UNSAFE_CLIENT_ID_MESSAGE, 400));
+                return;
+            }
         }
 
         boolean enableRefreshTokenRotation = false;
@@ -144,7 +191,30 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 new HashMap<>() // headers
             );
             if (response != null) {
-                String clientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
+                // the id the OAuth provider created must be the validated (or generated) one
+                if (!OAuth.isResponseForClient(response.jsonResponse, expectedClientId)
+                        || !OAuth.isSafeClientId(response.jsonResponse.getAsJsonObject().get("clientId").getAsString())) {
+                    // the OAuth provider created a client with another id than the validated one: remove it again
+                    // (best effort) instead of recording it in this app
+                    String createdClientId = null;
+                    if (response.jsonResponse != null && response.jsonResponse.isJsonObject()
+                            && response.jsonResponse.getAsJsonObject().has("clientId")) {
+                        createdClientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
+                    }
+                    if (createdClientId != null) {
+                        try {
+                            OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, null,
+                                    OAuth.getAdminClientPath(createdClientId), true, true, new HashMap<>(),
+                                    new JsonObject(), new HashMap<>());
+                        } catch (Exception e) {
+                            // ignore, the client is not recorded in this app either way
+                        }
+                    }
+                    OAuthProxyHelper.handleOAuthAPIException(resp,
+                            new OAuthAPIException("invalid_client_metadata", UNSAFE_CLIENT_ID_MESSAGE, 400));
+                    return;
+                }
+                String clientId = expectedClientId;
                 String clientSecret = null;
                 if (response.jsonResponse.getAsJsonObject().has("clientSecret")) {
                     clientSecret = response.jsonResponse.getAsJsonObject().get("clientSecret").getAsString();
@@ -169,6 +239,12 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String keyError = findConflictingKey(input);
+        if (keyError != null) {
+            OAuthProxyHelper.handleOAuthAPIException(resp,
+                    new OAuthAPIException("invalid_client_metadata", keyError, 400));
+            return;
+        }
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
         // Apply existing client config on top of input
@@ -180,8 +256,14 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
                     clientId,
-                    "/admin/clients/" + clientId,
+                    OAuth.getAdminClientPath(clientId),
                     true, true, queryParams, null);
+
+            if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                // the OAuth provider resolved a different client than the one checked above
+                OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+                return;
+            }
 
             JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
@@ -224,7 +306,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 appIdentifier,
                 storage,
                 clientId, // clientIdToCheck
-                "/admin/clients/" + clientId,
+                OAuth.getAdminClientPath(clientId),
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
@@ -233,6 +315,11 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
 
             if (response != null) {
+                if (!OAuth.isResponseForClient(response.jsonResponse, clientId)) {
+                    // the OAuth provider updated a different client than the one checked above
+                    OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+                    return;
+                }
                 try {
                     OAuth.addOrUpdateClient(main, appIdentifier, storage, clientId, client.clientSecret, client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
                 } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidConfigException e) {

@@ -393,6 +393,24 @@ public class ThirdPartyQueries {
         });
     }
 
+    public static int updateUserEmailOfUser_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                        String userId, String thirdPartyId, String thirdPartyUserId,
+                                                        String newEmail)
+            throws SQLException, StorageQueryException {
+        // The same (third_party_id, third_party_user_id) can belong to different recipe users in different
+        // tenants of the app, so the update must only touch the row of the recipe user it was called for.
+        String QUERY = "UPDATE " + getConfig(start).getThirdPartyUsersTable()
+                + " SET email = ? WHERE app_id = ? AND user_id = ? AND third_party_id = ? AND third_party_user_id = ?";
+
+        return update(con, QUERY, pst -> {
+            pst.setString(1, newEmail);
+            pst.setString(2, appIdentifier.getAppId());
+            pst.setString(3, userId);
+            pst.setString(4, thirdPartyId);
+            pst.setString(5, thirdPartyUserId);
+        });
+    }
+
     private static UserInfoPartial getUserInfoUsingUserId_Transaction(Start start, Connection con,
                                                                       AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {
