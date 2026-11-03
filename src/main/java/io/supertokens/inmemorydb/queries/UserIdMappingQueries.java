@@ -44,6 +44,26 @@ public class UserIdMappingQueries {
         return execute(start, QUERY, pst -> pst.setString(1, appIdentifier.getAppId()), ResultSet::next);
     }
 
+    public static boolean hasUserIdMappings_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT 1 FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE app_id = ? LIMIT 1";
+        return execute(sqlCon, QUERY, pst -> pst.setString(1, appIdentifier.getAppId()), ResultSet::next);
+    }
+
+    public static void createUserIdMapping_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                       String superTokensUserId, String externalUserId,
+                                                       String externalUserIdInfo)
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getUserIdMappingTable()
+                + " (app_id, supertokens_user_id, external_user_id, external_user_id_info)" + " VALUES(?, ?, ?, ?)";
+        update(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, superTokensUserId);
+            pst.setString(3, externalUserId);
+            pst.setString(4, externalUserIdInfo);
+        });
+    }
+
     public static String getQueryToCreateUserIdMappingTable(Start start) {
         String tableName = Config.getConfig(start).getUserIdMappingTable();
         // @formatter:off

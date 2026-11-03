@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import javax.annotation.Nullable;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -346,6 +347,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     Storage s = ((StorageLayer) resources.get(key)).storage;
                     storagesToInit.computeIfAbsent(s, k -> new HashSet<>()).add(key.getTenantIdentifier());
                 }
+                // Until the reloaded storages are checked for user id mappings, every app reads them.
+                io.supertokens.useridmapping.UserIdMappingOptOut.forgetAllChecks(main);
                 setAppsWithUserIdMappingDisabled(main, resources);
 
                 return null;
@@ -358,6 +361,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         // Connect every pool concurrently now that the ResourceDistributor lock is released.
         initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, null);
     }
 
     /**
@@ -374,6 +378,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         JsonObject baseConfig = Config.getBaseConfigAsJsonObject(main);
         Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        Set<AppIdentifier> changedApps = new HashSet<>();
+        for (TenantIdentifier changed : tenantsThatChanged) {
+            changedApps.add(changed.toAppIdentifier());
+        }
 
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
@@ -423,6 +431,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                     }
                 }
+                io.supertokens.useridmapping.UserIdMappingOptOut.forgetCheck(main, changedApps);
                 setAppsWithUserIdMappingDisabled(main,
                         main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY));
                 return null;
@@ -432,11 +441,35 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, changedApps);
     }
 
-    // Tells every loaded storage which of the apps it serves have disable_user_id_mapping on, so it skips the
-    // userid_mapping reads it makes on its own (user hydration, session lookup, WebAuthn user queries) for them.
-    // Every path that loads storages loads the config first, so the flag read here is the one the new storages serve.
+    // Once the storages are initialised, checks the apps with disable_user_id_mapping on for user id mappings (all
+    // loaded apps if appIdentifiers is null), then tells the storages which apps may skip mapping reads.
+    private static void checkAppsWithUserIdMappingDisabled(Main main, @Nullable Set<AppIdentifier> appIdentifiers) {
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Set<AppIdentifier> appsToCheck = appIdentifiers;
+        if (appsToCheck == null) {
+            appsToCheck = new HashSet<>();
+            for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                appsToCheck.add(key.getTenantIdentifier().toAppIdentifier());
+            }
+        }
+        io.supertokens.useridmapping.UserIdMappingOptOut.checkApps(main, appsToCheck);
+        setAppsWithUserIdMappingDisabled(main, resources);
+    }
+
+    // Re-tells every loaded storage which apps may skip mapping reads, after that changed outside a storage load.
+    public static void refreshAppsWithUserIdMappingDisabled(Main main) {
+        setAppsWithUserIdMappingDisabled(main, main.getResourceDistributor().getAllResourcesWithResourceKey(
+                RESOURCE_KEY));
+    }
+
+    // Tells every loaded storage which of the apps it serves may skip the userid_mapping reads it makes on its own
+    // (user hydration, session lookup, WebAuthn user queries): those with disable_user_id_mapping on whose databases
+    // were checked and have no mappings, or where the flag is forced. Every path that loads storages loads the
+    // config first, so the flag read here is the one the new storages serve.
     private static void setAppsWithUserIdMappingDisabled(Main main,
                                                          Map<ResourceDistributor.KeyClass,
                                                                  ResourceDistributor.SingletonResource> resources) {
@@ -446,7 +479,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             Set<AppIdentifier> disabledApps = disabledAppsPerStorage.computeIfAbsent(
                     ((StorageLayer) entry.getValue()).storage, k -> new HashSet<>());
             AppIdentifier appIdentifier = entry.getKey().getTenantIdentifier().toAppIdentifier();
-            if (io.supertokens.useridmapping.UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+            if (io.supertokens.useridmapping.UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
                 disabledApps.add(appIdentifier);
             }
         }

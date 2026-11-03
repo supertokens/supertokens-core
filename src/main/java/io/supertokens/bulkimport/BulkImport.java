@@ -655,7 +655,13 @@ public class BulkImport {
                 Map<String, Exception> errorsByPosition = ((BulkImportBatchInsertException) e.getCause()).exceptionByUserId;
                 for (String userid : errorsByPosition.keySet()) {
                     Exception exception = errorsByPosition.get(userid);
-                    if (exception instanceof ServletException) {
+                    if (exception instanceof ServletException && exception.getCause() != null
+                            && UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE.equals(
+                                    exception.getCause().getMessage())) {
+                        // disable_user_id_mapping was turned on while the batch was being imported
+                        errorsByPosition.put(userid, new Exception("E035: Cannot set externalUserId: "
+                                + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE));
+                    } else if (exception instanceof ServletException) {
                         String message =  "E030: " + e.getMessage();
                         errorsByPosition.put(userid, new Exception(message));
                     } else if (exception instanceof UserIdMappingAlreadyExistsException) {

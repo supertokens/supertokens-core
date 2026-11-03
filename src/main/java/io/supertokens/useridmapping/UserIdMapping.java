@@ -105,7 +105,8 @@ public class UserIdMapping {
         List<String> appsWithMappings = new ArrayList<>();
         for (TenantConfig tenantConfig : Multitenancy.getAllTenants(main)) {
             AppIdentifier appIdentifier = tenantConfig.tenantIdentifier.toAppIdentifier();
-            if (!checkedApps.add(appIdentifier) || !isUserIdMappingDisabled(main, appIdentifier)) {
+            if (!checkedApps.add(appIdentifier) || !isUserIdMappingDisabled(main, appIdentifier)
+                    || UserIdMappingOptOut.isForced(main, appIdentifier)) {
                 continue;
             }
             try {
@@ -256,9 +257,11 @@ public class UserIdMapping {
         }
 
 
-        StorageUtils.getUserIdMappingStorage(userStorage)
-                .createUserIdMapping(appIdentifier, superTokensUserId,
-                        externalUserId, externalUserIdInfo);
+        UserIdMappingOptOut.createWhileUserIdMappingIsEnabled(main, appIdentifier, userStorage, con -> {
+            ((UserIdMappingSQLStorage) userStorage).createUserIdMapping_Transaction(con, appIdentifier,
+                    superTokensUserId, externalUserId, externalUserIdInfo);
+            return null;
+        });
     }
 
     //support method for the primary intention of bulk importing users.
@@ -400,7 +403,22 @@ public class UserIdMapping {
                 mappingInCurrentStorageThatNeedsToBeDone.put(userIdInQuestion, superTokensUserIdToExternalUserId.get(userIdInQuestion));
             }
 
-            StorageUtils.getUserIdMappingStorage(storage).createBulkUserIdMapping(appIdentifier, mappingInCurrentStorageThatNeedsToBeDone);
+            try {
+                UserIdMappingOptOut.createWhileUserIdMappingIsEnabled(main, appIdentifier, storage, con -> {
+                    ((UserIdMappingSQLStorage) storage).createBulkUserIdMapping_Transaction(con, appIdentifier,
+                            mappingInCurrentStorageThatNeedsToBeDone);
+                    return null;
+                });
+            } catch (ServletException e) {
+                // disable_user_id_mapping was turned on for the app
+                for (Map.Entry<String, String> mapping : mappingInCurrentStorageThatNeedsToBeDone.entrySet()) {
+                    mappingResults.add(new UserIdBulkMappingResult(mapping.getKey(), mapping.getValue(), e));
+                }
+                continue;
+            } catch (UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
+                // the bulk insert reports constraint errors as StorageQueryException, so this doesn't happen
+                throw new StorageQueryException(e);
+            }
 
             EmailVerificationStorage emailVerificationStorage = StorageUtils.getEmailVerificationStorage(storage);
             emailVerificationStorage.updateMultipleIsEmailVerifiedToExternalUserIds(appIdentifier, supertokensIdToExternalIdInCurrentStorageForEmailUpdate);
@@ -506,7 +524,7 @@ public class UserIdMapping {
             Main main, AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        if (isUserIdMappingDisabled(main, appIdentifier)) {
+        if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
             return null;
         }
         return readUserIdMapping(appIdentifier, storage, userId, userIdType);
@@ -553,7 +571,7 @@ public class UserIdMapping {
             Main main, AppIdentifier appIdentifier, Storage storage, List<String> userIds,
             UserIdType userIdType)
             throws StorageQueryException {
-        if (isUserIdMappingDisabled(main, appIdentifier)) {
+        if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
             return new ArrayList<>();
         }
         UserIdMappingSQLStorage uidMappingStorage =
@@ -577,7 +595,7 @@ public class UserIdMapping {
             AppIdentifier appIdentifier, Storage storage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        if (isUserIdMappingDisabled(main, appIdentifier)) {
+        if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
             return null;
         }
         return readUserIdMapping(con, appIdentifier, storage, userId, userIdType);
@@ -735,7 +753,7 @@ public class UserIdMapping {
             Storage storage,
             ArrayList<String> userIds)
             throws StorageQueryException {
-        if (isUserIdMappingDisabled(main, appIdentifier)) {
+        if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
             return new HashMap<>();
         }
         // userIds are already filtered for a tenant
@@ -833,7 +851,7 @@ public class UserIdMapping {
                                                       AppIdentifier appIdentifier, Storage storage,
                                                       AuthRecipeUserInfo[] users)
             throws StorageQueryException {
-        if (isUserIdMappingDisabled(main, appIdentifier)) {
+        if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
             applyExternalUserIds(users, new HashMap<>());
             return;
         }

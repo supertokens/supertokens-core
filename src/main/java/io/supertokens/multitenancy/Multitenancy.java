@@ -78,6 +78,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
@@ -183,11 +184,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig,
+    // Returns the apps whose disable_user_id_mapping the config turns on, with the database to check each in; the
+    // write must take the mapping-creation lock for them (see UserIdMappingOptOut).
+    private static List<UserIdMappingOptOut.DisablingTarget> validateTenantConfig(Main main,
+                                                                               TenantConfig targetTenantConfig,
                                              boolean shouldPreventProtecterdConfigUpdate,
                                              boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException, StorageQueryException {
+
+        List<UserIdMappingOptOut.DisablingTarget> userIdMappingDisablingTargets = new ArrayList<>();
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (targetTenantConfig.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
@@ -276,7 +282,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 changedConfigs.put(targetTenantConfig.tenantIdentifier, normalisedConfig);
             }
 
-            assertNoUserIdMappingsWhereMappingGetsDisabled(main, changedConfigs);
+            userIdMappingDisablingTargets = assertNoUserIdMappingsWhereMappingGetsDisabled(main, changedConfigs);
         }
 
         // Validate migration_mode state-machine transitions. We only enforce this when the
@@ -302,6 +308,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         if (!skipThirdPartyConfigValidation) {
             ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
         }
+        return userIdMappingDisablingTargets;
     }
 
     // Whether the tenant is the target or one of its descendants in the config hierarchy (the target being an app's
@@ -317,9 +324,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     // also covers an app that moves to another database while the flag is on. An app that already has the flag on
     // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
     // flag was turned on, and mapping creation is rejected since then. An app being created has no mappings yet.
-    private static void assertNoUserIdMappingsWhereMappingGetsDisabled(Main main,
-                                                                       Map<TenantIdentifier, JsonObject> configs)
+    // This check is a fast, lock-free answer for the config API; the returned targets are checked again under the
+    // mapping-creation lock when the config is written. With disable_user_id_mapping_force on, nothing is checked:
+    // existing mappings are ignored.
+    private static List<UserIdMappingOptOut.DisablingTarget> assertNoUserIdMappingsWhereMappingGetsDisabled(
+            Main main, Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
+        List<UserIdMappingOptOut.DisablingTarget> targets = new ArrayList<>();
         // one pass over the loaded storages: user pools per app, and a loaded storage per user pool
         Map<TenantIdentifier, String> loadedTenantUserPools = new HashMap<>();
         Map<AppIdentifier, Set<String>> appUserPools = new HashMap<>();
@@ -338,6 +349,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
             JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
             if (disabled == null || disabled.isJsonNull() || !disabled.getAsBoolean()) {
+                continue;
+            }
+            JsonElement forced = entry.getValue().get("disable_user_id_mapping_force");
+            if (forced != null && !forced.isJsonNull() && forced.getAsBoolean()) {
                 continue;
             }
             TenantIdentifier tenantIdentifier = entry.getKey();
@@ -374,7 +389,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         + "for the app: remove them first"
                         : "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
             }
+            targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage));
         }
+        return targets;
     }
 
     /**
@@ -433,7 +450,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
 
-        validateTenantConfig(main, newTenant, shouldPreventProtectedConfigUpdate, skipThirdPartyConfigValidation);
+        List<UserIdMappingOptOut.DisablingTarget> userIdMappingDisablingTargets = validateTenantConfig(main,
+                newTenant, shouldPreventProtectedConfigUpdate, skipThirdPartyConfigValidation);
 
         boolean creationInSharedDbSucceeded = false;
         List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
@@ -457,7 +475,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         } catch (DuplicateTenantException e) {
             if (!creationInSharedDbSucceeded) {
                 try {
-                    StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
+                    if (userIdMappingDisablingTargets.isEmpty()) {
+                        StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
+                    } else {
+                        UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping(main, newTenant,
+                                userIdMappingDisablingTargets);
+                    }
                     // Use the fast refresh path for the update case as well.
                     tenantsThatChanged = MultitenancyHelper.getInstance(main)
                             .refreshAfterKnownTenantChange(newTenant.tenantIdentifier);

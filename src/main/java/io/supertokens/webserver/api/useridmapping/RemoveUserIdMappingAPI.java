@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -94,6 +95,9 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
                     getAppIdentifier(req),
                     storageAndUserIdMapping.storage, userId, userIdType, force);
+            if (didMappingExist) {
+                UserIdMappingOptOut.checkAgainAfterMappingRemoval(main, getAppIdentifier(req));
+            }
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);
