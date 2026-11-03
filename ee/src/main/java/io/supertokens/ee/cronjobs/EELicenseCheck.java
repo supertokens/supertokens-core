@@ -3,6 +3,7 @@ package io.supertokens.ee.cronjobs;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.RetrySoon;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.ee.EEFeatureFlag;
@@ -35,7 +36,9 @@ public class EELicenseCheck extends CronTask {
 
     @Override
     protected void doTaskPerApp(AppIdentifier app) throws Exception {
-        FeatureFlag.getInstance(main, app).syncFeatureFlagWithLicenseKey();
+        // a failed sync (e.g. a user count that could not be taken) is retried in a few minutes, not tomorrow
+        RetrySoon.run(main, "EELicenseCheck", app,
+                a -> FeatureFlag.getInstance(main, a).syncFeatureFlagWithLicenseKey());
     }
 
     @Override

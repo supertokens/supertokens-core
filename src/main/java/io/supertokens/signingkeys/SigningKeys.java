@@ -341,6 +341,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     private void updateKeyCacheIfNotChangedLocked(List<JWTSigningKeyInfo> oldKeyInfo)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
+        // a static legacy key moves into the JWT signing keys read below, so move it before reading either kind
+        AccessTokenSigningKey.getInstance(appIdentifier, main).ensureLegacyKeyTransferred();
         if (this.dynamicKeys == null ||
                 // First we disregard expired keys - it doesn't matter if they were known or not
                 this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())

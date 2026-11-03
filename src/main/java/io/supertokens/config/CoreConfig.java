@@ -138,6 +138,27 @@ public class CoreConfig {
                     + "schema fail. (Default: true)")
     private boolean schema_check_strict_mode = true;
 
+    @EnvName("STORAGE_INIT_TIMEOUT_SECONDS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How long (seconds) the core waits at startup for a tenant storage to initialise, counted from when its "
+                    + "own initialisation starts. A storage that takes longer is logged as an error and startup "
+                    + "continues without it, while it keeps initialising in the background. The base storage is "
+                    + "always waited for. Must be >= 1. (Default: 120)")
+    private int storage_init_timeout_seconds = 120;
+
+    @EnvName("STORAGE_INIT_PARALLELISM")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How many tenant storages (connection pools) the core initialises at the same time at startup. A higher "
+                    + "value starts many tenant databases faster, a lower one sends fewer connections at once to a "
+                    + "database many tenants share. Each storage still initialising after "
+                    + "storage_init_timeout_seconds lets one more storage start, so while such storages are still "
+                    + "running, more than this many can be initialising. Must be >= 1. (Default: 16)")
+    private int storage_init_parallelism = 16;
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -241,12 +262,17 @@ public class CoreConfig {
     @NotConflictingInConnectionUriDomain
     @JsonProperty
     @ConfigDescription(
-            "Maximum number of requests from one connection URI domain that may be in flight at the same time (i.e. "
-                    + "how many of the max_server_pool_size threads one tenant may hold). This is a fair-share rule, "
-                    + "enforced only while the request pool is saturated (see concurrency_cap_reserved_pool_percent): "
-                    + "a connection URI domain over its cap then gets HTTP 429 immediately instead of a thread; below "
-                    + "that, no request is ever rejected. Must be the same for all apps/tenants under a connection URI "
-                    + "domain and cannot exceed max_server_pool_size. 0 disables the cap. (Default: 0)")
+            "Maximum number of requests from one connection URI domain that may be in flight at the "
+                    + "same time. Only requests that pass the API-key check for an app that exists under the "
+                    + "domain count toward it; requests to routes without an API-key check (e.g. /hello, "
+                    + "/livez, /.well-known/jwks.json) and requests naming an app that does not exist only add "
+                    + "to the pool's saturation and are never capped. Requests on the admin port (admin_port) "
+                    + "bypass both the cap and the saturation count. This is a fair-share rule, enforced only "
+                    + "while the request pool is saturated (see concurrency_cap_reserved_pool_percent): a "
+                    + "connection URI domain over its cap then gets HTTP 429 immediately instead of a thread; "
+                    + "below that, no request is ever rejected. Must be the same for all apps/tenants under a "
+                    + "connection URI domain and cannot exceed max_server_pool_size. 0 disables the cap. "
+                    + "(Default: 0)")
     private int max_concurrent_requests_per_cud = 0;
 
     @EnvName("CONCURRENCY_CAP_RESERVED_POOL_PERCENT")
@@ -258,6 +284,21 @@ public class CoreConfig {
                     + "free threads than this; below that, tenants may exceed their cap. 100 keeps no headroom, so the "
                     + "cap is always enforced (a hard cap). Must be between 1 and 100. (Default: 25)")
     private int concurrency_cap_reserved_pool_percent = 25;
+
+    @EnvName("USERS_COUNT_MAX_AGE_MS")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How old, in milliseconds, a full user count may be before it is counted again. Telemetry's user " +
+                    "count, the license-usage stats and the unfiltered tenant count of /users/count on CDI 5.7 (or " +
+                    "5.6 with allowApproximate) are the last full count plus the sign-ups, deletions and links " +
+                    "logged since; the full count is shared by every core through the database and redone once it " +
+                    "is older than this, so a lower value means fresher counts but more full counts on the " +
+                    "database. While a burst (e.g. a bulk import) is being rolled into the count, /users/count gets the " +
+                    "count as of before it, with an older asOf. Other /users/count calls are exact counts and are " +
+                    "not affected. Only read from the " +
+                    "base config. (Default: 600000)")
+    private long users_count_max_age_ms = 600000;
 
     @EnvName("SUPERTOKENS_ADMIN_PORT")
     @ConfigYamlOnly
@@ -557,10 +598,10 @@ public class CoreConfig {
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If true, throttled activity events (token_refresh, session_create, oauth_token_exchange, " +
-                    "oauth_authorize) are collapsed to at most one activity_log write per (app, user) every 5 " +
-                    "minutes, so a burst of refreshes does not turn into a per-request insert. sign_in and sign_out " +
-                    "are never throttled. Set to false to record every activity event as its own row (a complete " +
+            "If true, throttled activity events (token_refresh, oauth_token_exchange, oauth_authorize) are " +
+                    "collapsed to at most one activity_log write per (app, user) every 5 minutes, so a burst of " +
+                    "refreshes does not turn into a per-request insert. sign_in, session_create and sign_out are " +
+                    "never throttled. Set to false to record every activity event as its own row (a complete " +
                     "audit trail) at the cost of that write volume. Must be the same for all apps/tenants under a " +
                     "connection URI domain. (Default: true)")
     private boolean activity_log_throttle_enabled = true;
@@ -798,6 +839,14 @@ public class CoreConfig {
         return schema_check_strict_mode;
     }
 
+    public int getStorageInitTimeoutSeconds() {
+        return storage_init_timeout_seconds;
+    }
+
+    public int getStorageInitParallelism() {
+        return storage_init_parallelism;
+    }
+
     public long getPasswordResetTokenLifetime() {
         return password_reset_token_lifetime;
     }
@@ -862,6 +911,10 @@ public class CoreConfig {
 
     public String getHost(Main main) {
         return host;
+    }
+
+    public long getUsersCountMaxAgeMs() {
+        return users_count_max_age_ms;
     }
 
     public int getMaxThreadPoolSize() {
@@ -1131,6 +1184,10 @@ public class CoreConfig {
             throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
         }
 
+        if (users_count_max_age_ms <= 0) {
+            throw new InvalidConfigException("'users_count_max_age_ms' must be > 0");
+        }
+
         if (max_server_pool_size <= 0) {
             throw new InvalidConfigException(
                     "'max_server_pool_size' must be >= 1." +
@@ -1320,6 +1377,14 @@ public class CoreConfig {
                 throw new InvalidConfigException(
                         "supertokens_min_cdi_version cannot be greater than supertokens_max_cdi_version");
             }
+        }
+
+        if (storage_init_timeout_seconds < 1) {
+            throw new InvalidConfigException("Provided storage_init_timeout_seconds must be >= 1");
+        }
+
+        if (storage_init_parallelism < 1) {
+            throw new InvalidConfigException("Provided storage_init_parallelism must be >= 1");
         }
 
         if (bulk_migration_parallelism < 1) {

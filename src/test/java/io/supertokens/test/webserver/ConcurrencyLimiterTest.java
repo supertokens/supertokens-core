@@ -206,6 +206,170 @@ public class ConcurrencyLimiterTest {
         stop(process);
     }
 
+    // ----- a request is charged to a CUD's quota only after it passes the API-key check: the CUD comes from the
+    // Host header, so charging first would let unauthenticated traffic fill another tenant's quota -----
+    @Test
+    public void testUnauthenticatedRequestsAreNotChargedToTheCudQuota() throws Exception {
+        String apiKey = "concurrencyLimiterTestApiKey123456";
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("api_keys", apiKey);
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[]{"../"});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        String authPath = SLOW_PATH + "-auth";
+        registerSlowServlet(process, authPath, WebserverAPI.RouteScope.DATA_PLANE, true);
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        // an authenticated request takes the CUD's only slot
+        Future<Resp> holder = ex.submit(() -> get("localhost", port, authPath + "?ms=4000", apiKey));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        // without a key the request is refused by the API-key check, not by the cap, and never takes a slot
+        Resp unauthenticated = get(port, authPath + "?ms=100");
+        assertEquals(401, unauthenticated.status);
+        assertEquals(1, ConcurrencyLimiter.getGlobalInFlightForTesting(process.getProcess()));
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        waitForGlobalInFlight(process, 0, 20000);
+        // with the slot free again, an authenticated request is served
+        assertEquals(200, get("localhost", port, authPath + "?ms=100", apiKey).status);
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.CONCURRENT_REQUEST_LIMIT_HIT));
+
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- the cap is a CUD-level setting: a path naming a tenant that does not exist under a real app (many
+    // handlers ignore the tenant segment) is still capped and counted -----
+    @Test
+    public void testUnknownTenantSegmentUnderAKnownCudIsStillCapped() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        // take the CUD's only slot
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        Resp ghost = get(port, "/ghosttenant" + SLOW_PATH + "?ms=100");
+        assertEquals(429, ghost.status);
+        assertEquals(1, ConcurrencyLimiter.getGlobalInFlightForTesting(process.getProcess()));
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+        stop(process);
+    }
+
+    // ----- the rejection WARN for an unknown tenant segment reports the cap that was actually enforced (read
+    // from the CUD's base tenant), not 0 from a failed lookup of the unknown tenant -----
+    @Test
+    public void testRejectionWarnForUnknownTenantSegmentReportsTheEnforcedCap() throws Exception {
+        assumeTrue("File logging is disabled via environment variable", Utils.isFileLoggingEnabled());
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        // the first rejection on this CUD, so it is the one that gets the WARN
+        assertEquals(429, get(port, "/ghosttenant" + SLOW_PATH + "?ms=100").status);
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+
+        File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+        int enforcedCapWarns = 0;
+        int zeroCapWarns = 0;
+        try (Scanner scanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (!line.contains(process.getProcess().getProcessId())) {
+                    continue;
+                }
+                if (line.contains("Concurrent request cap (1) reached")) {
+                    enforcedCapWarns++;
+                }
+                if (line.contains("Concurrent request cap (0) reached")) {
+                    zeroCapWarns++;
+                }
+            }
+        }
+        assertEquals(0, zeroCapWarns);
+        assertEquals(1, enforcedCapWarns);
+
+        stop(process);
+    }
+
+    // ----- a path naming an app that does not exist under a real CUD skips the API-key check (there is no app to
+    // check it against), so it is not charged to the CUD's cap: it only counts toward saturation -----
+    @Test
+    public void testRequestsForAnUnknownAppAreNotChargedToTheCud() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        // take the CUD's only slot
+        Future<Resp> holder = ex.submit(() -> get(port, SLOW_PATH + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+
+        // not rejected: the request was never charged to the CUD
+        assertEquals(200, get(port, "/appid-ghostapp" + SLOW_PATH + "?ms=100").status);
+
+        assertEquals(200, holder.get(20, TimeUnit.SECONDS).status);
+        waitForGlobalInFlight(process, 0, 15000);
+        ex.shutdown();
+
+        assertEquals(0, getRequestStats(process).get("concurrentRequestsRejected").getAsLong());
+
+        stop(process);
+    }
+
+    // ----- routes without an API-key check (e.g. /.well-known/jwks.json, the not-found handler, the SAML legacy
+    // routes) are not charged to the CUD named by the Host header: otherwise an unauthenticated client holding
+    // such requests open (e.g. a slowly sent body) could fill a chosen CUD's cap and get its real traffic 429'd.
+    // They still count toward the process-wide saturation. -----
+    @Test
+    public void testRoutesWithoutAnApiKeyCheckAreNotChargedToTheCud() throws Exception {
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        Utils.setValueInConfig("max_server_pool_size", "10");
+        Utils.setValueInConfig("concurrency_cap_reserved_pool_percent", "100"); // threshold = 0: always enforced
+        Utils.setValueInConfig("max_concurrent_requests_per_cud", "1");
+        TestingProcessManager.TestingProcess process = startAndRegisterSlowServlet();
+        String keyExemptPath = SLOW_PATH + "-nokey";
+        registerSlowServlet(process, keyExemptPath, WebserverAPI.RouteScope.DATA_PLANE, false);
+        int port = corePort();
+
+        ExecutorService ex = Executors.newSingleThreadExecutor();
+        Future<Resp> exempt = ex.submit(() -> get(port, keyExemptPath + "?ms=4000"));
+        waitForGlobalInFlight(process, 1, 15000);
+        // counted toward saturation, but not toward the CUD
+        assertEquals(0, ConcurrencyLimiter.getInFlightForCud(process.getProcess(), TenantIdentifier.BASE_TENANT));
+
+        // the CUD's only slot is still free for its authenticated traffic
+        assertEquals(200, get(port, SLOW_PATH + "?ms=100").status);
+
+        assertEquals(200, exempt.get(20, TimeUnit.SECONDS).status);
+        ex.shutdown();
+        stop(process);
+    }
+
     // ----- test 6: the real /hello liveness probe is never capped, even while the CUD is saturated -----
     @Test
     public void testHelloIsExemptFromTheCap() throws Exception {
@@ -699,6 +863,13 @@ public class ConcurrencyLimiterTest {
 
     private void registerSlowServlet(TestingProcessManager.TestingProcess process, String path,
                                      WebserverAPI.RouteScope routeScope) {
+        // a route with an API-key check, like every app-specific API: only such requests are charged to a CUD's
+        // cap. No api_keys are configured in these tests, so the check passes without a key.
+        registerSlowServlet(process, path, routeScope, true);
+    }
+
+    private void registerSlowServlet(TestingProcessManager.TestingProcess process, String path,
+                                     WebserverAPI.RouteScope routeScope, boolean checkApiKey) {
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             @Override
             public String getPath() {
@@ -717,7 +888,7 @@ public class ConcurrencyLimiterTest {
 
             @Override
             protected boolean checkAPIKey(HttpServletRequest req) {
-                return false;
+                return checkApiKey;
             }
 
             @Override
@@ -762,7 +933,14 @@ public class ConcurrencyLimiterTest {
     }
 
     private static Resp get(String host, int port, String path) throws IOException {
+        return get(host, port, path, null);
+    }
+
+    private static Resp get(String host, int port, String path, String apiKey) throws IOException {
         HttpURLConnection con = (HttpURLConnection) new URL("http://" + host + ":" + port + path).openConnection();
+        if (apiKey != null) {
+            con.setRequestProperty("api-key", apiKey);
+        }
         con.setConnectTimeout(3000);
         con.setReadTimeout(30000);
         con.setRequestMethod("GET");
