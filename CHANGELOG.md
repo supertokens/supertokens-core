@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Adds `disable_user_id_mapping` (per app, default `false`): the core rejects creating user id mappings, updating `externalUserIdInfo` and importing users with an `externalUserId` (`400`), and neither the core nor the storage reads mappings for the app. Removing mappings stays allowed.
+- `disable_user_id_mapping` can't be turned on while the app has mappings (config API `400`, startup fails when set in `config.yaml`/env). When it is turned on through the config API, turning it on and creating a mapping exclude each other through a database lock, and mapping creation checks the stored config. When it is set in `config.yaml`/env, each core uses its own value until it restarts, so stop creating mappings before rolling it out.
+- Adds `disable_user_id_mapping_force` (per app, default `false`): turns `disable_user_id_mapping` on despite existing mappings, which are then ignored. Sessions created under an external id before that stay valid until they expire and aren't revoked by the SuperTokens user id, so revoke them first. Turning force off is rejected while the app has mappings.
+- A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed. An app whose database is still initialising when the storage-init timeout hits is checked once that database is up, and reads mappings until then.
+- While `disable_user_id_mapping` is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet.
+
 ## [12.4.1]
 
 - Fixes database CPU spikes at startup: telemetry and license-usage user counts are no longer counted by every core; one count is stored in the database and shared by all cores for up to `users_count_max_age_ms`.
@@ -52,11 +60,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Non-rotating OAuth refresh no longer holds multiple DB connections per request: the token-revocation read now runs on the request's existing transaction connection, and token re-signing serves the pre-warmed signing-key caches instead of opening a nested transaction — removing the hold-and-wait pool exhaustion under load.
 - Adds a regression test asserting a non-rotating OAuth refresh borrows at most one DB connection at a time.
 - Non-rotating OAuth refresh: revoking a locally revoked token at the provider now checks the client on the request's transaction connection, and verifying the re-signed access token reads the signing keys from cache only, so neither borrows a second DB connection.
-- Adds `disable_user_id_mapping` (per app, default `false`): the core rejects creating user id mappings, updating `externalUserIdInfo` and importing users with an `externalUserId` (`400`), and neither the core nor the storage reads mappings for the app. Removing mappings stays allowed.
-- `disable_user_id_mapping` can't be turned on while the app has mappings (config API `400`, startup fails when set in `config.yaml`/env). Turning it on and creating a mapping exclude each other through a database lock, and mapping creation checks the stored config.
-- Adds `disable_user_id_mapping_force` (per app, default `false`): turns `disable_user_id_mapping` on despite existing mappings, which are then ignored.
-- A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed. An app whose database is still initialising when the storage-init timeout hits is checked once that database is up, and reads mappings until then.
-- While `disable_user_id_mapping` is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet.
 
 ## [12.3.1]
 

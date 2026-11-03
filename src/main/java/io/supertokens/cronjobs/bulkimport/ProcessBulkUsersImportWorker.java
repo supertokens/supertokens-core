@@ -141,8 +141,15 @@ public class ProcessBulkUsersImportWorker implements Callable<Boolean> {
         // Since all the tenants of a user must share the storage, partition by the storage of the first
         // tenantId of the first loginMethod.
         Map<BulkImportProxySQLStorage, List<BulkImportUser>> partitions = partitionUsersByStorage(storages, validUsers);
+        // The claim storage's partition goes last: its user id mapping creation lock is held until the claim
+        // commits, and taking another database's lock while holding it could deadlock (across databases, so
+        // undetected) with turning disable_user_id_mapping on, which takes those locks in its own order.
+        List<BulkImportUser> claimPartition = partitions.remove(claimStorage);
         for (Map.Entry<BulkImportProxySQLStorage, List<BulkImportUser>> partition : partitions.entrySet()) {
             importPartition(partition.getKey(), partition.getValue(), storages, claimStorage, claimCon);
+        }
+        if (claimPartition != null) {
+            importPartition(claimStorage, claimPartition, storages, claimStorage, claimCon);
         }
     }
 

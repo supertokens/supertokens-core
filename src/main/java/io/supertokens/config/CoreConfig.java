@@ -619,23 +619,30 @@ public class CoreConfig {
             "If true, the core rejects creating user id mappings, updating their externalUserIdInfo and " +
                     "bulk-importing users with an externalUserId (removing mappings is still allowed), and neither " +
                     "the core nor the storage reads user id mappings for this app. It cannot be turned on while the " +
-                    "app has user id mappings, unless disable_user_id_mapping_force is also true. Turning it on and " +
-                    "creating a mapping exclude each other through a database lock, and mapping creation checks the " +
-                    "stored config, so a core that hasn't refreshed its config yet can't create one either. While it " +
-                    "is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet (turn it " +
-                    "off, make the change, then turn it back on). If a core finds user id mappings for the app when " +
-                    "it loads its databases (for example, in a restored database), it keeps reading them and logs an " +
-                    "error until they are removed. (Default: false)")
+                    "app has user id mappings, unless disable_user_id_mapping_force is also true. When it is turned " +
+                    "on through the config API, turning it on and creating a mapping exclude each other through a " +
+                    "database lock, and mapping creation checks the stored config, so a core that hasn't refreshed " +
+                    "its config yet can't create one either. When it is set in config.yaml or env, each core uses " +
+                    "its own value until it restarts, so stop creating mappings before rolling it out, and a core " +
+                    "doesn't start while an app it applies to has user id mappings. While it is on, the app can't " +
+                    "move to, or add a tenant on, a database the core hasn't loaded yet (turn it off, make the " +
+                    "change, then turn it back on). If a core otherwise finds user id mappings for the app when it " +
+                    "loads its databases (for example, in a restored database, or in one still initialising when " +
+                    "startup finishes), it keeps reading them and logs an error until they are removed. " +
+                    "(Default: false)")
     private boolean disable_user_id_mapping = false;
 
     @EnvName("DISABLE_USER_ID_MAPPING_FORCE")
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
-            "If true together with disable_user_id_mapping, that flag can be turned on while the app has user " +
-                    "id mappings, and those mappings are ignored: neither the core nor the storage reads them, and " +
-                    "data stored under their external ids (sessions, TOTP devices, metadata, roles) no longer applies " +
-                    "to those users. Has no effect while disable_user_id_mapping is false. (Default: false)")
+            "If true together with disable_user_id_mapping, that flag can be turned on while the app has user id " +
+                    "mappings, and those mappings are ignored: neither the core nor the storage reads them, and " +
+                    "data stored under their external ids (TOTP devices, metadata, roles) no longer applies to " +
+                    "those users. Sessions created under an external id before that stay valid until they expire, " +
+                    "and revoking a user's sessions by its SuperTokens user id doesn't revoke them, so revoke them " +
+                    "before turning this on. It can't be turned off while the app has user id mappings. Has no " +
+                    "effect while disable_user_id_mapping is false. (Default: false)")
     private boolean disable_user_id_mapping_force = false;
 
     @EnvName("OTEL_COLLECTOR_CONNECTION_URI")

@@ -60,14 +60,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *     <li>Creating a mapping and turning the flag on exclude each other through a lock in the database the mapping
  *     goes to (see {@link #createWhileUserIdMappingIsEnabled} and {@link #overwriteTenantConfigDisablingUserIdMapping}).
  *     Mapping creation reads the flag from the stored config under that lock, so a core whose config is stale
- *     can't create a mapping after the flag is on.</li>
+ *     can't create a mapping after the flag is turned on through the config API. A flag set in config.yaml / env is
+ *     each core's own value until it restarts.</li>
  *     <li>Reads are skipped only for apps whose databases were checked and had no mappings ({@link #isReadSkipped}).
- *     A core checks that after it loads the app's databases. If it finds mappings anyway (a restored database, a
- *     flag set in config.yaml), it keeps reading them and logs an error: it fails closed. An app served by a
+ *     A core checks that after it loads the app's databases; a reload that keeps them as they were keeps the
+ *     result. If it finds mappings anyway (a restored database, a flag set in config.yaml), it keeps reading them
+ *     and logs an error: it fails closed. An app served by a
  *     storage that outlived the storage-init timeout is checked once that storage is up, and reads mappings until
  *     then: querying it earlier would wait for its pool, which would stall startup again.</li>
  *     <li>disable_user_id_mapping_force turns the check off: the flag can be turned on with mappings present, and
- *     those mappings are ignored.</li>
+ *     those mappings are ignored. Turning force off is checked like turning the flag on.</li>
  * </ul>
  */
 public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
@@ -114,8 +116,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         getInstance(main).appsCheckedWithoutMappings.removeAll(appIdentifiers);
     }
 
-    public static void forgetAllChecks(Main main) {
-        getInstance(main).appsCheckedWithoutMappings.clear();
+    // Called before a full storage reload: apps whose storages it keeps as they were keep their check.
+    public static void forgetChecksExcept(Main main, Set<AppIdentifier> appsWithUnchangedStorages) {
+        getInstance(main).appsCheckedWithoutMappings.retainAll(appsWithUnchangedStorages);
     }
 
     // Called once the app's storages are initialised: checks each app with the flag on (and not forced) for user id
@@ -180,11 +183,21 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
                 instance.appsAwaitingStorageInit.remove(appIdentifier);
                 continue;
             }
+            // Kept by a storage reload that left the app's storages as they were (see StorageLayer), or already
+            // checked by a storage that finished initialising.
+            if (instance.appsCheckedWithoutMappings.contains(appIdentifier)) {
+                instance.appsAwaitingStorageInit.remove(appIdentifier);
+                continue;
+            }
             // Marked as awaiting before looking, so a storage finishing in between still finds the app.
             instance.appsAwaitingStorageInit.add(appIdentifier);
             if (isServedByAStorageStillInitialising(main, appIdentifier)) {
                 instance.appsCheckedWithoutMappings.remove(appIdentifier);
-                continue;
+                // The storage may have finished, and its callback checked the app, before the line above: look
+                // again, so that result isn't lost.
+                if (isServedByAStorageStillInitialising(main, appIdentifier)) {
+                    continue;
+                }
             }
             instance.appsAwaitingStorageInit.remove(appIdentifier);
             try {
@@ -219,7 +232,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
      * shared mapping-creation lock and reading disable_user_id_mapping from the stored config. Turning the flag on
      * takes the same lock exclusively before it checks for mappings, so either the mapping is committed first and
      * that check sees it, or this reads the flag as on and refuses. For the bulk import proxy storage the
-     * transaction (and the lock) lasts until the batch is committed.
+     * transaction (and the lock) lasts until the batch is committed; on the claim connection that is the end of the
+     * chunk, so the bulk import worker imports the claim database's users last (see
+     * {@link #overwriteTenantConfigDisablingUserIdMapping}).
      */
     @UnauditedTransaction(justification = "User id mapping inserts are not audit events (the auto-commit insert "
             + "this replaces was unaudited); the transaction only adds the creation lock and the config read.")
@@ -262,8 +277,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     }
 
     // The flag as the stored config sets it for the app, merged like Config.getNormalisedConfigForTenant: the app's
-    // public tenant, then its connection uri domain, then this core's config.yaml. The base app only uses
-    // config.yaml, which has no row to lock.
+    // public tenant, then its connection uri domain, then this core's config.yaml. The first level that has the key
+    // wins, and an explicit null there means the default (off), as it does in the loaded config. The base app only
+    // uses config.yaml, which has no row to lock.
     private static boolean isDisabledInStoredConfig(Main main, AppIdentifier appIdentifier, Storage storage,
                                                     TransactionConnection con)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -279,9 +295,7 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             JsonObject coreConfig = readStoredCoreConfig(main, storage, con, tenantIdentifier);
             if (coreConfig != null && coreConfig.has(CONFIG_KEY)) {
                 JsonElement value = coreConfig.get(CONFIG_KEY);
-                if (!value.isJsonNull()) {
-                    return value.getAsBoolean();
-                }
+                return !value.isJsonNull() && value.getAsBoolean();
             }
         }
         return fromConfigYaml;
@@ -317,7 +331,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
      * Writes {@code newTenant} in a base storage transaction that first, for every target, takes the exclusive
      * mapping-creation lock in the target's database and checks it has no user id mappings for the app. The config
      * is committed before those locks are released, so a mapping creation that waited on them reads the flag as on.
-     * Locks are taken in a fixed order (database, then app), so two such writes can't deadlock.
+     * Locks are taken in a fixed order (database, then app), so two such writes can't deadlock. Mapping creation
+     * holds at most one database's lock at a time, except in the bulk import worker, which holds the claim
+     * database's lock until the chunk commits and so takes it after every other database's.
      */
     @UnauditedTransaction(justification = "Tenant config writes are not audit events (overwriteTenantConfig is "
             + "unaudited); the transaction adds the mapping-creation locks and checks around the same write.")
@@ -398,7 +414,7 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             storage.lockAppForDisablingUserIdMapping_Transaction(con, target.appIdentifier());
             if (storage.hasUserIdMappings_Transaction(con, target.appIdentifier())) {
                 throw new StorageTransactionLogicException(new InvalidConfigException(
-                        "disable_user_id_mapping cannot be enabled because the app has existing user id mappings"));
+                        UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE));
             }
         }
     }

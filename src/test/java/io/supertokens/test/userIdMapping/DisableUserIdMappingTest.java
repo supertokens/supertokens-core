@@ -17,6 +17,7 @@
 package io.supertokens.test.userIdMapping;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -51,6 +52,7 @@ import io.supertokens.test.bulkimport.BulkImportTestUtils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
 import jakarta.servlet.ServletException;
@@ -414,8 +416,7 @@ public class DisableUserIdMappingTest {
             Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
             fail();
         } catch (InvalidConfigException e) {
-            assertEquals("disable_user_id_mapping cannot be enabled because the app has existing user id mappings",
-                    e.getMessage());
+            assertEquals(UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE, e.getMessage());
         }
         assertFalse(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
 
@@ -434,6 +435,125 @@ public class DisableUserIdMappingTest {
 
         // other apps are unaffected
         assertFalse(UserIdMapping.isUserIdMappingDisabled(main, process.getAppForTesting().toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // Mappings are allowed while force is on. Turning force off is checked like turning the flag on, so the app can't
+    // reach "flag on, not forced, mappings present" through the config API (with the flag in config.yaml, the next
+    // restart would refuse to start).
+    @Test
+    public void turningForceOffIsRejectedWhileTheAppHasMappings() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "force", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, false), false);
+        Storage a1Storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, a1Storage, main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), a1Storage, user.getSupertokensUserId(),
+                "external-id", null, false);
+
+        TenantConfig forced = appConfig(a1, true);
+        forced.coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, forced, false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, a1.toAppIdentifier()));
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping_force cannot be turned off because the app has user id mappings: "
+                    + "remove them first", e.getMessage());
+        }
+        assertTrue(UserIdMappingOptOut.isForced(main, a1.toAppIdentifier()));
+
+        UserIdMapping.deleteUserIdMapping(a1.toAppIdentifier(), a1Storage, "external-id", UserIdType.EXTERNAL,
+                false);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+        assertFalse(UserIdMappingOptOut.isForced(main, a1.toAppIdentifier()));
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An explicit null in the app's stored config means "off" in the loaded config (the first level that has the key
+    // wins), so the locked re-check at mapping creation must not fall through to config.yaml.
+    @Test
+    public void anExplicitNullInTheAppConfigLetsMappingsBeCreatedWhenTheBaseConfigDisablesMapping()
+            throws Exception {
+        String[] args = {"../"};
+        // config.yaml turns the flag on for every app: needs the in-memory storage's fresh database (see
+        // startupCheckFailsForAppsWithMappingsWhenTheBaseConfigDisablesMapping).
+        TestingProcessManager.TestingProcess probe = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(probe.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        boolean inMemory = StorageLayer.isInMemDb(probe.getProcess());
+        stop(probe);
+        if (!inMemory) {
+            return;
+        }
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, "a1", null);
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.add("disable_user_id_mapping", JsonNull.INSTANCE);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(a1, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertFalse(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        Storage storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, storage, main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), storage, user.getSupertokensUserId(),
+                "external-id", null, false);
+        assertNotNull(UserIdMapping.getUserIdMapping(main, a1.toAppIdentifier(), storage, "external-id",
+                UserIdType.EXTERNAL));
+
+        stop(process);
+    }
+
+    // A full storage reload (here: creating another app) keeps the check of an app whose storages it didn't change,
+    // instead of querying every app with the flag on again.
+    @Test
+    public void storageReloadDoesNotCheckAppsWhoseStoragesDidNotChangeAgain() throws Exception {
+        String[] args = {"../"};
+        // an isolated process, so no other test's app with the flag on (and mappings) is checked during the reload
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (!StorageLayer.isInMemDb(main)) {
+            // the call counter exists only in the in-memory storage
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier flagged = new TenantIdentifier(null, "flagged", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(flagged, true), false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
+
+        TenantIdentifier other = new TenantIdentifier(null, "other", null);
+        Start.resetUserIdMappingCallCountForTesting();
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(other, false), false);
+        assertEquals(0, Start.getUserIdMappingCallCountForTesting());
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
+
+        // a new app has no check to keep, so it is checked
+        TenantIdentifier third = new TenantIdentifier(null, "third", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(third, true), false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, third.toAppIdentifier()));
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
 
         stop(process);
     }
@@ -591,7 +711,8 @@ public class DisableUserIdMappingTest {
             fail();
         } catch (InvalidConfigException e) {
             assertEquals("disable_user_id_mapping is enabled, but these apps have user id mappings (connection uri "
-                    + "domain | app id): " + app, e.getMessage());
+                    + "domain | app id): " + app + ". Remove them, or set disable_user_id_mapping_force to true for "
+                    + "those apps to ignore them.", e.getMessage());
         }
 
         stop(process);

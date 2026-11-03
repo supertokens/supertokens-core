@@ -52,6 +52,7 @@ import org.junit.rules.TestRule;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -66,8 +67,7 @@ import static org.junit.Assert.*;
 // the stored config, and a core that finds mappings for an app with the flag on keeps reading them.
 public class DisableUserIdMappingLockTest {
 
-    private static final String ENABLED_WITH_MAPPINGS =
-            "disable_user_id_mapping cannot be enabled because the app has existing user id mappings";
+    private static final String ENABLED_WITH_MAPPINGS = UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE;
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -220,7 +220,7 @@ public class DisableUserIdMappingLockTest {
 
         CompletableFuture<Void> initialised = new CompletableFuture<>();
         UserIdMappingOptOut.addStoragesStillInitialising(main, Map.of(storage, initialised));
-        UserIdMappingOptOut.forgetAllChecks(main);
+        UserIdMappingOptOut.forgetChecksExcept(main, Set.of());
         UserIdMappingOptOut.checkApps(main, List.of(appIdentifier));
         assertFalse("not checked while its storage initialises, so it keeps reading mappings",
                 UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
@@ -234,7 +234,7 @@ public class DisableUserIdMappingLockTest {
                 .createUserIdMapping(appIdentifier, user.getSupertokensUserId(), "external-id", null);
         CompletableFuture<Void> initialisedAgain = new CompletableFuture<>();
         UserIdMappingOptOut.addStoragesStillInitialising(main, Map.of(storage, initialisedAgain));
-        UserIdMappingOptOut.forgetAllChecks(main);
+        UserIdMappingOptOut.forgetChecksExcept(main, Set.of());
         UserIdMappingOptOut.checkApps(main, List.of(appIdentifier));
         UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
 
@@ -380,8 +380,10 @@ public class DisableUserIdMappingLockTest {
         }
     }
 
-    private static void reloadStorages(Main main, TenantIdentifier app) {
-        MultitenancyHelper.getInstance(main).forceReloadAllResources(List.of(app));
+    // Loads the app's storages afresh, as at startup or after a change to the app's config. A full reload that keeps
+    // the app's storages as they were keeps its check.
+    private static void reloadStorages(Main main, TenantIdentifier app) throws Exception {
+        MultitenancyHelper.getInstance(main).loadStorageLayerIncremental(List.of(app));
     }
 
     private static void await(CountDownLatch latch) {

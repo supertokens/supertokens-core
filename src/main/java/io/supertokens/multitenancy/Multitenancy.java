@@ -365,7 +365,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             }
             Set<String> currentUserPools = appUserPools.get(appIdentifier);
             boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
-            if (alreadyDisabled && currentUserPools != null && currentUserPools.contains(userPoolId)) {
+            // Turning force off is checked like turning the flag on: the app must not have mappings either way.
+            boolean forceGetsTurnedOff = alreadyDisabled && UserIdMappingOptOut.isForced(main, appIdentifier);
+            if (alreadyDisabled && !forceGetsTurnedOff && currentUserPools != null
+                    && currentUserPools.contains(userPoolId)) {
                 continue;
             }
             Storage storage = loadedStorages.get(userPoolId);
@@ -384,10 +387,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         + "then turn it on");
             }
             if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
-                throw new InvalidConfigException(alreadyDisabled
+                throw new InvalidConfigException(forceGetsTurnedOff
+                        ? "disable_user_id_mapping_force cannot be turned off because the app has user id mappings: "
+                        + "remove them first"
+                        : alreadyDisabled
                         ? "disable_user_id_mapping is on, but the database this config selects has user id mappings "
-                        + "for the app: remove them first"
-                        : "disable_user_id_mapping cannot be enabled because the app has existing user id mappings");
+                        + "for the app: remove them first, or set disable_user_id_mapping_force to true to ignore them"
+                        : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE);
             }
             targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage));
         }

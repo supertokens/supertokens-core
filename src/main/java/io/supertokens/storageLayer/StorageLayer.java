@@ -349,8 +349,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     Storage s = ((StorageLayer) resources.get(key)).storage;
                     storagesToInit.computeIfAbsent(s, k -> new HashSet<>()).add(key.getTenantIdentifier());
                 }
-                // Until the reloaded storages are checked for user id mappings, every app reads them.
-                io.supertokens.useridmapping.UserIdMappingOptOut.forgetAllChecks(main);
+                // An app whose storages changed reads user id mappings until they are checked again. An app served
+                // by the same storages as before keeps its check, so a reload doesn't query every app again.
+                io.supertokens.useridmapping.UserIdMappingOptOut.forgetChecksExcept(main,
+                        appsWithUnchangedStorages(existingStorageMap, resources));
                 setAppsWithUserIdMappingDisabled(main, resources);
 
                 return null;
@@ -444,6 +446,32 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         Map<Storage, CompletableFuture<Void>> stillInitialising = initStoragesInParallel(main, storagesToInit);
         checkAppsWithUserIdMappingDisabled(main, changedApps, stillInitialising);
+    }
+
+    private static Set<AppIdentifier> appsWithUnchangedStorages(
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> before,
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> after) {
+        Map<AppIdentifier, Set<Storage>> storagesBefore = storageInstancesPerApp(before);
+        Map<AppIdentifier, Set<Storage>> storagesAfter = storageInstancesPerApp(after);
+        Set<AppIdentifier> unchanged = new HashSet<>();
+        for (Map.Entry<AppIdentifier, Set<Storage>> entry : storagesAfter.entrySet()) {
+            if (entry.getValue().equals(storagesBefore.get(entry.getKey()))) {
+                unchanged.add(entry.getKey());
+            }
+        }
+        return unchanged;
+    }
+
+    private static Map<AppIdentifier, Set<Storage>> storageInstancesPerApp(
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources) {
+        Map<AppIdentifier, Set<Storage>> result = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                resources.entrySet()) {
+            result.computeIfAbsent(entry.getKey().getTenantIdentifier().toAppIdentifier(),
+                            k -> Collections.newSetFromMap(new IdentityHashMap<>()))
+                    .add(((StorageLayer) entry.getValue()).storage);
+        }
+        return result;
     }
 
     // Once the storages are initialised, checks the apps with disable_user_id_mapping on for user id mappings (all
