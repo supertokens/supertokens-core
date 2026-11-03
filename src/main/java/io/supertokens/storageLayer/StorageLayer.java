@@ -360,8 +360,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         // Connect every pool concurrently now that the ResourceDistributor lock is released.
-        initStoragesInParallel(main, storagesToInit);
-        checkAppsWithUserIdMappingDisabled(main, null);
+        Map<Storage, CompletableFuture<Void>> stillInitialising = initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, null, stillInitialising);
     }
 
     /**
@@ -440,13 +440,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new RuntimeException(e);
         }
 
-        initStoragesInParallel(main, storagesToInit);
-        checkAppsWithUserIdMappingDisabled(main, changedApps);
+        Map<Storage, CompletableFuture<Void>> stillInitialising = initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, changedApps, stillInitialising);
     }
 
     // Once the storages are initialised, checks the apps with disable_user_id_mapping on for user id mappings (all
-    // loaded apps if appIdentifiers is null), then tells the storages which apps may skip mapping reads.
-    private static void checkAppsWithUserIdMappingDisabled(Main main, @Nullable Set<AppIdentifier> appIdentifiers) {
+    // loaded apps if appIdentifiers is null), then tells the storages which apps may skip mapping reads. Apps served
+    // by a storage that outlived the init timeout are checked once it is up (see UserIdMappingOptOut).
+    private static void checkAppsWithUserIdMappingDisabled(Main main, @Nullable Set<AppIdentifier> appIdentifiers,
+                                                           Map<Storage, CompletableFuture<Void>> stillInitialising) {
+        io.supertokens.useridmapping.UserIdMappingOptOut.addStoragesStillInitialising(main, stillInitialising);
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
         Set<AppIdentifier> appsToCheck = appIdentifiers;
@@ -458,6 +461,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
         io.supertokens.useridmapping.UserIdMappingOptOut.checkApps(main, appsToCheck);
         setAppsWithUserIdMappingDisabled(main, resources);
+    }
+
+    // Every loaded storage instance that serves the app (getStoragesForApp keeps only one per user pool).
+    public static Set<Storage> getStorageInstancesForApp(Main main, AppIdentifier appIdentifier) {
+        Set<Storage> storages = new HashSet<>();
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                storages.add(((StorageLayer) resources.get(key)).storage);
+            }
+        }
+        return storages;
     }
 
     // Re-tells every loaded storage which apps may skip mapping reads, after that changed outside a storage load.
@@ -930,16 +946,20 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * same as the original sequential code, where such an exception would have escaped the
      * for-loop unhandled.
      */
-    private static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
-        initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
+    private static Map<Storage, CompletableFuture<Void>> initStoragesInParallel(
+            Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
+        return initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
                 STORAGE_INIT_TIMEOUT_SECONDS);
     }
 
-    // Package-private with the wait bounds as parameters so tests can use short ones.
-    static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit,
-                                       long progressIntervalSeconds, long timeoutSeconds) {
+    // Package-private with the wait bounds as parameters so tests can use short ones. Returns the storages still
+    // initialising when the timeout was hit, each with the future that completes once its initialisation finishes.
+    static Map<Storage, CompletableFuture<Void>> initStoragesInParallel(
+            Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit, long progressIntervalSeconds,
+            long timeoutSeconds) {
+        Map<Storage, CompletableFuture<Void>> stillInitialising = new HashMap<>();
         if (storagesToInit.isEmpty()) {
-            return;
+            return stillInitialising;
         }
         String infoLogPath = Config.getBaseConfig(main).getInfoLogPath(main);
         String errorLogPath = Config.getBaseConfig(main).getErrorLogPath(main);
@@ -957,11 +977,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         ExecutorService executor = newStorageInitExecutor(otherStorages.size());
         try {
+            List<Storage> storages = new ArrayList<>();
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
             for (Map.Entry<Storage, Set<TenantIdentifier>> entry : otherStorages.entrySet()) {
                 Storage storage = entry.getKey();
                 List<TenantIdentifier> tenants = new ArrayList<>(entry.getValue());
+                storages.add(storage);
                 tenantsPerFuture.add(tenants);
                 futures.add(CompletableFuture.runAsync(
                         () -> initStorage(main, storage, tenants, infoLogPath, errorLogPath, telemetry), executor));
@@ -972,7 +994,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 initStorage(main, baseStorage, new ArrayList<>(storagesToInit.get(baseStorage)), infoLogPath,
                         errorLogPath, telemetry);
             }
-            awaitStorageInit(main, futures, tenantsPerFuture, progressIntervalSeconds, timeoutSeconds);
+            if (!awaitStorageInit(main, futures, tenantsPerFuture, progressIntervalSeconds, timeoutSeconds)) {
+                for (int i = 0; i < futures.size(); i++) {
+                    if (!futures.get(i).isDone()) {
+                        stillInitialising.put(storages.get(i), futures.get(i));
+                    }
+                }
+            }
+            return stillInitialising;
         } finally {
             // no shutdownNow(): a straggler may be mid-DDL and must not be interrupted. The threads are daemon, so
             // they never keep the JVM alive; the pool simply exits once its queue drains.

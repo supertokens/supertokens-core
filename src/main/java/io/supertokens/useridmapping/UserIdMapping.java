@@ -96,6 +96,8 @@ public class UserIdMapping {
 
     // Startup counterpart of the config API check, for disable_user_id_mapping set in config.yaml / env. When the
     // base config leaves it off, the flag can only have been turned on through the config API, which checked it.
+    // Apps served by a storage still initialising are skipped rather than waited for: they read mappings until
+    // UserIdMappingOptOut checks them, once that storage is up.
     public static void assertNoUserIdMappingsWhereDisabledByBaseConfig(Main main)
             throws InvalidConfigException, StorageQueryException {
         if (!Config.getBaseConfig(main).isUserIdMappingDisabled()) {
@@ -106,7 +108,8 @@ public class UserIdMapping {
         for (TenantConfig tenantConfig : Multitenancy.getAllTenants(main)) {
             AppIdentifier appIdentifier = tenantConfig.tenantIdentifier.toAppIdentifier();
             if (!checkedApps.add(appIdentifier) || !isUserIdMappingDisabled(main, appIdentifier)
-                    || UserIdMappingOptOut.isForced(main, appIdentifier)) {
+                    || UserIdMappingOptOut.isForced(main, appIdentifier)
+                    || UserIdMappingOptOut.isServedByAStorageStillInitialising(main, appIdentifier)) {
                 continue;
             }
             try {
@@ -207,6 +210,7 @@ public class UserIdMapping {
         }
 
         Storage userStorage = mappingAndStorage.storage;
+        boolean moveEmailVerificationToExternalUserId = false;
 
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
@@ -241,8 +245,8 @@ public class UserIdMapping {
                     // email will have to be unverified first, then the userIdMapping should be created and then the
                     // email must be
                     // verified again on the externalUserId, which is not a good user experience.
-                    StorageUtils.getEmailVerificationStorage(userStorage).updateIsEmailVerifiedToExternalUserId(
-                            appIdentifier, superTokensUserId, externalUserId);
+                    // This happens once the mapping is created (below), so a refused creation moves nothing.
+                    moveEmailVerificationToExternalUserId = true;
                 } else if (storageClasses.size() > 0) {
                     String recipeName = storageClasses.get(0);
                     String[] parts = recipeName.split("[.]");
@@ -262,6 +266,11 @@ public class UserIdMapping {
                     superTokensUserId, externalUserId, externalUserIdInfo);
             return null;
         });
+
+        if (moveEmailVerificationToExternalUserId) {
+            StorageUtils.getEmailVerificationStorage(userStorage).updateIsEmailVerifiedToExternalUserId(
+                    appIdentifier, superTokensUserId, externalUserId);
+        }
     }
 
     //support method for the primary intention of bulk importing users.

@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,7 +63,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *     can't create a mapping after the flag is on.</li>
  *     <li>Reads are skipped only for apps whose databases were checked and had no mappings ({@link #isReadSkipped}).
  *     A core checks that after it loads the app's databases. If it finds mappings anyway (a restored database, a
- *     flag set in config.yaml), it keeps reading them and logs an error: it fails closed.</li>
+ *     flag set in config.yaml), it keeps reading them and logs an error: it fails closed. An app served by a
+ *     storage that outlived the storage-init timeout is checked once that storage is up, and reads mappings until
+ *     then: querying it earlier would wait for its pool, which would stall startup again.</li>
  *     <li>disable_user_id_mapping_force turns the check off: the flag can be turned on with mappings present, and
  *     those mappings are ignored.</li>
  * </ul>
@@ -75,6 +78,11 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     // Apps with disable_user_id_mapping on (and not forced) whose databases this core checked and found without
     // user id mappings. Only these skip mapping reads.
     private final Set<AppIdentifier> appsCheckedWithoutMappings = ConcurrentHashMap.newKeySet();
+
+    // Storages whose initialisation outlived the storage-init timeout, until it finishes, and the apps whose check
+    // waits for one of them.
+    private final Map<Storage, CompletableFuture<Void>> storagesStillInitialising = new ConcurrentHashMap<>();
+    private final Set<AppIdentifier> appsAwaitingStorageInit = ConcurrentHashMap.newKeySet();
 
     private UserIdMappingOptOut() {
     }
@@ -116,6 +124,40 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         checkApps(main, appIdentifiers, true);
     }
 
+    // Called with the storages a load gave up waiting for. Apps they serve are checked once they finish initialising.
+    public static void addStoragesStillInitialising(Main main, Map<Storage, CompletableFuture<Void>> storages) {
+        UserIdMappingOptOut instance = getInstance(main);
+        for (Map.Entry<Storage, CompletableFuture<Void>> entry : storages.entrySet()) {
+            Storage storage = entry.getKey();
+            CompletableFuture<Void> initialised = entry.getValue();
+            instance.storagesStillInitialising.put(storage, initialised);
+            initialised.whenComplete((ignored, initFailure) -> {
+                instance.storagesStillInitialising.remove(storage, initialised);
+                try {
+                    checkApps(main, new ArrayList<>(instance.appsAwaitingStorageInit));
+                    StorageLayer.refreshAppsWithUserIdMappingDisabled(main);
+                } catch (RuntimeException e) {
+                    Logging.error(main, TenantIdentifier.BASE_TENANT,
+                            "Could not check apps for user id mappings after their storage initialised, so they " +
+                                    "keep reading them: " + e.getMessage(), false, e);
+                }
+            });
+        }
+    }
+
+    public static boolean isServedByAStorageStillInitialising(Main main, AppIdentifier appIdentifier) {
+        UserIdMappingOptOut instance = getInstance(main);
+        if (instance.storagesStillInitialising.isEmpty()) {
+            return false;
+        }
+        for (Storage storage : StorageLayer.getStorageInstancesForApp(main, appIdentifier)) {
+            if (instance.storagesStillInitialising.containsKey(storage)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // After a user id mapping was removed from an app that has the flag on but reads mappings because it had some:
     // checks it again, so it skips mapping reads as soon as the last one is gone. Other cores notice at their next
     // storage load, and read mappings until then.
@@ -135,8 +177,16 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         for (AppIdentifier appIdentifier : appIdentifiers) {
             if (!UserIdMapping.isUserIdMappingDisabled(main, appIdentifier) || isForced(main, appIdentifier)) {
                 instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                instance.appsAwaitingStorageInit.remove(appIdentifier);
                 continue;
             }
+            // Marked as awaiting before looking, so a storage finishing in between still finds the app.
+            instance.appsAwaitingStorageInit.add(appIdentifier);
+            if (isServedByAStorageStillInitialising(main, appIdentifier)) {
+                instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                continue;
+            }
+            instance.appsAwaitingStorageInit.remove(appIdentifier);
             try {
                 if (UserIdMapping.hasUserIdMappings(main, appIdentifier)) {
                     instance.appsCheckedWithoutMappings.remove(appIdentifier);

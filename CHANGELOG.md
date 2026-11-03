@@ -46,7 +46,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds `disable_user_id_mapping` (per app, default `false`): the core rejects creating user id mappings, updating `externalUserIdInfo` and importing users with an `externalUserId` (`400`), and neither the core nor the storage reads mappings for the app. Removing mappings stays allowed.
 - `disable_user_id_mapping` can't be turned on while the app has mappings (config API `400`, startup fails when set in `config.yaml`/env). Turning it on and creating a mapping exclude each other through a database lock, and mapping creation checks the stored config.
 - Adds `disable_user_id_mapping_force` (per app, default `false`): turns `disable_user_id_mapping` on despite existing mappings, which are then ignored.
-- A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed.
+- A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed. An app whose database is still initialising when the storage-init timeout hits is checked once that database is up, and reads mappings until then.
 - While `disable_user_id_mapping` is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet.
 
 ## [12.3.1]

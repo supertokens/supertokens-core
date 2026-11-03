@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.Storage;
@@ -50,6 +51,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -95,6 +98,42 @@ public class DisableUserIdMappingLockTest {
 
         assertMappingCreationRefused(main, app.toAppIdentifier(), storage, user.getSupertokensUserId());
         assertFalse(StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(app.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // Same stale core, with the email verification exception: the refused creation must not have moved the user's
+    // verified email and verification tokens to the external id, which would have no mapping pointing at it.
+    @Test
+    public void refusedMappingCreationLeavesEmailVerificationWithTheUser() throws Exception {
+        TestingProcessManager.TestingProcess process = start();
+        Main main = process.getProcess();
+        TenantIdentifier app = process.getAppForTesting();
+        AppIdentifier appIdentifier = app.toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(app, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(app, storage, main, "user@example.com", "password123");
+        String superTokensUserId = user.getSupertokensUserId();
+        EmailVerification.verifyEmail(app, storage, EmailVerification.generateEmailVerificationToken(app, storage,
+                main, superTokensUserId, "user@example.com"));
+        String pendingToken = EmailVerification.generateEmailVerificationToken(app, storage, main, superTokensUserId,
+                "other@example.com");
+
+        StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(appConfig(app, true, false));
+        assertFalse("this core must not have picked up the change yet",
+                UserIdMapping.isUserIdMappingDisabled(main, appIdentifier));
+
+        try {
+            UserIdMapping.createUserIdMapping(main, appIdentifier, new Storage[]{storage}, superTokensUserId,
+                    "external-id", null, false, true);
+            fail();
+        } catch (ServletException e) {
+            assertEquals(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE, e.getRootCause().getMessage());
+        }
+
+        assertFalse(StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier));
+        assertTrue(EmailVerification.isEmailVerified(appIdentifier, storage, superTokensUserId, "user@example.com"));
+        assertFalse(EmailVerification.isEmailVerified(appIdentifier, storage, "external-id", "user@example.com"));
+        assertEquals(superTokensUserId, EmailVerification.verifyEmail(app, storage, pendingToken).id);
 
         stop(process);
     }
@@ -162,6 +201,51 @@ public class DisableUserIdMappingLockTest {
                 Utils.getCdiVersionStringLatestForTests(), "useridmapping");
         assertTrue(response.get("didMappingExist").getAsBoolean());
         assertTrue(UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
+
+        stop(process);
+    }
+
+    // A storage the core gave up waiting for at startup (storage-init timeout) is not queried for mappings: that
+    // query would wait for its pool and stall startup again. Its apps keep reading mappings, the startup check
+    // skips them, and they are checked once the storage is up.
+    @Test
+    public void appsOnAStorageStillInitialisingAreCheckedOnceItIsUp() throws Exception {
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(new String[]{"../"});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        Storage storage = StorageLayer.getStorage(TenantIdentifier.BASE_TENANT, main);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
+
+        CompletableFuture<Void> initialised = new CompletableFuture<>();
+        UserIdMappingOptOut.addStoragesStillInitialising(main, Map.of(storage, initialised));
+        UserIdMappingOptOut.forgetAllChecks(main);
+        UserIdMappingOptOut.checkApps(main, List.of(appIdentifier));
+        assertFalse("not checked while its storage initialises, so it keeps reading mappings",
+                UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
+        initialised.complete(null);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
+
+        // the startup check skips it too, although the database has a mapping
+        AuthRecipeUserInfo user = EmailPassword.signUp(TenantIdentifier.BASE_TENANT, storage, main,
+                "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(storage)
+                .createUserIdMapping(appIdentifier, user.getSupertokensUserId(), "external-id", null);
+        CompletableFuture<Void> initialisedAgain = new CompletableFuture<>();
+        UserIdMappingOptOut.addStoragesStillInitialising(main, Map.of(storage, initialisedAgain));
+        UserIdMappingOptOut.forgetAllChecks(main);
+        UserIdMappingOptOut.checkApps(main, List.of(appIdentifier));
+        UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
+
+        initialisedAgain.complete(null);
+        assertFalse(UserIdMappingOptOut.isReadSkipped(main, appIdentifier));
+        try {
+            UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertTrue(e.getMessage().startsWith("disable_user_id_mapping is enabled, but these apps have user id"));
+        }
 
         stop(process);
     }
