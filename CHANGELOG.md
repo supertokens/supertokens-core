@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [12.4.3]
+## [12.5.0]
 
 - Fixes the reservation-table backfill cron still checking for pending users every 5 minutes when `migration_mode` is `MIGRATED`.
-- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.2.1), so they no longer stay pending and block `MIGRATED`.
+- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.3.0), so they no longer stay pending and block `MIGRATED`.
 
 ## [12.4.1]
 
