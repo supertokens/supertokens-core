@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.5.0]
 
-- Requires plugin interface 11.2 (and supertokens-postgresql-plugin 10.2). Adds CDI 5.8.
+- Adds CDI 5.8.
 - Adds an optional per-client SAML `attributeMapping` on `PUT /recipe/saml/clients`: for each of `userId`, `email`,
   `firstName` and `lastName`, an ordered list of 1-10 assertion claim names (`NameID` is the Subject NameID).
   Invalid mappings are rejected with a 400 naming the key, including claim names with leading or trailing
@@ -34,9 +34,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Migration
 
-Adds the nullable `saml_clients.attribute_mapping` column. The supertokens-postgresql-plugin 10.2.0 adds it at
+Adds the nullable `saml_clients.attribute_mapping` column. The supertokens-postgresql-plugin 10.3.0 adds it at
 startup (`ADD COLUMN IF NOT EXISTS`), so an in-place upgrade needs no manual step; large deployments can pre-apply
-`migration-scripts/v10.2.0.sql`. Additive and online-safe.
+`migration-scripts/v10.3.0.sql`. Additive and online-safe.
 
 ```sql
 ALTER TABLE saml_clients ADD COLUMN IF NOT EXISTS attribute_mapping TEXT;
