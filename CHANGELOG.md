@@ -8,7 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [12.4.3]
 
 - Fixes the reservation-table backfill cron still checking for pending users every 5 minutes when `migration_mode` is `MIGRATED`.
-- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1, so such users are no longer re-backfilled on every cron run.
+- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.1.1), so they no longer stay pending and block `MIGRATED`.
 
 ## [12.4.1]
 
