@@ -1038,6 +1038,11 @@ public class CoreConfig {
         return disable_user_id_mapping && disable_user_id_mapping_force;
     }
 
+    // The force setting on its own, as a fallback level when another level sets disable_user_id_mapping.
+    public boolean isUserIdMappingForceSet() {
+        return disable_user_id_mapping_force;
+    }
+
     public String getOtelCollectorConnectionURI() {
         return otel_collector_connection_uri;
     }

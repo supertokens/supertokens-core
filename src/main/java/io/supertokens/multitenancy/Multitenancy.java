@@ -324,9 +324,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     // also covers an app that moves to another database while the flag is on. An app that already has the flag on
     // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
     // flag was turned on, and mapping creation is rejected since then. An app being created has no mappings yet.
-    // This check is a fast, lock-free answer for the config API; the returned targets are checked again under the
-    // mapping-creation lock when the config is written. With disable_user_id_mapping_force on, nothing is checked:
-    // existing mappings are ignored.
+    // This check is a fast, lock-free answer for the config API. The returned targets are checked again under the
+    // mapping-creation lock when the config is written, and that is where "the flag is already on" is decided from
+    // the stored config: this core's loaded copy can be a config sync behind, so here it only skips the pre-check.
+    // With disable_user_id_mapping_force on, nothing is checked: existing mappings are ignored.
     private static List<UserIdMappingOptOut.DisablingTarget> assertNoUserIdMappingsWhereMappingGetsDisabled(
             Main main, Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
@@ -364,11 +365,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 continue;
             }
             Set<String> currentUserPools = appUserPools.get(appIdentifier);
+            boolean usesDatabaseAlready = currentUserPools != null && currentUserPools.contains(userPoolId);
+            // This core's loaded config can be up to a config sync behind the stored one, so it only decides
+            // whether the lock-free pre-check runs. Whether the flag is already on is decided again under the lock,
+            // from the stored config (see UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping).
             boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
             // Turning force off is checked like turning the flag on: the app must not have mappings either way.
             boolean forceGetsTurnedOff = alreadyDisabled && UserIdMappingOptOut.isForced(main, appIdentifier);
-            if (alreadyDisabled && !forceGetsTurnedOff && currentUserPools != null
-                    && currentUserPools.contains(userPoolId)) {
+            if (alreadyDisabled && !forceGetsTurnedOff && usesDatabaseAlready) {
+                targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, loadedStorages.get(userPoolId),
+                        true));
                 continue;
             }
             Storage storage = loadedStorages.get(userPoolId);
@@ -388,14 +394,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             }
             if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
                 throw new InvalidConfigException(forceGetsTurnedOff
-                        ? "disable_user_id_mapping_force cannot be turned off because the app has user id mappings: "
-                        + "remove them first"
+                        ? UserIdMapping.CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE
                         : alreadyDisabled
-                        ? "disable_user_id_mapping is on, but the database this config selects has user id mappings "
-                        + "for the app: remove them first, or set disable_user_id_mapping_force to true to ignore them"
+                        ? UserIdMapping.NEW_DATABASE_HAS_MAPPINGS_MESSAGE
                         : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE);
             }
-            targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage));
+            targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage, usesDatabaseAlready));
         }
         return targets;
     }

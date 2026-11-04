@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -76,6 +77,7 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.useridmapping.UserIdMappingOptOut";
     private static final String CONFIG_KEY = "disable_user_id_mapping";
+    private static final String FORCE_CONFIG_KEY = "disable_user_id_mapping_force";
 
     // Apps with disable_user_id_mapping on (and not forced) whose databases this core checked and found without
     // user id mappings. Only these skip mapping reads.
@@ -283,8 +285,19 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     private static boolean isDisabledInStoredConfig(Main main, AppIdentifier appIdentifier, Storage storage,
                                                     TransactionConnection con)
             throws StorageQueryException, StorageTransactionLogicException {
+        return isOnInStoredConfig(appIdentifier, CONFIG_KEY, Config.getBaseConfig(main).isUserIdMappingDisabled(),
+                tenantIdentifier -> readStoredCoreConfig(main, storage, con, tenantIdentifier));
+    }
+
+    private interface StoredCoreConfigReader {
+        JsonObject read(TenantIdentifier tenantIdentifier)
+                throws StorageQueryException, StorageTransactionLogicException;
+    }
+
+    private static boolean isOnInStoredConfig(AppIdentifier appIdentifier, String key, boolean fromConfigYaml,
+                                              StoredCoreConfigReader reader)
+            throws StorageQueryException, StorageTransactionLogicException {
         TenantIdentifier appTenant = appIdentifier.getAsPublicTenantIdentifier();
-        boolean fromConfigYaml = Config.getBaseConfig(main).isUserIdMappingDisabled();
         if (appTenant.equals(TenantIdentifier.BASE_TENANT)) {
             return fromConfigYaml;
         }
@@ -292,9 +305,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         List<TenantIdentifier> chain = appTenant.equals(cudTenant) ? List.of(appTenant) : List.of(appTenant,
                 cudTenant);
         for (TenantIdentifier tenantIdentifier : chain) {
-            JsonObject coreConfig = readStoredCoreConfig(main, storage, con, tenantIdentifier);
-            if (coreConfig != null && coreConfig.has(CONFIG_KEY)) {
-                JsonElement value = coreConfig.get(CONFIG_KEY);
+            JsonObject coreConfig = reader.read(tenantIdentifier);
+            if (coreConfig != null && coreConfig.has(key)) {
+                JsonElement value = coreConfig.get(key);
                 return !value.isJsonNull() && value.getAsBoolean();
             }
         }
@@ -323,13 +336,19 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         return a.getUserPoolId().equals(b.getUserPoolId());
     }
 
-    // An app whose disable_user_id_mapping a config write turns on, and the loaded storage of a database it uses.
-    public record DisablingTarget(AppIdentifier appIdentifier, Storage storage) {
+    // An app whose config write leaves disable_user_id_mapping on (without force), and the loaded storage of a
+    // database the written config selects for it. usesDatabaseAlready: the app is on that database before the
+    // write, so the check can be skipped if the stored config already has the flag on, without force.
+    public record DisablingTarget(AppIdentifier appIdentifier, Storage storage, boolean usesDatabaseAlready) {
     }
 
     /**
      * Writes {@code newTenant} in a base storage transaction that first, for every target, takes the exclusive
-     * mapping-creation lock in the target's database and checks it has no user id mappings for the app. The config
+     * mapping-creation lock in the target's database and checks it has no user id mappings for the app. A target on
+     * a database the app already uses is not checked if, read under that lock, the stored config already has the
+     * flag on without force: mappings could not be created since then. That is decided from the stored config, not
+     * the loaded one, because a core can be a config sync behind: another core may have turned the flag off and
+     * created a mapping meanwhile, and writing the flag back on unchecked would hide that mapping. The config
      * is committed before those locks are released, so a mapping creation that waited on them reads the flag as on.
      * Locks are taken in a fixed order (database, then app), so two such writes can't deadlock. Mapping creation
      * holds at most one database's lock at a time, except in the bulk import worker, which holds the claim
@@ -353,7 +372,7 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         }
         try {
             base.startTransaction(baseCon -> {
-                lockCheckAndWrite(base, baseCon, newTenant, groups, 0);
+                lockCheckAndWrite(main, base, baseCon, newTenant, groups, 0);
                 return null;
             });
         } catch (StorageTransactionLogicException e) {
@@ -379,7 +398,7 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
 
     @UnauditedTransaction(justification = "Tenant config writes are not audit events (overwriteTenantConfig is "
             + "unaudited); the transaction only holds the mapping-creation lock in another database.")
-    private static void lockCheckAndWrite(MultitenancySQLStorage base, TransactionConnection baseCon,
+    private static void lockCheckAndWrite(Main main, MultitenancySQLStorage base, TransactionConnection baseCon,
                                           TenantConfig newTenant, List<List<DisablingTarget>> groups, int index)
             throws StorageQueryException, StorageTransactionLogicException {
         if (index == groups.size()) {
@@ -394,27 +413,45 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         List<DisablingTarget> group = groups.get(index);
         Storage storage = group.get(0).storage();
         if (isSameDatabase(storage, base)) {
-            lockAndAssertNoMappings((UserIdMappingSQLStorage) base, baseCon, group);
-            lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
+            lockAndAssertNoMappings(main, base, baseCon, (UserIdMappingSQLStorage) base, baseCon, group);
+            lockCheckAndWrite(main, base, baseCon, newTenant, groups, index + 1);
             return;
         }
         UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
         mappingStorage.startTransaction(con -> {
-            lockAndAssertNoMappings(mappingStorage, con, group);
-            lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
+            lockAndAssertNoMappings(main, base, baseCon, mappingStorage, con, group);
+            lockCheckAndWrite(main, base, baseCon, newTenant, groups, index + 1);
             mappingStorage.commitTransaction(con);
             return null;
         });
     }
 
-    private static void lockAndAssertNoMappings(UserIdMappingSQLStorage storage, TransactionConnection con,
+    // The stored config is read on the base transaction, which has not written yet, so it is the config as other
+    // cores committed it. Read after the lock is taken, it includes a turn-off that preceded any mapping creation
+    // the lock waited for.
+    private static void lockAndAssertNoMappings(Main main, MultitenancySQLStorage base, TransactionConnection baseCon,
+                                                UserIdMappingSQLStorage storage, TransactionConnection con,
                                                 List<DisablingTarget> group)
             throws StorageQueryException, StorageTransactionLogicException {
+        CoreConfig configYaml = Config.getBaseConfig(main);
+        StoredCoreConfigReader reader = tenantIdentifier -> base.getTenantCoreConfig_Transaction(baseCon,
+                tenantIdentifier);
         for (DisablingTarget target : group) {
-            storage.lockAppForDisablingUserIdMapping_Transaction(con, target.appIdentifier());
-            if (storage.hasUserIdMappings_Transaction(con, target.appIdentifier())) {
-                throw new StorageTransactionLogicException(new InvalidConfigException(
-                        UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE));
+            AppIdentifier appIdentifier = target.appIdentifier();
+            storage.lockAppForDisablingUserIdMapping_Transaction(con, appIdentifier);
+            boolean storedDisabled = isOnInStoredConfig(appIdentifier, CONFIG_KEY,
+                    configYaml.isUserIdMappingDisabled(), reader);
+            boolean storedForced = storedDisabled && isOnInStoredConfig(appIdentifier, FORCE_CONFIG_KEY,
+                    configYaml.isUserIdMappingForceSet(), reader);
+            if (storedDisabled && !storedForced && target.usesDatabaseAlready()) {
+                continue;
+            }
+            if (storage.hasUserIdMappings_Transaction(con, appIdentifier)) {
+                throw new StorageTransactionLogicException(new InvalidConfigException(storedForced
+                        ? UserIdMapping.CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE
+                        : storedDisabled
+                        ? UserIdMapping.NEW_DATABASE_HAS_MAPPINGS_MESSAGE
+                        : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE));
             }
         }
     }
