@@ -24,6 +24,8 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.migration.MigrationBackfillStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -377,6 +379,52 @@ public class ImportUserTest {
 
         assertEquals("OK", response.get("status").getAsString());
         assertNotNull(response.get("user"));
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldStoreTimeJoinedZeroAsOne() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        String userJsonStr = """
+                    {
+                        "loginMethods":[
+                            {
+                                "tenantIds":["public"],
+                                "isVerified":true,
+                                "isPrimary":false,
+                                "timeJoinedInMSSinceEpoch":0,
+                                "recipeId":"emailpassword",
+                                "email":"timejoined0@testing.com",
+                                "passwordHash":"$argon2id$v=19$m=23298,t=5,p=12$+AlWgiuzC2vqlKrde9G0SG$PmpDeTU2e6ORbHwUMi7MOavS0M3sUJlc9rX/o+nnSxt",
+                                "hashingAlgorithm":"argon2"
+                            }
+                        ]
+                }""";
+
+        JsonObject request = new Gson().fromJson(userJsonStr, JsonObject.class);
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/bulk-import/import",
+                request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        assertEquals("OK", response.get("status").getAsString());
+        JsonObject user = response.getAsJsonObject("user");
+        assertEquals(1, user.get("timeJoined").getAsLong());
+        assertEquals(1, user.getAsJsonArray("loginMethods").get(0).getAsJsonObject().get("timeJoined").getAsLong());
+
+        // time_joined = 0 marks a user as not yet backfilled
+        MigrationBackfillStorage storage = (MigrationBackfillStorage) StorageLayer.getStorage(main);
+        assertEquals(0, storage.getBackfillPendingUsersCount(new AppIdentifier(null, null)));
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

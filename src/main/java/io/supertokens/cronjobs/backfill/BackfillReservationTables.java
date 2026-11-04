@@ -65,9 +65,12 @@ public class BackfillReservationTables extends CronTask {
 
         MigrationBackfillStorage backfillStorage = (MigrationBackfillStorage) storage;
 
-        // Skip if in LEGACY mode — no backfill needed
+        // Skip in LEGACY mode (no backfill needed) and in MIGRATED mode. Moving to MIGRATED through
+        // the config API requires zero pending users (MigrationModeTransition). Setting MIGRATED in
+        // config.yaml, an env var or the base tenant skips that check, and users still pending then
+        // are not backfilled: finish the backfill before setting MIGRATED that way.
         MigrationMode mode = backfillStorage.getMigrationMode();
-        if (mode == MigrationMode.LEGACY) {
+        if (mode == MigrationMode.LEGACY || mode == MigrationMode.MIGRATED) {
             return;
         }
 

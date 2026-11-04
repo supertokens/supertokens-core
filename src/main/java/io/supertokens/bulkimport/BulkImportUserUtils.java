@@ -448,6 +448,12 @@ public class BulkImportUserUtils {
             errors.add("timeJoined cannot be < 0 for a loginMethod.");
         }
 
+        // time_joined = 0 marks a user as not yet backfilled by BackfillReservationTables, so an
+        // imported 0 would keep the user pending forever
+        if (timeJoined == 0) {
+            return 1;
+        }
+
         return timeJoined.longValue();
     }
 
