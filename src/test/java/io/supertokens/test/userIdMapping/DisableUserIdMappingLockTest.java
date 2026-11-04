@@ -102,6 +102,116 @@ public class DisableUserIdMappingLockTest {
         stop(process);
     }
 
+    // A config write refreshes this core's tenant configs before it is validated, but another core can still turn
+    // the flag off and create a mapping between that refresh and the write. A write that keeps the flag on therefore
+    // takes the lock too and reads the flag from the stored config under it: here it waits behind a mapping
+    // creation, the other core's changes land meanwhile, and the write is refused instead of hiding the mapping.
+    @Test
+    @UnauditedTransaction(justification = "Test: holds the lock that mapping creation takes.")
+    public void writeKeepingTheFlagOnRereadsTheStoredFlagUnderTheLock() throws Exception {
+        assertWriteKeepingTheFlagOnIsRefusedAfter(false, ENABLED_WITH_MAPPINGS);
+    }
+
+    // Same, with the other core forcing the flag on over the mapping: the write leaves force off, so it turns force
+    // off, and is refused.
+    @Test
+    @UnauditedTransaction(justification = "Test: holds the lock that mapping creation takes.")
+    public void writeKeepingTheFlagOnRereadsTheStoredForceUnderTheLock() throws Exception {
+        assertWriteKeepingTheFlagOnIsRefusedAfter(true, UserIdMapping.CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE);
+    }
+
+    @UnauditedTransaction(justification = "Test: holds the lock that mapping creation takes.")
+    private static void assertWriteKeepingTheFlagOnIsRefusedAfter(boolean otherCoreForcesTheFlagOn,
+                                                                  String expectedMessage) throws Exception {
+        TestingProcessManager.TestingProcess process = start();
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            stop(process); // the in-memory database runs one transaction at a time, so it has no such locks
+            return;
+        }
+        TenantIdentifier app = process.getAppForTesting();
+        AppIdentifier appIdentifier = app.toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(app, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(app, storage, main, "user@example.com", "password123");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(app, true, false), false);
+        MultitenancySQLStorage base = (MultitenancySQLStorage) StorageLayer.getBaseStorage(main);
+        assertEquals("the test database holds both the tenant configs and the app's users",
+                base.getUserPoolId(), storage.getUserPoolId());
+
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<Object> creation = executor.submit(() -> base.startTransaction(con -> {
+                ((UserIdMappingSQLStorage) base).lockAppForUserIdMappingCreation_Transaction(con, appIdentifier);
+                locked.countDown();
+                await(release);
+                base.commitTransaction(con);
+                return null;
+            }));
+            assertTrue(locked.await(10, TimeUnit.SECONDS));
+
+            // this core: the flag is on in its config and in the stored one when the write is validated
+            Future<Object> write = executor.submit(() -> {
+                Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(app, true, false), false);
+                return null;
+            });
+            Thread.sleep(1000);
+            assertFalse("a write keeping the flag on must take the lock", write.isDone());
+
+            // the other core: the flag goes off, a mapping is created, and maybe the flag is forced on over it
+            StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(appConfig(app, false, false));
+            StorageUtils.getUserIdMappingStorage(storage)
+                    .createUserIdMapping(appIdentifier, user.getSupertokensUserId(), "external-id", null);
+            if (otherCoreForcesTheFlagOn) {
+                StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(appConfig(app, true, true));
+            }
+
+            release.countDown();
+            creation.get(10, TimeUnit.SECONDS);
+            try {
+                write.get(10, TimeUnit.SECONDS);
+                fail();
+            } catch (ExecutionException e) {
+                assertTrue(e.getCause() instanceof InvalidConfigException);
+                assertEquals(expectedMessage, e.getCause().getMessage());
+            }
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+        }
+
+        // the other core's config is kept, so the mapping is read once this core catches up
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        assertEquals(otherCoreForcesTheFlagOn, UserIdMappingOptOut.isForced(main, appIdentifier));
+        if (!otherCoreForcesTheFlagOn) {
+            assertEquals(user.getSupertokensUserId(), UserIdMapping.getUserIdMapping(main, appIdentifier, storage,
+                    "external-id", UserIdType.ANY).superTokensUserId);
+        }
+
+        stop(process);
+    }
+
+    // With the flag on in the stored config too, a write that keeps it on isn't checked: a leftover mapping (here
+    // written straight to the storage) doesn't block it.
+    @Test
+    public void writeKeepingTheStoredFlagOnIsNotBlockedByALeftoverMapping() throws Exception {
+        TestingProcessManager.TestingProcess process = start();
+        Main main = process.getProcess();
+        TenantIdentifier app = process.getAppForTesting();
+        AppIdentifier appIdentifier = app.toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(app, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(app, storage, main, "user@example.com", "password123");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(app, true, false), false);
+        StorageUtils.getUserIdMappingStorage(storage)
+                .createUserIdMapping(appIdentifier, user.getSupertokensUserId(), "external-id", null);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(app, true, false), false);
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, appIdentifier));
+
+        stop(process);
+    }
+
     // Same stale core, with the email verification exception: the refused creation must not have moved the user's
     // verified email and verification tokens to the external id, which would have no mapping pointing at it.
     @Test
