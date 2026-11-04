@@ -31,6 +31,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   allow-list at authorize. The callback still pins the response to the ACS URL recorded at login, and IdP-initiated
   login stays refused.
 - Changing `attributeMapping.userId` on a client that already has users changes those users' IDs.
+- Fixes the reservation-table backfill cron still checking for pending users every 5 minutes when `migration_mode` is `MIGRATED`.
+- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.3.0), so they no longer stay pending and block `MIGRATED`.
 
 ### Migration
 
