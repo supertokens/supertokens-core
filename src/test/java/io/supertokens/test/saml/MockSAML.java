@@ -89,6 +89,10 @@ import java.util.*;
 
 // NOTE: This class provides helpers to mimic a minimal SAML IdP for tests.
 public class MockSAML {
+    // Pass as the nameId to build an assertion whose Subject has no NameID at all. A null nameId instead builds a
+    // NameID element without a value.
+    public static final String NO_NAME_ID = "\u0000no-name-id";
+
     public static class KeyMaterial {
         public final PrivateKey privateKey;
         public final X509Certificate certificate;
@@ -676,10 +680,12 @@ public class MockSAML {
         assertion.setIssuer(assertionIssuer);
 
         Subject subject = build(Subject.DEFAULT_ELEMENT_NAME);
-        NameID nameIdObj = build(NameID.DEFAULT_ELEMENT_NAME);
-        nameIdObj.setValue(nameId);
-        nameIdObj.setFormat(NameIDType.PERSISTENT);
-        subject.setNameID(nameIdObj);
+        if (!NO_NAME_ID.equals(nameId)) {
+            NameID nameIdObj = build(NameID.DEFAULT_ELEMENT_NAME);
+            nameIdObj.setValue(nameId);
+            nameIdObj.setFormat(NameIDType.PERSISTENT);
+            subject.setNameID(nameIdObj);
+        }
 
         SubjectConfirmation sc = build(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
         sc.setMethod(SubjectConfirmation.METHOD_BEARER);

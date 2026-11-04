@@ -109,10 +109,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v5_5);
         supportedVersions.add(SemVer.v5_6);
         supportedVersions.add(SemVer.v5_7);
+        supportedVersions.add(SemVer.v5_8);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v5_7;
+        return SemVer.v5_8;
     }
 
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
