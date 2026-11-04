@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds `disable_user_id_mapping_force` (per app, default `false`): turns `disable_user_id_mapping` on despite existing mappings, which are then ignored. Sessions created under an external id before that stay valid until they expire and aren't revoked by the SuperTokens user id, so revoke them first. Turning force off is rejected while the app has mappings.
 - A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed. An app whose database is still initialising when the storage-init timeout hits is checked once that database is up, and reads mappings until then.
 - While `disable_user_id_mapping` is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet.
+- Fixes `POST /recipe/session` leaving a session behind when it rejects a protected claim in `userDataInJWT` (`400`).
 
 ## [12.4.1]
 
