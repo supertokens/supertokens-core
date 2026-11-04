@@ -29,6 +29,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -81,6 +82,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.auditlog.AuditLog;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
@@ -88,6 +90,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -106,6 +109,7 @@ import io.supertokens.saml.exceptions.InvalidClientException;
 import io.supertokens.saml.exceptions.InvalidCodeException;
 import io.supertokens.saml.exceptions.InvalidRelayStateException;
 import io.supertokens.saml.exceptions.MalformedSAMLMetadataXMLException;
+import io.supertokens.saml.exceptions.SAMLClientFieldRequiredException;
 import io.supertokens.saml.exceptions.SAMLRequestSigningException;
 import io.supertokens.saml.exceptions.SAMLResponseVerificationFailedException;
 import net.shibboleth.shared.xml.SerializeSupport;
@@ -128,21 +132,48 @@ public class SAML {
                         "feature.");
     }
 
+    /**
+     * acsURLsPresent / attributeMappingPresent say whether the request carried the key at all (a JSON null counts
+     * as present). null (or an empty value) clears a field. Leaving out a field the client has set depends on
+     * requireSetFields (true for requests at CDI 5.8 or newer): it throws SAMLClientFieldRequiredException when
+     * true, and keeps the stored value when false.
+     */
     public static SAMLClient createOrUpdateSAMLClient(
             Main main, TenantIdentifier tenantIdentifier, Storage storage,
-            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning, JsonArray acsURLs)
+            String clientId, String clientSecret, String defaultRedirectURI, JsonArray redirectURIs, String metadataXML, boolean allowIDPInitiatedLogin, boolean enableRequestSigning,
+            JsonArray acsURLs, boolean acsURLsPresent, JsonObject attributeMapping, boolean attributeMappingPresent,
+            boolean requireSetFields)
             throws MalformedSAMLMetadataXMLException, StorageQueryException, CertificateException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, DuplicateEntityIdException,
-            IDPInitiatedLoginRequiresACSURLsException {
+            IDPInitiatedLoginRequiresACSURLsException, SAMLClientFieldRequiredException {
         checkForSAMLFeature(tenantIdentifier.toAppIdentifier(), main);
+
+        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
+
+        // Required once set (or, below CDI 5.8, kept when left out): handled before the IdP-initiated rule below,
+        // so leaving out a set acsURLs gets this message, or passes that rule with the stored list. SAMLClient reads
+        // a stored empty value back as null, i.e. unset.
+        SAMLClient existing = samlStorage.getSAMLClient(tenantIdentifier, clientId);
+        if (existing != null) {
+            if (existing.acsURLs != null && !acsURLsPresent) {
+                if (requireSetFields) {
+                    throw new SAMLClientFieldRequiredException("acsURLs");
+                }
+                acsURLs = existing.acsURLs;
+            }
+            if (existing.attributeMapping != null && !attributeMappingPresent) {
+                if (requireSetFields) {
+                    throw new SAMLClientFieldRequiredException("attributeMapping");
+                }
+                attributeMapping = existing.attributeMapping;
+            }
+        }
 
         // IdP-initiated login has no login-time ACS URL to pin the response to, so it is only allowed when the
         // client carries an ACS allow-list. Enforced on every create and update.
         if (allowIDPInitiatedLogin && !hasACSURLs(acsURLs)) {
             throw new IDPInitiatedLoginRequiresACSURLsException();
         }
-
-        SAMLStorage samlStorage = StorageUtils.getSAMLStorage(storage);
 
         var metadata = loadIdpMetadata(metadataXML);
         String idpSsoUrl = null;
@@ -164,7 +195,8 @@ public class SAML {
         getCertificateFromString(idpSigningCertificate); // checking validity
 
         String idpEntityId = metadata.getEntityID();
-        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning, acsURLs);
+        // SAMLClient stores an empty acsURLs / attributeMapping as null.
+        SAMLClient client = new SAMLClient(clientId, clientSecret, idpSsoUrl, redirectURIs, defaultRedirectURI, idpEntityId, idpSigningCertificate, allowIDPInitiatedLogin, enableRequestSigning, acsURLs, attributeMapping);
         return samlStorage.createOrUpdateSAMLClient(tenantIdentifier, client);
     }
 
@@ -903,11 +935,61 @@ public class SAML {
             }
         }
 
-        String sub = null;
-        String email = null;
-
         JsonObject claims = claimsInfo.claims;
 
+        // The mapping is read from the client now, not when the login started. A client without one (or one
+        // removed since the callback) keeps the built-in chain below.
+        SAMLClient client = samlStorage.getSAMLClient(tenantIdentifier, claimsInfo.clientId);
+        JsonObject attributeMapping = client == null ? null : client.attributeMapping;
+
+        String sub;
+        String email;
+        String firstName = null;
+        String lastName = null;
+
+        if (attributeMapping != null) {
+            sub = SAMLAttributeMapping.resolve(SAMLAttributeMapping.USER_ID, claims, attributeMapping);
+            email = SAMLAttributeMapping.resolve(SAMLAttributeMapping.EMAIL, claims, attributeMapping);
+            firstName = SAMLAttributeMapping.resolve(SAMLAttributeMapping.FIRST_NAME, claims, attributeMapping);
+            lastName = SAMLAttributeMapping.resolve(SAMLAttributeMapping.LAST_NAME, claims, attributeMapping);
+        } else {
+            try {
+                sub = getBuiltInUserId(claims);
+            } catch (RuntimeException e) {
+                // Today a NameID with no value fails the request here; it still does.
+                logAttributeMappingComparisonMismatch(main, tenantIdentifier, claimsInfo.clientId,
+                        SAMLAttributeMapping.USER_ID, claims);
+                throw e;
+            }
+            try {
+                email = getBuiltInEmail(claims);
+            } catch (RuntimeException e) {
+                logAttributeMappingComparisonMismatch(main, tenantIdentifier, claimsInfo.clientId,
+                        SAMLAttributeMapping.EMAIL, claims);
+                throw e;
+            }
+            compareWithDefaultAttributeMapping(main, tenantIdentifier, claimsInfo.clientId, claims, sub, email);
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.add("claims", claims);
+        payload.addProperty(isLegacy ? "id" : "sub", sub);
+        payload.addProperty("email", email);
+        payload.addProperty("aud", claimsInfo.clientId);
+        if (firstName != null) {
+            payload.addProperty("firstName", firstName);
+        }
+        if (lastName != null) {
+            payload.addProperty("lastName", lastName);
+        }
+
+        return payload;
+    }
+
+    // The built-in id rule, used for clients without an attribute mapping. Its output must not change: a blank
+    // NameID is returned as is, and a NameID with no value throws.
+    private static String getBuiltInUserId(JsonObject claims) {
+        String sub = null;
         if (claims.has("NameID")) {
             sub = claims.getAsJsonArray("NameID").get(0).getAsString();
         } else if (claims.has("http://schemas.microsoft.com/identity/claims/objectidentifier")) {
@@ -917,7 +999,12 @@ public class SAML {
             sub = claims.getAsJsonArray("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
                     .get(0).getAsString();
         }
+        return sub;
+    }
 
+    // The built-in email rule, used for clients without an attribute mapping. Its output must not change.
+    private static String getBuiltInEmail(JsonObject claims) {
+        String email = null;
         if (claims.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")) {
             email = claims.getAsJsonArray("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
                     .get(0).getAsString();
@@ -933,14 +1020,50 @@ public class SAML {
                 email = nameIdValue;
             }
         }
+        return email;
+    }
 
-        JsonObject payload = new JsonObject();
-        payload.add("claims", claims);
-        payload.addProperty(isLegacy ? "id" : "sub", sub);
-        payload.addProperty("email", email);
-        payload.addProperty("aud", claimsInfo.clientId);
+    // For a client without a mapping: logs where resolving with the default lists would have given a different
+    // id / sub or email than the built-in chain did. Never changes the response and never throws.
+    private static void compareWithDefaultAttributeMapping(Main main, TenantIdentifier tenantIdentifier,
+                                                           String clientId, JsonObject claims, String builtInSub,
+                                                           String builtInEmail) {
+        try {
+            if (!Objects.equals(builtInSub,
+                    SAMLAttributeMapping.resolve(SAMLAttributeMapping.USER_ID, claims, null))) {
+                logAttributeMappingComparisonMismatch(main, tenantIdentifier, clientId, SAMLAttributeMapping.USER_ID,
+                        claims);
+            }
+            if (!Objects.equals(builtInEmail,
+                    SAMLAttributeMapping.resolve(SAMLAttributeMapping.EMAIL, claims, null))) {
+                logAttributeMappingComparisonMismatch(main, tenantIdentifier, clientId, SAMLAttributeMapping.EMAIL,
+                        claims);
+            }
+        } catch (RuntimeException ignored) {
+            // the comparison is diagnostics only
+        }
+    }
 
-        return payload;
+    // One WARN line per differing field. It never contains claim values.
+    private static void logAttributeMappingComparisonMismatch(Main main, TenantIdentifier tenantIdentifier,
+                                                              String clientId, String field, JsonObject claims) {
+        try {
+            String kind = SAMLAttributeMapping.mismatchKind(claims);
+            String message = "SAML userinfo: the default attribute mapping would resolve a different value than " +
+                    "the built-in rule for a client without an attributeMapping (appId=" +
+                    tenantIdentifier.getAppId() + ", tenantId=" + tenantIdentifier.getTenantId() + ", clientId=" +
+                    clientId + ", field=" + field + ", kind=" + kind + ")";
+            Logging.warn(main, tenantIdentifier, message);
+
+            JsonObject data = new JsonObject();
+            data.addProperty("field", field);
+            data.addProperty("kind", kind);
+            data.addProperty("message", message);
+            ProcessState.getInstance(main)
+                    .addState(ProcessState.PROCESS_STATE.SAML_ATTRIBUTE_MAPPING_COMPARISON_MISMATCH, null, data);
+        } catch (RuntimeException ignored) {
+            // the comparison is diagnostics only
+        }
     }
 
     public static String getLegacyACSURL(Main main, AppIdentifier appIdentifier) throws TenantOrAppNotFoundException {
