@@ -228,6 +228,13 @@ public class Session {
             UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException,
             AccessTokenValidityOutOfRangeException {
         validateAccessTokenValidityOverride(tenantIdentifier, main, accessTokenValidity);
+        // Reject a protected claim in the JWT payload before the session row is written. The access token is
+        // minted after the locked insert (GHSA-2pc4-vw9j-454c), so leaving this to AccessTokenInfo.toJSON() would
+        // fail the request but keep the session row. V1/V2 nest the payload under userData, so nothing collides.
+        if (version != AccessToken.VERSION.V1 && version != AccessToken.VERSION.V2 &&
+                Arrays.stream(AccessTokenInfo.getRequiredAndProtectedProps(version)).anyMatch(userDataInJWT::has)) {
+            throw new AccessTokenPayloadError("The user payload contains protected field");
+        }
         String sessionHandle = UUID.randomUUID().toString();
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             sessionHandle += "_" + tenantIdentifier.getTenantId();
