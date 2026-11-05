@@ -20,11 +20,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -80,6 +81,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.useridmapping.UserIdMappingOptOut";
     private static final String CONFIG_KEY = "disable_user_id_mapping";
     private static final String FORCE_CONFIG_KEY = "disable_user_id_mapping_force";
+    private static final String TENANT_CONFIG_WRITE_NOT_AUDITED = "tenant config writes are not audit events "
+            + "(overwriteTenantConfig is unaudited); the transaction adds the config locks, mapping-creation locks "
+            + "and checks around the write.";
 
     // Apps with disable_user_id_mapping on (and not forced) whose databases this core checked and found without
     // user id mappings. Only these skip mapping reads.
@@ -240,15 +244,13 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
      * chunk, so the bulk import worker imports the claim database's users last (see
      * {@link #overwriteTenantConfigDisablingUserIdMapping}).
      */
-    @UnauditedTransaction(justification = "User id mapping inserts are not audit events (the auto-commit insert "
-            + "this replaces was unaudited); the transaction only adds the creation lock and the config read.")
     public static <T> T createWhileUserIdMappingIsEnabled(Main main, AppIdentifier appIdentifier, Storage storage,
                                                           MappingCreation<T> creation)
             throws StorageQueryException, ServletException, UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException {
         UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
         try {
-            return mappingStorage.startTransaction(con -> {
+            return ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
                 mappingStorage.lockAppForUserIdMappingCreation_Transaction(con, appIdentifier);
                 if (isDisabledInStoredConfig(main, appIdentifier, storage, con)) {
                     throw new StorageTransactionLogicException(new ServletException(
@@ -260,8 +262,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
                 } catch (UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 }
-                mappingStorage.commitTransaction(con);
-                return result;
+                return AuditedResult.withoutAudit(result, "User id mapping inserts are not audit events (the "
+                        + "auto-commit insert this replaces was unaudited); the transaction only adds the creation "
+                        + "lock and the config read.");
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof ServletException servletException) {
@@ -334,7 +337,6 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     // One read for the whole chain. On the mapping transaction's connection when the tenant configs live in the same
     // database, so there is only one connection. Otherwise reads the committed rows from the base storage, while the
     // lock is held.
-    @UnauditedTransaction(justification = "Read-only: reads the app's stored core configs.")
     private static Map<TenantIdentifier, JsonObject> readStoredCoreConfigs(Main main, Storage storage,
                                                                            TransactionConnection con,
                                                                            List<TenantIdentifier> tenantIdentifiers)
@@ -347,12 +349,10 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             return ((MultitenancySQLStorage) storage).getTenantCoreConfigs_Transaction(con, tenantIdentifiers, false);
         }
         MultitenancySQLStorage base = (MultitenancySQLStorage) baseStorage;
-        return base.startTransaction(baseCon -> {
-            Map<TenantIdentifier, JsonObject> coreConfigs = base.getTenantCoreConfigs_Transaction(baseCon,
-                    tenantIdentifiers, false);
-            base.commitTransaction(baseCon);
-            return coreConfigs;
-        });
+        return ((ActivityLogSQLStorage) base).startAuditedTransaction(TenantIdentifier.BASE_TENANT.toAppIdentifier(),
+                baseCon -> AuditedResult.withoutAudit(
+                        base.getTenantCoreConfigs_Transaction(baseCon, tenantIdentifiers, false),
+                        "Read-only: reads the app's stored core configs."));
     }
 
     private static boolean isSameDatabase(Storage a, Storage b) {
@@ -387,19 +387,20 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
      * in the bulk import worker, which holds the claim database's lock until the chunk commits and so takes it after
      * every other database's.
      */
-    @UnauditedTransaction(justification = "Tenant config writes are not audit events (overwriteTenantConfig is "
-            + "unaudited); the transaction adds the config locks, mapping-creation locks and checks around the write.")
     public static void overwriteTenantConfigDisablingUserIdMapping(Main main, TenantConfig newTenant,
                                                                    List<DisablingTarget> targets)
             throws StorageQueryException, InvalidConfigException, TenantOrAppNotFoundException,
             DuplicateThirdPartyIdException, DuplicateClientTypeException {
         MultitenancySQLStorage base = (MultitenancySQLStorage) StorageLayer.getBaseStorage(main);
         try {
-            base.startTransaction(baseCon -> {
-                lockCheckAndWrite(base, baseCon, newTenant, mappingChecks(main, base, baseCon, newTenant, targets),
-                        0);
-                return null;
-            });
+            // lockCheckAndWrite commits the base transaction itself, before the mapping-creation locks are released;
+            // the commit that follows it here then has nothing left to commit
+            ((ActivityLogSQLStorage) base).startAuditedTransaction(newTenant.tenantIdentifier.toAppIdentifier(),
+                    baseCon -> {
+                        lockCheckAndWrite(base, baseCon, newTenant,
+                                mappingChecks(main, base, baseCon, newTenant, targets), 0);
+                        return AuditedResult.withoutAudit(null, TENANT_CONFIG_WRITE_NOT_AUDITED);
+                    });
         } catch (StorageTransactionLogicException e) {
             Exception actual = e.actualException;
             if (actual instanceof InvalidConfigException invalidConfig) {
@@ -463,8 +464,6 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         return groups;
     }
 
-    @UnauditedTransaction(justification = "Tenant config writes are not audit events (overwriteTenantConfig is "
-            + "unaudited); the transaction only holds the mapping-creation lock in another database.")
     private static void lockCheckAndWrite(MultitenancySQLStorage base, TransactionConnection baseCon,
                                           TenantConfig newTenant, List<List<MappingCheck>> groups, int index)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -485,11 +484,12 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             return;
         }
         UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
-        mappingStorage.startTransaction(con -> {
+        // committed after the base transaction (inside lockCheckAndWrite), so the lock is held until the config is
+        ((ActivityLogSQLStorage) storage).startAuditedTransaction(group.get(0).appIdentifier(), con -> {
             lockAndAssertNoMappings(mappingStorage, con, group);
             lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
-            mappingStorage.commitTransaction(con);
-            return null;
+            return AuditedResult.withoutAudit(null, "Holds the mapping-creation lock in another database for a "
+                    + "tenant config write; " + TENANT_CONFIG_WRITE_NOT_AUDITED);
         });
     }
 
