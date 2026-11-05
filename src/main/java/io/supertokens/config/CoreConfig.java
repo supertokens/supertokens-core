@@ -641,10 +641,10 @@ public class CoreConfig {
                     "data stored under their external ids (TOTP devices, metadata, roles) no longer applies to " +
                     "those users. Sessions created under an external id before that stay valid, and listing or " +
                     "revoking a user's sessions by either its SuperTokens user id or its external id includes the " +
-                    "sessions stored under both. If a mapping was created with force and its external id is " +
-                    "another user's SuperTokens user id, that user's sessions are included too. It can't be " +
-                    "turned off while the app has user id mappings. Has no effect while disable_user_id_mapping " +
-                    "is false. " +
+                    "sessions stored under both. If a mapping was created with `force: true` on " +
+                    "POST /recipe/userid/map and its external id is another user's SuperTokens user id, that " +
+                    "user's sessions are included too. It can't be turned off while the app has user id " +
+                    "mappings. Has no effect while disable_user_id_mapping is false. " +
                     "(Default: false)")
     private boolean disable_user_id_mapping_force = false;
 

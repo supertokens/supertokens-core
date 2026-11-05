@@ -1424,9 +1424,10 @@ public class Session {
     // and callers may pass either. For a forced app this resolves both ways, reading the mappings ignoring the
     // opt-out (as user deletion and link/unlink do): an external id is first resolved to its SuperTokens id, so that
     // linked login methods are found, and then the external id of each id's mapping is added. The external id is
-    // added as is: a mapping created with force may name another user's SuperTokens id, and then that user's
-    // sessions are included too, as the config description documents. Other apps need nothing: either mappings are
-    // read as usual and callers pass the external id, or the flag is on without force and the app has no mappings.
+    // added as is: a mapping created with `force: true` on POST /recipe/userid/map may name another user's
+    // SuperTokens id, and then that user's sessions are included too, as the config description documents. Other
+    // apps need nothing: either mappings are read as usual and callers pass the external id, or the flag is on
+    // without force and the app has no mappings.
     private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, Storage storage,
                                                           String userId, boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
