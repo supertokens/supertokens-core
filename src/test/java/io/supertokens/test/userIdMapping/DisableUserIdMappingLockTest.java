@@ -296,6 +296,8 @@ public class DisableUserIdMappingLockTest {
             release.countDown();
             executor.shutdownNow();
         }
+        // the write left the other core's config alone: once this core catches up, the flag is off
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         assertFalse(UserIdMapping.isUserIdMappingDisabled(main, appIdentifier));
 
         stop(process);
