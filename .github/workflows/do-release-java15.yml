@@ -599,6 +599,7 @@ jobs:
             --repo supertokens/supertokens-plugin-interface \
             --title "v${{ inputs.plugin-interface-version }}" \
             --generate-notes \
+            --verify-tag \
             ${{ inputs.is-latest-release && '--latest' || '--latest=false' }}
 
       - name: Tag postgresql-plugin
@@ -617,6 +618,7 @@ jobs:
             --repo supertokens/supertokens-postgresql-plugin \
             --title "v${{ inputs.postgresql-plugin-version }}" \
             --generate-notes \
+            --verify-tag \
             ${{ inputs.is-latest-release && '--latest' || '--latest=false' }}
 
       - name: Tag core
@@ -636,6 +638,7 @@ jobs:
             --repo supertokens/supertokens-core \
             --title "v${{ inputs.core-version }}" \
             --generate-notes \
+            --verify-tag \
             ${{ inputs.is-latest-release && '--latest' || '--latest=false' }}
 
   # ── Build and commit the release JARs ─────────────────────────────

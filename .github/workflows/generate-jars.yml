@@ -197,7 +197,7 @@ jobs:
                   echo "::warning::Could not re-publish GitHub release v${PI_VER} for plugin-interface — publish manually"
                 echo "✓ Committed plugin-interface JARs to GitHub and updated tag v${PI_VER}"
               else
-                echo "::warning::Committed plugin-interface JARs but failed to move tag v${PI_VER} on GitHub; the tag still points at the release commit"
+                echo "::warning::Could not move tag v${PI_VER} to the plugin-interface JAR commit; that commit was not pushed and v${PI_VER} is unchanged. Re-run generate-jars with commit-to-github=true for this release once GitHub accepts tag pushes."
               fi
             else
               echo "::warning::Failed to commit plugin-interface JARs to GitHub"
@@ -264,7 +264,7 @@ jobs:
                   echo "::warning::Could not re-publish GitHub release v${PG_VER} for postgresql-plugin — publish manually"
                 echo "✓ Committed postgresql-plugin JARs to GitHub and updated tag v${PG_VER}"
               else
-                echo "::warning::Committed postgresql-plugin JARs but failed to move tag v${PG_VER} on GitHub; the tag still points at the release commit"
+                echo "::warning::Could not move tag v${PG_VER} to the postgresql-plugin JAR commit; that commit was not pushed and v${PG_VER} is unchanged. Re-run generate-jars with commit-to-github=true for this release once GitHub accepts tag pushes."
               fi
             else
               echo "::warning::Failed to commit postgresql-plugin JARs to GitHub"
@@ -338,7 +338,7 @@ jobs:
                   echo "::warning::Could not re-publish GitHub release v${CORE_VER} for core — publish manually"
                 echo "✓ Committed core JARs to GitHub and updated tag v${CORE_VER}"
               else
-                echo "::error::Committed core JARs but failed to move tag v${CORE_VER} on GitHub; the tag still points at the release commit"
+                echo "::error::Could not move tag v${CORE_VER} to the JAR commit. That commit was not pushed (it only existed on this runner); v${CORE_VER} and branch ${CORE_VER%.*} still point at the tagged release commit. The JARs are on S3, but the downloadable packages were not built. Once GitHub accepts tag pushes, re-run this job (Re-run failed jobs, or generate-jars with commit-to-github=true for ${CORE_VER})."
                 exit 1
               fi
             else
