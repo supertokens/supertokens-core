@@ -25,6 +25,16 @@ on:
         required: false
         type: boolean
         default: false
+      commit-plugin-interface:
+        description: 'With commit-to-github: also commit plugin-interface JARs and move its tag (untick when that version is not being released)'
+        required: false
+        type: boolean
+        default: true
+      commit-postgresql-plugin:
+        description: 'With commit-to-github: also commit PostgreSQL plugin JARs and move its tag (untick when that version is not being released)'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       core-version:
@@ -44,6 +54,16 @@ on:
         required: false
         type: boolean
         default: false
+      # Callers that release core without releasing a plugin pass false: otherwise the already-released
+      # plugin version gets a new JAR commit and its tag is moved off the released commit.
+      commit-plugin-interface:
+        required: false
+        type: boolean
+        default: true
+      commit-postgresql-plugin:
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   generate-jars:
@@ -131,7 +151,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
           S3_BUCKET: ${{ vars.S3_BUCKET }}
           S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
-          COMMIT_TO_GITHUB: ${{ inputs.commit-to-github }}
+          COMMIT_TO_GITHUB: ${{ inputs.commit-to-github && inputs.commit-plugin-interface }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PI_VER="${{ steps.versions.outputs.pi_version }}"
@@ -198,7 +218,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
           S3_BUCKET: ${{ vars.S3_BUCKET }}
           S3_JAR_PREFIX: ${{ vars.S3_JAR_PREFIX }}
-          COMMIT_TO_GITHUB: ${{ inputs.commit-to-github }}
+          COMMIT_TO_GITHUB: ${{ inputs.commit-to-github && inputs.commit-postgresql-plugin }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PG_VER="${{ steps.versions.outputs.pg_version }}"
