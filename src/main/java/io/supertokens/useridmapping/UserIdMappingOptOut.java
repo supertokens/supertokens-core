@@ -484,7 +484,8 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             return;
         }
         UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
-        // committed after the base transaction (inside lockCheckAndWrite), so the lock is held until the config is
+        // committed after the base transaction (inside lockCheckAndWrite), so the lock is held until the config
+        // write has committed
         ((ActivityLogSQLStorage) storage).startAuditedTransaction(group.get(0).appIdentifier(), con -> {
             lockAndAssertNoMappings(mappingStorage, con, group);
             lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
