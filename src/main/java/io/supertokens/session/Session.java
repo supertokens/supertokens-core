@@ -64,6 +64,7 @@ import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -1351,7 +1352,7 @@ public class Session {
     public static String[] revokeAllSessionsForUser(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                                     String userId, boolean revokeSessionsForLinkedAccounts)
             throws StorageQueryException {
-        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(tenantIdentifier, storage, userId,
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, tenantIdentifier, storage, userId,
                 revokeSessionsForLinkedAccounts);
         return revokeSessionUsingSessionHandles(main, tenantIdentifier.toAppIdentifier(), storage,
                 sessionHandles);
@@ -1388,12 +1389,14 @@ public class Session {
             }
         }
 
+        addExternalIdsIgnoredByForce(main, appIdentifier, storage, userIds);
+
         for (String currUserId : userIds) {
             for (TenantConfig tenant : tenants) {
                 try {
-                    sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
+                    sessionHandles.addAll(Arrays.asList(getNonExpiredSessionHandlesOfUserIds(
                             tenant.tenantIdentifier, StorageLayer.getStorage(tenant.tenantIdentifier, main),
-                            currUserId, false)));
+                            Set.of(currUserId))));
 
                 } catch (TenantOrAppNotFoundException e) {
                     // this might happen when a tenant was deleted after the tenant list was fetched
@@ -1406,7 +1409,7 @@ public class Session {
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
-            TenantIdentifier tenantIdentifier, Storage storage, String userId,
+            Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
             boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
         Set<String> userIds = new HashSet<>();
@@ -1420,12 +1423,41 @@ public class Session {
                 }
             }
         }
+        addExternalIdsIgnoredByForce(main, tenantIdentifier.toAppIdentifier(), storage, userIds);
+        return getNonExpiredSessionHandlesOfUserIds(tenantIdentifier, storage, userIds);
+    }
+
+    private static String[] getNonExpiredSessionHandlesOfUserIds(TenantIdentifier tenantIdentifier, Storage storage,
+                                                                 Set<String> userIds)
+            throws StorageQueryException {
         List<String> sessionHandles = new ArrayList<>();
         for (String currUserId : userIds) {
             sessionHandles.addAll(List.of(((SessionStorage) storage)
                     .getAllNonExpiredSessionHandlesForUser(tenantIdentifier, currUserId)));
         }
         return sessionHandles.toArray(new String[0]);
+    }
+
+    // With disable_user_id_mapping_force on, the core ignores the app's user id mappings and reports its users by
+    // their SuperTokens user ids, but sessions created before that are stored under the external ids. So that
+    // listing or revoking a user's sessions by its SuperTokens user id still finds them, this adds the external id
+    // of each id's mapping, read ignoring the opt-out (as user deletion and link/unlink do). Other apps need nothing:
+    // either mappings are read as usual and callers pass the external id, or the flag is on without force and the
+    // app has no mappings.
+    private static void addExternalIdsIgnoredByForce(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                     Set<String> userIds)
+            throws StorageQueryException {
+        if (!UserIdMappingOptOut.isForced(main, appIdentifier)) {
+            return;
+        }
+        for (String userId : new ArrayList<>(userIds)) {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                    UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId,
+                            UserIdType.SUPERTOKENS);
+            if (mapping != null) {
+                userIds.add(mapping.externalUserId);
+            }
+        }
     }
 
     @TestOnly

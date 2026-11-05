@@ -93,7 +93,7 @@ public class SessionUserAPI extends WebserverAPI {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                 Storage storage = getTenantStorage(req);
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        tenantIdentifier, storage, userId, fetchSessionsForAllLinkedAccounts);
+                        main, tenantIdentifier, storage, userId, fetchSessionsForAllLinkedAccounts);
             }
 
             JsonObject result = new JsonObject();

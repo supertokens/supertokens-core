@@ -639,10 +639,10 @@ public class CoreConfig {
             "If true together with disable_user_id_mapping, that flag can be turned on while the app has user id " +
                     "mappings, and those mappings are ignored: neither the core nor the storage reads them, and " +
                     "data stored under their external ids (TOTP devices, metadata, roles) no longer applies to " +
-                    "those users. Sessions created under an external id before that stay valid until they expire, " +
-                    "and revoking a user's sessions by its SuperTokens user id doesn't revoke them, so revoke them " +
-                    "before turning this on. It can't be turned off while the app has user id mappings. Has no " +
-                    "effect while disable_user_id_mapping is false. (Default: false)")
+                    "those users. Sessions created under an external id before that stay valid, and listing or " +
+                    "revoking a user's sessions by its SuperTokens user id includes them. It can't be turned off " +
+                    "while the app has user id mappings. Has no effect while disable_user_id_mapping is false. " +
+                    "(Default: false)")
     private boolean disable_user_id_mapping_force = false;
 
     @EnvName("OTEL_COLLECTOR_CONNECTION_URI")
