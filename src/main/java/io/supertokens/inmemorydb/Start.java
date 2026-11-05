@@ -2942,11 +2942,12 @@ public class Start
     }
 
     @Override
-    public JsonObject getTenantCoreConfig_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier)
+    public Map<TenantIdentifier, JsonObject> getTenantCoreConfigs_Transaction(
+            TransactionConnection con, Collection<TenantIdentifier> tenantIdentifiers, boolean lockAgainstConfigWrites)
             throws StorageQueryException {
         try {
-            return MultitenancyQueries.getTenantCoreConfig_Transaction(this, (Connection) con.getConnection(),
-                    tenantIdentifier);
+            return MultitenancyQueries.getTenantCoreConfigs_Transaction(this, (Connection) con.getConnection(),
+                    tenantIdentifiers, lockAgainstConfigWrites);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

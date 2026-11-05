@@ -61,6 +61,9 @@ public class UserIdMapping {
     public static final String CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE = "disable_user_id_mapping cannot be enabled "
             + "because the app has existing user id mappings: remove them first, or set "
             + "disable_user_id_mapping_force to true to ignore them";
+    public static final String DATABASE_NOT_LOADED_MESSAGE = "disable_user_id_mapping cannot be on while the app "
+            + "moves to a database that is not loaded yet: add the database with disable_user_id_mapping off, then "
+            + "turn it on";
     public static final String CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE = "disable_user_id_mapping_force cannot "
             + "be turned off because the app has user id mappings: remove them first";
     public static final String NEW_DATABASE_HAS_MAPPINGS_MESSAGE = "disable_user_id_mapping is on, but the database "

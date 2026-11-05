@@ -33,7 +33,9 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -229,16 +231,24 @@ public class MultitenancyQueries {
         executeCreateTenantQueries(start, sqlCon, tenantConfig);
     }
 
-    public static JsonObject getTenantCoreConfig_Transaction(Start start, Connection sqlCon,
-                                                             TenantIdentifier tenantIdentifier)
+    // SQLite runs one write transaction at a time, so there is nothing to lock: lockAgainstConfigWrites needs nothing.
+    public static Map<TenantIdentifier, JsonObject> getTenantCoreConfigs_Transaction(Start start, Connection sqlCon,
+            Collection<TenantIdentifier> tenantIdentifiers, boolean lockAgainstConfigWrites)
             throws SQLException, StorageQueryException {
+        Map<TenantIdentifier, JsonObject> coreConfigs = new HashMap<>();
         String QUERY = "SELECT core_config FROM " + Config.getConfig(start).getTenantConfigsTable()
                 + " WHERE connection_uri_domain = ? AND app_id = ? AND tenant_id = ?";
-        return execute(sqlCon, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getConnectionUriDomain());
-            pst.setString(2, tenantIdentifier.getAppId());
-            pst.setString(3, tenantIdentifier.getTenantId());
-        }, result -> result.next() ? JsonUtils.stringToJsonObject(result.getString("core_config")) : null);
+        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
+            JsonObject coreConfig = execute(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getConnectionUriDomain());
+                pst.setString(2, tenantIdentifier.getAppId());
+                pst.setString(3, tenantIdentifier.getTenantId());
+            }, result -> result.next() ? JsonUtils.stringToJsonObject(result.getString("core_config")) : null);
+            if (coreConfig != null) {
+                coreConfigs.put(tenantIdentifier, coreConfig);
+            }
+        }
+        return coreConfigs;
     }
 
     public static TenantConfig[] getAllTenants(Start start) throws StorageQueryException {

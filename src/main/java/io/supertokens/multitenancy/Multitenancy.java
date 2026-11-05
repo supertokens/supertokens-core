@@ -184,8 +184,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    // Returns the apps whose disable_user_id_mapping the config turns on, with the database to check each in; the
-    // write must take the mapping-creation lock for them (see UserIdMappingOptOut).
+    // Returns the apps whose disable_user_id_mapping the write can turn on, with each database to decide it in; the
+    // write must then go through UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping.
     private static List<UserIdMappingOptOut.DisablingTarget> validateTenantConfig(Main main,
                                                                                TenantConfig targetTenantConfig,
                                              boolean shouldPreventProtecterdConfigUpdate,
@@ -282,7 +282,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 changedConfigs.put(targetTenantConfig.tenantIdentifier, normalisedConfig);
             }
 
-            userIdMappingDisablingTargets = assertNoUserIdMappingsWhereMappingGetsDisabled(main, changedConfigs);
+            userIdMappingDisablingTargets = assertNoUserIdMappingsWhereMappingGetsDisabled(main,
+                    targetTenantIdentifier, changedConfigs);
         }
 
         // Validate migration_mode state-machine transitions. We only enforce this when the
@@ -324,12 +325,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     // also covers an app that moves to another database while the flag is on. An app that already has the flag on
     // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
     // flag was turned on, and mapping creation is rejected since then. An app being created has no mappings yet.
-    // This check is a fast, lock-free answer for the config API. The returned targets are checked again under the
-    // mapping-creation lock when the config is written, and that is where "the flag is already on" is decided from
-    // the stored config: this core's loaded copy can be a config sync behind, so here it only skips the pre-check.
     // With disable_user_id_mapping_force on, nothing is checked: existing mappings are ignored.
+    //
+    // This check is a fast, lock-free answer for the config API, from this core's loaded config. The returned
+    // targets are what the write decides again under locks, from the stored config (see
+    // UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping): every app whose flag the write can change,
+    // which is every app inheriting from the written row when that is an app's or a connection uri domain's public
+    // tenant, and any app moving to a database it doesn't use yet. Any other write, such as one to a tenant that
+    // isn't public, can't turn the flag on anywhere, and takes the plain write path.
     private static List<UserIdMappingOptOut.DisablingTarget> assertNoUserIdMappingsWhereMappingGetsDisabled(
-            Main main, Map<TenantIdentifier, JsonObject> configs)
+            Main main, TenantIdentifier targetTenantIdentifier, Map<TenantIdentifier, JsonObject> configs)
             throws InvalidConfigException, StorageQueryException {
         List<UserIdMappingOptOut.DisablingTarget> targets = new ArrayList<>();
         // one pass over the loaded storages: user pools per app, and a loaded storage per user pool
@@ -345,9 +350,30 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     .add(storage.getUserPoolId());
             loadedStorages.putIfAbsent(storage.getUserPoolId(), storage);
         }
+        // the base tenant's core config can't be changed, so writing it changes no app's flag
+        boolean writesAPublicTenantRow = !targetTenantIdentifier.equals(TenantIdentifier.BASE_TENANT)
+                && targetTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID);
 
         Set<String> checked = new HashSet<>();
         for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
+            TenantIdentifier tenantIdentifier = entry.getKey();
+            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+            Set<String> currentUserPools = appUserPools.get(appIdentifier);
+            if (currentUserPools == null) {
+                continue; // the app is being created, so its databases have no mappings for it
+            }
+            String userPoolId = StorageLayer.getNewStorageInstance(main, entry.getValue(), tenantIdentifier, true)
+                    .getUserPoolId();
+            if (!checked.add(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId() + "|"
+                    + userPoolId)) {
+                continue;
+            }
+            boolean usesDatabaseAlready = currentUserPools.contains(userPoolId);
+            Storage storage = loadedStorages.get(userPoolId);
+            if (writesAPublicTenantRow || !usesDatabaseAlready) {
+                targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage, usesDatabaseAlready));
+            }
+
             JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
             if (disabled == null || disabled.isJsonNull() || !disabled.getAsBoolean()) {
                 continue;
@@ -356,41 +382,20 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (forced != null && !forced.isJsonNull() && forced.getAsBoolean()) {
                 continue;
             }
-            TenantIdentifier tenantIdentifier = entry.getKey();
-            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
-            String userPoolId = StorageLayer.getNewStorageInstance(main, entry.getValue(), tenantIdentifier, true)
-                    .getUserPoolId();
-            if (!checked.add(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId() + "|"
-                    + userPoolId)) {
-                continue;
-            }
-            Set<String> currentUserPools = appUserPools.get(appIdentifier);
-            boolean usesDatabaseAlready = currentUserPools != null && currentUserPools.contains(userPoolId);
-            // This core's loaded config can be up to a config sync behind the stored one, so it only decides
-            // whether the lock-free pre-check runs. Whether the flag is already on is decided again under the lock,
-            // from the stored config (see UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping).
             boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
             // Turning force off is checked like turning the flag on: the app must not have mappings either way.
             boolean forceGetsTurnedOff = alreadyDisabled && UserIdMappingOptOut.isForced(main, appIdentifier);
             if (alreadyDisabled && !forceGetsTurnedOff && usesDatabaseAlready) {
-                targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, loadedStorages.get(userPoolId),
-                        true));
                 continue;
             }
-            Storage storage = loadedStorages.get(userPoolId);
             if (storage == null) {
-                if (currentUserPools == null) {
-                    continue; // the app is being created, so the database has no mappings for it
-                }
                 // Checking a database this core has not loaded would mean initialising it here.
                 if (!loadedTenantUserPools.containsKey(tenantIdentifier)) {
                     throw new InvalidConfigException("disable_user_id_mapping cannot be on while a tenant is added "
                             + "on a database that is not loaded yet: turn disable_user_id_mapping off for the app, "
                             + "add the tenant, then turn it back on");
                 }
-                throw new InvalidConfigException("disable_user_id_mapping cannot be on while the app moves to a "
-                        + "database that is not loaded yet: add the database with disable_user_id_mapping off, "
-                        + "then turn it on");
+                throw new InvalidConfigException(UserIdMapping.DATABASE_NOT_LOADED_MESSAGE);
             }
             if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
                 throw new InvalidConfigException(forceGetsTurnedOff
@@ -399,7 +404,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         ? UserIdMapping.NEW_DATABASE_HAS_MAPPINGS_MESSAGE
                         : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE);
             }
-            targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage, usesDatabaseAlready));
         }
         return targets;
     }
