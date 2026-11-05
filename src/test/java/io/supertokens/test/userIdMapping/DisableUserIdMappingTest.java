@@ -256,6 +256,44 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // With force on, the core reports users by their SuperTokens user ids, but sessions created before were stored
+    // under the external id. Listing and revoking a user's sessions by its SuperTokens user id still finds them, so
+    // "revoke all sessions" doesn't leave a pre-force session (and its refresh token) alive.
+    @Test
+    public void revokingByTheSuperTokensIdUnderForceRevokesSessionsStoredUnderTheExternalId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, user.getSupertokensUserId(), "external-id", null, false);
+        createSession(process, "external-id");
+        assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        Map<String, String> byUserId = new HashMap<>();
+        byUserId.put("userId", user.getSupertokensUserId());
+        JsonObject listed = get(process, "/recipe/session/user", byUserId, "session");
+        assertEquals(1, listed.getAsJsonArray("sessionHandles").size());
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", user.getSupertokensUserId());
+        JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+        assertEquals(1, removed.getAsJsonArray("sessionHandlesRevoked").size());
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        stop(process);
+    }
+
     // Removing a user with a leftover mapping from a tenant also deletes the sessions stored under the external id
     // in that tenant. Works by either id.
     @Test
