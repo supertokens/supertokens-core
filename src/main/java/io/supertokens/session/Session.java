@@ -1375,21 +1375,8 @@ public class Session {
 
         List<String> sessionHandles = new ArrayList<>();
 
-        Set<String> userIds = new HashSet<>();
-        userIds.add(userId);
-        if (fetchSessionsForAllLinkedAccounts) {
-            if (storage.getType().equals(STORAGE_TYPE.SQL)) {
-                AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
-                        .getPrimaryUserById(appIdentifier, userId);
-                if (primaryUser != null) {
-                    for (LoginMethod lM : primaryUser.loginMethods) {
-                        userIds.add(lM.getSupertokensUserId());
-                    }
-                }
-            }
-        }
-
-        addExternalIdsIgnoredByForce(main, appIdentifier, storage, userIds);
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, appIdentifier, storage, userId,
+                fetchSessionsForAllLinkedAccounts && storage.getType().equals(STORAGE_TYPE.SQL));
 
         for (String currUserId : userIds) {
             for (TenantConfig tenant : tenants) {
@@ -1412,18 +1399,8 @@ public class Session {
             Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
             boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
-        Set<String> userIds = new HashSet<>();
-        userIds.add(userId);
-        if (fetchSessionsForAllLinkedAccounts) {
-            AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
-                    .getPrimaryUserById(tenantIdentifier.toAppIdentifier(), userId);
-            if (primaryUser != null) {
-                for (LoginMethod lM : primaryUser.loginMethods) {
-                    userIds.add(lM.getSupertokensUserId());
-                }
-            }
-        }
-        addExternalIdsIgnoredByForce(main, tenantIdentifier.toAppIdentifier(), storage, userIds);
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                fetchSessionsForAllLinkedAccounts);
         return getNonExpiredSessionHandlesOfUserIds(tenantIdentifier, storage, userIds);
     }
 
@@ -1438,28 +1415,53 @@ public class Session {
         return sessionHandles.toArray(new String[0]);
     }
 
+    // The ids a user's sessions are stored under: the given id and, if asked, the user ids of the primary user's
+    // linked login methods.
+    //
     // With disable_user_id_mapping_force on, the core ignores the app's user id mappings and reports its users by
-    // their SuperTokens user ids, but sessions created before that are stored under the external ids. So that
-    // listing or revoking a user's sessions by its SuperTokens user id still finds them, this adds the external id
-    // of each id's mapping, read ignoring the opt-out (as user deletion and link/unlink do). The external id is added
-    // as is: a mapping created with force may name another user's SuperTokens id, and then that user's sessions are
-    // included too, as the config description documents. Other apps need nothing:
-    // either mappings are read as usual and callers pass the external id, or the flag is on without force and the
-    // app has no mappings.
-    private static void addExternalIdsIgnoredByForce(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                     Set<String> userIds)
+    // their SuperTokens user ids, but sessions created before that are stored under the external ids, and those
+    // sessions keep reporting the external id as their user id. So a user's sessions can be stored under both ids,
+    // and callers may pass either. For a forced app this resolves both ways, reading the mappings ignoring the
+    // opt-out (as user deletion and link/unlink do): an external id is first resolved to its SuperTokens id, so that
+    // linked login methods are found, and then the external id of each id's mapping is added. The external id is
+    // added as is: a mapping created with force may name another user's SuperTokens id, and then that user's
+    // sessions are included too, as the config description documents. Other apps need nothing: either mappings are
+    // read as usual and callers pass the external id, or the flag is on without force and the app has no mappings.
+    private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                          String userId, boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
-        if (!UserIdMappingOptOut.isForced(main, appIdentifier)) {
-            return;
-        }
-        for (String userId : new ArrayList<>(userIds)) {
+        boolean forced = UserIdMappingOptOut.isForced(main, appIdentifier);
+        Set<String> userIds = new HashSet<>();
+        userIds.add(userId);
+        String superTokensUserId = userId;
+        if (forced) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                    UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId,
-                            UserIdType.SUPERTOKENS);
+                    UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId, UserIdType.EXTERNAL);
             if (mapping != null) {
-                userIds.add(mapping.externalUserId);
+                superTokensUserId = mapping.superTokensUserId;
+                userIds.add(superTokensUserId);
             }
         }
+        if (fetchSessionsForAllLinkedAccounts) {
+            AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
+                    .getPrimaryUserById(appIdentifier, superTokensUserId);
+            if (primaryUser != null) {
+                for (LoginMethod lM : primaryUser.loginMethods) {
+                    userIds.add(lM.getSupertokensUserId());
+                }
+            }
+        }
+        if (forced) {
+            for (String id : new ArrayList<>(userIds)) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                        UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, id,
+                                UserIdType.SUPERTOKENS);
+                if (mapping != null) {
+                    userIds.add(mapping.externalUserId);
+                }
+            }
+        }
+        return userIds;
     }
 
     @TestOnly
