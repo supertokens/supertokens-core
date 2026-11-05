@@ -344,6 +344,58 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // A mapping created with force can name another user's SuperTokens id as its external id. Under force, listing
+    // or revoking by that id covers both users: the user whose id it is, with its linked login methods, and the
+    // mapped user.
+    @Test
+    public void revokingAnIdThatIsAlsoAForcedExternalIdUnderForceCoversBothUsersAndTheirLinkedAccounts()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked@example.com", "password123");
+        AuthRecipeUserInfo mapped = EmailPassword.signUp(main, "mapped@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), primary.getSupertokensUserId());
+        UserIdMapping.createUserIdMapping(main, mapped.getSupertokensUserId(), primary.getSupertokensUserId(), null,
+                true);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        createSession(process, linked.getSupertokensUserId());
+        createSession(process, mapped.getSupertokensUserId());
+
+        for (boolean acrossAllTenants : new boolean[]{true, false}) {
+            Map<String, String> byUserId = new HashMap<>();
+            byUserId.put("userId", primary.getSupertokensUserId());
+            byUserId.put("fetchAcrossAllTenants", String.valueOf(acrossAllTenants));
+            JsonObject listed = get(process, "/recipe/session/user", byUserId, "session");
+            assertEquals("fetchAcrossAllTenants=" + acrossAllTenants, 2,
+                    listed.getAsJsonArray("sessionHandles").size());
+        }
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", primary.getSupertokensUserId());
+        JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+        assertEquals(2, removed.getAsJsonArray("sessionHandlesRevoked").size());
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, linked.getSupertokensUserId()).length);
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, mapped.getSupertokensUserId()).length);
+
+        stop(process);
+    }
+
     // Removing a user with a leftover mapping from a tenant also deletes the sessions stored under the external id
     // in that tenant. Works by either id.
     @Test
