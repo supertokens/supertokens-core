@@ -1441,7 +1441,9 @@ public class Session {
     // With disable_user_id_mapping_force on, the core ignores the app's user id mappings and reports its users by
     // their SuperTokens user ids, but sessions created before that are stored under the external ids. So that
     // listing or revoking a user's sessions by its SuperTokens user id still finds them, this adds the external id
-    // of each id's mapping, read ignoring the opt-out (as user deletion and link/unlink do). Other apps need nothing:
+    // of each id's mapping, read ignoring the opt-out (as user deletion and link/unlink do). The external id is added
+    // as is: a mapping created with force may name another user's SuperTokens id, and then that user's sessions are
+    // included too, as the config description documents. Other apps need nothing:
     // either mappings are read as usual and callers pass the external id, or the flag is on without force and the
     // app has no mappings.
     private static void addExternalIdsIgnoredByForce(Main main, AppIdentifier appIdentifier, Storage storage,
