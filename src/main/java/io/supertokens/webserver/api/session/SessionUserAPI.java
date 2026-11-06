@@ -39,6 +39,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Locale;
 
 public class SessionUserAPI extends WebserverAPI {
 
@@ -63,14 +64,14 @@ public class SessionUserAPI extends WebserverAPI {
 
         boolean fetchAcrossAllTenants = true;
         if (fetchAcrossAllTenantsString != null) {
-            fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase().equals("true");
+            fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase(Locale.ROOT).equals("true");
         }
 
         String fetchSessionsForAllLinkedAccountsString = InputParser.getQueryParamOrThrowError(req,
                 "fetchSessionsForAllLinkedAccounts", true);
         boolean fetchSessionsForAllLinkedAccounts = true;
         if (fetchSessionsForAllLinkedAccountsString != null) {
-            fetchSessionsForAllLinkedAccounts = fetchSessionsForAllLinkedAccountsString.toLowerCase().equals("true");
+            fetchSessionsForAllLinkedAccounts = fetchSessionsForAllLinkedAccountsString.toLowerCase(Locale.ROOT).equals("true");
         }
 
         try {

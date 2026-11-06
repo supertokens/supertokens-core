@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 
 import java.lang.reflect.Field;
+import java.util.Locale;
 import java.util.Map;
 
 public class ConfigMapper {
@@ -125,7 +126,7 @@ public class ConfigMapper {
     private static Object handleBooleanConversion(JsonElement value, String fieldName) throws InvalidConfigException {
         // Handle boolean conversion from strings like "true", "false"
         if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
-            String stringValue = value.getAsString().toLowerCase();
+            String stringValue = value.getAsString().toLowerCase(Locale.ROOT);
             if (stringValue.equals("true")) {
                 return true;
             } else if (stringValue.equals("false")) {

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixes case conversions of identifiers (emails, tenant IDs, config values such as `password_hashing_alg`, OS names, etc.)
+  depending on the JVM default locale. For example, in the Turkish locale `"I".toLowerCase()` gives a dotless `ı`, so
+  emails were normalised differently and values like `argon2id` were not recognised. They now use `Locale.ROOT`.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

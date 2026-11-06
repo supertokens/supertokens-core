@@ -51,6 +51,18 @@ public class UtilsTest {
     }
 
     @Test
+    public void normaliseEmailDoesNotDependOnTheDefaultLocale() {
+        java.util.Locale original = java.util.Locale.getDefault();
+        try {
+            // in the Turkish locale "I".toLowerCase() is a dotless i, which would change the email
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertEquals("info@example.com", io.supertokens.utils.Utils.normaliseEmail("  INFO@Example.COM "));
+        } finally {
+            java.util.Locale.setDefault(original);
+        }
+    }
+
+    @Test
     public void pubPriKeyShouldHandleSemicolonSeparator() {
         io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub;pri");
 

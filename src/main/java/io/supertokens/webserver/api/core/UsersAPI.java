@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 public class UsersAPI extends WebserverAPI {
@@ -213,7 +214,7 @@ public class UsersAPI extends WebserverAPI {
         String[] searchTagArray = searchTag.split(";");
         ArrayList<String> searchTagArrayList = new ArrayList<>();
         for (String searchTagString : searchTagArray) {
-            String normalizedSearchTag = searchTagString.toLowerCase().trim();
+            String normalizedSearchTag = searchTagString.toLowerCase(Locale.ROOT).trim();
             if (normalizedSearchTag.length() != 0) {
                 searchTagArrayList.add(normalizedSearchTag);
             }

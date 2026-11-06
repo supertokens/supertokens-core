@@ -398,13 +398,13 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                     JsonObject jwk = new JsonObject();
 
                     // Most verifiers seem to expect kty and alg to be in upper case so forcing that here
-                    jwk.addProperty("kty", algorithm.getAlgorithmType().toUpperCase());
+                    jwk.addProperty("kty", algorithm.getAlgorithmType().toUpperCase(Locale.ROOT));
                     jwk.addProperty("kid", currentKeyInfo.keyId);
                     jwk.addProperty("n", Base64.getUrlEncoder().withoutPadding()
                             .encodeToString(toBytesUnsigned(((RSAPublicKey) publicKey).getModulus())));
                     jwk.addProperty("e", Base64.getUrlEncoder().withoutPadding()
                             .encodeToString(toBytesUnsigned(((RSAPublicKey) publicKey).getPublicExponent())));
-                    jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
+                    jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase(Locale.ROOT));
                     jwk.addProperty("use", "sig"); // We generate JWKs that are meant to be used for signature
                     // verification
 

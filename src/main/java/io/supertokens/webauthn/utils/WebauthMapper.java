@@ -34,6 +34,7 @@ import io.supertokens.webauthn.data.WebauthNCredentialResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 
 public class WebauthMapper {
     public static WebAuthNStoredCredential mapRegistrationDataToStoredCredential(
@@ -125,9 +126,9 @@ public class WebauthMapper {
                 options.getAuthenticatorSelection().isRequireResidentKey() == null ? false :
                         options.getAuthenticatorSelection().isRequireResidentKey());
         authenticatorSelection.addProperty("residentKey",
-                options.getAuthenticatorSelection().getResidentKey().getValue().toLowerCase());
+                options.getAuthenticatorSelection().getResidentKey().getValue().toLowerCase(Locale.ROOT));
         authenticatorSelection.addProperty("userVerification",
-                options.getAuthenticatorSelection().getUserVerification().getValue().toLowerCase());
+                options.getAuthenticatorSelection().getUserVerification().getValue().toLowerCase(Locale.ROOT));
 
         response.add("authenticatorSelection", authenticatorSelection);
         return response;

@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Locale;
 
 public class JWTSigningAPI extends WebserverAPI {
     private static final long serialVersionUID = 288744303462186631L;
@@ -81,7 +82,7 @@ public class JWTSigningAPI extends WebserverAPI {
         try {
             this.enforcePublicTenantAndGetPublicTenantStorage(req);
             String jwt = JWTSigningFunctions.createJWTToken(getAppIdentifier(req), main,
-                    algorithm.toUpperCase(), payload, jwksDomain,
+                    algorithm.toUpperCase(Locale.ROOT), payload, jwksDomain,
                     validity, useDynamicKey);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");

@@ -22,6 +22,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -298,7 +299,7 @@ public class EmailPassword {
             }
             for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
                 if (provider != null && provider.thirdPartyId != null) {
-                    result.add(provider.thirdPartyId.toLowerCase());
+                    result.add(provider.thirdPartyId.toLowerCase(Locale.ROOT));
                 }
             }
         }
@@ -313,7 +314,7 @@ public class EmailPassword {
     private static boolean hasThirdPartyPlaceholderShape(String localPart, Set<String> configuredThirdPartyIds) {
         int dot = localPart.indexOf('.');
         while (dot >= 0) {
-            String suffix = localPart.substring(dot + 1).toLowerCase();
+            String suffix = localPart.substring(dot + 1).toLowerCase(Locale.ROOT);
             if (configuredThirdPartyIds.contains(suffix)) {
                 return true;
             }
