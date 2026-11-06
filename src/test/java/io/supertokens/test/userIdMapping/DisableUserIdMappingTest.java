@@ -412,6 +412,47 @@ public class DisableUserIdMappingTest {
         stop(process);
     }
 
+    // A session created before force keeps the user id it reported then. For a linked login method that is the
+    // primary user's external id, while the session row holds the login method's own external id, which no longer
+    // resolves as a SuperTokens id under force.
+    @Test
+    public void refreshingALinkedAccountsSessionFromBeforeForceKeepsThePrimaryUsersId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), primary.getSupertokensUserId());
+        UserIdMapping.createUserIdMapping(main, primary.getSupertokensUserId(), "primary-external-id", null, false);
+        UserIdMapping.createUserIdMapping(main, linked.getSupertokensUserId(), "linked-external-id", null, false);
+
+        JsonObject session = createSession(process, "linked-external-id");
+        assertEquals("primary-external-id", session.getAsJsonObject("session").get("userId").getAsString());
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        JsonObject body = new JsonObject();
+        body.addProperty("refreshToken", session.getAsJsonObject("refreshToken").get("token").getAsString());
+        body.addProperty("enableAntiCsrf", false);
+        body.addProperty("useDynamicSigningKey", true);
+        JsonObject refreshed = postOk(process, "/recipe/session/refresh", body, "session");
+        assertEquals("primary-external-id", refreshed.getAsJsonObject("session").get("userId").getAsString());
+
+        stop(process);
+    }
+
     // A mapping created with force can name another user's SuperTokens id as its external id. Under force, listing
     // or revoking by that id covers both users: the user whose id it is, with its linked login methods, and the
     // mapped user.
@@ -978,6 +1019,9 @@ public class DisableUserIdMappingTest {
 
         String userId = count(counts, "email-password sign-up",
                 () -> emailPasswordSignUp(process, "user@example.com")).get("id").getAsString();
+        // the SDKs' placeholder email of a user without email: the sign-up checks whose id its local part is
+        count(counts, "email-password sign-up (placeholder email)",
+                () -> emailPasswordSignUp(process, "no-such-user@stfakeemail.supertokens.com"));
         count(counts, "email-password sign-in", () -> {
             JsonObject body = new JsonObject();
             body.addProperty("email", "user@example.com");
