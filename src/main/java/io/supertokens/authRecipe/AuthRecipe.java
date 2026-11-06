@@ -963,9 +963,16 @@ public class AuthRecipe {
                 // were created with, so the sessions under this id belong only to the login method being
                 // deleted. Remove them here, under the user lock taken above, so they stop being refreshable.
                 if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
-                    ((SessionSQLStorage) StorageUtils.getSessionStorage(storage))
-                            .deleteSessionsOfUser_Transaction(con, appIdentifier,
-                                    userIdToDeleteForNonAuthRecipeForRecipeUserId);
+                    SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
+                    sessionStorage.deleteSessionsOfUser_Transaction(con, appIdentifier,
+                            userIdToDeleteForNonAuthRecipeForRecipeUserId);
+                    // With a mapping left over from before disable_user_id_mapping, sessions created since then are
+                    // stored under the SuperTokens id, as in the other cleanup paths.
+                    if (alsoCleanUpSuperTokensUserId(main, appIdentifier,
+                            userIdToDeleteForNonAuthRecipeForRecipeUserId, userIdToDeleteForAuthRecipe)) {
+                        sessionStorage.deleteSessionsOfUser_Transaction(con, appIdentifier,
+                                userIdToDeleteForAuthRecipe);
+                    }
                 }
                 userIdToDeleteForNonAuthRecipeForRecipeUserId = null;
             }
