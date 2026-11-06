@@ -33,6 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Changing `attributeMapping.userId` on a client that already has users changes those users' IDs.
 - The reservation-table backfill cron no longer runs when `migration_mode` is `MIGRATED` (it checked for pending users every 5 minutes). Users still pending when MIGRATED is set in `config.yaml` or an env var are not backfilled, so finish the backfill first.
 - Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.3.0), so they no longer stay pending and block `MIGRATED`.
+- SAML: the legacy authorize and callback APIs, opened by the end user's browser, no longer require the API key.
 
 ### Migration
 

@@ -9,12 +9,14 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.apache.catalina.Valve;
@@ -886,6 +888,129 @@ public class LegacyTest5_4 {
     }
 
     // Helper method to extract authorization code from redirect URI
+    // ========== Core with API keys configured ==========
+
+    // The legacy flow is an OAuth provider facade: authorize and callback are opened by the end user's browser
+    // and token / userinfo are called by the relying party's OAuth client. None of them holds the core API key,
+    // so the whole flow must work without it on a core that has api_keys configured. The non-legacy SAML APIs,
+    // called by the backend SDK, still require the key.
+    @Test
+    public void testLegacyFlowWorksWithoutApiKeyWhenApiKeysAreConfigured() throws Exception {
+        String apiKey = "legacy-saml-test-api-key-0123456789";
+        Utils.setValueInConfig("api_keys", apiKey);
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.SAML});
+
+        String legacyACSURL = "http://localhost:3567/recipe/saml/legacy/callback";
+        String idpEntityId = "https://saml.example.com/entityid";
+        MockSAML.KeyMaterial keyMaterial = MockSAML.generateSelfSignedKeyMaterial();
+        String metadataXML = MockSAML.generateIdpMetadataXML(idpEntityId, "https://mocksaml.com/api/saml/sso",
+                keyMaterial.certificate);
+
+        JsonObject createClientInput = new JsonObject();
+        createClientInput.addProperty("clientSecret", "secret");
+        createClientInput.addProperty("defaultRedirectURI", TEST_REDIRECT_URI);
+        JsonArray redirectURIs = new JsonArray();
+        redirectURIs.add(TEST_REDIRECT_URI);
+        createClientInput.add("redirectURIs", redirectURIs);
+        createClientInput.addProperty("metadataXML", java.util.Base64.getEncoder()
+                .encodeToString(metadataXML.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        createClientInput.addProperty("allowIDPInitiatedLogin", false);
+
+        // The client API is called by the backend SDK and still requires the key.
+        try {
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                    SemVer.v5_4.get(), "saml");
+            fail("Expected the client API to require the API key");
+        } catch (HttpResponseException e) {
+            assertEquals(401, e.statusCode);
+        }
+        JsonObject createResp = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/clients", createClientInput, 1000, 1000, null,
+                SemVer.v5_4.get(), "PUT", apiKey, "saml");
+        String clientId = createResp.get("clientId").getAsString();
+
+        // authorize, opened by the browser without the key: redirects to the IdP.
+        Map<String, String> params = new HashMap<>();
+        params.put("client_id", clientId);
+        params.put("redirect_uri", TEST_REDIRECT_URI);
+        params.put("state", "test-state");
+        String ssoRedirectURI = null;
+        try {
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/legacy/authorize", params, 1000, 1000, null,
+                    SemVer.v5_4.get(), "saml");
+            fail("Expected redirect response");
+        } catch (HttpResponseException e) {
+            assertEquals(307, e.statusCode);
+            ssoRedirectURI = e.getMessage();
+        }
+        SAMLTestUtils.LoginInfo loginInfo = SAMLTestUtils.loginInfoFromSSORedirect(ssoRedirectURI);
+
+        // callback, the IdP's form POST through the browser without the key: redirects with a code.
+        String samlResponseBase64 = MockSAML.generateSignedSAMLResponseBase64(
+                idpEntityId,
+                SAMLTestUtils.TEST_SP_ENTITY_ID,
+                legacyACSURL,
+                "user@example.com",
+                null,
+                loginInfo.requestId,
+                keyMaterial,
+                300
+        );
+        JsonObject callbackFormData = new JsonObject();
+        callbackFormData.addProperty("SAMLResponse", samlResponseBase64);
+        callbackFormData.addProperty("RelayState", loginInfo.relayState);
+        String code = null;
+        try {
+            HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                    legacyACSURL, callbackFormData, 1000, 1000, null, SemVer.v5_4.get(), "saml", false);
+            fail("Expected redirect response");
+        } catch (HttpResponseException e) {
+            assertEquals(302, e.statusCode);
+            assertTrue(e.getMessage(), e.getMessage().contains(TEST_REDIRECT_URI + "?code="));
+            code = extractAuthCodeFromRedirectURI(e.getMessage());
+        }
+
+        // token and userinfo, called by the relying party's OAuth client without the key.
+        JsonObject tokenFormData = new JsonObject();
+        tokenFormData.addProperty("client_id", clientId);
+        tokenFormData.addProperty("client_secret", "secret");
+        tokenFormData.addProperty("code", code);
+        JsonObject tokenResponse = HttpRequestForTesting.sendFormDataPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/legacy/token", tokenFormData, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("OK", tokenResponse.get("status").getAsString());
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + tokenResponse.get("access_token").getAsString());
+        JsonObject userInfo = HttpRequestForTesting.sendGETRequestWithHeaders(process.getProcess(), "",
+                "http://localhost:3567/recipe/saml/legacy/userinfo", null, headers, 1000, 1000, null,
+                SemVer.v5_4.get(), "saml");
+        assertEquals("user@example.com", userInfo.get("id").getAsString());
+
+        // The non-legacy login API, called by the backend SDK, still requires the key.
+        JsonObject loginInput = new JsonObject();
+        loginInput.addProperty("clientId", clientId);
+        loginInput.addProperty("redirectURI", TEST_REDIRECT_URI);
+        loginInput.addProperty("acsURL", legacyACSURL);
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/saml/login", loginInput, 1000, 1000, null,
+                    SemVer.v5_4.get(), "saml");
+            fail("Expected the login API to require the API key");
+        } catch (HttpResponseException e) {
+            assertEquals(401, e.statusCode);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private String extractAuthCodeFromRedirectURI(String redirectURI) {
         // Extract the 'code' parameter from the redirect URI
         // Format: http://localhost:3000/auth/callback/saml-mock?code=some-uuid&state=test-state
