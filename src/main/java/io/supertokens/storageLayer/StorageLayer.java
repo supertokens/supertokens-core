@@ -704,7 +704,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     // ignoreUserIdMappingOptOut: find mappings even when disable_user_id_mapping is on. Only for removing a
-    // mapping or deleting a user, which must still see a mapping created before the opt-out.
+    // mapping or deleting a user, which must still see a mapping created before the opt-out, and for listing or
+    // revoking a user's sessions across tenants under disable_user_id_mapping_force, where callers may still pass
+    // the external id.
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
             UserIdType userIdType, boolean ignoreUserIdMappingOptOut)

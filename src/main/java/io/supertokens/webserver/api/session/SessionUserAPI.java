@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -78,10 +79,14 @@ public class SessionUserAPI extends WebserverAPI {
             if (fetchAcrossAllTenants) {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage;
+                // Under disable_user_id_mapping_force an external id is still found through its mapping,
+                // so a user on a tenant with its own database is looked up there, where the session
+                // listing resolves its SuperTokens id.
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
                             enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                    req, userId, UserIdType.ANY, false);
+                                    req, userId, UserIdType.ANY, false,
+                                    UserIdMappingOptOut.isForced(main, appIdentifier));
                     storage = storageAndUserIdMapping.storage;
                 } catch (UnknownUserIdException e) {
                     throw new IllegalStateException("should never happen");

@@ -539,7 +539,7 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     // ignoreUserIdMappingOptOut: see StorageLayer.findStorageAndUserIdMappingForUser. Only for the remove-mapping
-    // and delete-user APIs.
+    // and delete-user APIs, and for the session list and remove APIs of an app under disable_user_id_mapping_force.
     protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI,
             boolean ignoreUserIdMappingOptOut)
