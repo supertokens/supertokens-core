@@ -614,7 +614,8 @@ public class DisableUserIdMappingTest {
         System.out.println("[storage-reads] flag on: " + skipped);
         assertEquals(List.of("false", userId, "false", "false"), skipped);
 
-        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).setAppsWithUserIdMappingDisabled(Set.of());
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+                .setAppsWithUserIdMappingDisabled(Set.of(), Set.of());
         List<String> read = readsAffectedByTheLeftoverMappings(process, userId, session, webAuthnUser);
         System.out.println("[storage-reads] storage set cleared: " + read);
         assertEquals(List.of("true", "external-id", "true", "true"), read);
@@ -1039,6 +1040,18 @@ public class DisableUserIdMappingTest {
             body.addProperty("enableAntiCsrf", false);
             body.addProperty("useDynamicSigningKey", true);
             return postOk(process, "/recipe/session/refresh", body, "session");
+        });
+        // sessions don't need a SuperTokens user: refreshing one whose user id isn't a user reads no mapping either
+        JsonObject sessionOfNonUser = createSession(process, "not-a-supertokens-user");
+        count(counts, "session refresh (user id that isn't a SuperTokens user)", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("refreshToken",
+                    sessionOfNonUser.getAsJsonObject("refreshToken").get("token").getAsString());
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("useDynamicSigningKey", true);
+            JsonObject response = postOk(process, "/recipe/session/refresh", body, "session");
+            assertEquals("not-a-supertokens-user", response.getAsJsonObject("session").get("userId").getAsString());
+            return response;
         });
         count(counts, "session verify (checkDatabase)", () -> {
             JsonObject body = new JsonObject();

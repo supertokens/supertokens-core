@@ -526,18 +526,24 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                                          Map<ResourceDistributor.KeyClass,
                                                                  ResourceDistributor.SingletonResource> resources) {
         Map<Storage, Set<AppIdentifier>> disabledAppsPerStorage = new HashMap<>();
+        Map<Storage, Set<AppIdentifier>> forcedAppsPerStorage = new HashMap<>();
         for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
                 resources.entrySet()) {
-            Set<AppIdentifier> disabledApps = disabledAppsPerStorage.computeIfAbsent(
-                    ((StorageLayer) entry.getValue()).storage, k -> new HashSet<>());
+            Storage storage = ((StorageLayer) entry.getValue()).storage;
+            Set<AppIdentifier> disabledApps = disabledAppsPerStorage.computeIfAbsent(storage, k -> new HashSet<>());
+            Set<AppIdentifier> forcedApps = forcedAppsPerStorage.computeIfAbsent(storage, k -> new HashSet<>());
             AppIdentifier appIdentifier = entry.getKey().getTenantIdentifier().toAppIdentifier();
             if (io.supertokens.useridmapping.UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
                 disabledApps.add(appIdentifier);
+                if (io.supertokens.useridmapping.UserIdMappingOptOut.isForced(main, appIdentifier)) {
+                    forcedApps.add(appIdentifier);
+                }
             }
         }
         for (Map.Entry<Storage, Set<AppIdentifier>> entry : disabledAppsPerStorage.entrySet()) {
             if (entry.getKey() instanceof UserIdMappingStorage userIdMappingStorage) {
-                userIdMappingStorage.setAppsWithUserIdMappingDisabled(entry.getValue());
+                userIdMappingStorage.setAppsWithUserIdMappingDisabled(entry.getValue(),
+                        forcedAppsPerStorage.get(entry.getKey()));
             }
         }
     }

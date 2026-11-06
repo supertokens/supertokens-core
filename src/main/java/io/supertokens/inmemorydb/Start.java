@@ -2679,17 +2679,28 @@ public class Start
         userIdMappingCallCount.incrementAndGet();
     }
 
-    // Apps with disable_user_id_mapping on, as core last told this storage. The queries that read userid_mapping on
-    // their own skip that read for these apps.
-    private volatile Set<AppIdentifier> appsWithUserIdMappingDisabled = Set.of();
+    // Apps with disable_user_id_mapping on, and those of them with disable_user_id_mapping_force on, as core last
+    // told this storage. The queries that read userid_mapping on their own skip that read for these apps; for forced
+    // apps, refresh still resolves a session created under an external id before force. One immutable value, so a
+    // reader never sees one set updated without the other.
+    private record UserIdMappingOptOut(Set<AppIdentifier> disabled, Set<AppIdentifier> forced) {
+    }
+
+    private volatile UserIdMappingOptOut userIdMappingOptOut = new UserIdMappingOptOut(Set.of(), Set.of());
 
     @Override
-    public void setAppsWithUserIdMappingDisabled(Set<AppIdentifier> appIdentifiers) {
-        this.appsWithUserIdMappingDisabled = Set.copyOf(appIdentifiers);
+    public void setAppsWithUserIdMappingDisabled(Set<AppIdentifier> appIdentifiers,
+                                                 Set<AppIdentifier> forcedAppIdentifiers) {
+        this.userIdMappingOptOut = new UserIdMappingOptOut(Set.copyOf(appIdentifiers),
+                Set.copyOf(forcedAppIdentifiers));
     }
 
     public boolean isUserIdMappingDisabled(AppIdentifier appIdentifier) {
-        return appsWithUserIdMappingDisabled.contains(appIdentifier);
+        return userIdMappingOptOut.disabled().contains(appIdentifier);
+    }
+
+    public boolean isUserIdMappingForced(AppIdentifier appIdentifier) {
+        return userIdMappingOptOut.forced().contains(appIdentifier);
     }
 
     // Whether a query the storage runs on its own should read userid_mapping for this app. Counts the read.
