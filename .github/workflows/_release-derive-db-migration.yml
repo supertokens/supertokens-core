@@ -14,6 +14,12 @@ name: Release – Derive has-db-migration
 # alert + pending marker) when it doesn't know the migration yet — the core
 # release itself always proceeds.
 #
+# A migration ships with the FIRST core release that pairs with its plugin
+# version. A later core release that reuses an already-released plugin (e.g. a
+# core-only patch: core 12.4.3 on postgresql-plugin 10.2.0, which shipped with
+# 12.4.2) ships no schema change, so has-db-migration is false: no changelog
+# Migration section, no backend-apis migration PR, no SaaS rollout deferral.
+#
 # Extracted into a reusable workflow so do-release.yml and do-release-java15.yml
 # share one copy of this release-critical derivation instead of drifting.
 
@@ -36,6 +42,15 @@ on:
         type: string
         required: false
         default: supertokens/supertokens-postgresql-plugin
+      # 'true' when this release does not release the postgresql plugin (it was released
+      # with an earlier core); 'false' when it does. Left empty, it is looked up: true iff
+      # the public postgresql plugin repo already has the v<version> tag. do-release passes
+      # it from its release-postgresql-plugin input, so a re-run after the plugin tag was
+      # pushed derives the same value.
+      postgresql-plugin-already-released:
+        type: string
+        required: false
+        default: ''
     outputs:
       has-db-migration:
         value: ${{ jobs.derive.outputs.has-db-migration }}
@@ -69,10 +84,29 @@ jobs:
         env:
           CORE_VERSION: ${{ inputs.core-version }}
           PLUGIN_VERSION: ${{ inputs.postgresql-plugin-version }}
+          ALREADY_RELEASED: ${{ inputs.postgresql-plugin-already-released }}
         run: |
           manifest="plugin/migration-scripts/manifest.json"
           pluginVersion="$PLUGIN_VERSION"
-          if [ -f "$manifest" ]; then
+          if [ -z "$ALREADY_RELEASED" ]; then
+            # --exit-code: 0 = tag found, 2 = no such tag; anything else is a lookup failure
+            # (network, GitHub), which must not be read as "not released" - fail instead.
+            status=0
+            git ls-remote --exit-code --tags https://github.com/supertokens/supertokens-postgresql-plugin.git "refs/tags/v$pluginVersion" >/dev/null || status=$?
+            case "$status" in
+              0) ALREADY_RELEASED=true ;;
+              2) ALREADY_RELEASED=false ;;
+              *) echo "::error::could not look up tag v$pluginVersion in supertokens-postgresql-plugin (git ls-remote exit $status) - re-run the job."; exit 1 ;;
+            esac
+          elif [ "$ALREADY_RELEASED" = "true" ] && ! git ls-remote --tags https://github.com/supertokens/supertokens-postgresql-plugin.git "refs/tags/v$pluginVersion" | grep -q .; then
+            # Passed in by the caller (release-postgresql-plugin unticked), but no public tag:
+            # if this IS the plugin's first core release, its migration is being dropped.
+            echo "::warning::release-postgresql-plugin is unticked but supertokens-postgresql-plugin has no v$pluginVersion tag. If $pluginVersion was not released with an earlier core, this release's DB migration is being skipped - re-run with release-postgresql-plugin ticked."
+          fi
+          if [ "$ALREADY_RELEASED" = "true" ]; then
+            echo "::notice::postgresql-plugin $pluginVersion was released with an earlier core, so its migration (if any) already shipped then - has-db-migration=false for core $CORE_VERSION."
+            entry=""
+          elif [ -f "$manifest" ]; then
             entry=$(jq -c --arg v "$pluginVersion" '.migrations[] | select(.pluginVersion == $v)' "$manifest")
           else
             echo "::notice::$manifest not present at this postgresql-plugin SHA - assuming no DB migration."
