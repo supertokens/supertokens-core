@@ -205,6 +205,7 @@ jobs:
     with:
       core-version: ${{ inputs.core-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
+      postgresql-plugin-already-released: ${{ !inputs.release-postgresql-plugin }}
       core-sha: ${{ needs.update-deps.outputs.core-sha }}
       postgresql-sha: ${{ needs.update-deps.outputs.postgresql-sha }}
     secrets: inherit
