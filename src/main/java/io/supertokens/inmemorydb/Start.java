@@ -2699,8 +2699,16 @@ public class Start
         return userIdMappingOptOut.disabled().contains(appIdentifier);
     }
 
-    public boolean isUserIdMappingForced(AppIdentifier appIdentifier) {
-        return userIdMappingOptOut.forced().contains(appIdentifier);
+    // The app's opt-out as one value, read from a single snapshot, for a decision that needs both sets.
+    public enum UserIdMappingReads { ALL, NONE, NONE_EXCEPT_PRE_FORCE_SESSIONS }
+
+    public UserIdMappingReads getUserIdMappingReads(AppIdentifier appIdentifier) {
+        UserIdMappingOptOut optOut = this.userIdMappingOptOut;
+        if (!optOut.disabled().contains(appIdentifier)) {
+            return UserIdMappingReads.ALL;
+        }
+        return optOut.forced().contains(appIdentifier) ? UserIdMappingReads.NONE_EXCEPT_PRE_FORCE_SESSIONS
+                : UserIdMappingReads.NONE;
     }
 
     // Whether a query the storage runs on its own should read userid_mapping for this app. Counts the read.

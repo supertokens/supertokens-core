@@ -173,7 +173,11 @@ public class SessionQueries {
             return null;
         }
 
-        if (!start.readsUserIdMappingFor(tenantIdentifier.toAppIdentifier())) {
+        // one snapshot of the app's opt-out for the whole decision
+        Start.UserIdMappingReads userIdMappingReads = start.getUserIdMappingReads(tenantIdentifier.toAppIdentifier());
+        if (userIdMappingReads == Start.UserIdMappingReads.ALL) {
+            Start.countUserIdMappingCall();
+        } else {
             // disable_user_id_mapping: the session's user id is a SuperTokens user id, so only its primary user id
             // is resolved, without reading userid_mapping.
             String primaryUserId = execute(con, "SELECT primary_or_recipe_user_id FROM " + userIdTable +
@@ -190,7 +194,7 @@ public class SessionQueries {
                 sessionInfo.userId = primaryUserId;
                 return sessionInfo;
             }
-            if (!start.isUserIdMappingForced(tenantIdentifier.toAppIdentifier())) {
+            if (userIdMappingReads != Start.UserIdMappingReads.NONE_EXCEPT_PRE_FORCE_SESSIONS) {
                 // a session of a user id that isn't a SuperTokens user (sessions don't need one)
                 sessionInfo.userId = sessionInfo.recipeUserId;
                 return sessionInfo;
