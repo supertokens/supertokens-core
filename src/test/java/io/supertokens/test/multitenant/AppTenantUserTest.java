@@ -262,7 +262,7 @@ public class AppTenantUserTest {
             assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenant, tenantStorage,
                     userId)); // Nothing deleted indicates that the non auth recipe user data was deleted already
 
-            AuthRecipe.deleteUser(app.toAppIdentifier(), appStorage, userId);
+            AuthRecipe.deleteUser(process.getProcess(), app.toAppIdentifier(), appStorage, userId);
         }
 
         process.kill();

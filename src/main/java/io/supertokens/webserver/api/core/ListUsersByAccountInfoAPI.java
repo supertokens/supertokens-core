@@ -81,7 +81,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
             AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
                     tenantIdentifier, storage, doUnionOfAccountInfo, email, phoneNumber, thirdPartyId,
                     thirdPartyUserId, webauthnCredentialId);
-            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, users);
+            UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

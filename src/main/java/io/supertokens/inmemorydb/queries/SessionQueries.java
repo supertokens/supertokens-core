@@ -173,6 +173,25 @@ public class SessionQueries {
             return null;
         }
 
+        if (!start.readsUserIdMappingFor(tenantIdentifier.toAppIdentifier())) {
+            // disable_user_id_mapping: the session's user id is a SuperTokens user id, so only its primary user id
+            // is resolved, without reading userid_mapping.
+            String primaryUserId = execute(con, "SELECT primary_or_recipe_user_id FROM " + userIdTable +
+                    " WHERE app_id = ? AND user_id = ? LIMIT 1", pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, sessionInfo.recipeUserId);
+            }, result -> {
+                if (result.next()) {
+                    return result.getString(1);
+                }
+                return sessionInfo.recipeUserId;
+            });
+            if (primaryUserId != null) {
+                sessionInfo.userId = primaryUserId;
+            }
+            return sessionInfo;
+        }
+
         QUERY = "SELECT external_user_id, 0 as o " +
                 "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
                 "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +

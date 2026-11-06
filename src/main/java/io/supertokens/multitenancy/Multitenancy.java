@@ -19,6 +19,7 @@ package io.supertokens.multitenancy;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,8 @@ import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingExcept
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.auditlog.UnauditedTransaction;
 import io.supertokens.auditlog.lifecycle.GroupPresence;
 import io.supertokens.auditlog.lifecycle.LifecycleAuditEvent;
@@ -181,11 +184,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig,
+    // Returns the apps whose disable_user_id_mapping the write can turn on, with each database to decide it in; the
+    // write must then go through UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping.
+    private static List<UserIdMappingOptOut.DisablingTarget> validateTenantConfig(Main main,
+                                                                               TenantConfig targetTenantConfig,
                                              boolean shouldPreventProtecterdConfigUpdate,
                                              boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
-            TenantOrAppNotFoundException, CannotModifyBaseConfigException {
+            TenantOrAppNotFoundException, CannotModifyBaseConfigException, StorageQueryException {
+
+        List<UserIdMappingOptOut.DisablingTarget> userIdMappingDisablingTargets = new ArrayList<>();
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (targetTenantConfig.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
@@ -245,15 +253,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             TenantIdentifier targetTenantIdentifier = targetTenantConfig.tenantIdentifier;
             boolean hasAffectedDescendants = !targetTenantIdentifier.equals(TenantIdentifier.BASE_TENANT) &&
                     targetTenantIdentifier.getTenantId()
-                    .equals(TenantIdentifier.DEFAULT_TENANT_ID) && Arrays.stream(existingTenants).anyMatch(tenant -> {
-                TenantIdentifier tenantIdentifier = tenant.tenantIdentifier;
-                return !tenantIdentifier.equals(targetTenantIdentifier) &&
-                        tenantIdentifier.getConnectionUriDomain()
-                                .equals(targetTenantIdentifier.getConnectionUriDomain()) &&
-                        (targetTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) ||
-                                tenantIdentifier.getAppId().equals(targetTenantIdentifier.getAppId()));
-            });
+                    .equals(TenantIdentifier.DEFAULT_TENANT_ID) && Arrays.stream(existingTenants).anyMatch(tenant ->
+                    !tenant.tenantIdentifier.equals(targetTenantIdentifier) &&
+                            inheritsConfigFrom(tenant.tenantIdentifier, targetTenantIdentifier));
 
+            Map<TenantIdentifier, JsonObject> changedConfigs = new HashMap<>();
             if (hasAffectedDescendants) {
                 // App and CUD configs are parents in the config hierarchy. Validate the complete prospective state
                 // because changing a parent also changes every descendant that inherits from it.
@@ -262,6 +266,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                 existingTenants,
                                 Config.getBaseConfigAsJsonObject(main));
                 Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
+                for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry : normalisedConfigs.entrySet()) {
+                    // tenants outside the target's app/CUD keep their effective config
+                    if (inheritsConfigFrom(entry.getKey().getTenantIdentifier(), targetTenantIdentifier)) {
+                        changedConfigs.put(entry.getKey().getTenantIdentifier(), entry.getValue());
+                    }
+                }
             } else {
                 // A leaf tenant update cannot change another tenant's effective config.
                 JsonObject normalisedConfig = Config.getNormalisedConfigForTenant(
@@ -269,7 +279,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         Config.getBaseConfigAsJsonObject(main));
                 Config.assertSingleTenantConfigIsValid(main, targetTenantConfig.tenantIdentifier,
                         normalisedConfig, targetTenantConfig);
+                changedConfigs.put(targetTenantConfig.tenantIdentifier, normalisedConfig);
             }
+
+            userIdMappingDisablingTargets = assertNoUserIdMappingsWhereMappingGetsDisabled(main,
+                    targetTenantIdentifier, changedConfigs);
         }
 
         // Validate migration_mode state-machine transitions. We only enforce this when the
@@ -295,6 +309,103 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         if (!skipThirdPartyConfigValidation) {
             ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
         }
+        return userIdMappingDisablingTargets;
+    }
+
+    // Whether the tenant is the target or one of its descendants in the config hierarchy (the target being an app's
+    // or CUD's public tenant).
+    private static boolean inheritsConfigFrom(TenantIdentifier tenant, TenantIdentifier target) {
+        return tenant.getConnectionUriDomain().equals(target.getConnectionUriDomain()) &&
+                (target.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) ||
+                        tenant.getAppId().equals(target.getAppId()));
+    }
+
+    // disable_user_id_mapping hides existing mappings, so it can only be on for an app whose databases have none.
+    // The check runs against the database each prospective config selects, not the one currently loaded, so it
+    // also covers an app that moves to another database while the flag is on. An app that already has the flag on
+    // isn't re-checked on databases it already uses (also when a new tenant joins one): they were checked when the
+    // flag was turned on, and mapping creation is rejected since then. An app being created has no mappings yet.
+    // With disable_user_id_mapping_force on, nothing is checked: existing mappings are ignored.
+    //
+    // This check is a fast, lock-free answer for the config API, from this core's loaded config. The returned
+    // targets are what the write decides again under locks, from the stored config (see
+    // UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping): every app whose flag the write can change,
+    // which is every app inheriting from the written row when that is an app's or a connection uri domain's public
+    // tenant, and any app moving to a database it doesn't use yet. Any other write, such as one to a tenant that
+    // isn't public, can't turn the flag on anywhere, and takes the plain write path.
+    private static List<UserIdMappingOptOut.DisablingTarget> assertNoUserIdMappingsWhereMappingGetsDisabled(
+            Main main, TenantIdentifier targetTenantIdentifier, Map<TenantIdentifier, JsonObject> configs)
+            throws InvalidConfigException, StorageQueryException {
+        List<UserIdMappingOptOut.DisablingTarget> targets = new ArrayList<>();
+        // one pass over the loaded storages: user pools per app, and a loaded storage per user pool
+        Map<TenantIdentifier, String> loadedTenantUserPools = new HashMap<>();
+        Map<AppIdentifier, Set<String>> appUserPools = new HashMap<>();
+        Map<String, Storage> loadedStorages = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resource : main
+                .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY).entrySet()) {
+            Storage storage = ((StorageLayer) resource.getValue()).getUnderlyingStorage();
+            TenantIdentifier tenantIdentifier = resource.getKey().getTenantIdentifier();
+            loadedTenantUserPools.put(tenantIdentifier, storage.getUserPoolId());
+            appUserPools.computeIfAbsent(tenantIdentifier.toAppIdentifier(), k -> new HashSet<>())
+                    .add(storage.getUserPoolId());
+            loadedStorages.putIfAbsent(storage.getUserPoolId(), storage);
+        }
+        // the base tenant's core config can't be changed, so writing it changes no app's flag
+        boolean writesAPublicTenantRow = !targetTenantIdentifier.equals(TenantIdentifier.BASE_TENANT)
+                && targetTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID);
+
+        Set<String> checked = new HashSet<>();
+        for (Map.Entry<TenantIdentifier, JsonObject> entry : configs.entrySet()) {
+            TenantIdentifier tenantIdentifier = entry.getKey();
+            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+            Set<String> currentUserPools = appUserPools.get(appIdentifier);
+            if (currentUserPools == null) {
+                continue; // the app is being created, so its databases have no mappings for it
+            }
+            String userPoolId = StorageLayer.getNewStorageInstance(main, entry.getValue(), tenantIdentifier, true)
+                    .getUserPoolId();
+            if (!checked.add(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId() + "|"
+                    + userPoolId)) {
+                continue;
+            }
+            boolean usesDatabaseAlready = currentUserPools.contains(userPoolId);
+            Storage storage = loadedStorages.get(userPoolId);
+            if (writesAPublicTenantRow || !usesDatabaseAlready) {
+                targets.add(new UserIdMappingOptOut.DisablingTarget(appIdentifier, storage, usesDatabaseAlready));
+            }
+
+            JsonElement disabled = entry.getValue().get("disable_user_id_mapping");
+            if (disabled == null || disabled.isJsonNull() || !disabled.getAsBoolean()) {
+                continue;
+            }
+            JsonElement forced = entry.getValue().get("disable_user_id_mapping_force");
+            if (forced != null && !forced.isJsonNull() && forced.getAsBoolean()) {
+                continue;
+            }
+            boolean alreadyDisabled = UserIdMapping.isUserIdMappingDisabled(main, appIdentifier);
+            // Turning force off is checked like turning the flag on: the app must not have mappings either way.
+            boolean forceGetsTurnedOff = alreadyDisabled && UserIdMappingOptOut.isForced(main, appIdentifier);
+            if (alreadyDisabled && !forceGetsTurnedOff && usesDatabaseAlready) {
+                continue;
+            }
+            if (storage == null) {
+                // Checking a database this core has not loaded would mean initialising it here.
+                if (!loadedTenantUserPools.containsKey(tenantIdentifier)) {
+                    throw new InvalidConfigException("disable_user_id_mapping cannot be on while a tenant is added "
+                            + "on a database that is not loaded yet: turn disable_user_id_mapping off for the app, "
+                            + "add the tenant, then turn it back on");
+                }
+                throw new InvalidConfigException(UserIdMapping.DATABASE_NOT_LOADED_MESSAGE);
+            }
+            if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
+                throw new InvalidConfigException(forceGetsTurnedOff
+                        ? UserIdMapping.CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE
+                        : alreadyDisabled
+                        ? UserIdMapping.NEW_DATABASE_HAS_MAPPINGS_MESSAGE
+                        : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE);
+            }
+        }
+        return targets;
     }
 
     /**
@@ -353,7 +464,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
 
-        validateTenantConfig(main, newTenant, shouldPreventProtectedConfigUpdate, skipThirdPartyConfigValidation);
+        List<UserIdMappingOptOut.DisablingTarget> userIdMappingDisablingTargets = validateTenantConfig(main,
+                newTenant, shouldPreventProtectedConfigUpdate, skipThirdPartyConfigValidation);
 
         boolean creationInSharedDbSucceeded = false;
         List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
@@ -377,7 +489,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         } catch (DuplicateTenantException e) {
             if (!creationInSharedDbSucceeded) {
                 try {
-                    StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
+                    if (userIdMappingDisablingTargets.isEmpty()) {
+                        StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
+                    } else {
+                        UserIdMappingOptOut.overwriteTenantConfigDisablingUserIdMapping(main, newTenant,
+                                userIdMappingDisablingTargets);
+                    }
                     // Use the fast refresh path for the update case as well.
                     tenantsThatChanged = MultitenancyHelper.getInstance(main)
                             .refreshAfterKnownTenantChange(newTenant.tenantIdentifier);
@@ -606,6 +723,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage,
                 externalUserId == null ? userId : externalUserId);
         finalDidExist = finalDidExist || didExist;
+        if (externalUserId != null && UserIdMapping.alsoCleanUpSuperTokensUserId(main,
+                tenantIdentifier.toAppIdentifier(), externalUserId, userId)) {
+            didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage, userId);
+            finalDidExist = finalDidExist || didExist;
+        }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         UserLockingStorage userLockingStorage = (UserLockingStorage) storage;

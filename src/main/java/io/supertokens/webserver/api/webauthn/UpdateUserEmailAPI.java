@@ -57,7 +57,7 @@ public class UpdateUserEmailAPI extends WebserverAPI {
             String newEmail = InputParser.parseStringOrThrowError(requestBody, "email", false);
 
             //useridmapping is handled in the updateUserEmail method
-            WebAuthN.updateUserEmail(storage, tenantIdentifier, userId, newEmail);
+            WebAuthN.updateUserEmail(main, storage, tenantIdentifier, userId, newEmail);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

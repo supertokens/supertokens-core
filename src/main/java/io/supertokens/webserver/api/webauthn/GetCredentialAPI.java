@@ -56,7 +56,7 @@ public class GetCredentialAPI extends WebserverAPI {
             String credentialId = InputParser.getQueryParamOrThrowError(req, "webauthnCredentialId", false);
 
             // useridmapping is not required to be called separately here because it is handled in the underlying parts
-            WebAuthNStoredCredential credential = WebAuthN.loadCredentialByIdForUser(storage, tenantIdentifier, credentialId, recipeUserId);
+            WebAuthNStoredCredential credential = WebAuthN.loadCredentialByIdForUser(main, storage, tenantIdentifier, credentialId, recipeUserId);
             if (credential == null) {
                 throw new WebauthNCredentialNotExistsException();
             }

@@ -64,6 +64,7 @@ import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -228,6 +229,13 @@ public class Session {
             UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException,
             AccessTokenValidityOutOfRangeException {
         validateAccessTokenValidityOverride(tenantIdentifier, main, accessTokenValidity);
+        // Reject a protected claim in the JWT payload before the session row is written. The access token is
+        // minted after the locked insert (GHSA-2pc4-vw9j-454c), so leaving this to AccessTokenInfo.toJSON() would
+        // fail the request but keep the session row. V1/V2 nest the payload under userData, so nothing collides.
+        if (version != AccessToken.VERSION.V1 && version != AccessToken.VERSION.V2 &&
+                Arrays.stream(AccessTokenInfo.getRequiredAndProtectedProps(version)).anyMatch(userDataInJWT::has)) {
+            throw new AccessTokenPayloadError("The user payload contains protected field");
+        }
         String sessionHandle = UUID.randomUUID().toString();
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             sessionHandle += "_" + tenantIdentifier.getTenantId();
@@ -238,7 +246,7 @@ public class Session {
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
+                    main, tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
             if (userIdMapping != null) {
                 recipeUserId = userIdMapping.superTokensUserId;
             }
@@ -247,7 +255,7 @@ public class Session {
             // The recipe user's external id is independent of account link/unlink, so resolve it before
             // the lock. It goes into the tokens and the session row.
             HashMap<String, String> recipeExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifier.toAppIdentifier(), storage,
+                    main, tenantIdentifier.toAppIdentifier(), storage,
                     new ArrayList<>(Arrays.asList(recipeUserIdSupertokens)));
             final String recipeUserIdExternal = recipeExternal.getOrDefault(recipeUserIdSupertokens,
                     recipeUserIdSupertokens);
@@ -311,7 +319,7 @@ public class Session {
 
             // External id for the primary user id resolved under the lock (may differ from the recipe id).
             HashMap<String, String> primaryExternal = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifier.toAppIdentifier(), storage,
+                    main, tenantIdentifier.toAppIdentifier(), storage,
                     new ArrayList<>(Arrays.asList(primaryUserIdSupertokens)));
             primaryUserId = primaryExternal.getOrDefault(primaryUserIdSupertokens, primaryUserIdSupertokens);
 
@@ -1344,7 +1352,7 @@ public class Session {
     public static String[] revokeAllSessionsForUser(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                                     String userId, boolean revokeSessionsForLinkedAccounts)
             throws StorageQueryException {
-        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(tenantIdentifier, storage, userId,
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, tenantIdentifier, storage, userId,
                 revokeSessionsForLinkedAccounts);
         return revokeSessionUsingSessionHandles(main, tenantIdentifier.toAppIdentifier(), storage,
                 sessionHandles);
@@ -1367,20 +1375,15 @@ public class Session {
 
         List<String> sessionHandles = new ArrayList<>();
 
-        Set<String> userIds = new HashSet<>();
-        userIds.add(userId);
-        if (fetchSessionsForAllLinkedAccounts) {
-            if (storage.getType().equals(STORAGE_TYPE.SQL)) {
-                userIds.addAll(getSessionUserIdsOfAllLinkedAccounts(appIdentifier, storage, userId));
-            }
-        }
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, appIdentifier, storage, userId,
+                fetchSessionsForAllLinkedAccounts && storage.getType().equals(STORAGE_TYPE.SQL));
 
         for (String currUserId : userIds) {
             for (TenantConfig tenant : tenants) {
                 try {
-                    sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
+                    sessionHandles.addAll(Arrays.asList(getNonExpiredSessionHandlesOfUserIds(
                             tenant.tenantIdentifier, StorageLayer.getStorage(tenant.tenantIdentifier, main),
-                            currUserId, false)));
+                            Set.of(currUserId))));
 
                 } catch (TenantOrAppNotFoundException e) {
                     // this might happen when a tenant was deleted after the tenant list was fetched
@@ -1393,14 +1396,17 @@ public class Session {
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
-            TenantIdentifier tenantIdentifier, Storage storage, String userId,
+            Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
             boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
-        Set<String> userIds = new HashSet<>();
-        userIds.add(userId);
-        if (fetchSessionsForAllLinkedAccounts) {
-            userIds.addAll(getSessionUserIdsOfAllLinkedAccounts(tenantIdentifier.toAppIdentifier(), storage, userId));
-        }
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                fetchSessionsForAllLinkedAccounts);
+        return getNonExpiredSessionHandlesOfUserIds(tenantIdentifier, storage, userIds);
+    }
+
+    private static String[] getNonExpiredSessionHandlesOfUserIds(TenantIdentifier tenantIdentifier, Storage storage,
+                                                                 Set<String> userIds)
+            throws StorageQueryException {
         List<String> sessionHandles = new ArrayList<>();
         for (String currUserId : userIds) {
             sessionHandles.addAll(List.of(((SessionStorage) storage)
@@ -1409,33 +1415,79 @@ public class Session {
         return sessionHandles.toArray(new String[0]);
     }
 
-    /**
-     * Returns every user id that sessions of the account containing userId can be stored under.
-     * Sessions are stored under the recipe user id of the login method they were created with, in its external
-     * form if that recipe user has a user id mapping. userId itself may be a SuperTokens id or an external id.
-     */
-    private static Set<String> getSessionUserIdsOfAllLinkedAccounts(AppIdentifier appIdentifier, Storage storage,
-                                                                    String userId)
+    // The ids a user's sessions are stored under. A session is stored under the recipe user id of the login method
+    // it was created with, in its external form if that recipe user has a user id mapping, and callers may pass either
+    // form. So this returns the given id and, if asked, the user ids of the account's linked login methods together
+    // with their external ids; an external id given as userId is resolved to its SuperTokens id to find the account.
+    // Mappings are read through the opt-out aware wrappers, so an app with disable_user_id_mapping reads none.
+    //
+    // With disable_user_id_mapping_force on, the core ignores the app's user id mappings and reports its users by
+    // their SuperTokens user ids, but sessions created before that are stored under the external ids, and those
+    // sessions keep reporting the external id as their user id. So a user's sessions can be stored under both ids,
+    // and callers may pass either. For a forced app this resolves both ways, reading the mappings ignoring the
+    // opt-out (as user deletion and link/unlink do): an external id is also resolved to its SuperTokens id, linked
+    // login methods are looked up for both the given id and the resolved one, and then the external id of each id's
+    // mapping is added. Nothing is replaced, only added: a mapping created with `force: true` on
+    // POST /recipe/userid/map may name another user's SuperTokens id, and then listing or revoking either user's
+    // sessions includes the other user's sessions too, as the config description documents.
+    private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                          String userId, boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
+        boolean forced = UserIdMappingOptOut.isForced(main, appIdentifier);
         Set<String> userIds = new HashSet<>();
-        AuthRecipeStorage authRecipeStorage = (AuthRecipeStorage) storage;
-        AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, userId);
-        if (primaryUser == null) {
-            // userId may be the external id of a mapped user
+        userIds.add(userId);
+        List<String> superTokensUserIds = new ArrayList<>();
+        superTokensUserIds.add(userId);
+        if (forced) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                    StorageUtils.getUserIdMappingStorage(storage).getUserIdMapping(appIdentifier, userId, false);
-            if (mapping != null) {
-                primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, mapping.superTokensUserId);
+                    UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId, UserIdType.EXTERNAL);
+            if (mapping != null && !mapping.superTokensUserId.equals(userId)) {
+                superTokensUserIds.add(mapping.superTokensUserId);
+                userIds.add(mapping.superTokensUserId);
             }
         }
-        if (primaryUser != null) {
-            ArrayList<String> superTokensUserIds = new ArrayList<>();
-            for (LoginMethod lM : primaryUser.loginMethods) {
-                userIds.add(lM.getSupertokensUserId());
-                superTokensUserIds.add(lM.getSupertokensUserId());
+        if (fetchSessionsForAllLinkedAccounts) {
+            AuthRecipeStorage authRecipeStorage = (AuthRecipeStorage) storage;
+            List<AuthRecipeUserInfo> primaryUsers = new ArrayList<>();
+            for (String superTokensUserId : superTokensUserIds) {
+                AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, superTokensUserId);
+                if (primaryUser != null) {
+                    primaryUsers.add(primaryUser);
+                }
             }
-            userIds.addAll(UserIdMapping.getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
-                    superTokensUserIds).values());
+            if (primaryUsers.isEmpty() && !forced) {
+                // userId may be the external id of a mapped user
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                        UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId, UserIdType.EXTERNAL);
+                if (mapping != null) {
+                    AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier,
+                            mapping.superTokensUserId);
+                    if (primaryUser != null) {
+                        primaryUsers.add(primaryUser);
+                    }
+                }
+            }
+            ArrayList<String> linkedSuperTokensUserIds = new ArrayList<>();
+            for (AuthRecipeUserInfo primaryUser : primaryUsers) {
+                for (LoginMethod lM : primaryUser.loginMethods) {
+                    userIds.add(lM.getSupertokensUserId());
+                    linkedSuperTokensUserIds.add(lM.getSupertokensUserId());
+                }
+            }
+            if (!forced && !linkedSuperTokensUserIds.isEmpty()) {
+                userIds.addAll(UserIdMapping.getUserIdMappingForSuperTokensUserIds(main, appIdentifier, storage,
+                        linkedSuperTokensUserIds).values());
+            }
+        }
+        if (forced) {
+            for (String id : new ArrayList<>(userIds)) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                        UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, id,
+                                UserIdType.SUPERTOKENS);
+                if (mapping != null) {
+                    userIds.add(mapping.externalUserId);
+                }
+            }
         }
         return userIds;
     }

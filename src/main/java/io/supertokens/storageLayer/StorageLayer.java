@@ -33,12 +33,14 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.SchemaMismatchException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import javax.annotation.Nullable;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.opentelemetry.WithinOtelSpan;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.telemetry.TelemetryProvider;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
@@ -347,6 +349,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     Storage s = ((StorageLayer) resources.get(key)).storage;
                     storagesToInit.computeIfAbsent(s, k -> new HashSet<>()).add(key.getTenantIdentifier());
                 }
+                // An app whose storages changed reads user id mappings until they are checked again. An app served
+                // by the same storages as before keeps its check, so a reload doesn't query every app again.
+                io.supertokens.useridmapping.UserIdMappingOptOut.forgetChecksExcept(main,
+                        appsWithUnchangedStorages(existingStorageMap, resources));
+                setAppsWithUserIdMappingDisabled(main, resources);
 
                 return null;
             });
@@ -357,7 +364,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         // Connect every pool concurrently now that the ResourceDistributor lock is released.
-        initStoragesInParallel(main, storagesToInit);
+        Map<Storage, CompletableFuture<Void>> stillInitialising = initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, null, stillInitialising);
     }
 
     /**
@@ -374,6 +382,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         JsonObject baseConfig = Config.getBaseConfigAsJsonObject(main);
         Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        Set<AppIdentifier> changedApps = new HashSet<>();
+        for (TenantIdentifier changed : tenantsThatChanged) {
+            changedApps.add(changed.toAppIdentifier());
+        }
 
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
@@ -423,13 +435,105 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                     }
                 }
+                io.supertokens.useridmapping.UserIdMappingOptOut.forgetCheck(main, changedApps);
+                setAppsWithUserIdMappingDisabled(main,
+                        main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY));
                 return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
         }
 
-        initStoragesInParallel(main, storagesToInit);
+        Map<Storage, CompletableFuture<Void>> stillInitialising = initStoragesInParallel(main, storagesToInit);
+        checkAppsWithUserIdMappingDisabled(main, changedApps, stillInitialising);
+    }
+
+    private static Set<AppIdentifier> appsWithUnchangedStorages(
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> before,
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> after) {
+        Map<AppIdentifier, Set<Storage>> storagesBefore = storageInstancesPerApp(before);
+        Map<AppIdentifier, Set<Storage>> storagesAfter = storageInstancesPerApp(after);
+        Set<AppIdentifier> unchanged = new HashSet<>();
+        for (Map.Entry<AppIdentifier, Set<Storage>> entry : storagesAfter.entrySet()) {
+            if (entry.getValue().equals(storagesBefore.get(entry.getKey()))) {
+                unchanged.add(entry.getKey());
+            }
+        }
+        return unchanged;
+    }
+
+    private static Map<AppIdentifier, Set<Storage>> storageInstancesPerApp(
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources) {
+        Map<AppIdentifier, Set<Storage>> result = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                resources.entrySet()) {
+            result.computeIfAbsent(entry.getKey().getTenantIdentifier().toAppIdentifier(),
+                            k -> Collections.newSetFromMap(new IdentityHashMap<>()))
+                    .add(((StorageLayer) entry.getValue()).storage);
+        }
+        return result;
+    }
+
+    // Once the storages are initialised, checks the apps with disable_user_id_mapping on for user id mappings (all
+    // loaded apps if appIdentifiers is null), then tells the storages which apps may skip mapping reads. Apps served
+    // by a storage that outlived the init timeout are checked once it is up (see UserIdMappingOptOut).
+    private static void checkAppsWithUserIdMappingDisabled(Main main, @Nullable Set<AppIdentifier> appIdentifiers,
+                                                           Map<Storage, CompletableFuture<Void>> stillInitialising) {
+        io.supertokens.useridmapping.UserIdMappingOptOut.addStoragesStillInitialising(main, stillInitialising);
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Set<AppIdentifier> appsToCheck = appIdentifiers;
+        if (appsToCheck == null) {
+            appsToCheck = new HashSet<>();
+            for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                appsToCheck.add(key.getTenantIdentifier().toAppIdentifier());
+            }
+        }
+        io.supertokens.useridmapping.UserIdMappingOptOut.checkApps(main, appsToCheck);
+        setAppsWithUserIdMappingDisabled(main, resources);
+    }
+
+    // Every loaded storage instance that serves the app (getStoragesForApp keeps only one per user pool).
+    public static Set<Storage> getStorageInstancesForApp(Main main, AppIdentifier appIdentifier) {
+        Set<Storage> storages = new HashSet<>();
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                storages.add(((StorageLayer) resources.get(key)).storage);
+            }
+        }
+        return storages;
+    }
+
+    // Re-tells every loaded storage which apps may skip mapping reads, after that changed outside a storage load.
+    public static void refreshAppsWithUserIdMappingDisabled(Main main) {
+        setAppsWithUserIdMappingDisabled(main, main.getResourceDistributor().getAllResourcesWithResourceKey(
+                RESOURCE_KEY));
+    }
+
+    // Tells every loaded storage which of the apps it serves may skip the userid_mapping reads it makes on its own
+    // (user hydration, session lookup, WebAuthn user queries): those with disable_user_id_mapping on whose databases
+    // were checked and have no mappings, or where the flag is forced. Every path that loads storages loads the
+    // config first, so the flag read here is the one the new storages serve.
+    private static void setAppsWithUserIdMappingDisabled(Main main,
+                                                         Map<ResourceDistributor.KeyClass,
+                                                                 ResourceDistributor.SingletonResource> resources) {
+        Map<Storage, Set<AppIdentifier>> disabledAppsPerStorage = new HashMap<>();
+        for (Map.Entry<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> entry :
+                resources.entrySet()) {
+            Set<AppIdentifier> disabledApps = disabledAppsPerStorage.computeIfAbsent(
+                    ((StorageLayer) entry.getValue()).storage, k -> new HashSet<>());
+            AppIdentifier appIdentifier = entry.getKey().getTenantIdentifier().toAppIdentifier();
+            if (io.supertokens.useridmapping.UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
+                disabledApps.add(appIdentifier);
+            }
+        }
+        for (Map.Entry<Storage, Set<AppIdentifier>> entry : disabledAppsPerStorage.entrySet()) {
+            if (entry.getKey() instanceof UserIdMappingStorage userIdMappingStorage) {
+                userIdMappingStorage.setAppsWithUserIdMappingDisabled(entry.getValue());
+            }
+        }
     }
 
     public static Storage getBaseStorage(Main main) {
@@ -538,35 +642,41 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        return findStorageAndUserIdMappingForUser(main, tenantIdentifier, userId, userIdType, false);
+    }
+
+    // ignoreUserIdMappingOptOut: see the app-specific overload below. Only for removing a user from a tenant.
+    public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
+            Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType,
+            boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         Storage storage = getStorage(tenantIdentifier, main);
 
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             if (((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        tenantIdentifier.toAppIdentifier(), storage, userId, userIdType);
+                UserIdMapping mapping = readMapping(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                        userIdType, ignoreUserIdMappingOptOut);
 
                 return new StorageAndUserIdMapping(storage, mapping);
             }
 
         } else if (userIdType == UserIdType.EXTERNAL) {
-            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), storage,
-                    userId, userIdType);
+            UserIdMapping mapping = readMapping(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                    userIdType, ignoreUserIdMappingOptOut);
             if (mapping != null) {
                 return new StorageAndUserIdMapping(storage, mapping);
             }
         } else if (userIdType == UserIdType.ANY) {
             if (((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        tenantIdentifier.toAppIdentifier(), storage, userId, userIdType);
+                UserIdMapping mapping = readMapping(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                        userIdType, ignoreUserIdMappingOptOut);
 
                 return new StorageAndUserIdMapping(storage, mapping);
             }
 
-            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), storage,
-                    userId, userIdType);
+            UserIdMapping mapping = readMapping(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                    userIdType, ignoreUserIdMappingOptOut);
             if (mapping != null) {
                 return new StorageAndUserIdMapping(storage, mapping);
             }
@@ -588,8 +698,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
-            AppIdentifier appIdentifier, Storage[] storages, String userId,
+            Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
             UserIdType userIdType) throws StorageQueryException, UnknownUserIdException {
+        return findStorageAndUserIdMappingForUser(main, appIdentifier, storages, userId, userIdType, false);
+    }
+
+    // ignoreUserIdMappingOptOut: find mappings even when disable_user_id_mapping is on. Only for removing a
+    // mapping or deleting a user, which must still see a mapping created before the opt-out, and for listing or
+    // revoking a user's sessions across tenants under disable_user_id_mapping_force, where callers may still pass
+    // the external id.
+    public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
+            Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
+            UserIdType userIdType, boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException, UnknownUserIdException {
 
         if (storages.length == 0) {
             throw new IllegalStateException("should never come here");
@@ -604,9 +725,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (userIdType == UserIdType.SUPERTOKENS) {
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            appIdentifier, storage,
-                            userId, userIdType);
+                    UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                            ignoreUserIdMappingOptOut);
 
                     return new StorageAndUserIdMapping(storage, mapping);
                 }
@@ -617,9 +737,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         } else if (userIdType == UserIdType.EXTERNAL) {
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        appIdentifier, storage,
-                        userId, userIdType);
+                UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                        ignoreUserIdMappingOptOut);
 
                 if (mapping != null) {
                     return new StorageAndUserIdMapping(storage, mapping);
@@ -632,9 +751,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             // look for the user in auth recipes as supertokens user id
             for (Storage storage : storages) {
                 if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                    UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            appIdentifier, storage,
-                            userId, userIdType);
+                    UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                            ignoreUserIdMappingOptOut);
 
                     return new StorageAndUserIdMapping(storage, mapping);
                 }
@@ -642,9 +760,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
             // Look for user in auth recipes using user id mapping
             for (Storage storage : storages) {
-                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        appIdentifier, storage,
-                        userId, userIdType);
+                UserIdMapping mapping = readMapping(main, appIdentifier, storage, userId, userIdType,
+                        ignoreUserIdMappingOptOut);
 
                 if (mapping != null) {
                     return new StorageAndUserIdMapping(storage, mapping);
@@ -668,8 +785,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    private static UserIdMapping readMapping(Main main, AppIdentifier appIdentifier, Storage storage, String userId,
+                                             UserIdType userIdType, boolean ignoreUserIdMappingOptOut)
+            throws StorageQueryException {
+        if (ignoreUserIdMappingOptOut) {
+            return io.supertokens.useridmapping.UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage,
+                    userId, userIdType);
+        }
+        return io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId,
+                userIdType);
+    }
+
     public static List<StorageAndUserIdMapping> findStorageAndUserIdMappingForBulkUserImport(
-            AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
+            Main main, AppIdentifier appIdentifier, Storage[] storages, List<String> userIds,
             UserIdType userIdType) throws StorageQueryException {
 
         if (storages.length == 0) {
@@ -688,7 +816,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         List<StorageAndUserIdMapping> allMappingsFromAllStorages = new ArrayList<>();
         if (userIdType != UserIdType.ANY) {
             for (Storage storage : storages) {
-                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(
+                List<UserIdMapping> mappingsFromThisStorage = io.supertokens.useridmapping.UserIdMapping.getMultipleUserIdMapping(main,
                         appIdentifier, storage,
                         userIds, userIdType);
 
@@ -944,17 +1072,21 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
      * same as the original sequential code, where such an exception would have escaped the
      * for-loop unhandled.
      */
-    static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
-        initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
+    static Map<Storage, CompletableFuture<Void>> initStoragesInParallel(
+            Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit) {
+        return initStoragesInParallel(main, storagesToInit, STORAGE_INIT_PROGRESS_LOG_INTERVAL_SECONDS,
                 Config.getBaseConfig(main).getStorageInitTimeoutSeconds());
     }
 
     // Package-private with the wait bounds as parameters so tests can use short ones. The number of storages
-    // initialised at once is still read from storage_init_parallelism.
-    static void initStoragesInParallel(Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit,
-                                       long progressIntervalSeconds, long timeoutSeconds) {
+    // initialised at once is still read from storage_init_parallelism. Returns the storages boot continued past
+    // (still initialising when the wait gave up), each with the future that completes once its initialisation ends.
+    static Map<Storage, CompletableFuture<Void>> initStoragesInParallel(
+            Main main, Map<Storage, Set<TenantIdentifier>> storagesToInit, long progressIntervalSeconds,
+            long timeoutSeconds) {
+        Map<Storage, CompletableFuture<Void>> stillInitialising = new HashMap<>();
         if (storagesToInit.isEmpty()) {
-            return;
+            return stillInitialising;
         }
         String infoLogPath = Config.getBaseConfig(main).getInfoLogPath(main);
         String errorLogPath = Config.getBaseConfig(main).getErrorLogPath(main);
@@ -976,12 +1108,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     errorLogPath, telemetry);
         }
         if (otherStorages.isEmpty()) {
-            return;
+            return stillInitialising;
         }
 
         ThreadPoolExecutor executor = newStorageInitExecutor(otherStorages.size(),
                 Config.getBaseConfig(main).getStorageInitParallelism());
         try {
+            List<Storage> storages = new ArrayList<>();
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             List<List<TenantIdentifier>> tenantsPerFuture = new ArrayList<>();
             AtomicLongArray startedAtNanos = new AtomicLongArray(otherStorages.size());
@@ -991,6 +1124,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             for (Map.Entry<Storage, Set<TenantIdentifier>> entry : otherStorages.entrySet()) {
                 Storage storage = entry.getKey();
                 List<TenantIdentifier> tenants = new ArrayList<>(entry.getValue());
+                storages.add(storage);
                 int index = futures.size();
                 tenantsPerFuture.add(tenants);
                 // from submission, so a queued storage counts too; removed however the task ends
@@ -1004,8 +1138,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     }
                 }, executor));
             }
-            awaitStorageInit(main, futures, tenantsPerFuture, startedAtNanos, () -> addStorageInitThread(executor),
-                    progressIntervalSeconds, timeoutSeconds);
+            if (!awaitStorageInit(main, futures, tenantsPerFuture, startedAtNanos,
+                    () -> addStorageInitThread(executor), progressIntervalSeconds, timeoutSeconds)) {
+                for (int i = 0; i < futures.size(); i++) {
+                    if (!futures.get(i).isDone()) {
+                        stillInitialising.put(storages.get(i), futures.get(i));
+                    }
+                }
+            }
+            return stillInitialising;
         } finally {
             // no shutdownNow(): a straggler may be mid-DDL and must not be interrupted. The threads are daemon, so
             // they never keep the JVM alive; the pool simply exits once its queue drains.

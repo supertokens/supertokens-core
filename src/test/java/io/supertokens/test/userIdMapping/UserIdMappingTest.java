@@ -1140,7 +1140,7 @@ public class UserIdMappingTest {
         // resolve the mappings on the transaction's own connection
         ((SQLStorage) storage).startTransaction(con -> {
             try {
-                UserIdMapping.populateExternalUserIdForUsers(con, appIdentifier, storage, users);
+                UserIdMapping.populateExternalUserIdForUsers(process.getProcess(), con, appIdentifier, storage, users);
             } catch (StorageQueryException e) {
                 throw new StorageTransactionLogicException(e);
             }

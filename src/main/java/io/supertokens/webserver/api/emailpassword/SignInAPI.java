@@ -82,7 +82,7 @@ public class SignInAPI extends WebserverAPI {
 
             AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(main,
                     tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
 
             ActiveUsers.updateLastActive(tenantIdentifier, main,

@@ -16,12 +16,14 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import com.google.gson.JsonObject;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.multitenancy.MfaSqlHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.TenantConfigSQLHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.ThirdPartyProviderClientSQLHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.ThirdPartyProviderSQLHelper;
+import io.supertokens.inmemorydb.queries.utils.JsonUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -31,8 +33,11 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class MultitenancyQueries {
@@ -198,35 +203,52 @@ public class MultitenancyQueries {
             throws StorageQueryException, StorageTransactionLogicException {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
-            {
-                try {
-                    {
-                        String QUERY = "DELETE FROM " + Config.getConfig(start).getTenantConfigsTable()
-                                + " WHERE connection_uri_domain = ? AND app_id = ? AND tenant_id = ?;";
-                        int rowsAffected = update(sqlCon, QUERY, pst -> {
-                            pst.setString(1, tenantConfig.tenantIdentifier.getConnectionUriDomain());
-                            pst.setString(2, tenantConfig.tenantIdentifier.getAppId());
-                            pst.setString(3, tenantConfig.tenantIdentifier.getTenantId());
-                        });
-                        if (rowsAffected == 0) {
-                            throw new StorageTransactionLogicException(
-                                    new TenantOrAppNotFoundException(tenantConfig.tenantIdentifier));
-                        }
-                    }
-
-                    {
-                        executeCreateTenantQueries(start, sqlCon, tenantConfig);
-                    }
-
-                    sqlCon.commit();
-
-                } catch (SQLException throwables) {
-                    throw new StorageTransactionLogicException(throwables);
-                }
+            try {
+                overwriteTenantConfig_Transaction(start, sqlCon, tenantConfig);
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new StorageTransactionLogicException(e);
             }
-
             return null;
         });
+    }
+
+    public static void overwriteTenantConfig_Transaction(Start start, Connection sqlCon, TenantConfig tenantConfig)
+            throws SQLException, StorageQueryException, TenantOrAppNotFoundException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getTenantConfigsTable()
+                + " WHERE connection_uri_domain = ? AND app_id = ? AND tenant_id = ?;";
+        int rowsAffected = update(sqlCon, QUERY, pst -> {
+            pst.setString(1, tenantConfig.tenantIdentifier.getConnectionUriDomain());
+            pst.setString(2, tenantConfig.tenantIdentifier.getAppId());
+            pst.setString(3, tenantConfig.tenantIdentifier.getTenantId());
+        });
+        if (rowsAffected == 0) {
+            throw new TenantOrAppNotFoundException(tenantConfig.tenantIdentifier);
+        }
+
+        executeCreateTenantQueries(start, sqlCon, tenantConfig);
+    }
+
+    // SQLite runs one write transaction at a time, so there is nothing to lock: lockAgainstConfigWrites needs nothing.
+    public static Map<TenantIdentifier, JsonObject> getTenantCoreConfigs_Transaction(Start start, Connection sqlCon,
+            Collection<TenantIdentifier> tenantIdentifiers, boolean lockAgainstConfigWrites)
+            throws SQLException, StorageQueryException {
+        Map<TenantIdentifier, JsonObject> coreConfigs = new HashMap<>();
+        String QUERY = "SELECT core_config FROM " + Config.getConfig(start).getTenantConfigsTable()
+                + " WHERE connection_uri_domain = ? AND app_id = ? AND tenant_id = ?";
+        for (TenantIdentifier tenantIdentifier : tenantIdentifiers) {
+            JsonObject coreConfig = execute(sqlCon, QUERY, pst -> {
+                pst.setString(1, tenantIdentifier.getConnectionUriDomain());
+                pst.setString(2, tenantIdentifier.getAppId());
+                pst.setString(3, tenantIdentifier.getTenantId());
+            }, result -> result.next() ? JsonUtils.stringToJsonObject(result.getString("core_config")) : null);
+            if (coreConfig != null) {
+                coreConfigs.put(tenantIdentifier, coreConfig);
+            }
+        }
+        return coreConfigs;
     }
 
     public static TenantConfig[] getAllTenants(Start start) throws StorageQueryException {
