@@ -89,11 +89,15 @@ jobs:
           manifest="plugin/migration-scripts/manifest.json"
           pluginVersion="$PLUGIN_VERSION"
           if [ -z "$ALREADY_RELEASED" ]; then
-            if git ls-remote --exit-code --tags https://github.com/supertokens/supertokens-postgresql-plugin.git "refs/tags/v$pluginVersion" >/dev/null; then
-              ALREADY_RELEASED=true
-            else
-              ALREADY_RELEASED=false
-            fi
+            # --exit-code: 0 = tag found, 2 = no such tag; anything else is a lookup failure
+            # (network, GitHub), which must not be read as "not released" - fail instead.
+            status=0
+            git ls-remote --exit-code --tags https://github.com/supertokens/supertokens-postgresql-plugin.git "refs/tags/v$pluginVersion" >/dev/null || status=$?
+            case "$status" in
+              0) ALREADY_RELEASED=true ;;
+              2) ALREADY_RELEASED=false ;;
+              *) echo "::error::could not look up tag v$pluginVersion in supertokens-postgresql-plugin (git ls-remote exit $status) - re-run the job."; exit 1 ;;
+            esac
           fi
           if [ "$ALREADY_RELEASED" = "true" ]; then
             echo "::notice::postgresql-plugin $pluginVersion was released with an earlier core, so its migration (if any) already shipped then - has-db-migration=false for core $CORE_VERSION."
