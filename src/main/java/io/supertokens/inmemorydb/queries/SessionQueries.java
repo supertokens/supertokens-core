@@ -184,12 +184,15 @@ public class SessionQueries {
                 if (result.next()) {
                     return result.getString(1);
                 }
-                return sessionInfo.recipeUserId;
+                return null;
             });
             if (primaryUserId != null) {
                 sessionInfo.userId = primaryUserId;
+                return sessionInfo;
             }
-            return sessionInfo;
+            // Not a SuperTokens user id: a session created under an external id before
+            // disable_user_id_mapping_force was turned on. It keeps the user id it had then (for a linked login
+            // method, its primary user's), so it is resolved through the mapping below, as before force.
         }
 
         QUERY = "SELECT external_user_id, 0 as o " +
