@@ -258,29 +258,27 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
      * transaction (and the lock) lasts until the batch is committed; on the claim connection that is the end of the
      * chunk, so the bulk import worker imports the claim database's users last (see
      * {@link #overwriteTenantConfigDisablingUserIdMapping}).
+     * <p>
+     * When the mappings go to another database than the base one, the base transaction the config is read in is
+     * opened first, before the lock is taken, as a config write turning the flag on opens its base transaction
+     * before it takes the lock. So neither holds the lock while waiting for a base connection the other holds, which
+     * would stall both until a connection timeout when the base pool has no free connection.
      */
     public static <T> T createWhileUserIdMappingIsEnabled(Main main, AppIdentifier appIdentifier, Storage storage,
                                                           MappingCreation<T> creation)
             throws StorageQueryException, ServletException, UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException {
-        UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
+        Storage baseStorage = StorageLayer.getBaseStorage(main);
         try {
-            return ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
-                mappingStorage.lockAppForUserIdMappingCreation_Transaction(con, appIdentifier);
-                if (isDisabledInStoredConfig(main, appIdentifier, storage, con)) {
-                    throw new StorageTransactionLogicException(new ServletException(
-                            new WebserverAPI.BadRequestException(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE)));
-                }
-                T result;
-                try {
-                    result = creation.create(con);
-                } catch (UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
-                return AuditedResult.withoutAudit(result, "User id mapping inserts are not audit events (the "
-                        + "auto-commit insert this replaces was unaudited); the transaction only adds the creation "
-                        + "lock and the config read.");
-            });
+            if (isSameDatabase(storage, baseStorage)) {
+                return createInTransaction(main, appIdentifier, storage, null, creation);
+            }
+            MultitenancySQLStorage base = (MultitenancySQLStorage) baseStorage;
+            return ((ActivityLogSQLStorage) base).startAuditedTransaction(
+                    TenantIdentifier.BASE_TENANT.toAppIdentifier(),
+                    baseCon -> AuditedResult.withoutAudit(
+                            createInTransaction(main, appIdentifier, storage, baseCon, creation),
+                            "Read-only: reads the app's stored core configs for a user id mapping creation."));
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof ServletException servletException) {
                 throw servletException;
@@ -298,13 +296,43 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
         }
     }
 
-    // The flag as the stored config sets it for the app (see storedFlag). Read without locking: the creation lock
-    // is what orders this read against a config write turning the flag on.
-    private static boolean isDisabledInStoredConfig(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                    TransactionConnection con)
+    // The creation transaction on storage: the lock, the flag read, then the inserts. baseCon: the base transaction
+    // to read the stored config in when storage is another database (null: read on the creation's own connection).
+    private static <T> T createInTransaction(Main main, AppIdentifier appIdentifier, Storage storage,
+                                             TransactionConnection baseCon, MappingCreation<T> creation)
             throws StorageQueryException, StorageTransactionLogicException {
-        return storedFlag(Config.getBaseConfig(main), appIdentifier,
-                readStoredCoreConfigs(main, storage, con, configChain(appIdentifier))).disabled();
+        UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
+        return ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
+            mappingStorage.lockAppForUserIdMappingCreation_Transaction(con, appIdentifier);
+            if (isDisabledInStoredConfig(main, appIdentifier, storage, baseCon == null ? con : baseCon,
+                    baseCon == null)) {
+                throw new StorageTransactionLogicException(new ServletException(
+                        new WebserverAPI.BadRequestException(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE)));
+            }
+            T result;
+            try {
+                result = creation.create(con);
+            } catch (UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            return AuditedResult.withoutAudit(result, "User id mapping inserts are not audit events (the "
+                    + "auto-commit insert this replaces was unaudited); the transaction only adds the creation "
+                    + "lock and the config read.");
+        });
+    }
+
+    // The flag as the stored config sets it for the app (see storedFlag). Read without locking: the creation lock
+    // is what orders this read against a config write turning the flag on. Read after the lock is taken, so at
+    // read committed it sees a config write that committed before the lock was released. sameDatabase: con is on
+    // the database the tenant configs are in; otherwise con is a base transaction.
+    private static boolean isDisabledInStoredConfig(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                    TransactionConnection con, boolean sameDatabase)
+            throws StorageQueryException {
+        List<TenantIdentifier> chain = configChain(appIdentifier);
+        Map<TenantIdentifier, JsonObject> stored = chain.isEmpty() ? Map.of()
+                : ((MultitenancySQLStorage) (sameDatabase ? storage : StorageLayer.getBaseStorage(main)))
+                        .getTenantCoreConfigs_Transaction(con, chain, false);
+        return storedFlag(Config.getBaseConfig(main), appIdentifier, stored).disabled();
     }
 
     // The tenants whose stored core config sets an app's flag, most specific first: the app's public tenant, then
@@ -347,27 +375,6 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
             }
         }
         return fromConfigYaml;
-    }
-
-    // One read for the whole chain. On the mapping transaction's connection when the tenant configs live in the same
-    // database, so there is only one connection. Otherwise reads the committed rows from the base storage, while the
-    // lock is held.
-    private static Map<TenantIdentifier, JsonObject> readStoredCoreConfigs(Main main, Storage storage,
-                                                                           TransactionConnection con,
-                                                                           List<TenantIdentifier> tenantIdentifiers)
-            throws StorageQueryException, StorageTransactionLogicException {
-        if (tenantIdentifiers.isEmpty()) {
-            return Map.of();
-        }
-        Storage baseStorage = StorageLayer.getBaseStorage(main);
-        if (isSameDatabase(storage, baseStorage)) {
-            return ((MultitenancySQLStorage) storage).getTenantCoreConfigs_Transaction(con, tenantIdentifiers, false);
-        }
-        MultitenancySQLStorage base = (MultitenancySQLStorage) baseStorage;
-        return ((ActivityLogSQLStorage) base).startAuditedTransaction(TenantIdentifier.BASE_TENANT.toAppIdentifier(),
-                baseCon -> AuditedResult.withoutAudit(
-                        base.getTenantCoreConfigs_Transaction(baseCon, tenantIdentifiers, false),
-                        "Read-only: reads the app's stored core configs."));
     }
 
     private static boolean isSameDatabase(Storage a, Storage b) {
