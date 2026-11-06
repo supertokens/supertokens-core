@@ -94,11 +94,14 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
+            // checked before the lookup, which would otherwise report UNKNOWN_MAPPING_ERROR
+            UserIdMapping.assertUserIdMappingEnabled(main, getAppIdentifier(req));
+
             StorageAndUserIdMapping storageAndUserIdMapping =
                     this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
                             true);
 
-            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
+            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(main,
                     getAppIdentifier(req),
                     storageAndUserIdMapping.storage, userId, userIdType, externalUserIdInfo)) {
                 JsonObject response = new JsonObject();

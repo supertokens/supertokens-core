@@ -324,6 +324,7 @@ public class EmailVerificationQueries {
         // calculating the verified emails
 
         HashMap<String, String> supertokensUserIdToExternalUserIdMap =
+                !start.readsUserIdMappingFor(appIdentifier) ? new HashMap<>() :
                 UserIdMappingQueries.getUserIdMappingWithUserIds_Transaction(
                         start,
                         sqlCon, appIdentifier, supertokensUserIds);
@@ -394,7 +395,9 @@ public class EmailVerificationQueries {
         }
         // We have external user id stored in the email verification table, so we need to fetch the mapped userids for
         // calculating the verified emails
-        HashMap<String, String> supertokensUserIdToExternalUserIdMap = UserIdMappingQueries.getUserIdMappingWithUserIds(
+        HashMap<String, String> supertokensUserIdToExternalUserIdMap =
+                !start.readsUserIdMappingFor(appIdentifier) ? new HashMap<>() :
+                UserIdMappingQueries.getUserIdMappingWithUserIds(
                 start,
                 appIdentifier, supertokensUserIds);
         HashMap<String, String> externalUserIdToSupertokensUserIdMap = new HashMap<>();

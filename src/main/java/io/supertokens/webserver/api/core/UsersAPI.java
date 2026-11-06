@@ -170,7 +170,8 @@ public class UsersAPI extends WebserverAPI {
                     limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
-            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, users.users);
+            UserIdMapping.populateExternalUserIdForUsers(main, tenantIdentifier.toAppIdentifier(), storage,
+                    users.users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

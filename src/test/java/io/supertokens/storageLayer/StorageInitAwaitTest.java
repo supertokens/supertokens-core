@@ -638,4 +638,43 @@ public class StorageInitAwaitTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    // The storages boot continued past are returned, so their apps' user id mapping check can wait for them instead
+    // of querying them (which would wait for their pool initialisation).
+    @Test
+    public void storagesStillInitialisingWhenTheTimeoutIsHitAreReturned() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage ready = mock(Storage.class);
+        CountDownLatch release = new CountDownLatch(1);
+        Storage stuck = mock(Storage.class);
+        doAnswer(invocation -> {
+            release.await();
+            return null;
+        }).when(stuck).initStorage(anyBoolean(), any());
+        Map<Storage, Set<TenantIdentifier>> storagesToInit = new HashMap<>();
+        storagesToInit.put(ready, new HashSet<>(tenants("ready")));
+        storagesToInit.put(stuck, new HashSet<>(tenants("stuck")));
+
+        try {
+            Map<Storage, CompletableFuture<Void>> stillInitialising =
+                    StorageLayer.initStoragesInParallel(process.getProcess(), storagesToInit, 1, 1);
+
+            assertEquals(Set.of(stuck), stillInitialising.keySet());
+            CompletableFuture<Void> initialised = stillInitialising.get(stuck);
+            assertFalse(initialised.isDone());
+            release.countDown();
+            initialised.get(10, TimeUnit.SECONDS);
+        } finally {
+            release.countDown();
+        }
+
+        assertTrue(StorageLayer.initStoragesInParallel(process.getProcess(), Map.of(ready,
+                new HashSet<>(tenants("ready"))), 1, 1).isEmpty());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

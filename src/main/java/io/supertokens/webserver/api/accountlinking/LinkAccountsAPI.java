@@ -107,7 +107,7 @@ public class LinkAccountsAPI extends WebserverAPI {
                     appIdentifier, primaryUserIdStorage,
                     recipeUserId, primaryUserId);
 
-            UserIdMapping.populateExternalUserIdForUsers(appIdentifier, primaryUserIdStorage,
+            UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, primaryUserIdStorage,
                     new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -136,7 +136,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(main,
                         appIdentifier, primaryUserIdStorage, e.primaryUserId,
                         UserIdType.SUPERTOKENS);
                 if (result != null) {
@@ -153,7 +153,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                UserIdMapping.populateExternalUserIdForUsers(appIdentifier, recipeUserIdStorage,
+                UserIdMapping.populateExternalUserIdForUsers(main, appIdentifier, recipeUserIdStorage,
                         new AuthRecipeUserInfo[]{e.recipeUser});
                 response.addProperty("primaryUserId", e.recipeUser.getSupertokensOrExternalUserId());
                 response.addProperty("description", e.getMessage());

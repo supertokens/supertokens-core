@@ -132,7 +132,7 @@ public class MultitenantUnlinkDisassociateTest extends MultitenantTestBase {
                             @Override
                             public void execute(Main main) throws Exception {
                                 Storage t1Storage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipe.deleteUser(t1.toAppIdentifier(), t1Storage,
+                                AuthRecipe.deleteUser(main, t1.toAppIdentifier(), t1Storage,
                                         TestCase.users.get(1).getSupertokensUserId());
                             }
                         },

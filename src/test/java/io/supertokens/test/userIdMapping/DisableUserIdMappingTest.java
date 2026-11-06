@@ -1,0 +1,1257 @@
+/*
+ *    Copyright (c) 2026, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.test.userIdMapping;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import io.supertokens.Main;
+import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.bulkimport.BulkImportUserUtils;
+import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.inmemorydb.Start;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.session.Session;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import io.supertokens.test.bulkimport.BulkImportTestUtils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
+import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.usermetadata.UserMetadata;
+import jakarta.servlet.ServletException;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+
+import static org.junit.Assert.*;
+
+public class DisableUserIdMappingTest {
+
+    private static final String BASE = "http://localhost:3567";
+
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void requestsDoNotLookUpUserIdMappingsWhenDisabled() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemory(true);
+        if (process == null) {
+            return;
+        }
+
+        Map<String, Long> counts = countUserIdMappingCallsPerRequest(process);
+        for (Map.Entry<String, Long> entry : counts.entrySet()) {
+            assertEquals(entry.getKey(), 0L, (long) entry.getValue());
+        }
+
+        stop(process);
+    }
+
+    // Shows that the counter sees the lookups the disabled run skips.
+    @Test
+    public void requestsLookUpUserIdMappingsWhenEnabled() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemory(false);
+        if (process == null) {
+            return;
+        }
+
+        // these read no user id mapping, in core or in the storage, even with mapping enabled
+        Set<String> noLookup = Set.of("session verify (checkDatabase)", "session remove", "user roles add",
+                "user roles get");
+        Map<String, Long> counts = countUserIdMappingCallsPerRequest(process);
+        for (Map.Entry<String, Long> entry : counts.entrySet()) {
+            assertEquals(entry.getKey(), !noLookup.contains(entry.getKey()), entry.getValue() > 0);
+        }
+
+        stop(process);
+    }
+
+    @Test
+    public void creatingAndUpdatingMappingsIsRejectedWhenDisabled() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        String userId = emailPasswordSignUp(process, "user@example.com").get("id").getAsString();
+
+        JsonObject mapping = new JsonObject();
+        mapping.addProperty("superTokensUserId", userId);
+        mapping.addProperty("externalUserId", "external-id");
+        assertBadRequest(() -> post(process, "/recipe/userid/map", mapping, "useridmapping"));
+
+        try {
+            UserIdMapping.createUserIdMapping(process.getProcess(), userId, "external-id", null, false);
+            fail();
+        } catch (ServletException e) {
+            assertEquals(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE, e.getRootCause().getMessage());
+        }
+
+        JsonObject info = new JsonObject();
+        info.addProperty("userId", userId);
+        info.addProperty("externalUserIdInfo", "info");
+        assertBadRequest(() -> HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                BASE + "/recipe/userid/external-user-id-info", info, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "useridmapping"));
+
+        // removal stays allowed
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", userId);
+        JsonObject removeResponse = post(process, "/recipe/userid/map/remove", remove, "useridmapping");
+        assertEquals("OK", removeResponse.get("status").getAsString());
+        assertFalse(removeResponse.get("didMappingExist").getAsBoolean());
+
+        stop(process);
+    }
+
+    // A mapping created before the opt-out (the documented config refresh race) is hidden from reads but can
+    // still be removed.
+    @Test
+    public void mappingCreatedBeforeTheOptOutIsHiddenButRemovable() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+                .createUserIdMapping(app, user.getSupertokensUserId(), "external-id", null);
+
+        assertNull(UserIdMapping.getUserIdMapping(main, user.getSupertokensUserId(), UserIdType.ANY));
+        assertNull(UserIdMapping.getUserIdMapping(main, "external-id", UserIdType.EXTERNAL));
+
+        assertTrue(UserIdMapping.deleteUserIdMapping(main, user.getSupertokensUserId(), UserIdType.SUPERTOKENS,
+                false));
+        assertFalse(StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).hasUserIdMappings(app));
+
+        stop(process);
+    }
+
+    // A mapping left over from the config refresh window can be removed over the API by its external id, with
+    // userIdType EXTERNAL, ANY, or none (the SDK default, which the core treats as ANY).
+    @Test
+    public void leftoverMappingIsRemovableByItsExternalIdOverTheApi() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+
+        for (String userIdType : new String[]{"EXTERNAL", "ANY", null}) {
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), "external-id");
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("userId", "external-id");
+            if (userIdType != null) {
+                remove.addProperty("userIdType", userIdType);
+            }
+            JsonObject response = postOk(process, "/recipe/userid/map/remove", remove, "useridmapping");
+            assertTrue(String.valueOf(userIdType), response.get("didMappingExist").getAsBoolean());
+            assertFalse(String.valueOf(userIdType),
+                    StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).hasUserIdMappings(app));
+        }
+
+        stop(process);
+    }
+
+    // Deleting a user with a leftover mapping also deletes what is stored under the external id: its sessions
+    // (so their refresh tokens stop working) and its metadata. Works by either id.
+    @Test
+    public void deletingAUserRemovesSessionsAndMetadataStoredUnderALeftoverMapping() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        for (boolean deleteByExternalId : new boolean[]{false, true}) {
+            String externalId = "external-id-" + deleteByExternalId;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, externalId + "@example.com", "password123");
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), externalId);
+            createSession(process, externalId);
+            JsonObject metadata = new JsonObject();
+            metadata.addProperty("key", "value");
+            UserMetadata.updateUserMetadata(main, externalId, metadata);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("userId", deleteByExternalId ? externalId : user.getSupertokensUserId());
+            postOk(process, "/user/remove", remove, null);
+
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+            assertEquals(0, UserMetadata.getUserMetadata(main, externalId).entrySet().size());
+            assertFalse(StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main)).hasUserIdMappings(app));
+        }
+
+        stop(process);
+    }
+
+    // Linking a user with a leftover mapping revokes its sessions, which are stored under the external id.
+    @Test
+    public void linkingAUserRevokesSessionsStoredUnderALeftoverMapping() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        plantLeftoverMapping(main, app, user.getSupertokensUserId(), "external-id");
+        createSession(process, "external-id");
+        assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, user.getSupertokensUserId(), primary.getSupertokensUserId());
+
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        stop(process);
+    }
+
+    // With force on, the core reports users by their SuperTokens user ids, but sessions created before were stored
+    // under the external id. Listing and revoking a user's sessions by its SuperTokens user id still finds them, so
+    // "revoke all sessions" doesn't leave a pre-force session (and its refresh token) alive.
+    @Test
+    public void revokingByTheSuperTokensIdUnderForceRevokesSessionsStoredUnderTheExternalId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, user.getSupertokensUserId(), "external-id", null, false);
+        createSession(process, "external-id");
+        assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        Map<String, String> byUserId = new HashMap<>();
+        byUserId.put("userId", user.getSupertokensUserId());
+        JsonObject listed = get(process, "/recipe/session/user", byUserId, "session");
+        assertEquals(1, listed.getAsJsonArray("sessionHandles").size());
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", user.getSupertokensUserId());
+        JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+        assertEquals(1, removed.getAsJsonArray("sessionHandlesRevoked").size());
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        stop(process);
+    }
+
+    // The reverse direction: a session created before force keeps reporting the external id, so "sign out
+    // everywhere" from that device revokes by the external id. That must also find the sessions the user created
+    // after force, which are stored under the SuperTokens id. Covers both the app-wide and the tenant-scoped lookup.
+    @Test
+    public void revokingByTheExternalIdUnderForceRevokesSessionsStoredUnderTheSuperTokensId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        // one user per lookup: the first revokes across all tenants, the second only in the request's tenant
+        boolean[] revokeAcrossAllTenants = {true, false};
+        String[] superTokensIds = new String[2];
+        for (int i = 0; i < 2; i++) {
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, "user" + i + "@example.com", "password123");
+            superTokensIds[i] = user.getSupertokensUserId();
+            UserIdMapping.createUserIdMapping(main, superTokensIds[i], "external-id-" + i, null, false);
+            createSession(process, "external-id-" + i);
+        }
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        for (int i = 0; i < 2; i++) {
+            String label = "revokeAcrossAllTenants=" + revokeAcrossAllTenants[i];
+            createSession(process, superTokensIds[i]);
+
+            Map<String, String> byUserId = new HashMap<>();
+            byUserId.put("userId", "external-id-" + i);
+            byUserId.put("fetchAcrossAllTenants", String.valueOf(revokeAcrossAllTenants[i]));
+            JsonObject listed = get(process, "/recipe/session/user", byUserId, "session");
+            assertEquals(label, 2, listed.getAsJsonArray("sessionHandles").size());
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("userId", "external-id-" + i);
+            remove.addProperty("revokeAcrossAllTenants", revokeAcrossAllTenants[i]);
+            JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+            assertEquals(label, 2, removed.getAsJsonArray("sessionHandlesRevoked").size());
+            assertEquals(label, 0, Session.getAllNonExpiredSessionHandlesForUser(main, superTokensIds[i]).length);
+        }
+
+        stop(process);
+    }
+
+    // Under force, listing or revoking across all tenants by the external id of a user on a tenant with its own
+    // database finds that user's storage through the mapping, even when nothing else is stored under the external id
+    // there, so the sessions stored under the SuperTokens id are listed and revoked.
+    @Test
+    public void revokingByTheExternalIdUnderForceFindsAUserOnATenantWithItsOwnDatabase() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier appPublic = new TenantIdentifier(null, "uidm-own-db", null);
+        TenantIdentifier ownDbTenant = new TenantIdentifier(null, "uidm-own-db", "t1");
+        AppIdentifier app = appPublic.toAppIdentifier();
+        JsonObject ownPool = new JsonObject();
+        StorageLayer.getBaseStorage(main).modifyConfigToAddANewUserPoolForTesting(ownPool, 1);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, TenantIdentifier.BASE_TENANT,
+                new TenantConfig(appPublic, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appPublic,
+                new TenantConfig(ownDbTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, ownPool));
+        Storage publicStorage = StorageLayer.getStorage(appPublic, main);
+        Storage ownStorage = StorageLayer.getStorage(ownDbTenant, main);
+        if (publicStorage.getUserPoolId().equals(ownStorage.getUserPoolId())) {
+            // one user pool for every tenant (the in-memory db): the scenario isn't reachable
+            stop(process);
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(ownDbTenant, ownStorage, main, "own-db@example.com",
+                "password123");
+        String superTokensId = user.getSupertokensUserId();
+        UserIdMapping.createUserIdMapping(main, app, ownStorage, superTokensId, "own-db-external-id", null, false);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, TenantIdentifier.BASE_TENANT,
+                new TenantConfig(appPublic, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, coreConfig));
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        // only a session created after force, stored under the SuperTokens id; nothing is left under the external id
+        Session.createNewSession(ownDbTenant, ownStorage, main, superTokensId, new JsonObject(), new JsonObject());
+
+        Map<String, String> byExternalId = new HashMap<>();
+        byExternalId.put("userId", "own-db-external-id");
+        byExternalId.put("fetchAcrossAllTenants", "true");
+        JsonObject listed = get(process, "/appid-uidm-own-db/recipe/session/user", byExternalId, "session");
+        assertEquals(1, listed.getAsJsonArray("sessionHandles").size());
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", "own-db-external-id");
+        remove.addProperty("revokeAcrossAllTenants", true);
+        JsonObject removed = postOk(process, "/appid-uidm-own-db/recipe/session/remove", remove, "session");
+        assertEquals(1, removed.getAsJsonArray("sessionHandlesRevoked").size());
+
+        stop(process);
+    }
+
+    // A session created before force keeps the user id it reported then. For a linked login method that is the
+    // primary user's external id, while the session row holds the login method's own external id, which no longer
+    // resolves as a SuperTokens id under force.
+    @Test
+    public void refreshingALinkedAccountsSessionFromBeforeForceKeepsThePrimaryUsersId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), primary.getSupertokensUserId());
+        UserIdMapping.createUserIdMapping(main, primary.getSupertokensUserId(), "primary-external-id", null, false);
+        UserIdMapping.createUserIdMapping(main, linked.getSupertokensUserId(), "linked-external-id", null, false);
+
+        JsonObject session = createSession(process, "linked-external-id");
+        assertEquals("primary-external-id", session.getAsJsonObject("session").get("userId").getAsString());
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        JsonObject body = new JsonObject();
+        body.addProperty("refreshToken", session.getAsJsonObject("refreshToken").get("token").getAsString());
+        body.addProperty("enableAntiCsrf", false);
+        body.addProperty("useDynamicSigningKey", true);
+        JsonObject refreshed = postOk(process, "/recipe/session/refresh", body, "session");
+        assertEquals("primary-external-id", refreshed.getAsJsonObject("session").get("userId").getAsString());
+
+        stop(process);
+    }
+
+    // A mapping created with force can name another user's SuperTokens id as its external id. Under force, listing
+    // or revoking by that id covers both users: the user whose id it is, with its linked login methods, and the
+    // mapped user.
+    @Test
+    public void revokingAnIdThatIsAlsoAForcedExternalIdUnderForceCoversBothUsersAndTheirLinkedAccounts()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked@example.com", "password123");
+        AuthRecipeUserInfo mapped = EmailPassword.signUp(main, "mapped@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+        AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), primary.getSupertokensUserId());
+        UserIdMapping.createUserIdMapping(main, mapped.getSupertokensUserId(), primary.getSupertokensUserId(), null,
+                true);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        createSession(process, linked.getSupertokensUserId());
+        createSession(process, mapped.getSupertokensUserId());
+
+        for (boolean acrossAllTenants : new boolean[]{true, false}) {
+            Map<String, String> byUserId = new HashMap<>();
+            byUserId.put("userId", primary.getSupertokensUserId());
+            byUserId.put("fetchAcrossAllTenants", String.valueOf(acrossAllTenants));
+            JsonObject listed = get(process, "/recipe/session/user", byUserId, "session");
+            assertEquals("fetchAcrossAllTenants=" + acrossAllTenants, 2,
+                    listed.getAsJsonArray("sessionHandles").size());
+        }
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", primary.getSupertokensUserId());
+        JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+        assertEquals(2, removed.getAsJsonArray("sessionHandlesRevoked").size());
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, linked.getSupertokensUserId()).length);
+        assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, mapped.getSupertokensUserId()).length);
+
+        stop(process);
+    }
+
+    // Removing a user with a leftover mapping from a tenant also deletes the sessions stored under the external id
+    // in that tenant. Works by either id.
+    @Test
+    public void disassociatingAUserRemovesSessionsStoredUnderALeftoverMapping() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        for (boolean removeByExternalId : new boolean[]{false, true}) {
+            String externalId = "external-id-" + removeByExternalId;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, externalId + "@example.com", "password123");
+            plantLeftoverMapping(main, app, user.getSupertokensUserId(), externalId);
+            createSession(process, externalId);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+
+            JsonObject remove = new JsonObject();
+            remove.addProperty("recipeUserId", removeByExternalId ? externalId : user.getSupertokensUserId());
+            JsonObject response = postOk(process, "/recipe/multitenancy/tenant/user/remove", remove,
+                    "multitenancy");
+
+            assertTrue(String.valueOf(removeByExternalId), response.get("wasAssociated").getAsBoolean());
+            assertEquals(String.valueOf(removeByExternalId), 0,
+                    Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+        }
+
+        stop(process);
+    }
+
+    // The storage also skips the userid_mapping reads it makes on its own. A leftover mapping shows it: the storage
+    // would otherwise use it to find email verification stored under the external id (user hydration, also of
+    // WebAuthn users, and WebAuthn sign-in) and to report the external id as the session's user id (refresh).
+    // Clearing the storage's set of opted-out apps brings those reads back.
+    // With a leftover mapping, sessions can exist under both ids: under the external id from before the opt-out and
+    // under the SuperTokens id from after it (sign-in no longer returns the external id). Deleting, linking and
+    // removing the user from a tenant clear both.
+    @Test
+    public void sessionsUnderBothIdsOfALeftoverMappingAreRemoved() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                        new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
+        AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
+
+        for (String action : new String[]{"delete", "delete-primary-keeping-linked", "link", "disassociate"}) {
+            String externalId = "external-id-" + action;
+            AuthRecipeUserInfo user = EmailPassword.signUp(main, action + "@example.com", "password123");
+            String superTokensId = user.getSupertokensUserId();
+            if (action.equals("delete-primary-keeping-linked")) {
+                // a primary user with another login method linked to it, whose own login method is deleted
+                AuthRecipe.createPrimaryUser(main, superTokensId);
+                AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked-" + action + "@example.com",
+                        "password123");
+                AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), superTokensId);
+            }
+            plantLeftoverMapping(main, app, superTokensId, externalId);
+            createSession(process, externalId);
+            createSession(process, superTokensId);
+
+            if (action.equals("delete")) {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("userId", superTokensId);
+                postOk(process, "/user/remove", remove, null);
+            } else if (action.equals("delete-primary-keeping-linked")) {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("userId", superTokensId);
+                remove.addProperty("removeAllLinkedAccounts", false);
+                postOk(process, "/user/remove", remove, null);
+            } else if (action.equals("link")) {
+                AuthRecipe.linkAccounts(main, superTokensId, primary.getSupertokensUserId());
+            } else {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("recipeUserId", superTokensId);
+                postOk(process, "/recipe/multitenancy/tenant/user/remove", remove, "multitenancy");
+            }
+
+            assertEquals(action, 0, Session.getAllNonExpiredSessionHandlesForUser(main, externalId).length);
+            assertEquals(action, 0, Session.getAllNonExpiredSessionHandlesForUser(main, superTokensId).length);
+        }
+
+        stop(process);
+    }
+
+    @Test
+    public void storageSkipsItsOwnUserIdMappingReadsForTheApp() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+
+        String userId = emailPasswordSignUp(process, "user@example.com").get("id").getAsString();
+        plantLeftoverMapping(main, app, userId, "external-id");
+        EmailVerification.verifyEmail(main,
+                EmailVerification.generateEmailVerificationToken(main, "external-id", "user@example.com"));
+        JsonObject session = createSession(process, userId);
+        JsonObject webAuthnUser = io.supertokens.test.webauthn.Utils.registerUserWithCredentials(main,
+                "wa-user@example.com");
+        String webAuthnUserId = webAuthnUser.getAsJsonObject("user").get("id").getAsString();
+        plantLeftoverMapping(main, app, webAuthnUserId, "wa-external-id");
+        EmailVerification.verifyEmail(main,
+                EmailVerification.generateEmailVerificationToken(main, "wa-external-id", "wa-user@example.com"));
+
+        List<String> skipped = readsAffectedByTheLeftoverMappings(process, userId, session, webAuthnUser);
+        System.out.println("[storage-reads] flag on: " + skipped);
+        assertEquals(List.of("false", userId, "false", "false"), skipped);
+
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+                .setAppsWithUserIdMappingDisabled(Set.of(), Set.of());
+        List<String> read = readsAffectedByTheLeftoverMappings(process, userId, session, webAuthnUser);
+        System.out.println("[storage-reads] storage set cleared: " + read);
+        assertEquals(List.of("true", "external-id", "true", "true"), read);
+
+        stop(process);
+    }
+
+    // Whether the email-password user's email is verified, the user id of its refreshed session, and whether the
+    // WebAuthn user's email is verified, when loaded by id and as returned by its sign-in.
+    private static List<String> readsAffectedByTheLeftoverMappings(TestingProcessManager.TestingProcess process,
+                                                                   String userId, JsonObject session,
+                                                                   JsonObject webAuthnUser) throws Exception {
+        String verified = isEmailVerified(getUserById(process, userId));
+
+        JsonObject body = new JsonObject();
+        body.addProperty("refreshToken", session.getAsJsonObject("refreshToken").get("token").getAsString());
+        body.addProperty("enableAntiCsrf", false);
+        body.addProperty("useDynamicSigningKey", true);
+        JsonObject refreshed = postOk(process, "/recipe/session/refresh", body, "session");
+        session.add("refreshToken", refreshed.get("refreshToken"));
+        String sessionUserId = refreshed.getAsJsonObject("session").get("userId").getAsString();
+
+        String webAuthnVerified = isEmailVerified(
+                getUserById(process, webAuthnUser.getAsJsonObject("user").get("id").getAsString()));
+        JsonObject signIn = io.supertokens.test.webauthn.Utils.signInWithUser(process.getProcess(), webAuthnUser);
+        assertEquals("OK", signIn.get("status").getAsString());
+        String signInVerified = isEmailVerified(signIn.getAsJsonObject("user"));
+
+        return List.of(verified, sessionUserId, webAuthnVerified, signInVerified);
+    }
+
+    private static JsonObject getUserById(TestingProcessManager.TestingProcess process, String userId)
+            throws Exception {
+        Map<String, String> byUserId = new HashMap<>();
+        byUserId.put("userId", userId);
+        return get(process, "/user/id", byUserId, null).getAsJsonObject("user");
+    }
+
+    private static String isEmailVerified(JsonObject user) {
+        return user.getAsJsonArray("loginMethods").get(0).getAsJsonObject().get("verified").getAsString();
+    }
+
+    @Test
+    public void cannotBeEnabledForAnAppWithMappings() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, false), false);
+        Storage a1Storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, a1Storage, main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), a1Storage, user.getSupertokensUserId(),
+                "external-id", null, false);
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals(UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE, e.getMessage());
+        }
+        assertFalse(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        UserIdMapping.deleteUserIdMapping(a1.toAppIdentifier(), a1Storage, "external-id", UserIdType.EXTERNAL,
+                false);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        try {
+            UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), a1Storage, user.getSupertokensUserId(),
+                    "external-id", null, false);
+            fail();
+        } catch (ServletException e) {
+            assertEquals(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE, e.getRootCause().getMessage());
+        }
+
+        // other apps are unaffected
+        assertFalse(UserIdMapping.isUserIdMappingDisabled(main, process.getAppForTesting().toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // Mappings are allowed while force is on. Turning force off is checked like turning the flag on, so the app can't
+    // reach "flag on, not forced, mappings present" through the config API (with the flag in config.yaml, the next
+    // restart would refuse to start).
+    @Test
+    public void turningForceOffIsRejectedWhileTheAppHasMappings() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "force", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, false), false);
+        Storage a1Storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, a1Storage, main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), a1Storage, user.getSupertokensUserId(),
+                "external-id", null, false);
+
+        TenantConfig forced = appConfig(a1, true);
+        forced.coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, forced, false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, a1.toAppIdentifier()));
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping_force cannot be turned off because the app has user id mappings: "
+                    + "remove them first", e.getMessage());
+        }
+        assertTrue(UserIdMappingOptOut.isForced(main, a1.toAppIdentifier()));
+
+        UserIdMapping.deleteUserIdMapping(a1.toAppIdentifier(), a1Storage, "external-id", UserIdType.EXTERNAL,
+                false);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+        assertFalse(UserIdMappingOptOut.isForced(main, a1.toAppIdentifier()));
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An explicit null in the app's stored config means "off" in the loaded config (the first level that has the key
+    // wins), so the locked re-check at mapping creation must not fall through to config.yaml.
+    @Test
+    public void anExplicitNullInTheAppConfigLetsMappingsBeCreatedWhenTheBaseConfigDisablesMapping()
+            throws Exception {
+        String[] args = {"../"};
+        // config.yaml turns the flag on for every app: needs the in-memory storage's fresh database (see
+        // startupCheckFailsForAppsWithMappingsWhenTheBaseConfigDisablesMapping).
+        TestingProcessManager.TestingProcess probe = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(probe.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        boolean inMemory = StorageLayer.isInMemDb(probe.getProcess());
+        stop(probe);
+        if (!inMemory) {
+            return;
+        }
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, "a1", null);
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.add("disable_user_id_mapping", JsonNull.INSTANCE);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(a1, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertFalse(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        Storage storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, storage, main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, a1.toAppIdentifier(), storage, user.getSupertokensUserId(),
+                "external-id", null, false);
+        assertNotNull(UserIdMapping.getUserIdMapping(main, a1.toAppIdentifier(), storage, "external-id",
+                UserIdType.EXTERNAL));
+
+        stop(process);
+    }
+
+    // A full storage reload (here: creating another app) keeps the check of an app whose storages it didn't change,
+    // instead of querying every app with the flag on again.
+    @Test
+    public void storageReloadDoesNotCheckAppsWhoseStoragesDidNotChangeAgain() throws Exception {
+        String[] args = {"../"};
+        // an isolated process, so no other test's app with the flag on (and mappings) is checked during the reload
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (!StorageLayer.isInMemDb(main)) {
+            // the call counter exists only in the in-memory storage
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier flagged = new TenantIdentifier(null, "flagged", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(flagged, true), false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
+
+        TenantIdentifier other = new TenantIdentifier(null, "other", null);
+        Start.resetUserIdMappingCallCountForTesting();
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(other, false), false);
+        assertEquals(0, Start.getUserIdMappingCallCountForTesting());
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
+
+        // a new app has no check to keep, so it is checked
+        TenantIdentifier third = new TenantIdentifier(null, "third", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(third, true), false);
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, third.toAppIdentifier()));
+        assertTrue(UserIdMappingOptOut.isReadSkipped(main, flagged.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An app that already has the flag on isn't re-checked when it gets a new tenant on a database it already uses,
+    // so a leftover mapping doesn't block creating tenants.
+    @Test
+    public void creatingATenantInAnAppWithTheFlagOnIgnoresLeftoverMappings() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+        Storage a1Storage = StorageLayer.getStorage(a1, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(a1, a1Storage, main, "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(a1Storage)
+                .createUserIdMapping(a1.toAppIdentifier(), user.getSupertokensUserId(), "external-id", null);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, a1.getAppId(), "t1");
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(t1, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, new JsonObject()), false);
+        assertNotNull(Multitenancy.getTenantInfo(main, t1));
+
+        stop(process);
+    }
+
+    // The check runs against the database the new config selects. A database this core has not loaded can't be
+    // checked without initialising it, so the flag can't be on in the update that moves the app there.
+    @Test
+    public void cannotKeepTheFlagOnWhileMovingToADatabaseThatIsNotLoaded() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database to move to
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+
+        TenantConfig moved = appConfig(a1, true);
+        moved.coreConfig.addProperty("postgresql_database_name", "st_disable_uidm_not_loaded");
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, moved, false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping cannot be on while the app moves to a database that is not loaded "
+                    + "yet: add the database with disable_user_id_mapping off, then turn it on", e.getMessage());
+        }
+
+        stop(process);
+    }
+
+    // A new app has no mappings anywhere, so it can be created on a database this core hasn't loaded with the flag
+    // on (e.g. inherited from config.yaml).
+    @Test
+    public void creatingAnAppOnADatabaseThatIsNotLoadedWorksWithTheFlagOn() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "newdb", null);
+        TenantConfig config = appConfig(a1, true);
+        // a pool number no other test uses, so the database is not loaded
+        StorageLayer.getBaseStorage(main).modifyConfigToAddANewUserPoolForTesting(config.coreConfig, 41);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, config, false);
+        assertTrue(UserIdMapping.isUserIdMappingDisabled(main, a1.toAppIdentifier()));
+
+        stop(process);
+    }
+
+    // An existing app can't be checked on a database this core hasn't loaded, so a new tenant there is rejected
+    // while the flag is on, with a message that says how to add it.
+    @Test
+    public void addingATenantOnADatabaseThatIsNotLoadedIsRejectedWhileTheFlagIsOn() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.isInMemDb(main)) {
+            // the in-memory storage has a single user pool, so there is no other database
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier a1 = new TenantIdentifier(null, process.getAppForTesting().getAppId() + "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appConfig(a1, true), false);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("postgresql_database_name", "st_disable_uidm_not_loaded");
+        TenantIdentifier t1 = new TenantIdentifier(null, a1.getAppId(), "t1");
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(t1, new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping cannot be on while a tenant is added on a database that is not "
+                    + "loaded yet: turn disable_user_id_mapping off for the app, add the tenant, then turn it back "
+                    + "on", e.getMessage());
+        }
+        assertNull(Multitenancy.getTenantInfo(main, t1));
+
+        stop(process);
+    }
+
+    @Test
+    public void startupCheckFailsForAppsWithMappingsWhenTheBaseConfigDisablesMapping() throws Exception {
+        String[] args = {"../"};
+        // config.yaml turns the flag on for every app. On a shared test database, other tests' apps with mappings
+        // would fail this startup, so the test needs the in-memory storage's fresh database.
+        TestingProcessManager.TestingProcess probe = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(probe.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        boolean inMemory = StorageLayer.isInMemDb(probe.getProcess());
+        stop(probe);
+        if (!inMemory) {
+            return;
+        }
+        Utils.setValueInConfig("disable_user_id_mapping", "true");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        // without mappings, the core starts
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
+
+        // The in-memory database does not survive a restart, so plant a mapping behind the core's back and run the
+        // check that startup runs.
+        // An isolated process serves only the base app (getAppForTesting may name a shared-process test app).
+        TenantIdentifier tenant = TenantIdentifier.BASE_TENANT;
+        AppIdentifier app = tenant.toAppIdentifier();
+        Storage storage = StorageLayer.getStorage(tenant, main);
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, storage, main, "user@example.com", "password123");
+        StorageUtils.getUserIdMappingStorage(storage)
+                .createUserIdMapping(app, user.getSupertokensUserId(), "external-id", null);
+        try {
+            UserIdMapping.assertNoUserIdMappingsWhereDisabledByBaseConfig(main);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("disable_user_id_mapping is enabled, but these apps have user id mappings (connection uri "
+                    + "domain | app id): " + app + ". Remove them, or set disable_user_id_mapping_force to true for "
+                    + "those apps to ignore them.", e.getMessage());
+        }
+
+        stop(process);
+    }
+
+    @Test
+    public void bulkImportRejectsExternalUserIdsWhenDisabled() throws Exception {
+        TestingProcessManager.TestingProcess process = startWithUserIdMappingDisabled();
+        Main main = process.getProcess();
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        List<BulkImportUser> users = BulkImportTestUtils.generateBulkImportUserWithRoles(1, List.of("public"), 0,
+                List.of());
+
+        try {
+            new BulkImportUserUtils(new String[0]).createBulkImportUserFromJSON(main, app,
+                    users.get(0).toJsonObject(), BulkImportUserUtils.IDMode.GENERATE);
+            fail();
+        } catch (InvalidBulkImportDataException e) {
+            assertTrue(e.errors.toString(), e.errors.contains(
+                    "Cannot set externalUserId: " + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE));
+        }
+
+        // users already queued when the config was turned on
+        try {
+            BulkImport.createMultipleUserIdMapping(main, app, users, new Storage[]{StorageLayer.getStorage(main)});
+            fail();
+        } catch (StorageTransactionLogicException e) {
+            Map<String, Exception> errors = ((BulkImportBatchInsertException) e.actualException).exceptionByUserId;
+            assertEquals("E035: Cannot set externalUserId: " + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE,
+                    errors.get(BulkImportUserUtils.getPrimaryLoginMethod(users.get(0)).superTokensUserId).getMessage());
+        }
+
+        stop(process);
+    }
+
+    // Runs one request of each kind the opt-out covers and returns how many times each asked the storage for a user
+    // id mapping.
+    private static Map<String, Long> countUserIdMappingCallsPerRequest(TestingProcessManager.TestingProcess process)
+            throws Exception {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        // warm-up: the first session creates the signing keys
+        createSession(process, emailPasswordSignUp(process, "warm-up@example.com").get("id").getAsString());
+
+        String userId = count(counts, "email-password sign-up",
+                () -> emailPasswordSignUp(process, "user@example.com")).get("id").getAsString();
+        // the SDKs' placeholder email of a user without email: the sign-up checks whose id its local part is
+        count(counts, "email-password sign-up (placeholder email)",
+                () -> emailPasswordSignUp(process, "no-such-user@stfakeemail.supertokens.com"));
+        count(counts, "email-password sign-in", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("email", "user@example.com");
+            body.addProperty("password", "validPass123");
+            JsonObject response = post(process, "/recipe/signin", body, "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            return response;
+        });
+
+        JsonObject session = count(counts, "session create", () -> createSession(process, userId));
+        String handle = session.getAsJsonObject("session").get("handle").getAsString();
+        JsonObject refreshed = count(counts, "session refresh", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("refreshToken", session.getAsJsonObject("refreshToken").get("token").getAsString());
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("useDynamicSigningKey", true);
+            return postOk(process, "/recipe/session/refresh", body, "session");
+        });
+        // sessions don't need a SuperTokens user: refreshing one whose user id isn't a user reads no mapping either
+        JsonObject sessionOfNonUser = createSession(process, "not-a-supertokens-user");
+        count(counts, "session refresh (user id that isn't a SuperTokens user)", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("refreshToken",
+                    sessionOfNonUser.getAsJsonObject("refreshToken").get("token").getAsString());
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("useDynamicSigningKey", true);
+            JsonObject response = postOk(process, "/recipe/session/refresh", body, "session");
+            assertEquals("not-a-supertokens-user", response.getAsJsonObject("session").get("userId").getAsString());
+            return response;
+        });
+        count(counts, "session verify (checkDatabase)", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("accessToken", refreshed.getAsJsonObject("accessToken").get("token").getAsString());
+            body.addProperty("doAntiCsrfCheck", false);
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("checkDatabase", true);
+            return postOk(process, "/recipe/session/verify", body, "session");
+        });
+        count(counts, "session remove", () -> {
+            JsonObject body = new JsonObject();
+            JsonArray handles = new JsonArray();
+            handles.add(handle);
+            body.add("sessionHandles", handles);
+            return postOk(process, "/recipe/session/remove", body, "session");
+        });
+
+        Map<String, String> byUserId = new HashMap<>();
+        byUserId.put("userId", userId);
+        count(counts, "get user by id", () -> get(process, "/user/id", byUserId, null));
+        Map<String, String> byEmail = new HashMap<>();
+        byEmail.put("email", "user@example.com");
+        byEmail.put("doUnionOfAccountInfo", "false");
+        count(counts, "get users by account info", () -> get(process, "/users/by-accountinfo", byEmail, null));
+
+        count(counts, "user metadata get", () -> get(process, "/recipe/user/metadata", byUserId, "usermetadata"));
+        count(counts, "user metadata update", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", userId);
+            body.add("metadataUpdate", new JsonObject());
+            return put(process, "/recipe/user/metadata", body, "usermetadata");
+        });
+        JsonObject role = new JsonObject();
+        role.addProperty("role", "admin");
+        put(process, "/recipe/role", role, "userroles");
+        count(counts, "user roles add", () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", userId);
+            body.addProperty("role", "admin");
+            return put(process, "/recipe/user/role", body, "userroles");
+        });
+        count(counts, "user roles get", () -> get(process, "/recipe/user/roles", byUserId, "userroles"));
+
+        count(counts, "third-party sign-in-up (new user)",
+                () -> thirdPartySignInUp(process, "tp-user", "tp-user@example.com"));
+        count(counts, "third-party sign-in-up (existing user)",
+                () -> thirdPartySignInUp(process, "tp-user", "tp-user@example.com"));
+
+        JsonObject code = createCode(process, "pl-user@example.com");
+        count(counts, "passwordless consume-code (new user)", () -> consumeCode(process, code));
+        JsonObject secondCode = createCode(process, "pl-user@example.com");
+        count(counts, "passwordless consume-code (existing user)", () -> consumeCode(process, secondCode));
+
+        JsonObject webAuthnUser = count(counts, "webauthn sign-up",
+                () -> io.supertokens.test.webauthn.Utils.registerUserWithCredentials(process.getProcess(),
+                        "wa-user@example.com"));
+        count(counts, "webauthn sign-in", () -> {
+            JsonObject response = io.supertokens.test.webauthn.Utils.signInWithUser(process.getProcess(),
+                    webAuthnUser);
+            assertEquals("OK", response.get("status").getAsString());
+            return response;
+        });
+
+        System.out.println("[userid-mapping-calls] " + counts);
+        return counts;
+    }
+
+    private static <T> T count(Map<String, Long> counts, String request, Callable<T> call) throws Exception {
+        Start.resetUserIdMappingCallCountForTesting();
+        T result = call.call();
+        counts.put(request, Start.getUserIdMappingCallCountForTesting());
+        return result;
+    }
+
+    // Writes a mapping straight to the storage, as a core that had not yet picked up disable_user_id_mapping would.
+    private static void plantLeftoverMapping(Main main, AppIdentifier app, String superTokensUserId,
+                                             String externalUserId) throws Exception {
+        StorageUtils.getUserIdMappingStorage(StorageLayer.getStorage(main))
+                .createUserIdMapping(app, superTokensUserId, externalUserId, null);
+    }
+
+    private static TenantConfig appConfig(TenantIdentifier app, boolean disableUserIdMapping) {
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", disableUserIdMapping);
+        return new TenantConfig(app, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true), null, null, coreConfig);
+    }
+
+    private static void assertBadRequest(Callable<?> request) throws Exception {
+        try {
+            request.call();
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: " + UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE,
+                    e.getMessage());
+        }
+    }
+
+    // Turns disable_user_id_mapping on for the test's own app. Setting it in config.yaml would turn it on for every
+    // app, and on a shared test database the startup check would then trip over other tests' apps with mappings.
+    private static TestingProcessManager.TestingProcess startWithUserIdMappingDisabled() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), appConfig(process.getAppForTesting(), true),
+                false);
+        return process;
+    }
+
+    private static TestingProcessManager.TestingProcess startInMemory(boolean disableUserIdMapping) throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = disableUserIdMapping ? startWithUserIdMappingDisabled()
+                : TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        if (!(StorageLayer.getStorage(process.getProcess()) instanceof Start)) {
+            // The call counter exists only in the in-memory storage.
+            stop(process);
+            return null;
+        }
+        return process;
+    }
+
+    private static void stop(TestingProcessManager.TestingProcess process) throws Exception {
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static JsonObject post(TestingProcessManager.TestingProcess process, String path, JsonObject body,
+                                   String rid) throws Exception {
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", BASE + path, body, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), rid);
+    }
+
+    private static JsonObject postOk(TestingProcessManager.TestingProcess process, String path, JsonObject body,
+                                     String rid) throws Exception {
+        JsonObject response = post(process, path, body, rid);
+        assertEquals("OK", response.get("status").getAsString());
+        return response;
+    }
+
+    private static JsonObject put(TestingProcessManager.TestingProcess process, String path, JsonObject body,
+                                  String rid) throws Exception {
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", BASE + path, body,
+                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), rid);
+        assertEquals("OK", response.get("status").getAsString());
+        return response;
+    }
+
+    private static JsonObject get(TestingProcessManager.TestingProcess process, String path,
+                                  Map<String, String> params, String rid) throws Exception {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", BASE + path, params,
+                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), rid);
+        assertEquals("OK", response.get("status").getAsString());
+        return response;
+    }
+
+    private static JsonObject emailPasswordSignUp(TestingProcessManager.TestingProcess process, String email)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("email", email);
+        body.addProperty("password", "validPass123");
+        return postOk(process, "/recipe/signup", body, "emailpassword").getAsJsonObject("user");
+    }
+
+    private static JsonObject createSession(TestingProcessManager.TestingProcess process, String userId)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", userId);
+        body.add("userDataInJWT", new JsonObject());
+        body.add("userDataInDatabase", new JsonObject());
+        body.addProperty("enableAntiCsrf", false);
+        return postOk(process, "/recipe/session", body, "session");
+    }
+
+    private static JsonObject thirdPartySignInUp(TestingProcessManager.TestingProcess process,
+                                                 String thirdPartyUserId, String email) throws Exception {
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", email);
+        emailObject.addProperty("isVerified", false);
+        JsonObject body = new JsonObject();
+        body.addProperty("thirdPartyId", "google");
+        body.addProperty("thirdPartyUserId", thirdPartyUserId);
+        body.add("email", emailObject);
+        return postOk(process, "/recipe/signinup", body, "thirdparty");
+    }
+
+    private static JsonObject createCode(TestingProcessManager.TestingProcess process, String email)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("email", email);
+        return postOk(process, "/recipe/signinup/code", body, "passwordless");
+    }
+
+    private static JsonObject consumeCode(TestingProcessManager.TestingProcess process, JsonObject code)
+            throws Exception {
+        JsonObject body = new JsonObject();
+        body.addProperty("deviceId", code.get("deviceId").getAsString());
+        body.addProperty("preAuthSessionId", code.get("preAuthSessionId").getAsString());
+        body.addProperty("userInputCode", code.get("userInputCode").getAsString());
+        return postOk(process, "/recipe/signinup/code/consume", body, "passwordless");
+    }
+}

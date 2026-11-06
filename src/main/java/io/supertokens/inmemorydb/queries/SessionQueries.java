@@ -173,6 +173,38 @@ public class SessionQueries {
             return null;
         }
 
+        // one snapshot of the app's opt-out for the whole decision
+        Start.UserIdMappingReads userIdMappingReads = start.getUserIdMappingReads(tenantIdentifier.toAppIdentifier());
+        if (userIdMappingReads == Start.UserIdMappingReads.ALL) {
+            Start.countUserIdMappingCall();
+        } else {
+            // disable_user_id_mapping: the session's user id is a SuperTokens user id, so only its primary user id
+            // is resolved, without reading userid_mapping.
+            String primaryUserId = execute(con, "SELECT primary_or_recipe_user_id FROM " + userIdTable +
+                    " WHERE app_id = ? AND user_id = ? LIMIT 1", pst -> {
+                pst.setString(1, tenantIdentifier.getAppId());
+                pst.setString(2, sessionInfo.recipeUserId);
+            }, result -> {
+                if (result.next()) {
+                    return result.getString(1);
+                }
+                return null;
+            });
+            if (primaryUserId != null) {
+                sessionInfo.userId = primaryUserId;
+                return sessionInfo;
+            }
+            if (userIdMappingReads != Start.UserIdMappingReads.NONE_EXCEPT_PRE_FORCE_SESSIONS) {
+                // a session of a user id that isn't a SuperTokens user (sessions don't need one)
+                sessionInfo.userId = sessionInfo.recipeUserId;
+                return sessionInfo;
+            }
+            // Under disable_user_id_mapping_force, a session created under an external id before force was turned
+            // on. It keeps the user id it had then (for a linked login method, its primary user's), so it is
+            // resolved through the mapping below, as before force.
+            Start.countUserIdMappingCall();
+        }
+
         QUERY = "SELECT external_user_id, 0 as o " +
                 "FROM " + getConfig(start).getUserIdMappingTable() + " um2 " +
                 "WHERE um2.app_id = ? AND um2.supertokens_user_id IN (" +

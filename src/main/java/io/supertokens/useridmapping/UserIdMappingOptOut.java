@@ -1,0 +1,530 @@
+/*
+ *    Copyright (c) 2026, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.useridmapping;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
+import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
+import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.webserver.WebserverAPI;
+
+import jakarta.servlet.ServletException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * disable_user_id_mapping is an optimisation: an app that has no user id mappings can skip reading them. This class
+ * keeps that true.
+ *
+ * <ul>
+ *     <li>Creating a mapping and turning the flag on exclude each other through a lock in the database the mapping
+ *     goes to (see {@link #createWhileUserIdMappingIsEnabled} and {@link #overwriteTenantConfigDisablingUserIdMapping}).
+ *     Mapping creation reads the flag from the stored config under that lock, so a core whose config is stale
+ *     can't create a mapping after the flag is turned on through the config API. A flag set in config.yaml / env is
+ *     each core's own value until it restarts.</li>
+ *     <li>Reads are skipped only for apps whose databases were checked and had no mappings ({@link #isReadSkipped}).
+ *     A core checks that after it loads the app's databases; a reload that keeps them as they were keeps the
+ *     result. If it finds mappings anyway (a restored database, a flag set in config.yaml), it keeps reading them
+ *     and logs an error: it fails closed. An app served by a
+ *     storage that outlived the storage-init timeout is checked once that storage is up, and reads mappings until
+ *     then: querying it earlier would wait for its pool, which would stall startup again.</li>
+ *     <li>disable_user_id_mapping_force turns the check off: the flag can be turned on with mappings present, and
+ *     those mappings are ignored. Turning force off is checked like turning the flag on.</li>
+ * </ul>
+ */
+public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
+
+    private static final String RESOURCE_KEY = "io.supertokens.useridmapping.UserIdMappingOptOut";
+    private static final String CONFIG_KEY = "disable_user_id_mapping";
+    private static final String FORCE_CONFIG_KEY = "disable_user_id_mapping_force";
+    private static final String TENANT_CONFIG_WRITE_NOT_AUDITED = "tenant config writes are not audit events "
+            + "(overwriteTenantConfig is unaudited); the transaction adds the config locks, mapping-creation locks "
+            + "and checks around the write.";
+
+    // Apps with disable_user_id_mapping on (and not forced) whose databases this core checked and found without
+    // user id mappings. Only these skip mapping reads.
+    private final Set<AppIdentifier> appsCheckedWithoutMappings = ConcurrentHashMap.newKeySet();
+
+    // Storages whose initialisation outlived the storage-init timeout, until it finishes, and the apps whose check
+    // waits for one of them.
+    private final Map<Storage, CompletableFuture<Void>> storagesStillInitialising = new ConcurrentHashMap<>();
+    private final Set<AppIdentifier> appsAwaitingStorageInit = ConcurrentHashMap.newKeySet();
+
+    private UserIdMappingOptOut() {
+    }
+
+    private static UserIdMappingOptOut getInstance(Main main) {
+        return (UserIdMappingOptOut) main.getResourceDistributor()
+                .setResource(TenantIdentifier.BASE_TENANT, RESOURCE_KEY, new UserIdMappingOptOut());
+    }
+
+    public static boolean isForced(Main main, AppIdentifier appIdentifier) {
+        try {
+            return Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                    .isUserIdMappingDisabledByForce();
+        } catch (TenantOrAppNotFoundException e) {
+            return false;
+        }
+    }
+
+    // Whether the core and the storage may skip user id mapping reads for the app.
+    public static boolean isReadSkipped(Main main, AppIdentifier appIdentifier) {
+        if (!UserIdMapping.isUserIdMappingDisabled(main, appIdentifier)) {
+            return false;
+        }
+        return isForced(main, appIdentifier) || getInstance(main).appsCheckedWithoutMappings.contains(appIdentifier);
+    }
+
+    // Called before storages are (re)loaded: until they are checked again, the apps read mappings.
+    public static void forgetCheck(Main main, Collection<AppIdentifier> appIdentifiers) {
+        getInstance(main).appsCheckedWithoutMappings.removeAll(appIdentifiers);
+    }
+
+    // Called before a full storage reload: apps whose storages it keeps as they were keep their check.
+    public static void forgetChecksExcept(Main main, Set<AppIdentifier> appsWithUnchangedStorages) {
+        getInstance(main).appsCheckedWithoutMappings.retainAll(appsWithUnchangedStorages);
+    }
+
+    // Called once the app's storages are initialised: checks each app with the flag on (and not forced) for user id
+    // mappings. Only apps without any skip mapping reads; for the others the core keeps reading and logs an error.
+    public static void checkApps(Main main, Collection<AppIdentifier> appIdentifiers) {
+        checkApps(main, appIdentifiers, true);
+    }
+
+    // Called with the storages a load gave up waiting for. Apps they serve are checked once they finish initialising.
+    public static void addStoragesStillInitialising(Main main, Map<Storage, CompletableFuture<Void>> storages) {
+        UserIdMappingOptOut instance = getInstance(main);
+        for (Map.Entry<Storage, CompletableFuture<Void>> entry : storages.entrySet()) {
+            Storage storage = entry.getKey();
+            CompletableFuture<Void> initialised = entry.getValue();
+            instance.storagesStillInitialising.put(storage, initialised);
+            initialised.whenComplete((ignored, initFailure) -> {
+                instance.storagesStillInitialising.remove(storage, initialised);
+                try {
+                    checkApps(main, new ArrayList<>(instance.appsAwaitingStorageInit));
+                    StorageLayer.refreshAppsWithUserIdMappingDisabled(main);
+                } catch (RuntimeException e) {
+                    Logging.error(main, TenantIdentifier.BASE_TENANT,
+                            "Could not check apps for user id mappings after their storage initialised, so they " +
+                                    "keep reading them: " + e.getMessage(), false, e);
+                }
+            });
+        }
+    }
+
+    public static boolean isServedByAStorageStillInitialising(Main main, AppIdentifier appIdentifier) {
+        if (getInstance(main).storagesStillInitialising.isEmpty()) {
+            return false;
+        }
+        return isServedByAStorageStillInitialising(main, StorageLayer.getStorageInstancesForApp(main, appIdentifier));
+    }
+
+    // storages: the app's loaded storage instances, e.g. from StorageLayer.getStorageInstancesPerApp.
+    public static boolean isServedByAStorageStillInitialising(Main main, Set<Storage> storages) {
+        UserIdMappingOptOut instance = getInstance(main);
+        if (instance.storagesStillInitialising.isEmpty()) {
+            return false;
+        }
+        for (Storage storage : storages) {
+            if (instance.storagesStillInitialising.containsKey(storage)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // After a user id mapping was removed from an app that has the flag on but reads mappings because it had some:
+    // checks it again, so it skips mapping reads as soon as the last one is gone. Other cores notice at their next
+    // storage load, and read mappings until then.
+    public static void checkAgainAfterMappingRemoval(Main main, AppIdentifier appIdentifier) {
+        if (!UserIdMapping.isUserIdMappingDisabled(main, appIdentifier) || isForced(main, appIdentifier)
+                || getInstance(main).appsCheckedWithoutMappings.contains(appIdentifier)) {
+            return;
+        }
+        checkApps(main, List.of(appIdentifier), false);
+        if (getInstance(main).appsCheckedWithoutMappings.contains(appIdentifier)) {
+            StorageLayer.refreshAppsWithUserIdMappingDisabled(main);
+        }
+    }
+
+    private static void checkApps(Main main, Collection<AppIdentifier> appIdentifiers, boolean logIfMappingsFound) {
+        UserIdMappingOptOut instance = getInstance(main);
+        // The loaded storages grouped by app, built on first use and then shared by the whole pass, so the pass
+        // costs one scan of the resources instead of one per app.
+        Map<AppIdentifier, Set<Storage>> storagesPerApp = null;
+        for (AppIdentifier appIdentifier : appIdentifiers) {
+            if (!UserIdMapping.isUserIdMappingDisabled(main, appIdentifier) || isForced(main, appIdentifier)) {
+                instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                instance.appsAwaitingStorageInit.remove(appIdentifier);
+                continue;
+            }
+            // Kept by a storage reload that left the app's storages as they were (see StorageLayer), or already
+            // checked by a storage that finished initialising.
+            if (instance.appsCheckedWithoutMappings.contains(appIdentifier)) {
+                instance.appsAwaitingStorageInit.remove(appIdentifier);
+                continue;
+            }
+            if (storagesPerApp == null) {
+                storagesPerApp = StorageLayer.getStorageInstancesPerApp(main);
+            }
+            Set<Storage> storages = storagesPerApp.getOrDefault(appIdentifier, Set.of());
+            // Marked as awaiting before looking, so a storage finishing in between still finds the app.
+            instance.appsAwaitingStorageInit.add(appIdentifier);
+            if (isServedByAStorageStillInitialising(main, storages)) {
+                instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                // The storage may have finished, and its callback checked the app, before the line above: look
+                // again, so that result isn't lost.
+                if (isServedByAStorageStillInitialising(main, storages)) {
+                    continue;
+                }
+            }
+            instance.appsAwaitingStorageInit.remove(appIdentifier);
+            try {
+                if (UserIdMapping.hasUserIdMappings(appIdentifier, storages)) {
+                    instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                    if (!logIfMappingsFound) {
+                        continue;
+                    }
+                    Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                            "disable_user_id_mapping is on, but the app's database has user id mappings, so the " +
+                                    "core keeps reading them. Remove the mappings, or set " +
+                                    "disable_user_id_mapping_force to true to ignore them.", false);
+                } else {
+                    instance.appsCheckedWithoutMappings.add(appIdentifier);
+                }
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+                instance.appsCheckedWithoutMappings.remove(appIdentifier);
+                Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                        "Could not check the app for user id mappings, so the core keeps reading them: " +
+                                e.getMessage(), false, e);
+            }
+        }
+    }
+
+    public interface MappingCreation<T> {
+        T create(TransactionConnection con)
+                throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException;
+    }
+
+    /**
+     * Runs {@code creation} in a transaction on {@code storage}, the database the mappings go to, after taking the
+     * shared mapping-creation lock and reading disable_user_id_mapping from the stored config. Turning the flag on
+     * takes the same lock exclusively before it checks for mappings, so either the mapping is committed first and
+     * that check sees it, or this reads the flag as on and refuses. For the bulk import proxy storage the
+     * transaction (and the lock) lasts until the batch is committed; on the claim connection that is the end of the
+     * chunk, so the bulk import worker imports the claim database's users last (see
+     * {@link #overwriteTenantConfigDisablingUserIdMapping}).
+     * <p>
+     * When the mappings go to another database than the base one, the base transaction the config is read in is
+     * opened first, before the lock is taken, as a config write turning the flag on opens its base transaction
+     * before it takes the lock. So neither holds the lock while waiting for a base connection the other holds, which
+     * would stall both until a connection timeout when the base pool has no free connection.
+     */
+    public static <T> T createWhileUserIdMappingIsEnabled(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                          MappingCreation<T> creation)
+            throws StorageQueryException, ServletException, UnknownSuperTokensUserIdException,
+            UserIdMappingAlreadyExistsException {
+        Storage baseStorage = StorageLayer.getBaseStorage(main);
+        try {
+            if (isSameDatabase(storage, baseStorage)) {
+                return createInTransaction(main, appIdentifier, storage, null, creation);
+            }
+            MultitenancySQLStorage base = (MultitenancySQLStorage) baseStorage;
+            return ((ActivityLogSQLStorage) base).startAuditedTransaction(
+                    TenantIdentifier.BASE_TENANT.toAppIdentifier(),
+                    baseCon -> AuditedResult.withoutAudit(
+                            createInTransaction(main, appIdentifier, storage, baseCon, creation),
+                            "Read-only: reads the app's stored core configs for a user id mapping creation."));
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof ServletException servletException) {
+                throw servletException;
+            }
+            if (e.actualException instanceof UnknownSuperTokensUserIdException unknown) {
+                throw unknown;
+            }
+            if (e.actualException instanceof UserIdMappingAlreadyExistsException exists) {
+                throw exists;
+            }
+            if (e.actualException instanceof StorageQueryException storageQueryException) {
+                throw storageQueryException;
+            }
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    // The creation transaction on storage: the lock, the flag read, then the inserts. baseCon: the base transaction
+    // to read the stored config in when storage is another database (null: read on the creation's own connection).
+    private static <T> T createInTransaction(Main main, AppIdentifier appIdentifier, Storage storage,
+                                             TransactionConnection baseCon, MappingCreation<T> creation)
+            throws StorageQueryException, StorageTransactionLogicException {
+        UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
+        return ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
+            mappingStorage.lockAppForUserIdMappingCreation_Transaction(con, appIdentifier);
+            if (isDisabledInStoredConfig(main, appIdentifier, storage, baseCon == null ? con : baseCon,
+                    baseCon == null)) {
+                throw new StorageTransactionLogicException(new ServletException(
+                        new WebserverAPI.BadRequestException(UserIdMapping.USER_ID_MAPPING_DISABLED_MESSAGE)));
+            }
+            T result;
+            try {
+                result = creation.create(con);
+            } catch (UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            return AuditedResult.withoutAudit(result, "User id mapping inserts are not audit events (the "
+                    + "auto-commit insert this replaces was unaudited); the transaction only adds the creation "
+                    + "lock and the config read.");
+        });
+    }
+
+    // The flag as the stored config sets it for the app (see storedFlag). Read without locking: the creation lock
+    // is what orders this read against a config write turning the flag on. Read after the lock is taken, so at
+    // read committed it sees a config write that committed before the lock was released. sameDatabase: con is on
+    // the database the tenant configs are in; otherwise con is a base transaction.
+    private static boolean isDisabledInStoredConfig(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                    TransactionConnection con, boolean sameDatabase)
+            throws StorageQueryException {
+        List<TenantIdentifier> chain = configChain(appIdentifier);
+        Map<TenantIdentifier, JsonObject> stored = chain.isEmpty() ? Map.of()
+                : ((MultitenancySQLStorage) (sameDatabase ? storage : StorageLayer.getBaseStorage(main)))
+                        .getTenantCoreConfigs_Transaction(con, chain, false);
+        return storedFlag(Config.getBaseConfig(main), appIdentifier, stored).disabled();
+    }
+
+    // The tenants whose stored core config sets an app's flag, most specific first: the app's public tenant, then
+    // its connection uri domain. Empty for the base app, which only uses config.yaml.
+    private static List<TenantIdentifier> configChain(AppIdentifier appIdentifier) {
+        TenantIdentifier appTenant = appIdentifier.getAsPublicTenantIdentifier();
+        if (appTenant.equals(TenantIdentifier.BASE_TENANT)) {
+            return List.of();
+        }
+        TenantIdentifier cudTenant = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), null, null);
+        return appTenant.equals(cudTenant) ? List.of(appTenant) : List.of(appTenant, cudTenant);
+    }
+
+    private record StoredFlag(boolean disabled, boolean forced) {
+        boolean onWithoutForce() {
+            return disabled && !forced;
+        }
+    }
+
+    // The flag and force as the given stored rows set them for the app, merged like
+    // Config.getNormalisedConfigForTenant: the app's public tenant, then its connection uri domain, then this core's
+    // config.yaml. The first level that has a key wins, and an explicit null there means the default (off), as it
+    // does in the loaded config.
+    private static StoredFlag storedFlag(CoreConfig configYaml, AppIdentifier appIdentifier,
+                                         Map<TenantIdentifier, JsonObject> storedCoreConfigs) {
+        List<TenantIdentifier> chain = configChain(appIdentifier);
+        boolean disabled = valueInChain(chain, storedCoreConfigs, CONFIG_KEY, configYaml.isUserIdMappingDisabled());
+        boolean forced = disabled && valueInChain(chain, storedCoreConfigs, FORCE_CONFIG_KEY,
+                configYaml.isUserIdMappingForceSet());
+        return new StoredFlag(disabled, forced);
+    }
+
+    private static boolean valueInChain(List<TenantIdentifier> chain, Map<TenantIdentifier, JsonObject> coreConfigs,
+                                        String key, boolean fromConfigYaml) {
+        for (TenantIdentifier tenantIdentifier : chain) {
+            JsonObject coreConfig = coreConfigs.get(tenantIdentifier);
+            if (coreConfig != null && coreConfig.has(key)) {
+                JsonElement value = coreConfig.get(key);
+                return !value.isJsonNull() && value.getAsBoolean();
+            }
+        }
+        return fromConfigYaml;
+    }
+
+    private static boolean isSameDatabase(Storage a, Storage b) {
+        return a.getUserPoolId().equals(b.getUserPoolId());
+    }
+
+    // An app a config write may turn disable_user_id_mapping on for (without force), and a database the written
+    // config selects for it: storage is that database's loaded storage, or null if this core hasn't loaded it.
+    // usesDatabaseAlready: the app is on that database before the write.
+    public record DisablingTarget(AppIdentifier appIdentifier, Storage storage, boolean usesDatabaseAlready) {
+    }
+
+    // A database the write turns the flag on for an app in, and the error if it has mappings for the app.
+    private record MappingCheck(AppIdentifier appIdentifier, Storage storage, String messageIfMappingsFound) {
+    }
+
+    /**
+     * Writes {@code newTenant} in a base storage transaction that first reads the stored config rows that set the
+     * targets' flag ({@link #configChain}) and decides from them, before and after the write, where the write turns
+     * the flag on without force: it is off (or forced) before and on without force after, or on before but the app
+     * moves to a database it didn't use. A write that leaves the flag as it is, or only inherits it, checks nothing.
+     * The read first takes the locks those rows' config writes take, so no write of them is in progress or starts
+     * before this one commits (one in progress makes the storage retry this transaction), and before and after hold
+     * until the commit. That is decided from the stored rows, not this core's loaded config, which can be behind:
+     * another core may have turned the flag off and created a mapping, and writing it back on unchecked would hide
+     * that mapping.
+     * <p>
+     * For each database the write turns the flag on in, it takes the exclusive mapping-creation lock and checks the
+     * database has no user id mappings for the app. The config is committed before those locks are released, so a
+     * mapping creation that waited on them reads the flag as on. Locks are taken in a fixed order (database, then
+     * app), so two such writes can't deadlock. Mapping creation holds at most one database's lock at a time, except
+     * in the bulk import worker, which holds the claim database's lock until the chunk commits and so takes it after
+     * every other database's.
+     */
+    public static void overwriteTenantConfigDisablingUserIdMapping(Main main, TenantConfig newTenant,
+                                                                   List<DisablingTarget> targets)
+            throws StorageQueryException, InvalidConfigException, TenantOrAppNotFoundException,
+            DuplicateThirdPartyIdException, DuplicateClientTypeException {
+        MultitenancySQLStorage base = (MultitenancySQLStorage) StorageLayer.getBaseStorage(main);
+        try {
+            // lockCheckAndWrite commits the base transaction itself, before the mapping-creation locks are released;
+            // the commit that follows it here then has nothing left to commit
+            ((ActivityLogSQLStorage) base).startAuditedTransaction(newTenant.tenantIdentifier.toAppIdentifier(),
+                    baseCon -> {
+                        lockCheckAndWrite(base, baseCon, newTenant,
+                                mappingChecks(main, base, baseCon, newTenant, targets), 0);
+                        return AuditedResult.withoutAudit(null, TENANT_CONFIG_WRITE_NOT_AUDITED);
+                    });
+        } catch (StorageTransactionLogicException e) {
+            Exception actual = e.actualException;
+            if (actual instanceof InvalidConfigException invalidConfig) {
+                throw invalidConfig;
+            }
+            if (actual instanceof TenantOrAppNotFoundException notFound) {
+                throw notFound;
+            }
+            if (actual instanceof DuplicateThirdPartyIdException duplicateThirdPartyId) {
+                throw duplicateThirdPartyId;
+            }
+            if (actual instanceof DuplicateClientTypeException duplicateClientType) {
+                throw duplicateClientType;
+            }
+            if (actual instanceof StorageQueryException storageQueryException) {
+                throw storageQueryException;
+            }
+            throw new StorageQueryException(actual);
+        }
+    }
+
+    // Reads the targets' stored config rows, locked against config writes, and returns, grouped by database (in
+    // database, then app order), where the write turns the flag on without force.
+    private static List<List<MappingCheck>> mappingChecks(Main main, MultitenancySQLStorage base,
+                                                          TransactionConnection baseCon, TenantConfig newTenant,
+                                                          List<DisablingTarget> targets)
+            throws StorageQueryException, StorageTransactionLogicException {
+        Set<TenantIdentifier> rows = new HashSet<>();
+        for (DisablingTarget target : targets) {
+            rows.addAll(configChain(target.appIdentifier()));
+        }
+        Map<TenantIdentifier, JsonObject> before = base.getTenantCoreConfigs_Transaction(baseCon, rows, true);
+        Map<TenantIdentifier, JsonObject> after = new HashMap<>(before);
+        if (rows.contains(newTenant.tenantIdentifier)) {
+            after.put(newTenant.tenantIdentifier,
+                    newTenant.coreConfig == null ? new JsonObject() : newTenant.coreConfig);
+        }
+        CoreConfig configYaml = Config.getBaseConfig(main);
+        Map<String, List<MappingCheck>> checksByDatabase = new TreeMap<>();
+        for (DisablingTarget target : targets) {
+            StoredFlag flagBefore = storedFlag(configYaml, target.appIdentifier(), before);
+            StoredFlag flagAfter = storedFlag(configYaml, target.appIdentifier(), after);
+            if (!flagAfter.onWithoutForce() || (flagBefore.onWithoutForce() && target.usesDatabaseAlready())) {
+                continue;
+            }
+            if (target.storage() == null) {
+                throw new StorageTransactionLogicException(new InvalidConfigException(
+                        UserIdMapping.DATABASE_NOT_LOADED_MESSAGE));
+            }
+            String message = flagBefore.forced() ? UserIdMapping.CANNOT_TURN_OFF_FORCE_WITH_MAPPINGS_MESSAGE
+                    : flagBefore.disabled() ? UserIdMapping.NEW_DATABASE_HAS_MAPPINGS_MESSAGE
+                    : UserIdMapping.CANNOT_DISABLE_WITH_MAPPINGS_MESSAGE;
+            checksByDatabase.computeIfAbsent(target.storage().getUserPoolId(), k -> new ArrayList<>())
+                    .add(new MappingCheck(target.appIdentifier(), target.storage(), message));
+        }
+        List<List<MappingCheck>> groups = new ArrayList<>(checksByDatabase.values());
+        for (List<MappingCheck> group : groups) {
+            group.sort(Comparator.comparing((MappingCheck c) -> c.appIdentifier().getConnectionUriDomain())
+                    .thenComparing(c -> c.appIdentifier().getAppId()));
+        }
+        return groups;
+    }
+
+    private static void lockCheckAndWrite(MultitenancySQLStorage base, TransactionConnection baseCon,
+                                          TenantConfig newTenant, List<List<MappingCheck>> groups, int index)
+            throws StorageQueryException, StorageTransactionLogicException {
+        if (index == groups.size()) {
+            try {
+                base.overwriteTenantConfig_Transaction(baseCon, newTenant);
+            } catch (TenantOrAppNotFoundException | DuplicateThirdPartyIdException | DuplicateClientTypeException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            base.commitTransaction(baseCon);
+            return;
+        }
+        List<MappingCheck> group = groups.get(index);
+        Storage storage = group.get(0).storage();
+        if (isSameDatabase(storage, base)) {
+            lockAndAssertNoMappings((UserIdMappingSQLStorage) base, baseCon, group);
+            lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
+            return;
+        }
+        UserIdMappingSQLStorage mappingStorage = (UserIdMappingSQLStorage) storage;
+        // committed after the base transaction (inside lockCheckAndWrite), so the lock is held until the config
+        // write has committed
+        ((ActivityLogSQLStorage) storage).startAuditedTransaction(group.get(0).appIdentifier(), con -> {
+            lockAndAssertNoMappings(mappingStorage, con, group);
+            lockCheckAndWrite(base, baseCon, newTenant, groups, index + 1);
+            return AuditedResult.withoutAudit(null, "Holds the mapping-creation lock in another database for a "
+                    + "tenant config write; " + TENANT_CONFIG_WRITE_NOT_AUDITED);
+        });
+    }
+
+    private static void lockAndAssertNoMappings(UserIdMappingSQLStorage storage, TransactionConnection con,
+                                                List<MappingCheck> group)
+            throws StorageQueryException, StorageTransactionLogicException {
+        for (MappingCheck check : group) {
+            storage.lockAppForDisablingUserIdMapping_Transaction(con, check.appIdentifier());
+            if (storage.hasUserIdMappings_Transaction(con, check.appIdentifier())) {
+                throw new StorageTransactionLogicException(new InvalidConfigException(
+                        check.messageIfMappingsFound()));
+            }
+        }
+    }
+}

@@ -35,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -115,10 +116,14 @@ public class SessionRemoveAPI extends WebserverAPI {
 
                 if (revokeAcrossAllTenants) {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
+                    // Under disable_user_id_mapping_force an external id is still found through its mapping,
+                    // so a user on a tenant with its own database is looked up there, where the session
+                    // listing resolves its SuperTokens id.
                     try {
                         StorageAndUserIdMapping storageAndUserIdMapping =
                                 enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                        req, userId, UserIdType.ANY, false);
+                                        req, userId, UserIdType.ANY, false,
+                                        UserIdMappingOptOut.isForced(main, appIdentifier));
                         storage = storageAndUserIdMapping.storage;
                     } catch (UnknownUserIdException e) {
                         throw new IllegalStateException("should never happen");
@@ -136,7 +141,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 if (storage.getType() == STORAGE_TYPE.SQL) {
                     try {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
-                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                                 appIdentifier, storage, userId, UserIdType.ANY);
                         // Emit onto the storage sessions were just revoked on — the user's own storage,
                         // already resolved above (the app-specific user storage in the across-all-tenants

@@ -613,6 +613,43 @@ public class CoreConfig {
     @ConfigDescription("Time in milliseconds for how long a webauthn account recovery token is valid for. [Default: 3600000 (1 hour)]")
     private long webauthn_recover_account_token_lifetime = 3600000; // in MS;
 
+    @EnvName("DISABLE_USER_ID_MAPPING")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription(
+            "If true, the core rejects creating user id mappings, updating their externalUserIdInfo and " +
+                    "bulk-importing users with an externalUserId (removing mappings is still allowed), and neither " +
+                    "the core nor the storage reads user id mappings for this app. It cannot be turned on while the " +
+                    "app has user id mappings, unless disable_user_id_mapping_force is also true. When it is turned " +
+                    "on through the config API, turning it on and creating a mapping exclude each other through a " +
+                    "database lock, and mapping creation checks the stored config, so a core that hasn't refreshed " +
+                    "its config yet can't create one either. When it is set in config.yaml or env, each core uses " +
+                    "its own value until it restarts, so stop creating mappings before rolling it out, and a core " +
+                    "doesn't start while an app it applies to has user id mappings. While it is on, the app can't " +
+                    "move to, or add a tenant on, a database the core hasn't loaded yet (turn it off, make the " +
+                    "change, then turn it back on). If a core otherwise finds user id mappings for the app when it " +
+                    "loads its databases (for example, in a restored database, or in one still initialising when " +
+                    "startup finishes), it keeps reading them and logs an error until they are removed. " +
+                    "(Default: false)")
+    private boolean disable_user_id_mapping = false;
+
+    @EnvName("DISABLE_USER_ID_MAPPING_FORCE")
+    @NotConflictingInApp
+    @JsonProperty
+    @ConfigDescription(
+            "If true together with disable_user_id_mapping, that flag can be turned on while the app has user id " +
+                    "mappings, and those mappings are ignored: neither the core nor the storage reads them, and " +
+                    "data stored under their external ids (TOTP devices, metadata, roles) no longer applies to " +
+                    "those users. Sessions created under an external id before that stay valid, and listing or " +
+                    "revoking a user's sessions by either its SuperTokens user id or its external id includes the " +
+                    "sessions stored under both. If a mapping was created with `force: true` on " +
+                    "POST /recipe/userid/map and its external id is another user's SuperTokens user id, listing " +
+                    "or revoking either user's sessions includes the other user's sessions too. It can't be " +
+                    "turned off while the app has user id mappings. Has no effect while " +
+                    "disable_user_id_mapping is false. " +
+                    "(Default: false)")
+    private boolean disable_user_id_mapping_force = false;
+
     @EnvName("OTEL_COLLECTOR_CONNECTION_URI")
     @ConfigYamlOnly
     @JsonProperty
@@ -996,6 +1033,19 @@ public class CoreConfig {
 
     public boolean getActivityLogThrottleEnabled() {
         return activity_log_throttle_enabled;
+    }
+
+    public boolean isUserIdMappingDisabled() {
+        return disable_user_id_mapping;
+    }
+
+    public boolean isUserIdMappingDisabledByForce() {
+        return disable_user_id_mapping && disable_user_id_mapping_force;
+    }
+
+    // The force setting on its own, as a fallback level when another level sets disable_user_id_mapping.
+    public boolean isUserIdMappingForceSet() {
+        return disable_user_id_mapping_force;
     }
 
     public String getOtelCollectorConnectionURI() {

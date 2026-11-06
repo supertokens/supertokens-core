@@ -481,6 +481,8 @@ jobs:
       plugin-interface-version: ${{ inputs.plugin-interface-version }}
       postgresql-plugin-version: ${{ inputs.postgresql-plugin-version }}
       commit-to-github: true
+      commit-plugin-interface: ${{ inputs.release-plugin-interface }}
+      commit-postgresql-plugin: ${{ inputs.release-postgresql-plugin }}
     secrets: inherit
 
   # build-jars is skipped for canary releases; !failure() lets the

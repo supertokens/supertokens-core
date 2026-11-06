@@ -53,7 +53,7 @@ public class ListCredentialsAPI extends WebserverAPI {
 
             String userId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
 
-            List<WebAuthNStoredCredential> credentials = WebAuthN.listCredentialsForUser(storage, tenantIdentifier, userId);
+            List<WebAuthNStoredCredential> credentials = WebAuthN.listCredentialsForUser(main, storage, tenantIdentifier, userId);
 
             JsonObject response = WebauthMapper.mapStoredCredentialsToResponse(credentials);
             response.addProperty("status", "OK");

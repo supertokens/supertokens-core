@@ -58,7 +58,7 @@ public class GetUserFromRecoverAccountTokenAPI extends WebserverAPI {
 
             AuthRecipeUserInfo user = WebAuthN.getUserForToken(storage, tenantIdentifier, token);
 
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(main,
                     tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
 
             String recipeUserId = null;

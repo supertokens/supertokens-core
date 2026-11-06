@@ -344,7 +344,7 @@ public class SessionTests {
 
             String[] listed = Session.getAllNonExpiredSessionHandlesForUser(main, revokeWith);
             assertEquals(revokeWith, 3, listed.length);
-            String[] tenantListed = Session.getAllNonExpiredSessionHandlesForUser(
+            String[] tenantListed = Session.getAllNonExpiredSessionHandlesForUser(main,
                     ResourceDistributor.getAppForTesting(), StorageLayer.getStorage(main), revokeWith, true);
             assertEquals(revokeWith, 3, tenantListed.length);
 
@@ -611,14 +611,16 @@ public class SessionTests {
         Storage baseTenant = (StorageLayer.getBaseStorage(process.getProcess()));
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(),
+                    process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
             assertEquals(session1.session.handle, sessions[0]);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(),
+                    process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
@@ -626,13 +628,15 @@ public class SessionTests {
         }
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(),
+                    process.getAppForTesting(), baseTenant,
                     user1.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getAppForTesting(), baseTenant,
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(),
+                    process.getAppForTesting(), baseTenant,
                     user2.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);

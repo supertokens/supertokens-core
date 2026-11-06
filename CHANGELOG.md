@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.5.0]
+
+- Adds CDI 5.8.
+- Adds an optional per-client SAML `attributeMapping` on `PUT /recipe/saml/clients`: for each of `userId`, `email`,
+  `firstName` and `lastName`, an ordered list of 1-10 assertion claim names (`NameID` is the Subject NameID).
+  Invalid mappings are rejected with a 400 naming the key, including claim names with leading or trailing
+  whitespace (names match claims exactly). The PUT response and `GET /recipe/saml/clients/list`
+  return it when set. Accepted on every CDI version; documented in CDI 5.8.
+- Only clients **with** an `attributeMapping` use the new resolution in `/recipe/saml/legacy/userinfo` (`id`) and
+  `/recipe/saml/user` (`sub`): for each field, the client's list or else the default list (today's rules), taking the
+  first claim with a non-blank first value. For such clients an empty, whitespace-only or valueless NameID falls
+  through to the next claim instead of becoming the ID (or failing the request). `firstName` / `lastName` are
+  returned only when mapped and found. Clients **without** a mapping are unchanged and get exactly today's output;
+  core logs a WARN line (app, tenant, client, field and kind, never claim values) when the default lists would
+  have given them a different `id` / `sub` or `email`.
+- Behaviour change: once a SAML client has `acsURLs` or `attributeMapping` set, a PUT that leaves the key out no
+  longer clears it. From CDI 5.8 such a PUT returns 400: send the current value to keep it, or `null` (or `[]` /
+  `{}`) to clear it. Below CDI 5.8 (today's SDKs) the stored value is kept, so an omitted `acsURLs` keeps the
+  allow-list instead of silently clearing it, and updating a client with IdP-initiated login on no longer fails
+  for want of `acsURLs`. `acsURLs: null` is now accepted and clears the list on every CDI version.
+- Behaviour change: a stored empty `acsURLs` (`[]`, which 12.3.1+ cores accepted when IdP-initiated login was off) is
+  now treated as not configured and left out of responses. SP-initiated logins for such a client previously all
+  failed with `INVALID_CLIENT`, because nothing can match an empty allow-list; they now succeed with no ACS
+  allow-list at authorize. The callback still pins the response to the ACS URL recorded at login, and IdP-initiated
+  login stays refused.
+- Changing `attributeMapping.userId` on a client that already has users changes those users' IDs.
+- The reservation-table backfill cron no longer runs when `migration_mode` is `MIGRATED` (it checked for pending users every 5 minutes). Users still pending when MIGRATED is set in `config.yaml` or an env var are not backfilled, so finish the backfill first.
+- Bulk import stores `timeJoinedInMSSinceEpoch: 0` as 1. Users imported with 0 before this release are backfilled with `time_joined` 1 (postgresql plugin 10.3.0), so they no longer stay pending and block `MIGRATED`.
+- Adds `disable_user_id_mapping` (per app, default `false`): the core rejects creating user id mappings, updating `externalUserIdInfo` and importing users with an `externalUserId` (`400`), and neither the core nor the storage reads mappings for the app. Removing mappings stays allowed.
+- `disable_user_id_mapping` can't be turned on while the app has mappings (config API `400`, startup fails when set in `config.yaml`/env). When it is turned on through the config API, turning it on and creating a mapping exclude each other through a database lock, and mapping creation checks the stored config. When it is set in `config.yaml`/env, each core uses its own value until it restarts, so stop creating mappings before rolling it out.
+- Adds `disable_user_id_mapping_force` (per app, default `false`): turns `disable_user_id_mapping` on despite existing mappings, which are then ignored. Sessions created under an external id before that stay valid, and listing or revoking a user's sessions by either id includes the sessions stored under both. If a mapping was created with `force: true` on `POST /recipe/userid/map` and its external id is another user's SuperTokens user id, listing or revoking either user's sessions includes the other user's sessions too. Turning force off is rejected while the app has mappings.
+- A core that finds mappings for an app with `disable_user_id_mapping` on (e.g. in a restored database) keeps reading them and logs an error until they are removed. An app whose database is still initialising when the storage-init timeout hits is checked once that database is up, and reads mappings until then.
+- While `disable_user_id_mapping` is on, the app can't move to, or add a tenant on, a database the core hasn't loaded yet.
+- Fixes `POST /recipe/session` leaving a session behind when it rejects a protected claim in `userDataInJWT` (`400`).
+
+### Migration
+
+Adds the nullable `saml_clients.attribute_mapping` column. The supertokens-postgresql-plugin 10.3.0 adds it at
+startup (`ADD COLUMN IF NOT EXISTS`), so an in-place upgrade needs no manual step; large deployments can pre-apply
+`migration-scripts/v10.3.0.sql`. Additive and online-safe.
+
+```sql
+ALTER TABLE saml_clients ADD COLUMN IF NOT EXISTS attribute_mapping TEXT;
+```
+
 ## [12.4.3]
 
 ### Fixes
