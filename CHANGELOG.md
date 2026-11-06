@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixes `Utils.decrypt` to decode the decrypted bytes explicitly as UTF-8 (the charset `Utils.encrypt` uses) instead of the
+  platform default charset. Nothing changes on UTF-8 platforms, which includes the default on Java 18+.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.
