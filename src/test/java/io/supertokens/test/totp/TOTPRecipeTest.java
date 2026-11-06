@@ -468,18 +468,17 @@ public class TOTPRecipeTest {
         boolean justVerfied = Totp.verifyDevice(main, "user", "deviceName", validCode);
         assert justVerfied;
 
-        // Verify again with same correct code:
-        justVerfied = Totp.verifyDevice(main, "user", "deviceName", validCode);
-        assert !justVerfied;
+        // Verify again with same correct code (the code is checked even though the device is verified, and
+        // it was already used):
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyDevice(main, "user", "deviceName", validCode));
 
-        // Verify again with new correct code:
-        String newValidCode = generateTotpCode(main, device);
+        // Verify again with new correct code (the next one, which is accepted because skew = 1):
+        String newValidCode = generateTotpCode(main, device, 1);
         justVerfied = Totp.verifyDevice(main, "user", "deviceName", newValidCode);
         assert !justVerfied;
 
         // Verify again with wrong code:
-        justVerfied = Totp.verifyDevice(main, "user", "deviceName", "ic1");
-        assert !justVerfied;
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyDevice(main, "user", "deviceName", "ic1"));
 
         result.process.kill();
         assertNotNull(result.process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -614,7 +613,7 @@ public class TOTPRecipeTest {
 
         // Verify that TOTP verification still works:
         Totp.verifyDevice(main, "user", devices[0].deviceName, generateTotpCode(main, devices[0]));
-        Totp.verifyDevice(main, "user", devices[0].deviceName, generateTotpCode(main, devices[1]));
+        Totp.verifyDevice(main, "user", devices[1].deviceName, generateTotpCode(main, devices[1]));
 
         // Try update device name to an already existing device name:
         assertThrows(DeviceAlreadyExistsException.class,

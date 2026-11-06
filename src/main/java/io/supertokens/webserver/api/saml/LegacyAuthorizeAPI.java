@@ -30,6 +30,13 @@ public class LegacyAuthorizeAPI extends WebserverAPI  {
         return "/recipe/saml/legacy/authorize";
     }
 
+    // Opened by the end user's browser (the relying party redirects it here as the OAuth authorization endpoint),
+    // which does not hold the core API key. Only a registered client's own redirect URIs are accepted.
+    @Override
+    protected boolean checkAPIKey(HttpServletRequest req) {
+        return false;
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String clientId = InputParser.getQueryParamOrThrowError(req, "client_id", false);

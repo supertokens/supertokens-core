@@ -527,6 +527,7 @@ public class GeneralQueries {
 
             //index
             update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsUserIdIndex(start), NO_OP_SETTER);
+            update(start, WebAuthNQueries.getQueryToCreateWebAuthNCredentialsAppIdIdIndex(start), NO_OP_SETTER);
         }
 
         // SAML tables

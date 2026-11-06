@@ -194,20 +194,25 @@ public class UserRoles {
             TenantOrAppNotFoundException {
 
         // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
-        // We do this because it's not straight forward to replicate roles to all storages of an app
-        // The role existence check must resolve against the app (public tenant) storage, the same way
-        // addRoleToUser does, so that a role created and granted against the app storage can also be
-        // removed when the tenant is backed by its own storage.
+        // (see addRoleToUser), so the role's existence is checked against the app's public tenant storage.
         Storage appStorage = StorageLayer.getStorage(
                 tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
-        if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
-            throw new UnknownRoleException();
-        }
+        boolean doesRoleExist = doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role);
 
         UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
 
-        return userRolesStorage.startTransaction(con ->
-                userRolesStorage.deleteRoleForUser_Transaction(tenantIdentifier, con, userId, role));
+        // The mapping is removed from the tenant's storage even if the role no longer exists, so that a
+        // revocation never leaves a mapping behind.
+        boolean didUserHaveRole = userRolesStorage.startTransaction(con -> {
+            boolean deleted = userRolesStorage.deleteRoleForUser_Transaction(tenantIdentifier, con, userId, role);
+            userRolesStorage.commitTransaction(con);
+            return deleted;
+        });
+
+        if (!doesRoleExist) {
+            throw new UnknownRoleException();
+        }
+        return didUserHaveRole;
     }
 
     @TestOnly
@@ -234,24 +239,30 @@ public class UserRoles {
     }
 
     // retrieve all users who have the input role, if role does not exist then throw UNKNOWN_ROLE_EXCEPTION
-    public static String[] getUsersForRole(TenantIdentifier tenantIdentifier, Storage storage, String role)
-            throws StorageQueryException, UnknownRoleException {
+    public static String[] getUsersForRole(Main main, TenantIdentifier tenantIdentifier, Storage storage, String role)
+            throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
         // Since getUsersForRole does not change any data we do not use a transaction since it would not solve any
         // problem
-        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-        boolean doesRoleExist = userRolesStorage.doesRoleExist(tenantIdentifier.toAppIdentifier(), role);
-        if (doesRoleExist) {
-            return userRolesStorage.getUsersForRole(tenantIdentifier, role);
-        } else {
+
+        // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
+        // (see addRoleToUser), so the role's existence is checked against the app's public tenant storage.
+        Storage appStorage = StorageLayer.getStorage(
+                tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
+        if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
             throw new UnknownRoleException();
         }
+        return StorageUtils.getUserRolesStorage(storage).getUsersForRole(tenantIdentifier, role);
     }
 
     @TestOnly
     public static String[] getUsersForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUsersForRole(ResourceDistributor.getAppForTesting(), storage, role);
+        try {
+            return getUsersForRole(main, ResourceDistributor.getAppForTesting(), storage, role);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     // retrieve all permissions associated with the role
