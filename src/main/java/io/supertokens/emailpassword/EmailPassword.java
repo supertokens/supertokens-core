@@ -73,8 +73,8 @@ import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
-import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.auditlog.UnauditedTransaction;
@@ -172,8 +172,8 @@ public class EmailPassword {
                     try {
                         // Checked before the new user is inserted, so the new user's own id can never match.
                         boolean isPlaceholderEmailOfUserWithoutEmail =
-                                isPlaceholderEmailOfUserWithoutEmail_Transaction(storage, con, appIdentifier, email,
-                                        emailAsProvided, configuredThirdPartyIds);
+                                isPlaceholderEmailOfUserWithoutEmail_Transaction(main, storage, con, appIdentifier,
+                                        email, emailAsProvided, configuredThirdPartyIds);
                         AuthRecipeUserInfo user = epStorage.signUp_Transaction(tenantIdentifier, con, userId, email,
                                 hashedPassword, timeJoined);
                         if (isPlaceholderEmailOfUserWithoutEmail) {
@@ -223,7 +223,7 @@ public class EmailPassword {
      * - local parts that are not the id of an existing user, or whose user already has an email (the SDKs only
      *   generate this placeholder for users without one).
      */
-    private static boolean isPlaceholderEmailOfUserWithoutEmail_Transaction(Storage storage,
+    private static boolean isPlaceholderEmailOfUserWithoutEmail_Transaction(Main main, Storage storage,
                                                                             TransactionConnection con,
                                                                             AppIdentifier appIdentifier,
                                                                             String email, String emailAsProvided,
@@ -245,7 +245,6 @@ public class EmailPassword {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        UserIdMappingSQLStorage userIdMappingStorage = (UserIdMappingSQLStorage) storage;
         List<AuthRecipeUserInfo> matchedUsers = new ArrayList<>();
         for (String candidate : candidateUserIds) {
             if (candidate.isEmpty() || hasThirdPartyPlaceholderShape(candidate, configuredThirdPartyIds)) {
@@ -257,8 +256,10 @@ public class EmailPassword {
             if (userBySuperTokensId != null) {
                 matchedUsers.add(userBySuperTokensId);
             }
+            // read through the opt-out: with disable_user_id_mapping on, external ids aren't resolved here either
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                    userIdMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, candidate, false);
+                    io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, con, appIdentifier, storage,
+                            candidate, UserIdType.EXTERNAL);
             if (mapping != null) {
                 AuthRecipeUserInfo userByExternalId = authRecipeStorage.getPrimaryUserById_Transaction(
                         appIdentifier, con, mapping.superTokensUserId);
