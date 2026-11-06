@@ -493,6 +493,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         setAppsWithUserIdMappingDisabled(main, resources);
     }
 
+    // Every loaded storage instance, grouped by app, from one pass over the resources: for checks that visit every
+    // app, so each app's lookup doesn't scan all resources again.
+    public static Map<AppIdentifier, Set<Storage>> getStorageInstancesPerApp(Main main) {
+        return storageInstancesPerApp(main.getResourceDistributor().getAllResourcesWithResourceKey(RESOURCE_KEY));
+    }
+
     // Every loaded storage instance that serves the app (getStoragesForApp keeps only one per user pool).
     public static Set<Storage> getStorageInstancesForApp(Main main, AppIdentifier appIdentifier) {
         Set<Storage> storages = new HashSet<>();

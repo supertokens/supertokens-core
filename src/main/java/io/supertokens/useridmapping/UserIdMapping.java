@@ -97,7 +97,20 @@ public class UserIdMapping {
 
     public static boolean hasUserIdMappings(Main main, AppIdentifier appIdentifier)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
+        return hasUserIdMappings(appIdentifier, List.of(StorageLayer.getStoragesForApp(main, appIdentifier)));
+    }
+
+    // storages: the app's loaded storage instances; each user pool is asked once.
+    public static boolean hasUserIdMappings(AppIdentifier appIdentifier, Collection<Storage> storages)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Map<String, Storage> storagePerUserPool = new HashMap<>();
+        for (Storage storage : storages) {
+            storagePerUserPool.putIfAbsent(storage.getUserPoolId(), storage);
+        }
+        if (storagePerUserPool.isEmpty()) {
+            throw new TenantOrAppNotFoundException(appIdentifier);
+        }
+        for (Storage storage : storagePerUserPool.values()) {
             if (StorageUtils.getUserIdMappingStorage(storage).hasUserIdMappings(appIdentifier)) {
                 return true;
             }
@@ -116,15 +129,20 @@ public class UserIdMapping {
         }
         Set<AppIdentifier> checkedApps = new HashSet<>();
         List<String> appsWithMappings = new ArrayList<>();
+        // one pass over the loaded storages for all apps, not one per app
+        Map<AppIdentifier, Set<Storage>> storagesPerApp = StorageLayer.getStorageInstancesPerApp(main);
         for (TenantConfig tenantConfig : Multitenancy.getAllTenants(main)) {
             AppIdentifier appIdentifier = tenantConfig.tenantIdentifier.toAppIdentifier();
             if (!checkedApps.add(appIdentifier) || !isUserIdMappingDisabled(main, appIdentifier)
-                    || UserIdMappingOptOut.isForced(main, appIdentifier)
-                    || UserIdMappingOptOut.isServedByAStorageStillInitialising(main, appIdentifier)) {
+                    || UserIdMappingOptOut.isForced(main, appIdentifier)) {
+                continue;
+            }
+            Set<Storage> storages = storagesPerApp.getOrDefault(appIdentifier, Set.of());
+            if (UserIdMappingOptOut.isServedByAStorageStillInitialising(main, storages)) {
                 continue;
             }
             try {
-                if (hasUserIdMappings(main, appIdentifier)) {
+                if (hasUserIdMappings(appIdentifier, storages)) {
                     appsWithMappings.add(appIdentifier.toString());
                 }
             } catch (TenantOrAppNotFoundException e) {

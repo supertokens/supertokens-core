@@ -157,11 +157,19 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
     }
 
     public static boolean isServedByAStorageStillInitialising(Main main, AppIdentifier appIdentifier) {
+        if (getInstance(main).storagesStillInitialising.isEmpty()) {
+            return false;
+        }
+        return isServedByAStorageStillInitialising(main, StorageLayer.getStorageInstancesForApp(main, appIdentifier));
+    }
+
+    // storages: the app's loaded storage instances, e.g. from StorageLayer.getStorageInstancesPerApp.
+    public static boolean isServedByAStorageStillInitialising(Main main, Set<Storage> storages) {
         UserIdMappingOptOut instance = getInstance(main);
         if (instance.storagesStillInitialising.isEmpty()) {
             return false;
         }
-        for (Storage storage : StorageLayer.getStorageInstancesForApp(main, appIdentifier)) {
+        for (Storage storage : storages) {
             if (instance.storagesStillInitialising.containsKey(storage)) {
                 return true;
             }
@@ -185,6 +193,9 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
 
     private static void checkApps(Main main, Collection<AppIdentifier> appIdentifiers, boolean logIfMappingsFound) {
         UserIdMappingOptOut instance = getInstance(main);
+        // The loaded storages grouped by app, built on first use and then shared by the whole pass, so the pass
+        // costs one scan of the resources instead of one per app.
+        Map<AppIdentifier, Set<Storage>> storagesPerApp = null;
         for (AppIdentifier appIdentifier : appIdentifiers) {
             if (!UserIdMapping.isUserIdMappingDisabled(main, appIdentifier) || isForced(main, appIdentifier)) {
                 instance.appsCheckedWithoutMappings.remove(appIdentifier);
@@ -197,19 +208,23 @@ public class UserIdMappingOptOut extends ResourceDistributor.SingletonResource {
                 instance.appsAwaitingStorageInit.remove(appIdentifier);
                 continue;
             }
+            if (storagesPerApp == null) {
+                storagesPerApp = StorageLayer.getStorageInstancesPerApp(main);
+            }
+            Set<Storage> storages = storagesPerApp.getOrDefault(appIdentifier, Set.of());
             // Marked as awaiting before looking, so a storage finishing in between still finds the app.
             instance.appsAwaitingStorageInit.add(appIdentifier);
-            if (isServedByAStorageStillInitialising(main, appIdentifier)) {
+            if (isServedByAStorageStillInitialising(main, storages)) {
                 instance.appsCheckedWithoutMappings.remove(appIdentifier);
                 // The storage may have finished, and its callback checked the app, before the line above: look
                 // again, so that result isn't lost.
-                if (isServedByAStorageStillInitialising(main, appIdentifier)) {
+                if (isServedByAStorageStillInitialising(main, storages)) {
                     continue;
                 }
             }
             instance.appsAwaitingStorageInit.remove(appIdentifier);
             try {
-                if (UserIdMapping.hasUserIdMappings(main, appIdentifier)) {
+                if (UserIdMapping.hasUserIdMappings(appIdentifier, storages)) {
                     instance.appsCheckedWithoutMappings.remove(appIdentifier);
                     if (!logIfMappingsFound) {
                         continue;
