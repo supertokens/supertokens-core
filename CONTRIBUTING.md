@@ -105,6 +105,12 @@ release's `## [X.Y.Z]` heading add a `### Migration` subsection that references
 the plugin's script (`migration-scripts/vX.Y.Z.sql`). The release workflow
 checks this and fails early (before anything is registered) if it is missing.
 
+A migration ships with the **first** core release paired with its plugin
+version. A later core release that reuses that already-released plugin (a
+core-only patch, e.g. 12.4.3 on postgresql-plugin 10.2.0, which shipped with
+12.4.2) is dispatched with `release-postgresql-plugin` unticked: it gets
+`has-db-migration=false` and needs no `### Migration` section.
+
 The full pipeline (plugin PR → core release → SaaS rollout, including what
 happens when the SaaS backend does not yet know a migration) is documented in
 [supertokens-postgresql-plugin/migration-scripts/README.md](https://github.com/supertokens/supertokens-postgresql-plugin/blob/master/migration-scripts/README.md).

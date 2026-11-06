@@ -179,7 +179,12 @@ public class SAMLTestUtils {
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/saml/login", body, 1000, 1000, null, SemVer.v5_4.get(), "saml");
 
-        String ssoRedirectURI = resp.get("ssoRedirectURI").getAsString();
+        return loginInfoFromSSORedirect(resp.get("ssoRedirectURI").getAsString());
+    }
+
+    // The RelayState and AuthnRequest ID of an SSO redirect URL, as returned by /recipe/saml/login or sent as the
+    // Location of /recipe/saml/legacy/authorize. Records the pair for requestIdFor.
+    public static LoginInfo loginInfoFromSSORedirect(String ssoRedirectURI) throws Exception {
         String relayState = extractQueryParam(ssoRedirectURI, "RelayState");
         String requestId = extractAuthnRequestId(extractQueryParam(ssoRedirectURI, "SAMLRequest"));
         REQUEST_ID_BY_RELAY_STATE.put(relayState, requestId);

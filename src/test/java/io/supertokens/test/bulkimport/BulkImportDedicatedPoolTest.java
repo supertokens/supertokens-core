@@ -31,7 +31,10 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -49,7 +52,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -127,7 +132,7 @@ public class BulkImportDedicatedPoolTest {
         int maxBulkImportBackends = 0;
         long deadline = System.currentTimeMillis() + 120_000;
         while (System.currentTimeMillis() < deadline) {
-            maxBulkImportBackends = Math.max(maxBulkImportBackends, countBulkImportBackends(storage));
+            maxBulkImportBackends = Math.max(maxBulkImportBackends, countBulkImportBackends(main));
             if (pendingUsers(storage) == 0) {
                 break;
             }
@@ -147,7 +152,7 @@ public class BulkImportDedicatedPoolTest {
         // one pool per user pool of the app (createTenants makes two), each capped at the parallelism
         assertTrue("import backends " + maxBulkImportBackends + " must stay within 2 pools x parallelism",
                 maxBulkImportBackends <= 2 * parallelism);
-        waitForBulkImportBackends(storage, 0);
+        waitForBulkImportBackends(main, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -188,7 +193,7 @@ public class BulkImportDedicatedPoolTest {
         // 5 imported + the pre-existing one
         assertEquals(6, AuthRecipe.getUsersCount(main, null));
         assertNotNull(AuthRecipe.getUserById(main, existing.getSupertokensUserId()));
-        waitForBulkImportBackends(storage, 0);
+        waitForBulkImportBackends(main, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -210,13 +215,12 @@ public class BulkImportDedicatedPoolTest {
         UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
         UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         BulkImportTestUtils.createTenants(process);
-        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
 
         BulkImportUser user = generateBulkImportUser(1).get(0);
         AuthRecipeUserInfo imported = BulkImport.importUser(main, APP, user);
         assertNotNull(imported);
         assertEquals(1, AuthRecipe.getUsersCount(main, null));
-        waitForBulkImportBackends(storage, 0);
+        waitForBulkImportBackends(main, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -246,25 +250,41 @@ public class BulkImportDedicatedPoolTest {
                 + storage.getBulkImportUsersCount(APP, BULK_IMPORT_USER_STATUS.PROCESSING);
     }
 
-    private static int countBulkImportBackends(SQLStorage storage) throws Exception {
-        return storage.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-            try (PreparedStatement pst = sqlCon.prepareStatement(
-                    "SELECT COUNT(*) FROM pg_stat_activity WHERE application_name = ?")) {
-                pst.setString(1, BULK_IMPORT_APPLICATION_NAME);
-                try (ResultSet rs = pst.executeQuery()) {
-                    rs.next();
-                    return rs.getInt(1);
+    /**
+     * Counts the import backends connected to this test's own databases: one per user pool of the app (the
+     * same set {@code BulkImportProxyStoragePools.openForApp} opens a pool for). pg_stat_activity is
+     * server-wide, and the parallel Gradle test workers share one PostgreSQL server, so an unfiltered count
+     * also includes another worker's concurrent bulk import (e.g. BulkImportFlowTest at parallelism 14).
+     */
+    private static int countBulkImportBackends(Main main) throws Exception {
+        Map<String, SQLStorage> storageByUserPool = new LinkedHashMap<>();
+        for (TenantConfig tenant : Multitenancy.getAllTenantsForApp(APP, main)) {
+            Storage storage = StorageLayer.getStorage(tenant.tenantIdentifier, main);
+            storageByUserPool.putIfAbsent(storage.getUserPoolId(), (SQLStorage) storage);
+        }
+        int total = 0;
+        for (SQLStorage storage : storageByUserPool.values()) {
+            total += storage.startTransaction(con -> {
+                Connection sqlCon = (Connection) con.getConnection();
+                try (PreparedStatement pst = sqlCon.prepareStatement(
+                        "SELECT COUNT(*) FROM pg_stat_activity WHERE application_name = ?"
+                                + " AND datname = current_database()")) {
+                    pst.setString(1, BULK_IMPORT_APPLICATION_NAME);
+                    try (ResultSet rs = pst.executeQuery()) {
+                        rs.next();
+                        return rs.getInt(1);
+                    }
                 }
-            }
-        });
+            });
+        }
+        return total;
     }
 
-    private static void waitForBulkImportBackends(SQLStorage storage, int expected) throws Exception {
+    private static void waitForBulkImportBackends(Main main, int expected) throws Exception {
         long deadline = System.currentTimeMillis() + 15_000;
         int seen = -1;
         while (System.currentTimeMillis() < deadline) {
-            seen = countBulkImportBackends(storage);
+            seen = countBulkImportBackends(main);
             if (seen == expected) {
                 return;
             }

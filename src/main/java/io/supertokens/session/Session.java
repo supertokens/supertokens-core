@@ -1415,8 +1415,11 @@ public class Session {
         return sessionHandles.toArray(new String[0]);
     }
 
-    // The ids a user's sessions are stored under: the given id and, if asked, the user ids of the primary user's
-    // linked login methods.
+    // The ids a user's sessions are stored under. A session is stored under the recipe user id of the login method
+    // it was created with, in its external form if that recipe user has a user id mapping, and callers may pass either
+    // form. So this returns the given id and, if asked, the user ids of the account's linked login methods together
+    // with their external ids; an external id given as userId is resolved to its SuperTokens id to find the account.
+    // Mappings are read through the opt-out aware wrappers, so an app with disable_user_id_mapping reads none.
     //
     // With disable_user_id_mapping_force on, the core ignores the app's user id mappings and reports its users by
     // their SuperTokens user ids, but sessions created before that are stored under the external ids, and those
@@ -1426,9 +1429,7 @@ public class Session {
     // login methods are looked up for both the given id and the resolved one, and then the external id of each id's
     // mapping is added. Nothing is replaced, only added: a mapping created with `force: true` on
     // POST /recipe/userid/map may name another user's SuperTokens id, and then listing or revoking either user's
-    // sessions includes the other user's sessions too, as the config description documents. Other
-    // apps need nothing: either mappings are read as usual and callers pass the external id, or the flag is on
-    // without force and the app has no mappings.
+    // sessions includes the other user's sessions too, as the config description documents.
     private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, Storage storage,
                                                           String userId, boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
@@ -1446,14 +1447,36 @@ public class Session {
             }
         }
         if (fetchSessionsForAllLinkedAccounts) {
+            AuthRecipeStorage authRecipeStorage = (AuthRecipeStorage) storage;
+            List<AuthRecipeUserInfo> primaryUsers = new ArrayList<>();
             for (String superTokensUserId : superTokensUserIds) {
-                AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
-                        .getPrimaryUserById(appIdentifier, superTokensUserId);
+                AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, superTokensUserId);
                 if (primaryUser != null) {
-                    for (LoginMethod lM : primaryUser.loginMethods) {
-                        userIds.add(lM.getSupertokensUserId());
+                    primaryUsers.add(primaryUser);
+                }
+            }
+            if (primaryUsers.isEmpty() && !forced) {
+                // userId may be the external id of a mapped user
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
+                        UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId, UserIdType.EXTERNAL);
+                if (mapping != null) {
+                    AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier,
+                            mapping.superTokensUserId);
+                    if (primaryUser != null) {
+                        primaryUsers.add(primaryUser);
                     }
                 }
+            }
+            ArrayList<String> linkedSuperTokensUserIds = new ArrayList<>();
+            for (AuthRecipeUserInfo primaryUser : primaryUsers) {
+                for (LoginMethod lM : primaryUser.loginMethods) {
+                    userIds.add(lM.getSupertokensUserId());
+                    linkedSuperTokensUserIds.add(lM.getSupertokensUserId());
+                }
+            }
+            if (!forced && !linkedSuperTokensUserIds.isEmpty()) {
+                userIds.addAll(UserIdMapping.getUserIdMappingForSuperTokensUserIds(main, appIdentifier, storage,
+                        linkedSuperTokensUserIds).values());
             }
         }
         if (forced) {

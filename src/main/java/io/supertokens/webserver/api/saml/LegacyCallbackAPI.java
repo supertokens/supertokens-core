@@ -31,6 +31,13 @@ public class LegacyCallbackAPI extends WebserverAPI {
         return "/recipe/saml/legacy/callback";
     }
 
+    // The legacy ACS URL: the IdP's SAML response arrives here as a form POST from the end user's browser, which
+    // does not hold the core API key. The SAML response signature and the RelayState authenticate the request.
+    @Override
+    protected boolean checkAPIKey(HttpServletRequest req) {
+        return false;
+    }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String samlResponse = req.getParameter("SAMLResponse");
