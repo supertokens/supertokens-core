@@ -117,7 +117,8 @@ jobs:
             extra=(--target "${{ inputs.plugin-interface-sha }}" --prerelease --latest=false)
           else
             tag="v${{ inputs.plugin-interface-version }}"
-            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+            # --verify-tag: never let gh create a missing tag on the default branch
+            extra=(--verify-tag ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
           fi
           if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
             echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
@@ -143,7 +144,8 @@ jobs:
             extra=(--target "${{ inputs.postgresql-sha }}" --prerelease --latest=false)
           else
             tag="v${{ inputs.postgresql-plugin-version }}"
-            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+            # --verify-tag: never let gh create a missing tag on the default branch
+            extra=(--verify-tag ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
           fi
           if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
             echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
@@ -171,7 +173,8 @@ jobs:
             extra=(--target "${{ inputs.core-sha }}" --prerelease --latest=false)
           else
             tag="v${{ inputs.core-version }}"
-            extra=(${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
+            # --verify-tag: never let gh create a missing tag on the default branch
+            extra=(--verify-tag ${{ inputs.is-latest-release == true && '--latest' || '--latest=false' }})
           fi
           if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
             echo "Release $tag already exists on $repo — skipping creation (idempotent re-run)"
