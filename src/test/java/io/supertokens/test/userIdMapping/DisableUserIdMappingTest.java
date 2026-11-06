@@ -512,10 +512,17 @@ public class DisableUserIdMappingTest {
         AuthRecipeUserInfo primary = EmailPassword.signUp(main, "primary@example.com", "password123");
         AuthRecipe.createPrimaryUser(main, primary.getSupertokensUserId());
 
-        for (String action : new String[]{"delete", "link", "disassociate"}) {
+        for (String action : new String[]{"delete", "delete-primary-keeping-linked", "link", "disassociate"}) {
             String externalId = "external-id-" + action;
             AuthRecipeUserInfo user = EmailPassword.signUp(main, action + "@example.com", "password123");
             String superTokensId = user.getSupertokensUserId();
+            if (action.equals("delete-primary-keeping-linked")) {
+                // a primary user with another login method linked to it, whose own login method is deleted
+                AuthRecipe.createPrimaryUser(main, superTokensId);
+                AuthRecipeUserInfo linked = EmailPassword.signUp(main, "linked-" + action + "@example.com",
+                        "password123");
+                AuthRecipe.linkAccounts(main, linked.getSupertokensUserId(), superTokensId);
+            }
             plantLeftoverMapping(main, app, superTokensId, externalId);
             createSession(process, externalId);
             createSession(process, superTokensId);
@@ -523,6 +530,11 @@ public class DisableUserIdMappingTest {
             if (action.equals("delete")) {
                 JsonObject remove = new JsonObject();
                 remove.addProperty("userId", superTokensId);
+                postOk(process, "/user/remove", remove, null);
+            } else if (action.equals("delete-primary-keeping-linked")) {
+                JsonObject remove = new JsonObject();
+                remove.addProperty("userId", superTokensId);
+                remove.addProperty("removeAllLinkedAccounts", false);
                 postOk(process, "/user/remove", remove, null);
             } else if (action.equals("link")) {
                 AuthRecipe.linkAccounts(main, superTokensId, primary.getSupertokensUserId());
