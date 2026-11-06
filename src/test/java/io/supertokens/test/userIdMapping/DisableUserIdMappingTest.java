@@ -32,6 +32,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.session.Session;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -340,6 +341,73 @@ public class DisableUserIdMappingTest {
             assertEquals(label, 2, removed.getAsJsonArray("sessionHandlesRevoked").size());
             assertEquals(label, 0, Session.getAllNonExpiredSessionHandlesForUser(main, superTokensIds[i]).length);
         }
+
+        stop(process);
+    }
+
+    // Under force, listing or revoking across all tenants by the external id of a user on a tenant with its own
+    // database finds that user's storage through the mapping, even when nothing else is stored under the external id
+    // there, so the sessions stored under the SuperTokens id are listed and revoked.
+    @Test
+    public void revokingByTheExternalIdUnderForceFindsAUserOnATenantWithItsOwnDatabase() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+            stop(process);
+            return;
+        }
+
+        TenantIdentifier appPublic = new TenantIdentifier(null, "uidm-own-db", null);
+        TenantIdentifier ownDbTenant = new TenantIdentifier(null, "uidm-own-db", "t1");
+        AppIdentifier app = appPublic.toAppIdentifier();
+        JsonObject ownPool = new JsonObject();
+        StorageLayer.getBaseStorage(main).modifyConfigToAddANewUserPoolForTesting(ownPool, 1);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, TenantIdentifier.BASE_TENANT,
+                new TenantConfig(appPublic, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appPublic,
+                new TenantConfig(ownDbTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, ownPool));
+        Storage publicStorage = StorageLayer.getStorage(appPublic, main);
+        Storage ownStorage = StorageLayer.getStorage(ownDbTenant, main);
+        if (publicStorage.getUserPoolId().equals(ownStorage.getUserPoolId())) {
+            // one user pool for every tenant (the in-memory db): the scenario isn't reachable
+            stop(process);
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(ownDbTenant, ownStorage, main, "own-db@example.com",
+                "password123");
+        String superTokensId = user.getSupertokensUserId();
+        UserIdMapping.createUserIdMapping(main, app, ownStorage, superTokensId, "own-db-external-id", null, false);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, TenantIdentifier.BASE_TENANT,
+                new TenantConfig(appPublic, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, coreConfig));
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        // only a session created after force, stored under the SuperTokens id; nothing is left under the external id
+        Session.createNewSession(ownDbTenant, ownStorage, main, superTokensId, new JsonObject(), new JsonObject());
+
+        Map<String, String> byExternalId = new HashMap<>();
+        byExternalId.put("userId", "own-db-external-id");
+        byExternalId.put("fetchAcrossAllTenants", "true");
+        JsonObject listed = get(process, "/appid-uidm-own-db/recipe/session/user", byExternalId, "session");
+        assertEquals(1, listed.getAsJsonArray("sessionHandles").size());
+
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", "own-db-external-id");
+        remove.addProperty("revokeAcrossAllTenants", true);
+        JsonObject removed = postOk(process, "/appid-uidm-own-db/recipe/session/remove", remove, "session");
+        assertEquals(1, removed.getAsJsonArray("sessionHandlesRevoked").size());
 
         stop(process);
     }
