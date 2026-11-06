@@ -98,6 +98,10 @@ jobs:
               2) ALREADY_RELEASED=false ;;
               *) echo "::error::could not look up tag v$pluginVersion in supertokens-postgresql-plugin (git ls-remote exit $status) - re-run the job."; exit 1 ;;
             esac
+          elif [ "$ALREADY_RELEASED" = "true" ] && ! git ls-remote --tags https://github.com/supertokens/supertokens-postgresql-plugin.git "refs/tags/v$pluginVersion" | grep -q .; then
+            # Passed in by the caller (release-postgresql-plugin unticked), but no public tag:
+            # if this IS the plugin's first core release, its migration is being dropped.
+            echo "::warning::release-postgresql-plugin is unticked but supertokens-postgresql-plugin has no v$pluginVersion tag. If $pluginVersion was not released with an earlier core, this release's DB migration is being skipped - re-run with release-postgresql-plugin ticked."
           fi
           if [ "$ALREADY_RELEASED" = "true" ]; then
             echo "::notice::postgresql-plugin $pluginVersion was released with an earlier core, so its migration (if any) already shipped then - has-db-migration=false for core $CORE_VERSION."

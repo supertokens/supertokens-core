@@ -22,7 +22,7 @@ on:
         type: boolean
         default: true
       release-postgresql-plugin:
-        description: 'Release a new postgresql-plugin version'
+        description: 'Release a new postgresql-plugin version. Untick only when this plugin version already shipped with an earlier core release: unticking also marks this release as having no DB migration'
         required: true
         type: boolean
         default: true
