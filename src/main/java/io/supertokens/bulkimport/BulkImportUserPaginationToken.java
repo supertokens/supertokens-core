@@ -16,6 +16,7 @@
 
 package io.supertokens.bulkimport;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class BulkImportUserPaginationToken {
@@ -29,7 +30,7 @@ public class BulkImportUserPaginationToken {
 
     public static BulkImportUserPaginationToken extractTokenInfo(String token) throws InvalidTokenException {
         try {
-            String decodedPaginationToken = new String(Base64.getDecoder().decode(token));
+            String decodedPaginationToken = new String(Base64.getDecoder().decode(token), StandardCharsets.UTF_8);
             String[] splitDecodedToken = decodedPaginationToken.split(";");
             if (splitDecodedToken.length != 2) {
                 throw new InvalidTokenException();
@@ -43,7 +44,8 @@ public class BulkImportUserPaginationToken {
     }
 
     public String generateToken() {
-        return new String(Base64.getEncoder().encode((this.bulkImportUserId + ";" + this.createdAt).getBytes()));
+        byte[] tokenBytes = (this.bulkImportUserId + ";" + this.createdAt).getBytes(StandardCharsets.UTF_8);
+        return new String(Base64.getEncoder().encode(tokenBytes), StandardCharsets.UTF_8);
     }
 
     public static class InvalidTokenException extends Exception {

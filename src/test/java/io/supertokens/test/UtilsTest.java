@@ -51,6 +51,22 @@ public class UtilsTest {
     }
 
     @Test
+    public void paginationTokensRoundTripNonAsciiIds() throws Exception {
+        String userId = "usér-你好";
+
+        io.supertokens.authRecipe.UserPaginationToken userToken = io.supertokens.authRecipe.UserPaginationToken
+                .extractTokenInfo(new io.supertokens.authRecipe.UserPaginationToken(userId, 42).generateToken());
+        assertEquals(userId, userToken.userId);
+        assertEquals(42, userToken.timeJoined);
+
+        io.supertokens.bulkimport.BulkImportUserPaginationToken bulkToken =
+                io.supertokens.bulkimport.BulkImportUserPaginationToken.extractTokenInfo(
+                        new io.supertokens.bulkimport.BulkImportUserPaginationToken(userId, 7).generateToken());
+        assertEquals(userId, bulkToken.bulkImportUserId);
+        assertEquals(7, bulkToken.createdAt);
+    }
+
+    @Test
     public void pubPriKeyShouldHandleSemicolonSeparator() {
         io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub;pri");
 
