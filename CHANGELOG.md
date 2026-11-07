@@ -7,8 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Fixes `Utils.decrypt` to decode the decrypted bytes explicitly as UTF-8 (the charset `Utils.encrypt` uses) instead of the
-  platform default charset. Nothing changes on UTF-8 platforms, which includes the default on Java 18+.
+- Fixes non-ASCII data (e.g. a non-ASCII external user ID in the refresh token payload, or an OAuth client secret)
+  not round-tripping when the core's JVM default charset is not UTF-8 (`-Dfile.encoding`). `Utils.decrypt` now
+  decodes as UTF-8, the charset `Utils.encrypt` uses. No change on UTF-8 JVMs, which is the default on Java 18+.
 
 ## [12.5.0]
 
