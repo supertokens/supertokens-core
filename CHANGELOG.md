@@ -7,9 +7,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Fixes case conversions of identifiers (emails, tenant IDs, config values such as `password_hashing_alg`, OS names, etc.)
-  depending on the JVM default locale. For example, in the Turkish locale `"I".toLowerCase()` gives a dotless `ı`, so
-  emails were normalised differently and values like `argon2id` were not recognised. They now use `Locale.ROOT`.
+- Fixes case conversions of identifiers (emails, tenant IDs, config values such as `log_level` or
+  `recent_token_reuse_behaviour`, OS names, JWT alg names, etc.) depending on the JVM default locale. For example, in the
+  Turkish locale `"I".toLowerCase()` gives a dotless `ı` and `"i".toUpperCase()` gives `İ`, so emails were normalised
+  differently and values like `log_level: info` were not recognised. They now use `Locale.ROOT`.
+- Behaviour change, only for cores whose JVM default locale is Turkish or Azerbaijani (`tr`, `az`): emails containing
+  `I` were previously stored lowercased with a dotless `ı` (e.g. `INFO@example.com` as `ınfo@example.com`) and are now
+  normalised to `info@example.com`, so those accounts are no longer found by exact lookups (sign in, sign up,
+  password reset, etc.) until the stored emails are fixed. Before upgrading, find them by searching for the character
+  `ı` (U+0131) in the email columns (emailpassword, passwordless, third party and WebAuthn users, and email
+  verification), and update them to the `Locale.ROOT` lowercase form. Cores running with any other default locale are
+  not affected.
 
 ## [12.5.0]
 

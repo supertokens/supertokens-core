@@ -63,6 +63,20 @@ public class UtilsTest {
     }
 
     @Test
+    public void snakeCaseToCamelCaseDoesNotDependOnTheDefaultLocale() {
+        java.util.Locale original = java.util.Locale.getDefault();
+        try {
+            // in the Turkish locale "i".toUpperCase() is a dotted capital I
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertEquals("clientId", io.supertokens.utils.Utils.snakeCaseToCamelCase("client_id"));
+            assertEquals("accessTokenSigningKeyUpdateInterval",
+                    io.supertokens.utils.Utils.snakeCaseToCamelCase("access_token_signing_key_update_interval"));
+        } finally {
+            java.util.Locale.setDefault(original);
+        }
+    }
+
+    @Test
     public void pubPriKeyShouldHandleSemicolonSeparator() {
         io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub;pri");
 
