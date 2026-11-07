@@ -427,7 +427,7 @@ public class BulkImportUserUtils {
         }
 
         // We make the tenantId lowercase while parsing from the request in WebserverAPI.java
-        String normalisedTenantId = tenantId.trim().toLowerCase();
+        String normalisedTenantId = tenantId.trim().toLowerCase(Locale.ROOT);
         TenantConfig[] allTenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
         Set<String> validTenantIds = new HashSet<>();
         Arrays.stream(allTenantConfigs)
@@ -494,7 +494,7 @@ public class BulkImportUserUtils {
 
         try {
             // We trim the hashingAlgorithm and make it uppercase as per the ImportUserWithPasswordHashAPI.java
-            return CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithm.trim().toUpperCase());
+            return CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithm.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             errors.add(
                     "Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!");

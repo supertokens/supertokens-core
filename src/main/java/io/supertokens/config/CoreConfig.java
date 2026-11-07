@@ -807,7 +807,7 @@ public class CoreConfig {
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
-        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg.toUpperCase());
+        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg.toUpperCase(Locale.ROOT));
     }
 
     @TestOnly
@@ -994,7 +994,7 @@ public class CoreConfig {
     // drop a trailing slash. PathRouter derives the override key from a matched API's getPath() through this same
     // method, so the two representations stay in lockstep.
     public static String normalizeApiPath(String path) {
-        String p = path.trim().toLowerCase();
+        String p = path.trim().toLowerCase(Locale.ROOT);
         if (p.isEmpty()) {
             return p;
         }
@@ -1430,8 +1430,8 @@ public class CoreConfig {
                     String[] allowedValues = field.getAnnotation(EnumProperty.class).value();
                     try {
                         String value = field.get(this) != null ? field.get(this).toString() : null;
-                        if (!Arrays.asList(Arrays.stream(allowedValues).map(str -> str.toLowerCase()).toArray())
-                                .contains(value.toLowerCase())) {
+                        if (!Arrays.asList(Arrays.stream(allowedValues).map(str -> str.toLowerCase(Locale.ROOT)).toArray())
+                                .contains(value.toLowerCase(Locale.ROOT))) {
                             throw new InvalidConfigException(
                                     fieldId + " property is not set correctly. It must be one of "
                                             + Arrays.toString(allowedValues));
@@ -1467,11 +1467,11 @@ public class CoreConfig {
         }
 
         if (log_level != null) {
-            log_level = log_level.trim().toUpperCase();
+            log_level = log_level.trim().toUpperCase(Locale.ROOT);
         }
 
         if (recent_token_reuse_behaviour != null) {
-            recent_token_reuse_behaviour = recent_token_reuse_behaviour.trim().toUpperCase();
+            recent_token_reuse_behaviour = recent_token_reuse_behaviour.trim().toUpperCase(Locale.ROOT);
         }
 
         { // info_log_path

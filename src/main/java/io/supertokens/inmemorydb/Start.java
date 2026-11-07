@@ -252,7 +252,7 @@ public class Start
             } catch (SQLException | StorageQueryException | StorageTransactionLogicException |
                      TenantOrAppNotFoundException e) {
                 if ((e instanceof SQLTransactionRollbackException
-                        || (e.getMessage() != null && e.getMessage().toLowerCase().contains("deadlock")))
+                        || (e.getMessage() != null && e.getMessage().toLowerCase(Locale.ROOT).contains("deadlock")))
                         && tries < 3) {
                     ProcessState.getInstance(this.main).addState(ProcessState.PROCESS_STATE.DEADLOCK_FOUND, e);
                     continue; // this because deadlocks are not necessarily a result of faulty logic. They can

@@ -44,6 +44,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class JWTSigningFunctions {
@@ -122,7 +123,7 @@ public class JWTSigningFunctions {
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
-        headerClaims.put("alg", supportedAlgorithm.name().toUpperCase()); // All examples in the RFC have the algorithm
+        headerClaims.put("alg", supportedAlgorithm.name().toUpperCase(Locale.ROOT)); // All examples in the RFC have the algorithm
         // in upper case
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
