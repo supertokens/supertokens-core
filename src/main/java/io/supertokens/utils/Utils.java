@@ -266,7 +266,9 @@ public class Utils {
         cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 
         // Encrypt the data
-        return new String(cipher.doFinal(cipherBytes));
+        // encrypt() converts the plaintext with stringToBytes (UTF-8), so decode with the same charset instead of
+        // relying on the platform default
+        return new String(cipher.doFinal(cipherBytes), StandardCharsets.UTF_8);
     }
 
     public static byte[] pbkdf2(char[] text, byte[] salt, int iterationCount, int keyLength)

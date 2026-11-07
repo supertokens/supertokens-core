@@ -77,6 +77,19 @@ public class RefreshTokenTest {
     }
 
     @Test
+    public void encryptAndDecryptWorksWithNonAsciiText()
+            throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        String key = "1000"
+                +
+                ":79a6cbeb2066a3ab80f951037b90cc52bc216d9507998454184daeb3ef47cf387aab9c65e5fc69209fa6f0f67aee486c9d292cfc159a41c4b02415ba669f3219:d305504825a1b109";
+        String message = "Jürgen 你好 € 🚀";
+        String enc = io.supertokens.utils.Utils.encrypt(message, key);
+        String dec = io.supertokens.utils.Utils.decrypt(enc, key);
+        assertEquals(message, dec);
+    }
+
+    @Test
     public void encryptAndDecryptDoesNotWorksWithDifferentKey()
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
