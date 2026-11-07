@@ -170,7 +170,7 @@ public class HttpRequestForOAuthProvider {
         } else {
             inputStream = con.getInputStream();
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
         String inputLine;
         StringBuilder response = new StringBuilder();

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixes the core reading HTTP responses (e.g. from the OAuth provider) and writing/reading pagination tokens with the
+  JVM default charset instead of UTF-8, which garbled non-ASCII characters when the default charset is not UTF-8
+  (`-Dfile.encoding`). No change on UTF-8 JVMs, which is the default on Java 18+.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.
