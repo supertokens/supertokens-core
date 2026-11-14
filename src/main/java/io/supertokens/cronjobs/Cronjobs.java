@@ -25,10 +25,11 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class Cronjobs extends ResourceDistributor.SingletonResource {
@@ -41,14 +42,15 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     private final ScheduledExecutorService executor;
     // Shared by every cron job's per-storage work, so at most cron_storage_parallelism storages are worked on at
     // once across all jobs, instead of one thread (and its database connections) per storage per job.
-    private final ExecutorService storageExecutor;
+    private final ThreadPoolExecutor storageExecutor;
     private final int storageParallelism;
     private List<CronTask> tasks = new ArrayList<>();
 
     private Cronjobs(int storageParallelism) {
         this.executor = Executors.newScheduledThreadPool(5);
         this.storageParallelism = storageParallelism;
-        this.storageExecutor = Executors.newFixedThreadPool(storageParallelism);
+        this.storageExecutor = new ThreadPoolExecutor(storageParallelism, storageParallelism, 0L,
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
     public static Cronjobs getInstance(Main main) {
@@ -65,7 +67,7 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 new Cronjobs(Config.getBaseConfig(main).getCronStorageParallelism()));
     }
 
-    ExecutorService getStorageExecutor() {
+    ThreadPoolExecutor getStorageExecutor() {
         return this.storageExecutor;
     }
 
@@ -87,7 +89,10 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 instance.executor.shutdown();
                 instance.storageExecutor.shutdown();
                 instance.executor.awaitTermination(10, TimeUnit.SECONDS);
-                instance.storageExecutor.awaitTermination(10, TimeUnit.SECONDS);
+                if (!instance.storageExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    // storages are closed right after this returns: drop queued work, interrupt running work
+                    instance.storageExecutor.shutdownNow();
+                }
             } catch (Exception e) {
                 // ignore any error as app is shutting down.
             }

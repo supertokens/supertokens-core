@@ -53,6 +53,10 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     private final boolean isPerApp;
 
+    // Where the next per-storage pass starts. A pass that runs out of time resumes here, at its first unfinished
+    // storage, so with more storages than one interval can cover, every storage is still reached in turn.
+    private int nextStorageIndex = 0;
+
     protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo, boolean isPerApp) {
         this.jobName = jobName;
         this.main = main;
@@ -130,7 +134,10 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 // cron_storage_parallelism storages are worked on (and connected to) at the same time.
                 AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
                 List<Future<?>> pending = new ArrayList<>();
-                for (List<TenantIdentifier> t : copied) {
+                int start = copied.isEmpty() ? 0 : Math.floorMod(nextStorageIndex, copied.size());
+                List<List<TenantIdentifier>> ordered = new ArrayList<>(copied.subList(start, copied.size()));
+                ordered.addAll(copied.subList(0, start));
+                for (List<TenantIdentifier> t : ordered) {
                     Runnable perStorage = () -> {
                         try {
                             doTaskPerStorage(t.get(0), StorageLayer.getStorage(t.get(0), main));
@@ -165,7 +172,10 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                         break;
                     }
                 }
-                awaitPerStorageTasks(pending);
+                int unfinished = awaitPerStorageTasks(pending);
+                if (unfinished >= 0 && !copied.isEmpty()) {
+                    nextStorageIndex = (start + unfinished) % copied.size();
+                }
                 if (threwQuitProgramException.get()) {
                     main.wakeUpMainThreadToShutdown();
                 }
@@ -176,23 +186,36 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     /*
      * Waits for this pass's storages, at most one interval in total as before. Tasks still queued or running after
-     * that are cancelled, so a slow pass cannot pile up behind the next one on the shared executor.
+     * that are cancelled and dropped from the shared queue, so a slow pass cannot pile up behind the next one.
+     * Returns the index (in submission order) of the first storage that did not finish, or -1 if all did.
      */
-    private void awaitPerStorageTasks(List<Future<?>> pending) {
+    private int awaitPerStorageTasks(List<Future<?>> pending) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(this.getIntervalTimeSeconds());
-        for (Future<?> f : pending) {
+        for (int i = 0; i < pending.size(); i++) {
             try {
-                f.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                pending.get(i).get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
             } catch (TimeoutException | InterruptedException e) {
                 pending.forEach(p -> p.cancel(true));
+                Cronjobs.getInstance(main).getStorageExecutor().purge();
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
-                return;
-            } catch (ExecutionException | CancellationException ignored) {
-                // per-storage errors are logged inside the task
+                Logging.warn(main, TenantIdentifier.BASE_TENANT,
+                        "Cronjob " + this.jobName + " ran out of time after " + i + " of " + pending.size()
+                                + " storages; the next run starts from the rest");
+                return i;
+            } catch (CancellationException ignored) {
+                // the core is shutting down
+            } catch (ExecutionException e) {
+                // Exceptions are logged inside the task; this is an Error (e.g. a plugin's NoSuchMethodError),
+                // which the task does not catch and would otherwise be dropped with its Future.
+                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING,
+                        e.getCause() instanceof Exception ? (Exception) e.getCause() : e);
+                Logging.error(main, TenantIdentifier.BASE_TENANT, "Cronjob threw an error: " + this.jobName,
+                        Main.isTesting, e.getCause() instanceof Exception ? (Exception) e.getCause() : e);
             }
         }
+        return -1;
     }
 
     public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {

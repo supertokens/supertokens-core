@@ -11,7 +11,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)):
     - Per-storage cron work runs on one executor shared by all cron jobs, so at most `cron_storage_parallelism` (new,
       default 4) storages are worked on at once, instead of one thread per storage for every job pass. A pass over
-      many storages takes longer; a pass still stops after one interval as before.
+      many storages takes longer; a pass still stops after one interval as before, and the next pass starts at the
+      first storage it did not reach, so every storage still gets its turn.
     - Outside tests, each job's first run is delayed by a random offset of up to one interval (capped at one hour), so
       jobs with the same interval, and cores started together, no longer run in the same second. Their intervals are
       unchanged.
