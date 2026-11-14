@@ -207,7 +207,7 @@ public class BulkImportUserUtils {
             String supertokensUserId = switch (idMode) {
                 case READ_STORED -> parseAndValidateFieldType(jsonLoginMethodObj, "superTokensUserId", ValueType.STRING,
                         true, String.class, errors, " for a loginMethod");
-                case GENERATE -> Utils.getUUID();
+                case GENERATE -> Utils.getUUIDv7();
             };
 
             if ("emailpassword".equals(recipeId)) {

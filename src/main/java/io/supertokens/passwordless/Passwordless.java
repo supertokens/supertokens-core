@@ -562,7 +562,7 @@ public class Passwordless {
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
 
         while (true) {
-            String userId = Utils.getUUID();
+            String userId = Utils.getUUIDv7();
             try {
                 // Create the user and emit its user_creation event atomically on the same connection, so the
                 // event cannot be lost relative to the creation it records. The user-id retry loop on

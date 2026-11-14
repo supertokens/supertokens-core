@@ -323,7 +323,7 @@ public class WebAuthN {
 
                 while (true) {
                     try {
-                        String recipeUserId = Utils.getUUID();
+                        String recipeUserId = Utils.getUUIDv7();
                         long timeJoined = System.currentTimeMillis();
 
                         WebAuthNOptions generatedOptions = webAuthNStorage.loadOptionsById_Transaction(tenantIdentifier,

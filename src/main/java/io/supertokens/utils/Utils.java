@@ -377,6 +377,26 @@ public class Utils {
         return UUID.randomUUID().toString();
     }
 
+    private static final SecureRandom UUID_V7_RANDOM = new SecureRandom();
+
+    /*
+     * RFC 9562 UUIDv7: a 48-bit unix-millis timestamp followed by random bits. New user IDs sort by creation
+     * time, so inserts append to the primary key index instead of landing on random pages like v4. The string
+     * form is the same 36-char UUID, so it fits every existing user ID column and validation.
+     */
+    public static String getUUIDv7() {
+        byte[] bytes = new byte[16];
+        UUID_V7_RANDOM.nextBytes(bytes);
+        long millis = System.currentTimeMillis();
+        for (int i = 0; i < 6; i++) {
+            bytes[i] = (byte) (millis >>> (40 - 8 * i));
+        }
+        bytes[6] = (byte) ((bytes[6] & 0x0f) | 0x70); // version 7
+        bytes[8] = (byte) ((bytes[8] & 0x3f) | 0x80); // IETF variant
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        return new UUID(buffer.getLong(), buffer.getLong()).toString();
+    }
+
     public static String exceptionStacktraceToString(Exception e) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
