@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.net.MalformedURLException;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -242,5 +243,32 @@ public class UtilsTest {
         String expectedResult = "nothing";
         String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
         assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void getUUIDv7IsAVersion7RFCUUIDCarryingTheCurrentTime() {
+        long before = System.currentTimeMillis();
+        String id = io.supertokens.utils.Utils.getUUIDv7();
+        long after = System.currentTimeMillis();
+
+        UUID uuid = UUID.fromString(id);
+        assertEquals(36, id.length());
+        assertEquals(7, uuid.version());
+        assertEquals(2, uuid.variant());
+        long millis = uuid.getMostSignificantBits() >>> 16;
+        assertTrue(millis >= before && millis <= after);
+    }
+
+    @Test
+    public void getUUIDv7IsUniqueAndSortsByCreationTime() throws InterruptedException {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < 10000; i++) {
+            assertTrue(seen.add(io.supertokens.utils.Utils.getUUIDv7()));
+        }
+
+        String earlier = io.supertokens.utils.Utils.getUUIDv7();
+        Thread.sleep(2);
+        String later = io.supertokens.utils.Utils.getUUIDv7();
+        assertTrue(earlier.compareTo(later) < 0);
     }
 }

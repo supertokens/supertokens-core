@@ -160,7 +160,7 @@ public class EmailPassword {
                 ? getConfiguredThirdPartyIdsLowerCase(appIdentifier, main) : new HashSet<>();
 
         while (true) {
-            String userId = Utils.getUUID();
+            String userId = Utils.getUUIDv7();
             long timeJoined = System.currentTimeMillis();
 
             try {
@@ -409,7 +409,7 @@ public class EmailPassword {
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
         while (true) {
-            String userId = Utils.getUUID();
+            String userId = Utils.getUUIDv7();
             try {
                 // Create the user and emit its user_creation event atomically on the same connection; the user-id
                 // retry loop on DuplicateUserIdException stays outside the transaction.

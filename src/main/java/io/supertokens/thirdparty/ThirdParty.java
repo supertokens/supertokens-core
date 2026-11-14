@@ -420,7 +420,7 @@ public class ThirdParty {
 
         while (true) {
             // loop for sign up
-            String userId = Utils.getUUID();
+            String userId = Utils.getUUIDv7();
 
             try {
                 // Create the user and emit its user_creation event atomically on the same connection, so the

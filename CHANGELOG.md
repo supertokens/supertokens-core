@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- New user IDs are UUID v7 (RFC 9562) instead of v4, for email password, passwordless, third party and WebAuthn
+  sign-ups and for bulk-imported users that get a generated ID. v7 IDs start with the creation time in milliseconds,
+  so inserts land at the end of the user ID indexes instead of on random pages. They are the same 36-character UUID
+  string, so no schema or API change is needed and existing v4 IDs keep working. Other IDs (sessions, codes, signing
+  keys, the WebAuthn user handle, dashboard users) stay v4. ([#1503](https://github.com/supertokens/supertokens-core/issues/1503))
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

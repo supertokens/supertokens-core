@@ -195,6 +195,20 @@ public class EmailPasswordTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testSignUpGeneratesAUUIDv7UserId() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        assertEquals(7, java.util.UUID.fromString(user.getSupertokensUserId()).version());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // After reset password generate token, check that the token is hashed in the db
     // Failure condition: If the token returned from the database is not hashed or the hash value does not
     // match the check, the test will fail
