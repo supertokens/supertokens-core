@@ -318,7 +318,7 @@ public class CronjobTest {
     }
 
     /* Per-storage work that sleeps and records concurrency in counters that can be shared between jobs. Each
-       user pool is tagged with its position (the tenant id) so a test can see which pools ran. */
+       user pool is tagged (see taggedPools) so a test can see which pools ran. */
     static class ConcurrencyProbeCronjob extends CronTask {
         final AtomicInteger running;
         final AtomicInteger maxRunning;
@@ -352,7 +352,7 @@ public class CronjobTest {
             maxRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
             try {
                 Thread.sleep(workMillis);
-                ran.add(representative.getTenantId());
+                ran.add(representative.getConnectionUriDomain());
                 finished.incrementAndGet();
             } finally {
                 running.decrementAndGet();
@@ -360,10 +360,14 @@ public class CronjobTest {
         }
     }
 
+    /*
+     * Distinct user pools that all resolve to the base storage: an unconfigured connectionUriDomain falls back to
+     * the base tenant in StorageLayer.getStorage, while each pool keeps its own identity (the domain is its tag).
+     */
     private static List<List<TenantIdentifier>> taggedPools(int count) {
         List<List<TenantIdentifier>> pools = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            pools.add(List.of(new TenantIdentifier(null, null, "t" + i)));
+            pools.add(List.of(new TenantIdentifier("t" + i, null, null)));
         }
         return pools;
     }

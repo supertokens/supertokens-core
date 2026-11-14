@@ -53,9 +53,11 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     private final boolean isPerApp;
 
-    // Where the next per-storage pass starts. A pass that runs out of time resumes here, at its first unfinished
-    // storage, so with more storages than one interval can cover, every storage is still reached in turn.
-    private int nextStorageIndex = 0;
+    // Storages (by representative tenant) that have finished since the last pass that reached every storage. A
+    // pass that runs out of time is cancelled; the next one queues the storages not in this set first, so with
+    // more storages than one interval can cover, each still gets its turn. Keyed rather than indexed so it stays
+    // right when tenants are added or removed between passes. Only touched by this job's scheduler thread.
+    private final Set<TenantIdentifier> doneThisCycle = new HashSet<>();
 
     protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo, boolean isPerApp) {
         this.jobName = jobName;
@@ -134,9 +136,18 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 // cron_storage_parallelism storages are worked on (and connected to) at the same time.
                 AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
                 List<Future<?>> pending = new ArrayList<>();
-                int start = copied.isEmpty() ? 0 : Math.floorMod(nextStorageIndex, copied.size());
-                List<List<TenantIdentifier>> ordered = new ArrayList<>(copied.subList(start, copied.size()));
-                ordered.addAll(copied.subList(0, start));
+                // storages not yet reached this cycle go first, in their usual order
+                List<List<TenantIdentifier>> ordered = new ArrayList<>();
+                List<List<TenantIdentifier>> alreadyDone = new ArrayList<>();
+                for (List<TenantIdentifier> t : copied) {
+                    if (doneThisCycle.contains(t.get(0))) {
+                        alreadyDone.add(t);
+                    } else {
+                        ordered.add(t);
+                    }
+                }
+                ordered.addAll(alreadyDone);
+                List<TenantIdentifier> submitted = new ArrayList<>();
                 for (List<TenantIdentifier> t : ordered) {
                     Runnable perStorage = () -> {
                         try {
@@ -166,15 +177,30 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                         }
                     };
                     try {
-                        pending.add(Cronjobs.getInstance(main).getStorageExecutor().submit(perStorage));
+                        pending.add(Cronjobs.getInstance(main).submitStorageTask(perStorage));
+                        submitted.add(t.get(0));
                     } catch (RejectedExecutionException e) {
                         // the core is shutting down
                         break;
                     }
                 }
-                int unfinished = awaitPerStorageTasks(pending);
-                if (unfinished >= 0 && !copied.isEmpty()) {
-                    nextStorageIndex = (start + unfinished) % copied.size();
+                boolean allFinished = awaitPerStorageTasks(pending) && pending.size() == copied.size();
+                Set<TenantIdentifier> current = new HashSet<>();
+                copied.forEach(t -> current.add(t.get(0)));
+                if (!allFinished) {
+                    for (int i = 0; i < pending.size(); i++) {
+                        if (pending.get(i).isDone() && !pending.get(i).isCancelled()) {
+                            doneThisCycle.add(submitted.get(i));
+                        }
+                    }
+                    // forget storages that are no longer served, so the set cannot grow without bound
+                    doneThisCycle.retainAll(current);
+                }
+                // A cycle ends once every current storage has had its turn, over one pass or several. Without
+                // the second check, a cycle covered across passes would leave every storage marked done and
+                // the next passes would never reorder again.
+                if (allFinished || doneThisCycle.containsAll(current)) {
+                    doneThisCycle.clear();
                 }
                 if (threwQuitProgramException.get()) {
                     main.wakeUpMainThreadToShutdown();
@@ -187,25 +213,27 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     /*
      * Waits for this pass's storages, at most one interval in total as before. Tasks still queued or running after
      * that are cancelled and dropped from the shared queue, so a slow pass cannot pile up behind the next one.
-     * Returns the index (in submission order) of the first storage that did not finish, or -1 if all did.
+     * Returns false if the pass did not finish (out of time, interrupted, or the core is shutting down).
      */
-    private int awaitPerStorageTasks(List<Future<?>> pending) {
+    private boolean awaitPerStorageTasks(List<Future<?>> pending) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(this.getIntervalTimeSeconds());
-        for (int i = 0; i < pending.size(); i++) {
+        boolean finished = true;
+        for (Future<?> f : pending) {
             try {
-                pending.get(i).get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                f.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
             } catch (TimeoutException | InterruptedException e) {
                 pending.forEach(p -> p.cancel(true));
-                Cronjobs.getInstance(main).getStorageExecutor().purge();
+                Cronjobs.getInstance(main).purgeStorageTasks();
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
+                } else {
+                    Logging.warn(main, TenantIdentifier.BASE_TENANT, "Cronjob " + this.jobName
+                            + " ran out of time; the next run starts with the storages it did not reach");
                 }
-                Logging.warn(main, TenantIdentifier.BASE_TENANT,
-                        "Cronjob " + this.jobName + " ran out of time after " + i + " of " + pending.size()
-                                + " storages; the next run starts from the rest");
-                return i;
-            } catch (CancellationException ignored) {
-                // the core is shutting down
+                return false;
+            } catch (CancellationException e) {
+                // cancelled by shutdown (Cronjobs.shutdownAndAwaitTermination)
+                finished = false;
             } catch (ExecutionException e) {
                 // Exceptions are logged inside the task; this is an Error (e.g. a plugin's NoSuchMethodError),
                 // which the task does not catch and would otherwise be dropped with its Future.
@@ -215,7 +243,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                         Main.isTesting, e.getCause() instanceof Exception ? (Exception) e.getCause() : e);
             }
         }
-        return -1;
+        return finished;
     }
 
     public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {

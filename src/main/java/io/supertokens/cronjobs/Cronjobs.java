@@ -25,7 +25,10 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -44,6 +47,8 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     // once across all jobs, instead of one thread (and its database connections) per storage per job.
     private final ThreadPoolExecutor storageExecutor;
     private final int storageParallelism;
+    // Storage tasks not yet finished. Shutdown cancels them, so cron threads waiting on them return.
+    private final Set<FutureTask<?>> inFlight = ConcurrentHashMap.newKeySet();
     private List<CronTask> tasks = new ArrayList<>();
 
     private Cronjobs(int storageParallelism) {
@@ -67,8 +72,26 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 new Cronjobs(Config.getBaseConfig(main).getCronStorageParallelism()));
     }
 
-    ThreadPoolExecutor getStorageExecutor() {
-        return this.storageExecutor;
+    FutureTask<?> submitStorageTask(Runnable work) {
+        FutureTask<?> task = new FutureTask<Void>(work, null) {
+            @Override
+            protected void done() {
+                inFlight.remove(this);
+            }
+        };
+        inFlight.add(task);
+        try {
+            storageExecutor.execute(task);
+        } catch (RuntimeException e) {
+            inFlight.remove(task);
+            throw e;
+        }
+        return task;
+    }
+
+    // drops cancelled tasks from the queue; Future.cancel alone leaves them there until a worker picks them up
+    void purgeStorageTasks() {
+        storageExecutor.purge();
     }
 
     @TestOnly
@@ -86,13 +109,18 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 t.shutdownIsGoingToBeCalled();
             }
             try {
+                // No new runs, and no new storage tasks (submit is rejected from here on).
                 instance.executor.shutdown();
                 instance.storageExecutor.shutdown();
-                instance.executor.awaitTermination(10, TimeUnit.SECONDS);
                 if (!instance.storageExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                     // storages are closed right after this returns: drop queued work, interrupt running work
                     instance.storageExecutor.shutdownNow();
                 }
+                // shutdownNow neither completes the Futures it drains nor ones a worker is still in, so a cron
+                // thread waiting on them would block for up to its interval. Cancelling them releases it. This
+                // runs before waiting for the scheduler, whose threads may be the ones waiting.
+                instance.inFlight.forEach(t -> t.cancel(true));
+                instance.executor.awaitTermination(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 // ignore any error as app is shutting down.
             }
