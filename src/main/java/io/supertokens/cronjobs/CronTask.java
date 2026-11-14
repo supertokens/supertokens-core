@@ -31,9 +31,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class CronTask extends ResourceDistributor.SingletonResource implements Runnable {
@@ -123,11 +126,12 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                     }
                 }
             } else {
-                // we create one thread per unique storage and run the query based on that.
-                ExecutorService service = Executors.newFixedThreadPool(copied.size());
+                // one task per unique storage, on the executor all cron jobs share, so only
+                // cron_storage_parallelism storages are worked on (and connected to) at the same time.
                 AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
+                List<Future<?>> pending = new ArrayList<>();
                 for (List<TenantIdentifier> t : copied) {
-                    service.execute(() -> {
+                    Runnable perStorage = () -> {
                         try {
                             doTaskPerStorage(t.get(0), StorageLayer.getStorage(t.get(0), main));
                         } catch (Exception e) {
@@ -153,23 +157,42 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                                 }
                             }
                         }
-                    });
+                    };
+                    try {
+                        pending.add(Cronjobs.getInstance(main).getStorageExecutor().submit(perStorage));
+                    } catch (RejectedExecutionException e) {
+                        // the core is shutting down
+                        break;
+                    }
                 }
-                service.shutdown();
-                boolean didShutdown = false;
-                try {
-                    didShutdown = service.awaitTermination(this.getIntervalTimeSeconds(), TimeUnit.SECONDS);
-                } catch (InterruptedException ignored) {
-                }
-                if (!didShutdown) {
-                    service.shutdownNow();
-                }
+                awaitPerStorageTasks(pending);
                 if (threwQuitProgramException.get()) {
                     main.wakeUpMainThreadToShutdown();
                 }
             }
         }
         Logging.info(main, this.targetTenant, "Cronjob finished: " + jobName, false);
+    }
+
+    /*
+     * Waits for this pass's storages, at most one interval in total as before. Tasks still queued or running after
+     * that are cancelled, so a slow pass cannot pile up behind the next one on the shared executor.
+     */
+    private void awaitPerStorageTasks(List<Future<?>> pending) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(this.getIntervalTimeSeconds());
+        for (Future<?> f : pending) {
+            try {
+                f.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+            } catch (TimeoutException | InterruptedException e) {
+                pending.forEach(p -> p.cancel(true));
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                return;
+            } catch (ExecutionException | CancellationException ignored) {
+                // per-storage errors are logged inside the task
+            }
+        }
     }
 
     public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {

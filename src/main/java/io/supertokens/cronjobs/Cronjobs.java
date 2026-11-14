@@ -18,25 +18,37 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class Cronjobs extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.cronjobs.Cronjobs";
     final Object lock = new Object();
+    // Longest random offset added to a job's first run (see addCronjob).
+    public static final int MAX_INITIAL_JITTER_SECONDS = 3600;
+
     private final ScheduledExecutorService executor;
+    // Shared by every cron job's per-storage work, so at most cron_storage_parallelism storages are worked on at
+    // once across all jobs, instead of one thread (and its database connections) per storage per job.
+    private final ExecutorService storageExecutor;
+    private final int storageParallelism;
     private List<CronTask> tasks = new ArrayList<>();
 
-    private Cronjobs() {
+    private Cronjobs(int storageParallelism) {
         this.executor = Executors.newScheduledThreadPool(5);
+        this.storageParallelism = storageParallelism;
+        this.storageExecutor = Executors.newFixedThreadPool(storageParallelism);
     }
 
     public static Cronjobs getInstance(Main main) {
@@ -49,7 +61,17 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main) {
-        main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Cronjobs());
+        main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                new Cronjobs(Config.getBaseConfig(main).getCronStorageParallelism()));
+    }
+
+    ExecutorService getStorageExecutor() {
+        return this.storageExecutor;
+    }
+
+    @TestOnly
+    public int getStorageParallelism() {
+        return this.storageParallelism;
     }
 
     public static void shutdownAndAwaitTermination(Main main) {
@@ -63,7 +85,9 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
             }
             try {
                 instance.executor.shutdown();
+                instance.storageExecutor.shutdown();
                 instance.executor.awaitTermination(10, TimeUnit.SECONDS);
+                instance.storageExecutor.awaitTermination(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 // ignore any error as app is shutting down.
             }
@@ -92,11 +116,25 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         Cronjobs instance = getInstance(main);
         synchronized (instance.lock) {
             if (!instance.tasks.contains(task)) {
-                instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
-                        task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
+                long initialWait = task.getInitialWaitTimeSeconds();
+                if (!Main.isTesting) {
+                    initialWait += initialJitterSeconds(task.getIntervalTimeSeconds());
+                }
+                instance.executor.scheduleWithFixedDelay(task, initialWait, task.getIntervalTimeSeconds(),
+                        TimeUnit.SECONDS);
                 instance.tasks.add(task);
             }
         }
+    }
+
+    /*
+     * Most jobs wait one interval before their first run, so jobs with the same interval, and cores started
+     * together, would otherwise fire in the same instant for the life of the process. A random offset of up to one
+     * interval (capped at an hour) spreads them out. Tests keep their exact timings (addCronjob skips this there).
+     */
+    public static long initialJitterSeconds(int intervalSeconds) {
+        int bound = Math.min(intervalSeconds, MAX_INITIAL_JITTER_SECONDS);
+        return bound <= 0 ? 0 : ThreadLocalRandom.current().nextInt(bound);
     }
 
     public static boolean isCronjobLoaded(Main main, CronTask task) {

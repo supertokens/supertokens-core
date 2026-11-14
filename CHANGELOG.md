@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Cron jobs no longer open connections to every tenant database at the same instant
+  ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)):
+    - Per-storage cron work runs on one executor shared by all cron jobs, so at most `cron_storage_parallelism` (new,
+      default 4) storages are worked on at once, instead of one thread per storage for every job pass. A pass over
+      many storages takes longer; a pass still stops after one interval as before.
+    - Outside tests, each job's first run is delayed by a random offset of up to one interval (capped at one hour), so
+      jobs with the same interval, and cores started together, no longer run in the same second. Their intervals are
+      unchanged.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

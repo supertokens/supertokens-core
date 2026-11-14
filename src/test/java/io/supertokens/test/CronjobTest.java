@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
@@ -313,6 +314,47 @@ public class CronjobTest {
         @Override
         protected void doTaskPerStorage(Storage storage) throws Exception {
             storages.add(storage);
+        }
+    }
+
+    /* Records how many of its per-storage tasks run at the same time. */
+    static class ConcurrencyProbeCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.ConcurrencyProbeCronjob";
+        final AtomicInteger running = new AtomicInteger();
+        final AtomicInteger maxRunning = new AtomicInteger();
+        final AtomicInteger finished = new AtomicInteger();
+
+        private ConcurrencyProbeCronjob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("ConcurrencyProbeCronjob", main, tenantsInfo, false);
+        }
+
+        public static ConcurrencyProbeCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            try {
+                return (ConcurrencyProbeCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (ConcurrencyProbeCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new ConcurrencyProbeCronjob(main, tenantsInfo));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 60;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerStorage(Storage storage) throws Exception {
+            maxRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
+            Thread.sleep(100);
+            running.decrementAndGet();
+            finished.incrementAndGet();
         }
     }
 
@@ -783,6 +825,70 @@ public class CronjobTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPerStorageWorkIsBoundedByCronStorageParallelism() throws Exception {
+        Utils.setValueInConfig("cron_storage_parallelism", "3");
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(3, Cronjobs.getInstance(process.getProcess()).getStorageParallelism());
+
+        // twelve user pools; the per-storage work is the same for each, the bound is what is under test
+        List<List<TenantIdentifier>> pools = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            pools.add(List.of(TenantIdentifier.BASE_TENANT));
+        }
+        ConcurrencyProbeCronjob probe = ConcurrencyProbeCronjob.getInstance(process.getProcess(), pools);
+        Cronjobs.addCronjob(process.getProcess(), probe);
+
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (probe.finished.get() < 12 && System.currentTimeMillis() < deadline) {
+            Thread.sleep(50);
+        }
+        assertEquals(12, probe.finished.get());
+        assertTrue(probe.maxRunning.get() > 1);
+        assertTrue("ran " + probe.maxRunning.get() + " storages at once", probe.maxRunning.get() <= 3);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCronStorageParallelismDefaultsTo4AndMustBePositive() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(4, Config.getBaseConfig(process.getProcess()).getCronStorageParallelism());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        Utils.setValueInConfig("cron_storage_parallelism", "0");
+        process = TestingProcessManager.startIsolatedProcess(args);
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals("Provided cron_storage_parallelism must be >= 1", e.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testInitialJitterStaysWithinOneIntervalCappedAtAnHour() {
+        Set<Long> seen = new HashSet<>();
+        for (int i = 0; i < 1000; i++) {
+            long hourly = Cronjobs.initialJitterSeconds(3600);
+            assertTrue(hourly >= 0 && hourly < 3600);
+            seen.add(hourly);
+
+            long daily = Cronjobs.initialJitterSeconds(24 * 3600);
+            assertTrue(daily >= 0 && daily < Cronjobs.MAX_INITIAL_JITTER_SECONDS);
+
+            assertTrue(Cronjobs.initialJitterSeconds(300) < 300);
+        }
+        assertEquals(0, Cronjobs.initialJitterSeconds(0));
+        // jobs scheduled together end up at different offsets
+        assertTrue(seen.size() > 100);
     }
 
     @Test

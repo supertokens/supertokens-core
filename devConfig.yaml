@@ -76,6 +76,11 @@ core_config_version: 0
 # start, so while such storages are still running, more than this many can be initialising. Must be >= 1.
 # storage_init_parallelism:
 
+# (OPTIONAL | Default: 4) int value. How many tenant storages a cron job works on at the same time. Each one opens
+# database connections, so a lower value sends fewer connections at once to a database many tenants share, and a pass
+# over many storages takes longer. Shared by all cron jobs. Must be >= 1.
+# cron_storage_parallelism:
+
 
 
 # (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
