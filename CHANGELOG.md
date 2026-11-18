@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Session refresh and sign-out commit once: `POST /recipe/session/refresh` writes the session update and its
+  `token_refresh` activity event in one transaction, and `POST /recipe/session/remove` writes the deletes and the
+  `sign_out` event in one transaction (per database for session handles on several databases). The event is no
+  longer best-effort: if it cannot be written, the request fails and nothing is changed. Lookups of the user's
+  sessions, linked accounts and user id mappings run inside that transaction.
+- Behaviour change: revoking sessions by `sessionHandles` now records a `sign_out` activity event for each user
+  whose session was revoked (attributed to their SuperTokens user id), like revoking by `userId` already did.
+  Unknown or already revoked handles record nothing and write nothing.
+- Revoking a user's sessions across all tenants logs a warning when a tenant on a database other than the user's
+  still holds sessions for them, and revokes those in a separate write on that database.
+- Requires plugin interface 11.4 (`SessionSQLStorage.deleteSession_Transaction` and
+  `getAllNonExpiredSessionHandlesForUser_Transaction`).
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

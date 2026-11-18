@@ -19,22 +19,17 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.supertokens.ActiveUsers;
-import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMappingOptOut;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -44,10 +39,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class SessionRemoveAPI extends WebserverAPI {
     private static final long serialVersionUID = -2082970815993229316L;
@@ -128,37 +119,19 @@ public class SessionRemoveAPI extends WebserverAPI {
                     } catch (UnknownUserIdException e) {
                         throw new IllegalStateException("should never happen");
                     }
-                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                    sessionHandlesRevoked = Session.signOutAllSessionsForUser(
                             main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
                     TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                     storage = getTenantStorage(req);
 
-                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                    sessionHandlesRevoked = Session.signOutAllSessionsForUser(
                             main, tenantIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 }
 
-                if (storage.getType() == STORAGE_TYPE.SQL) {
-                    try {
-                        AppIdentifier appIdentifier = getAppIdentifier(req);
-                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                                appIdentifier, storage, userId, UserIdType.ANY);
-                        // Emit onto the storage sessions were just revoked on — the user's own storage,
-                        // already resolved above (the app-specific user storage in the across-all-tenants
-                        // branch, the request tenant's storage otherwise) — rather than redirecting to the
-                        // app's public-tenant storage. This keeps the SIGN_OUT colocated with the user's
-                        // auth record so the per-storage fold and summed count read stay consistent for a
-                        // separate-database tenant, without leaning on the fold residency guard as a backstop.
-                        if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(appIdentifier, storage, main,
-                                    userIdMapping.superTokensUserId, ActivityEventType.SIGN_OUT);
-                        } else {
-                            ActiveUsers.updateLastActive(appIdentifier, storage, main, userId,
-                                    ActivityEventType.SIGN_OUT);
-                        }
-                    } catch (StorageQueryException ignored) {
-                    }
-                }
+                // On a SQL storage the user's sign_out was written in the same transaction as the deletes, on the
+                // storage the sessions were revoked on: the user's own storage (the app-specific user storage in
+                // the across-all-tenants branch, the request tenant's storage otherwise).
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -172,29 +145,10 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
-                AppIdentifier appIdentifier = getAppIdentifier(req);
-                Map<String, List<String>> sessionHandlesByTenantId = new HashMap<>();
-
-                for (String sessionHandle : sessionHandles) {
-                    String tenantId = Session.getTenantIdFromSessionHandle(sessionHandle);
-                    if (!sessionHandlesByTenantId.containsKey(tenantId)) {
-                        sessionHandlesByTenantId.put(tenantId, new ArrayList<>());
-                    }
-                    sessionHandlesByTenantId.get(tenantId).add(sessionHandle);
-                }
-                List<String> allSessionHandlesRevoked = new ArrayList<>();
-                for (Map.Entry<String, List<String>> entry : sessionHandlesByTenantId.entrySet()) {
-                    String tenantId = entry.getKey();
-                    List<String> sessionHandlesForTenant = entry.getValue();
-                    Storage storage = StorageLayer.getStorage(
-                            new TenantIdentifier(
-                                    appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), tenantId),
-                            main);
-
-                    String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
-                            appIdentifier, storage, sessionHandlesForTenant.toArray(new String[0]));
-                    allSessionHandlesRevoked.addAll(List.of(sessionHandlesRevoked));
-                }
+                // Records a sign_out for each user whose session was revoked, in the same transaction as the
+                // deletes on that session's storage.
+                String[] allSessionHandlesRevoked = Session.signOutSessionsUsingSessionHandles(main,
+                        getAppIdentifier(req), sessionHandles);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
