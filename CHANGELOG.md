@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- The OAuth token and auth APIs (`POST /recipe/oauth/token`, `POST /recipe/oauth/auth`) write the session's activity
+  event in the same transaction as the OAuth session row, so each request commits once; `client_credentials` writes
+  its token stats and session rows in one transaction. A failed activity event write now fails the request instead
+  of being ignored. For a session whose tenant has its own database, the event is written there right after the
+  OAuth row commits. Needs plugin interface 11.4.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

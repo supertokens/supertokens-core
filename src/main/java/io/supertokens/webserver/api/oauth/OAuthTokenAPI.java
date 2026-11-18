@@ -19,8 +19,9 @@ package io.supertokens.webserver.api.oauth;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.pluginInterface.auditlog.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -28,6 +29,7 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOAuthProvider;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.OAuthSessionActivity;
 import io.supertokens.oauth.OAuthToken;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -36,19 +38,13 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
-import io.supertokens.pluginInterface.session.SessionInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.session.Session;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.output.Logging;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -71,7 +67,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import io.supertokens.auditlog.UnauditedTransaction;
 
 public class OAuthTokenAPI extends WebserverAPI {
 
@@ -234,9 +229,13 @@ public class OAuthTokenAPI extends WebserverAPI {
                     response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(),
                             iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
 
+                    JsonObject m2mAccessTokenPayload = null;
                     if (grantType.equals("client_credentials")) {
                         try {
-                            OAuth.addM2MToken(main, appIdentifier, storage, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                            // decoded before the write's transaction, so no signing-key read runs while it holds
+                            // a connection
+                            m2mAccessTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main,
+                                    response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
                         } catch (TryRefreshTokenException e) {
                             throw new IllegalStateException("should never happen");
                         }
@@ -254,8 +253,8 @@ public class OAuthTokenAPI extends WebserverAPI {
                             jti = accessTokenPayload.get("jti").getAsString();
                             accessTokenExp = accessTokenPayload.get("exp").getAsLong();
                             if (accessTokenPayload.has("sessionHandle")) {
+                                // the session's activity event is written with the OAuth session row, below
                                 sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
-                                updateLastActive(appIdentifier, sessionHandle);
                             }
                         } catch (TryRefreshTokenException e) {
                             //ignore, shouldn't happen
@@ -292,18 +291,22 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token, always creating a mapping.
-                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp,
+                                    m2mAccessTokenPayload, ActivityEventType.OAUTH_TOKEN_EXCHANGE);
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, jti, refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, inputRefreshToken, newRefreshToken, sessionHandle, jti, refreshTokenExp,
+                                        m2mAccessTokenPayload, ActivityEventType.OAUTH_TOKEN_EXCHANGE);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
-                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp);
+                                OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, newRefreshToken, null, sessionHandle, jti, refreshTokenExp,
+                                        m2mAccessTokenPayload, ActivityEventType.OAUTH_TOKEN_EXCHANGE);
                             }
                         }
                     } else {
-                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, accessTokenExp);
+                        OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, accessTokenExp,
+                                m2mAccessTokenPayload, ActivityEventType.OAUTH_TOKEN_EXCHANGE);
                     }
 
                 } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException
@@ -325,28 +328,6 @@ public class OAuthTokenAPI extends WebserverAPI {
             OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
         }
     }
-
-    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
-        try {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
-
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
-                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
-            } else {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
-                        ActivityEventType.OAUTH_TOKEN_EXCHANGE);
-            }
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
 
     /**
      * Handles a non-rotating OAuth refresh token exchange with a two-layer mutex:
@@ -396,9 +377,9 @@ public class OAuthTokenAPI extends WebserverAPI {
 
     /**
      * SQL path: DB transaction with {@code SELECT … FOR UPDATE} covering the full Hydra
-     * round-trip. The caller must already hold the JVM lock for this token.
+     * round-trip. The session's activity event is written with the mapping update after the
+     * exchange (see {@link OAuthSessionActivity}). The caller must already hold the JVM lock for this token.
      */
-    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private void handleNonRotatingRefresh(
             HttpServletRequest req, HttpServletResponse resp,
             AppIdentifier appIdentifier, OAuthSQLStorage sqlStorage, OAuthClient oauthClient,
@@ -407,8 +388,13 @@ public class OAuthTokenAPI extends WebserverAPI {
             throws IOException, ServletException {
 
         final JsonObject[] finalResponse = {null};
-        // Session handle from the re-signed access token, for the best-effort updateLastActive after the commit.
-        final String[] sessionHandleForLastActive = {null};
+        // The activity of the session the re-signed access token carries, for the bookkeeping (or, for a session
+        // tenant with its own database, the event write) after the commit.
+        final OAuthSessionActivity[] activity = {null};
+        // Set when the logic returns after a successful provider exchange: a failure after that is the activity
+        // event write or the commit (CORE-3 diagnostics), with the gid for the log line.
+        final boolean[] committingAfterExchange = {false};
+        final String[] gidForCommitLog = {null};
 
         // Pre-warm the signing-key caches OUTSIDE the transaction so that token re-signing and JWT payload
         // verification inside the transaction below are served from cache and never borrow a second pool
@@ -429,7 +415,9 @@ public class OAuthTokenAPI extends WebserverAPI {
         }
 
         try {
-            sqlStorage.startTransaction(con -> {
+            ((ActivityLogSQLStorage) sqlStorage).startAuditedTransaction(appIdentifier, con -> {
+                finalResponse[0] = null;
+                committingAfterExchange[0] = false;
                 // Tracked purely for CORE-3 diagnostics (PLAN-017): once the provider exchange has succeeded,
                 // any later failure that rolls back this transaction is a stranded-mapping risk we debug-log.
                 boolean exchangeSucceeded = false;
@@ -451,7 +439,9 @@ public class OAuthTokenAPI extends WebserverAPI {
                             main, req, resp, appIdentifier, sqlStorage,
                             null, "/admin/oauth2/introspect", true, false,
                             introspectFields, new HashMap<>());
-                    if (introspectResp == null) return null; // already responded; auto-rollback
+                    if (introspectResp == null) {
+                        return AuditedResult.withoutAudit(null, NOTHING_WRITTEN); // already responded
+                    }
 
                     JsonObject refreshTokenPayload = introspectResp.jsonResponse.getAsJsonObject();
                     // Run the revocation read on the outer connection `con` (not a nested borrow) and reuse
@@ -469,7 +459,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                                 "token_inactive",
                                 "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.",
                                 401));
-                        return null; // already responded; auto-rollback
+                        return AuditedResult.withoutAudit(null, NOTHING_WRITTEN); // already responded
                     }
 
                     // ── 3. Exchange with Hydra ─────────────────────────────────────
@@ -489,7 +479,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                         Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(),
                                 "OAuth non-rotating refresh: Hydra exchange failed (null response) — ext=...'"
                                         + tokenSuffix(externalRefreshToken) + "'");
-                        return null; // already responded; auto-rollback
+                        return AuditedResult.withoutAudit(null, NOTHING_WRITTEN); // already responded
                     }
                     // Provider has now (re)issued tokens. From here on, a rollback strands the local mapping
                     // while the provider has already rotated — the atomicity gap we log at warn below (PLAN-017 CORE-3).
@@ -515,12 +505,6 @@ public class OAuthTokenAPI extends WebserverAPI {
                             jti = atPayload.get("jti").getAsString();
                             if (atPayload.has("sessionHandle")) {
                                 sessionHandle = atPayload.get("sessionHandle").getAsString();
-                                // updateLastActive is best-effort side work that may target a DIFFERENT
-                                // tenant's storage/pool than the one holding `con`, so it must NOT be threaded
-                                // onto `con` (that would run it against the wrong storage). Its reads would
-                                // borrow a second connection while `con` is held, so it runs after the commit,
-                                // below (PLAN-017 §5.4).
-                                sessionHandleForLastActive[0] = sessionHandle;
                             }
                         } catch (TryRefreshTokenException e) {
                             Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
@@ -531,7 +515,12 @@ public class OAuthTokenAPI extends WebserverAPI {
                         }
                     }
 
-                    // ── 6. UPDATE + commit ─────────────────────────────────────────
+                    // The session's tenant may use another storage than the one holding `con`: then its event is
+                    // written after the commit, below, and nothing of it runs on `con` (PLAN-017 §5.4).
+                    activity[0] = OAuthSessionActivity.of(main, appIdentifier, sqlStorage, sessionHandle,
+                            ActivityEventType.OAUTH_TOKEN_EXCHANGE);
+
+                    // ── 6. UPDATE, activity event + commit ─────────────────────────
                     if (exchangeResp.jsonResponse.getAsJsonObject().has("refresh_token")) {
                         String newInternalToken = exchangeResp.jsonResponse.getAsJsonObject()
                                 .get("refresh_token").getAsString();
@@ -593,24 +582,27 @@ public class OAuthTokenAPI extends WebserverAPI {
                         }
                     }
 
+                    AuditedResult<Void> audited;
                     try {
-                        sqlStorage.commitTransaction(con);
+                        // the session and user id mapping lookups for the event run on `con`
+                        audited = activity[0].inTransaction(con, null);
                     } catch (StorageQueryException e) {
-                        // Diagnostic only (PLAN-017 CORE-3): commit failed even though the provider exchange
-                        // succeeded, so the local mapping rolls back while the provider already rotated. Logged at
-                        // warn — a data-integrity divergence, per reviewer. Rethrow unchanged — same rollback and
-                        // error response as before.
+                        // Diagnostic only (PLAN-017 CORE-3), as for the update above.
                         Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(),
-                                "OAuth non-rotating refresh: commit failed after a successful provider exchange —"
-                                        + " local mapping rolled back (stranded-mapping risk), ext=...'"
-                                        + tokenSuffix(externalRefreshToken) + "' gid=" + (gid == null ? "?" : gid)
-                                        + " — " + e);
+                                "OAuth non-rotating refresh: activity event lookup failed after a successful"
+                                        + " provider exchange — transaction will roll back (stranded-mapping"
+                                        + " risk), ext=...'" + tokenSuffix(externalRefreshToken) + "' gid="
+                                        + (gid == null ? "?" : gid) + " — " + e);
                         throw e;
                     }
 
                     exchangeResp.jsonResponse.getAsJsonObject().remove("refresh_token");
                     exchangeResp.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                     finalResponse[0] = exchangeResp.jsonResponse.getAsJsonObject();
+                    committingAfterExchange[0] = true;
+                    gidForCommitLog[0] = gid;
+                    // startAuditedTransaction writes the event on `con` and commits
+                    return audited;
 
                 } catch (IOException | TenantOrAppNotFoundException | FeatureNotEnabledException
                          | InvalidConfigException | InvalidKeyException | NoSuchAlgorithmException
@@ -630,7 +622,6 @@ public class OAuthTokenAPI extends WebserverAPI {
                     }
                     throw new StorageTransactionLogicException(e);
                 }
-                return null;
             });
 
         } catch (StorageTransactionLogicException e) {
@@ -638,17 +629,33 @@ public class OAuthTokenAPI extends WebserverAPI {
             if (e.actualException instanceof ServletException) throw (ServletException) e.actualException;
             throw new ServletException(e.actualException);
         } catch (StorageQueryException e) {
+            if (committingAfterExchange[0]) {
+                // Diagnostic only (PLAN-017 CORE-3): the activity event write or the commit failed even though the
+                // provider exchange succeeded, so the local mapping rolls back while the provider already rotated.
+                // Logged at warn — a data-integrity divergence, per reviewer. Same rollback and error response as
+                // any other failure.
+                Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(),
+                        "OAuth non-rotating refresh: activity event write or commit failed after a successful"
+                                + " provider exchange — local mapping rolled back (stranded-mapping risk), ext=...'"
+                                + tokenSuffix(externalRefreshToken) + "' gid="
+                                + (gidForCommitLog[0] == null ? "?" : gidForCommitLog[0]) + " — " + e);
+            }
             throw new ServletException(e);
         }
 
         // Send response only if the transaction committed (null = error already sent by proxyFormPOST)
         if (finalResponse[0] != null) {
-            if (sessionHandleForLastActive[0] != null) {
-                updateLastActive(appIdentifier, sessionHandleForLastActive[0]);
+            try {
+                activity[0].afterCommit();
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+                throw new ServletException(e);
             }
             super.sendJsonResponse(200, finalResponse[0], resp);
         }
     }
+
+    private static final String NOTHING_WRITTEN = "Nothing was written: the request failed and its error response "
+            + "has been sent.";
 
     private static String tokenSuffix(String token) {
         if (token == null || token.length() <= 8) return token;
