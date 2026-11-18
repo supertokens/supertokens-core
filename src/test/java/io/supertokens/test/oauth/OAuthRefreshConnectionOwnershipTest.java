@@ -99,7 +99,7 @@ public class OAuthRefreshConnectionOwnershipTest {
      * Craft a minimal well-formed JWT that the OAuth provider would return as an access token. The non-rotating refresh
      * handler re-signs it with the Core signing keys ({@code OAuthToken.reSignToken} decodes without verifying),
      * so the signature here is arbitrary. Carries a {@code sessionHandle} only when one is given, which is what
-     * triggers the best-effort {@code updateLastActive} side-call (which may target another storage).
+     * makes the handler write the session's activity event (on another storage, for a tenant with its own database).
      */
     private static String fakeProviderAccessToken(String sessionHandle) {
         long now = System.currentTimeMillis() / 1000L;
@@ -239,8 +239,8 @@ public class OAuthRefreshConnectionOwnershipTest {
 
     /**
      * An access token that carries a {@code sessionHandle} makes the handler record the user's activity, which reads
-     * the session and its user-id mapping. Those reads borrow their own connections, so they must not run while the
-     * transaction connection is held.
+     * the session and its user-id mapping. On the transaction's storage those reads must run on its connection, not
+     * borrow their own while it is held.
      */
     @Test
     public void nonRotatingRefresh_withSessionHandle_holdsExactlyOneConnection() throws Exception {
@@ -262,8 +262,8 @@ public class OAuthRefreshConnectionOwnershipTest {
                 new JsonObject()).session.handle;
 
         OAuth.doOAuthProxyFormPOSTTestHook = providerStub(sessionHandle);
-        // Warn mode for the nested-acquisition guard: in its default throwing mode the nested read would fail
-        // before it is counted, and updateLastActive swallows that failure, so the peak would read 1 anyway.
+        // Warn mode for the nested-acquisition guard: in its default throwing mode a nested read would fail the
+        // request instead of showing up in the peak.
         ConnectionPool.setThrowOnNestedAcquisition(false);
         try {
             ConnectionPool.startBorrowTracking(false /* peak gauge only, do not enforce */);
