@@ -112,9 +112,9 @@ public class DisableUserIdMappingTest {
             return;
         }
 
-        // these read no user id mapping, in core or in the storage, even with mapping enabled
-        Set<String> noLookup = Set.of("session verify (checkDatabase)", "session remove", "user roles add",
-                "user roles get");
+        // these read no user id mapping, in core or in the storage, even with mapping enabled. (Revoking a session by
+        // handle does: it attributes the user's sign_out to their SuperTokens user id.)
+        Set<String> noLookup = Set.of("session verify (checkDatabase)", "user roles add", "user roles get");
         Map<String, Long> counts = countUserIdMappingCallsPerRequest(process);
         for (Map.Entry<String, Long> entry : counts.entrySet()) {
             assertEquals(entry.getKey(), !noLookup.contains(entry.getKey()), entry.getValue() > 0);
