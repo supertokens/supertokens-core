@@ -25,14 +25,9 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class Cronjobs extends ResourceDistributor.SingletonResource {
@@ -41,21 +36,18 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     final Object lock = new Object();
     // Longest random offset added to a job's first run (see addCronjob).
     public static final int MAX_INITIAL_JITTER_SECONDS = 3600;
+    // How long shutdown waits for interrupted storage work to stop before storages are closed.
+    private static final long STORAGE_WORK_STOP_WAIT_SECONDS = 5;
 
     private final ScheduledExecutorService executor;
-    // Shared by every cron job's per-storage work, so at most cron_storage_parallelism storages are worked on at
-    // once across all jobs, instead of one thread (and its database connections) per storage per job.
-    private final ThreadPoolExecutor storageExecutor;
+    // Each job's per-storage work runs on that job's own pool of this many threads (see CronTask), so one job's
+    // pass connects to at most this many storages at once, and a slow job only delays itself.
     private final int storageParallelism;
-    // Storage tasks not yet finished. Shutdown cancels them, so cron threads waiting on them return.
-    private final Set<FutureTask<?>> inFlight = ConcurrentHashMap.newKeySet();
     private List<CronTask> tasks = new ArrayList<>();
 
     private Cronjobs(int storageParallelism) {
         this.executor = Executors.newScheduledThreadPool(5);
         this.storageParallelism = storageParallelism;
-        this.storageExecutor = new ThreadPoolExecutor(storageParallelism, storageParallelism, 0L,
-                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
     }
 
     public static Cronjobs getInstance(Main main) {
@@ -72,29 +64,6 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 new Cronjobs(Config.getBaseConfig(main).getCronStorageParallelism()));
     }
 
-    FutureTask<?> submitStorageTask(Runnable work) {
-        FutureTask<?> task = new FutureTask<Void>(work, null) {
-            @Override
-            protected void done() {
-                inFlight.remove(this);
-            }
-        };
-        inFlight.add(task);
-        try {
-            storageExecutor.execute(task);
-        } catch (RuntimeException e) {
-            inFlight.remove(task);
-            throw e;
-        }
-        return task;
-    }
-
-    // drops cancelled tasks from the queue; Future.cancel alone leaves them there until a worker picks them up
-    void purgeStorageTasks() {
-        storageExecutor.purge();
-    }
-
-    @TestOnly
     public int getStorageParallelism() {
         return this.storageParallelism;
     }
@@ -109,17 +78,16 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 t.shutdownIsGoingToBeCalled();
             }
             try {
-                // No new runs, and no new storage tasks (submit is rejected from here on).
                 instance.executor.shutdown();
-                instance.storageExecutor.shutdown();
-                if (!instance.storageExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                    // storages are closed right after this returns: drop queued work, interrupt running work
-                    instance.storageExecutor.shutdownNow();
+                // Storages are closed right after this returns, so per-storage work must stop now: queued tasks
+                // are dropped instead of starting and opening connections, running ones are interrupted, and
+                // their Futures are cancelled so scheduler threads waiting on them return.
+                for (CronTask t : instance.tasks) {
+                    t.stopStorageWork();
                 }
-                // shutdownNow neither completes the Futures it drains nor ones a worker is still in, so a cron
-                // thread waiting on them would block for up to its interval. Cancelling them releases it. This
-                // runs before waiting for the scheduler, whose threads may be the ones waiting.
-                instance.inFlight.forEach(t -> t.cancel(true));
+                for (CronTask t : instance.tasks) {
+                    t.awaitStorageWorkStopped(STORAGE_WORK_STOP_WAIT_SECONDS);
+                }
                 instance.executor.awaitTermination(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 // ignore any error as app is shutting down.
@@ -149,25 +117,29 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         Cronjobs instance = getInstance(main);
         synchronized (instance.lock) {
             if (!instance.tasks.contains(task)) {
+                int interval = task.getIntervalTimeSeconds();
                 long initialWait = task.getInitialWaitTimeSeconds();
                 if (!Main.isTesting) {
-                    initialWait += initialJitterSeconds(task.getIntervalTimeSeconds());
+                    initialWait += initialJitterSeconds(initialWait, interval);
                 }
-                instance.executor.scheduleWithFixedDelay(task, initialWait, task.getIntervalTimeSeconds(),
-                        TimeUnit.SECONDS);
+                instance.executor.scheduleWithFixedDelay(task, initialWait, interval, TimeUnit.SECONDS);
                 instance.tasks.add(task);
             }
         }
     }
 
     /*
-     * Most jobs wait one interval before their first run, so jobs with the same interval, and cores started
-     * together, would otherwise fire in the same instant for the life of the process. A random offset of up to one
-     * interval (capped at an hour) spreads them out. Tests keep their exact timings (addCronjob skips this there).
+     * Jobs whose first run is a full interval after start would otherwise fire in the same instant as every other
+     * job with that interval, and as the same job on cores started together, for the life of the process. A random
+     * offset of up to one interval (capped at an hour) spreads them out. Jobs that start sooner on purpose (the
+     * license check, telemetry, bulk import, the backfill) keep their own timing: their start is set relative to
+     * boot and to each other, and an offset would break that.
      */
-    public static long initialJitterSeconds(int intervalSeconds) {
-        int bound = Math.min(intervalSeconds, MAX_INITIAL_JITTER_SECONDS);
-        return bound <= 0 ? 0 : ThreadLocalRandom.current().nextInt(bound);
+    public static long initialJitterSeconds(long initialWaitSeconds, int intervalSeconds) {
+        if (intervalSeconds <= 0 || initialWaitSeconds < intervalSeconds) {
+            return 0;
+        }
+        return ThreadLocalRandom.current().nextInt(Math.min(intervalSeconds, MAX_INITIAL_JITTER_SECONDS));
     }
 
     public static boolean isCronjobLoaded(Main main, CronTask task) {
