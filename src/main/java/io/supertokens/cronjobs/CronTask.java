@@ -29,12 +29,21 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class CronTask extends ResourceDistributor.SingletonResource implements Runnable {
 
@@ -49,6 +58,21 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     private final TenantIdentifier targetTenant;
 
     private final boolean isPerApp;
+
+    // Storages (by representative tenant) in the order the next pass queues them. A pass that runs out of time
+    // moves every storage it did not finish to the end, so storages it never reached go first next time and one
+    // that never finishes cannot hold the front of every pass. Keyed rather than indexed so it stays right when
+    // tenants are added or removed between passes. Only touched by this job's scheduler thread.
+    private final LinkedHashSet<TenantIdentifier> passOrder = new LinkedHashSet<>();
+
+    // This job's own per-storage pool, cron_storage_parallelism threads, created on its first per-storage pass.
+    // Per job rather than shared, so a job stuck on one storage only delays itself, and its time limit only ever
+    // covers its own queue.
+    private ThreadPoolExecutor storageExecutor;
+    // Storage tasks not yet finished, so shutdown can cancel the ones shutdownNow drains or interrupts.
+    private final Set<FutureTask<?>> inFlight = ConcurrentHashMap.newKeySet();
+    // Set at shutdown; no pool is created after it.
+    private boolean stopping = false;
 
     protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo, boolean isPerApp) {
         this.jobName = jobName;
@@ -123,53 +147,223 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                     }
                 }
             } else {
-                // we create one thread per unique storage and run the query based on that.
-                ExecutorService service = Executors.newFixedThreadPool(copied.size());
+                // one task per unique storage, on this job's own pool, so the job connects to at most
+                // cron_storage_parallelism storages at once and never waits behind another job's work.
+                ThreadPoolExecutor pool = storageExecutor();
+                if (pool == null) {
+                    // the core is shutting down
+                    return;
+                }
                 AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
-                for (List<TenantIdentifier> t : copied) {
-                    service.execute(() -> {
-                        try {
-                            doTaskPerStorage(t.get(0), StorageLayer.getStorage(t.get(0), main));
-                        } catch (Exception e) {
-                            ProcessState.getInstance(main)
-                                    .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                            Logging.error(main, t.get(0), "Cronjob threw an exception: " + this.jobName, Main.isTesting,
-                                    e);
-                            if (e instanceof QuitProgramException) {
-                                threwQuitProgramException.set(true);
-                            }
-                        }
-
-                        for (TenantIdentifier tenant : t) {
-                            try {
-                                doTaskPerTenant(tenant);
-                            } catch (Exception e) {
-                                ProcessState.getInstance(main)
-                                        .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                                Logging.error(main, tenant, "Cronjob threw an exception: " + this.jobName,
-                                        Main.isTesting, e);
-                                if (e instanceof QuitProgramException) {
-                                    threwQuitProgramException.set(true);
-                                }
-                            }
-                        }
-                    });
+                List<Future<?>> pending = new ArrayList<>();
+                List<TenantIdentifier> submitted = new ArrayList<>();
+                // Each pass records its own starts; a task cancelled at the end of the previous pass may still mark
+                // itself started, so this is reset before queueing rather than after the pass.
+                Set<TenantIdentifier> started = ConcurrentHashMap.newKeySet();
+                for (List<TenantIdentifier> t : orderForThisPass(copied)) {
+                    try {
+                        pending.add(submit(pool, () -> {
+                            started.add(t.get(0));
+                            runForStorage(t, threwQuitProgramException);
+                        }));
+                        submitted.add(t.get(0));
+                    } catch (RejectedExecutionException e) {
+                        // the core is shutting down
+                        break;
+                    }
                 }
-                service.shutdown();
-                boolean didShutdown = false;
-                try {
-                    didShutdown = service.awaitTermination(this.getIntervalTimeSeconds(), TimeUnit.SECONDS);
-                } catch (InterruptedException ignored) {
-                }
-                if (!didShutdown) {
-                    service.shutdownNow();
-                }
+                awaitPerStorageTasks(pending);
+                updatePassOrder(pending, submitted, started);
                 if (threwQuitProgramException.get()) {
                     main.wakeUpMainThreadToShutdown();
                 }
             }
         }
         Logging.info(main, this.targetTenant, "Cronjob finished: " + jobName, false);
+    }
+
+    /*
+     * One storage's work: the per-storage task, then each of its tenants. Stops as soon as the worker is
+     * interrupted (the pass ran out of time, or the core is stopping), so a cancelled task does not keep going
+     * through its tenants untracked or run alongside the next pass on the same storage. An interruption is not
+     * an error and is not logged as one.
+     */
+    private void runForStorage(List<TenantIdentifier> tenants, AtomicBoolean threwQuitProgramException) {
+        try {
+            doTaskPerStorage(tenants.get(0), StorageLayer.getStorage(tenants.get(0), main));
+        } catch (Exception e) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            reportError(tenants.get(0), e, threwQuitProgramException);
+        }
+        for (TenantIdentifier tenant : tenants) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            try {
+                doTaskPerTenant(tenant);
+            } catch (Exception e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                reportError(tenant, e, threwQuitProgramException);
+            }
+        }
+    }
+
+    private void reportError(TenantIdentifier tenant, Exception e, AtomicBoolean threwQuitProgramException) {
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
+        Logging.error(main, tenant, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+        if (e instanceof QuitProgramException) {
+            threwQuitProgramException.set(true);
+        }
+    }
+
+    /* Storages this pass queues: those in passOrder first, in that order, then any new ones in their usual order. */
+    private List<List<TenantIdentifier>> orderForThisPass(List<List<TenantIdentifier>> copied) {
+        List<List<TenantIdentifier>> ordered = new ArrayList<>();
+        for (TenantIdentifier key : passOrder) {
+            for (List<TenantIdentifier> t : copied) {
+                if (t.get(0).equals(key)) {
+                    ordered.add(t);
+                    break;
+                }
+            }
+        }
+        for (List<TenantIdentifier> t : copied) {
+            if (!passOrder.contains(t.get(0))) {
+                ordered.add(t);
+            }
+        }
+        return ordered;
+    }
+
+    /*
+     * Next pass order: storages this pass did not finish (timed out, cancelled or never started) first, in the
+     * order they were queued, then the ones that finished. A storage that never finishes within the interval
+     * therefore drops behind the others instead of staying first and taking every pass. Storages no longer served
+     * are not carried over, so the order only ever holds current storages.
+     */
+    private void updatePassOrder(List<Future<?>> pending, List<TenantIdentifier> submitted,
+                                 Set<TenantIdentifier> started) {
+        List<TenantIdentifier> notReached = new ArrayList<>();
+        List<TenantIdentifier> timedOut = new ArrayList<>();
+        List<TenantIdentifier> finished = new ArrayList<>();
+        for (int i = 0; i < pending.size(); i++) {
+            Future<?> f = pending.get(i);
+            if (f.isDone() && !f.isCancelled()) {
+                finished.add(submitted.get(i));
+            } else if (started.contains(submitted.get(i))) {
+                timedOut.add(submitted.get(i));
+            } else {
+                notReached.add(submitted.get(i));
+            }
+        }
+        passOrder.clear();
+        passOrder.addAll(notReached);
+        passOrder.addAll(finished);
+        passOrder.addAll(timedOut);
+    }
+
+    /*
+     * Waits for this pass's storages, at most one interval in total as before. The pool is this job's own, so the
+     * wait only ever covers this job's own queue. Tasks still queued or running after that are cancelled and
+     * dropped from the queue, so a slow pass cannot pile up behind the next one.
+     */
+    private void awaitPerStorageTasks(List<Future<?>> pending) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(this.getIntervalTimeSeconds());
+        for (Future<?> f : pending) {
+            try {
+                f.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+            } catch (TimeoutException | InterruptedException e) {
+                pending.forEach(p -> p.cancel(true));
+                ThreadPoolExecutor pool = storageExecutor;
+                if (pool != null) {
+                    pool.purge();
+                }
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                } else {
+                    Logging.warn(main, TenantIdentifier.BASE_TENANT, "Cronjob " + this.jobName
+                            + " ran out of time; the next run starts with the storages it did not reach");
+                }
+                return;
+            } catch (CancellationException e) {
+                // cancelled by shutdown (stopStorageWork)
+            } catch (ExecutionException e) {
+                // Exceptions are logged inside the task; this is an Error (e.g. a plugin's NoSuchMethodError),
+                // which the task does not catch and would otherwise be dropped with its Future.
+                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING,
+                        e.getCause() instanceof Exception ? (Exception) e.getCause() : e);
+                Logging.error(main, TenantIdentifier.BASE_TENANT, "Cronjob threw an error: " + this.jobName,
+                        Main.isTesting, e.getCause() instanceof Exception ? (Exception) e.getCause() : e);
+            }
+        }
+    }
+
+    /* Wraps a storage task so it is tracked until it finishes, and so shutdown can cancel it. */
+    private FutureTask<?> submit(ThreadPoolExecutor pool, Runnable work) {
+        FutureTask<?> task = new FutureTask<Void>(work, null) {
+            @Override
+            protected void done() {
+                inFlight.remove(this);
+            }
+        };
+        inFlight.add(task);
+        try {
+            pool.execute(task);
+        } catch (RuntimeException e) {
+            inFlight.remove(task);
+            throw e;
+        }
+        return task;
+    }
+
+    /*
+     * This job's pool, created on first use: daemon platform threads named after the job (as
+     * StorageLayer.newStorageInitExecutor does), so a task stuck in a JDBC read never keeps the JVM alive after
+     * stop and thread dumps show which job each thread belongs to. Null once the core is stopping.
+     */
+    private synchronized ThreadPoolExecutor storageExecutor() {
+        if (storageExecutor == null) {
+            if (stopping) {
+                return null;
+            }
+            int threads = Cronjobs.getInstance(main).getStorageParallelism();
+            AtomicInteger threadNumber = new AtomicInteger();
+            storageExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threads, runnable -> {
+                Thread thread = new Thread(runnable, "cron-" + jobName + "-" + threadNumber.incrementAndGet());
+                thread.setDaemon(true);
+                return thread;
+            });
+        }
+        return storageExecutor;
+    }
+
+    /*
+     * Called by Cronjobs at shutdown, before storages are closed: drops queued storage work instead of letting it
+     * start and open connections, interrupts running work, and cancels every tracked Future, since shutdownNow
+     * neither completes the ones it drains nor the ones a worker is in. That releases a scheduler thread waiting
+     * on them in awaitPerStorageTasks.
+     */
+    synchronized void stopStorageWork() {
+        stopping = true;
+        if (storageExecutor != null) {
+            storageExecutor.shutdownNow();
+        }
+        inFlight.forEach(t -> t.cancel(true));
+    }
+
+    /* Waits briefly for interrupted storage work to stop, so it is not still running when storages close. */
+    void awaitStorageWorkStopped(long seconds) throws InterruptedException {
+        ThreadPoolExecutor pool;
+        synchronized (this) {
+            pool = storageExecutor;
+        }
+        if (pool != null) {
+            pool.awaitTermination(seconds, TimeUnit.SECONDS);
+        }
     }
 
     public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {

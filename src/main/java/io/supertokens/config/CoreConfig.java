@@ -159,6 +159,15 @@ public class CoreConfig {
                     + "running, more than this many can be initialising. Must be >= 1. (Default: 16)")
     private int storage_init_parallelism = 16;
 
+    @EnvName("CRON_STORAGE_PARALLELISM")
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "How many tenant storages a cron job works on at the same time. Each one opens database connections, so "
+                    + "a lower value sends fewer connections at once to a database many tenants share, and a pass over "
+                    + "many storages takes longer. Shared by all cron jobs. Must be >= 1. (Default: 4)")
+    private int cron_storage_parallelism = 4;
+
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -859,6 +868,10 @@ public class CoreConfig {
         return storage_init_parallelism;
     }
 
+    public int getCronStorageParallelism() {
+        return cron_storage_parallelism;
+    }
+
     public long getPasswordResetTokenLifetime() {
         return password_reset_token_lifetime;
     }
@@ -1402,6 +1415,10 @@ public class CoreConfig {
 
         if (storage_init_parallelism < 1) {
             throw new InvalidConfigException("Provided storage_init_parallelism must be >= 1");
+        }
+
+        if (cron_storage_parallelism < 1) {
+            throw new InvalidConfigException("Provided cron_storage_parallelism must be >= 1");
         }
 
         if (bulk_migration_parallelism < 1) {
