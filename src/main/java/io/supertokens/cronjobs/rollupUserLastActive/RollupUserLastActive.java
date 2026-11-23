@@ -54,7 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   back to {@code now - retention}. Retention comes from {@code activity_log_retention_days} via the
  *   representative tenant.
  *   <li>The window is folded in slices of at most {@link #SLICE_MS}, each in its own transaction that also
- *   advances the watermark to the slice's end (the last slice ends at the run-start time). One slice must fit
+ *   advances the watermark to the slice's end (the last slice's watermark is the run-start time, and its fold
+ *   stays open-ended like the unsliced fold). One slice must fit
  *   well inside the storage connection's socket timeout: a single unbounded fold over a large backlog would
  *   exceed it, roll back with its watermark, and come back larger on every retry, so the projection would
  *   never catch up. A pass stops after {@link #PASS_BUDGET_MS} and leaves the rest of the backlog (with the
@@ -189,12 +190,16 @@ public class RollupUserLastActive extends CronTask {
             while (true) {
                 final long from = sliceStart;
                 final long to = Math.min(sliceStart + sliceMs, runStart);
+                // The last slice stays open-ended, exactly like the unsliced fold: activity stamped after the
+                // run start (another instance's clock running ahead) is folded now rather than a pass later.
+                // Its watermark is still the run start, so the next window re-reads that overlap.
+                final long foldEnd = to >= runStart ? Long.MAX_VALUE : to;
                 // The rollup consumes the activity log to maintain a derived projection; it emits no audit
                 // events of its own, so it runs through the audited-transaction combinator's zero-event path.
                 // The combinator owns the commit.
                 boolean[] folded = new boolean[1];
                 activityLogStorage.startAuditedTransaction(appIdentifier, con -> {
-                    folded[0] = activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, from, to);
+                    folded[0] = activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, from, foldEnd);
                     if (folded[0]) {
                         // Advance the watermark only when the fold actually ran, and only to this slice's end
                         // (the run-start time for the last slice, not "now after the fold"): the next window
