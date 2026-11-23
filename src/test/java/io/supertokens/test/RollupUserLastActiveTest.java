@@ -22,6 +22,7 @@ import io.supertokens.cronjobs.rollupUserLastActive.RollupDirtySignal;
 import io.supertokens.cronjobs.rollupUserLastActive.RollupUserLastActive;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -38,6 +39,7 @@ import java.sql.ResultSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -257,7 +259,7 @@ public class RollupUserLastActiveTest {
         // A lock loser: the fold reports it folded nothing (another instance holds the rollup lock).
         Start skippingStorage = Mockito.spy(f.storage);
         Mockito.doReturn(false).when(skippingStorage)
-                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong());
+                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
 
         // Null watermark before the pass — the deep-catch-up loss case.
         assertNull(getWatermark(f.storage, f.representative));
@@ -268,6 +270,109 @@ public class RollupUserLastActiveTest {
         assertNull(getWatermark(f.storage, f.representative));
         // And the dirty flag is re-armed for the next tick.
         assertTrue(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
+
+        stopFixture(f);
+    }
+
+    private static final long HOUR_MS = 60L * 60L * 1000L;
+
+    /**
+     * A backlog is folded in bounded slices, each its own transaction, so no single fold has to cover the
+     * whole window. That is what keeps one fold inside the storage connection's socket timeout: an unbounded
+     * fold over a large backlog times out, rolls back with its watermark, and retries an even larger window
+     * on every pass, so it never catches up.
+     */
+    @Test
+    public void aBacklogIsFoldedInBoundedSlices() throws Exception {
+        TestFixture f = startFixture();
+
+        long now = System.currentTimeMillis();
+        setWatermark(f.storage, f.representative, now - 10 * HOUR_MS);
+        insertUserLastActiveEvent(f.storage, "rollup-slice-early", now - 9 * HOUR_MS);
+        insertUserLastActiveEvent(f.storage, "rollup-slice-late", now - 2 * HOUR_MS);
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+
+        Start spy = Mockito.spy(f.storage);
+        f.cron.setSliceAndPassBudgetForTesting(HOUR_MS, Long.MAX_VALUE);
+        f.cron.runOncePerStorageForTesting(f.representative, spy);
+
+        // 10h15m window (watermark - 15 min margin) in 1h slices -> 11 bounded folds, never an unbounded one.
+        Mockito.verify(spy, Mockito.times(11))
+                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
+        Mockito.verify(spy, Mockito.never())
+                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong());
+        assertEquals(Long.valueOf(now - 9 * HOUR_MS), getLastActive(f.storage, "rollup-slice-early"));
+        assertEquals(Long.valueOf(now - 2 * HOUR_MS), getLastActive(f.storage, "rollup-slice-late"));
+        // Caught up: the watermark reached the run start and the dirty flag is not re-armed.
+        assertTrue(getWatermark(f.storage, f.representative) >= now);
+        assertFalse(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
+
+        stopFixture(f);
+    }
+
+    /**
+     * A pass that runs out of its time budget keeps what it folded (the watermark is advanced per slice) and
+     * leaves the rest of the backlog, with the dirty flag re-armed, to the next pass.
+     */
+    @Test
+    public void aPassOutOfBudgetKeepsItsProgressAndContinuesNextPass() throws Exception {
+        TestFixture f = startFixture();
+
+        long now = System.currentTimeMillis();
+        long watermark = now - 10 * HOUR_MS;
+        setWatermark(f.storage, f.representative, watermark);
+        insertUserLastActiveEvent(f.storage, "rollup-budget-early", now - 10 * HOUR_MS + 1000);
+        insertUserLastActiveEvent(f.storage, "rollup-budget-late", now - 2 * HOUR_MS);
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+
+        // A zero budget: every pass folds exactly one slice.
+        f.cron.setSliceAndPassBudgetForTesting(HOUR_MS, 0);
+        f.cron.runOncePerStorageForTesting(f.representative, f.storage);
+
+        long firstSliceEnd = watermark - 15 * 60 * 1000L + HOUR_MS;
+        assertEquals(Long.valueOf(firstSliceEnd), getWatermark(f.storage, f.representative));
+        assertEquals(Long.valueOf(now - 10 * HOUR_MS + 1000), getLastActive(f.storage, "rollup-budget-early"));
+        assertNull(getLastActive(f.storage, "rollup-budget-late"));
+        assertTrue(RollupDirtySignal.getInstance(f.main).consumeDirty(f.userPoolId));
+
+        // The next pass resumes from the advanced watermark (minus the margin), not from the old one.
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+        f.cron.runOncePerStorageForTesting(f.representative, f.storage);
+        assertEquals(Long.valueOf(firstSliceEnd - 15 * 60 * 1000L + HOUR_MS),
+                getWatermark(f.storage, f.representative));
+
+        stopFixture(f);
+    }
+
+    /**
+     * Consecutive failed passes are counted per storage (from the third one on they are also logged to the
+     * console), and a pass that succeeds resets the count.
+     */
+    @Test
+    public void consecutiveFailuresAreCountedAndResetBySuccess() throws Exception {
+        TestFixture f = startFixture();
+
+        insertUserLastActiveEvent(f.storage, "rollup-fail-count", System.currentTimeMillis() - 1000);
+        Start failing = Mockito.spy(f.storage);
+        Mockito.doThrow(new StorageQueryException(new java.sql.SQLException("simulated socket timeout")))
+                .when(failing)
+                .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
+
+        for (int i = 1; i <= 3; i++) {
+            RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+            try {
+                f.cron.runOncePerStorageForTesting(f.representative, failing);
+                fail("expected the fold to throw");
+            } catch (Exception expected) {
+                // counted below
+            }
+            assertEquals(i, f.cron.getConsecutiveFailuresForTesting(f.userPoolId));
+        }
+
+        RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+        f.cron.runOncePerStorageForTesting(f.representative, f.storage);
+        assertEquals(0, f.cron.getConsecutiveFailuresForTesting(f.userPoolId));
+        assertNotNull(getLastActive(f.storage, "rollup-fail-count"));
 
         stopFixture(f);
     }

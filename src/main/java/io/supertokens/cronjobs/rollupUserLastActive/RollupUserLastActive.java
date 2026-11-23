@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.ActiveUsersSQLStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
@@ -52,7 +53,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>The fold window is {@code max(watermark - MARGIN, now - retention)}; on a missing watermark it falls
  *   back to {@code now - retention}. Retention comes from {@code activity_log_retention_days} via the
  *   representative tenant.
- *   <li>Fold, reconcile and the watermark advance to the run-start time happen in one transaction, and
+ *   <li>The window is folded in slices of at most {@link #SLICE_MS}, each in its own transaction that also
+ *   advances the watermark to the slice's end (the last slice ends at the run-start time). One slice must fit
+ *   well inside the storage connection's socket timeout: a single unbounded fold over a large backlog would
+ *   exceed it, roll back with its watermark, and come back larger on every retry, so the projection would
+ *   never catch up. A pass stops after {@link #PASS_BUDGET_MS} and leaves the rest of the backlog (with the
+ *   dirty flag set) to the next tick.
+ *   <li>Fold, reconcile and the watermark advance of a slice happen in one transaction, and
  *   the watermark advances only when the fold actually ran: a storage whose fold skips because a
  *   concurrent instance holds its rollup lock returns {@code false}, and this pass then leaves the
  *   watermark where it was (re-arming the dirty flag) so the unfolded window is retried, rather than
@@ -89,10 +96,28 @@ public class RollupUserLastActive extends CronTask {
     // 600s interval this is roughly hourly, well inside the retention horizon.
     private static final int BACKSTOP_EVERY_N_TICKS = 6;
 
+    // Upper bound of one fold transaction's window. A normal pass (watermark - MARGIN .. now, about 25 minutes)
+    // is a single slice; only a backlog is split. Measured fold cost is about 1 s per million in-window
+    // activity rows, so an hour of activity stays far below the PostgreSQL plugin's 60 s socket timeout.
+    static final long SLICE_MS = 60 * 60 * 1000L;
+
+    // How long one pass may keep folding slices before it yields to the next tick, so a deep backlog
+    // (e.g. after an upgrade, or the retention fallback) is caught up over several passes instead of holding
+    // the cron thread and a pooled connection for its whole duration.
+    static final long PASS_BUDGET_MS = 5 * 60 * 1000L;
+
+    // After this many consecutive failed passes for a storage, every further failure is logged to the console
+    // as well, so a rollup that cannot make progress is visible in the deployment's logs.
+    static final int CONSOLE_ALERT_AFTER_N_FAILURES = 3;
+
     private static class PerStorageState {
         boolean startupDone = false;
         long passCount = 0;
+        int consecutiveFailures = 0;
     }
+
+    private long sliceMs = SLICE_MS;
+    private long passBudgetMs = PASS_BUDGET_MS;
 
     // Per-storage cron state (first-run tracking + tick counting for the backstop). Only ever touched by the
     // cron's own thread(s): passes never overlap (scheduleWithFixedDelay) and a given storage is handled by
@@ -153,44 +178,74 @@ public class RollupUserLastActive extends CronTask {
                 // must not make the check skip a fold the fold itself would perform.
                 if (!activityLogStorage.hasUnfoldedActivitySince(windowStart - 1)) {
                     state.startupDone = true;
+                    state.consecutiveFailures = 0;
                     return;
                 }
             }
 
-            final long windowStartMillis = windowStart;
             AppIdentifier appIdentifier = representative.toAppIdentifier();
-            // The rollup consumes the activity log to maintain a derived projection; it emits no audit
-            // events of its own, so it runs through the audited-transaction combinator's zero-event path.
-            // The combinator owns the commit.
-            boolean[] folded = new boolean[1];
-            activityLogStorage.startAuditedTransaction(appIdentifier, con -> {
-                folded[0] = activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, windowStartMillis);
-                if (folded[0]) {
-                    // Advance the watermark only when the fold actually ran, and to the run-start time
-                    // (not "now after the fold"): the next window reaches back to windowStart =
-                    // watermark - MARGIN, so under-advancing is always safe. A skipped fold (another
-                    // instance holds the storage's rollup lock) folded nothing on this connection, so
-                    // advancing here would strand the unfolded window — on a null-watermark catch-up the
-                    // deep backlog would never be re-folded, since later windows only reach back MARGIN.
-                    activeUsersStorage.setKeyValue_Transaction(representative, con, WATERMARK_KEY,
-                            new KeyValueInfo(String.valueOf(runStart)));
-                }
-                return AuditedResult.withoutAudit(null,
-                        "The last-active rollup maintains a derived projection by folding existing "
-                                + "activity-log events into the user_last_active projection; it consumes the "
-                                + "audit log rather than producing new events.");
-            });
+            long sliceStart = windowStart;
+            boolean caughtUp = false;
+            while (true) {
+                final long from = sliceStart;
+                final long to = Math.min(sliceStart + sliceMs, runStart);
+                // The rollup consumes the activity log to maintain a derived projection; it emits no audit
+                // events of its own, so it runs through the audited-transaction combinator's zero-event path.
+                // The combinator owns the commit.
+                boolean[] folded = new boolean[1];
+                activityLogStorage.startAuditedTransaction(appIdentifier, con -> {
+                    folded[0] = activeUsersStorage.rollupLastActiveFromActivityLog_Transaction(con, from, to);
+                    if (folded[0]) {
+                        // Advance the watermark only when the fold actually ran, and only to this slice's end
+                        // (the run-start time for the last slice, not "now after the fold"): the next window
+                        // reaches back to watermark - MARGIN, so under-advancing is always safe. A skipped fold
+                        // (another instance holds the storage's rollup lock) folded nothing on this
+                        // connection, so advancing here would strand the unfolded window — on a null-watermark
+                        // catch-up the deep backlog would never be re-folded, since later windows only reach
+                        // back MARGIN.
+                        activeUsersStorage.setKeyValue_Transaction(representative, con, WATERMARK_KEY,
+                                new KeyValueInfo(String.valueOf(to)));
+                    }
+                    return AuditedResult.withoutAudit(null,
+                            "The last-active rollup maintains a derived projection by folding existing "
+                                    + "activity-log events into the user_last_active projection; it consumes the "
+                                    + "audit log rather than producing new events.");
+                });
 
-            if (folded[0]) {
+                if (!folded[0]) {
+                    // The fold was skipped (a concurrent instance holds the rollup lock and is folding).
+                    // Leave the watermark where the last folded slice put it and stop this pass.
+                    break;
+                }
                 state.startupDone = true;
-            } else {
-                // The fold was skipped (a concurrent instance holds the rollup lock and is folding this
-                // window). Leave the watermark untouched and re-arm the dirty flag so the next tick retries.
+                if (to >= runStart) {
+                    caughtUp = true;
+                    break;
+                }
+                sliceStart = to;
+                if (System.currentTimeMillis() - runStart >= passBudgetMs) {
+                    Logging.info(main, representative, "Last-active rollup is catching up: folded up to " + to
+                            + ", " + ((runStart - to) / 60000) + " minutes of activity left for the next pass",
+                            true);
+                    break;
+                }
+            }
+
+            state.consecutiveFailures = 0;
+            if (!caughtUp) {
+                // Skipped or out of budget: re-arm the dirty flag so the next tick continues from the watermark.
                 dirtySignal.markDirty(userPoolId);
             }
         } catch (Exception e) {
             // Re-arm the dirty flag so the next tick retries this storage.
             dirtySignal.markDirty(userPoolId);
+            state.consecutiveFailures++;
+            if (state.consecutiveFailures >= CONSOLE_ALERT_AFTER_N_FAILURES) {
+                // The cron framework logs task exceptions to the error log only; a rollup that keeps failing
+                // leaves user_last_active (and every active-user count) frozen, so surface it on the console.
+                Logging.error(main, representative, "Last-active rollup failed " + state.consecutiveFailures
+                        + " passes in a row for this storage; user_last_active is not advancing", true, e);
+            }
             throw e;
         }
     }
@@ -224,6 +279,18 @@ public class RollupUserLastActive extends CronTask {
             return waitTime;
         }
         return 0;
+    }
+
+    @TestOnly
+    public void setSliceAndPassBudgetForTesting(long sliceMs, long passBudgetMs) {
+        this.sliceMs = sliceMs;
+        this.passBudgetMs = passBudgetMs;
+    }
+
+    @TestOnly
+    public int getConsecutiveFailuresForTesting(String userPoolId) {
+        PerStorageState state = stateByUserPoolId.get(userPoolId);
+        return state == null ? 0 : state.consecutiveFailures;
     }
 
     @TestOnly
