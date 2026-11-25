@@ -217,6 +217,43 @@ public class SessionActivityEventTransactionTest {
         stop(process);
     }
 
+    // Removing by userId records a sign_out when it revoked a session or the id is a user of the app. An id that is
+    // neither writes nothing, so an arbitrary or over-long id gets the documented 200 instead of failing on the
+    // activity log's user_id column.
+    @Test
+    public void removingByAnUnknownUserIdWithNoSessionsWritesNoSignOut() throws Exception {
+        TestingProcessManager.TestingProcess process = startSql(false);
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+
+        long from = System.currentTimeMillis() - 1;
+        assertEquals(Set.of(), handlesOf(removeUser(process, "not-a-user")));
+        assertEquals(Set.of(), handlesOf(removeUser(process, "x".repeat(200))));
+        assertEquals(0, events(main, "sign_out", from).size());
+
+        // a user of the app without sessions still gets its sign_out, as before, also through its external id
+        String known = EmailPassword.signUp(main, "known@example.com", "password").getSupertokensUserId();
+        AuthRecipeUserInfo mapped = EmailPassword.signUp(main, "mapped-known@example.com", "password");
+        UserIdMapping.createUserIdMapping(main, mapped.getSupertokensUserId(), "external-known", null, false);
+        from = System.currentTimeMillis() - 1;
+        assertEquals(Set.of(), handlesOf(removeUser(process, known)));
+        assertEquals(Set.of(), handlesOf(removeUser(process, "external-known")));
+        assertEquals(Set.of(known, mapped.getSupertokensUserId()), events(main, "sign_out", from).stream()
+                .map(e -> e.primaryOrRecipeUserId).collect(Collectors.toSet()));
+
+        // a revoked session of an id that is not a user (sessions can be created for any id) still records one
+        String sessionOnly = handle(createSession(process, "session-only-id"));
+        from = System.currentTimeMillis() - 1;
+        assertEquals(Set.of(sessionOnly), handlesOf(removeUser(process, "session-only-id")));
+        List<AuditLogEvent> signOuts = events(main, "sign_out", from);
+        assertEquals(1, signOuts.size());
+        assertEquals("session-only-id", signOuts.get(0).primaryOrRecipeUserId);
+
+        stop(process);
+    }
+
     // A user is only associated with tenants on their own user pool. Should a tenant on another database still hold
     // sessions stored under the user's id, revoking across all tenants revokes them there too, in a separate write.
     @Test

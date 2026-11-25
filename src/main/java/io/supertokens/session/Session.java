@@ -1494,8 +1494,8 @@ public class Session {
     }
 
     // Revokes the user's sessions in tenants, all backed by the SQL storage, and writes the user's sign_out, in one
-    // transaction. The sign_out is recorded whether or not the user had sessions, against the app's public tenant
-    // and the user's SuperTokens id, as before.
+    // transaction. The sign_out is recorded against the app's public tenant and the user's SuperTokens id, as before,
+    // also when the user had no sessions, unless userId is not a user of the app either: then nothing is written.
     private static SignOut signOutAllSessionsForUser(Main main, AppIdentifier appIdentifier, Storage storage,
                                                      String userId, boolean revokeSessionsForLinkedAccounts,
                                                      List<TenantIdentifier> tenants)
@@ -1525,8 +1525,12 @@ public class Session {
                     }
                 }
                 AuditLogEvent event = signOutEvent(main, con, appIdentifier.getAsPublicTenantIdentifier(), storage,
-                        userId);
+                        userId, !revoked.isEmpty());
                 signOutEvent[0] = event;
+                if (event == null) {
+                    return AuditedResult.withoutAudit(new SignOut(revoked, userIds), "Nothing was revoked and the "
+                            + "userId is not a user of the app, so there is no sign_out to record.");
+                }
                 return new AuditedResult<>(new SignOut(revoked, userIds), event);
             });
         } catch (StorageTransactionLogicException e) {
@@ -1535,7 +1539,9 @@ public class Session {
             }
             throw new StorageQueryException(e.actualException);
         }
-        ActiveUsers.activityEventCommitted(main, appIdentifier, storage, signOutEvent[0]);
+        if (signOutEvent[0] != null) {
+            ActiveUsers.activityEventCommitted(main, appIdentifier, storage, signOutEvent[0]);
+        }
         return signOut;
     }
 
@@ -1618,7 +1624,7 @@ public class Session {
                     }
                 }
                 for (Map.Entry<String, TenantIdentifier> user : users.entrySet()) {
-                    signOutEvents.add(signOutEvent(main, con, user.getValue(), storage, user.getKey()));
+                    signOutEvents.add(signOutEvent(main, con, user.getValue(), storage, user.getKey(), true));
                 }
                 if (signOutEvents.isEmpty()) {
                     return AuditedResult.withoutAudit(revokedHandles, "Every session was revoked by another "
@@ -1641,12 +1647,19 @@ public class Session {
 
     // The sign_out activity event for userId, attributed to its SuperTokens user id. The mapping lookup runs on the
     // transaction's connection and is skipped for an app with disable_user_id_mapping on.
+    // The sign_out for userId, attributed to its SuperTokens id. Returns null, so no event is written, when no
+    // session was revoked (revokedAny is false) and userId does not resolve to a user of the app: an arbitrary id
+    // then adds no activity row, and one longer than the activity log's user_id column cannot fail the request.
     private static AuditLogEvent signOutEvent(Main main, TransactionConnection con, TenantIdentifier tenantIdentifier,
-                                              Storage storage, String userId)
+                                              Storage storage, String userId, boolean revokedAny)
             throws StorageQueryException, TenantOrAppNotFoundException {
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
                 main, con, tenantIdentifier.toAppIdentifier(), storage, userId, UserIdType.ANY);
         String superTokensUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+        if (!revokedAny && !((AuthRecipeSQLStorage) storage).doesUserIdExist_Transaction(con,
+                tenantIdentifier.toAppIdentifier(), superTokensUserId)) {
+            return null;
+        }
         // sign_out is never throttled, so there is always an event
         return Objects.requireNonNull(ActiveUsers.activityEventForTransaction(tenantIdentifier, main,
                 superTokensUserId, superTokensUserId, null, ActivityEventType.SIGN_OUT));
