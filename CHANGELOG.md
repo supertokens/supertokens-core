@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [12.5.1]
 
 - Session refresh and sign-out commit once: `POST /recipe/session/refresh` writes the session update and its
   `token_refresh` activity event in one transaction, and `POST /recipe/session/remove` writes the deletes and the
@@ -17,8 +17,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Unknown or already revoked handles record nothing and write nothing.
 - Revoking a user's sessions across all tenants logs a warning when a tenant on a database other than the user's
   still holds sessions for them, and revokes those in a separate write on that database.
-- Requires plugin interface 11.4 (`SessionSQLStorage.deleteSession_Transaction` and
-  `getAllNonExpiredSessionHandlesForUser_Transaction`).
 
 ## [12.5.0]
 
