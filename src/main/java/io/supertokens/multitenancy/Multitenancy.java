@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -418,7 +419,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             return MigrationMode.LEGACY;
         }
         try {
-            return MigrationMode.valueOf(coreConfig.get("migration_mode").getAsString().toUpperCase());
+            return MigrationMode.valueOf(coreConfig.get("migration_mode").getAsString().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException | UnsupportedOperationException e) {
             return MigrationMode.LEGACY;
         }

@@ -59,6 +59,7 @@ import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -109,6 +110,9 @@ public class Utils {
         // as per https://github.com/supertokens/supertokens-core/issues/89 and
         // https://github.com/supertokens/supertokens-core/issues/171
         email = email.trim();
+        // Deliberately NOT Locale.ROOT: emails are stored (and looked up by exact match) in the form produced by
+        // the JVM default locale, so changing this would make already stored emails unreachable on cores that run
+        // with a tr/az/lt default locale.
         email = email.toLowerCase();
 
         return email;
@@ -462,7 +466,7 @@ public class Utils {
             toSnakeCase = toSnakeCase
                     .replaceAll(
                             regex, replacement)
-                    .toLowerCase();
+                    .toLowerCase(Locale.ROOT);
         }
         return toSnakeCase;
     }
@@ -471,7 +475,7 @@ public class Utils {
         if(toCamelCase != null) {
             toCamelCase = Pattern.compile("_([a-z])")
                     .matcher(toCamelCase)
-                    .replaceAll(m -> m.group(1).toUpperCase());
+                    .replaceAll(m -> m.group(1).toUpperCase(Locale.ROOT));
         }
         return toCamelCase;
     }

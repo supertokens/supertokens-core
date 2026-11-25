@@ -156,7 +156,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static void loadStorageUCL(String pluginFolderPath) throws MalformedURLException {
         File loc = new File(pluginFolderPath);
 
-        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
+        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase(Locale.ROOT).endsWith(".jar"));
 
         if (flist != null) {
             URL[] urls = new URL[flist.length];

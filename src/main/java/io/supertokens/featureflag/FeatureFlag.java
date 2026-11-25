@@ -38,6 +38,7 @@ import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -76,7 +77,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         File loc = new File(eeFolderPath);
         EEFeatureFlagInterface eeLayerTemp = null;
 
-        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
+        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase(Locale.ROOT).endsWith(".jar"));
 
         if (flist != null) {
             URL[] urls = new URL[flist.length];

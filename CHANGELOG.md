@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixes case conversions of identifiers (config values such as `log_level` or `recent_token_reuse_behaviour`, tenant
+  IDs, path routing, OS names, JWT alg names, etc.) depending on the JVM default locale. For example, in the Turkish
+  locale `"i".toUpperCase()` gives `İ`, so values like `log_level: info` were not recognised. They now use
+  `Locale.ROOT`. Email normalisation is intentionally left unchanged, since stored emails depend on it.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

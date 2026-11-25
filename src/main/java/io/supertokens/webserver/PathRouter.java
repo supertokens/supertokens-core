@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -143,11 +144,11 @@ public class PathRouter extends WebserverAPI {
 
     private WebserverAPI getAPIThatMatchesPath(HttpServletRequest req) {
         // getServletPath returns the path without the configured base path.
-        String requestPath = req.getServletPath().toLowerCase();
+        String requestPath = req.getServletPath().toLowerCase(Locale.ROOT);
 
         // first we check for exact match
         for (WebserverAPI api : this.apis) {
-            String apiPath = api.getPath().toLowerCase();
+            String apiPath = api.getPath().toLowerCase(Locale.ROOT);
             if (!apiPath.startsWith("/")) {
                 apiPath = "/" + apiPath;
             }
@@ -158,7 +159,7 @@ public class PathRouter extends WebserverAPI {
 
         // then we check if tenantId or appId is embedded in the URL.
         for (WebserverAPI api : this.apis) {
-            String apiPath = api.getPath().toLowerCase();
+            String apiPath = api.getPath().toLowerCase(Locale.ROOT);
             if (!apiPath.startsWith("/")) {
                 apiPath = "/" + apiPath;
             }

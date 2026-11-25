@@ -21,6 +21,7 @@ import jakarta.servlet.ServletException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Locale;
 
 public class Utils {
 
@@ -43,7 +44,7 @@ public class Utils {
                                                                  boolean throwExceptionIfInvalid)
             throws ServletException {
         connectionUriDomain = connectionUriDomain.trim();
-        connectionUriDomain = connectionUriDomain.toLowerCase();
+        connectionUriDomain = connectionUriDomain.toLowerCase(Locale.ROOT);
 
         if (connectionUriDomain.length() == 0) {
             throw new ServletException(
@@ -79,7 +80,7 @@ public class Utils {
 
     public static String normalizeAndValidateAppId(String appId) throws ServletException {
         appId = appId.trim();
-        appId = appId.toLowerCase();
+        appId = appId.toLowerCase(Locale.ROOT);
 
         if (appId.length() == 0) {
             throw new ServletException(new WebserverAPI.BadRequestException("appId should not be an empty String"));
@@ -99,7 +100,7 @@ public class Utils {
 
     public static String normalizeAndValidateTenantId(String tenantId) throws ServletException {
         tenantId = tenantId.trim();
-        tenantId = tenantId.toLowerCase();
+        tenantId = tenantId.toLowerCase(Locale.ROOT);
 
         if (tenantId.length() == 0) {
             throw new ServletException(new WebserverAPI.BadRequestException("tenantId should not be an empty String"));

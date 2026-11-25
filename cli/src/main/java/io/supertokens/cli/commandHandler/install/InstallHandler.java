@@ -28,6 +28,7 @@ import io.supertokens.cli.logging.Logging;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class InstallHandler extends CommandHandler {
@@ -63,7 +64,7 @@ public class InstallHandler extends CommandHandler {
                 Logging.info("Run \"supertokens --help\" to see list of available commands");
             }
         } catch (Exception e) {
-            if (e.getMessage().toLowerCase().contains("permission denied") && !(e instanceof QuitProgramException)) {
+            if (e.getMessage().toLowerCase(Locale.ROOT).contains("permission denied") && !(e instanceof QuitProgramException)) {
                 throw new QuitProgramException("Installation failed. Try again with"
                         + ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." : " sudo."),
                         null);

@@ -16,6 +16,8 @@
 
 package io.supertokens;
 
+import java.util.Locale;
+
 public class OperatingSystem {
 
     public enum OS {
@@ -23,7 +25,7 @@ public class OperatingSystem {
     }
 
     public static OS getOS() {
-        String os = System.getProperty("os.name").toLowerCase();
+        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         if (os.contains("win")) {
             return OS.WINDOWS;
         } else if (os.contains("mac")) {

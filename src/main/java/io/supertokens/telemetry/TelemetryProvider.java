@@ -48,6 +48,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -121,7 +122,7 @@ public class TelemetryProvider extends ResourceDistributor.SingletonResource imp
         if (logLevel == null) {
             return Severity.UNDEFINED_SEVERITY_NUMBER;
         }
-        switch (logLevel.toLowerCase()) {
+        switch (logLevel.toLowerCase(Locale.ROOT)) {
             case "debug": return Severity.DEBUG;
             case "info":  return Severity.INFO;
             case "warn":  return Severity.WARN;

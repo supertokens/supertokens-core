@@ -48,6 +48,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -227,7 +228,7 @@ public abstract class WebserverAPI extends HttpServlet {
             final String BEARER_PREFIX = "bearer ";
             String authHeader = req.getHeader(AUTH_HEADER);
 
-            if (authHeader != null && authHeader.toLowerCase().startsWith(BEARER_PREFIX)) {
+            if (authHeader != null && authHeader.toLowerCase(Locale.ROOT).startsWith(BEARER_PREFIX)) {
                 apiKey = authHeader.substring(BEARER_PREFIX.length()).trim();
             } else if (authHeader != null) {
                 apiKey = authHeader.trim();
@@ -352,8 +353,8 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     private String getTenantId(HttpServletRequest req) {
-        String path = req.getServletPath().toLowerCase();
-        String apiPath = getPath().toLowerCase();
+        String path = req.getServletPath().toLowerCase(Locale.ROOT);
+        String apiPath = getPath().toLowerCase(Locale.ROOT);
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
@@ -365,7 +366,7 @@ public abstract class WebserverAPI extends HttpServlet {
             return null;
         } else {
             if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
-                String tenantId = path.split("/")[2].toLowerCase();
+                String tenantId = path.split("/")[2].toLowerCase(Locale.ROOT);
                 if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
@@ -378,7 +379,7 @@ public abstract class WebserverAPI extends HttpServlet {
             } else if (path.matches("^/appid-[a-z0-9-]*" + apiPath + "/?$")) {
                 return null;
             } else if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
-                String tenantId = path.split("/")[1].toLowerCase();
+                String tenantId = path.split("/")[1].toLowerCase(Locale.ROOT);
                 if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
@@ -395,8 +396,8 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     private String getAppId(HttpServletRequest req) {
-        String path = req.getServletPath().toLowerCase();
-        String apiPath = getPath().toLowerCase();
+        String path = req.getServletPath().toLowerCase(Locale.ROOT);
+        String apiPath = getPath().toLowerCase(Locale.ROOT);
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
@@ -408,7 +409,7 @@ public abstract class WebserverAPI extends HttpServlet {
             return null;
         } else {
             if (path.matches("^/appid-[a-z0-9-]*(/[a-z0-9-]+)?" + apiPath + "/?$")) {
-                String appId = path.split("/")[1].toLowerCase();
+                String appId = path.split("/")[1].toLowerCase(Locale.ROOT);
                 if (appId.equals("appid-public")) {
                     return null;
                 }

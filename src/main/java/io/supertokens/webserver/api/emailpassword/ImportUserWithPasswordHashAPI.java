@@ -40,6 +40,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.util.Locale;
 
 public class ImportUserWithPasswordHashAPI extends WebserverAPI {
     @Serial
@@ -80,7 +81,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         if (hashingAlgorithmString != null) {
             // normalise hashing algorithm string
-            hashingAlgorithmString = hashingAlgorithmString.trim().toUpperCase();
+            hashingAlgorithmString = hashingAlgorithmString.trim().toUpperCase(Locale.ROOT);
 
             if (hashingAlgorithmString.equals("")) {
                 throw new ServletException(
