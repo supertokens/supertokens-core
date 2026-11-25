@@ -110,7 +110,10 @@ public class Utils {
         // as per https://github.com/supertokens/supertokens-core/issues/89 and
         // https://github.com/supertokens/supertokens-core/issues/171
         email = email.trim();
-        email = email.toLowerCase(Locale.ROOT);
+        // Deliberately NOT Locale.ROOT: emails are stored (and looked up by exact match) in the form produced by
+        // the JVM default locale, so changing this would make already stored emails unreachable on cores that run
+        // with a tr/az/lt default locale.
+        email = email.toLowerCase();
 
         return email;
     }
