@@ -25,8 +25,10 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.TransactionCounters.Snapshot;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -36,6 +38,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
@@ -282,6 +285,38 @@ public class OAuthActivityEventTransactionTest {
 
             stop(process);
         }
+    }
+
+    // an unknown client fails the transactional write with OAuthClientNotFoundException, as the autocommit one does,
+    // and classifying the foreign key failure borrows no second pool connection
+    @Test
+    public void unknownClientFailsTheTransactionalWriteWithClientNotFound() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        Storage storage = StorageLayer.getStorage(main);
+        if (storage.getType() != STORAGE_TYPE.SQL) {
+            stop(process);
+            return;
+        }
+        AppIdentifier app = process.getAppForTesting().toAppIdentifier();
+        long exp = System.currentTimeMillis() + 100000;
+        try {
+            ((OAuthStorage) storage).createOrUpdateOAuthSession(app, "gid-no-client", "no-such-client", "ext", null,
+                    null, "jti", exp);
+            fail("expected OAuthClientNotFoundException");
+        } catch (OAuthClientNotFoundException expected) {
+        }
+        try {
+            OAuth.createOrUpdateOauthSession(main, app, storage, "no-such-client", "gid-no-client", "ext", null, null,
+                    "jti", exp, null, ActivityEventType.OAUTH_TOKEN_EXCHANGE);
+            fail("expected OAuthClientNotFoundException");
+        } catch (OAuthClientNotFoundException expected) {
+        }
+        assertEquals(0, oauthSessionRows(main, "gid-no-client"));
+
+        stop(process);
     }
 
     // a token whose session was revoked (or has expired) is still exchanged; there is no user to record activity for

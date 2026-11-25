@@ -4187,6 +4187,7 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
 
                 if (isForeignKeyConstraintError(
+                        (Connection) con.getConnection(),
                         errorMessage,
                         config.getOAuthClientsTable(),
                         new String[]{"app_id", "client_id"},
