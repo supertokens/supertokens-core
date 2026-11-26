@@ -12,11 +12,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   its token stats and session rows in one transaction. A failed activity event write now fails the request instead
   of being ignored. For a session whose tenant has its own database, the event is written there right after the
   OAuth row commits.
-- Requires plugin interface 11.3.1 and supertokens-postgresql-plugin 10.3.1 or later: the OAuth token and auth APIs
-  call the new `OAuthSQLStorage.createOrUpdateOAuthSession_Transaction` and
-  `OAuthSQLStorage.addOAuthM2MTokenForStats_Transaction`. With an older 11.3 plugin (for example
-  supertokens-postgresql-plugin 10.3.0) the core still starts, but every `POST /recipe/oauth/token` and implicit
-  `POST /recipe/oauth/auth` request fails, so upgrade the plugin together with the core.
 
 ## [12.5.0]
 
