@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [12.5.1]
+
+- Updates jackson to 2.22.4 and guava to 33.7.2 to fix CVE-2026-68497, CVE-2026-91776, CVE-2026-91777,
+  CVE-2026-89407, CVE-2026-89425 and CVE-2026-102554 in the docker image.
+
 ## [12.5.0]
 
 - Adds CDI 5.8.

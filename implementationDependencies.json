@@ -17,24 +17,24 @@
 		"src":"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.13.1/gson-2.13.1-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.38.0/error_prone_annotations-2.38.0.jar",
-		"name":"error_prone_annotations 2.38.0",
-		"src":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.38.0/error_prone_annotations-2.38.0-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar",
+		"name":"error_prone_annotations 2.50.0",
+		"src":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.1/jackson-dataformat-yaml-2.22.1.jar",
-		"name":"jackson-dataformat-yaml 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.1/jackson-dataformat-yaml-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.4/jackson-dataformat-yaml-2.22.4.jar",
+		"name":"jackson-dataformat-yaml 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.4/jackson-dataformat-yaml-2.22.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar",
-		"name":"jackson-databind 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4.jar",
+		"name":"jackson-databind 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar",
-		"name":"jackson-core 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4.jar",
+		"name":"jackson-core 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar",
@@ -47,9 +47,9 @@
 		"src":"https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.5/snakeyaml-2.5-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.22.1/jackson-dataformat-cbor-2.22.1.jar",
-		"name":"jackson-dataformat-cbor 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.22.1/jackson-dataformat-cbor-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.22.4/jackson-dataformat-cbor-2.22.4.jar",
+		"name":"jackson-dataformat-cbor 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.22.4/jackson-dataformat-cbor-2.22.4-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
@@ -132,14 +132,19 @@
 		"src":"https://build.shibboleth.net/nexus/content/repositories/releases/net/shibboleth/shib-support/9.2.3/shib-support-9.2.3-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/guava/33.0.0-jre/guava-33.0.0-jre.jar",
-		"name":"guava 33.0.0-jre",
-		"src":"https://repo.maven.apache.org/maven2/com/google/guava/guava/33.0.0-jre/guava-33.0.0-jre-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.jar",
+		"name":"commons-codec 1.18.0",
+		"src":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar",
-		"name":"failureaccess 1.0.2",
-		"src":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar",
+		"name":"guava 33.7.2-jre",
+		"src":"https://repo.maven.apache.org/maven2/com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre-sources.jar"
+	},
+	{
+		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar",
+		"name":"failureaccess 1.0.3",
+		"src":"https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
@@ -147,14 +152,14 @@
 		"src":"https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.41.0/checker-qual-3.41.0.jar",
-		"name":"checker-qual 3.41.0",
-		"src":"https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.41.0/checker-qual-3.41.0-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar",
+		"name":"jspecify 1.0.1",
+		"src":"https://repo.maven.apache.org/maven2/org/jspecify/jspecify/1.0.1/jspecify-1.0.1-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.jar",
-		"name":"commons-codec 1.18.0",
-		"src":"https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar",
+		"name":"j2objc-annotations 3.1",
+		"src":"https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/io/dropwizard/metrics/metrics-core/4.2.39/metrics-core-4.2.39.jar",
@@ -172,9 +177,9 @@
 		"src":"https://repo.maven.apache.org/maven2/io/dropwizard/metrics/metrics-json/4.2.39/metrics-json-4.2.39-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.1/jackson-datatype-jsr310-2.22.1.jar",
-		"name":"jackson-datatype-jsr310 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.1/jackson-datatype-jsr310-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.4/jackson-datatype-jsr310-2.22.4.jar",
+		"name":"jackson-datatype-jsr310 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.4/jackson-datatype-jsr310-2.22.4-sources.jar"
 	},
 	{
 		"jar":"https://build.shibboleth.net/nexus/content/repositories/releases/org/opensaml/opensaml-security-api/5.2.3/opensaml-security-api-5.2.3.jar",
