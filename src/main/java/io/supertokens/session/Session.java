@@ -1420,11 +1420,11 @@ public class Session {
     }
 
     // POST /recipe/session/remove with a userId and revokeAcrossAllTenants: revokes the user's sessions in every
-    // tenant of the app and records the user's sign_out. storage is the user's storage. A user is only associated
-    // with tenants on their own user pool, so the reads, the deletes and the sign_out run in one transaction on
-    // storage, over the tenants it backs. A tenant on another storage that still holds sessions for the user breaks
-    // that invariant: its sessions are revoked as before, in a separate write on that storage, with a warning. On a
-    // non-SQL storage this revokes as before, without a sign_out.
+    // tenant of the app and records the user's sign_out. storage is the user's storage: the reads, the deletes and the
+    // sign_out run in one transaction on storage, over the tenants it backs. Session creation does not tie a session
+    // to the user's storage, so a tenant on another storage can hold sessions under the user's ids too: those are
+    // revoked as before, in a separate write on that storage. On a non-SQL storage this revokes as before, without a
+    // sign_out.
     public static String[] signOutAllSessionsForUser(Main main, AppIdentifier appIdentifier, Storage storage,
                                                      String userId, boolean revokeSessionsForLinkedAccounts)
             throws StorageQueryException, TenantOrAppNotFoundException {
@@ -1458,10 +1458,10 @@ public class Session {
             if (sessionHandles.length == 0) {
                 continue;
             }
-            Logging.warn(main, tenant.getKey(), "Revoking sessions of user " + userId + " in app "
-                    + appIdentifier.getAppId() + ", tenant " + tenant.getKey().getTenantId() + " is on storage "
+            Logging.debug(main, tenant.getKey(), "Revoking sessions of user " + userId + " in app "
+                    + appIdentifier.getAppId() + ": tenant " + tenant.getKey().getTenantId() + " is on storage "
                     + tenant.getValue().getUserPoolId() + ", not on the user's storage " + storage.getUserPoolId()
-                    + ": revoking its sessions in a separate write on that storage.");
+                    + ", so its sessions are revoked in a separate write on that storage.");
             revoked.addAll(Arrays.asList(revokeSessionUsingSessionHandles(tenant.getKey(), tenant.getValue(),
                     sessionHandles)));
         }
@@ -1525,7 +1525,7 @@ public class Session {
                     }
                 }
                 AuditLogEvent event = signOutEvent(main, con, appIdentifier.getAsPublicTenantIdentifier(), storage,
-                        userId, !revoked.isEmpty());
+                        userId, !revoked.isEmpty(), userIds);
                 signOutEvent[0] = event;
                 if (event == null) {
                     return AuditedResult.withoutAudit(new SignOut(revoked, userIds), "Nothing was revoked and the "
@@ -1547,9 +1547,8 @@ public class Session {
 
     // POST /recipe/session/remove with sessionHandles: revokes the sessions and records a sign_out for each user
     // whose session it revoked, on the storage the session was deleted from. The handles are grouped by the storage
-    // of their tenant, and each storage's reads, deletes and sign_outs run in one transaction. A storage that holds
-    // none of the sessions is only read: it opens no transaction. On a non-SQL storage this revokes as before,
-    // without a sign_out.
+    // of their tenant, and each storage's reads, deletes and sign_outs run in one transaction, which writes nothing
+    // when the storage holds none of the sessions. On a non-SQL storage this revokes as before, without a sign_out.
     // Every caller of this endpoint gets the sign_out, including the dashboard and an SDK revoking a session after a
     // legacy token-theft response (no reuse subtype): that is recorded as the victim's sign_out, by design. A reused
     // session the core revokes itself (CDI 5.6+) goes through revokeSessionUsingSessionHandles and records none, and
@@ -1558,6 +1557,8 @@ public class Session {
                                                               String[] sessionHandles)
             throws StorageQueryException, TenantOrAppNotFoundException {
         Map<String, Storage> storages = new LinkedHashMap<>();
+        // Each transaction locks the sessions it reads until it commits, so they are read in one order, by tenant
+        // id and handle: two requests revoking overlapping handles then never wait for each other's locks in a cycle.
         Map<String, Map<TenantIdentifier, List<String>>> sessionHandlesByStorage = new LinkedHashMap<>();
         for (String sessionHandle : sessionHandles) {
             String tenantId = getTenantIdFromSessionHandle(sessionHandle);
@@ -1565,8 +1566,14 @@ public class Session {
                     appIdentifier.getAppId(), tenantId == null ? TenantIdentifier.DEFAULT_TENANT_ID : tenantId);
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
             storages.putIfAbsent(storage.getUserPoolId(), storage);
-            sessionHandlesByStorage.computeIfAbsent(storage.getUserPoolId(), k -> new LinkedHashMap<>())
+            sessionHandlesByStorage.computeIfAbsent(storage.getUserPoolId(),
+                            k -> new TreeMap<>(Comparator.comparing(TenantIdentifier::getTenantId)))
                     .computeIfAbsent(tenantIdentifier, k -> new ArrayList<>()).add(sessionHandle);
+        }
+        for (Map<TenantIdentifier, List<String>> tenants : sessionHandlesByStorage.values()) {
+            for (List<String> handles : tenants.values()) {
+                Collections.sort(handles);
+            }
         }
 
         List<String> revoked = new ArrayList<>();
@@ -1588,19 +1595,6 @@ public class Session {
                                                                    Storage storage,
                                                                    Map<TenantIdentifier, List<String>> sessionHandles)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        // Read first, so that a request whose sessions are all unknown or already revoked writes nothing.
-        Map<TenantIdentifier, List<String>> existing = new LinkedHashMap<>();
-        for (Map.Entry<TenantIdentifier, List<String>> tenant : sessionHandles.entrySet()) {
-            for (String sessionHandle : tenant.getValue()) {
-                if (((SessionStorage) storage).getSession(tenant.getKey(), sessionHandle) != null) {
-                    existing.computeIfAbsent(tenant.getKey(), k -> new ArrayList<>()).add(sessionHandle);
-                }
-            }
-        }
-        if (existing.isEmpty()) {
-            return new ArrayList<>();
-        }
-
         ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
         SessionSQLStorage sessionStorage = (SessionSQLStorage) storage;
         List<AuditLogEvent> signOutEvents = new ArrayList<>();
@@ -1611,7 +1605,7 @@ public class Session {
                 List<String> revokedHandles = new ArrayList<>();
                 // the user id of each revoked session's user, with the tenant of its first revoked session
                 Map<String, TenantIdentifier> users = new LinkedHashMap<>();
-                for (Map.Entry<TenantIdentifier, List<String>> tenant : existing.entrySet()) {
+                for (Map.Entry<TenantIdentifier, List<String>> tenant : sessionHandles.entrySet()) {
                     List<String> sessionsOfTenant = new ArrayList<>();
                     for (String sessionHandle : tenant.getValue()) {
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = sessionStorage
@@ -1628,11 +1622,12 @@ public class Session {
                     }
                 }
                 for (Map.Entry<String, TenantIdentifier> user : users.entrySet()) {
-                    signOutEvents.add(signOutEvent(main, con, user.getValue(), storage, user.getKey(), true));
+                    signOutEvents.add(signOutEvent(main, con, user.getValue(), storage, user.getKey(), true,
+                            Set.of()));
                 }
                 if (signOutEvents.isEmpty()) {
-                    return AuditedResult.withoutAudit(revokedHandles, "Every session was revoked by another "
-                            + "request after it was read: nothing was revoked here, so there is no sign_out.");
+                    return AuditedResult.withoutAudit(revokedHandles, "None of the sessions exists: nothing was "
+                            + "revoked, so there is no sign_out.");
                 }
                 return new AuditedResult<>(revokedHandles, signOutEvents.get(0),
                         signOutEvents.subList(1, signOutEvents.size()).toArray(new AuditLogEvent[0]));
@@ -1652,21 +1647,40 @@ public class Session {
     // The sign_out activity event for userId, attributed to its SuperTokens user id. The mapping lookup runs on the
     // transaction's connection and is skipped for an app with disable_user_id_mapping on.
     // The sign_out for userId, attributed to its SuperTokens id. Returns null, so no event is written, when no
-    // session was revoked (revokedAny is false) and userId does not resolve to a user of the app: an arbitrary id
-    // then adds no activity row, and one longer than the activity log's user_id column cannot fail the request.
+    // session was revoked (revokedAny is false) and neither userId nor any of sessionUserIds, the ids its sessions
+    // were looked up by (under disable_user_id_mapping_force they include the SuperTokens id of an external id), is
+    // a user of the app: an arbitrary id then adds no activity row, and one longer than the activity log's user_id
+    // column cannot fail the request.
     private static AuditLogEvent signOutEvent(Main main, TransactionConnection con, TenantIdentifier tenantIdentifier,
-                                              Storage storage, String userId, boolean revokedAny)
+                                              Storage storage, String userId, boolean revokedAny,
+                                              Set<String> sessionUserIds)
             throws StorageQueryException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                main, con, tenantIdentifier.toAppIdentifier(), storage, userId, UserIdType.ANY);
+                main, con, appIdentifier, storage, userId, UserIdType.ANY);
         String superTokensUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
-        if (!revokedAny && !((AuthRecipeSQLStorage) storage).doesUserIdExist_Transaction(con,
-                tenantIdentifier.toAppIdentifier(), superTokensUserId)) {
+        if (!revokedAny && !isUserOfApp(con, appIdentifier, storage, superTokensUserId, sessionUserIds)) {
             return null;
         }
         // sign_out is never throttled, so there is always an event
         return Objects.requireNonNull(ActiveUsers.activityEventForTransaction(tenantIdentifier, main,
                 superTokensUserId, superTokensUserId, null, ActivityEventType.SIGN_OUT));
+    }
+
+    private static boolean isUserOfApp(TransactionConnection con, AppIdentifier appIdentifier, Storage storage,
+                                       String superTokensUserId, Set<String> otherUserIds)
+            throws StorageQueryException {
+        AuthRecipeSQLStorage authStorage = (AuthRecipeSQLStorage) storage;
+        if (authStorage.doesUserIdExist_Transaction(con, appIdentifier, superTokensUserId)) {
+            return true;
+        }
+        for (String userId : otherUserIds) {
+            if (!userId.equals(superTokensUserId) && authStorage.doesUserIdExist_Transaction(con, appIdentifier,
+                    userId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @TestOnly

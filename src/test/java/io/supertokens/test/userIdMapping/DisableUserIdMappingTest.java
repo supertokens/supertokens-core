@@ -35,6 +35,7 @@ import io.supertokens.session.Session;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportBatchInsertException;
@@ -291,6 +292,42 @@ public class DisableUserIdMappingTest {
         JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
         assertEquals(1, removed.getAsJsonArray("sessionHandlesRevoked").size());
         assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(main, "external-id").length);
+
+        stop(process);
+    }
+
+    // Under force the mapping is ignored, but sessions are still found through it, so the external id of a known user
+    // is a user of the app: removing by it records the sign_out also when no session was left to revoke.
+    @Test
+    public void removingByTheExternalIdUnderForceWithNoSessionsRecordsSignOut() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+            stop(process);
+            return;
+        }
+        TenantIdentifier tenant = process.getAppForTesting();
+        AppIdentifier app = tenant.toAppIdentifier();
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "user@example.com", "password123");
+        UserIdMapping.createUserIdMapping(main, user.getSupertokensUserId(), "external-id", null, false);
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("disable_user_id_mapping", true);
+        coreConfig.addProperty("disable_user_id_mapping_force", true);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null, coreConfig), false);
+        assertTrue(UserIdMappingOptOut.isForced(main, app));
+
+        long from = System.currentTimeMillis() - 1;
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", "external-id");
+        JsonObject removed = postOk(process, "/recipe/session/remove", remove, "session");
+        assertEquals(0, removed.getAsJsonArray("sessionHandlesRevoked").size());
+        assertEquals(1, ((ActivityLogStorage) StorageLayer.getStorage(main)).getActivityLogEntriesForApp(app,
+                Set.of("sign_out"), from, System.currentTimeMillis() + 1000, 100).size());
 
         stop(process);
     }

@@ -118,7 +118,7 @@ public class TransactionCountBaselineTest {
         });
 
         // failure paths that write nothing open no writing transaction: the refresh only reads the revoked session,
-        // and a handle that is already revoked is only read
+        // and a handle that is already revoked is only read, in the transaction that would have revoked it
         baseline.measure("session refresh (revoked session)", Snapshot.of(1, 0, 0), () -> {
             JsonObject body = new JsonObject();
             body.addProperty("refreshToken", refreshed.getAsJsonObject("refreshToken").get("token").getAsString());
@@ -129,7 +129,7 @@ public class TransactionCountBaselineTest {
             return response;
         });
 
-        baseline.measure("session remove (revoked handle)", Snapshot.of(0, 0, 0), () -> {
+        baseline.measure("session remove (revoked handle)", Snapshot.of(1, 0, 0), () -> {
             JsonObject body = new JsonObject();
             JsonArray handles = new JsonArray();
             handles.add(handle);

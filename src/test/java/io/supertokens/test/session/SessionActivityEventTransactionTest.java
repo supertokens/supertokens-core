@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.auditlog.ActivityLogStorage;
 import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
 import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
@@ -55,6 +56,9 @@ import org.junit.rules.TestRule;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,6 +66,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -250,6 +255,65 @@ public class SessionActivityEventTransactionTest {
         List<AuditLogEvent> signOuts = events(main, "sign_out", from);
         assertEquals(1, signOuts.size());
         assertEquals("session-only-id", signOuts.get(0).primaryOrRecipeUserId);
+
+        stop(process);
+    }
+
+    // Revoking by handle locks each session it reads until commit. Two overlapping batches in opposite orders must
+    // not each hold one session while waiting for the other's: the in-memory db's locks never time out. Here another
+    // transaction holds the lower handle and then needs the higher one while a revoke of [higher, lower] runs.
+    @Test
+    public void revokingByHandleLocksSessionsInAStableOrder() throws Exception {
+        TestingProcessManager.TestingProcess process = startInMemory();
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        Start storage = (Start) StorageLayer.getStorage(main);
+        String userId = EmailPassword.signUp(main, "lock-order@example.com", "password").getSupertokensUserId();
+        String a = handle(createSession(process, userId));
+        String b = handle(createSession(process, userId));
+        String lower = a.compareTo(b) < 0 ? a : b;
+        String higher = a.compareTo(b) < 0 ? b : a;
+
+        CountDownLatch lowerLocked = new CountDownLatch(1);
+        CountDownLatch lockHigher = new CountDownLatch(1);
+        CountDownLatch higherLocked = new CountDownLatch(1);
+        CompletableFuture<Void> other = CompletableFuture.runAsync(() -> {
+            try {
+                storage.startTransaction(con -> {
+                    storage.getSessionInfo_Transaction(TenantIdentifier.BASE_TENANT, con, lower);
+                    lowerLocked.countDown();
+                    try {
+                        lockHigher.await();
+                    } catch (InterruptedException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.getSessionInfo_Transaction(TenantIdentifier.BASE_TENANT, con, higher);
+                    higherLocked.countDown();
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertTrue(lowerLocked.await(10, TimeUnit.SECONDS));
+        CompletableFuture<String[]> revoke = CompletableFuture.supplyAsync(() -> {
+            try {
+                return Session.signOutSessionsUsingSessionHandles(main, new AppIdentifier(null, null),
+                        new String[]{higher, lower});
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        // let the revoke reach its first lock
+        Thread.sleep(1000);
+        lockHigher.countDown();
+        assertTrue("the revoke holds the higher handle while waiting for the lower one",
+                higherLocked.await(10, TimeUnit.SECONDS));
+        other.get(10, TimeUnit.SECONDS);
+        assertEquals(Set.of(lower, higher), Set.of(revoke.get(10, TimeUnit.SECONDS)));
 
         stop(process);
     }
