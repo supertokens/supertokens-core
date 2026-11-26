@@ -163,9 +163,12 @@ public class CoreConfig {
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
-            "How many tenant storages a cron job works on at the same time. Each one opens database connections, so "
-                    + "a lower value sends fewer connections at once to a database many tenants share, and a pass over "
-                    + "many storages takes longer. Shared by all cron jobs. Must be >= 1. (Default: 4)")
+            "How many tenant storages one cron job works on at the same time. Each one opens database connections, "
+                    + "so a lower value sends fewer connections at once to a database many tenants share, and a pass "
+                    + "over many storages takes longer. The limit is per job, not a total across jobs: each of the 9 "
+                    + "cron jobs that run per storage has its own pool, so when they all run at once up to 9 times "
+                    + "this many storages are worked on at the same time (36 at the default). Size it against your "
+                    + "database's connection limit. Must be >= 1. (Default: 4)")
     private int cron_storage_parallelism = 4;
 
     @EnvName("PASSWORD_RESET_TOKEN_LIFETIME")

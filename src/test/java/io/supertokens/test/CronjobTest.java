@@ -45,6 +45,8 @@ import org.reflections.Reflections;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -356,6 +358,42 @@ public class CronjobTest {
                 finished.incrementAndGet();
             } finally {
                 running.decrementAndGet();
+            }
+        }
+    }
+
+    /* A job whose storage work does not respond to interrupts until released, like one blocked in a JDBC read. */
+    static class IgnoresInterruptCronjob extends CronTask {
+        private final CountDownLatch started;
+        private final CountDownLatch release;
+
+        IgnoresInterruptCronjob(String name, Main main, List<List<TenantIdentifier>> tenantsInfo,
+                                CountDownLatch started, CountDownLatch release) {
+            super(name, main, tenantsInfo, false);
+            this.started = started;
+            this.release = release;
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 600;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerStorage(TenantIdentifier representative, Storage storage) {
+            started.countDown();
+            while (true) {
+                try {
+                    release.await();
+                    return;
+                } catch (InterruptedException e) {
+                    // keep blocking, as a socket read would
+                }
             }
         }
     }
@@ -903,6 +941,34 @@ public class CronjobTest {
         }
         assertEquals(6, quick.finished.get());
         assertEquals(0, stuck.finished.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testShutdownWaitsOnceForAllStuckStoragePools() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // four jobs, each with a worker that ignores the shutdown interrupt
+        int jobs = 4;
+        CountDownLatch started = new CountDownLatch(jobs);
+        CountDownLatch release = new CountDownLatch(1);
+        for (int i = 0; i < jobs; i++) {
+            Cronjobs.addCronjob(process.getProcess(), new IgnoresInterruptCronjob("ProbeStuckAtShutdown" + i,
+                    process.getProcess(), taggedPools(1), started, release));
+        }
+        assertTrue(started.await(10, TimeUnit.SECONDS));
+
+        long start = System.currentTimeMillis();
+        Cronjobs.shutdownAndAwaitTermination(process.getProcess());
+        long tookMillis = System.currentTimeMillis() - start;
+        release.countDown();
+
+        // the four pools share one 5s wait; waiting 5s for each in turn would take 20s
+        assertTrue("shutdown took " + tookMillis + "ms", tookMillis < 12_000);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

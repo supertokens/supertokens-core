@@ -5,13 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [12.5.1]
 
 - Cron jobs no longer open connections to every tenant database at the same instant
   ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)):
     - Each job's per-storage work runs on that job's own pool of `cron_storage_parallelism` (new, default 4) threads,
       instead of one thread per storage on every pass, so a pass connects to at most that many storages at once. Jobs
-      don't share the pool, so a job stuck on one storage only delays itself. A pass over many storages takes longer;
+      don't share the pool, so a job stuck on one storage only delays itself, and the limit is per job: the 9 jobs
+      that run per storage can together work on up to 9 times that many storages (36 at the default). A pass over
+      many storages takes longer;
       it still stops after one interval as before, and the next pass starts with the storages it did not reach, with
       any storage that ran out of time moved to the end so it can't hold up the rest.
     - Outside tests, a job whose first run is a full interval after start is delayed by a random offset of up to one

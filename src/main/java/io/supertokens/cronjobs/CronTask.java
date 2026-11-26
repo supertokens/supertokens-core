@@ -355,14 +355,14 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         inFlight.forEach(t -> t.cancel(true));
     }
 
-    /* Waits briefly for interrupted storage work to stop, so it is not still running when storages close. */
-    void awaitStorageWorkStopped(long seconds) throws InterruptedException {
+    /* Waits up to the given time for interrupted storage work to stop, so it is not running when storages close. */
+    void awaitStorageWorkStopped(long nanos) throws InterruptedException {
         ThreadPoolExecutor pool;
         synchronized (this) {
             pool = storageExecutor;
         }
         if (pool != null) {
-            pool.awaitTermination(seconds, TimeUnit.SECONDS);
+            pool.awaitTermination(nanos, TimeUnit.NANOSECONDS);
         }
     }
 

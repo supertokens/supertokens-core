@@ -36,7 +36,8 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     final Object lock = new Object();
     // Longest random offset added to a job's first run (see addCronjob).
     public static final int MAX_INITIAL_JITTER_SECONDS = 3600;
-    // How long shutdown waits for interrupted storage work to stop before storages are closed.
+    // How long shutdown waits, in total across every job's pool, for interrupted storage work to stop before
+    // storages are closed.
     private static final long STORAGE_WORK_STOP_WAIT_SECONDS = 5;
 
     private final ScheduledExecutorService executor;
@@ -85,8 +86,11 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 for (CronTask t : instance.tasks) {
                     t.stopStorageWork();
                 }
+                // One deadline for all pools: a worker blocked in a JDBC read ignores the interrupt, and waiting
+                // the full time for each such pool in turn would multiply the shutdown time by the number of jobs.
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(STORAGE_WORK_STOP_WAIT_SECONDS);
                 for (CronTask t : instance.tasks) {
-                    t.awaitStorageWorkStopped(STORAGE_WORK_STOP_WAIT_SECONDS);
+                    t.awaitStorageWorkStopped(Math.max(0, deadline - System.nanoTime()));
                 }
                 instance.executor.awaitTermination(10, TimeUnit.SECONDS);
             } catch (Exception e) {
