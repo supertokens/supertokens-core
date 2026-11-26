@@ -19,10 +19,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   victim's `sign_out`; a reused session that the core revokes itself (CDI 5.6+) records none.
 - Revoking a user's sessions across all tenants revokes the sessions a tenant on a database other than the user's
   holds for them in a separate write on that database, outside the transaction with the `sign_out`.
-- Revoking by `sessionHandles` reads the sessions in a fixed order (by tenant id, then handle), so two requests with
-  overlapping handles in opposite orders no longer wait on each other forever on the in-memory database.
-- Requires plugin interface 11.3.1 (postgresql plugin 10.3.1): the session remove endpoint uses session queries that
-  plugin interface 11.3.0 does not have.
 
 ## [12.5.0]
 

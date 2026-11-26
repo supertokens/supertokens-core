@@ -47,6 +47,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.usermetadata.UserMetadata;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -318,8 +319,8 @@ public class SessionActivityEventTransactionTest {
         stop(process);
     }
 
-    // A user is only associated with tenants on their own user pool. Should a tenant on another database still hold
-    // sessions stored under the user's id, revoking across all tenants revokes them there too, in a separate write.
+    // Sessions don't need a user, so a tenant on another database can hold sessions under the user's id. Revoking
+    // across all tenants revokes them there too, in a separate write, and records one sign_out.
     @Test
     public void revokingAcrossTenantsAlsoRevokesSessionsOnATenantOfAnotherDatabase() throws Exception {
         TestingProcessManager.TestingProcess process = startSql(true);
@@ -369,6 +370,78 @@ public class SessionActivityEventTransactionTest {
         assertEquals(userId, signOuts.get(0).primaryOrRecipeUserId);
 
         stop(process);
+    }
+
+    // An id that is not a user resolves to the first storage that uses it for anything: here either the public
+    // tenant's (user metadata) or the other database (its only session). When it resolves to the public tenant's,
+    // the transaction there revokes nothing and records no sign_out, so the sign_out is recorded after the separate
+    // revocation. Either way the session is revoked and exactly one sign_out is recorded, like before this change.
+    @Test
+    public void revokingACustomIdWhoseOnlySessionIsOnAnotherDatabaseStillRecordsOneSignOut() throws Exception {
+        TestingProcessManager.TestingProcess process = startSql(true);
+        if (process == null) {
+            return;
+        }
+        Main main = process.getProcess();
+        TenantIdentifier appPublic = new TenantIdentifier(null, "signout-custom-own-db", null);
+        TenantIdentifier ownDbTenant = new TenantIdentifier(null, "signout-custom-own-db", "t1");
+        JsonObject ownPool = new JsonObject();
+        StorageLayer.getBaseStorage(main).modifyConfigToAddANewUserPoolForTesting(ownPool, 1);
+        Multitenancy.addNewOrUpdateAppOrTenant(main, TenantIdentifier.BASE_TENANT,
+                new TenantConfig(appPublic, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, new JsonObject()));
+        Multitenancy.addNewOrUpdateAppOrTenant(main, appPublic,
+                new TenantConfig(ownDbTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true), null, null, ownPool));
+        Storage publicStorage = StorageLayer.getStorage(appPublic, main);
+        Storage ownStorage = StorageLayer.getStorage(ownDbTenant, main);
+        if (publicStorage.getUserPoolId().equals(ownStorage.getUserPoolId())) {
+            // one user pool for every tenant (the in-memory db): the scenario isn't reachable
+            stop(process);
+            return;
+        }
+
+        String customId = "custom-only-on-own-db";
+        JsonObject metadata = new JsonObject();
+        metadata.addProperty("k", "v");
+        UserMetadata.updateUserMetadata(appPublic.toAppIdentifier(), publicStorage, customId, metadata);
+        String onOtherStorage = Session.createNewSession(ownDbTenant, ownStorage, main, customId, new JsonObject(),
+                new JsonObject()).session.handle;
+
+        long from = System.currentTimeMillis() - 1;
+        JsonObject remove = new JsonObject();
+        remove.addProperty("userId", customId);
+        remove.addProperty("revokeAcrossAllTenants", true);
+        JsonObject removed = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                BASE + "/appid-signout-custom-own-db/recipe/session/remove", remove, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "session");
+        assertEquals("OK", removed.get("status").getAsString());
+        assertEquals(Set.of(onOtherStorage), handlesOf(removed));
+        assertNull(((SessionStorage) ownStorage).getSession(ownDbTenant, onOtherStorage));
+
+        List<AuditLogEvent> signOuts = signOutsOnBoth(publicStorage, ownStorage, appPublic, from);
+        assertEquals(1, signOuts.size());
+        assertEquals(customId, signOuts.get(0).primaryOrRecipeUserId);
+
+        // revoking again finds nothing anywhere: still no second sign_out
+        JsonObject again = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                BASE + "/appid-signout-custom-own-db/recipe/session/remove", remove, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "session");
+        assertEquals("OK", again.get("status").getAsString());
+        assertEquals(0, handlesOf(again).size());
+        assertEquals(1, signOutsOnBoth(publicStorage, ownStorage, appPublic, from).size());
+
+        stop(process);
+    }
+
+    private static List<AuditLogEvent> signOutsOnBoth(Storage first, Storage second, TenantIdentifier app, long from)
+            throws Exception {
+        List<AuditLogEvent> events = new java.util.ArrayList<>();
+        for (Storage storage : List.of(first, second)) {
+            events.addAll(((ActivityLogStorage) storage).getActivityLogEntriesForApp(app.toAppIdentifier(),
+                    Set.of("sign_out"), from, System.currentTimeMillis() + 1000, 100));
+        }
+        return events;
     }
 
     // Makes every activity-log insert of eventType fail (the in-memory db only).
