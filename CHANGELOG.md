@@ -14,7 +14,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sessions, linked accounts and user id mappings run inside that transaction.
 - Behaviour change: revoking sessions by `sessionHandles` now records a `sign_out` activity event for each user
   whose session was revoked (attributed to their SuperTokens user id), like revoking by `userId` already did.
-  Unknown or already revoked handles record nothing and write nothing.
+  Unknown or already revoked handles record nothing and write nothing. This includes revocations from the dashboard
+  and the revocation an SDK sends after a legacy token-theft response (no reuse subtype), which is recorded as the
+  victim's `sign_out`; a reused session that the core revokes itself (CDI 5.6+) records none.
 - Revoking a user's sessions across all tenants logs a warning when a tenant on a database other than the user's
   still holds sessions for them, and revokes those in a separate write on that database.
 

@@ -1550,6 +1550,10 @@ public class Session {
     // of their tenant, and each storage's reads, deletes and sign_outs run in one transaction. A storage that holds
     // none of the sessions is only read: it opens no transaction. On a non-SQL storage this revokes as before,
     // without a sign_out.
+    // Every caller of this endpoint gets the sign_out, including the dashboard and an SDK revoking a session after a
+    // legacy token-theft response (no reuse subtype): that is recorded as the victim's sign_out, by design. A reused
+    // session the core revokes itself (CDI 5.6+) goes through revokeSessionUsingSessionHandles and records none, and
+    // an SDK's later revoke of the same handle finds nothing to revoke, so it records none either.
     public static String[] signOutSessionsUsingSessionHandles(Main main, AppIdentifier appIdentifier,
                                                               String[] sessionHandles)
             throws StorageQueryException, TenantOrAppNotFoundException {
