@@ -18,7 +18,6 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
-import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.config.Config;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -28,19 +27,14 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -95,43 +89,32 @@ public class RefreshSessionAPI extends WebserverAPI {
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
-            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
-                    refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion,
-                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey), version,
-                    accessTokenValidity);
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), sessionInfo.session.tenantId);
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-
             // Skip the userid_mapping lookup and the activity-log write when the same session user_id was
             // marked active recently. With default 1h access tokens and diverse user_ids this gate rarely
             // fires — refreshes are typically further apart than the throttle window. Its real value is
             // capping the blast radius of refresh loops, burst patterns (e.g. many tabs refreshing at once),
             // and load tests that concentrate on a small user set; it is not expected to move the needle on
             // steady-state per-request latency. This short-circuit is itself part of the throttle, so it is
-            // bypassed (every refresh records) when activity_log_throttle_enabled is off.
-            boolean throttleEnabled = Config.getConfig(tenantIdentifier, main).getActivityLogThrottleEnabled();
-            if (storage.getType() == STORAGE_TYPE.SQL
-                    && (!throttleEnabled
-                            || !ActiveUsers.wasRecentlyActive(appIdentifier, sessionInfo.session.userId))) {
-                try {
-                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                            appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
-                                ActivityEventType.TOKEN_REFRESH);
-                    } else {
-                        ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.session.userId,
-                                ActivityEventType.TOKEN_REFRESH);
-                    }
-                    if (throttleEnabled) {
-                        // Mark by the session's user_id so the next refresh can short-circuit the mapping
-                        // lookup, not just the write. Meaningful only while throttling is on.
-                        ActiveUsers.markRecentlyActive(appIdentifier, sessionInfo.session.userId);
-                    }
-                } catch (StorageQueryException ignored) {
-                }
+            // bypassed (every refresh records) when activity_log_throttle_enabled is off. The refresh asks this
+            // with the session's user_id inside its transaction (SQL storages only) and, when it says yes, writes
+            // the token_refresh event in that same transaction.
+            boolean throttleEnabled = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                    .getActivityLogThrottleEnabled();
+            boolean[] recordedTokenRefresh = new boolean[1];
+            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
+                    refreshToken, antiCsrfToken,
+                    enableAntiCsrf, accessTokenVersion,
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey), version,
+                    accessTokenValidity, sessionUserId -> {
+                        recordedTokenRefresh[0] = !throttleEnabled
+                                || !ActiveUsers.wasRecentlyActive(appIdentifier, sessionUserId);
+                        return recordedTokenRefresh[0];
+                    });
+
+            if (throttleEnabled && recordedTokenRefresh[0]) {
+                // Mark by the session's user_id so the next refresh can short-circuit the mapping lookup, not
+                // just the write. Meaningful only while throttling is on.
+                ActiveUsers.markRecentlyActive(appIdentifier, sessionInfo.session.userId);
             }
 
             JsonObject result = sessionInfo.toJsonObject();
