@@ -626,6 +626,30 @@ public class Start
     }
 
     @Override
+    public int deleteSession_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                         String[] sessionHandles) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return SessionQueries.deleteSession_Transaction(this, sqlCon, tenantIdentifier, sessionHandles);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public String[] getAllNonExpiredSessionHandlesForUser_Transaction(TransactionConnection con,
+                                                                      TenantIdentifier tenantIdentifier,
+                                                                      String userId) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return SessionQueries.getAllNonExpiredSessionHandlesForUser_Transaction(this, sqlCon, tenantIdentifier,
+                    userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void setKeyValue_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con, String key,
                                         KeyValueInfo info)
             throws StorageQueryException, TenantOrAppNotFoundException {
@@ -4175,6 +4199,46 @@ public class Start
         try {
             OAuthQueries.updateOAuthSessionInternal(this, (Connection) con.getConnection(),
                     appIdentifier, gid, newInternalRefreshToken, sessionHandle, jti, exp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void createOrUpdateOAuthSession_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                       String gid, String clientId, String externalRefreshToken,
+                                                       String internalRefreshToken, String sessionHandle, String jti,
+                                                       long exp)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        try {
+            OAuthQueries.createOrUpdateOAuthSession_Transaction(this, (Connection) con.getConnection(), appIdentifier,
+                    gid, clientId, externalRefreshToken, internalRefreshToken, sessionHandle, jti, exp);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        (Connection) con.getConnection(),
+                        errorMessage,
+                        config.getOAuthClientsTable(),
+                        new String[]{"app_id", "client_id"},
+                        new Object[]{appIdentifier.getAppId(), clientId})) {
+                    throw new OAuthClientNotFoundException();
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addOAuthM2MTokenForStats_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                     String clientId, long iat, long exp)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        // as for addOAuthM2MTokenForStats, the stats table has no client_id foreign key to violate
+        try {
+            OAuthQueries.addOAuthM2MTokenForStats_Transaction(this, (Connection) con.getConnection(), appIdentifier,
+                    iat, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

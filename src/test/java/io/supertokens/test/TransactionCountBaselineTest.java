@@ -22,11 +22,23 @@ import com.webauthn4j.data.extension.client.AuthenticationExtensionClientOutput;
 import com.webauthn4j.data.AuthenticatorAssertionResponse;
 import com.webauthn4j.data.PublicKeyCredential;
 import com.webauthn4j.test.EmulatorUtil;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.TransactionCounters.Snapshot;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.oauth.MockOAuthProvider;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,7 +100,10 @@ public class TransactionCountBaselineTest {
                 () -> createSession(process, userId));
         String handle = session.getAsJsonObject("session").get("handle").getAsString();
 
-        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(1, 1, 1),
+        // the token_refresh activity row is written in the refresh's own transaction. A legacy (CDI <= 5.4) refresh
+        // with a child refresh token that is not promoted yet (Case-B) still opens two: the promote, then the retry
+        // that refreshes and writes the token_refresh row. That rare path is not measured here.
+        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(1, 1, 0),
                 () -> refreshSession(process, session.getAsJsonObject("refreshToken").get("token").getAsString()));
 
         baseline.measure("session verify (checkDatabase)", Snapshot.of(0, 0, 0),
@@ -102,7 +117,8 @@ public class TransactionCountBaselineTest {
             return response;
         });
 
-        baseline.measure("session remove", Snapshot.of(0, 0, 1), () -> {
+        // the delete and the user's sign_out activity row commit together
+        baseline.measure("session remove", Snapshot.of(1, 1, 0), () -> {
             JsonObject body = new JsonObject();
             JsonArray handles = new JsonArray();
             handles.add(handle);
@@ -110,6 +126,40 @@ public class TransactionCountBaselineTest {
             JsonObject response = post(process, "/recipe/session/remove", body, "session");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(handles, response.getAsJsonArray("sessionHandlesRevoked"));
+            return response;
+        });
+
+        // failure paths that write nothing open no writing transaction: the refresh only reads the revoked session,
+        // and a handle that is already revoked is only read, in the transaction that would have revoked it
+        baseline.measure("session refresh (revoked session)", Snapshot.of(1, 0, 0), () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("refreshToken", refreshed.getAsJsonObject("refreshToken").get("token").getAsString());
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("useDynamicSigningKey", true);
+            JsonObject response = post(process, "/recipe/session/refresh", body, "session");
+            assertEquals("UNAUTHORISED", response.get("status").getAsString());
+            return response;
+        });
+
+        baseline.measure("session remove (revoked handle)", Snapshot.of(1, 0, 0), () -> {
+            JsonObject body = new JsonObject();
+            JsonArray handles = new JsonArray();
+            handles.add(handle);
+            body.add("sessionHandles", handles);
+            JsonObject response = post(process, "/recipe/session/remove", body, "session");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(0, response.getAsJsonArray("sessionHandlesRevoked").size());
+            return response;
+        });
+
+        createSession(process, userId);
+        baseline.measure("session remove (userId)", Snapshot.of(1, 1, 0), () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", userId);
+            JsonObject response = post(process, "/recipe/session/remove", body, "session");
+            assertEquals("OK", response.get("status").getAsString());
+            // the warm-up session and the one just created
+            assertEquals(2, response.getAsJsonArray("sessionHandlesRevoked").size());
             return response;
         });
 
@@ -253,6 +303,78 @@ public class TransactionCountBaselineTest {
     }
 
     // Collects every measurement and reports all mismatches together, so a change shows its full effect at once.
+    @Test
+    public void oauthApis() throws Exception {
+        try (MockOAuthProvider provider = new MockOAuthProvider()) {
+            TestingProcessManager.TestingProcess process = startInMemory();
+            if (process == null) {
+                return;
+            }
+            Main main = process.getProcess();
+            TenantIdentifier tenant = process.getAppForTesting();
+            Storage storage = StorageLayer.getStorage(tenant, main);
+            FeatureFlagTestContent.getInstance(main)
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+            Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null,
+                    provider.coreConfig()), false);
+            String userId = emailPasswordSignUp(process, "oauth-user@example.com").get("id").getAsString();
+            provider.sessionHandle = Session.createNewSession(tenant, storage, main, userId, new JsonObject(),
+                    new JsonObject()).session.handle;
+            Baseline baseline = new Baseline();
+
+            // the session row, the M2M token stats row (client_credentials) and the session's activity event commit
+            // together, after the provider exchange
+            MockOAuthProvider.addClient(main, tenant.toAppIdentifier(), storage, true);
+            MockOAuthProvider.token(main, MockOAuthProvider.authorizationCodeRequest()); // warm-up: signing keys
+            JsonObject exchanged = baseline.measure("oauth token (authorization_code)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.authorizationCodeRequest()));
+            baseline.measure("oauth token (refresh, rotating)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.refreshRequest(
+                            exchanged.get("refresh_token").getAsString())));
+            baseline.measure("oauth auth (implicit)", Snapshot.of(1, 1, 0), () -> {
+                JsonObject response = MockOAuthProvider.auth(main, MockOAuthProvider.implicitAuthRequest());
+                assertEquals("OK", response.get("status").getAsString());
+                return response;
+            });
+            provider.issueRefreshToken = false;
+            baseline.measure("oauth token (client_credentials)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.clientCredentialsRequest()));
+            provider.issueRefreshToken = true;
+
+            provider.active = false;
+            baseline.measure("oauth token (refresh, rotating, inactive token)", Snapshot.of(0, 0, 0), () -> {
+                JsonObject response = MockOAuthProvider.token(main, MockOAuthProvider.refreshRequest(
+                        exchanged.get("refresh_token").getAsString()));
+                assertEquals("token_inactive", response.get("error").getAsString());
+                return response;
+            });
+            provider.active = true;
+
+            // the mapping update and the activity event commit together, in the transaction that holds the row lock
+            MockOAuthProvider.addClient(main, tenant.toAppIdentifier(), storage, false);
+            String refreshToken = okToken(main, MockOAuthProvider.authorizationCodeRequest())
+                    .get("refresh_token").getAsString();
+            baseline.measure("oauth token (refresh, non-rotating)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.refreshRequest(refreshToken)));
+            provider.active = false;
+            baseline.measure("oauth token (refresh, non-rotating, inactive token)", Snapshot.of(1, 0, 0), () -> {
+                JsonObject response = MockOAuthProvider.token(main, MockOAuthProvider.refreshRequest(refreshToken));
+                assertEquals("token_inactive", response.get("error").getAsString());
+                return response;
+            });
+
+            baseline.assertMatches();
+            stop(process);
+        }
+    }
+
+    private static JsonObject okToken(Main main, JsonObject request) throws Exception {
+        JsonObject response = MockOAuthProvider.token(main, request);
+        assertEquals("OK", response.get("status").getAsString());
+        return response;
+    }
+
     private static class Baseline {
         private final List<String> lines = new ArrayList<>();
         private boolean mismatch = false;
