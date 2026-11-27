@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +65,11 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     // that never finishes cannot hold the front of every pass. Keyed rather than indexed so it stays right when
     // tenants are added or removed between passes. Only touched by this job's scheduler thread.
     private final LinkedHashSet<TenantIdentifier> passOrder = new LinkedHashSet<>();
+
+    // The same for the tenants inside each storage: representative tenant -> the tenant that storage's next pass
+    // starts from. Without it a storage whose tenants overrun the pass would restart at its first tenant every
+    // time, and the later ones would never be reached. Written by the worker threads.
+    private final Map<TenantIdentifier, TenantIdentifier> resumeAt = new ConcurrentHashMap<>();
 
     // This job's own per-storage pool, cron_storage_parallelism threads, created on its first per-storage pass.
     // Per job rather than shared, so a job stuck on one storage only delays itself, and its time limit only ever
@@ -183,33 +189,55 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     }
 
     /*
-     * One storage's work: the per-storage task, then each of its tenants. Stops as soon as the worker is
-     * interrupted (the pass ran out of time, or the core is stopping), so a cancelled task does not keep going
-     * through its tenants untracked or run alongside the next pass on the same storage. An interruption is not
-     * an error and is not logged as one.
+     * One storage's work: the per-storage task, then each of its tenants, starting where the last pass on this
+     * storage was cut off. Stops as soon as the worker is interrupted (the pass ran out of time, or the core is
+     * stopping), so a cancelled task does not keep going through its tenants untracked or run alongside the next
+     * pass on the same storage. An interruption is not an error and is not logged as one.
      */
     private void runForStorage(List<TenantIdentifier> tenants, AtomicBoolean threwQuitProgramException) {
+        TenantIdentifier representative = tenants.get(0);
         try {
-            doTaskPerStorage(tenants.get(0), StorageLayer.getStorage(tenants.get(0), main));
+            doTaskPerStorage(representative, StorageLayer.getStorage(representative, main));
         } catch (Exception e) {
-            if (Thread.currentThread().isInterrupted()) {
+            if (wasInterrupted(e)) {
                 return;
             }
-            reportError(tenants.get(0), e, threwQuitProgramException);
+            reportError(representative, e, threwQuitProgramException);
         }
-        for (TenantIdentifier tenant : tenants) {
+
+        int n = tenants.size();
+        // no resume point, or its tenant was removed since: from the top (null-checked, as an immutable list's
+        // indexOf throws on null)
+        TenantIdentifier resume = resumeAt.get(representative);
+        int start = resume == null ? 0 : Math.max(0, tenants.indexOf(resume));
+        for (int k = 0; k < n; k++) {
             if (Thread.currentThread().isInterrupted()) {
                 return;
             }
+            int i = (start + k) % n;
+            // Where the next pass starts if this tenant is cut off: at this tenant, so it gets the next pass's full
+            // budget, unless it already had one (it is first in this pass), in which case after it, so one tenant
+            // that never fits cannot hold every pass.
+            resumeAt.put(representative, k == 0 ? tenants.get((i + 1) % n) : tenants.get(i));
             try {
-                doTaskPerTenant(tenant);
+                doTaskPerTenant(tenants.get(i));
             } catch (Exception e) {
-                if (Thread.currentThread().isInterrupted()) {
+                if (wasInterrupted(e)) {
                     return;
                 }
-                reportError(tenant, e, threwQuitProgramException);
+                reportError(tenants.get(i), e, threwQuitProgramException);
             }
         }
+        // every tenant got its turn: the next pass starts from the top again
+        resumeAt.remove(representative);
+    }
+
+    /* Job code that sleeps or waits gets an InterruptedException, which clears the flag; restore it and stop. */
+    private static boolean wasInterrupted(Exception e) {
+        if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
+        return Thread.currentThread().isInterrupted();
     }
 
     private void reportError(TenantIdentifier tenant, Exception e, AtomicBoolean threwQuitProgramException) {
@@ -389,6 +417,12 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     @TestOnly
     public List<List<TenantIdentifier>> getTenantsInfo() {
         return this.tenantsInfo;
+    }
+
+    // run() calls only doTaskPerApp for a per-app job, and only doTaskPerStorage / doTaskPerTenant otherwise
+    @TestOnly
+    public boolean isPerApp() {
+        return this.isPerApp;
     }
 
     // the list belongs to tenants that are a part of the same user pool ID

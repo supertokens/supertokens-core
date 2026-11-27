@@ -25,6 +25,8 @@ import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
+import io.supertokens.cronjobs.cleanupOAuthSessionsAndChallenges.CleanupOAuthSessionsAndChallenges;
+import io.supertokens.cronjobs.cleanupWebauthnExpiredData.CleanUpWebauthNExpiredDataCron;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -33,8 +35,12 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.webauthn.WebAuthNOptions;
+import io.supertokens.pluginInterface.webauthn.WebAuthNStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -358,6 +364,39 @@ public class CronjobTest {
                 finished.incrementAndGet();
             } finally {
                 running.decrementAndGet();
+            }
+        }
+    }
+
+    /* Per-tenant work that sleeps, recording the tenants that finished. The sleep is cut off when a pass times out. */
+    static class TenantProbeCronjob extends CronTask {
+        final List<String> finished = Collections.synchronizedList(new ArrayList<>());
+        private final long workMillis;
+
+        TenantProbeCronjob(String name, Main main, List<List<TenantIdentifier>> tenantsInfo, long workMillis) {
+            super(name, main, tenantsInfo, false);
+            this.workMillis = workMillis;
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerTenant(TenantIdentifier tenant) throws Exception {
+            Thread.sleep(workMillis);
+            finished.add(tenant.getTenantId());
+        }
+
+        Set<String> finishedSoFar() {
+            synchronized (finished) {
+                return new HashSet<>(finished);
             }
         }
     }
@@ -960,12 +999,17 @@ public class CronjobTest {
             Cronjobs.addCronjob(process.getProcess(), new IgnoresInterruptCronjob("ProbeStuckAtShutdown" + i,
                     process.getProcess(), taggedPools(1), started, release));
         }
-        assertTrue(started.await(10, TimeUnit.SECONDS));
+        long tookMillis;
+        try {
+            assertTrue(started.await(10, TimeUnit.SECONDS));
 
-        long start = System.currentTimeMillis();
-        Cronjobs.shutdownAndAwaitTermination(process.getProcess());
-        long tookMillis = System.currentTimeMillis() - start;
-        release.countDown();
+            long start = System.currentTimeMillis();
+            Cronjobs.shutdownAndAwaitTermination(process.getProcess());
+            tookMillis = System.currentTimeMillis() - start;
+        } finally {
+            // the workers ignore interrupts: without this a failed assertion leaves them blocked for the whole run
+            release.countDown();
+        }
 
         // the four pools share one 5s wait; waiting 5s for each in turn would take 20s
         assertTrue("shutdown took " + tookMillis + "ms", tookMillis < 12_000);
@@ -995,6 +1039,114 @@ public class CronjobTest {
         for (int i = 0; i < 10; i++) {
             assertTrue("t" + i + " never ran: " + ran, ran.contains("t" + i));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testATimedOutPassResumesAtTheTenantsItDidNotReach() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // one storage with four tenants, 700 ms each, 1 s per pass: a pass finishes one tenant and is cut off in the
+        // next. Restarting at a0 every pass would only ever finish a0; skipping the cut-off tenant would only ever
+        // finish a0 and a2.
+        List<TenantIdentifier> tenants = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            tenants.add(new TenantIdentifier("tenantresume", null, "a" + i));
+        }
+        TenantProbeCronjob probe = new TenantProbeCronjob("ProbeTenantResume", process.getProcess(),
+                List.of(tenants), 700);
+        Cronjobs.addCronjob(process.getProcess(), probe);
+
+        long deadline = System.currentTimeMillis() + 20_000;
+        while (probe.finishedSoFar().size() < 4 && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+        }
+        assertEquals(Set.of("a0", "a1", "a2", "a3"), probe.finishedSoFar());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testEveryCronJobOverridesTheHookItsModeCalls() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // run() calls only doTaskPerApp for a per-app job and never doTaskPerStorage / doTaskPerTenant, so a job
+        // that overrides the other mode's hook runs on schedule and does nothing
+        for (CronTask task : Cronjobs.getInstance(process.getProcess()).getTasks()) {
+            Set<String> hooks = new HashSet<>();
+            for (Class<?> c = task.getClass(); c != CronTask.class; c = c.getSuperclass()) {
+                for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
+                    if (m.getName().startsWith("doTask")) {
+                        hooks.add(m.getName());
+                    }
+                }
+            }
+            String name = task.getClass().getName();
+            if (task.isPerApp()) {
+                assertTrue(name + " is per app but overrides " + hooks, hooks.equals(Set.of("doTaskPerApp")));
+            } else {
+                assertFalse(name + " is per storage but overrides doTaskPerApp", hooks.contains("doTaskPerApp"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testWebauthnAndOAuthCleanupJobsDeleteExpiredRows() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args, false);
+        CronTaskTest.getInstance(process.getProcess())
+                .setIntervalInSeconds(CleanUpWebauthNExpiredDataCron.RESOURCE_KEY, 1);
+        CronTaskTest.getInstance(process.getProcess())
+                .setIntervalInSeconds(CleanupOAuthSessionsAndChallenges.RESOURCE_KEY, 1);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TenantIdentifier tenant = process.getAppForTesting();
+        Storage storage = StorageLayer.getStorage(tenant, process.getProcess());
+
+        long now = System.currentTimeMillis();
+        WebAuthNOptions options = new WebAuthNOptions();
+        options.generatedOptionsId = "expired-options";
+        options.relyingPartyId = "example.com";
+        options.relyingPartyName = "example";
+        options.userEmail = "user@example.com";
+        options.timeout = 60_000L;
+        options.challenge = "Y2hhbGxlbmdl";
+        options.origin = "https://example.com";
+        options.createdAt = now - 120_000;
+        options.expiresAt = now - 60_000;
+        options.userPresenceRequired = true;
+        options.userVerification = "preferred";
+        WebAuthNStorage webauthn = StorageUtils.getWebAuthNStorage(storage);
+        webauthn.saveGeneratedOptions(tenant, options);
+
+        OAuthStorage oauth = StorageUtils.getOAuthStorage(storage);
+        oauth.addOrUpdateOauthClient(tenant.toAppIdentifier(), "cleanup-client", "secret", false, false);
+        oauth.addOAuthLogoutChallenge(tenant.toAppIdentifier(), "expired-challenge", "cleanup-client", null, null,
+                null, 0);
+
+        long deadline = System.currentTimeMillis() + 10_000;
+        while ((webauthn.loadOptionsById(tenant, "expired-options") != null
+                || oauth.getOAuthLogoutChallenge(tenant.toAppIdentifier(), "expired-challenge") != null)
+                && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+        }
+        assertNull(webauthn.loadOptionsById(tenant, "expired-options"));
+        assertNull(oauth.getOAuthLogoutChallenge(tenant.toAppIdentifier(), "expired-challenge"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

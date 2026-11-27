@@ -17,7 +17,7 @@ public class CleanupOAuthSessionsAndChallenges extends CronTask {
             ".CleanupOAuthSessionsAndChallenges";
 
     private CleanupOAuthSessionsAndChallenges(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("CleanupOAuthSessionsAndChallenges", main, tenantsInfo, true);
+        super("CleanupOAuthSessionsAndChallenges", main, tenantsInfo, false);
     }
 
     public static CleanupOAuthSessionsAndChallenges init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
