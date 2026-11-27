@@ -60,6 +60,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *   exceed it, roll back with its watermark, and come back larger on every retry, so the projection would
  *   never catch up. A pass stops after {@link #PASS_BUDGET_MS} and leaves the rest of the backlog (with the
  *   dirty flag set) to the next tick.
+ *   <br>Known, accepted effect of slicing: a slice's reconcile only sees the {@code account_linking} events in
+ *   that slice. When a recipe user was active in an earlier slice and linked to a primary user in a later one,
+ *   the earlier slice credits the recipe user's own row and the later slice removes it. If a pass stops
+ *   between those slices (budget, failure, restart), active-user counts include both the recipe and the
+ *   primary user until a later pass folds the slice with the link. This only happens while a backlog is being
+ *   caught up and heals itself; checking each user's current link inside every slice would cost an extra
+ *   lookup per folded user on every pass.
  *   <li>Fold, reconcile and the watermark advance of a slice happen in one transaction, and
  *   the watermark advances only when the fold actually ran: a storage whose fold skips because a
  *   concurrent instance holds its rollup lock returns {@code false}, and this pass then leaves the
@@ -248,11 +255,24 @@ public class RollupUserLastActive extends CronTask {
             if (state.consecutiveFailures >= CONSOLE_ALERT_AFTER_N_FAILURES) {
                 // The cron framework logs task exceptions to the error log only; a rollup that keeps failing
                 // leaves user_last_active (and every active-user count) frozen, so surface it on the console.
+                // The console line carries only the message (the stack trace goes to the error log), so the
+                // cause is part of the message: operators who only collect deployment logs still see it.
                 Logging.error(main, representative, "Last-active rollup failed " + state.consecutiveFailures
-                        + " passes in a row for this storage; user_last_active is not advancing", true, e);
+                        + " passes in a row for this storage; user_last_active is not advancing. Cause: "
+                        + describeCause(e), true, e);
             }
             throw e;
         }
+    }
+
+    /* The exception and its innermost cause, e.g. "StorageQueryException <- SQLException: socket timeout". */
+    static String describeCause(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String rootText = root.getClass().getSimpleName() + (root.getMessage() == null ? "" : ": " + root.getMessage());
+        return root == e ? rootText : e.getClass().getSimpleName() + " <- " + rootText;
     }
 
     private Long getWatermark(ActiveUsersSQLStorage storage, TenantIdentifier representative)

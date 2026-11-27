@@ -346,7 +346,7 @@ public class RollupUserLastActiveTest {
 
     /**
      * Consecutive failed passes are counted per storage (from the third one on they are also logged to the
-     * console), and a pass that succeeds resets the count.
+     * console, with the cause), and a pass that succeeds resets the count.
      */
     @Test
     public void consecutiveFailuresAreCountedAndResetBySuccess() throws Exception {
@@ -358,16 +358,29 @@ public class RollupUserLastActiveTest {
                 .when(failing)
                 .rollupLastActiveFromActivityLog_Transaction(Mockito.any(), Mockito.anyLong(), Mockito.anyLong());
 
-        for (int i = 1; i <= 3; i++) {
-            RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
-            try {
-                f.cron.runOncePerStorageForTesting(f.representative, failing);
-                fail("expected the fold to throw");
-            } catch (Exception expected) {
-                // counted below
+        java.io.PrintStream originalErr = System.err;
+        java.io.ByteArrayOutputStream console = new java.io.ByteArrayOutputStream();
+        try {
+            for (int i = 1; i <= 3; i++) {
+                if (i == 3) {
+                    System.setErr(new java.io.PrintStream(console, true));
+                }
+                RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
+                try {
+                    f.cron.runOncePerStorageForTesting(f.representative, failing);
+                    fail("expected the fold to throw");
+                } catch (Exception expected) {
+                    // counted below
+                }
+                assertEquals(i, f.cron.getConsecutiveFailuresForTesting(f.userPoolId));
             }
-            assertEquals(i, f.cron.getConsecutiveFailuresForTesting(f.userPoolId));
+        } finally {
+            System.setErr(originalErr);
         }
+        // the third failure's console alert names the cause, not just the failure count
+        String alert = console.toString();
+        assertTrue(alert, alert.contains("failed 3 passes in a row"));
+        assertTrue(alert, alert.contains("SQLException: simulated socket timeout"));
 
         RollupDirtySignal.getInstance(f.main).markDirty(f.userPoolId);
         f.cron.runOncePerStorageForTesting(f.representative, f.storage);
