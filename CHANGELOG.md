@@ -24,6 +24,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   its token stats and session rows in one transaction. A failed activity event write now fails the request instead
   of being ignored. For a session whose tenant has its own database, the event is written there right after the
   OAuth row commits.
+- Fixes the last-active rollup getting stuck on a large backlog: it now folds in one-hour slices, advancing its
+  watermark after each, and logs the cause to the console after 3 failed passes in a row. While a backlog is being
+  caught up, a user linked to another account in a not-yet-folded slice can be counted alongside that account.
 
 ## [12.5.0]
 
