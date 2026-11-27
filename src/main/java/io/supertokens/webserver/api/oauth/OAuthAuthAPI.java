@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.oauth;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.supertokens.ActiveUsers;
 import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -29,15 +28,9 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
-import io.supertokens.pluginInterface.session.SessionInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.session.Session;
 import io.supertokens.session.jwt.JWT;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -139,10 +132,11 @@ public class OAuthAuthAPI extends WebserverAPI {
                             String sessionHandle = null;
                             if (accessTokenPayload.has("sessionHandle")) {
                                 sessionHandle = accessTokenPayload.get("sessionHandle").getAsString();
-                                updateLastActive(appIdentifier, sessionHandle);
                             }
 
-                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null, sessionHandle, jti, exp);
+                            // the session's activity event is written with the OAuth session row
+                            OAuth.createOrUpdateOauthSession(main, appIdentifier, storage, clientId, gid, null, null,
+                                    sessionHandle, jti, exp, null, ActivityEventType.OAUTH_AUTHORIZE);
                         }
                     }
                 }
@@ -167,27 +161,6 @@ public class OAuthAuthAPI extends WebserverAPI {
 
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | OAuthClientNotFoundException e) {
             throw new ServletException(e);
-        }
-    }
-
-    private void updateLastActive(AppIdentifier appIdentifier, String sessionHandle) {
-        try {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
-
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                    appIdentifier, storage, sessionInfo.userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, userIdMapping.superTokensUserId,
-                        ActivityEventType.OAUTH_AUTHORIZE);
-            } else {
-                ActiveUsers.updateLastActive(tenantIdentifier, main, sessionInfo.userId,
-                        ActivityEventType.OAUTH_AUTHORIZE);
-            }
-        } catch (Exception e) {
-            // ignore
         }
     }
 }

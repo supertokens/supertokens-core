@@ -7,23 +7,32 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.5.1]
 
-- Cron jobs no longer open connections to every tenant database at the same instant
-  ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)):
-    - Each job's per-storage work runs on that job's own pool of `cron_storage_parallelism` (new, default 4) threads,
-      instead of one thread per storage on every pass, so a pass connects to at most that many storages at once. Jobs
-      don't share the pool, so a job stuck on one storage only delays itself, and the limit is per job: the 11 jobs
-      that run per storage can together work on up to 11 times that many storages (44 at the default). A pass over
-      many storages takes longer;
-      it still stops after one interval as before, and the next pass starts with the storages it did not reach, with
-      any storage that ran out of time moved to the end so it can't hold up the rest. Within a storage, the next pass
-      also starts at the tenant the last one was cut off at, so later tenants still get their cleanup.
-    - Outside tests, a job whose first run is a full interval after start is delayed by a random offset of up to one
-      interval (capped at one hour), so jobs with the same interval, and cores started together, no longer run in the
-      same second. Jobs that start sooner on purpose (the license check, telemetry, bulk import, the reservation
-      backfill) keep their timing, and no interval changes.
-    - On shutdown, queued cron work is dropped and running work is interrupted before storages are closed.
-- The WebAuthn and OAuth cleanup cron jobs now delete expired data: expired WebAuthn options and account recovery
-  tokens, expired OAuth sessions and M2M tokens, and OAuth logout challenges older than 48 hours were never removed.
+- Session refresh and sign-out commit once: `POST /recipe/session/refresh` writes the session update and its
+  `token_refresh` activity event in one transaction, and `POST /recipe/session/remove` writes the deletes and the
+  `sign_out` event in one transaction (per database for session handles on several databases). The event is no
+  longer best-effort: if it cannot be written, the request fails and nothing is changed. Lookups of the user's
+  sessions, linked accounts and user id mappings run inside that transaction.
+- Behaviour change: revoking sessions by `sessionHandles` now records a `sign_out` activity event for each user
+  whose session was revoked (attributed to their SuperTokens user id), like revoking by `userId` already did.
+  Unknown or already revoked handles record nothing and write nothing. This includes revocations from the dashboard
+  and the revocation an SDK sends after a legacy token-theft response (no reuse subtype), which is recorded as the
+  victim's `sign_out`; a reused session that the core revokes itself (CDI 5.6+) records none.
+- Revoking a user's sessions across all tenants revokes the sessions a tenant on a database other than the user's
+  holds for them in a separate write on that database, outside the transaction with the `sign_out`.
+- The OAuth token and auth APIs (`POST /recipe/oauth/token`, `POST /recipe/oauth/auth`) write the session's activity
+  event in the same transaction as the OAuth session row, so each request commits once; `client_credentials` writes
+  its token stats and session rows in one transaction. A failed activity event write now fails the request instead
+  of being ignored. For a session whose tenant has its own database, the event is written there right after the
+  OAuth row commits.
+- Fixes the last-active rollup getting stuck on a large backlog: it now folds in one-hour slices, advancing its
+  watermark after each, and logs the cause to the console after 3 failed passes in a row. While a backlog is being
+  caught up, a user linked to another account in a not-yet-folded slice can be counted alongside that account.
+- Updates jackson to 2.22.4 and guava to 33.7.2 to fix CVE-2026-68497, CVE-2026-91776, CVE-2026-91777,
+  CVE-2026-89407, CVE-2026-89425 and CVE-2026-102554 in the docker image.
+- Cron jobs work on at most `cron_storage_parallelism` (new, default 4) storages at once per job, and jobs first
+  scheduled a full interval out start at a random offset, so they no longer connect to every tenant database at the
+  same instant ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)).
+- The WebAuthn and OAuth cleanup cron jobs now delete expired data; they never ran before.
 
 ## [12.5.0]
 

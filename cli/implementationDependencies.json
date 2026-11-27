@@ -12,19 +12,19 @@
 		"src":"https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.38.0/error_prone_annotations-2.38.0-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.1/jackson-dataformat-yaml-2.22.1.jar",
-		"name":"jackson-dataformat-yaml 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.1/jackson-dataformat-yaml-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.4/jackson-dataformat-yaml-2.22.4.jar",
+		"name":"jackson-dataformat-yaml 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.4/jackson-dataformat-yaml-2.22.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar",
-		"name":"jackson-databind 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4.jar",
+		"name":"jackson-databind 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4-sources.jar"
 	},
 	{
-		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar",
-		"name":"jackson-core 2.22.1",
-		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1-sources.jar"
+		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4.jar",
+		"name":"jackson-core 2.22.4",
+		"src":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4-sources.jar"
 	},
 	{
 		"jar":"https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar",

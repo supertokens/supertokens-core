@@ -168,13 +168,16 @@ public class ActiveUsersQueries {
      * correlated {@code EXISTS} sub-select (result-identical).
      */
     public static boolean rollupLastActiveFromActivityLog_Transaction(Start start, Connection con,
-                                                                   long windowStartMillis)
+                                                                   long windowStartMillis,
+                                                                   long windowEndMillis)
             throws StorageQueryException, SQLException {
         String userLastActiveTable = Config.getConfig(start).getUserLastActiveTable();
         String activityLogTable = Config.getConfig(start).getActivityLogTable();
         String appIdToUserIdTable = Config.getConfig(start).getAppIdToUserIdTable();
 
-        // SQLite's two-argument max() is the scalar GREATEST, so the upsert stays monotonic.
+        // The window is [windowStartMillis, windowEndMillis) so the cron can fold a backlog in slices. The
+        // upsert only rewrites a row whose timestamp moves forward, which keeps it monotonic and skips no-op
+        // rewrites of unchanged rows (mirrors the PostgreSQL plugin).
         // The fold set is the semantic activity events plus the two lifecycle events that imply activity
         // (user_creation, account_linking); see RollupEventTypes.FOLD_SET. account_linking credits the primary
         // user here (primary_or_recipe_user_id); the reconcile below separately drops the recipe user's row.
@@ -189,13 +192,17 @@ public class ActiveUsersQueries {
         String FOLD_QUERY = "INSERT INTO " + userLastActiveTable + " (app_id, user_id, last_active_time)"
                 + " SELECT app_id, primary_or_recipe_user_id, MAX(created_at) FROM " + activityLogTable + " al"
                 + " WHERE event_type IN (" + RollupEventTypes.sqlInList() + ") AND created_at >= ?"
+                + " AND created_at < ?"
                 + " AND EXISTS (SELECT 1 FROM " + appIdToUserIdTable + " m"
                 + " WHERE m.app_id = al.app_id AND m.user_id = al.primary_or_recipe_user_id)"
                 + " GROUP BY app_id, primary_or_recipe_user_id"
                 + " ON CONFLICT (app_id, user_id) DO UPDATE"
-                + " SET last_active_time = MAX(" + userLastActiveTable + ".last_active_time,"
-                + " excluded.last_active_time)";
-        update(con, FOLD_QUERY, pst -> pst.setLong(1, windowStartMillis));
+                + " SET last_active_time = excluded.last_active_time"
+                + " WHERE " + userLastActiveTable + ".last_active_time < excluded.last_active_time";
+        update(con, FOLD_QUERY, pst -> {
+            pst.setLong(1, windowStartMillis);
+            pst.setLong(2, windowEndMillis);
+        });
 
         // The ordering guard (al.created_at >= last_active_time) makes the reconcile order-insensitive and
         // keeps it result-identical to the PostgreSQL DELETE ... USING: only scrub a linked-away recipe user's
@@ -207,11 +214,14 @@ public class ActiveUsersQueries {
         String RECONCILE_QUERY = "DELETE FROM " + userLastActiveTable
                 + " WHERE EXISTS (SELECT 1 FROM " + activityLogTable + " al"
                 + " WHERE al.event_type = '" + LifecycleEventType.ACCOUNT_LINKING.getValue() + "'"
-                + " AND al.created_at >= ?"
+                + " AND al.created_at >= ? AND al.created_at < ?"
                 + " AND al.app_id = " + userLastActiveTable + ".app_id"
                 + " AND al.recipe_user_id = " + userLastActiveTable + ".user_id"
                 + " AND al.created_at >= " + userLastActiveTable + ".last_active_time)";
-        update(con, RECONCILE_QUERY, pst -> pst.setLong(1, windowStartMillis));
+        update(con, RECONCILE_QUERY, pst -> {
+            pst.setLong(1, windowStartMillis);
+            pst.setLong(2, windowEndMillis);
+        });
         return true;
     }
 
