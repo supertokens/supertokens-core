@@ -33,9 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scheduled a full interval out start at a random offset, so they no longer connect to every tenant database at the
   same instant ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)).
 - The WebAuthn and OAuth cleanup cron jobs now delete expired data; they never ran before.
-- Fixes non-ASCII data (e.g. a non-ASCII external user ID in the refresh token payload, or an OAuth client secret)
-  not round-tripping when the core's JVM default charset is not UTF-8 (`-Dfile.encoding`). `Utils.decrypt` now
-  decodes as UTF-8, the charset `Utils.encrypt` uses. No change on UTF-8 JVMs, which is the default on Java 18+.
+- Fixes encrypted non-ASCII values not decrypting correctly on JVMs whose default charset isn't UTF-8.
 
 ## [12.5.0]
 
