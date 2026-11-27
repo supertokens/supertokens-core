@@ -30,6 +30,8 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.auditlog.ActivityEventType;
+import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -46,6 +48,7 @@ import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
+import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
@@ -788,14 +791,6 @@ public class OAuth {
         }
     }
 
-    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken)
-            throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException,
-            UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException, OAuthClientNotFoundException {
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
-        oauthStorage.addOAuthM2MTokenForStats(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
-    }
-
     public static String createLogoutRequestAndReturnRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
             String postLogoutRedirectionUri, String sessionHandle, String state)
             throws StorageQueryException, OAuthClientNotFoundException {
@@ -872,5 +867,49 @@ public class OAuth {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.createOrUpdateOAuthSession(appIdentifier, gid, clientId, externalRefreshToken, internalRefreshToken,
                 sessionHandle, jti, exp);
+    }
+
+    /**
+     * Writes the OAuth session row of a token or auth request in one audited transaction on the OAuth storage (the
+     * app's public-tenant storage), together with the request's activity event: in that transaction when the
+     * session's tenant uses the same storage, otherwise in its own transaction on the session tenant's storage once
+     * this one has committed (see {@link OAuthSessionActivity}). A failed event write fails the call.
+     * <p>
+     * For {@code client_credentials}, pass the payload of the issued access token as {@code m2mAccessTokenPayload}:
+     * its M2M token stats row is written in the same transaction. Decode it before calling, so no signing-key read
+     * borrows a connection while the transaction's is held.
+     */
+    public static void createOrUpdateOauthSession(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                  String clientId, String gid, String externalRefreshToken,
+                                                  String internalRefreshToken, String sessionHandle, String jti,
+                                                  long exp, @Nullable JsonObject m2mAccessTokenPayload,
+                                                  ActivityEventType activityEventType)
+            throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException {
+        OAuthSQLStorage oauthStorage = (OAuthSQLStorage) storage;
+        OAuthSessionActivity activity = OAuthSessionActivity.of(main, appIdentifier, storage, sessionHandle,
+                activityEventType);
+        try {
+            ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
+                try {
+                    if (m2mAccessTokenPayload != null) {
+                        oauthStorage.addOAuthM2MTokenForStats_Transaction(appIdentifier, con,
+                                m2mAccessTokenPayload.get("client_id").getAsString(),
+                                m2mAccessTokenPayload.get("iat").getAsLong(),
+                                m2mAccessTokenPayload.get("exp").getAsLong());
+                    }
+                    oauthStorage.createOrUpdateOAuthSession_Transaction(appIdentifier, con, gid, clientId,
+                            externalRefreshToken, internalRefreshToken, sessionHandle, jti, exp);
+                } catch (OAuthClientNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+                return activity.inTransaction(con, null);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof OAuthClientNotFoundException) {
+                throw (OAuthClientNotFoundException) e.actualException;
+            }
+            throw new IllegalStateException(e.actualException);
+        }
+        activity.afterCommit();
     }
 }

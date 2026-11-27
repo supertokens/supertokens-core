@@ -22,11 +22,23 @@ import com.webauthn4j.data.extension.client.AuthenticationExtensionClientOutput;
 import com.webauthn4j.data.AuthenticatorAssertionResponse;
 import com.webauthn4j.data.PublicKeyCredential;
 import com.webauthn4j.test.EmulatorUtil;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.TransactionCounters.Snapshot;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.oauth.MockOAuthProvider;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -291,6 +303,78 @@ public class TransactionCountBaselineTest {
     }
 
     // Collects every measurement and reports all mismatches together, so a change shows its full effect at once.
+    @Test
+    public void oauthApis() throws Exception {
+        try (MockOAuthProvider provider = new MockOAuthProvider()) {
+            TestingProcessManager.TestingProcess process = startInMemory();
+            if (process == null) {
+                return;
+            }
+            Main main = process.getProcess();
+            TenantIdentifier tenant = process.getAppForTesting();
+            Storage storage = StorageLayer.getStorage(tenant, main);
+            FeatureFlagTestContent.getInstance(main)
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.OAUTH});
+            Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantConfig(tenant, new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null), new PasswordlessConfig(true), null, null,
+                    provider.coreConfig()), false);
+            String userId = emailPasswordSignUp(process, "oauth-user@example.com").get("id").getAsString();
+            provider.sessionHandle = Session.createNewSession(tenant, storage, main, userId, new JsonObject(),
+                    new JsonObject()).session.handle;
+            Baseline baseline = new Baseline();
+
+            // the session row, the M2M token stats row (client_credentials) and the session's activity event commit
+            // together, after the provider exchange
+            MockOAuthProvider.addClient(main, tenant.toAppIdentifier(), storage, true);
+            MockOAuthProvider.token(main, MockOAuthProvider.authorizationCodeRequest()); // warm-up: signing keys
+            JsonObject exchanged = baseline.measure("oauth token (authorization_code)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.authorizationCodeRequest()));
+            baseline.measure("oauth token (refresh, rotating)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.refreshRequest(
+                            exchanged.get("refresh_token").getAsString())));
+            baseline.measure("oauth auth (implicit)", Snapshot.of(1, 1, 0), () -> {
+                JsonObject response = MockOAuthProvider.auth(main, MockOAuthProvider.implicitAuthRequest());
+                assertEquals("OK", response.get("status").getAsString());
+                return response;
+            });
+            provider.issueRefreshToken = false;
+            baseline.measure("oauth token (client_credentials)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.clientCredentialsRequest()));
+            provider.issueRefreshToken = true;
+
+            provider.active = false;
+            baseline.measure("oauth token (refresh, rotating, inactive token)", Snapshot.of(0, 0, 0), () -> {
+                JsonObject response = MockOAuthProvider.token(main, MockOAuthProvider.refreshRequest(
+                        exchanged.get("refresh_token").getAsString()));
+                assertEquals("token_inactive", response.get("error").getAsString());
+                return response;
+            });
+            provider.active = true;
+
+            // the mapping update and the activity event commit together, in the transaction that holds the row lock
+            MockOAuthProvider.addClient(main, tenant.toAppIdentifier(), storage, false);
+            String refreshToken = okToken(main, MockOAuthProvider.authorizationCodeRequest())
+                    .get("refresh_token").getAsString();
+            baseline.measure("oauth token (refresh, non-rotating)", Snapshot.of(1, 1, 0),
+                    () -> okToken(main, MockOAuthProvider.refreshRequest(refreshToken)));
+            provider.active = false;
+            baseline.measure("oauth token (refresh, non-rotating, inactive token)", Snapshot.of(1, 0, 0), () -> {
+                JsonObject response = MockOAuthProvider.token(main, MockOAuthProvider.refreshRequest(refreshToken));
+                assertEquals("token_inactive", response.get("error").getAsString());
+                return response;
+            });
+
+            baseline.assertMatches();
+            stop(process);
+        }
+    }
+
+    private static JsonObject okToken(Main main, JsonObject request) throws Exception {
+        JsonObject response = MockOAuthProvider.token(main, request);
+        assertEquals("OK", response.get("status").getAsString());
+        return response;
+    }
+
     private static class Baseline {
         private final List<String> lines = new ArrayList<>();
         private boolean mismatch = false;

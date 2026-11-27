@@ -109,11 +109,12 @@ public class ActiveUsers {
      * <p>The append is best-effort: {@link AuditLog#emit} swallows its own write failures, so a failed
      * activity write never fails the caller's request. That matters because these events are emitted after an
      * already-committed (and, for OAuth, externally non-reversible) auth operation — a transient activity-log
-     * error must not turn a succeeded sign-in / session-create / oauth call into a 500. Dropped rows self-heal
-     * for active-user counting: the next event for the user re-credits them, and the reliable recency anchors are
-     * the transactional {@code user_creation} / {@code account_linking} lifecycle events. Session refresh and
-     * sign-out do not use this path: they write their event in the mutation's transaction through {@link
-     * #activityEventForTransaction}, so there a failed event write fails the request and nothing commits.
+     * error must not turn a succeeded sign-in / session-create call into a 500. Dropped rows self-heal for
+     * active-user counting: the next event for the user re-credits them, and the reliable recency anchors are the
+     * transactional {@code user_creation} / {@code account_linking} lifecycle events. Session refresh, sign-out
+     * and the OAuth token and auth APIs do not use this path: they write their event in the mutation's
+     * transaction through {@link #activityEventForTransaction}, so there a failed event write fails the request
+     * and nothing commits.
      */
     public static void updateLastActive(TenantIdentifier tenantIdentifier, Main main, String userId,
                                         ActivityEventType eventType)
@@ -173,7 +174,8 @@ public class ActiveUsers {
     /**
      * The activity event for a caller that writes it in its own audited transaction ({@code
      * startAuditedTransaction}), so the event commits with the mutation it records, and a failed event write
-     * fails the mutation and the request. Session refresh and sign-out record their activity this way. Applies
+     * fails the mutation and the request. Session refresh, sign-out and the OAuth token and auth APIs record
+     * their activity this way. Applies
      * the same throttle as {@link #updateLastActive}, but returns {@code null} instead of skipping a write when the
      * throttle drops the event. Once the transaction has committed, call {@link #activityEventCommitted}.
      */

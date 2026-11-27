@@ -19,6 +19,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   victim's `sign_out`; a reused session that the core revokes itself (CDI 5.6+) records none.
 - Revoking a user's sessions across all tenants revokes the sessions a tenant on a database other than the user's
   holds for them in a separate write on that database, outside the transaction with the `sign_out`.
+- The OAuth token and auth APIs (`POST /recipe/oauth/token`, `POST /recipe/oauth/auth`) write the session's activity
+  event in the same transaction as the OAuth session row, so each request commits once; `client_credentials` writes
+  its token stats and session rows in one transaction. A failed activity event write now fails the request instead
+  of being ignored. For a session whose tenant has its own database, the event is written there right after the
+  OAuth row commits.
 
 ## [12.5.0]
 

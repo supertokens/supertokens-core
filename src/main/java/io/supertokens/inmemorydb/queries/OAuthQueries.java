@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionPool;
+import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
@@ -188,11 +189,35 @@ public class OAuthQueries {
                                                   String externalRefreshToken, String internalRefreshToken, String sessionHandle,
                                                   String jti, long exp)
             throws SQLException, StorageQueryException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthSessionsTable() +
+        update(start, getQueryToCreateOrUpdateOAuthSession(start), createOrUpdateOAuthSessionValues(appIdentifier, gid,
+                clientId, externalRefreshToken, internalRefreshToken, sessionHandle, jti, exp));
+    }
+
+    // The same upsert as createOrUpdateOAuthSession, on the caller's transaction connection.
+    public static void createOrUpdateOAuthSession_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                              @NotNull String gid, @NotNull String clientId,
+                                                              String externalRefreshToken,
+                                                              String internalRefreshToken, String sessionHandle,
+                                                              String jti, long exp)
+            throws SQLException, StorageQueryException {
+        update(con, getQueryToCreateOrUpdateOAuthSession(start), createOrUpdateOAuthSessionValues(appIdentifier, gid,
+                clientId, externalRefreshToken, internalRefreshToken, sessionHandle, jti, exp));
+    }
+
+    private static String getQueryToCreateOrUpdateOAuthSession(Start start) {
+        return "INSERT INTO " + Config.getConfig(start).getOAuthSessionsTable() +
                 " (gid, client_id, app_id, external_refresh_token, internal_refresh_token, session_handle, jti, exp) VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON CONFLICT (gid) DO UPDATE SET external_refresh_token = ?, internal_refresh_token = ?, " +
                 "session_handle = ? , jti = CONCAT(jti, ?), exp = ?";
-        update(start, QUERY, pst -> {
+    }
+
+    private static PreparedStatementValueSetter createOrUpdateOAuthSessionValues(AppIdentifier appIdentifier,
+                                                                                 String gid, String clientId,
+                                                                                 String externalRefreshToken,
+                                                                                 String internalRefreshToken,
+                                                                                 String sessionHandle, String jti,
+                                                                                 long exp) {
+        return pst -> {
 
             String jtiToInsert = jti + ","; //every jti value ends with ','
 
@@ -210,7 +235,7 @@ public class OAuthQueries {
             pst.setString(11, sessionHandle);
             pst.setString(12, jtiToInsert);
             pst.setLong(13, exp);
-        });
+        };
     }
 
     public static List<OAuthClient> getOAuthClients(Start start, AppIdentifier appIdentifier, List<String> clientIds)
@@ -378,20 +403,35 @@ public class OAuthQueries {
 
     public static void addOAuthM2MTokenForStats(Start start, AppIdentifier appIdentifier, String clientId, long iat, long exp)
             throws SQLException, StorageQueryException {
-        // Bucket the token into hourly (epoch-hour) iat/exp buckets and increment a counter instead
-        // of storing one row per issued token, matching the postgresql plugin. `clientId` is unused
-        // now (the rollup table has no client_id); the parameter is kept so the OAuthStorage
-        // signature is unchanged.
-        long iatBucket = iat / 3600;
-        long expBucket = exp / 3600;
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthM2MTokenStatsTable() +
+        update(start, getQueryToAddOAuthM2MTokenForStats(start), addOAuthM2MTokenForStatsValues(appIdentifier, iat, exp));
+    }
+
+    // The same upsert as addOAuthM2MTokenForStats, on the caller's transaction connection.
+    public static void addOAuthM2MTokenForStats_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                            long iat, long exp)
+            throws SQLException, StorageQueryException {
+        update(con, getQueryToAddOAuthM2MTokenForStats(start), addOAuthM2MTokenForStatsValues(appIdentifier, iat, exp));
+    }
+
+    // Bucket the token into hourly (epoch-hour) iat/exp buckets and increment a counter instead
+    // of storing one row per issued token, matching the postgresql plugin. The client id is unused
+    // now (the rollup table has no client_id); the parameter is kept so the OAuthStorage
+    // signature is unchanged.
+    private static String getQueryToAddOAuthM2MTokenForStats(Start start) {
+        return "INSERT INTO " + Config.getConfig(start).getOAuthM2MTokenStatsTable() +
                 " (app_id, iat_bucket, exp_bucket, count) VALUES (?, ?, ?, 1)" +
                 " ON CONFLICT (app_id, iat_bucket, exp_bucket) DO UPDATE SET count = count + 1";
-        update(start, QUERY, pst -> {
+    }
+
+    private static PreparedStatementValueSetter addOAuthM2MTokenForStatsValues(AppIdentifier appIdentifier, long iat,
+                                                                               long exp) {
+        long iatBucket = iat / 3600;
+        long expBucket = exp / 3600;
+        return pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setLong(2, iatBucket);
             pst.setLong(3, expBucket);
-        });
+        };
     }
 
     public static void addOAuthLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge, String clientId,
