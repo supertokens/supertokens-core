@@ -1025,14 +1025,15 @@ public class CronjobTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.startIsolatedProcess(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        // one storage at a time, 400 ms each, 1 s per pass: a pass reaches only the first two or three of ten
-        // pools. Without resuming, every pass would start again at t0 and t9 would never run.
+        // one storage at a time, 400 ms each, 1 s per pass: a pass reaches only two or three of ten pools.
+        // Without resuming, every pass would start again with the same pools and the rest would never run. The
+        // first pass's order isn't t0..t9, so wait for all ten rather than for t9.
         ConcurrencyProbeCronjob probe = new ConcurrencyProbeCronjob("ProbeResume", process.getProcess(),
                 taggedPools(10), 1, 400, new AtomicInteger(), new AtomicInteger());
         Cronjobs.addCronjob(process.getProcess(), probe);
 
         long deadline = System.currentTimeMillis() + 20_000;
-        while (!ranSoFar(probe).contains("t9") && System.currentTimeMillis() < deadline) {
+        while (ranSoFar(probe).size() < 10 && System.currentTimeMillis() < deadline) {
             Thread.sleep(100);
         }
         Set<String> ran = ranSoFar(probe);
