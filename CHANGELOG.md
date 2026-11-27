@@ -33,6 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scheduled a full interval out start at a random offset, so they no longer connect to every tenant database at the
   same instant ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)).
 - The WebAuthn and OAuth cleanup cron jobs now delete expired data; they never ran before.
+- Fixes encrypted non-ASCII values not decrypting correctly on JVMs whose default charset isn't UTF-8.
 
 ## [12.5.0]
 
