@@ -27,6 +27,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixes the last-active rollup getting stuck on a large backlog: it now folds in one-hour slices, advancing its
   watermark after each, and logs the cause to the console after 3 failed passes in a row. While a backlog is being
   caught up, a user linked to another account in a not-yet-folded slice can be counted alongside that account.
+- Updates jackson to 2.22.4 and guava to 33.7.2 to fix CVE-2026-68497, CVE-2026-91776, CVE-2026-91777,
+  CVE-2026-89407, CVE-2026-89425 and CVE-2026-102554 in the docker image.
 
 ## [12.5.0]
 

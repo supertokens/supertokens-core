@@ -42,13 +42,13 @@ dependencies {
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.13.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.22.1'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.22.4'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-cbor
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-cbor', version: '2.22.1'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-cbor', version: '2.22.4'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.22.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.22.4'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
     api group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '11.0.25'
@@ -128,6 +128,11 @@ dependencies {
         // CVE-2026-8763 (Bouncy Castle Name Constraints bypass in X.509 path validation);
         // fixed in 1.85. Surfaced by the container security scan of supertokens-postgresql.
         implementation 'org.bouncycastle:bcprov-jdk18on:1.85'
+
+        // guava 33.0.0-jre (transitive via opensaml / shib-support) is affected by
+        // CVE-2026-102554 (eager array allocation during deserialization, DoS); fixed in 33.7.2.
+        // Surfaced by the container security scan of supertokens-postgresql (#1528).
+        implementation 'com.google.guava:guava:33.7.2-jre'
     }
 
     compileOnly project(":supertokens-plugin-interface")
