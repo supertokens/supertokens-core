@@ -100,7 +100,10 @@ public class TransactionCountBaselineTest {
                 () -> createSession(process, userId));
         String handle = session.getAsJsonObject("session").get("handle").getAsString();
 
-        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(1, 1, 1),
+        // the token_refresh activity row is written in the refresh's own transaction. A legacy (CDI <= 5.4) refresh
+        // with a child refresh token that is not promoted yet (Case-B) still opens two: the promote, then the retry
+        // that refreshes and writes the token_refresh row. That rare path is not measured here.
+        JsonObject refreshed = baseline.measure("session refresh", Snapshot.of(1, 1, 0),
                 () -> refreshSession(process, session.getAsJsonObject("refreshToken").get("token").getAsString()));
 
         baseline.measure("session verify (checkDatabase)", Snapshot.of(0, 0, 0),
@@ -114,7 +117,8 @@ public class TransactionCountBaselineTest {
             return response;
         });
 
-        baseline.measure("session remove", Snapshot.of(0, 0, 1), () -> {
+        // the delete and the user's sign_out activity row commit together
+        baseline.measure("session remove", Snapshot.of(1, 1, 0), () -> {
             JsonObject body = new JsonObject();
             JsonArray handles = new JsonArray();
             handles.add(handle);
@@ -122,6 +126,40 @@ public class TransactionCountBaselineTest {
             JsonObject response = post(process, "/recipe/session/remove", body, "session");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(handles, response.getAsJsonArray("sessionHandlesRevoked"));
+            return response;
+        });
+
+        // failure paths that write nothing open no writing transaction: the refresh only reads the revoked session,
+        // and a handle that is already revoked is only read, in the transaction that would have revoked it
+        baseline.measure("session refresh (revoked session)", Snapshot.of(1, 0, 0), () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("refreshToken", refreshed.getAsJsonObject("refreshToken").get("token").getAsString());
+            body.addProperty("enableAntiCsrf", false);
+            body.addProperty("useDynamicSigningKey", true);
+            JsonObject response = post(process, "/recipe/session/refresh", body, "session");
+            assertEquals("UNAUTHORISED", response.get("status").getAsString());
+            return response;
+        });
+
+        baseline.measure("session remove (revoked handle)", Snapshot.of(1, 0, 0), () -> {
+            JsonObject body = new JsonObject();
+            JsonArray handles = new JsonArray();
+            handles.add(handle);
+            body.add("sessionHandles", handles);
+            JsonObject response = post(process, "/recipe/session/remove", body, "session");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(0, response.getAsJsonArray("sessionHandlesRevoked").size());
+            return response;
+        });
+
+        createSession(process, userId);
+        baseline.measure("session remove (userId)", Snapshot.of(1, 1, 0), () -> {
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", userId);
+            JsonObject response = post(process, "/recipe/session/remove", body, "session");
+            assertEquals("OK", response.get("status").getAsString());
+            // the warm-up session and the one just created
+            assertEquals(2, response.getAsJsonArray("sessionHandlesRevoked").size());
             return response;
         });
 

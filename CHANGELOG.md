@@ -7,6 +7,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [12.5.1]
 
+- Session refresh and sign-out commit once: `POST /recipe/session/refresh` writes the session update and its
+  `token_refresh` activity event in one transaction, and `POST /recipe/session/remove` writes the deletes and the
+  `sign_out` event in one transaction (per database for session handles on several databases). The event is no
+  longer best-effort: if it cannot be written, the request fails and nothing is changed. Lookups of the user's
+  sessions, linked accounts and user id mappings run inside that transaction.
+- Behaviour change: revoking sessions by `sessionHandles` now records a `sign_out` activity event for each user
+  whose session was revoked (attributed to their SuperTokens user id), like revoking by `userId` already did.
+  Unknown or already revoked handles record nothing and write nothing. This includes revocations from the dashboard
+  and the revocation an SDK sends after a legacy token-theft response (no reuse subtype), which is recorded as the
+  victim's `sign_out`; a reused session that the core revokes itself (CDI 5.6+) records none.
+- Revoking a user's sessions across all tenants revokes the sessions a tenant on a database other than the user's
+  holds for them in a separate write on that database, outside the transaction with the `sign_out`.
 - The OAuth token and auth APIs (`POST /recipe/oauth/token`, `POST /recipe/oauth/auth`) write the session's activity
   event in the same transaction as the OAuth session row, so each request commits once; `client_credentials` writes
   its token stats and session rows in one transaction. A failed activity event write now fails the request instead

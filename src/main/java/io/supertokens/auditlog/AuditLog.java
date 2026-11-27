@@ -26,7 +26,9 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 public class AuditLog {
 
     /**
-     * Writes {@code event} to the activity_log table (best-effort, never throws).
+     * Writes {@code event} to the activity_log table (best-effort, never throws). For callers that record an event
+     * after their mutation has committed. An event that must commit or fail with its mutation is written inside
+     * the mutation's {@code startAuditedTransaction} instead, where a failed write fails the request.
      */
     public static void emit(Main main, Storage storage, TenantIdentifier tenantIdentifier, AuditLogEvent event) {
         if (storage instanceof ActivityLogStorage) {
