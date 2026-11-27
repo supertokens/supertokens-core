@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ActiveUsers;
 import io.supertokens.pluginInterface.auditlog.ActivityEventType;
 import io.supertokens.pluginInterface.auditlog.ActivityLogSQLStorage;
+import io.supertokens.pluginInterface.auditlog.AuditLogEvent;
 import io.supertokens.pluginInterface.auditlog.AuditedResult;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -41,6 +42,7 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -50,9 +52,11 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.useridmapping.LockedUser;
 import io.supertokens.pluginInterface.useridmapping.UserLockingStorage;
 import io.supertokens.pluginInterface.useridmapping.UserNotFoundForLockingException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.info.SessionInfo;
@@ -81,6 +85,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
+import java.util.function.Predicate;
 import io.supertokens.auditlog.UnauditedTransaction;
 
 public class Session {
@@ -851,16 +856,36 @@ public class Session {
         }
     }
 
-    // accessTokenValidity (ms): the optional per-mint access token validity override (PLAN-002 decision 11,
-    // CDI >= 5.6). null keeps the configured access_token_validity. When set it is validated shorten-only
-    // (0 < param <= configured) and applies only to the CDI >= 5.6 rotation mint (refresh cases 1 and 3); it is
-    // never persisted, and the refresh token validity/expiry is not overridable.
+    // Overload that records no token_refresh activity event.
     public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
                                                           AccessToken.VERSION accessTokenVersion,
                                                           Boolean shouldUseStaticKey, SemVer cdiVersion,
                                                           @Nullable Long accessTokenValidity)
+            throws StorageTransactionLogicException,
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException,
+            AccessTokenValidityOutOfRangeException {
+        return refreshSession(appIdentifier, main, refreshToken, antiCsrfToken, enableAntiCsrf, accessTokenVersion,
+                shouldUseStaticKey, cdiVersion, accessTokenValidity, null);
+    }
+
+    // accessTokenValidity (ms): the optional per-mint access token validity override (PLAN-002 decision 11,
+    // CDI >= 5.6). null keeps the configured access_token_validity. When set it is validated shorten-only
+    // (0 < param <= configured) and applies only to the CDI >= 5.6 rotation mint (refresh cases 1 and 3); it is
+    // never persisted, and the refresh token validity/expiry is not overridable.
+    //
+    // recordTokenRefreshFor: the caller's throttle decision for the token_refresh activity event, asked with the
+    // refreshed session's user id; null records none. On SQL storages a recorded event is written in the
+    // refresh's own transaction, so a failed event write fails the refresh and nothing commits.
+    public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
+                                                          @Nonnull String refreshToken,
+                                                          @Nullable String antiCsrfToken, boolean enableAntiCsrf,
+                                                          AccessToken.VERSION accessTokenVersion,
+                                                          Boolean shouldUseStaticKey, SemVer cdiVersion,
+                                                          @Nullable Long accessTokenValidity,
+                                                          @Nullable Predicate<String> recordTokenRefreshFor)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException,
@@ -880,7 +905,7 @@ public class Session {
         validateAccessTokenValidityOverride(tenantIdentifier, main, accessTokenValidity);
         return refreshSessionHelper(
                 tenantIdentifier, storage, main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion,
-                shouldUseStaticKey, cdiVersion, accessTokenValidity);
+                shouldUseStaticKey, cdiVersion, accessTokenValidity, recordTokenRefreshFor);
     }
 
     // True when the presented refresh token is a child (via its token-internal parent hash) of the refresh
@@ -916,6 +941,32 @@ public class Session {
                 newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
     }
 
+    // The refresh's audited result: with the token_refresh activity event when the caller's throttle decision asks
+    // for one, attributed to the SuperTokens user id. The mapping lookup runs on the refresh's connection and is
+    // skipped for an app with disable_user_id_mapping on. The event is also left in refreshEvent[0] for the
+    // post-commit bookkeeping.
+    private static AuditedResult<SessionInformationHolder> withTokenRefreshEvent(
+            Main main, TransactionConnection con, TenantIdentifier tenantIdentifier, Storage storage,
+            SessionInformationHolder refreshed, @Nullable Predicate<String> recordTokenRefreshFor,
+            AuditLogEvent[] refreshEvent)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (recordTokenRefreshFor == null || !recordTokenRefreshFor.test(refreshed.session.userId)) {
+            return AuditedResult.withoutAudit(refreshed, "The caller's activity throttle skips the token_refresh "
+                    + "event for this refresh.");
+        }
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+                main, con, tenantIdentifier.toAppIdentifier(), storage, refreshed.session.userId, UserIdType.ANY);
+        String userId = userIdMapping != null ? userIdMapping.superTokensUserId : refreshed.session.userId;
+        AuditLogEvent event = ActiveUsers.activityEventForTransaction(tenantIdentifier, main, userId, userId, null,
+                ActivityEventType.TOKEN_REFRESH);
+        if (event == null) {
+            return AuditedResult.withoutAudit(refreshed, "The activity throttle skips the token_refresh event for "
+                    + "this refresh.");
+        }
+        refreshEvent[0] = event;
+        return new AuditedResult<>(refreshed, event);
+    }
+
     // Warms the signing-material caches while this thread holds no DB connection. Token minting inside the
     // transaction lambdas of getSession/refreshSessionHelper is then served from cache: any key-cache refresh
     // that is due (cold start, dynamic-key rotation window) does its DB round trip here instead of checking
@@ -928,13 +979,12 @@ public class Session {
         RefreshTokenKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getKey();
     }
 
-    @UnauditedTransaction(justification = "Legacy unaudited transaction (PLAN-012 backlog); pending conversion to startAuditedTransaction or read-only exemption.")
     private static SessionInformationHolder refreshSessionHelper(
             TenantIdentifier tenantIdentifier, Storage storage, Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo,
             boolean enableAntiCsrf,
             AccessToken.VERSION accessTokenVersion, Boolean shouldUseStaticKey, SemVer cdiVersion,
-            @Nullable Long accessTokenValidity)
+            @Nullable Long accessTokenValidity, @Nullable Predicate<String> recordTokenRefreshFor)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError,
             TenantOrAppNotFoundException {
@@ -946,10 +996,15 @@ public class Session {
         //////////////////////////////////////////////////////////////////////////////////////////////
         if (StorageUtils.getSessionStorage(storage).getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sessionStorage = (SessionSQLStorage) StorageUtils.getSessionStorage(storage);
+            ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+            // The token_refresh event written with the refresh, if any; set by the transaction's last attempt.
+            AuditLogEvent[] refreshEvent = new AuditLogEvent[1];
             try {
                 CoreConfig config = Config.getConfig(tenantIdentifier, main);
                 warmSigningMaterial(tenantIdentifier, main);
-                SessionInformationHolder result = sessionStorage.startTransaction(con -> {
+                SessionInformationHolder result = auditStorage.startAuditedTransaction(
+                        tenantIdentifier.toAppIdentifier(), con -> {
+                    refreshEvent[0] = null;
                     try {
                         String sessionHandle = refreshTokenInfo.sessionHandle;
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = sessionStorage
@@ -984,10 +1039,11 @@ public class Session {
                                         Utils.hashSHA256(Utils.hashSHA256(newRefreshToken.token)),
                                         presentedHash2, now, now + config.getRefreshTokenValidityInMillis(),
                                         useStaticKey);
-                                sessionStorage.commitTransaction(con);
-                                return buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
-                                        newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey,
-                                        accessTokenValidity);
+                                return withTokenRefreshEvent(main, con, tenantIdentifier, storage,
+                                        buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
+                                                newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey,
+                                                accessTokenValidity),
+                                        recordTokenRefreshFor, refreshEvent);
                             }
 
                             // Case 3: presented == prev within the grace window -> re-rotate. Single write of
@@ -1002,15 +1058,16 @@ public class Session {
                                 sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
                                         Utils.hashSHA256(Utils.hashSHA256(newRefreshToken.token)),
                                         prevHash, rotatedAt, sessionInfo.expiry, useStaticKey);
-                                sessionStorage.commitTransaction(con);
                                 ProcessState.getInstance(main).addState(
                                         ProcessState.PROCESS_STATE.REFRESH_TOKEN_GRACE_PERIOD_HIT, null);
                                 Logging.debug(main, tenantIdentifier,
                                         "Refresh token rotation grace-window re-rotation for session "
                                                 + sessionHandle + " (" + (now - rotatedAt) + "ms since rotation)");
-                                return buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
-                                        newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey,
-                                        accessTokenValidity);
+                                return withTokenRefreshEvent(main, con, tenantIdentifier, storage,
+                                        buildRefreshedSession(tenantIdentifier, main, sessionHandle, sessionInfo,
+                                                newRefreshToken, antiCsrfToken, accessTokenVersion, useStaticKey,
+                                                accessTokenValidity),
+                                        recordTokenRefreshFor, refreshEvent);
                             }
 
                             // Case 4: reuse. Classify, log telemetry, and report per recent_token_reuse_behaviour.
@@ -1052,8 +1109,6 @@ public class Session {
                             }
 
                             // at this point, the input refresh token is the parent one.
-                            sessionStorage.commitTransaction(con);
-
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
                             final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(
                                     tenantIdentifier, main, sessionHandle,
@@ -1070,11 +1125,13 @@ public class Session {
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
 
-                            return new SessionInformationHolder(
-                                    new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.recipeUserId,
-                                            sessionInfo.userDataInJWT,
-                                            tenantIdentifier.getTenantId()),
-                                    newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
+                            return withTokenRefreshEvent(main, con, tenantIdentifier, storage,
+                                    new SessionInformationHolder(
+                                            new SessionInfo(sessionHandle, sessionInfo.userId,
+                                                    sessionInfo.recipeUserId, sessionInfo.userDataInJWT,
+                                                    tenantIdentifier.getTenantId()),
+                                            newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken),
+                                    recordTokenRefreshFor, refreshEvent);
                         }
 
                         if ((refreshTokenInfo.type == RefreshToken.TYPE.FREE
@@ -1091,13 +1148,13 @@ public class Session {
                                     nowLegacy + config.getRefreshTokenValidityInMillis(),
                                     useStaticKey);
 
-                            sessionStorage.commitTransaction(con);
-
                             // Case-B promoted the presented token; null tells the caller to retry AFTER this
                             // transaction has returned its connection to the pool. Recursing here (the previous
                             // shape) checked out a second connection while still holding this one, deadlocking
                             // the pool at pool-size concurrent Case-B refreshes.
-                            return null;
+                            return AuditedResult.withoutAudit(null, "Legacy (CDI <= 5.4) Case-B promote: the "
+                                    + "retry that follows this transaction performs the refresh and writes its "
+                                    + "token_refresh event.");
                         }
 
                         sessionStorage.commitTransaction(con);
@@ -1114,13 +1171,17 @@ public class Session {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
+                if (refreshEvent[0] != null) {
+                    ActiveUsers.activityEventCommitted(main, tenantIdentifier.toAppIdentifier(), storage,
+                            refreshEvent[0]);
+                }
                 if (result == null) {
                     // Case-B promote: retry now that the transaction above has released its connection, so a
                     // refresh never holds more than one connection at a time. The re-read sees the promoted
                     // state and takes the plain rotation path.
                     return refreshSessionHelper(tenantIdentifier, storage, main, refreshToken, refreshTokenInfo,
                             enableAntiCsrf, accessTokenVersion, shouldUseStaticKey, cdiVersion,
-                            accessTokenValidity);
+                            accessTokenValidity, recordTokenRefreshFor);
                 }
                 return result;
             } catch (StorageTransactionLogicException e) {
@@ -1222,7 +1283,7 @@ public class Session {
                         return refreshSessionHelper(
                                 tenantIdentifier, storage, main, refreshToken, refreshTokenInfo,
                                 enableAntiCsrf, accessTokenVersion, shouldUseStaticKey, cdiVersion,
-                                accessTokenValidity);
+                                accessTokenValidity, recordTokenRefreshFor);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.recipeUserId, sessionInfo.userId);
@@ -1358,6 +1419,300 @@ public class Session {
                 sessionHandles);
     }
 
+    // POST /recipe/session/remove with a userId and revokeAcrossAllTenants: revokes the user's sessions in every
+    // tenant of the app and records the user's sign_out. storage is the user's storage: the reads, the deletes and the
+    // sign_out run in one transaction on storage, over the tenants it backs. Session creation does not tie a session
+    // to the user's storage, so a tenant on another storage can hold sessions under the user's ids too: those are
+    // revoked as before, in a separate write on that storage. If only such a write revoked anything and the id is not
+    // a user (an id resolves to the first storage that uses it for anything), the transaction recorded no sign_out,
+    // so it is recorded on storage afterwards. On a non-SQL storage this revokes as before, without a sign_out.
+    public static String[] signOutAllSessionsForUser(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                     String userId, boolean revokeSessionsForLinkedAccounts)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
+            return revokeAllSessionsForUser(main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
+        }
+        List<TenantIdentifier> tenantsOnStorage = new ArrayList<>();
+        Map<TenantIdentifier, Storage> tenantsOnOtherStorages = new LinkedHashMap<>();
+        for (TenantConfig tenant : Multitenancy.getAllTenantsForApp(appIdentifier, main)) {
+            Storage tenantStorage;
+            try {
+                tenantStorage = StorageLayer.getStorage(tenant.tenantIdentifier, main);
+            } catch (TenantOrAppNotFoundException e) {
+                // this might happen when a tenant was deleted after the tenant list was fetched
+                continue;
+            }
+            if (tenantStorage.getUserPoolId().equals(storage.getUserPoolId())) {
+                tenantsOnStorage.add(tenant.tenantIdentifier);
+            } else {
+                tenantsOnOtherStorages.put(tenant.tenantIdentifier, tenantStorage);
+            }
+        }
+
+        SignOut signOut = signOutAllSessionsForUser(main, appIdentifier, storage, userId,
+                revokeSessionsForLinkedAccounts, tenantsOnStorage);
+
+        List<String> revoked = new ArrayList<>(signOut.revokedSessionHandles);
+        boolean revokedElsewhere = false;
+        for (Map.Entry<TenantIdentifier, Storage> tenant : tenantsOnOtherStorages.entrySet()) {
+            String[] sessionHandles = getNonExpiredSessionHandlesOfUserIds(tenant.getKey(), tenant.getValue(),
+                    signOut.userIds);
+            if (sessionHandles.length == 0) {
+                continue;
+            }
+            Logging.debug(main, tenant.getKey(), "Revoking sessions of user " + userId + " in app "
+                    + appIdentifier.getAppId() + ": tenant " + tenant.getKey().getTenantId() + " is on storage "
+                    + tenant.getValue().getUserPoolId() + ", not on the user's storage " + storage.getUserPoolId()
+                    + ", so its sessions are revoked in a separate write on that storage.");
+            String[] revokedThere = revokeSessionUsingSessionHandles(tenant.getKey(), tenant.getValue(),
+                    sessionHandles);
+            revoked.addAll(Arrays.asList(revokedThere));
+            revokedElsewhere |= revokedThere.length > 0;
+        }
+        if (revokedElsewhere && !signOut.signOutRecorded) {
+            recordSignOut(main, appIdentifier, storage, userId);
+        }
+        return revoked.toArray(new String[0]);
+    }
+
+    // POST /recipe/session/remove with a userId for one tenant: revokes the user's sessions in tenantIdentifier and
+    // records the user's sign_out, in one transaction on storage, the tenant's storage. On a non-SQL storage this
+    // revokes as before, without a sign_out.
+    public static String[] signOutAllSessionsForUser(Main main, TenantIdentifier tenantIdentifier, Storage storage,
+                                                     String userId, boolean revokeSessionsForLinkedAccounts)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
+            return revokeAllSessionsForUser(main, tenantIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
+        }
+        return signOutAllSessionsForUser(main, tenantIdentifier.toAppIdentifier(), storage, userId,
+                revokeSessionsForLinkedAccounts, List.of(tenantIdentifier)).revokedSessionHandles
+                .toArray(new String[0]);
+    }
+
+    private static class SignOut {
+        final List<String> revokedSessionHandles;
+        // the ids the user's sessions are stored under
+        final Set<String> userIds;
+        final boolean signOutRecorded;
+
+        SignOut(List<String> revokedSessionHandles, Set<String> userIds, boolean signOutRecorded) {
+            this.revokedSessionHandles = revokedSessionHandles;
+            this.userIds = userIds;
+            this.signOutRecorded = signOutRecorded;
+        }
+    }
+
+    // Records the sign_out for userId on storage in its own transaction, attributed like the one
+    // signOutAllSessionsForUser writes (the app's public tenant, the SuperTokens id). For sessions revoked only on
+    // another storage, outside that transaction.
+    private static void recordSignOut(Main main, AppIdentifier appIdentifier, Storage storage, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        AuditLogEvent[] event = new AuditLogEvent[1];
+        try {
+            ((ActivityLogSQLStorage) storage).startAuditedTransaction(appIdentifier, con -> {
+                event[0] = signOutEvent(main, con, appIdentifier.getAsPublicTenantIdentifier(), storage, userId,
+                        true, Set.of());
+                return new AuditedResult<>(Boolean.TRUE, event[0]);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw new StorageQueryException(e.actualException);
+        }
+        ActiveUsers.activityEventCommitted(main, appIdentifier, storage, event[0]);
+    }
+
+    // Revokes the user's sessions in tenants, all backed by the SQL storage, and writes the user's sign_out, in one
+    // transaction. The sign_out is recorded against the app's public tenant and the user's SuperTokens id, as before,
+    // also when the user had no sessions, unless userId is not a user of the app either: then nothing is written.
+    private static SignOut signOutAllSessionsForUser(Main main, AppIdentifier appIdentifier, Storage storage,
+                                                     String userId, boolean revokeSessionsForLinkedAccounts,
+                                                     List<TenantIdentifier> tenants)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        SessionSQLStorage sessionStorage = (SessionSQLStorage) storage;
+        AuditLogEvent[] signOutEvent = new AuditLogEvent[1];
+        SignOut signOut;
+        try {
+            signOut = auditStorage.startAuditedTransaction(appIdentifier, con -> {
+                signOutEvent[0] = null;
+                Set<String> userIds = getUserIdsToFindSessionsBy(main, appIdentifier, userId,
+                        revokeSessionsForLinkedAccounts, new TransactionLookups(main, appIdentifier, storage, con));
+                List<String> revoked = new ArrayList<>();
+                for (TenantIdentifier tenant : tenants) {
+                    List<String> sessionHandles = new ArrayList<>();
+                    for (String currUserId : userIds) {
+                        sessionHandles.addAll(Arrays.asList(
+                                sessionStorage.getAllNonExpiredSessionHandlesForUser_Transaction(con, tenant,
+                                        currUserId)));
+                    }
+                    // The handles were read in this transaction, so a shortfall means another request revoked some
+                    // of them since; they are revoked all the same.
+                    if (!sessionHandles.isEmpty() && sessionStorage.deleteSession_Transaction(con, tenant,
+                            sessionHandles.toArray(new String[0])) > 0) {
+                        revoked.addAll(sessionHandles);
+                    }
+                }
+                AuditLogEvent event = signOutEvent(main, con, appIdentifier.getAsPublicTenantIdentifier(), storage,
+                        userId, !revoked.isEmpty(), userIds);
+                signOutEvent[0] = event;
+                if (event == null) {
+                    return AuditedResult.withoutAudit(new SignOut(revoked, userIds, false), "Nothing was revoked "
+                            + "and the userId is not a user of the app, so there is no sign_out to record.");
+                }
+                return new AuditedResult<>(new SignOut(revoked, userIds, true), event);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw new StorageQueryException(e.actualException);
+        }
+        if (signOutEvent[0] != null) {
+            ActiveUsers.activityEventCommitted(main, appIdentifier, storage, signOutEvent[0]);
+        }
+        return signOut;
+    }
+
+    // POST /recipe/session/remove with sessionHandles: revokes the sessions and records a sign_out for each user
+    // whose session it revoked, on the storage the session was deleted from. The handles are grouped by the storage
+    // of their tenant, and each storage's reads, deletes and sign_outs run in one transaction, which writes nothing
+    // when the storage holds none of the sessions. On a non-SQL storage this revokes as before, without a sign_out.
+    // Every caller of this endpoint gets the sign_out, including the dashboard and an SDK revoking a session after a
+    // legacy token-theft response (no reuse subtype): that is recorded as the victim's sign_out, by design. A reused
+    // session the core revokes itself (CDI 5.6+) goes through revokeSessionUsingSessionHandles and records none, and
+    // an SDK's later revoke of the same handle finds nothing to revoke, so it records none either.
+    public static String[] signOutSessionsUsingSessionHandles(Main main, AppIdentifier appIdentifier,
+                                                              String[] sessionHandles)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Map<String, Storage> storages = new LinkedHashMap<>();
+        // Each transaction locks the sessions it reads until it commits, so they are read in one order, by tenant
+        // id and handle: two requests revoking overlapping handles then never wait for each other's locks in a cycle.
+        Map<String, Map<TenantIdentifier, List<String>>> sessionHandlesByStorage = new LinkedHashMap<>();
+        for (String sessionHandle : sessionHandles) {
+            String tenantId = getTenantIdFromSessionHandle(sessionHandle);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), tenantId == null ? TenantIdentifier.DEFAULT_TENANT_ID : tenantId);
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            storages.putIfAbsent(storage.getUserPoolId(), storage);
+            sessionHandlesByStorage.computeIfAbsent(storage.getUserPoolId(),
+                            k -> new TreeMap<>(Comparator.comparing(TenantIdentifier::getTenantId)))
+                    .computeIfAbsent(tenantIdentifier, k -> new ArrayList<>()).add(sessionHandle);
+        }
+        for (Map<TenantIdentifier, List<String>> tenants : sessionHandlesByStorage.values()) {
+            for (List<String> handles : tenants.values()) {
+                Collections.sort(handles);
+            }
+        }
+
+        List<String> revoked = new ArrayList<>();
+        for (Map.Entry<String, Map<TenantIdentifier, List<String>>> entry : sessionHandlesByStorage.entrySet()) {
+            Storage storage = storages.get(entry.getKey());
+            if (storage.getType() != STORAGE_TYPE.SQL) {
+                for (Map.Entry<TenantIdentifier, List<String>> tenant : entry.getValue().entrySet()) {
+                    revoked.addAll(Arrays.asList(revokeSessionUsingSessionHandles(tenant.getKey(), storage,
+                            tenant.getValue().toArray(new String[0]))));
+                }
+                continue;
+            }
+            revoked.addAll(signOutSessionsUsingSessionHandles(main, appIdentifier, storage, entry.getValue()));
+        }
+        return revoked.toArray(new String[0]);
+    }
+
+    private static List<String> signOutSessionsUsingSessionHandles(Main main, AppIdentifier appIdentifier,
+                                                                   Storage storage,
+                                                                   Map<TenantIdentifier, List<String>> sessionHandles)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        ActivityLogSQLStorage auditStorage = (ActivityLogSQLStorage) storage;
+        SessionSQLStorage sessionStorage = (SessionSQLStorage) storage;
+        List<AuditLogEvent> signOutEvents = new ArrayList<>();
+        List<String> revoked;
+        try {
+            revoked = auditStorage.startAuditedTransaction(appIdentifier, con -> {
+                signOutEvents.clear();
+                List<String> revokedHandles = new ArrayList<>();
+                // the user id of each revoked session's user, with the tenant of its first revoked session
+                Map<String, TenantIdentifier> users = new LinkedHashMap<>();
+                for (Map.Entry<TenantIdentifier, List<String>> tenant : sessionHandles.entrySet()) {
+                    List<String> sessionsOfTenant = new ArrayList<>();
+                    for (String sessionHandle : tenant.getValue()) {
+                        io.supertokens.pluginInterface.session.SessionInfo sessionInfo = sessionStorage
+                                .getSessionInfo_Transaction(tenant.getKey(), con, sessionHandle);
+                        if (sessionInfo != null) {
+                            sessionsOfTenant.add(sessionHandle);
+                            users.putIfAbsent(sessionInfo.userId, tenant.getKey());
+                        }
+                    }
+                    if (!sessionsOfTenant.isEmpty()) {
+                        sessionStorage.deleteSession_Transaction(con, tenant.getKey(),
+                                sessionsOfTenant.toArray(new String[0]));
+                        revokedHandles.addAll(sessionsOfTenant);
+                    }
+                }
+                for (Map.Entry<String, TenantIdentifier> user : users.entrySet()) {
+                    signOutEvents.add(signOutEvent(main, con, user.getValue(), storage, user.getKey(), true,
+                            Set.of()));
+                }
+                if (signOutEvents.isEmpty()) {
+                    return AuditedResult.withoutAudit(revokedHandles, "None of the sessions exists: nothing was "
+                            + "revoked, so there is no sign_out.");
+                }
+                return new AuditedResult<>(revokedHandles, signOutEvents.get(0),
+                        signOutEvents.subList(1, signOutEvents.size()).toArray(new AuditLogEvent[0]));
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw new StorageQueryException(e.actualException);
+        }
+        for (AuditLogEvent event : signOutEvents) {
+            ActiveUsers.activityEventCommitted(main, appIdentifier, storage, event);
+        }
+        return revoked;
+    }
+
+    // The sign_out activity event for userId, attributed to its SuperTokens user id. The mapping lookup runs on the
+    // transaction's connection and is skipped for an app with disable_user_id_mapping on.
+    // The sign_out for userId, attributed to its SuperTokens id. Returns null, so no event is written, when no
+    // session was revoked (revokedAny is false) and neither userId nor any of sessionUserIds, the ids its sessions
+    // were looked up by (under disable_user_id_mapping_force they include the SuperTokens id of an external id), is
+    // a user of the app: an arbitrary id then adds no activity row, and one longer than the activity log's user_id
+    // column cannot fail the request.
+    private static AuditLogEvent signOutEvent(Main main, TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                              Storage storage, String userId, boolean revokedAny,
+                                              Set<String> sessionUserIds)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+                main, con, appIdentifier, storage, userId, UserIdType.ANY);
+        String superTokensUserId = userIdMapping != null ? userIdMapping.superTokensUserId : userId;
+        if (!revokedAny && !isUserOfApp(con, appIdentifier, storage, superTokensUserId, sessionUserIds)) {
+            return null;
+        }
+        // sign_out is never throttled, so there is always an event
+        return Objects.requireNonNull(ActiveUsers.activityEventForTransaction(tenantIdentifier, main,
+                superTokensUserId, superTokensUserId, null, ActivityEventType.SIGN_OUT));
+    }
+
+    private static boolean isUserOfApp(TransactionConnection con, AppIdentifier appIdentifier, Storage storage,
+                                       String superTokensUserId, Set<String> otherUserIds)
+            throws StorageQueryException {
+        AuthRecipeSQLStorage authStorage = (AuthRecipeSQLStorage) storage;
+        if (authStorage.doesUserIdExist_Transaction(con, appIdentifier, superTokensUserId)) {
+            return true;
+        }
+        for (String userId : otherUserIds) {
+            if (!userId.equals(superTokensUserId) && authStorage.doesUserIdExist_Transaction(con, appIdentifier,
+                    userId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @TestOnly
     public static String[] getAllNonExpiredSessionHandlesForUser(Main main, String userId)
             throws StorageQueryException {
@@ -1375,8 +1730,9 @@ public class Session {
 
         List<String> sessionHandles = new ArrayList<>();
 
-        Set<String> userIds = getUserIdsToFindSessionsBy(main, appIdentifier, storage, userId,
-                fetchSessionsForAllLinkedAccounts && storage.getType().equals(STORAGE_TYPE.SQL));
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, appIdentifier, userId,
+                fetchSessionsForAllLinkedAccounts && storage.getType().equals(STORAGE_TYPE.SQL),
+                new AutoCommitLookups(main, appIdentifier, storage));
 
         for (String currUserId : userIds) {
             for (TenantConfig tenant : tenants) {
@@ -1399,8 +1755,9 @@ public class Session {
             Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
             boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
-        Set<String> userIds = getUserIdsToFindSessionsBy(main, tenantIdentifier.toAppIdentifier(), storage, userId,
-                fetchSessionsForAllLinkedAccounts);
+        Set<String> userIds = getUserIdsToFindSessionsBy(main, tenantIdentifier.toAppIdentifier(), userId,
+                fetchSessionsForAllLinkedAccounts,
+                new AutoCommitLookups(main, tenantIdentifier.toAppIdentifier(), storage));
         return getNonExpiredSessionHandlesOfUserIds(tenantIdentifier, storage, userIds);
     }
 
@@ -1430,8 +1787,9 @@ public class Session {
     // mapping is added. Nothing is replaced, only added: a mapping created with `force: true` on
     // POST /recipe/userid/map may name another user's SuperTokens id, and then listing or revoking either user's
     // sessions includes the other user's sessions too, as the config description documents.
-    private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, Storage storage,
-                                                          String userId, boolean fetchSessionsForAllLinkedAccounts)
+    private static Set<String> getUserIdsToFindSessionsBy(Main main, AppIdentifier appIdentifier, String userId,
+                                                          boolean fetchSessionsForAllLinkedAccounts,
+                                                          UserLookups lookups)
             throws StorageQueryException {
         boolean forced = UserIdMappingOptOut.isForced(main, appIdentifier);
         Set<String> userIds = new HashSet<>();
@@ -1440,17 +1798,16 @@ public class Session {
         superTokensUserIds.add(userId);
         if (forced) {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                    UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId, UserIdType.EXTERNAL);
+                    lookups.getUserIdMappingIgnoringOptOut(userId, UserIdType.EXTERNAL);
             if (mapping != null && !mapping.superTokensUserId.equals(userId)) {
                 superTokensUserIds.add(mapping.superTokensUserId);
                 userIds.add(mapping.superTokensUserId);
             }
         }
         if (fetchSessionsForAllLinkedAccounts) {
-            AuthRecipeStorage authRecipeStorage = (AuthRecipeStorage) storage;
             List<AuthRecipeUserInfo> primaryUsers = new ArrayList<>();
             for (String superTokensUserId : superTokensUserIds) {
-                AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier, superTokensUserId);
+                AuthRecipeUserInfo primaryUser = lookups.getPrimaryUserById(superTokensUserId);
                 if (primaryUser != null) {
                     primaryUsers.add(primaryUser);
                 }
@@ -1458,10 +1815,9 @@ public class Session {
             if (primaryUsers.isEmpty() && !forced) {
                 // userId may be the external id of a mapped user
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                        UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId, UserIdType.EXTERNAL);
+                        lookups.getUserIdMapping(userId, UserIdType.EXTERNAL);
                 if (mapping != null) {
-                    AuthRecipeUserInfo primaryUser = authRecipeStorage.getPrimaryUserById(appIdentifier,
-                            mapping.superTokensUserId);
+                    AuthRecipeUserInfo primaryUser = lookups.getPrimaryUserById(mapping.superTokensUserId);
                     if (primaryUser != null) {
                         primaryUsers.add(primaryUser);
                     }
@@ -1475,21 +1831,119 @@ public class Session {
                 }
             }
             if (!forced && !linkedSuperTokensUserIds.isEmpty()) {
-                userIds.addAll(UserIdMapping.getUserIdMappingForSuperTokensUserIds(main, appIdentifier, storage,
-                        linkedSuperTokensUserIds).values());
+                userIds.addAll(lookups.getExternalUserIds(linkedSuperTokensUserIds));
             }
         }
         if (forced) {
             for (String id : new ArrayList<>(userIds)) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping =
-                        UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, id,
-                                UserIdType.SUPERTOKENS);
+                        lookups.getUserIdMappingIgnoringOptOut(id, UserIdType.SUPERTOKENS);
                 if (mapping != null) {
                     userIds.add(mapping.externalUserId);
                 }
             }
         }
         return userIds;
+    }
+
+    // The reads getUserIdsToFindSessionsBy makes, so revoking sessions can make them on its transaction's
+    // connection. getUserIdMapping and getExternalUserIds read nothing for an app with disable_user_id_mapping on.
+    private interface UserLookups {
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(String userId,
+                                                                                    UserIdType userIdType)
+                throws StorageQueryException;
+
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(String userId,
+                                                                                                  UserIdType userIdType)
+                throws StorageQueryException;
+
+        AuthRecipeUserInfo getPrimaryUserById(String userId) throws StorageQueryException;
+
+        Collection<String> getExternalUserIds(ArrayList<String> superTokensUserIds) throws StorageQueryException;
+    }
+
+    private static class AutoCommitLookups implements UserLookups {
+        private final Main main;
+        private final AppIdentifier appIdentifier;
+        private final Storage storage;
+
+        AutoCommitLookups(Main main, AppIdentifier appIdentifier, Storage storage) {
+            this.main = main;
+            this.appIdentifier = appIdentifier;
+            this.storage = storage;
+        }
+
+        @Override
+        public io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(String userId,
+                                                                                           UserIdType userIdType)
+                throws StorageQueryException {
+            return UserIdMapping.getUserIdMapping(main, appIdentifier, storage, userId, userIdType);
+        }
+
+        @Override
+        public io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+                String userId, UserIdType userIdType) throws StorageQueryException {
+            return UserIdMapping.getUserIdMappingIgnoringOptOut(appIdentifier, storage, userId, userIdType);
+        }
+
+        @Override
+        public AuthRecipeUserInfo getPrimaryUserById(String userId) throws StorageQueryException {
+            return ((AuthRecipeStorage) storage).getPrimaryUserById(appIdentifier, userId);
+        }
+
+        @Override
+        public Collection<String> getExternalUserIds(ArrayList<String> superTokensUserIds)
+                throws StorageQueryException {
+            return UserIdMapping.getUserIdMappingForSuperTokensUserIds(main, appIdentifier, storage,
+                    superTokensUserIds).values();
+        }
+    }
+
+    private static class TransactionLookups implements UserLookups {
+        private final Main main;
+        private final AppIdentifier appIdentifier;
+        private final Storage storage;
+        private final TransactionConnection con;
+
+        TransactionLookups(Main main, AppIdentifier appIdentifier, Storage storage, TransactionConnection con) {
+            this.main = main;
+            this.appIdentifier = appIdentifier;
+            this.storage = storage;
+            this.con = con;
+        }
+
+        @Override
+        public io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(String userId,
+                                                                                           UserIdType userIdType)
+                throws StorageQueryException {
+            return UserIdMapping.getUserIdMapping(main, con, appIdentifier, storage, userId, userIdType);
+        }
+
+        @Override
+        public io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMappingIgnoringOptOut(
+                String userId, UserIdType userIdType) throws StorageQueryException {
+            return UserIdMapping.getUserIdMappingIgnoringOptOut(con, appIdentifier, storage, userId, userIdType);
+        }
+
+        @Override
+        public AuthRecipeUserInfo getPrimaryUserById(String userId) throws StorageQueryException {
+            return ((AuthRecipeSQLStorage) storage).getPrimaryUserById_Transaction(appIdentifier, con, userId);
+        }
+
+        @Override
+        public Collection<String> getExternalUserIds(ArrayList<String> superTokensUserIds)
+                throws StorageQueryException {
+            List<String> externalUserIds = new ArrayList<>();
+            if (UserIdMappingOptOut.isReadSkipped(main, appIdentifier)) {
+                return externalUserIds;
+            }
+            for (io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping :
+                    ((UserIdMappingSQLStorage) storage).getMultipleUserIdMapping_Transaction(con, appIdentifier,
+                            superTokensUserIds, true)) {
+                externalUserIds.add(mapping.externalUserId);
+            }
+            return externalUserIds;
+        }
     }
 
     @TestOnly

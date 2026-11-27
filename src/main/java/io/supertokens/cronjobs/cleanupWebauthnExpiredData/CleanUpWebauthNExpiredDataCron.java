@@ -33,7 +33,7 @@ public class CleanUpWebauthNExpiredDataCron extends CronTask {
             ".CleanUpWebauthnExpiredDataCron";
 
     private CleanUpWebauthNExpiredDataCron(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("CleanUpWebauthnExpiredDataCron", main, tenantsInfo, true);
+        super("CleanUpWebauthnExpiredDataCron", main, tenantsInfo, false);
     }
 
     public static CleanUpWebauthNExpiredDataCron init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
