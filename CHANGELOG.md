@@ -29,6 +29,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   caught up, a user linked to another account in a not-yet-folded slice can be counted alongside that account.
 - Updates jackson to 2.22.4 and guava to 33.7.2 to fix CVE-2026-68497, CVE-2026-91776, CVE-2026-91777,
   CVE-2026-89407, CVE-2026-89425 and CVE-2026-102554 in the docker image.
+- Cron jobs work on at most `cron_storage_parallelism` (new, default 4) storages at once per job, and jobs first
+  scheduled a full interval out start at a random offset, so they no longer connect to every tenant database at the
+  same instant ([#1519](https://github.com/supertokens/supertokens-core/issues/1519)).
+- The WebAuthn and OAuth cleanup cron jobs now delete expired data; they never ran before.
 
 ## [12.5.0]
 
